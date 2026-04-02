@@ -98,6 +98,25 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     return merged;
   }
 
+  /// Restituisce gli appointments associati a un client specifico,
+  /// unendo giorno corrente e settimana visibile.
+  List<Appointment> getByClientId(int clientId) {
+    final currentList = state.value ?? [];
+    final mergedById = <int, Appointment>{
+      for (final appt in currentList)
+        if (appt.clientId == clientId) appt.id: appt,
+    };
+
+    final weeklyItems = _findAppointmentsForClientInVisibleWeek(clientId);
+    for (final appt in weeklyItems) {
+      mergedById.putIfAbsent(appt.id, () => appt);
+    }
+
+    final merged = mergedById.values.toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    return merged;
+  }
+
   void moveAppointment({
     required int appointmentId,
     required int newStaffId,
@@ -790,6 +809,37 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     return [
       for (final appointment in appointments)
         if (appointment.bookingId == bookingId) appointment,
+    ];
+  }
+
+  List<Appointment> _findAppointmentsForClientInVisibleWeek(int clientId) {
+    final location = ref.read(currentLocationProvider);
+    final business = ref.read(currentBusinessProvider);
+    if (location.id <= 0 || business.id <= 0) {
+      return const <Appointment>[];
+    }
+
+    final anchorDate = ref.read(agendaDateProvider);
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    final weekRange = computeWeekRange(anchorDate, timezone);
+    final weeklyAppointments = ref.read(
+      weeklyAppointmentsProvider(
+        WeeklyAppointmentsRequest(
+          weekStart: weekRange.start,
+          locationId: location.id,
+          businessId: business.id,
+        ),
+      ),
+    );
+
+    final appointments = weeklyAppointments.value?.appointments;
+    if (appointments == null || appointments.isEmpty) {
+      return const <Appointment>[];
+    }
+
+    return [
+      for (final appointment in appointments)
+        if (appointment.clientId == clientId) appointment,
     ];
   }
 

@@ -257,6 +257,10 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("Card text zoom"),
     "agendaDisplaySettingsExtraMinutesBandIntensityLabel":
         MessageLookupByLibrary.simpleMessage("Additional extra-band intensity"),
+    "agendaDisplaySettingsHoverUnrelatedDimIntensityLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Unrelated card dimming intensity (desktop hover)",
+        ),
     "agendaDisplaySettingsResetDefaultsAction":
         MessageLookupByLibrary.simpleMessage("Reset defaults"),
     "agendaDisplaySettingsServiceColorsLabel":

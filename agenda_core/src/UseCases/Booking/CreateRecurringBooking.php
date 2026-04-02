@@ -14,7 +14,7 @@ use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\BookingAuditRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
-use Agenda\UseCases\Notifications\QueueBookingConfirmation;
+use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\UseCases\Notifications\QueueBookingReminder;
 use Agenda\Domain\Booking\RecurrenceRule;
 use Agenda\Domain\Exceptions\BookingException;
@@ -90,6 +90,7 @@ final class CreateRecurringBooking
         $recurrenceData = $data['recurrence'] ?? null;
         $notes = $data['notes'] ?? null;
         $excludedIndices = $data['excluded_indices'] ?? [];
+        $requestedLocale = $data['locale'] ?? null;
 
         if (empty($serviceIds)) {
             throw BookingException::invalidService([]);
@@ -301,8 +302,8 @@ final class CreateRecurringBooking
                     'is_recurrence_parent' => $isParent,
                 ];
 
-                // NOTE: Notifications for recurring bookings will be implemented in Phase 2
-                // For now, only the parent booking confirmation is logged
+                // Reminder notifications are queued post-commit for each created occurrence.
+                // TODO(phase-2-notifications): queue booking_confirmed for recurring occurrences.
 
                 // Log audit event
                 if ($this->auditRepository !== null) {
@@ -323,6 +324,17 @@ final class CreateRecurringBooking
             }
 
             $pdo->commit();
+
+            // Non-blocking: queue reminder notifications only after successful commit.
+            $this->queueReminderNotificationsForCreatedBookings(
+                createdBookings: $createdBookings,
+                itemTemplates: $itemTemplates,
+                location: $location,
+                client: $client,
+                clientId: (int) $clientId,
+                businessId: $businessId,
+                requestedLocale: is_string($requestedLocale) ? $requestedLocale : null
+            );
 
             return [
                 'recurrence_rule_id' => $ruleId,
@@ -363,6 +375,94 @@ final class CreateRecurringBooking
         );
 
         return !empty($existingBookings);
+    }
+
+    /**
+     * Queue one reminder per created recurring occurrence.
+     * Runs outside transaction and never throws.
+     *
+     * @param array<int,array{id:int,start_time:string,end_time:string}> $createdBookings
+     * @param array<int,array{service_name:string}> $itemTemplates
+     * @param array<string,mixed> $location
+     * @param array<string,mixed> $client
+     */
+    private function queueReminderNotificationsForCreatedBookings(
+        array $createdBookings,
+        array $itemTemplates,
+        array $location,
+        array $client,
+        int $clientId,
+        int $businessId,
+        ?string $requestedLocale = null
+    ): void {
+        if ($this->notificationRepo === null || $createdBookings === []) {
+            return;
+        }
+
+        $clientEmail = trim((string) ($client['email'] ?? ''));
+        if ($clientEmail === '') {
+            return;
+        }
+
+        $clientName = trim((string) (($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? '')));
+        $locationEmail = trim((string) ($location['email'] ?? ''));
+        $businessEmail = trim((string) ($location['business_email'] ?? ''));
+        $senderEmail = $locationEmail !== '' ? $locationEmail : ($businessEmail !== '' ? $businessEmail : null);
+        $senderName = $locationEmail !== ''
+            ? ($location['name'] ?? null)
+            : ($businessEmail !== '' ? ($location['business_name'] ?? null) : null);
+        $serviceNames = array_values(array_unique(array_map(
+            static fn (array $template): string => (string) ($template['service_name'] ?? ''),
+            $itemTemplates
+        )));
+        $services = implode(', ', array_filter($serviceNames, static fn (string $name): bool => $name !== ''));
+        $locale = EmailTemplateRenderer::resolvePreferredLocale(
+            $requestedLocale,
+            $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? null,
+            $_ENV['DEFAULT_LOCALE'] ?? 'it'
+        );
+        $frontendUrl = $_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it';
+        $businessSlug = (string) ($location['business_slug'] ?? '');
+
+        $reminderUseCase = new QueueBookingReminder($this->db, $this->notificationRepo);
+
+        foreach ($createdBookings as $createdBooking) {
+            try {
+                $notificationData = [
+                    'booking_id' => (int) $createdBooking['id'],
+                    'client_id' => $clientId,
+                    'client_email' => $clientEmail,
+                    'client_name' => $clientName,
+                    'business_id' => $businessId,
+                    'business_name' => $location['business_name'] ?? '',
+                    'business_email' => $location['business_email'] ?? '',
+                    'location_name' => $location['name'] ?? '',
+                    'location_email' => $location['email'] ?? '',
+                    'location_address' => $location['address'] ?? '',
+                    'location_city' => $location['city'] ?? '',
+                    'location_phone' => $location['phone'] ?? '',
+                    'location_timezone' => $location['timezone'] ?? 'Europe/Rome',
+                    'sender_email' => $senderEmail,
+                    'sender_name' => $senderName,
+                    'start_time' => (string) $createdBooking['start_time'],
+                    'end_time' => (string) $createdBooking['end_time'],
+                    'services' => $services,
+                    'manage_url' => $frontendUrl . '/' . $businessSlug . '/my-bookings',
+                    'booking_url' => $frontendUrl . '/' . $businessSlug . '/booking',
+                    'locale' => $locale,
+                ];
+
+                $reminderUseCase->execute($notificationData);
+            } catch (\Throwable $e) {
+                error_log(
+                    sprintf(
+                        'Failed to queue recurring reminder for booking %d: %s',
+                        (int) $createdBooking['id'],
+                        $e->getMessage()
+                    )
+                );
+            }
+        }
     }
 
     /**

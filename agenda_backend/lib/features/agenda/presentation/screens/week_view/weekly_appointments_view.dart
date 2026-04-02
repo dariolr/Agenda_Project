@@ -8,17 +8,22 @@ import 'package:agenda_backend/core/models/staff.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart'
     show StaffPlanning;
 import 'package:agenda_backend/core/utils/color_utils.dart';
+import 'package:agenda_backend/core/widgets/adaptive_dropdown.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
 import 'package:agenda_backend/features/agenda/mappers/appointments_by_day.dart';
+import 'package:agenda_backend/features/agenda/presentation/dialogs/add_block_dialog.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/week_view/single_staff_weekly_timeline.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/appointment_card_base.dart';
 import 'package:agenda_backend/features/agenda/presentation/widgets/appointment_dialog.dart';
+import 'package:agenda_backend/features/agenda/presentation/widgets/booking_dialog.dart';
 import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/agenda_display_settings_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/agenda_interaction_lock_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/selected_appointment_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/weekly_appointments_provider.dart';
@@ -557,6 +562,7 @@ class _WeeklyDayColumn extends ConsumerStatefulWidget {
 
 class _WeeklyDayColumnState extends ConsumerState<_WeeklyDayColumn> {
   static const double _todayBadgeMinColumnWidth = 220;
+  static const double _compactEmptyColumnWidthThreshold = 240;
   late final ScrollController _scrollController;
 
   @override
@@ -653,15 +659,31 @@ class _WeeklyDayColumnState extends ConsumerState<_WeeklyDayColumn> {
                 Expanded(
                   child:
                       widget.appointments.isEmpty && widget.classEvents.isEmpty
-                      ? Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(12),
-                            child: Text(
-                              context.l10n.clientAppointmentsEmpty,
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.bodySmall,
-                            ),
-                          ),
+                      ? LayoutBuilder(
+                          builder: (context, constraints) {
+                            final isCompactMode =
+                                constraints.maxWidth <=
+                                _compactEmptyColumnWidthThreshold;
+                            return Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(12),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      context.l10n.clientAppointmentsEmpty,
+                                      textAlign: TextAlign.center,
+                                      style: theme.textTheme.bodySmall,
+                                    ),
+                                    if (isCompactMode) ...[
+                                      const SizedBox(height: 10),
+                                      _WeeklyCompactAddAction(day: widget.day),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            );
+                          },
                         )
                       : ListView.separated(
                           controller: _scrollController,
@@ -721,7 +743,74 @@ class _WeeklyDayColumnState extends ConsumerState<_WeeklyDayColumn> {
   }
 }
 
-class _WeeklyAppointmentTile extends ConsumerWidget {
+class _WeeklyCompactAddAction extends ConsumerWidget {
+  const _WeeklyCompactAddAction({required this.day});
+
+  final DateTime day;
+  static const double _actionButtonHeight = 40;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
+    final onContainer = scheme.onSecondaryContainer;
+    final targetDay = DateUtils.dateOnly(day);
+    return AdaptiveDropdown<String>(
+      modalTitle: l10n.agendaAddTitle,
+      useRootNavigator: true,
+      desktopPresentation: AdaptiveDropdownDesktopPresentation.dialog,
+      nonDesktopPresentation:
+          AdaptiveDropdownNonDesktopPresentation.bottomSheet,
+      items: [
+        AdaptiveDropdownItem(
+          value: 'appointment',
+          child: Text(l10n.agendaAddAppointment),
+        ),
+        AdaptiveDropdownItem(value: 'block', child: Text(l10n.agendaAddBlock)),
+      ],
+      onSelected: (value) async {
+        if (value == 'appointment') {
+          await showBookingDialog(context, ref, date: targetDay);
+        } else if (value == 'block') {
+          await showAddBlockDialog(context, ref, date: targetDay);
+        }
+        if (!context.mounted) return;
+        ref.invalidate(appointmentsProvider);
+        final location = ref.read(currentLocationProvider);
+        final business = ref.read(currentBusinessProvider);
+        if (location.id <= 0 || business.id <= 0) return;
+        final anchorDate = ref.read(agendaDateProvider);
+        final timezone = ref.read(effectiveTenantTimezoneProvider);
+        final weekRange = computeWeekRange(anchorDate, timezone);
+        ref.invalidate(
+          weeklyAppointmentsProvider(
+            WeeklyAppointmentsRequest(
+              weekStart: weekRange.start,
+              locationId: location.id,
+              businessId: business.id,
+            ),
+          ),
+        );
+      },
+      child: Material(
+        elevation: 0,
+        color: scheme.secondaryContainer,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        clipBehavior: Clip.antiAlias,
+        child: SizedBox(
+          height: _actionButtonHeight,
+          width: 46,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            child: Icon(Icons.add_rounded, size: 22, color: onContainer),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WeeklyAppointmentTile extends ConsumerStatefulWidget {
   const _WeeklyAppointmentTile({
     required this.day,
     required this.appointment,
@@ -737,21 +826,47 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
   final bool showStaffNameFooter;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_WeeklyAppointmentTile> createState() =>
+      _WeeklyAppointmentTileState();
+}
+
+class _WeeklyAppointmentTileState extends ConsumerState<_WeeklyAppointmentTile> {
+  bool _selectedFromHover = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final appointment = widget.appointment;
     final color = _resolveAppointmentColor(context, ref, appointment);
     final staffName = _resolveStaffDisplayName(ref, appointment.staffId);
+    final formFactor = ref.watch(formFactorProvider);
+    final isDesktop = formFactor == AppFormFactor.desktop;
+    final selectionState = ref.watch(selectedAppointmentProvider);
+    final isSelected = selectionState.contains(appointment.id);
+    final isHoveringCards = ref.watch(agendaCardHoverProvider);
+    final hasActiveHoverSelection =
+        isDesktop && isHoveringCards && !selectionState.isEmpty;
+    final shouldDeEmphasize = hasActiveHoverSelection && !isSelected;
+    final hoverDimIntensity = ref.watch(
+      agendaHoverUnrelatedCardDimIntensityProvider,
+    );
+    final unrelatedCardOpacity = (1.0 - (hoverDimIntensity * 0.65)).clamp(
+      0.35,
+      1.0,
+    );
     final showPriceInCard = ref.watch(
       effectiveShowAppointmentPriceInCardProvider,
     );
     final cardTextScale = ref.watch(agendaCardTextScaleProvider);
     final effectiveHeightScale = cardTextScale > 1.0 ? cardTextScale : 1.0;
     final baseTileHeight = showPriceInCard
-        ? _tileHeight
-        : _tileHeightWhenPriceHidden;
+        ? _WeeklyAppointmentTile._tileHeight
+        : _WeeklyAppointmentTile._tileHeightWhenPriceHidden;
     final tileHeight = baseTileHeight * effectiveHeightScale;
     final theme = Theme.of(context);
-    final footerHeight = showStaffNameFooter ? _staffFooterHeight : 0.0;
-    final cardBorderRadius = showStaffNameFooter
+    final footerHeight = widget.showStaffNameFooter
+        ? _WeeklyAppointmentTile._staffFooterHeight
+        : 0.0;
+    final cardBorderRadius = widget.showStaffNameFooter
         ? const BorderRadius.only(
             topLeft: Radius.circular(6),
             topRight: Radius.circular(6),
@@ -760,65 +875,88 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
 
     return SizedBox(
       height: tileHeight,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => _handleTap(context, ref),
-        child: Column(
-          children: [
-            SizedBox(
-              height: tileHeight - footerHeight,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: IgnorePointer(
-                      child: AppointmentCard(
-                        appointment: appointment,
-                        color: color,
-                        showExtraMinutesBand: false,
-                        borderRadius: cardBorderRadius,
-                        forceCompactPresentation: true,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) {
+          ref.read(agendaCardHoverProvider.notifier).enter();
+          ref
+              .read(selectedAppointmentProvider.notifier)
+              .selectByAppointment(appointment);
+          _selectedFromHover = true;
+        },
+        onExit: (_) {
+          ref.read(agendaCardHoverProvider.notifier).exit();
+          if (_selectedFromHover &&
+              ref
+                  .read(selectedAppointmentProvider)
+                  .contains(appointment.id)) {
+            ref.read(selectedAppointmentProvider.notifier).clear();
+            _selectedFromHover = false;
+          }
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => _handleTap(context, ref),
+          child: Column(
+            children: [
+              SizedBox(
+                height: tileHeight - footerHeight,
+                child: Stack(
+                  children: [
+                    Positioned.fill(
+                      child: IgnorePointer(
+                        child: AppointmentCard(
+                          appointment: appointment,
+                          color: color,
+                          showExtraMinutesBand: false,
+                          borderRadius: cardBorderRadius,
+                          forceCompactPresentation: true,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (widget.showStaffNameFooter)
+                Opacity(
+                  opacity: shouldDeEmphasize ? unrelatedCardOpacity : 1.0,
+                  child: Container(
+                    height: _WeeklyAppointmentTile._staffFooterHeight,
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: const BorderRadius.vertical(
+                        bottom: Radius.circular(6),
+                      ),
+                      border: Border(
+                        left: BorderSide(color: color),
+                        right: BorderSide(color: color),
+                        bottom: BorderSide(color: color),
+                      ),
+                    ),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        staffName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w700,
+                          height: 1.0,
+                          color:
+                              ThemeData.estimateBrightnessForColor(color) ==
+                                  Brightness.dark
+                              ? Colors.white
+                              : Colors.black,
+                        ),
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-            if (showStaffNameFooter)
-              Container(
-                height: _staffFooterHeight,
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(6),
-                  ),
-                  border: Border(
-                    left: BorderSide(color: color),
-                    right: BorderSide(color: color),
-                    bottom: BorderSide(color: color),
-                  ),
                 ),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    staffName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      fontSize: 9,
-                      fontWeight: FontWeight.w700,
-                      height: 1.0,
-                      color:
-                          ThemeData.estimateBrightnessForColor(color) ==
-                              Brightness.dark
-                          ? Colors.white
-                          : Colors.black,
-                    ),
-                  ),
-                ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -874,7 +1012,7 @@ class _WeeklyAppointmentTile extends ConsumerWidget {
   }
 
   Future<void> _handleTap(BuildContext context, WidgetRef ref) async {
-    await showAppointmentDialog(context, ref, initial: appointment);
+    await showAppointmentDialog(context, ref, initial: widget.appointment);
     if (!context.mounted) return;
 
     ref.invalidate(appointmentsProvider);

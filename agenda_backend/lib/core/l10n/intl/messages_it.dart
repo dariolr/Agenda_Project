@@ -266,6 +266,10 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage(
           "Intensità colori tempo aggiuntivo",
         ),
+    "agendaDisplaySettingsHoverUnrelatedDimIntensityLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Intensità del colore su appuntamenti diversi da quelli selezionati",
+        ),
     "agendaDisplaySettingsResetDefaultsAction":
         MessageLookupByLibrary.simpleMessage("Ripristina default"),
     "agendaDisplaySettingsServiceColorsLabel":

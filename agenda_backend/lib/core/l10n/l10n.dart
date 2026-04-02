@@ -10529,6 +10529,16 @@ class L10n {
     );
   }
 
+  /// `Intensità del colore su appuntamenti diversi da quelli selezionati`
+  String get agendaDisplaySettingsHoverUnrelatedDimIntensityLabel {
+    return Intl.message(
+      'Intensità del colore su appuntamenti diversi da quelli selezionati',
+      name: 'agendaDisplaySettingsHoverUnrelatedDimIntensityLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Visualizza importi`
   String get agendaDisplaySettingsShowPricesLabel {
     return Intl.message(

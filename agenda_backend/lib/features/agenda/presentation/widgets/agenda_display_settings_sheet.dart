@@ -146,7 +146,9 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
             children: [
               IconButton(
                 onPressed: () {
-                  notifier.setCardColorOpacity(settings.cardColorOpacity - 0.05);
+                  notifier.setCardColorOpacity(
+                    settings.cardColorOpacity - 0.05,
+                  );
                 },
                 icon: const Icon(Icons.remove),
               ),
@@ -161,7 +163,9 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
               ),
               IconButton(
                 onPressed: () {
-                  notifier.setCardColorOpacity(settings.cardColorOpacity + 0.05);
+                  notifier.setCardColorOpacity(
+                    settings.cardColorOpacity + 0.05,
+                  );
                 },
                 icon: const Icon(Icons.add),
               ),
@@ -205,6 +209,46 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
               Text('${(settings.extraMinutesBandIntensity * 100).round()}%'),
             ],
           ),
+          if (isDesktop) ...[
+            const SizedBox(height: _sectionSpacing),
+            Text(
+              context.l10n.agendaDisplaySettingsHoverUnrelatedDimIntensityLabel,
+              style: settingLabelStyle,
+            ),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () {
+                    notifier.setHoverUnrelatedCardDimIntensity(
+                      settings.hoverUnrelatedCardDimIntensity - 0.05,
+                    );
+                  },
+                  icon: const Icon(Icons.remove),
+                ),
+                Expanded(
+                  child: Slider(
+                    min: 0.0,
+                    max: 1.0,
+                    divisions: 20,
+                    value: settings.hoverUnrelatedCardDimIntensity,
+                    onChanged: notifier.setHoverUnrelatedCardDimIntensity,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    notifier.setHoverUnrelatedCardDimIntensity(
+                      settings.hoverUnrelatedCardDimIntensity + 0.05,
+                    );
+                  },
+                  icon: const Icon(Icons.add),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '${(settings.hoverUnrelatedCardDimIntensity * 100).round()}%',
+                ),
+              ],
+            ),
+          ],
         ],
       ),
       actions: [

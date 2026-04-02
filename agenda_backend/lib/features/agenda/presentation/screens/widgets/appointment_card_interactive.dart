@@ -141,7 +141,9 @@ class _AppointmentCardInteractiveState
     return MouseRegion(
       cursor: _isResizeZoneHovered
           ? SystemMouseCursors.resizeUpDown
-          : MouseCursor.defer,
+          : (formFactor == AppFormFactor.desktop
+                ? SystemMouseCursors.click
+                : MouseCursor.defer),
       onEnter: (_) {
         _hoverNotifier.enter();
         _selectAppointment(ref, fromHover: true);
@@ -397,7 +399,11 @@ class _AppointmentCardInteractiveState
   void _selectAppointment(WidgetRef ref, {bool fromHover = false}) {
     _selectedFromHover = fromHover;
     final sel = ref.read(selectedAppointmentProvider.notifier);
-    sel.toggleByAppointment(widget.appointment);
+    if (fromHover) {
+      sel.selectByAppointment(widget.appointment);
+    } else {
+      sel.toggleByAppointment(widget.appointment);
+    }
   }
 
   Future<void> _handleDragEnd(WidgetRef ref, DraggableDetails details) async {
@@ -646,8 +652,8 @@ class _AppointmentCardInteractiveState
     );
     final baseCardOpacity = cardColorIntensity.clamp(0.3, 1.0);
     // Keep the extra-minutes band always subtle, regardless of card intensity.
-    final extraMinutesBandOpacity =
-        (0.08 + (extraMinutesBandIntensity * 0.22)).clamp(0.08, 0.30);
+    final extraMinutesBandOpacity = (0.08 + (extraMinutesBandIntensity * 0.22))
+        .clamp(0.08, 0.30);
     final extraMinutesBandColor = Color.alphaBlend(
       Colors.black.withOpacity(0.03 + (extraMinutesBandIntensity * 0.10)),
       widget.color,
@@ -761,8 +767,7 @@ class _AppointmentCardInteractiveState
       isPriceDisplayEnabled: isPriceDisplayEnabled,
       forceCompactPresentation: widget.forceCompactPresentation,
     );
-    final baseBorderRadius =
-        presentation.isUltraShort || presentation.isShort
+    final baseBorderRadius = presentation.isUltraShort || presentation.isShort
         ? widget.borderRadius
         : const BorderRadius.all(Radius.circular(LayoutConfig.borderRadius));
     final radiusScale = presentation.isUltraShort
@@ -798,7 +803,25 @@ class _AppointmentCardInteractiveState
     final animationCurve = _isDraggingResize || forFeedback
         ? Curves.linear
         : Curves.easeOutQuad;
-    final isNonDesktop = ref.watch(formFactorProvider) != AppFormFactor.desktop;
+    final formFactor = ref.watch(formFactorProvider);
+    final isDesktop = formFactor == AppFormFactor.desktop;
+    final isNonDesktop = !isDesktop;
+    final selectionState = ref.watch(selectedAppointmentProvider);
+    final isHoveringCards = ref.watch(agendaCardHoverProvider);
+    final hasActiveHoverSelection =
+        isDesktop && isHoveringCards && !selectionState.isEmpty;
+    final shouldDeEmphasize =
+        hasActiveHoverSelection && !isSelected && !forFeedback && !isGhost;
+    final hoverDimIntensity = ref.watch(
+      agendaHoverUnrelatedCardDimIntensityProvider,
+    );
+    final unrelatedCardOpacity = (1.0 - (hoverDimIntensity * 0.65)).clamp(
+      0.35,
+      1.0,
+    );
+    final cardOpacity = isGhost
+        ? AgendaTheme.ghostOpacity
+        : (shouldDeEmphasize ? unrelatedCardOpacity : 1.0);
     final showTouchResizeFeedback =
         isNonDesktop &&
         (_touchResizePriming ||
@@ -807,7 +830,7 @@ class _AppointmentCardInteractiveState
             _isDraggingResize);
 
     return Opacity(
-      opacity: isGhost ? AgendaTheme.ghostOpacity : 1,
+      opacity: cardOpacity,
       child: Material(
         borderRadius: effectiveBorderRadius,
         color: Colors.transparent,
@@ -1147,101 +1170,105 @@ class _AppointmentCardInteractiveState
       );
 
       return LayoutBuilder(
-          builder: (context, constraints) {
-            final maxIcons = presentation.maxTrailingIcons(
-              isCompactIconsLayout: isCompactIconsLayout,
-            );
-            final visibleTrailingIcons = trailingIcons.take(maxIcons).toList();
+        builder: (context, constraints) {
+          final maxIcons = presentation.maxTrailingIcons(
+            isCompactIconsLayout: isCompactIconsLayout,
+          );
+          final visibleTrailingIcons = trailingIcons.take(maxIcons).toList();
 
-            List<InlineSpan> buildBaseChildren({required bool fullTime}) {
-              return <InlineSpan>[
-                TextSpan(
-                  text: fullTime ? '$start - $end ' : '$start ',
-                  style: compactTimeStyle,
-                ),
-                TextSpan(text: client, style: compactClientStyle),
-                if (info.isNotEmpty && client.isNotEmpty)
-                  TextSpan(text: ' - ', style: compactTimeStyle),
-                if (info.isNotEmpty)
-                  TextSpan(text: info, style: serviceTextStyle),
-              ];
-            }
+          List<InlineSpan> buildBaseChildren({required bool fullTime}) {
+            return <InlineSpan>[
+              TextSpan(
+                text: fullTime ? '$start - $end ' : '$start ',
+                style: compactTimeStyle,
+              ),
+              TextSpan(text: client, style: compactClientStyle),
+              if (info.isNotEmpty && client.isNotEmpty)
+                TextSpan(text: ' - ', style: compactTimeStyle),
+              if (info.isNotEmpty)
+                TextSpan(text: info, style: serviceTextStyle),
+            ];
+          }
 
-            var showInlinePrice = false;
-            var inlinePriceWidth = 0.0;
-            if (appointmentPrice != null && constraints.maxWidth.isFinite) {
-              final pricePainter = TextPainter(
-                text: TextSpan(
-                  text: appointmentPrice,
-                  style: pricePrimaryTextStyle,
-                ),
-                textDirection: Directionality.of(context),
-                maxLines: 1,
-              )..layout(maxWidth: double.infinity);
-              inlinePriceWidth = pricePainter.width;
-              final iconsReservedWidth =
-                  visibleTrailingIcons.length *
-                  (scaledTrailingIconSize + trailingIconLeftPadding);
-              final reservedWidthForRightSide =
-                  iconsReservedWidth + inlinePriceWidth + 6;
-              const minLeftTextWidth = 54.0;
-              showInlinePrice =
-                  (constraints.maxWidth - reservedWidthForRightSide) >=
-                  minLeftTextWidth;
-            }
-
+          var showInlinePrice = false;
+          var inlinePriceWidth = 0.0;
+          if (appointmentPrice != null && constraints.maxWidth.isFinite) {
+            final pricePainter = TextPainter(
+              text: TextSpan(
+                text: appointmentPrice,
+                style: pricePrimaryTextStyle,
+              ),
+              textDirection: Directionality.of(context),
+              maxLines: 1,
+            )..layout(maxWidth: double.infinity);
+            inlinePriceWidth = pricePainter.width;
             final iconsReservedWidth =
                 visibleTrailingIcons.length *
                 (scaledTrailingIconSize + trailingIconLeftPadding);
-            final rightSideReservedWidth =
-                iconsReservedWidth + (showInlinePrice ? (inlinePriceWidth + 6) : 0);
-            final availableLeftWidth = constraints.maxWidth.isFinite
-                ? (constraints.maxWidth - rightSideReservedWidth).clamp(0.0, double.infinity)
-                : double.infinity;
+            final reservedWidthForRightSide =
+                iconsReservedWidth + inlinePriceWidth + 6;
+            const minLeftTextWidth = 54.0;
+            showInlinePrice =
+                (constraints.maxWidth - reservedWidthForRightSide) >=
+                minLeftTextWidth;
+          }
 
-            final fullTimeChildren = buildBaseChildren(fullTime: true);
-            var effectiveChildren = fullTimeChildren;
-            if (constraints.maxWidth.isFinite) {
-              final fullTimePainter = TextPainter(
-                text: TextSpan(children: fullTimeChildren),
-                textDirection: Directionality.of(context),
-                maxLines: 1,
-              )..layout(maxWidth: double.infinity);
-              if (fullTimePainter.width > availableLeftWidth) {
-                effectiveChildren = buildBaseChildren(fullTime: false);
-              }
+          final iconsReservedWidth =
+              visibleTrailingIcons.length *
+              (scaledTrailingIconSize + trailingIconLeftPadding);
+          final rightSideReservedWidth =
+              iconsReservedWidth +
+              (showInlinePrice ? (inlinePriceWidth + 6) : 0);
+          final availableLeftWidth = constraints.maxWidth.isFinite
+              ? (constraints.maxWidth - rightSideReservedWidth).clamp(
+                  0.0,
+                  double.infinity,
+                )
+              : double.infinity;
+
+          final fullTimeChildren = buildBaseChildren(fullTime: true);
+          var effectiveChildren = fullTimeChildren;
+          if (constraints.maxWidth.isFinite) {
+            final fullTimePainter = TextPainter(
+              text: TextSpan(children: fullTimeChildren),
+              textDirection: Directionality.of(context),
+              maxLines: 1,
+            )..layout(maxWidth: double.infinity);
+            if (fullTimePainter.width > availableLeftWidth) {
+              effectiveChildren = buildBaseChildren(fullTime: false);
             }
+          }
 
-            return Center(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: RichText(
-                        maxLines: 1,
-                        softWrap: false,
-                        overflow: TextOverflow.ellipsis,
-                        text: TextSpan(children: effectiveChildren),
-                      ),
-                    ),
-                  ),
-                  if (showInlinePrice) ...[
-                    const SizedBox(width: 6),
-                    Text(
-                      appointmentPrice!,
+          return Center(
+            child: Row(
+              children: [
+                Expanded(
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: RichText(
                       maxLines: 1,
                       softWrap: false,
                       overflow: TextOverflow.ellipsis,
-                      style: pricePrimaryTextStyle,
+                      text: TextSpan(children: effectiveChildren),
                     ),
-                  ],
-                  if (visibleTrailingIcons.isNotEmpty) ...visibleTrailingIcons,
+                  ),
+                ),
+                if (showInlinePrice) ...[
+                  const SizedBox(width: 6),
+                  Text(
+                    appointmentPrice!,
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    style: pricePrimaryTextStyle,
+                  ),
                 ],
-              ),
-            );
-          },
-        );
+                if (visibleTrailingIcons.isNotEmpty) ...visibleTrailingIcons,
+              ],
+            ),
+          );
+        },
+      );
     }
 
     return LayoutBuilder(

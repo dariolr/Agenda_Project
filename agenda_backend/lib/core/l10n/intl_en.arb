@@ -1589,6 +1589,7 @@
   "agendaDisplaySettingsCardTextZoomLabel": "Card text zoom",
   "agendaDisplaySettingsCardColorOpacityLabel": "Color intensity",
   "agendaDisplaySettingsExtraMinutesBandIntensityLabel": "Additional extra-band intensity",
+  "agendaDisplaySettingsHoverUnrelatedDimIntensityLabel": "Unrelated card dimming intensity (desktop hover)",
   "agendaDisplaySettingsShowPricesLabel": "Show prices in cards",
   "agendaDisplaySettingsShowCancelledLabel": "Show cancelled appointments",
   "agendaDisplaySettingsServiceColorsLabel": "Card colors from:",

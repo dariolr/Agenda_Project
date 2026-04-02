@@ -108,18 +108,26 @@ foreach ($notifications as $notification) {
         echo "[{$id}] {$channel} -> {$recipient}... ";
     }
     
-    // Per i reminder, verifica che il booking sia ancora attivo e che il send
-    // sia ancora nella finestra prevista (-24h con piccola tolleranza tecnica).
-    // I reminder fuori finestra vengono scartati per evitare messaggi fuorvianti.
+    // Per i reminder, invia finche' l'appuntamento e' ancora futuro.
+    // Evita invii troppo a ridosso (cutoff configurabile) e mantieni tracciabilita'.
     if ($channel === 'booking_reminder' && $bookingId !== null) {
         $sendDecision = getReminderSendDecision($db->getPdo(), (int) $bookingId);
         if ($sendDecision['skip_send']) {
+            $discardReason = 'Promemoria non inviato: notifica generata in ritardo e fuori finestra -24h (' . $sendDecision['reason'] . ').';
             if ($verbose) {
-                echo "SKIPPED ({$sendDecision['reason']}) - deleting\n";
+                echo "SKIPPED ({$sendDecision['reason']}) - marking failed\n";
             }
-            // Elimina il reminder pending non più valido.
-            $deleteStmt = $db->getPdo()->prepare('DELETE FROM notification_queue WHERE id = ?');
-            $deleteStmt->execute([$id]);
+            $discardStmt = $db->getPdo()->prepare(
+                'UPDATE notification_queue
+                 SET status = "failed",
+                     failed_at = NOW(),
+                     error_message = :error_message
+                 WHERE id = :id'
+            );
+            $discardStmt->execute([
+                'id' => $id,
+                'error_message' => $discardReason,
+            ]);
             $failed++;
             continue;
         }
@@ -278,6 +286,17 @@ foreach ($notifications as $notification) {
         
     } catch (\Throwable $e) {
         $error = $e->getMessage();
+        if (isHardFailure($error)) {
+            markHardFailed($db->getPdo(), $id, $error);
+            $failed++;
+            if ($verbose) {
+                echo "FAILED (hard): {$error}\n";
+            } else {
+                error_log("Notification {$id} hard-failed: {$error}");
+            }
+            continue;
+        }
+
         $retryScheduledAt = null;
         if ($channel === 'booking_reminder' && $bookingId !== null) {
             $currentAttempt = ((int) ($notification['attempts'] ?? 0)) + 1;
@@ -315,6 +334,37 @@ if ($verbose) {
 
 // Exit with error code if all failed
 exit($sent === 0 && $failed > 0 ? 1 : 0);
+
+/**
+ * Returns true when error is permanent and retries are pointless.
+ */
+function isHardFailure(string $error): bool
+{
+    $normalized = strtolower(trim($error));
+    if ($normalized === '') {
+        return false;
+    }
+
+    return str_contains($normalized, 'invalid recipient email');
+}
+
+/**
+ * Mark notification as failed immediately (no further retries).
+ */
+function markHardFailed(\PDO $pdo, int $id, string $error): void
+{
+    $stmt = $pdo->prepare(
+        'UPDATE notification_queue
+         SET status = "failed",
+             failed_at = NOW(),
+             error_message = :error
+         WHERE id = :id'
+    );
+    $stmt->execute([
+        'id' => $id,
+        'error' => $error,
+    ]);
+}
 
 /**
  * Render email template based on notification type
@@ -515,7 +565,13 @@ function getReminderRetryDecision(\PDO $pdo, int $bookingId, int $currentAttempt
  * Rules:
  * - booking must be active (pending|confirmed)
  * - appointment start must be available
- * - send only inside the 24h-before window with a tolerance of +/- 60 minutes
+ * - reminder is sendable while appointment is still in the future
+ * - optional cutoff to avoid useless "too-late" reminders
+ * - upper bound to avoid sending reminders too early
+ *
+ * Env:
+ * - REMINDER_MIN_HOURS_BEFORE_START (default: 2)
+ * - REMINDER_MAX_HOURS_BEFORE_START (default: 25)
  *
  * @return array{skip_send: bool, reason: string}
  */
@@ -560,13 +616,38 @@ function getReminderSendDecision(\PDO $pdo, int $bookingId): array
     $now = new \DateTimeImmutable('now', $timezone);
     $secondsUntilStart = $appointmentStart->getTimestamp() - $now->getTimestamp();
 
-    // Reminders are "24h before". Tolerance keeps cron/runtime jitter from dropping valid sends.
-    $minSeconds = 23 * 3600; // 23h
-    $maxSeconds = 25 * 3600; // 25h
-    if ($secondsUntilStart < $minSeconds || $secondsUntilStart > $maxSeconds) {
+    if ($secondsUntilStart <= 0) {
         return [
             'skip_send' => true,
-            'reason' => 'outside 24h reminder window',
+            'reason' => 'appointment already started/past',
+        ];
+    }
+
+    $minHoursBeforeStartRaw = $_ENV['REMINDER_MIN_HOURS_BEFORE_START'] ?? getenv('REMINDER_MIN_HOURS_BEFORE_START') ?: '2';
+    $minHoursBeforeStart = (int) $minHoursBeforeStartRaw;
+    if ($minHoursBeforeStart < 0) {
+        $minHoursBeforeStart = 0;
+    }
+
+    $maxHoursBeforeStartRaw = $_ENV['REMINDER_MAX_HOURS_BEFORE_START'] ?? getenv('REMINDER_MAX_HOURS_BEFORE_START') ?: '25';
+    $maxHoursBeforeStart = (int) $maxHoursBeforeStartRaw;
+    if ($maxHoursBeforeStart <= 0) {
+        $maxHoursBeforeStart = 25;
+    }
+
+    $maxSeconds = $maxHoursBeforeStart * 3600;
+    if ($secondsUntilStart > $maxSeconds) {
+        return [
+            'skip_send' => true,
+            'reason' => "too early for reminder (> {$maxHoursBeforeStart}h)",
+        ];
+    }
+
+    $minSeconds = $minHoursBeforeStart * 3600;
+    if ($secondsUntilStart < $minSeconds) {
+        return [
+            'skip_send' => true,
+            'reason' => "too close to appointment (< {$minHoursBeforeStart}h)",
         ];
     }
 
