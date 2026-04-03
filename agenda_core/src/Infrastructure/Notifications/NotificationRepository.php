@@ -73,12 +73,29 @@ final class NotificationRepository
      */
     public function getPending(int $limit = 50): array
     {
+        $reminderLookaheadHoursRaw = $_ENV['REMINDER_FETCH_LOOKAHEAD_HOURS']
+            ?? getenv('REMINDER_FETCH_LOOKAHEAD_HOURS')
+            ?: '3';
+        $reminderLookaheadHours = (int) $reminderLookaheadHoursRaw;
+        if ($reminderLookaheadHours < 0) {
+            $reminderLookaheadHours = 0;
+        }
+        $reminderLookaheadHoursSql = (string) $reminderLookaheadHours;
+
         $stmt = $this->db->getPdo()->prepare(
             'SELECT * FROM notification_queue 
              WHERE status = "pending"
-               AND (scheduled_at IS NULL OR scheduled_at <= NOW())
+               AND (
+                    -- Non-reminder: original behavior.
+                    (channel <> "booking_reminder" AND (scheduled_at IS NULL OR scheduled_at <= NOW()))
+                    -- Reminder: small look-ahead so worker can apply per-location timezone check.
+                    OR (channel = "booking_reminder" AND (scheduled_at IS NULL OR scheduled_at <= DATE_ADD(NOW(), INTERVAL ' . $reminderLookaheadHoursSql . ' HOUR)))
+               )
                AND attempts < max_attempts
-             ORDER BY priority ASC, created_at ASC
+             ORDER BY
+                priority ASC,
+                CASE WHEN channel = "booking_reminder" THEN COALESCE(scheduled_at, created_at) ELSE created_at END ASC,
+                created_at ASC
              LIMIT :limit
              FOR UPDATE SKIP LOCKED'
         );

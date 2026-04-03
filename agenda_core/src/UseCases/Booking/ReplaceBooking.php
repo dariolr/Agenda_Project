@@ -13,6 +13,8 @@ use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\ClassEventRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
+use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
+use Agenda\UseCases\Notifications\QueueBookingReminder;
 use Agenda\Domain\Exceptions\BookingException;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -526,9 +528,108 @@ final class ReplaceBooking
 
     private function queueModifiedNotification(int $newBookingId, array $beforeSnapshot, array $afterSnapshot): void
     {
-        // TODO: Implement booking_modified notification
-        // This should send a single notification indicating the booking was modified
-        // Not a cancel + new notification
+        if ($this->notificationRepo === null) {
+            return;
+        }
+
+        try {
+            $booking = $this->bookingRepository->findById($newBookingId);
+            if ($booking === null) {
+                return;
+            }
+
+            $clientId = isset($booking['client_id']) ? (int) $booking['client_id'] : 0;
+            if ($clientId <= 0) {
+                return;
+            }
+
+            $client = $this->clientRepository->findById($clientId);
+            if ($client === null || empty($client['email'])) {
+                return;
+            }
+
+            $locationId = isset($booking['location_id']) ? (int) $booking['location_id'] : 0;
+            if ($locationId <= 0) {
+                return;
+            }
+
+            $location = $this->locationRepository->findById($locationId);
+            if ($location === null) {
+                return;
+            }
+
+            $items = $booking['items'] ?? [];
+            if (!is_array($items) || $items === []) {
+                return;
+            }
+
+            $firstStart = null;
+            $lastEnd = null;
+            foreach ($items as $item) {
+                $start = $item['start_time'] ?? null;
+                $end = $item['end_time'] ?? null;
+                if (is_string($start) && $start !== '' && ($firstStart === null || strcmp($start, $firstStart) < 0)) {
+                    $firstStart = $start;
+                }
+                if (is_string($end) && $end !== '' && ($lastEnd === null || strcmp($end, $lastEnd) > 0)) {
+                    $lastEnd = $end;
+                }
+            }
+
+            if ($firstStart === null) {
+                return;
+            }
+
+            $locationEmail = trim((string) ($location['email'] ?? ''));
+            $businessEmail = trim((string) ($location['business_email'] ?? ''));
+            $senderEmail = $locationEmail !== '' ? $locationEmail : ($businessEmail !== '' ? $businessEmail : null);
+            $senderName = $locationEmail !== ''
+                ? ($location['name'] ?? null)
+                : ($businessEmail !== '' ? ($location['business_name'] ?? null) : null);
+
+            $serviceNames = array_values(array_unique(array_map(
+                static fn (array $item): string => (string) ($item['service_name'] ?? ''),
+                $items
+            )));
+            $services = implode(', ', array_filter($serviceNames, static fn (string $name): bool => $name !== ''));
+
+            $locale = EmailTemplateRenderer::resolvePreferredLocale(
+                null,
+                null,
+                $_ENV['DEFAULT_LOCALE'] ?? 'it'
+            );
+            $frontendUrl = $_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it';
+            $businessSlug = (string) ($location['business_slug'] ?? '');
+
+            $notificationData = [
+                'booking_id' => $newBookingId,
+                'client_id' => $clientId,
+                'client_email' => (string) $client['email'],
+                'client_name' => trim((string) (($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? ''))),
+                'business_id' => (int) ($booking['business_id'] ?? 0),
+                'business_name' => $location['business_name'] ?? '',
+                'business_email' => $location['business_email'] ?? '',
+                'location_name' => $location['name'] ?? '',
+                'location_email' => $location['email'] ?? '',
+                'location_address' => $location['address'] ?? '',
+                'location_city' => $location['city'] ?? '',
+                'location_phone' => $location['phone'] ?? '',
+                'location_timezone' => $location['timezone'] ?? 'Europe/Rome',
+                'sender_email' => $senderEmail,
+                'sender_name' => $senderName,
+                'start_time' => $firstStart,
+                'end_time' => $lastEnd,
+                'services' => $services,
+                'manage_url' => $frontendUrl . '/' . $businessSlug . '/my-bookings',
+                'booking_url' => $frontendUrl . '/' . $businessSlug . '/booking',
+                'locale' => $locale,
+            ];
+
+            $reminderUseCase = new QueueBookingReminder($this->db, $this->notificationRepo);
+            $reminderUseCase->execute($notificationData);
+        } catch (\Throwable $e) {
+            error_log("Failed to queue reminder for replaced booking {$newBookingId}: " . $e->getMessage());
+        }
     }
 
     private function generateCorrelationId(): string
