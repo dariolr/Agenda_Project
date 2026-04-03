@@ -111,6 +111,18 @@ foreach ($notifications as $notification) {
     // Per i reminder, invia finche' l'appuntamento e' ancora futuro.
     // Evita invii troppo a ridosso (cutoff configurabile) e mantieni tracciabilita'.
     if ($channel === 'booking_reminder' && $bookingId !== null) {
+        $scheduleDecision = getReminderScheduleDecision(
+            $db->getPdo(),
+            (int) $bookingId,
+            isset($notification['scheduled_at']) ? (string) $notification['scheduled_at'] : null
+        );
+        if (!$scheduleDecision['ready']) {
+            if ($verbose) {
+                echo "DEFERRED ({$scheduleDecision['reason']})\n";
+            }
+            continue;
+        }
+
         $sendDecision = getReminderSendDecision($db->getPdo(), (int) $bookingId);
         if ($sendDecision['skip_send']) {
             $discardReason = 'Promemoria non inviato: notifica generata in ritardo e fuori finestra -24h (' . $sendDecision['reason'] . ').';
@@ -653,6 +665,61 @@ function getReminderSendDecision(\PDO $pdo, int $bookingId): array
 
     return [
         'skip_send' => false,
+        'reason' => '',
+    ];
+}
+
+/**
+ * Decide if a reminder is ready based on scheduled_at interpreted
+ * in the booking location timezone.
+ *
+ * @return array{ready: bool, reason: string}
+ */
+function getReminderScheduleDecision(\PDO $pdo, int $bookingId, ?string $scheduledAtRaw): array
+{
+    if ($scheduledAtRaw === null || trim($scheduledAtRaw) === '') {
+        return [
+            'ready' => true,
+            'reason' => '',
+        ];
+    }
+
+    $stmt = $pdo->prepare(
+        'SELECT l.timezone AS location_timezone
+         FROM bookings b
+         JOIN locations l ON b.location_id = l.id
+         WHERE b.id = :booking_id
+         LIMIT 1'
+    );
+    $stmt->execute(['booking_id' => $bookingId]);
+    $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+    $timezoneName = (string) ($row['location_timezone'] ?? 'Europe/Rome');
+    try {
+        $timezone = new \DateTimeZone($timezoneName);
+    } catch (\Throwable) {
+        $timezone = new \DateTimeZone('Europe/Rome');
+    }
+
+    try {
+        $scheduledAt = new \DateTimeImmutable($scheduledAtRaw, $timezone);
+    } catch (\Throwable) {
+        return [
+            'ready' => true,
+            'reason' => 'invalid scheduled_at format',
+        ];
+    }
+
+    $now = new \DateTimeImmutable('now', $timezone);
+    if ($scheduledAt > $now) {
+        return [
+            'ready' => false,
+            'reason' => 'scheduled for future local time',
+        ];
+    }
+
+    return [
+        'ready' => true,
         'reason' => '',
     ];
 }
