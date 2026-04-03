@@ -138,6 +138,8 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   }
 
   void _handleMasterScroll(double offset) {
+    final initialScrollDone = ref.read(initialScrollDoneProvider);
+
     // sincronizza lo scroll della colonna oraria con la timeline
     if (!_hourColumnController.hasClients) {
       if (mounted) {
@@ -162,6 +164,9 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     if (mounted) {
       setState(() {
         _verticalOffset = canonicalOffset;
+        if (initialScrollDone) {
+          _agendaViewportReady = true;
+        }
       });
     }
 
@@ -176,6 +181,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
   void _applyPendingOffset() {
     if (!mounted || _pendingHourOffset == null) return;
+    final initialScrollDone = ref.read(initialScrollDoneProvider);
 
     if (!_hourColumnController.hasClients) {
       _schedulePendingApply();
@@ -198,6 +204,9 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     if (mounted) {
       setState(() {
         _verticalOffset = canonicalOffset;
+        if (initialScrollDone) {
+          _agendaViewportReady = true;
+        }
       });
     }
     _pendingHourOffset = null;
