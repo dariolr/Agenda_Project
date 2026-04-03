@@ -31,6 +31,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../providers/agenda_scroll_request_provider.dart';
 import '../providers/date_range_provider.dart';
+import '../providers/initial_scroll_provider.dart';
 import '../providers/location_providers.dart';
 
 class AgendaScreen extends ConsumerStatefulWidget {
@@ -50,6 +51,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   final AgendaDayController _timelineController = AgendaDayController();
   late final ProviderSubscription<AgendaScrollRequest?> _scrollRequestSub;
   late final ProviderSubscription<int> _locationSub;
+  late final ProviderSubscription<bool> _initialScrollSub;
   Timer? _pollingTimer;
 
   /// Intervallo polling: 10 secondi in debug, 5 minuti in produzione
@@ -129,6 +131,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     _pollingTimer?.cancel();
     _scrollRequestSub.close();
     _locationSub.close();
+    _initialScrollSub.close();
     _timelineController.dispose();
     _hourColumnController.dispose();
     super.dispose();
@@ -140,7 +143,6 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       if (mounted) {
         setState(() {
           _verticalOffset = offset;
-          _agendaViewportReady = true;
         });
       }
       _pendingHourOffset = offset;
@@ -160,7 +162,6 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     if (mounted) {
       setState(() {
         _verticalOffset = canonicalOffset;
-        _agendaViewportReady = true;
       });
     }
 
@@ -197,7 +198,6 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     if (mounted) {
       setState(() {
         _verticalOffset = canonicalOffset;
-        _agendaViewportReady = true;
       });
     }
     _pendingHourOffset = null;
@@ -249,6 +249,26 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
         }
       },
     );
+
+    _initialScrollSub = ref.listenManual<bool>(initialScrollDoneProvider, (
+      prev,
+      next,
+    ) {
+      if (!mounted) return;
+      if (!next) {
+        if (_agendaViewportReady) {
+          setState(() {
+            _agendaViewportReady = false;
+          });
+        }
+        return;
+      }
+      if (_hourColumnController.hasClients && !_agendaViewportReady) {
+        setState(() {
+          _agendaViewportReady = true;
+        });
+      }
+    }, fireImmediately: true);
 
     _locationSub = ref.listenManual<int>(currentLocationIdProvider, (
       prev,
@@ -513,7 +533,12 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
         ),
         if (shouldDeferAgendaPaint)
           Positioned.fill(
-            child: ColoredBox(color: Theme.of(context).colorScheme.surface),
+            child: ColoredBox(
+              color: Theme.of(context).colorScheme.surface,
+              child: isGlobalLoading
+                  ? const SizedBox.shrink()
+                  : const Center(child: CircularProgressIndicator()),
+            ),
           ),
         if (shouldShowNoStaffState)
           Positioned.fill(
