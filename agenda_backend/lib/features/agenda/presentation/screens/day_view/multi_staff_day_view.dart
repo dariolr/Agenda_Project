@@ -56,7 +56,9 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   late final ProviderSubscription<AgendaScrollRequest?> _scrollRequestSub;
   late final ProviderSubscription<DateTime> _dateSub;
 
-  final ScrollController _headerHCtrl = ScrollController();
+  final ScrollController _headerHCtrl = ScrollController(
+    keepScrollOffset: false,
+  );
   bool _isSyncing = false;
   Offset? _initialDragPosition;
   bool _autoScrollArmed = false;
@@ -432,6 +434,12 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       _verticalCtrl = verticalCtrl;
       _verticalCtrl?.addListener(_onVerticalScrollChanged);
       widget.onVerticalControllerChanged?.call(verticalCtrl);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (!identical(_verticalCtrl, verticalCtrl)) return;
+        if (!verticalCtrl.hasClients) return;
+        widget.onScrollOffsetChanged?.call(verticalCtrl.offset);
+      });
     }
 
     return LayoutBuilder(
@@ -484,6 +492,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
               CurrentTimeLine(
                 hourColumnWidth: widget.hourColumnWidth,
                 verticalOffset: widget.currentTimeVerticalOffset,
+                verticalController: scrollState.verticalScrollCtrl,
                 horizontalOffset:
                     -widget.hourColumnWidth + CurrentTimeLine.horizontalMargin,
               ),

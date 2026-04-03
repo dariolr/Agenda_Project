@@ -44,7 +44,9 @@ class AgendaScreen extends ConsumerStatefulWidget {
 }
 
 class _AgendaScreenState extends ConsumerState<AgendaScreen> {
-  final ScrollController _hourColumnController = ScrollController();
+  final ScrollController _hourColumnController = ScrollController(
+    keepScrollOffset: false,
+  );
   final AgendaDayController _timelineController = AgendaDayController();
   late final ProviderSubscription<AgendaScrollRequest?> _scrollRequestSub;
   late final ProviderSubscription<int> _locationSub;
@@ -133,16 +135,14 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   }
 
   void _handleMasterScroll(double offset) {
-    // aggiorna l'offset usato dalla CurrentTimeLine
-    if (mounted) {
-      setState(() {
-        _verticalOffset = offset;
-        _agendaViewportReady = true;
-      });
-    }
-
     // sincronizza lo scroll della colonna oraria con la timeline
     if (!_hourColumnController.hasClients) {
+      if (mounted) {
+        setState(() {
+          _verticalOffset = offset;
+          _agendaViewportReady = true;
+        });
+      }
       _pendingHourOffset = offset;
       _schedulePendingApply();
       return;
@@ -153,12 +153,24 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       position.minScrollExtent,
       position.maxScrollExtent,
     );
+    final canonicalOffset = target.toDouble();
+    final needsTimelineCorrection = (offset - canonicalOffset).abs() >= 0.5;
 
-    if ((position.pixels - target).abs() < 0.5) {
-      return;
+    // Usa sempre l'offset canonico (clampato sulla colonna ore) come source of truth.
+    if (mounted) {
+      setState(() {
+        _verticalOffset = canonicalOffset;
+        _agendaViewportReady = true;
+      });
     }
 
-    _hourColumnController.jumpTo(target);
+    if ((position.pixels - canonicalOffset).abs() >= 0.5) {
+      _hourColumnController.jumpTo(canonicalOffset);
+    }
+
+    if (needsTimelineCorrection) {
+      _timelineController.jumpTo(canonicalOffset);
+    }
   }
 
   void _applyPendingOffset() {
@@ -174,8 +186,20 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       position.minScrollExtent,
       position.maxScrollExtent,
     );
+    final canonicalOffset = target.toDouble();
+    final needsTimelineCorrection =
+        (_pendingHourOffset! - canonicalOffset).abs() >= 0.5;
 
-    _hourColumnController.jumpTo(target);
+    _hourColumnController.jumpTo(canonicalOffset);
+    if (needsTimelineCorrection) {
+      _timelineController.jumpTo(canonicalOffset);
+    }
+    if (mounted) {
+      setState(() {
+        _verticalOffset = canonicalOffset;
+        _agendaViewportReady = true;
+      });
+    }
     _pendingHourOffset = null;
   }
 

@@ -39,25 +39,30 @@ class AgendaScrollKey {
   int get hashCode => identity.hashCode;
 }
 
-final agendaScrollProvider = Provider.family.autoDispose<AgendaScrollState, AgendaScrollKey>((ref, key) {
-  final staffList = key.staff;
-  final verticalCtrl = ScrollController(initialScrollOffset: key.initialOffset);
-  final horizontalCtrl = ScrollController();
-  final Map<int, ScrollController> staffCtrls = {
-    for (final s in staffList) s.id: ScrollController(),
-  };
+final agendaScrollProvider = Provider.family
+    .autoDispose<AgendaScrollState, AgendaScrollKey>((ref, key) {
+      final staffList = key.staff;
+      final verticalCtrl = ScrollController(
+        initialScrollOffset: key.initialOffset,
+        keepScrollOffset: false,
+      );
+      final horizontalCtrl = ScrollController(keepScrollOffset: false);
+      final Map<int, ScrollController> staffCtrls = {
+        for (final s in staffList)
+          s.id: ScrollController(keepScrollOffset: false),
+      };
 
-  ref.onDispose(() {
-    verticalCtrl.dispose();
-    horizontalCtrl.dispose();
-    for (final controller in staffCtrls.values) {
-      controller.dispose();
-    }
-  });
+      ref.onDispose(() {
+        verticalCtrl.dispose();
+        horizontalCtrl.dispose();
+        for (final controller in staffCtrls.values) {
+          controller.dispose();
+        }
+      });
 
-  return AgendaScrollState(
-    verticalScrollCtrl: verticalCtrl,
-    horizontalScrollCtrl: horizontalCtrl,
-    staffScrollCtrls: staffCtrls,
-  );
-});
+      return AgendaScrollState(
+        verticalScrollCtrl: verticalCtrl,
+        horizontalScrollCtrl: horizontalCtrl,
+        staffScrollCtrls: staffCtrls,
+      );
+    });

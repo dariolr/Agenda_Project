@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/models/staff.dart';
+import '../../../../../core/services/tenant_time_service.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../../../providers/tenant_time_provider.dart';
@@ -105,26 +106,59 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !controller.hasClients) return;
 
-      final target =
+      final desiredOffset =
           savedOffset ??
           _snappedTopHourOffset(
             controller: controller,
             layoutConfig: layoutConfig,
           );
-      controller.jumpTo(target);
+      _stabilizeInitialScroll(
+        controller,
+        desiredOffset: desiredOffset.toDouble(),
+        remainingFrames: initialScrollDone ? 4 : 12,
+        markInitialScrollDone: !initialScrollDone,
+      );
+    });
+  }
 
-      // Salva nel provider
-      ref.read(agendaVerticalOffsetProvider.notifier).set(target);
-      widget.onVerticalOffsetChanged?.call(target);
+  void _stabilizeInitialScroll(
+    ScrollController controller, {
+    required double desiredOffset,
+    required int remainingFrames,
+    bool markInitialScrollDone = false,
+  }) {
+    if (!mounted || !controller.hasClients) return;
 
-      if (!initialScrollDone) {
-        // Marca completato solo DOPO avere applicato lo scroll iniziale,
-        // così la CurrentTimeLine non appare in posizione transitoria.
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          ref.read(initialScrollDoneProvider.notifier).markDone();
-        });
+    final clampedDesired = desiredOffset
+        .clamp(
+          controller.position.minScrollExtent,
+          controller.position.maxScrollExtent,
+        )
+        .toDouble();
+
+    if ((controller.offset - clampedDesired).abs() > 0.5) {
+      controller.jumpTo(clampedDesired);
+    }
+
+    final currentOffset = controller.offset;
+    ref.read(agendaVerticalOffsetProvider.notifier).set(currentOffset);
+    widget.onVerticalOffsetChanged?.call(currentOffset);
+
+    if (remainingFrames <= 1) {
+      if (markInitialScrollDone) {
+        ref.read(initialScrollDoneProvider.notifier).markDone();
       }
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !controller.hasClients) return;
+      _stabilizeInitialScroll(
+        controller,
+        desiredOffset: desiredOffset,
+        remainingFrames: remainingFrames - 1,
+        markInitialScrollDone: markInitialScrollDone,
+      );
     });
   }
 
@@ -219,8 +253,13 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
     widget.onVerticalOffsetChanged?.call(offset);
   }
 
+  DateTime _tenantNow() {
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    return TenantTimeService.nowInTimezone(timezone);
+  }
+
   double _timelineOffsetForToday(LayoutConfig layoutConfig) {
-    final now = ref.read(tenantNowProvider);
+    final now = _tenantNow();
     final minutes = now.hour * 60 + now.minute;
     return layoutConfig.offsetForMinuteOfDay(minutes);
   }
@@ -229,7 +268,7 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
     required ScrollController controller,
     required LayoutConfig layoutConfig,
   }) {
-    final now = ref.read(tenantNowProvider);
+    final now = _tenantNow();
     final snappedHour = (now.hour - 1).clamp(0, 23);
     final snappedMinutes = snappedHour * 60;
     final snappedOffset = layoutConfig.offsetForMinuteOfDay(snappedMinutes);

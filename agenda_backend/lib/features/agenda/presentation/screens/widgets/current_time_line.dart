@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/services/tenant_time_service.dart';
-import '../../../domain/config/layout_config.dart';
 import '../../../providers/date_range_provider.dart';
 import '../../../providers/initial_scroll_provider.dart';
 import '../../../providers/layout_config_provider.dart';
@@ -20,12 +19,14 @@ class CurrentTimeLine extends ConsumerStatefulWidget {
 
   final double hourColumnWidth;
   final double verticalOffset;
+  final ScrollController? verticalController;
   final double horizontalOffset;
 
   const CurrentTimeLine({
     super.key,
     required this.hourColumnWidth,
     required this.verticalOffset,
+    this.verticalController,
     this.horizontalOffset = 0,
   });
 
@@ -35,9 +36,7 @@ class CurrentTimeLine extends ConsumerStatefulWidget {
 
 class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   Timer? _minuteTimer;
-  double _offset = 0;
-  String _label = '';
-  late final ProviderSubscription<LayoutConfig> _layoutConfigSub;
+  ScrollController? _verticalController;
 
   // 🔹 Definiamo l'altezza della linea come costante
   static const double _lineHeight = 1.0;
@@ -49,58 +48,54 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
   @override
   void initState() {
     super.initState();
-
-    // Ascolta i cambi di LayoutConfig (slotHeight / minutesPerSlot)
-    _layoutConfigSub = ref.listenManual<LayoutConfig>(
-      layoutConfigProvider,
-      (prev, next) => _updateLine(configOverride: next),
-      fireImmediately: true,
-    );
+    _attachVerticalController(widget.verticalController);
 
     // Aggiornamento minuto per minuto
     _scheduleMinuteSync();
   }
 
-  DateTime _tenantNow() {
-    // Provider<DateTime> è cachato da Riverpod: leggiamo direttamente dal service
-    // per ottenere sempre TZDateTime.now() aggiornato al minuto corrente.
-    final timezone = ref.read(effectiveTenantTimezoneProvider);
+  @override
+  void didUpdateWidget(covariant CurrentTimeLine oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!identical(oldWidget.verticalController, widget.verticalController)) {
+      _attachVerticalController(widget.verticalController);
+    }
+  }
+
+  void _attachVerticalController(ScrollController? controller) {
+    _verticalController?.removeListener(_onVerticalScrollChanged);
+    _verticalController = controller;
+    _verticalController?.addListener(_onVerticalScrollChanged);
+  }
+
+  void _onVerticalScrollChanged() {
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  DateTime _tenantNow(String timezone) {
     return TenantTimeService.nowInTimezone(timezone);
   }
 
   void _scheduleMinuteSync() {
-    final now = _tenantNow();
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    final now = _tenantNow(timezone);
     final msToNextMinute = 60000 - (now.second * 1000 + now.millisecond);
     _minuteTimer = Timer(Duration(milliseconds: msToNextMinute), () {
-      _updateLine();
+      if (!mounted) return;
+      setState(() {});
       _minuteTimer?.cancel();
       _minuteTimer = Timer.periodic(const Duration(minutes: 1), (_) {
-        _updateLine();
+        if (!mounted) return;
+        setState(() {});
       });
-    });
-  }
-
-  void _updateLine({LayoutConfig? configOverride}) {
-    final now = _tenantNow();
-    final minutesSinceMidnight = now.hour * 60 + now.minute;
-    final LayoutConfig config =
-        configOverride ?? ref.read(layoutConfigProvider);
-
-    final offset = config.offsetForMinuteOfDay(minutesSinceMidnight);
-    final label =
-        "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
-
-    if (!mounted) return;
-    setState(() {
-      _offset = offset;
-      _label = label;
     });
   }
 
   @override
   void dispose() {
     _minuteTimer?.cancel();
-    _layoutConfigSub.close();
+    _verticalController?.removeListener(_onVerticalScrollChanged);
     super.dispose();
   }
 
@@ -121,10 +116,22 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
       return const SizedBox.shrink();
     }
 
-    final layout = ref.read(layoutConfigProvider);
+    final layout = ref.watch(layoutConfigProvider);
+    final now = _tenantNow(timezone);
+    final minutesSinceMidnight = now.hour * 60 + now.minute;
+    final liveLabel =
+        "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+    final liveOffset = layout.offsetForMinuteOfDay(minutesSinceMidnight);
+
+    final persistedVerticalOffset = ref.watch(agendaVerticalOffsetProvider);
+    final effectiveVerticalOffset =
+        (_verticalController != null && _verticalController!.hasClients)
+        ? _verticalController!.offset
+        : (persistedVerticalOffset ?? widget.verticalOffset);
 
     // Posizione del centro timeline nel contenitore padre.
-    final lineCenterY = _offset - widget.verticalOffset + layout.headerHeight;
+    final lineCenterY =
+        liveOffset - effectiveVerticalOffset + layout.headerHeight;
     final timelineTop = lineCenterY - (_timeBoxHeight / 2);
     final clipTop = (layout.headerHeight - timelineTop).clamp(
       0.0,
@@ -179,7 +186,7 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
-                      _label,
+                      liveLabel,
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: Colors.white,
