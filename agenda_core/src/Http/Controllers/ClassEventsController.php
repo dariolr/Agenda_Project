@@ -239,21 +239,28 @@ final class ClassEventsController
             return Response::error('from and to are required', 'validation_error', 400, $request->traceId);
         }
 
+        $locationId = $request->queryParam('location_id');
+        $locationIdInt = $locationId !== null && $locationId !== '' ? (int) $locationId : null;
+
         try {
-            $from = new \DateTimeImmutable($fromRaw);
-            $to = new \DateTimeImmutable($toRaw);
-        } catch (\Throwable) {
-            return Response::error('Invalid from/to datetime format', 'validation_error', 400, $request->traceId);
+            $fromUtc = $this->toSqlUtcForFilter($fromRaw, $locationIdInt);
+            $toUtc = $this->toSqlUtcForFilter($toRaw, $locationIdInt);
+        } catch (\Throwable $e) {
+            return Response::error(
+                $e->getMessage() !== '' ? $e->getMessage() : 'Invalid from/to datetime format',
+                'validation_error',
+                400,
+                $request->traceId
+            );
         }
 
-        $locationId = $request->queryParam('location_id');
         $classTypeId = $request->queryParam('class_type_id');
 
         $items = $this->classEventRepo->findByBusinessAndRange(
             $businessId,
-            $from->format('Y-m-d H:i:s'),
-            $to->format('Y-m-d H:i:s'),
-            $locationId !== null && $locationId !== '' ? (int) $locationId : null,
+            $fromUtc,
+            $toUtc,
+            $locationIdInt,
             $classTypeId !== null && $classTypeId !== '' ? (int) $classTypeId : null,
             $this->resolveCustomerId($businessId, $userId)
         );
@@ -692,8 +699,41 @@ final class ClassEventsController
             return $this->toSqlUtc($raw);
         }
 
-        $timezone = $this->locationRepo->getTimezone($locationId) ?? 'Europe/Rome';
+        $timezone = $this->locationRepo->getTimezone($locationId);
+        if (!is_string($timezone) || trim($timezone) === '') {
+            throw new \InvalidArgumentException('Missing location timezone');
+        }
         $dt = new \DateTimeImmutable($raw, new \DateTimeZone($timezone));
+        return $dt->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
+    }
+
+    /**
+     * Parse filter datetimes in a deterministic way:
+     * - with explicit offset/Z: trust input instant
+     * - without offset: location_id is required to resolve location timezone
+     */
+    private function toSqlUtcForFilter(string $isoDateTime, ?int $locationId): string
+    {
+        $raw = trim($isoDateTime);
+        if ($raw === '') {
+            throw new \InvalidArgumentException('Invalid datetime');
+        }
+
+        $hasOffset = str_ends_with($raw, 'Z') || (bool) preg_match('/[+\-]\d{2}:\d{2}$/', $raw);
+        if ($hasOffset) {
+            return $this->toSqlUtc($raw);
+        }
+
+        if ($locationId === null || $locationId <= 0) {
+            throw new \InvalidArgumentException('location_id is required when from/to has no timezone offset');
+        }
+
+        $timezoneName = $this->locationRepo->getTimezone($locationId);
+        if (!is_string($timezoneName) || trim($timezoneName) === '') {
+            throw new \InvalidArgumentException('Missing location timezone');
+        }
+
+        $dt = new \DateTimeImmutable($raw, new \DateTimeZone($timezoneName));
         return $dt->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d H:i:s');
     }
 
@@ -781,6 +821,7 @@ final class ClassEventsController
 
     private function formatClassEvent(array $row, array $resourceRequirements = []): array
     {
+        $locationTimezone = $this->requireLocationTimezone($row);
         $spotsLeft = max(
             0,
             (int) ($row['capacity_total'] ?? 1) -
@@ -796,12 +837,12 @@ final class ClassEventsController
             'starts_at' => $row['starts_at'],
             'starts_at_local' => $this->formatUtcSqlToLocationLocal(
                 (string) $row['starts_at'],
-                (string) ($row['location_timezone'] ?? 'Europe/Rome')
+                $locationTimezone
             ),
             'ends_at' => $row['ends_at'],
             'ends_at_local' => $this->formatUtcSqlToLocationLocal(
                 (string) $row['ends_at'],
-                (string) ($row['location_timezone'] ?? 'Europe/Rome')
+                $locationTimezone
             ),
             'location_id' => (int) $row['location_id'],
             'staff_id' => (int) $row['staff_id'],
@@ -816,14 +857,14 @@ final class ClassEventsController
             'booking_open_at_local' => isset($row['booking_open_at']) && $row['booking_open_at'] !== null
                 ? $this->formatUtcSqlToLocationLocal(
                     (string) $row['booking_open_at'],
-                    (string) ($row['location_timezone'] ?? 'Europe/Rome')
+                    $locationTimezone
                 )
                 : null,
             'booking_close_at' => $row['booking_close_at'] ?? null,
             'booking_close_at_local' => isset($row['booking_close_at']) && $row['booking_close_at'] !== null
                 ? $this->formatUtcSqlToLocationLocal(
                     (string) $row['booking_close_at'],
-                    (string) ($row['location_timezone'] ?? 'Europe/Rome')
+                    $locationTimezone
                 )
                 : null,
             'cancel_cutoff_minutes' => (int) ($row['cancel_cutoff_minutes'] ?? 0),
@@ -889,6 +930,11 @@ final class ClassEventsController
 
     private function formatClassBooking(array $row): array
     {
+        $locationTimezone = $this->requireLocationTimezone($row);
+        $bookedAt = $row['booked_at'] ?? null;
+        $cancelledAt = $row['cancelled_at'] ?? null;
+        $checkedInAt = $row['checked_in_at'] ?? null;
+
         return [
             'id' => (int) $row['id'],
             'business_id' => (int) $row['business_id'],
@@ -896,14 +942,36 @@ final class ClassEventsController
             'customer_id' => (int) $row['customer_id'],
             'status' => (string) $row['status'],
             'waitlist_position' => isset($row['waitlist_position']) ? (int) $row['waitlist_position'] : null,
-            'booked_at' => $row['booked_at'],
-            'cancelled_at' => $row['cancelled_at'] ?? null,
-            'checked_in_at' => $row['checked_in_at'] ?? null,
+            'booked_at' => $bookedAt,
+            'booked_at_local' => $bookedAt !== null
+                ? $this->formatUtcSqlToLocationLocal((string) $bookedAt, $locationTimezone)
+                : null,
+            'cancelled_at' => $cancelledAt,
+            'cancelled_at_local' => $cancelledAt !== null
+                ? $this->formatUtcSqlToLocationLocal((string) $cancelledAt, $locationTimezone)
+                : null,
+            'checked_in_at' => $checkedInAt,
+            'checked_in_at_local' => $checkedInAt !== null
+                ? $this->formatUtcSqlToLocationLocal((string) $checkedInAt, $locationTimezone)
+                : null,
             'payment_status' => $row['payment_status'] ?? null,
             'notes' => $row['notes'] ?? null,
             'customer_first_name' => $row['customer_first_name'] ?? null,
             'customer_last_name' => $row['customer_last_name'] ?? null,
+            'location_timezone' => $locationTimezone,
         ];
+    }
+
+    private function requireLocationTimezone(array $row): string
+    {
+        $timezone = trim((string) ($row['location_timezone'] ?? ''));
+        if ($timezone === '') {
+            throw new \RuntimeException('Missing location timezone in class event payload');
+        }
+
+        // Validate timezone identifier.
+        new \DateTimeZone($timezone);
+        return $timezone;
     }
 
     private function formatClassType(array $row, array $locationIds = []): array

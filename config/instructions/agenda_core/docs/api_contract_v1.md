@@ -1871,3 +1871,96 @@ Endpoint protetti (`Authorization: Bearer <access_token>`) per business:
   }
 }
 ```
+
+---
+
+## Payment Methods (Business Scoped)
+
+### GET /v1/businesses/{business_id}/payment-methods
+
+Headers: `Authorization: Bearer <access_token>`
+
+Query (optional):
+- `include_inactive=1` per includere anche metodi disattivati
+
+Response (200):
+```json
+{
+  "success": true,
+  "data": {
+    "methods": [
+      {
+        "id": 1,
+        "business_id": 10,
+        "code": "cash",
+        "name": "Contanti",
+        "sort_order": 10,
+        "icon_key": "cash",
+        "is_active": true
+      }
+    ]
+  }
+}
+```
+
+Note:
+- Alla prima lettura vengono inizializzati in automatico i default (`cash`, `card`, `voucher`, `other`) se assenti.
+
+### POST /v1/businesses/{business_id}/payment-methods
+
+Request:
+```json
+{
+  "name": "Satispay",
+  "code": "satispay",
+  "sort_order": 50
+}
+```
+
+Response (201):
+```json
+{
+  "success": true,
+  "data": {
+    "method": {
+      "id": 12,
+      "business_id": 10,
+      "code": "satispay",
+      "name": "Satispay",
+      "sort_order": 50,
+      "icon_key": null,
+      "is_active": true
+    }
+  }
+}
+```
+
+### PUT /v1/businesses/{business_id}/payment-methods/{id}
+
+Request:
+```json
+{
+  "name": "Carta",
+  "sort_order": 20
+}
+```
+
+Response (200): stesso shape di `POST`.
+
+### DELETE /v1/businesses/{business_id}/payment-methods/{id}
+
+Soft delete (`is_active = 0`).
+
+Response (200):
+```json
+{
+  "success": true,
+  "data": {
+    "deleted": true
+  }
+}
+```
+
+Note:
+- Non è possibile lasciare il business senza metodi attivi.
+- `discount` resta riservato come tipo tecnico interno per le righe sconto.

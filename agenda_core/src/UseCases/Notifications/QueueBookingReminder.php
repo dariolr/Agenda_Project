@@ -206,7 +206,8 @@ final class QueueBookingReminder
      */
     public function queueUpcomingReminders(): int
     {
-        // Find bookings starting in next 48 hours without reminder queued
+        // Find active bookings without reminder queued.
+        // The "next 48 hours" window is enforced per-location in PHP.
         // Support both client_id (customers) and user_id (legacy operators)
         $stmt = $this->db->getPdo()->prepare(
             'SELECT 
@@ -238,7 +239,6 @@ final class QueueBookingReminder
              LEFT JOIN services s ON sv.service_id = s.id
              WHERE b.status IN ("pending", "confirmed")
                AND (b.client_id IS NOT NULL OR b.user_id IS NOT NULL)
-               AND bi.start_time BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 48 HOUR)
                AND NOT EXISTS (
                    SELECT 1 FROM notification_queue nq 
                    WHERE nq.booking_id = b.id 
@@ -273,6 +273,9 @@ final class QueueBookingReminder
 
         $queued = 0;
         foreach ($bookings as $booking) {
+            if (!$this->isWithinUpcomingWindow($booking, 48)) {
+                continue;
+            }
             if ($this->execute($booking) > 0) {
                 $queued++;
             }
@@ -321,6 +324,38 @@ final class QueueBookingReminder
         return EmailTemplateRenderer::normalizeLocale(
             $booking['locale'] ?? $booking['business_locale'] ?? null
         );
+    }
+
+    /**
+     * Check if booking start is in the next N hours in the location timezone.
+     */
+    private function isWithinUpcomingWindow(array $booking, int $hours): bool
+    {
+        $startTimeRaw = (string) ($booking['start_time'] ?? '');
+        if ($startTimeRaw === '') {
+            return false;
+        }
+
+        $timezoneName = (string) ($booking['location_timezone'] ?? 'Europe/Rome');
+        try {
+            $timezone = new DateTimeZone($timezoneName);
+        } catch (\Throwable) {
+            $timezone = new DateTimeZone('Europe/Rome');
+        }
+
+        try {
+            $startTime = new DateTimeImmutable($startTimeRaw, $timezone);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        $now = new DateTimeImmutable('now', $timezone);
+        if ($startTime <= $now) {
+            return false;
+        }
+
+        $windowEnd = $now->modify('+' . max(0, $hours) . ' hours');
+        return $startTime <= $windowEnd;
     }
 
     /**

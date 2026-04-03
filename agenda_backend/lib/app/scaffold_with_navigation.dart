@@ -38,6 +38,7 @@ import '../features/business/providers/location_closures_provider.dart';
 import '../features/business/providers/superadmin_selected_business_provider.dart';
 import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
 import '../features/clients/providers/clients_providers.dart';
+import '../features/payments/presentation/dialogs/payment_method_dialog.dart';
 import '../features/services/presentation/dialogs/category_dialog.dart';
 import '../features/services/presentation/dialogs/service_dialog.dart';
 import '../features/services/presentation/dialogs/service_package_dialog.dart';
@@ -140,6 +141,7 @@ class _ScaffoldWithNavigationState
     final isClassEvents = currentPath == '/altro/classi';
     final isMoreResources = currentPath == '/altro/risorse';
     final isMoreLocations = currentPath == '/altro/sedi';
+    final isMorePaymentMethods = currentPath == '/altro/metodi-pagamento';
     final hasAltroBack =
         !isAltroRoot &&
         ((isMore && currentPath.startsWith('/altro/')) ||
@@ -153,7 +155,8 @@ class _ScaffoldWithNavigationState
             isPermessi ||
             isClassEvents ||
             isMoreResources ||
-            isMoreLocations);
+            isMoreLocations ||
+            isMorePaymentMethods);
     final backTarget = isReport && fromAgendaEntry ? '/agenda' : '/altro';
     final showCloseBackButton = fromAltroEntry || (isReport && fromAgendaEntry);
     final agendaDate = ref.watch(agendaDateProvider);
@@ -253,6 +256,8 @@ class _ScaffoldWithNavigationState
           actions.add(const _ResourcesAddAction());
         } else if (isMoreLocations && canManageClosures) {
           actions.add(const _LocationsAddAction());
+        } else if (isMorePaymentMethods && canManageClosures) {
+          actions.add(const _PaymentMethodsAddAction());
         } else if (isBookingNotifications) {
           actions.add(_BookingNotificationsRefreshAction(ref: ref));
         } else if (isClosures && canManageClosures) {
@@ -310,6 +315,8 @@ class _ScaffoldWithNavigationState
                       ? Text(context.l10n.resourcesTitle)
                       : isMoreLocations
                       ? Text(context.l10n.teamLocationsLabel)
+                      : isMorePaymentMethods
+                      ? Text(context.l10n.paymentMethodsTitle)
                       : isBookingNotifications
                       ? Text(context.l10n.bookingNotificationsTitle)
                       : isClosures
@@ -401,6 +408,8 @@ class _ScaffoldWithNavigationState
                                 ? Text(context.l10n.resourcesTitle)
                                 : isMoreLocations
                                 ? Text(context.l10n.teamLocationsLabel)
+                                : isMorePaymentMethods
+                                ? Text(context.l10n.paymentMethodsTitle)
                                 : isBookingNotifications
                                 ? Text(context.l10n.bookingNotificationsTitle)
                                 : isClosures
@@ -460,6 +469,8 @@ class _ScaffoldWithNavigationState
         actions.add(const _ResourcesAddAction(compact: true));
       } else if (isMoreLocations && canManageClosures) {
         actions.add(const _LocationsAddAction(compact: true));
+      } else if (isMorePaymentMethods && canManageClosures) {
+        actions.add(const _PaymentMethodsAddAction(compact: true));
       } else if (isBookingNotifications) {
         actions.add(_BookingNotificationsRefreshAction(ref: ref));
       } else if (isClosures && canManageClosures) {
@@ -513,6 +524,8 @@ class _ScaffoldWithNavigationState
                     ? Text(context.l10n.resourcesTitle)
                     : isMoreLocations
                     ? Text(context.l10n.teamLocationsLabel)
+                    : isMorePaymentMethods
+                    ? Text(context.l10n.paymentMethodsTitle)
                     : isBookingNotifications
                     ? Text(context.l10n.bookingNotificationsTitle)
                     : isClosures
@@ -1387,9 +1400,9 @@ class _ClientsAddAction extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final layoutConfig = ref.watch(layoutConfigProvider);
-    final formFactor = ref.watch(formFactorProvider);
     final showLabel = layoutConfig.showTopbarAddLabel;
-    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
+    // In modalita' compatta (tablet/mobile) il pulsante resta sempre icon-only.
+    final showLabelEffective = compact ? false : showLabel;
     const iconOnlyWidth = 46.0;
     final bool isIconOnly = !showLabelEffective;
     if (compact) {
@@ -1939,6 +1952,59 @@ class _LocationsAddAction extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: GestureDetector(
         onTap: () => showLocationDialog(context, ref),
+        child: Builder(
+          builder: (buttonContext) {
+            final scheme = Theme.of(buttonContext).colorScheme;
+            final onContainer = scheme.onSecondaryContainer;
+            return Material(
+              elevation: 0,
+              color: scheme.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: SizedBox(
+                height: _actionButtonHeight,
+                width: isIconOnly ? iconOnlyWidth : null,
+                child: Padding(
+                  padding: compact
+                      ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+                      : const EdgeInsets.fromLTRB(12, 8, 28, 8),
+                  child: _buildAddButtonContent(
+                    showLabelEffective: showLabelEffective,
+                    compact: compact,
+                    label: l10n.agendaAdd,
+                    onContainer: onContainer,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _PaymentMethodsAddAction extends ConsumerWidget {
+  const _PaymentMethodsAddAction({this.compact = false});
+  final bool compact;
+  static const double _actionButtonHeight = 40;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
+    final showLabel = layoutConfig.showTopbarAddLabel;
+    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
+    const iconOnlyWidth = 46.0;
+    final bool isIconOnly = !showLabelEffective;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: GestureDetector(
+        onTap: () => showPaymentMethodDialog(context, ref),
         child: Builder(
           builder: (buttonContext) {
             final scheme = Theme.of(buttonContext).colorScheme;

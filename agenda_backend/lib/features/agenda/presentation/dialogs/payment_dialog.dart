@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers/form_factor_provider.dart';
+import '../../../../core/models/business_payment_method.dart';
 import '../../../../core/models/booking_payment.dart';
 import '../../../../core/models/booking_payment_computed.dart';
 import '../../../../core/models/booking_payment_line.dart';
@@ -17,6 +18,7 @@ import '../../providers/booking_payment_providers.dart';
 import '../../providers/bookings_provider.dart';
 import '../../providers/bookings_repository_provider.dart';
 import '../../providers/location_providers.dart';
+import '../../../payments/providers/payment_methods_provider.dart';
 
 /// Mostra il dialog di pagamento per distribuire il totale di una prenotazione
 /// tra diversi metodi di pagamento.
@@ -56,8 +58,6 @@ Future<BookingPayment?> showPaymentDialog(
   }
 }
 
-enum _PaymentMethod { cash, card, discount, voucher, other }
-
 class _PaymentDialog extends ConsumerStatefulWidget {
   const _PaymentDialog({
     required this.totalPrice,
@@ -78,17 +78,20 @@ class _PaymentDialog extends ConsumerStatefulWidget {
 }
 
 class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
-  static const List<_PaymentMethod> _paymentPriorityOrder =
-      _PaymentMethod.values;
+  static const String _discountMethodCode = BookingPaymentLineType.discount;
+  static const List<String> _defaultPaidMethodCodes = <String>[
+    BookingPaymentLineType.cash,
+    BookingPaymentLineType.card,
+    BookingPaymentLineType.voucher,
+    BookingPaymentLineType.other,
+  ];
 
   static const List<double> _quickPercentages = <double>[10, 20, 30, 50, 100];
 
-  final Map<_PaymentMethod, TextEditingController> _controllers = {
-    for (final m in _PaymentMethod.values) m: TextEditingController(),
-  };
-  final Map<_PaymentMethod, FocusNode> _focusNodes = {
-    for (final m in _PaymentMethod.values) m: FocusNode(),
-  };
+  final Map<String, TextEditingController> _controllers = {};
+  final Map<String, FocusNode> _focusNodes = {};
+  List<BusinessPaymentMethod> _businessPaymentMethods = const [];
+  List<String> _paidMethodCodes = List<String>.from(_defaultPaidMethodCodes);
   late final TextEditingController _totalPriceController;
   late final FocusNode _totalPriceReadOnlyFocusNode;
   late final TextEditingController _noteController;
@@ -99,17 +102,17 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
   @override
   void initState() {
     super.initState();
-    for (final controller in _controllers.values) {
-      controller.text = _formatAmountValue(0);
+    for (final code in [..._defaultPaidMethodCodes, _discountMethodCode]) {
+      _ensureMethodState(code);
     }
     _totalPriceController = TextEditingController(
       text: _formatAmountValue(widget.totalPrice),
     );
     _totalPriceReadOnlyFocusNode = FocusNode(skipTraversal: true);
     _noteController = TextEditingController();
-    for (final entry in _focusNodes.entries) {
-      entry.value.addListener(() {
-        if (!entry.value.hasFocus) {
+    for (final node in _focusNodes.values) {
+      node.addListener(() {
+        if (!node.hasFocus) {
           _rebalanceOverflow();
           if (mounted) {
             setState(() {});
@@ -117,10 +120,59 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
         }
       });
     }
+    _loadBusinessPaymentMethods();
     if (widget.initialPayment != null) {
       _applyBookingPayment(widget.initialPayment!);
     } else if (widget.bookingId != null) {
       _loadPersistedPayment();
+    }
+  }
+
+  void _ensureMethodState(String methodCode) {
+    _controllers.putIfAbsent(methodCode, () {
+      final controller = TextEditingController(text: _formatAmountValue(0));
+      return controller;
+    });
+    _focusNodes.putIfAbsent(methodCode, () {
+      final node = FocusNode();
+      node.addListener(() {
+        if (!node.hasFocus) {
+          _rebalanceOverflow();
+          if (mounted) {
+            setState(() {});
+          }
+        }
+      });
+      return node;
+    });
+  }
+
+  Future<void> _loadBusinessPaymentMethods() async {
+    try {
+      final methods = await ref.read(paymentMethodsProvider.future);
+      if (!mounted) return;
+      final activeMethods = methods.where((m) => m.isActive).toList()
+        ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+
+      final methodCodes = activeMethods
+          .map((m) => m.code.trim())
+          .where((code) => code.isNotEmpty && code != _discountMethodCode)
+          .toList();
+
+      final nextCodes = methodCodes.isEmpty
+          ? List<String>.from(_defaultPaidMethodCodes)
+          : methodCodes;
+
+      for (final code in nextCodes) {
+        _ensureMethodState(code);
+      }
+
+      setState(() {
+        _businessPaymentMethods = activeMethods;
+        _paidMethodCodes = nextCodes;
+      });
+    } catch (_) {
+      // Fallback ai metodi default se il fetch fallisce.
     }
   }
 
@@ -155,14 +207,16 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
   }
 
   double get _totalPaidEntered {
-    return (_amountForMethod(_PaymentMethod.cash) ?? 0) +
-        (_amountForMethod(_PaymentMethod.card) ?? 0);
+    return _controllers.entries
+        .where((entry) => entry.key != _discountMethodCode)
+        .fold<double>(0, (sum, entry) {
+          final amount = PriceFormatter.parse(entry.value.text) ?? 0;
+          return sum + amount;
+        });
   }
 
   double get _totalDueReductions {
-    return (_amountForMethod(_PaymentMethod.discount) ?? 0) +
-        (_amountForMethod(_PaymentMethod.voucher) ?? 0) +
-        (_amountForMethod(_PaymentMethod.other) ?? 0);
+    return _amountForMethod(_discountMethodCode) ?? 0;
   }
 
   double get _effectiveAmountDue {
@@ -180,26 +234,21 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
   int get _currencyDecimalDigits =>
       PriceFormatter.decimalDigitsForCurrency(widget.currencyCode);
 
-  bool _supportsQuickChips(_PaymentMethod method) {
-    return method == _PaymentMethod.cash ||
-        method == _PaymentMethod.discount ||
-        method == _PaymentMethod.card ||
-        method == _PaymentMethod.voucher ||
-        method == _PaymentMethod.other;
-  }
+  bool _supportsQuickChips(String methodCode) => true;
 
-  bool _isMethodEditable(_PaymentMethod method) {
-    return method != _PaymentMethod.discount;
-  }
+  bool _isMethodEditable(String methodCode) =>
+      methodCode != _discountMethodCode;
 
-  List<_PaymentMethod> _visiblePaymentMethods() {
-    final methods = _PaymentMethod.values
-        .where((method) => method != _PaymentMethod.discount)
-        .toList(growable: true);
+  List<String> _paymentPriorityOrder() => <String>[
+    ..._paidMethodCodes,
+    _discountMethodCode,
+  ];
 
-    final discountAmount = _amountForMethod(_PaymentMethod.discount) ?? 0;
+  List<String> _visiblePaymentMethods() {
+    final methods = List<String>.from(_paidMethodCodes);
+    final discountAmount = _amountForMethod(_discountMethodCode) ?? 0;
     if (discountAmount > 0) {
-      methods.add(_PaymentMethod.discount);
+      methods.add(_discountMethodCode);
     }
 
     return methods;
@@ -248,22 +297,26 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     ];
   }
 
-  double? _amountForMethod(_PaymentMethod method) {
-    return PriceFormatter.parse(_controllers[method]!.text);
+  double? _amountForMethod(String methodCode) {
+    final controller = _controllers[methodCode];
+    if (controller == null) return null;
+    return PriceFormatter.parse(controller.text);
   }
 
-  double? _selectedPercentForMethod(_PaymentMethod method) {
-    if (!_supportsQuickChips(method) || _currentTotalPrice <= 0) return null;
-    final amount = _amountForMethod(method);
+  double? _selectedPercentForMethod(String methodCode) {
+    if (!_supportsQuickChips(methodCode) || _currentTotalPrice <= 0) {
+      return null;
+    }
+    final amount = _amountForMethod(methodCode);
     if (amount == null || amount <= 0) return null;
     return (amount / _currentTotalPrice) * 100;
   }
 
   bool _samePercent(double a, double b) => (a - b).abs() < 0.01;
 
-  List<double> _chipPercentagesForMethod(_PaymentMethod method) {
+  List<double> _chipPercentagesForMethod(String methodCode) {
     final options = List<double>.from(_quickPercentages);
-    final current = _selectedPercentForMethod(method);
+    final current = _selectedPercentForMethod(methodCode);
     if (current == null) return options;
     final hasMatch = options.any((value) => _samePercent(value, current));
     if (!hasMatch) {
@@ -273,11 +326,12 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     return options;
   }
 
-  void _applyQuickPercentage(_PaymentMethod method, double percentage) {
+  void _applyQuickPercentage(String methodCode, double percentage) {
     if (_currentTotalPrice <= 0) return;
     final amount = _currentTotalPrice * percentage / 100;
-    _setControllerValue(_controllers[method]!, _formatAmountValue(amount));
-    _rebalanceOverflow(preservedMethod: method);
+    _ensureMethodState(methodCode);
+    _setControllerValue(_controllers[methodCode]!, _formatAmountValue(amount));
+    _rebalanceOverflow(preservedMethod: methodCode);
   }
 
   void _setControllerValue(TextEditingController controller, String text) {
@@ -299,36 +353,6 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
 
   double _amountFromCents(int cents) => cents / 100.0;
 
-  BookingPaymentLineType _lineTypeForMethod(_PaymentMethod method) {
-    switch (method) {
-      case _PaymentMethod.cash:
-        return BookingPaymentLineType.cash;
-      case _PaymentMethod.card:
-        return BookingPaymentLineType.card;
-      case _PaymentMethod.discount:
-        return BookingPaymentLineType.discount;
-      case _PaymentMethod.voucher:
-        return BookingPaymentLineType.voucher;
-      case _PaymentMethod.other:
-        return BookingPaymentLineType.other;
-    }
-  }
-
-  _PaymentMethod _methodForLineType(BookingPaymentLineType type) {
-    switch (type) {
-      case BookingPaymentLineType.cash:
-        return _PaymentMethod.cash;
-      case BookingPaymentLineType.card:
-        return _PaymentMethod.card;
-      case BookingPaymentLineType.discount:
-        return _PaymentMethod.discount;
-      case BookingPaymentLineType.voucher:
-        return _PaymentMethod.voucher;
-      case BookingPaymentLineType.other:
-        return _PaymentMethod.other;
-    }
-  }
-
   void _applyBookingPayment(BookingPayment payment) {
     _loadedAutoDiscountCents = payment.lines
         .where(
@@ -341,12 +365,18 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
       _totalPriceController,
       _formatAmountValue(_amountFromCents(payment.totalDueCents)),
     );
-    final totalsByMethod = <_PaymentMethod, int>{
-      for (final method in _PaymentMethod.values) method: 0,
-    };
+    final totalsByMethod = <String, int>{};
     for (final line in payment.lines) {
-      final method = _methodForLineType(line.type);
-      totalsByMethod[method] = (totalsByMethod[method] ?? 0) + line.amountCents;
+      final methodCode = line.type.trim().isNotEmpty
+          ? line.type.trim()
+          : BookingPaymentLineType.other;
+      _ensureMethodState(methodCode);
+      if (methodCode != _discountMethodCode &&
+          !_paidMethodCodes.contains(methodCode)) {
+        _paidMethodCodes = [..._paidMethodCodes, methodCode];
+      }
+      totalsByMethod[methodCode] =
+          (totalsByMethod[methodCode] ?? 0) + line.amountCents;
     }
     for (final entry in _controllers.entries) {
       final amountCents = totalsByMethod[entry.key] ?? 0;
@@ -369,7 +399,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
       if (amountCents <= 0) {
         continue;
       }
-      if (entry.key == _PaymentMethod.discount) {
+      if (entry.key == _discountMethodCode) {
         final autoDiscountCents = amountCents < _loadedAutoDiscountCents
             ? amountCents
             : _loadedAutoDiscountCents;
@@ -394,12 +424,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
         }
         continue;
       }
-      lines.add(
-        BookingPaymentLine(
-          type: _lineTypeForMethod(entry.key),
-          amountCents: amountCents,
-        ),
-      );
+      lines.add(BookingPaymentLine(type: entry.key, amountCents: amountCents));
     }
 
     return BookingPayment(
@@ -511,12 +536,12 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     }
   }
 
-  void _rebalanceOverflow({_PaymentMethod? preservedMethod}) {
+  void _rebalanceOverflow({String? preservedMethod}) {
     final totalDue = _currentTotalPrice;
     if (totalDue < 0) return;
 
-    final amounts = <_PaymentMethod, double>{
-      for (final method in _paymentPriorityOrder)
+    final amounts = <String, double>{
+      for (final method in _paymentPriorityOrder())
         method: (_amountForMethod(method) ?? 0).clamp(0, double.infinity),
     };
 
@@ -526,7 +551,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
 
     // The edited method keeps its value as long as possible. The other methods
     // are reduced first, starting from the lowest-priority one.
-    final reductionOrder = _paymentPriorityOrder.reversed.where(
+    final reductionOrder = _paymentPriorityOrder().reversed.where(
       (method) => method != preservedMethod && _isMethodEditable(method),
     );
 
@@ -541,11 +566,12 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
       overflow -= reduction;
     }
 
-    for (final method in _paymentPriorityOrder) {
+    for (final method in _paymentPriorityOrder()) {
       if ((preservedMethod != null && method == preservedMethod) ||
           !_isMethodEditable(method)) {
         continue;
       }
+      _ensureMethodState(method);
       _setControllerValue(
         _controllers[method]!,
         _formatAmountValue(amounts[method] ?? 0),
@@ -560,42 +586,54 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     return Colors.green.shade700;
   }
 
-  String _methodLabel(BuildContext context, _PaymentMethod method) {
+  String _methodLabel(BuildContext context, String methodCode) {
     final l10n = context.l10n;
-    switch (method) {
-      case _PaymentMethod.cash:
+    if (methodCode == _discountMethodCode) {
+      return l10n.paymentMethodDiscount;
+    }
+
+    for (final method in _businessPaymentMethods) {
+      if (method.code == methodCode && method.name.isNotEmpty) {
+        return method.name;
+      }
+    }
+
+    switch (methodCode) {
+      case BookingPaymentLineType.cash:
         return l10n.paymentMethodCash;
-      case _PaymentMethod.card:
+      case BookingPaymentLineType.card:
         return l10n.paymentMethodCard;
-      case _PaymentMethod.discount:
-        return l10n.paymentMethodDiscount;
-      case _PaymentMethod.voucher:
+      case BookingPaymentLineType.voucher:
         return l10n.paymentMethodVoucher;
-      case _PaymentMethod.other:
+      case BookingPaymentLineType.other:
         return l10n.paymentMethodOther;
+      default:
+        return methodCode;
     }
   }
 
-  IconData _methodIcon(_PaymentMethod method) {
-    switch (method) {
-      case _PaymentMethod.cash:
+  IconData _methodIcon(String methodCode) {
+    switch (methodCode) {
+      case BookingPaymentLineType.cash:
         return Icons.payments_outlined;
-      case _PaymentMethod.card:
+      case BookingPaymentLineType.card:
         return Icons.credit_card_outlined;
-      case _PaymentMethod.discount:
+      case BookingPaymentLineType.discount:
         return Icons.discount_outlined;
-      case _PaymentMethod.voucher:
+      case BookingPaymentLineType.voucher:
         return Icons.card_giftcard_outlined;
-      case _PaymentMethod.other:
+      case BookingPaymentLineType.other:
         return Icons.more_horiz_outlined;
+      default:
+        return Icons.payments_outlined;
     }
   }
 
-  Widget _buildQuickChips(BuildContext context, _PaymentMethod method) {
+  Widget _buildQuickChips(BuildContext context, String methodCode) {
     final theme = Theme.of(context);
-    final selectedPercent = _selectedPercentForMethod(method);
-    final options = _chipPercentagesForMethod(method);
-    final isEditable = _isMethodEditable(method);
+    final selectedPercent = _selectedPercentForMethod(methodCode);
+    final options = _chipPercentagesForMethod(methodCode);
+    final isEditable = _isMethodEditable(methodCode);
 
     return Padding(
       padding: const EdgeInsets.only(top: 1),
@@ -636,7 +674,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
                   selected: isSelected,
                   onSelected: isEditable
                       ? (_) {
-                          _applyQuickPercentage(method, percentage);
+                          _applyQuickPercentage(methodCode, percentage);
                           setState(() {});
                         }
                       : null,
@@ -648,18 +686,19 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     );
   }
 
-  Widget _buildAmountField(_PaymentMethod method) {
-    final controller = _controllers[method]!;
-    final isEditable = _isMethodEditable(method);
+  Widget _buildAmountField(String methodCode) {
+    _ensureMethodState(methodCode);
+    final controller = _controllers[methodCode]!;
+    final isEditable = _isMethodEditable(methodCode);
 
     return _buildReadOnlyAwareAmountField(
       controller: controller,
-      focusNode: _focusNodes[method]!,
+      focusNode: _focusNodes[methodCode]!,
       isReadOnly: !isEditable,
       onChanged: isEditable
           ? (value) {
               _normalizeNonNegativeAmount(controller, value);
-              _rebalanceOverflow(preservedMethod: method);
+              _rebalanceOverflow(preservedMethod: methodCode);
               setState(() {});
             }
           : null,
@@ -975,6 +1014,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     final actions = _buildActions(context);
 
     if (!widget.isBottomSheet) {
+      final maxDialogBodyHeight = MediaQuery.sizeOf(context).height * 0.62;
       return DismissibleDialog(
         child: AppFormDialog(
           title: _buildHeaderRow(
@@ -982,10 +1022,15 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
             theme.textTheme.titleLarge,
             _settlementColor(context, _remainingToPay),
           ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [content, const SizedBox(height: 18), summary],
+          content: ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: maxDialogBodyHeight),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [content, const SizedBox(height: 18), summary],
+              ),
+            ),
           ),
           actions: actions,
           contentPadding: const EdgeInsets.only(top: 20),

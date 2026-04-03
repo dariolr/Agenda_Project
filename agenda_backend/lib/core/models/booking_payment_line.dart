@@ -1,41 +1,11 @@
-enum BookingPaymentLineType {
-  cash,
-  card,
-  discount,
-  voucher,
-  other;
+abstract final class BookingPaymentLineType {
+  static const String cash = 'cash';
+  static const String card = 'card';
+  static const String discount = 'discount';
+  static const String voucher = 'voucher';
+  static const String other = 'other';
 
-  String get apiValue {
-    switch (this) {
-      case BookingPaymentLineType.cash:
-        return 'cash';
-      case BookingPaymentLineType.card:
-        return 'card';
-      case BookingPaymentLineType.discount:
-        return 'discount';
-      case BookingPaymentLineType.voucher:
-        return 'voucher';
-      case BookingPaymentLineType.other:
-        return 'other';
-    }
-  }
-
-  static BookingPaymentLineType fromApiValue(String value) {
-    switch (value) {
-      case 'cash':
-        return BookingPaymentLineType.cash;
-      case 'card':
-        return BookingPaymentLineType.card;
-      case 'discount':
-        return BookingPaymentLineType.discount;
-      case 'voucher':
-        return BookingPaymentLineType.voucher;
-      case 'other':
-        return BookingPaymentLineType.other;
-      default:
-        throw ArgumentError.value(value, 'value', 'Unsupported payment line type');
-      }
-  }
+  static bool isDiscount(String value) => value == discount;
 }
 
 class BookingPaymentLine {
@@ -45,13 +15,15 @@ class BookingPaymentLine {
     this.meta,
   });
 
-  final BookingPaymentLineType type;
+  final String type;
   final int amountCents;
   final Map<String, dynamic>? meta;
 
   factory BookingPaymentLine.fromJson(Map<String, dynamic> json) {
     return BookingPaymentLine(
-      type: BookingPaymentLineType.fromApiValue(json['type'] as String? ?? 'other'),
+      type: (json['type'] as String?)?.trim().isNotEmpty == true
+          ? (json['type'] as String).trim()
+          : BookingPaymentLineType.other,
       amountCents: json['amount_cents'] as int? ?? 0,
       meta: json['meta'] as Map<String, dynamic>?,
     );
@@ -59,7 +31,7 @@ class BookingPaymentLine {
 
   Map<String, dynamic> toJson() {
     return {
-      'type': type.apiValue,
+      'type': type,
       'amount_cents': amountCents,
       if (meta != null) 'meta': meta,
     };

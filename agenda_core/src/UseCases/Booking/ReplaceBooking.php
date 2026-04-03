@@ -410,12 +410,14 @@ final class ReplaceBooking
         array $items
     ): int {
         $pdo = $this->db->getPdo();
+        $nowLocal = $this->resolveCurrentTimeForLocation($locationId);
+        $nowFormatted = $nowLocal->format('Y-m-d H:i:s');
 
         // Insert booking
         $stmt = $pdo->prepare(
             'INSERT INTO bookings 
              (business_id, location_id, client_id, notes, status, source, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())'
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $businessId,
@@ -424,6 +426,8 @@ final class ReplaceBooking
             $notes,
             'confirmed',
             $source,
+            $nowFormatted,
+            $nowFormatted,
         ]);
         $bookingId = (int) $pdo->lastInsertId();
 
@@ -432,7 +436,7 @@ final class ReplaceBooking
             'INSERT INTO booking_items 
              (booking_id, location_id, service_id, service_variant_id, staff_id, 
               start_time, end_time, price, service_name_snapshot, created_at, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())'
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
 
         foreach ($items as $item) {
@@ -446,10 +450,29 @@ final class ReplaceBooking
                 $item['end_time']->format('Y-m-d H:i:s'),
                 $item['price'],
                 $item['service_name'],
+                $nowFormatted,
+                $nowFormatted,
             ]);
         }
 
         return $bookingId;
+    }
+
+    private function resolveCurrentTimeForLocation(int $locationId): \DateTimeImmutable
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT timezone FROM locations WHERE id = ? LIMIT 1'
+        );
+        $stmt->execute([$locationId]);
+        $timezoneName = (string) ($stmt->fetchColumn() ?: 'Europe/Rome');
+
+        try {
+            $timezone = new \DateTimeZone($timezoneName);
+        } catch (\Throwable) {
+            $timezone = new \DateTimeZone('Europe/Rome');
+        }
+
+        return new \DateTimeImmutable('now', $timezone);
     }
 
     private function createBookingSnapshot(int $bookingId): array

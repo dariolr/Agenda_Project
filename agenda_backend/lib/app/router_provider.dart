@@ -25,6 +25,7 @@ import '../features/class_events/presentation/class_events_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
 import '../features/more/presentation/more_screen.dart';
 import '../features/more/presentation/locations_screen.dart';
+import '../features/payments/presentation/payment_methods_screen.dart';
 import '../features/reports/presentation/reports_screen.dart';
 import '../features/services/presentation/services_screen.dart';
 import '../features/staff/presentation/staff_week_overview_screen.dart';
@@ -201,6 +202,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (path == '/report' && !canViewReports) return '/agenda';
         if (path == '/chiusure' && !canManageBusinessSettings) return '/agenda';
         if (path == '/altro/classi' && !canAccessClassEvents) return '/agenda';
+        if (path == '/altro/metodi-pagamento' && !canManageBusinessSettings) {
+          return '/agenda';
+        }
         if (path == '/permessi' && !canManageOperators) return '/agenda';
         if (path.startsWith('/operatori/') && !canManageOperators) {
           return '/agenda';
@@ -364,23 +368,25 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'risorse',
                     name: 'more-resources',
                     pageBuilder: (BuildContext context, GoRouterState state) =>
-                        const NoTransitionPage(
-                          child: MoreResourcesScreen(),
-                        ),
+                        const NoTransitionPage(child: MoreResourcesScreen()),
                   ),
                   GoRoute(
                     path: 'sedi',
                     name: 'more-locations',
                     pageBuilder: (BuildContext context, GoRouterState state) =>
-                        const NoTransitionPage(
-                          child: MoreLocationsScreen(),
-                        ),
+                        const NoTransitionPage(child: MoreLocationsScreen()),
                   ),
                   GoRoute(
                     path: 'classi',
                     name: 'class-events',
                     builder: (BuildContext context, GoRouterState state) =>
                         const ClassEventsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'metodi-pagamento',
+                    name: 'payment-methods',
+                    pageBuilder: (BuildContext context, GoRouterState state) =>
+                        const NoTransitionPage(child: PaymentMethodsScreen()),
                   ),
                 ],
               ),

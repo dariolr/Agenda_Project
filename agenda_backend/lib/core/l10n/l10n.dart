@@ -69,14 +69,14 @@ class L10n {
     return Intl.message('Agenda', name: 'navAgenda', desc: '', args: []);
   }
 
-  /// `Clienti`
+  /// `Clients`
   String get navClients {
-    return Intl.message('Clienti', name: 'navClients', desc: '', args: []);
+    return Intl.message('Clients', name: 'navClients', desc: '', args: []);
   }
 
-  /// `Servizi`
+  /// `Services`
   String get navServices {
-    return Intl.message('Servizi', name: 'navServices', desc: '', args: []);
+    return Intl.message('Services', name: 'navServices', desc: '', args: []);
   }
 
   /// `Team`
@@ -84,409 +84,399 @@ class L10n {
     return Intl.message('Team', name: 'navStaff', desc: '', args: []);
   }
 
-  /// `Profilo`
+  /// `Profile`
   String get navProfile {
-    return Intl.message('Profilo', name: 'navProfile', desc: '', args: []);
+    return Intl.message('Profile', name: 'navProfile', desc: '', args: []);
   }
 
-  /// `Altro`
+  /// `More`
   String get navMore {
-    return Intl.message('Altro', name: 'navMore', desc: '', args: []);
+    return Intl.message('More', name: 'navMore', desc: '', args: []);
   }
 
-  /// `Elenco Clienti`
+  /// `Clients List`
   String get clientsTitle {
     return Intl.message(
-      'Elenco Clienti',
+      'Clients List',
       name: 'clientsTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Specificare almeno un builder per form factor`
+  /// `Specify at least one builder for form factor`
   String get errorFormFactorBuilderRequired {
     return Intl.message(
-      'Specificare almeno un builder per form factor',
+      'Specify at least one builder for form factor',
       name: 'errorFormFactorBuilderRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun builder disponibile per {factor}`
+  /// `No builder available for {factor}`
   String errorFormFactorBuilderMissing(String factor) {
     return Intl.message(
-      'Nessun builder disponibile per $factor',
+      'No builder available for $factor',
       name: 'errorFormFactorBuilderMissing',
       desc: '',
       args: [factor],
     );
   }
 
-  /// `Errore`
+  /// `Error`
   String get errorTitle {
-    return Intl.message('Errore', name: 'errorTitle', desc: '', args: []);
+    return Intl.message('Error', name: 'errorTitle', desc: '', args: []);
   }
 
-  /// `Pagina non trovata: {path}`
+  /// `Page not found: {path}`
   String errorNotFound(String path) {
     return Intl.message(
-      'Pagina non trovata: $path',
+      'Page not found: $path',
       name: 'errorNotFound',
       desc: '',
       args: [path],
     );
   }
 
-  /// `Servizio non trovato`
+  /// `Service not found`
   String get errorServiceNotFound {
     return Intl.message(
-      'Servizio non trovato',
+      'Service not found',
       name: 'errorServiceNotFound',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eccezione non trovata: {id}`
+  /// `Exception not found: {id}`
   String errorExceptionNotFound(int id) {
     return Intl.message(
-      'Eccezione non trovata: $id',
+      'Exception not found: $id',
       name: 'errorExceptionNotFound',
       desc: '',
       args: [id],
     );
   }
 
-  /// `Schermata Team`
+  /// `Team Screen`
   String get staffScreenPlaceholder {
     return Intl.message(
-      'Schermata Team',
+      'Team Screen',
       name: 'staffScreenPlaceholder',
       desc: '',
       args: [],
     );
   }
 
-  /// `Elimina`
+  /// `Delete`
   String get actionDelete {
-    return Intl.message('Elimina', name: 'actionDelete', desc: '', args: []);
+    return Intl.message('Delete', name: 'actionDelete', desc: '', args: []);
   }
 
-  /// `Annulla`
+  /// `Cancel`
   String get actionCancel {
-    return Intl.message('Annulla', name: 'actionCancel', desc: '', args: []);
+    return Intl.message('Cancel', name: 'actionCancel', desc: '', args: []);
   }
 
-  /// `Conferma`
+  /// `Confirm`
   String get actionConfirm {
-    return Intl.message('Conferma', name: 'actionConfirm', desc: '', args: []);
+    return Intl.message('Confirm', name: 'actionConfirm', desc: '', args: []);
   }
 
-  /// `Chiudi`
+  /// `Close`
   String get actionClose {
-    return Intl.message('Chiudi', name: 'actionClose', desc: '', args: []);
+    return Intl.message('Close', name: 'actionClose', desc: '', args: []);
   }
 
-  /// `Riprova`
+  /// `Retry`
   String get actionRetry {
-    return Intl.message('Riprova', name: 'actionRetry', desc: '', args: []);
+    return Intl.message('Retry', name: 'actionRetry', desc: '', args: []);
   }
 
-  /// `Riprogramma`
+  /// `Reschedule`
   String get actionReschedule {
     return Intl.message(
-      'Riprogramma',
+      'Reschedule',
       name: 'actionReschedule',
       desc: '',
       args: [],
     );
   }
 
-  /// `Confermi l’eliminazione?`
+  /// `Confirm deletion?`
   String get deleteConfirmationTitle {
     return Intl.message(
-      'Confermi l’eliminazione?',
+      'Confirm deletion?',
       name: 'deleteConfirmationTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modalità riprogrammazione attiva: seleziona una data e clicca uno slot.`
+  /// `Reschedule mode active: select a date and click a slot.`
   String get bookingRescheduleModeHint {
     return Intl.message(
-      'Modalità riprogrammazione attiva: seleziona una data e clicca uno slot.',
+      'Reschedule mode active: select a date and click a slot.',
       name: 'bookingRescheduleModeHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modalità riprogrammazione attiva: seleziona uno slot nella settimana corrente oppure cambia settimana per scegliere un’altra data.`
+  /// `Reschedule mode active: select a slot in the current week or change week to choose another date.`
   String get bookingRescheduleModeHintWeekSame {
     return Intl.message(
-      'Modalità riprogrammazione attiva: seleziona uno slot nella settimana corrente oppure cambia settimana per scegliere un’altra data.',
+      'Reschedule mode active: select a slot in the current week or change week to choose another date.',
       name: 'bookingRescheduleModeHintWeekSame',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modalità riprogrammazione attiva: seleziona una data (anche in un’altra settimana) e clicca uno slot.`
+  /// `Reschedule mode active: select a date (including another week) and click a slot.`
   String get bookingRescheduleModeHintWeekDifferent {
     return Intl.message(
-      'Modalità riprogrammazione attiva: seleziona una data (anche in un’altra settimana) e clicca uno slot.',
+      'Reschedule mode active: select a date (including another week) and click a slot.',
       name: 'bookingRescheduleModeHintWeekDifferent',
       desc: '',
       args: [],
     );
   }
 
-  /// `La riprogrammazione non è disponibile in visualizzazione settimanale multi-operatore. Seleziona un solo operatore o passa alla vista giorno.`
+  /// `Rescheduling is not available in multi-staff weekly view. Select a single staff member or switch to day view.`
   String get bookingRescheduleNotAvailableForCurrentView {
     return Intl.message(
-      'La riprogrammazione non è disponibile in visualizzazione settimanale multi-operatore. Seleziona un solo operatore o passa alla vista giorno.',
+      'Rescheduling is not available in multi-staff weekly view. Select a single staff member or switch to day view.',
       name: 'bookingRescheduleNotAvailableForCurrentView',
       desc: '',
       args: [],
     );
   }
 
-  /// `Annulla riprogrammazione`
+  /// `Cancel reschedule`
   String get bookingRescheduleCancelAction {
     return Intl.message(
-      'Annulla riprogrammazione',
+      'Cancel reschedule',
       name: 'bookingRescheduleCancelAction',
       desc: '',
       args: [],
     );
   }
 
-  /// `Confermi la riprogrammazione?`
+  /// `Confirm reschedule?`
   String get bookingRescheduleConfirmTitle {
     return Intl.message(
-      'Confermi la riprogrammazione?',
+      'Confirm reschedule?',
       name: 'bookingRescheduleConfirmTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `La prenotazione verrà spostata al {date} alle {time} per {staffName}.`
+  /// `The booking will be moved to {date} at {time} for {staffName}.`
   String bookingRescheduleConfirmMessage(
     String date,
     String time,
     String staffName,
   ) {
     return Intl.message(
-      'La prenotazione verrà spostata al $date alle $time per $staffName.',
+      'The booking will be moved to $date at $time for $staffName.',
       name: 'bookingRescheduleConfirmMessage',
       desc: '',
       args: [date, time, staffName],
     );
   }
 
-  /// `Impossibile riprogrammare la prenotazione.`
+  /// `Unable to reschedule the booking.`
   String get bookingRescheduleMoveFailed {
     return Intl.message(
-      'Impossibile riprogrammare la prenotazione.',
+      'Unable to reschedule the booking.',
       name: 'bookingRescheduleMoveFailed',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile riprogrammare: uno o più servizi uscirebbero dalla giornata selezionata.`
+  /// `Unable to reschedule: one or more services would fall outside the selected day.`
   String get bookingRescheduleOutOfDayBlocked {
     return Intl.message(
-      'Impossibile riprogrammare: uno o più servizi uscirebbero dalla giornata selezionata.',
+      'Unable to reschedule: one or more services would fall outside the selected day.',
       name: 'bookingRescheduleOutOfDayBlocked',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione non trovata.`
+  /// `Booking not found.`
   String get bookingRescheduleMissingBooking {
     return Intl.message(
-      'Prenotazione non trovata.',
+      'Booking not found.',
       name: 'bookingRescheduleMissingBooking',
       desc: '',
       args: [],
     );
   }
 
-  /// `Oggi`
+  /// `Today`
   String get agendaToday {
-    return Intl.message('Oggi', name: 'agendaToday', desc: '', args: []);
+    return Intl.message('Today', name: 'agendaToday', desc: '', args: []);
   }
 
-  /// `Visualizzazione`
+  /// `View`
   String get agendaViewMode {
-    return Intl.message(
-      'Visualizzazione',
-      name: 'agendaViewMode',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('View', name: 'agendaViewMode', desc: '', args: []);
   }
 
-  /// `Cambia in giorno per giorno`
+  /// `Switch to day by day`
   String get agendaViewModeSwitchToDay {
     return Intl.message(
-      'Cambia in giorno per giorno',
+      'Switch to day by day',
       name: 'agendaViewModeSwitchToDay',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cambia in settimana per settimana`
+  /// `Switch to week by week`
   String get agendaViewModeSwitchToWeek {
     return Intl.message(
-      'Cambia in settimana per settimana',
+      'Switch to week by week',
       name: 'agendaViewModeSwitchToWeek',
       desc: '',
       args: [],
     );
   }
 
-  /// `Giorno precedente`
+  /// `Previous day`
   String get agendaPrevDay {
     return Intl.message(
-      'Giorno precedente',
+      'Previous day',
       name: 'agendaPrevDay',
       desc: '',
       args: [],
     );
   }
 
-  /// `Giorno successivo`
+  /// `Next day`
   String get agendaNextDay {
-    return Intl.message(
-      'Giorno successivo',
-      name: 'agendaNextDay',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Next day', name: 'agendaNextDay', desc: '', args: []);
   }
 
-  /// `Settimana precedente`
+  /// `Previous Week`
   String get agendaPrevWeek {
     return Intl.message(
-      'Settimana precedente',
+      'Previous Week',
       name: 'agendaPrevWeek',
       desc: '',
       args: [],
     );
   }
 
-  /// `Settimana successivo`
+  /// `Next Week`
   String get agendaNextWeek {
     return Intl.message(
-      'Settimana successivo',
+      'Next Week',
       name: 'agendaNextWeek',
       desc: '',
       args: [],
     );
   }
 
-  /// `Mese precedente`
+  /// `Previous month`
   String get agendaPrevMonth {
     return Intl.message(
-      'Mese precedente',
+      'Previous month',
       name: 'agendaPrevMonth',
       desc: '',
       args: [],
     );
   }
 
-  /// `Mese successivo`
+  /// `Next month`
   String get agendaNextMonth {
     return Intl.message(
-      'Mese successivo',
+      'Next month',
       name: 'agendaNextMonth',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessuna sede disponibile`
+  /// `No locations available`
   String get agendaNoLocations {
     return Intl.message(
-      'Nessuna sede disponibile',
+      'No locations available',
       name: 'agendaNoLocations',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile caricare gli appuntamenti della settimana.`
+  /// `Unable to load this week's appointments.`
   String get agendaWeeklyLoadError {
     return Intl.message(
-      'Impossibile caricare gli appuntamenti della settimana.',
+      'Unable to load this week\'s appointments.',
       name: 'agendaWeeklyLoadError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona sede`
+  /// `Select location`
   String get agendaSelectLocation {
     return Intl.message(
-      'Seleziona sede',
+      'Select location',
       name: 'agendaSelectLocation',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tutte le sedi`
+  /// `All locations`
   String get allLocations {
     return Intl.message(
-      'Tutte le sedi',
+      'All locations',
       name: 'allLocations',
       desc: '',
       args: [],
     );
   }
 
-  /// `Disponibilità settimanale`
+  /// `Weekly availability`
   String get availabilityTitle {
     return Intl.message(
-      'Disponibilità settimanale',
+      'Weekly availability',
       name: 'availabilityTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Disponibilità – {name}`
+  /// `Availability – {name}`
   String availabilityTitleFor(String name) {
     return Intl.message(
-      'Disponibilità – $name',
+      'Availability – $name',
       name: 'availabilityTitleFor',
       desc: '',
       args: [name],
     );
   }
 
-  /// `Salva modifiche`
+  /// `Save changes`
   String get availabilitySave {
     return Intl.message(
-      'Salva modifiche',
+      'Save changes',
       name: 'availabilitySave',
       desc: '',
       args: [],
     );
   }
 
-  /// `Settimana corrente`
+  /// `Current week`
   String get currentWeek {
     return Intl.message(
-      'Settimana corrente',
+      'Current week',
       name: 'currentWeek',
       desc: '',
       args: [],
@@ -518,25 +508,25 @@ class L10n {
     return Intl.message('Team:', name: 'labelStaff', desc: '', args: []);
   }
 
-  /// `Seleziona`
+  /// `Select`
   String get labelSelect {
-    return Intl.message('Seleziona', name: 'labelSelect', desc: '', args: []);
+    return Intl.message('Select', name: 'labelSelect', desc: '', args: []);
   }
 
-  /// `Disponibilità`
+  /// `Availability`
   String get staffHubAvailabilityTitle {
     return Intl.message(
-      'Disponibilità',
+      'Availability',
       name: 'staffHubAvailabilityTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Configura gli orari di lavoro settimanali`
+  /// `Configure weekly working hours`
   String get staffHubAvailabilitySubtitle {
     return Intl.message(
-      'Configura gli orari di lavoro settimanali',
+      'Configure weekly working hours',
       name: 'staffHubAvailabilitySubtitle',
       desc: '',
       args: [],
@@ -548,59 +538,59 @@ class L10n {
     return Intl.message('Team', name: 'staffHubTeamTitle', desc: '', args: []);
   }
 
-  /// `Gestione membri e ruoli`
+  /// `Manage members and roles`
   String get staffHubTeamSubtitle {
     return Intl.message(
-      'Gestione membri e ruoli',
+      'Manage members and roles',
       name: 'staffHubTeamSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Statistiche`
+  /// `Statistics`
   String get staffHubStatsTitle {
     return Intl.message(
-      'Statistiche',
+      'Statistics',
       name: 'staffHubStatsTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Performance e carichi di lavoro`
+  /// `Performance and workloads`
   String get staffHubStatsSubtitle {
     return Intl.message(
-      'Performance e carichi di lavoro',
+      'Performance and workloads',
       name: 'staffHubStatsSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non ancora disponibile`
+  /// `Not yet available`
   String get staffHubNotYetAvailable {
     return Intl.message(
-      'Non ancora disponibile',
+      'Not yet available',
       name: 'staffHubNotYetAvailable',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica orari`
+  /// `Edit hours`
   String get staffEditHours {
     return Intl.message(
-      'Modifica orari',
+      'Edit hours',
       name: 'staffEditHours',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica`
+  /// `Edit`
   String get actionEdit {
-    return Intl.message('Modifica', name: 'actionEdit', desc: '', args: []);
+    return Intl.message('Edit', name: 'actionEdit', desc: '', args: []);
   }
 
   /// `{minutes} min`
@@ -613,84 +603,69 @@ class L10n {
     );
   }
 
-  /// `{hours} ora`
+  /// `{hours} hour`
   String durationHour(Object hours) {
     return Intl.message(
-      '$hours ora',
+      '$hours hour',
       name: 'durationHour',
       desc: '',
       args: [hours],
     );
   }
 
-  /// `{hours} ora {minutes} min`
+  /// `{hours} hour {minutes} min`
   String durationHourMinute(Object hours, Object minutes) {
     return Intl.message(
-      '$hours ora $minutes min',
+      '$hours hour $minutes min',
       name: 'durationHourMinute',
       desc: '',
       args: [hours, minutes],
     );
   }
 
-  /// `Gratis`
+  /// `Free`
   String get freeLabel {
-    return Intl.message('Gratis', name: 'freeLabel', desc: '', args: []);
+    return Intl.message('Free', name: 'freeLabel', desc: '', args: []);
   }
 
-  /// `a partire da`
+  /// `starting from`
   String get priceStartingFromPrefix {
     return Intl.message(
-      'a partire da',
+      'starting from',
       name: 'priceStartingFromPrefix',
       desc: '',
       args: [],
     );
   }
 
-  /// `N/D`
+  /// `N/A`
   String get priceNotAvailable {
-    return Intl.message('N/D', name: 'priceNotAvailable', desc: '', args: []);
+    return Intl.message('N/A', name: 'priceNotAvailable', desc: '', args: []);
   }
 
-  /// `Nuovo cliente`
+  /// `New client`
   String get clientsNew {
-    return Intl.message(
-      'Nuovo cliente',
-      name: 'clientsNew',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('New client', name: 'clientsNew', desc: '', args: []);
   }
 
-  /// `Modifica cliente`
+  /// `Edit client`
   String get clientsEdit {
-    return Intl.message(
-      'Modifica cliente',
-      name: 'clientsEdit',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Edit client', name: 'clientsEdit', desc: '', args: []);
   }
 
-  /// `Nessun cliente`
+  /// `No clients`
   String get clientsEmpty {
-    return Intl.message(
-      'Nessun cliente',
-      name: 'clientsEmpty',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('No clients', name: 'clientsEmpty', desc: '', args: []);
   }
 
-  /// `Salva`
+  /// `Save`
   String get actionSave {
-    return Intl.message('Salva', name: 'actionSave', desc: '', args: []);
+    return Intl.message('Save', name: 'actionSave', desc: '', args: []);
   }
 
-  /// `Tutti`
+  /// `All`
   String get filterAll {
-    return Intl.message('Tutti', name: 'filterAll', desc: '', args: []);
+    return Intl.message('All', name: 'filterAll', desc: '', args: []);
   }
 
   /// `VIP`
@@ -698,24 +673,29 @@ class L10n {
     return Intl.message('VIP', name: 'filterVIP', desc: '', args: []);
   }
 
-  /// `Inattivi`
+  /// `Inactive`
   String get filterInactive {
-    return Intl.message('Inattivi', name: 'filterInactive', desc: '', args: []);
+    return Intl.message('Inactive', name: 'filterInactive', desc: '', args: []);
   }
 
-  /// `Nuovi`
+  /// `New`
   String get filterNew {
-    return Intl.message('Nuovi', name: 'filterNew', desc: '', args: []);
+    return Intl.message('New', name: 'filterNew', desc: '', args: []);
   }
 
-  /// `Nome`
+  /// `First name`
   String get formFirstName {
-    return Intl.message('Nome', name: 'formFirstName', desc: '', args: []);
+    return Intl.message(
+      'First name',
+      name: 'formFirstName',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `Cognome`
+  /// `Last name`
   String get formLastName {
-    return Intl.message('Cognome', name: 'formLastName', desc: '', args: []);
+    return Intl.message('Last name', name: 'formLastName', desc: '', args: []);
   }
 
   /// `Email`
@@ -723,364 +703,364 @@ class L10n {
     return Intl.message('Email', name: 'formEmail', desc: '', args: []);
   }
 
-  /// `Telefono`
+  /// `Phone`
   String get formPhone {
-    return Intl.message('Telefono', name: 'formPhone', desc: '', args: []);
+    return Intl.message('Phone', name: 'formPhone', desc: '', args: []);
   }
 
-  /// `Note (non visibili al cliente)`
+  /// `Notes (not visible to client)`
   String get formNotes {
     return Intl.message(
-      'Note (non visibili al cliente)',
+      'Notes (not visible to client)',
       name: 'formNotes',
       desc: '',
       args: [],
     );
   }
 
-  /// `Richiesto`
+  /// `Required`
   String get validationRequired {
     return Intl.message(
-      'Richiesto',
+      'Required',
       name: 'validationRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Email non valida`
+  /// `Invalid email`
   String get validationInvalidEmail {
     return Intl.message(
-      'Email non valida',
+      'Invalid email',
       name: 'validationInvalidEmail',
       desc: '',
       args: [],
     );
   }
 
-  /// `Telefono non valido`
+  /// `Invalid phone`
   String get validationInvalidPhone {
     return Intl.message(
-      'Telefono non valido',
+      'Invalid phone',
       name: 'validationInvalidPhone',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ultima visita: {date}`
+  /// `Last visit: {date}`
   String lastVisitLabel(String date) {
     return Intl.message(
-      'Ultima visita: $date',
+      'Last visit: $date',
       name: 'lastVisitLabel',
       desc: '',
       args: [date],
     );
   }
 
-  /// `Inserire almeno nome o cognome`
+  /// `Enter at least first name or last name`
   String get validationNameOrLastNameRequired {
     return Intl.message(
-      'Inserire almeno nome o cognome',
+      'Enter at least first name or last name',
       name: 'validationNameOrLastNameRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizi`
+  /// `Services`
   String get servicesTabLabel {
     return Intl.message(
-      'Servizi',
+      'Services',
       name: 'servicesTabLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Pacchetti`
+  /// `Packages`
   String get servicePackagesTabLabel {
     return Intl.message(
-      'Pacchetti',
+      'Packages',
       name: 'servicePackagesTabLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Pacchetti`
+  /// `Packages`
   String get servicePackagesTitle {
     return Intl.message(
-      'Pacchetti',
+      'Packages',
       name: 'servicePackagesTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `I più richiesti`
+  /// `Most popular`
   String get popularServicesTitle {
     return Intl.message(
-      'I più richiesti',
+      'Most popular',
       name: 'popularServicesTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun pacchetto disponibile`
+  /// `No packages available`
   String get servicePackagesEmptyState {
     return Intl.message(
-      'Nessun pacchetto disponibile',
+      'No packages available',
       name: 'servicePackagesEmptyState',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuovo pacchetto`
+  /// `New package`
   String get servicePackageNewMenu {
     return Intl.message(
-      'Nuovo pacchetto',
+      'New package',
       name: 'servicePackageNewMenu',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuovo pacchetto`
+  /// `New package`
   String get servicePackageNewTitle {
     return Intl.message(
-      'Nuovo pacchetto',
+      'New package',
       name: 'servicePackageNewTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica pacchetto`
+  /// `Edit package`
   String get servicePackageEditTitle {
     return Intl.message(
-      'Modifica pacchetto',
+      'Edit package',
       name: 'servicePackageEditTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nome pacchetto`
+  /// `Package name`
   String get servicePackageNameLabel {
     return Intl.message(
-      'Nome pacchetto',
+      'Package name',
       name: 'servicePackageNameLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Descrizione`
+  /// `Description`
   String get servicePackageDescriptionLabel {
     return Intl.message(
-      'Descrizione',
+      'Description',
       name: 'servicePackageDescriptionLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prezzo pacchetto`
+  /// `Package price`
   String get servicePackageOverridePriceLabel {
     return Intl.message(
-      'Prezzo pacchetto',
+      'Package price',
       name: 'servicePackageOverridePriceLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Durata pacchetto (min)`
+  /// `Package duration (min)`
   String get servicePackageOverrideDurationLabel {
     return Intl.message(
-      'Durata pacchetto (min)',
+      'Package duration (min)',
       name: 'servicePackageOverrideDurationLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Pacchetto attivo`
+  /// `Package active`
   String get servicePackageActiveLabel {
     return Intl.message(
-      'Pacchetto attivo',
+      'Package active',
       name: 'servicePackageActiveLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizi inclusi`
+  /// `Included services`
   String get servicePackageServicesLabel {
     return Intl.message(
-      'Servizi inclusi',
+      'Included services',
       name: 'servicePackageServicesLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ordine servizi`
+  /// `Service order`
   String get servicePackageOrderLabel {
     return Intl.message(
-      'Ordine servizi',
+      'Service order',
       name: 'servicePackageOrderLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun servizio selezionato`
+  /// `No services selected`
   String get servicePackageNoServices {
     return Intl.message(
-      'Nessun servizio selezionato',
+      'No services selected',
       name: 'servicePackageNoServices',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona almeno un servizio`
+  /// `Select at least one service`
   String get servicePackageServicesRequired {
     return Intl.message(
-      'Seleziona almeno un servizio',
+      'Select at least one service',
       name: 'servicePackageServicesRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Pacchetto creato`
+  /// `Package created`
   String get servicePackageCreatedTitle {
     return Intl.message(
-      'Pacchetto creato',
+      'Package created',
       name: 'servicePackageCreatedTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il pacchetto è stato creato.`
+  /// `The package has been created.`
   String get servicePackageCreatedMessage {
     return Intl.message(
-      'Il pacchetto è stato creato.',
+      'The package has been created.',
       name: 'servicePackageCreatedMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Pacchetto aggiornato`
+  /// `Package updated`
   String get servicePackageUpdatedTitle {
     return Intl.message(
-      'Pacchetto aggiornato',
+      'Package updated',
       name: 'servicePackageUpdatedTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il pacchetto è stato aggiornato.`
+  /// `The package has been updated.`
   String get servicePackageUpdatedMessage {
     return Intl.message(
-      'Il pacchetto è stato aggiornato.',
+      'The package has been updated.',
       name: 'servicePackageUpdatedMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore nel salvataggio del pacchetto.`
+  /// `Failed to save the package.`
   String get servicePackageSaveError {
     return Intl.message(
-      'Errore nel salvataggio del pacchetto.',
+      'Failed to save the package.',
       name: 'servicePackageSaveError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eliminare il pacchetto?`
+  /// `Delete package?`
   String get servicePackageDeleteTitle {
     return Intl.message(
-      'Eliminare il pacchetto?',
+      'Delete package?',
       name: 'servicePackageDeleteTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questa azione non può essere annullata.`
+  /// `This action cannot be undone.`
   String get servicePackageDeleteMessage {
     return Intl.message(
-      'Questa azione non può essere annullata.',
+      'This action cannot be undone.',
       name: 'servicePackageDeleteMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Pacchetto eliminato`
+  /// `Package deleted`
   String get servicePackageDeletedTitle {
     return Intl.message(
-      'Pacchetto eliminato',
+      'Package deleted',
       name: 'servicePackageDeletedTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il pacchetto è stato eliminato.`
+  /// `The package has been deleted.`
   String get servicePackageDeletedMessage {
     return Intl.message(
-      'Il pacchetto è stato eliminato.',
+      'The package has been deleted.',
       name: 'servicePackageDeletedMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore durante l'eliminazione del pacchetto.`
+  /// `Failed to delete the package.`
   String get servicePackageDeleteError {
     return Intl.message(
-      'Errore durante l\'eliminazione del pacchetto.',
+      'Failed to delete the package.',
       name: 'servicePackageDeleteError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Inattivo`
+  /// `Inactive`
   String get servicePackageInactiveLabel {
     return Intl.message(
-      'Inattivo',
+      'Inactive',
       name: 'servicePackageInactiveLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non valido`
+  /// `Invalid`
   String get servicePackageBrokenLabel {
     return Intl.message(
-      'Non valido',
+      'Invalid',
       name: 'servicePackageBrokenLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `servizi`
+  /// `services`
   String get servicesLabel {
-    return Intl.message('servizi', name: 'servicesLabel', desc: '', args: []);
+    return Intl.message('services', name: 'servicesLabel', desc: '', args: []);
   }
 
   /// `min`
@@ -1088,104 +1068,94 @@ class L10n {
     return Intl.message('min', name: 'minutesLabel', desc: '', args: []);
   }
 
-  /// `Aggiungi pacchetto`
+  /// `Add package`
   String get addPackage {
-    return Intl.message(
-      'Aggiungi pacchetto',
-      name: 'addPackage',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Add package', name: 'addPackage', desc: '', args: []);
   }
 
-  /// `Impossibile espandere il pacchetto selezionato.`
+  /// `Unable to expand the selected package.`
   String get servicePackageExpandError {
     return Intl.message(
-      'Impossibile espandere il pacchetto selezionato.',
+      'Unable to expand the selected package.',
       name: 'servicePackageExpandError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Numero non valido`
+  /// `Invalid number`
   String get validationInvalidNumber {
     return Intl.message(
-      'Numero non valido',
+      'Invalid number',
       name: 'validationInvalidNumber',
       desc: '',
       args: [],
     );
   }
 
-  /// `Aggiungi`
+  /// `Add`
   String get agendaAdd {
-    return Intl.message('Aggiungi', name: 'agendaAdd', desc: '', args: []);
+    return Intl.message('Add', name: 'agendaAdd', desc: '', args: []);
   }
 
-  /// `Aggiungi un...`
+  /// `Add a...`
   String get agendaAddTitle {
-    return Intl.message(
-      'Aggiungi un...',
-      name: 'agendaAddTitle',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Add a...', name: 'agendaAddTitle', desc: '', args: []);
   }
 
-  /// `Nuovo appuntamento`
+  /// `New appointment`
   String get agendaAddAppointment {
     return Intl.message(
-      'Nuovo appuntamento',
+      'New appointment',
       name: 'agendaAddAppointment',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuovo blocco`
+  /// `New block`
   String get agendaAddBlock {
     return Intl.message(
-      'Nuovo blocco',
+      'New block',
       name: 'agendaAddBlock',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuovo appuntamento`
+  /// `New appointment`
   String get appointmentDialogTitleNew {
     return Intl.message(
-      'Nuovo appuntamento',
+      'New appointment',
       name: 'appointmentDialogTitleNew',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica appuntamento`
+  /// `Edit appointment`
   String get appointmentDialogTitleEdit {
     return Intl.message(
-      'Modifica appuntamento',
+      'Edit appointment',
       name: 'appointmentDialogTitleEdit',
       desc: '',
       args: [],
     );
   }
 
-  /// `Data`
+  /// `Date`
   String get formDate {
-    return Intl.message('Data', name: 'formDate', desc: '', args: []);
+    return Intl.message('Date', name: 'formDate', desc: '', args: []);
   }
 
-  /// `Servizio`
+  /// `Service`
   String get formService {
-    return Intl.message('Servizio', name: 'formService', desc: '', args: []);
+    return Intl.message('Service', name: 'formService', desc: '', args: []);
   }
 
-  /// `Cliente`
+  /// `Client`
   String get formClient {
-    return Intl.message('Cliente', name: 'formClient', desc: '', args: []);
+    return Intl.message('Client', name: 'formClient', desc: '', args: []);
   }
 
   /// `Team`
@@ -1193,149 +1163,154 @@ class L10n {
     return Intl.message('Team', name: 'formStaff', desc: '', args: []);
   }
 
-  /// `Dettagli prenotazione`
+  /// `Booking details`
   String get bookingDetails {
     return Intl.message(
-      'Dettagli prenotazione',
+      'Booking details',
       name: 'bookingDetails',
       desc: '',
       args: [],
     );
   }
 
-  /// `Note prenotazione`
+  /// `Booking notes`
   String get bookingNotes {
     return Intl.message(
-      'Note prenotazione',
+      'Booking notes',
       name: 'bookingNotes',
       desc: '',
       args: [],
     );
   }
 
-  /// `Note`
+  /// `Notes`
   String get appointmentNotesTitle {
     return Intl.message(
-      'Note',
+      'Notes',
       name: 'appointmentNotesTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nota sull'appuntamento`
+  /// `Appointment note`
   String get appointmentNoteLabel {
     return Intl.message(
-      'Nota sull\'appuntamento',
+      'Appointment note',
       name: 'appointmentNoteLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nota sul cliente`
+  /// `Client note`
   String get clientNoteLabel {
     return Intl.message(
-      'Nota sul cliente',
+      'Client note',
       name: 'clientNoteLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizi`
+  /// `Services`
   String get bookingItems {
-    return Intl.message('Servizi', name: 'bookingItems', desc: '', args: []);
+    return Intl.message('Services', name: 'bookingItems', desc: '', args: []);
   }
 
-  /// `Totale`
+  /// `Total`
   String get bookingTotal {
-    return Intl.message('Totale', name: 'bookingTotal', desc: '', args: []);
+    return Intl.message('Total', name: 'bookingTotal', desc: '', args: []);
   }
 
-  /// `Attenzione: l’orario selezionato per l’appuntamento include fasce non disponibili per il team scelto.`
+  /// `Warning: the appointment time includes unavailable slots for the chosen team.`
   String get bookingUnavailableTimeWarningAppointment {
     return Intl.message(
-      'Attenzione: l’orario selezionato per l’appuntamento include fasce non disponibili per il team scelto.',
+      'Warning: the appointment time includes unavailable slots for the chosen team.',
       name: 'bookingUnavailableTimeWarningAppointment',
       desc: '',
       args: [],
     );
   }
 
-  /// `Attenzione: l’orario di questo servizio include fasce non disponibili per il team scelto.`
+  /// `Warning: this service time includes unavailable slots for the chosen team.`
   String get bookingUnavailableTimeWarningService {
     return Intl.message(
-      'Attenzione: l’orario di questo servizio include fasce non disponibili per il team scelto.',
+      'Warning: this service time includes unavailable slots for the chosen team.',
       name: 'bookingUnavailableTimeWarningService',
       desc: '',
       args: [],
     );
   }
 
-  /// `Attenzione: il membro del team selezionato non è abilitato per questo servizio.`
+  /// `Warning: the selected team member is not eligible for this service.`
   String get bookingStaffNotEligibleWarning {
     return Intl.message(
-      'Attenzione: il membro del team selezionato non è abilitato per questo servizio.',
+      'Warning: the selected team member is not eligible for this service.',
       name: 'bookingStaffNotEligibleWarning',
       desc: '',
       args: [],
     );
   }
 
-  /// `Elimina prenotazione`
+  /// `Delete booking`
   String get actionDeleteBooking {
     return Intl.message(
-      'Elimina prenotazione',
+      'Delete booking',
       name: 'actionDeleteBooking',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eliminare l'appuntamento?`
+  /// `Delete appointment?`
   String get deleteAppointmentConfirmTitle {
     return Intl.message(
-      'Eliminare l\'appuntamento?',
+      'Delete appointment?',
       name: 'deleteAppointmentConfirmTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `L'appuntamento verrà rimosso. L'operazione non può essere annullata.`
+  /// `The appointment will be removed. This action cannot be undone.`
   String get deleteAppointmentConfirmMessage {
     return Intl.message(
-      'L\'appuntamento verrà rimosso. L\'operazione non può essere annullata.',
+      'The appointment will be removed. This action cannot be undone.',
       name: 'deleteAppointmentConfirmMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eliminare l’intera prenotazione?`
+  /// `Delete entire booking?`
   String get deleteBookingConfirmTitle {
     return Intl.message(
-      'Eliminare l’intera prenotazione?',
+      'Delete entire booking?',
       name: 'deleteBookingConfirmTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Verranno rimossi tutti i servizi collegati. L'operazione non può essere annullata.`
+  /// `All linked services will be removed. This action cannot be undone.`
   String get deleteBookingConfirmMessage {
     return Intl.message(
-      'Verranno rimossi tutti i servizi collegati. L\'operazione non può essere annullata.',
+      'All linked services will be removed. This action cannot be undone.',
       name: 'deleteBookingConfirmMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sedi`
+  /// `Locations`
   String get teamLocationsLabel {
-    return Intl.message('Sedi', name: 'teamLocationsLabel', desc: '', args: []);
+    return Intl.message(
+      'Locations',
+      name: 'teamLocationsLabel',
+      desc: '',
+      args: [],
+    );
   }
 
   /// `Team`
@@ -1343,120 +1318,120 @@ class L10n {
     return Intl.message('Team', name: 'teamStaffLabel', desc: '', args: []);
   }
 
-  /// `Aggiungi membro`
+  /// `Add team member`
   String get teamAddStaff {
     return Intl.message(
-      'Aggiungi membro',
+      'Add team member',
       name: 'teamAddStaff',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun membro in questa sede`
+  /// `No team members in this location`
   String get teamNoStaffInLocation {
     return Intl.message(
-      'Nessun membro in questa sede',
+      'No team members in this location',
       name: 'teamNoStaffInLocation',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile eliminare la sede`
+  /// `Cannot delete location`
   String get teamDeleteLocationBlockedTitle {
     return Intl.message(
-      'Impossibile eliminare la sede',
+      'Cannot delete location',
       name: 'teamDeleteLocationBlockedTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Rimuovi prima tutti i membri del team associati.`
+  /// `Remove all team members assigned to this location first.`
   String get teamDeleteLocationBlockedMessage {
     return Intl.message(
-      'Rimuovi prima tutti i membri del team associati.',
+      'Remove all team members assigned to this location first.',
       name: 'teamDeleteLocationBlockedMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eliminare la sede?`
+  /// `Delete location?`
   String get teamDeleteLocationTitle {
     return Intl.message(
-      'Eliminare la sede?',
+      'Delete location?',
       name: 'teamDeleteLocationTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `La sede verrà rimossa dal team. L'operazione non può essere annullata.`
+  /// `The location will be removed from the team. This action cannot be undone.`
   String get teamDeleteLocationMessage {
     return Intl.message(
-      'La sede verrà rimossa dal team. L\'operazione non può essere annullata.',
+      'The location will be removed from the team. This action cannot be undone.',
       name: 'teamDeleteLocationMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eliminare il membro del team?`
+  /// `Delete team member?`
   String get teamDeleteStaffTitle {
     return Intl.message(
-      'Eliminare il membro del team?',
+      'Delete team member?',
       name: 'teamDeleteStaffTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il membro verrà rimosso dal team. L'operazione non può essere annullata.`
+  /// `The member will be removed from the team. This action cannot be undone.`
   String get teamDeleteStaffMessage {
     return Intl.message(
-      'Il membro verrà rimosso dal team. L\'operazione non può essere annullata.',
+      'The member will be removed from the team. This action cannot be undone.',
       name: 'teamDeleteStaffMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuova sede`
+  /// `New location`
   String get teamNewLocationTitle {
     return Intl.message(
-      'Nuova sede',
+      'New location',
       name: 'teamNewLocationTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica sede`
+  /// `Edit location`
   String get teamEditLocationTitle {
     return Intl.message(
-      'Modifica sede',
+      'Edit location',
       name: 'teamEditLocationTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nome sede`
+  /// `Location name`
   String get teamLocationNameLabel {
     return Intl.message(
-      'Nome sede',
+      'Location name',
       name: 'teamLocationNameLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Indirizzo`
+  /// `Address`
   String get teamLocationAddressLabel {
     return Intl.message(
-      'Indirizzo',
+      'Address',
       name: 'teamLocationAddressLabel',
       desc: '',
       args: [],
@@ -1473,70 +1448,70 @@ class L10n {
     );
   }
 
-  /// `Email per notifiche ai clienti`
+  /// `Email for customer notifications`
   String get teamLocationEmailHint {
     return Intl.message(
-      'Email per notifiche ai clienti',
+      'Email for customer notifications',
       name: 'teamLocationEmailHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Configurazione prenotazione online per questa sede`
+  /// `Online booking configuration for this location`
   String get teamLocationOnlineBookingSettingsSection {
     return Intl.message(
-      'Configurazione prenotazione online per questa sede',
+      'Online booking configuration for this location',
       name: 'teamLocationOnlineBookingSettingsSection',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nomenclatura prenotazione online`
+  /// `Online booking nomenclature`
   String get teamLocationNomenclatureSection {
     return Intl.message(
-      'Nomenclatura prenotazione online',
+      'Online booking nomenclature',
       name: 'teamLocationNomenclatureSection',
       desc: '',
       args: [],
     );
   }
 
-  /// `Aggiungi solo le diciture che vuoi sovrascrivere. Verranno applicate a tutti gli utenti.`
+  /// `Add only the labels you want to override. They will apply to all users.`
   String get teamLocationNomenclatureEditorIntro {
     return Intl.message(
-      'Aggiungi solo le diciture che vuoi sovrascrivere. Verranno applicate a tutti gli utenti.',
+      'Add only the labels you want to override. They will apply to all users.',
       name: 'teamLocationNomenclatureEditorIntro',
       desc: '',
       args: [],
     );
   }
 
-  /// `Icona selezione fornitore dei servizi`
+  /// `Service provider selection icon`
   String get teamLocationStaffIconKeyLabel {
     return Intl.message(
-      'Icona selezione fornitore dei servizi',
+      'Service provider selection icon',
       name: 'teamLocationStaffIconKeyLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Icona da visualizzare sulla prenotazione online per la selezione del fornitore dei servizi`
+  /// `Icon shown in online booking for service provider selection`
   String get teamLocationStaffIconKeyHint {
     return Intl.message(
-      'Icona da visualizzare sulla prenotazione online per la selezione del fornitore dei servizi',
+      'Icon shown in online booking for service provider selection',
       name: 'teamLocationStaffIconKeyHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Inserisci personalizzazione (opzionale)`
+  /// `Enter custom text (optional)`
   String get teamLocationNomenclatureInputHint {
     return Intl.message(
-      'Inserisci personalizzazione (opzionale)',
+      'Enter custom text (optional)',
       name: 'teamLocationNomenclatureInputHint',
       desc: '',
       args: [],
@@ -1553,2633 +1528,2633 @@ class L10n {
     );
   }
 
-  /// `Lascia vuoto per mantenere il default.`
+  /// `Leave empty to keep default.`
   String get teamLocationNomenclatureLeaveEmptyHint {
     return Intl.message(
-      'Lascia vuoto per mantenere il default.',
+      'Leave empty to keep default.',
       name: 'teamLocationNomenclatureLeaveEmptyHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Deve contenere "{count}".`
+  /// `It must include "{count}".`
   String teamLocationNomenclatureCountPlaceholderNote(Object count) {
     return Intl.message(
-      'Deve contenere "$count".',
+      'It must include "$count".',
       name: 'teamLocationNomenclatureCountPlaceholderNote',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Chiave`
+  /// `Key`
   String get teamLocationNomenclatureKeyLabel {
     return Intl.message(
-      'Chiave',
+      'Key',
       name: 'teamLocationNomenclatureKeyLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Testo personalizzato`
+  /// `Custom text`
   String get teamLocationNomenclatureValueLabel {
     return Intl.message(
-      'Testo personalizzato',
+      'Custom text',
       name: 'teamLocationNomenclatureValueLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Aggiungi dicitura`
+  /// `Add label`
   String get teamLocationNomenclatureAddRow {
     return Intl.message(
-      'Aggiungi dicitura',
+      'Add label',
       name: 'teamLocationNomenclatureAddRow',
       desc: '',
       args: [],
     );
   }
 
-  /// `La stessa chiave è stata inserita più di una volta.`
+  /// `The same key has been entered more than once.`
   String get teamLocationNomenclatureDuplicateKey {
     return Intl.message(
-      'La stessa chiave è stata inserita più di una volta.',
+      'The same key has been entered more than once.',
       name: 'teamLocationNomenclatureDuplicateKey',
       desc: '',
       args: [],
     );
   }
 
-  /// `Per "services_selected_many" devi includere il placeholder count.`
+  /// `For "services_selected_many" you must include the count placeholder.`
   String get teamLocationNomenclatureCountPlaceholderError {
     return Intl.message(
-      'Per "services_selected_many" devi includere il placeholder count.',
+      'For "services_selected_many" you must include the count placeholder.',
       name: 'teamLocationNomenclatureCountPlaceholderError',
       desc: '',
       args: [],
     );
   }
 
-  /// `JSON nomenclatura`
+  /// `Nomenclature JSON`
   String get teamLocationBookingTextOverridesLabel {
     return Intl.message(
-      'JSON nomenclatura',
+      'Nomenclature JSON',
       name: 'teamLocationBookingTextOverridesLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `{"default":{"services_title":"Scegli attività"}}`
+  /// `{"default":{"services_title":"Choose activities"}}`
   String get teamLocationBookingTextOverridesHint {
     return Intl.message(
-      '{"default":{"services_title":"Scegli attività"}}',
+      '{"default":{"services_title":"Choose activities"}}',
       name: 'teamLocationBookingTextOverridesHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Un solo blocco: chiave obbligatoria "default".`
+  /// `Single block only: required key "default".`
   String get teamLocationBookingTextOverridesHelper {
     return Intl.message(
-      'Un solo blocco: chiave obbligatoria "default".',
+      'Single block only: required key "default".',
       name: 'teamLocationBookingTextOverridesHelper',
       desc: '',
       args: [],
     );
   }
 
-  /// `JSON non valido. Inserisci un oggetto con frasi non vuote.`
+  /// `Invalid JSON. Provide an object with non-empty phrases.`
   String get teamLocationBookingTextOverridesInvalid {
     return Intl.message(
-      'JSON non valido. Inserisci un oggetto con frasi non vuote.',
+      'Invalid JSON. Provide an object with non-empty phrases.',
       name: 'teamLocationBookingTextOverridesInvalid',
       desc: '',
       args: [],
     );
   }
 
-  /// `È ammesso solo il blocco "default".`
+  /// `Only the "default" block is allowed.`
   String get teamLocationBookingTextOverridesDefaultOnly {
     return Intl.message(
-      'È ammesso solo il blocco "default".',
+      'Only the "default" block is allowed.',
       name: 'teamLocationBookingTextOverridesDefaultOnly',
       desc: '',
       args: [],
     );
   }
 
-  /// `Etichetta operatore`
+  /// `Team label`
   String get teamLocationStaffDisplayLabel {
     return Intl.message(
-      'Etichetta operatore',
+      'Team label',
       name: 'teamLocationStaffDisplayLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Es. Operatore, Risorsa, Tecnico`
+  /// `E.g. Team member, Resource, Specialist`
   String get teamLocationStaffDisplayHint {
     return Intl.message(
-      'Es. Operatore, Risorsa, Tecnico',
+      'E.g. Team member, Resource, Specialist',
       name: 'teamLocationStaffDisplayHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Etichetta servizio`
+  /// `Service label`
   String get teamLocationServiceDisplayLabel {
     return Intl.message(
-      'Etichetta servizio',
+      'Service label',
       name: 'teamLocationServiceDisplayLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Es. Servizio, Trattamento, Prestazione`
+  /// `E.g. Service, Treatment, Session`
   String get teamLocationServiceDisplayHint {
     return Intl.message(
-      'Es. Servizio, Trattamento, Prestazione',
+      'E.g. Service, Treatment, Session',
       name: 'teamLocationServiceDisplayHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Etichetta sede`
+  /// `Location label`
   String get teamLocationLocationDisplayLabel {
     return Intl.message(
-      'Etichetta sede',
+      'Location label',
       name: 'teamLocationLocationDisplayLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Es. Sede, Luogo, Sala`
+  /// `E.g. Location, Place, Room`
   String get teamLocationLocationDisplayHint {
     return Intl.message(
-      'Es. Sede, Luogo, Sala',
+      'E.g. Location, Place, Room',
       name: 'teamLocationLocationDisplayHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sede attiva`
+  /// `Location active`
   String get teamLocationIsActiveLabel {
     return Intl.message(
-      'Sede attiva',
+      'Location active',
       name: 'teamLocationIsActiveLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Se disattivata, la sede non sarà visibile ai clienti`
+  /// `If disabled, the location will not be visible to customers`
   String get teamLocationIsActiveHint {
     return Intl.message(
-      'Se disattivata, la sede non sarà visibile ai clienti',
+      'If disabled, the location will not be visible to customers',
       name: 'teamLocationIsActiveHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Limiti prenotazione online`
+  /// `Online booking limits`
   String get teamLocationBookingLimitsSection {
     return Intl.message(
-      'Limiti prenotazione online',
+      'Online booking limits',
       name: 'teamLocationBookingLimitsSection',
       desc: '',
       args: [],
     );
   }
 
-  /// `Consenti ai clienti di scegliere il fornitore dei servizi`
+  /// `Allow customers to choose the service provider`
   String get teamLocationAllowCustomerChooseStaffLabel {
     return Intl.message(
-      'Consenti ai clienti di scegliere il fornitore dei servizi',
+      'Allow customers to choose the service provider',
       name: 'teamLocationAllowCustomerChooseStaffLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Se disattivato, il sistema assegna automaticamente il fornitore dei servizi`
+  /// `If disabled, the system assigns the service provider automatically`
   String get teamLocationAllowCustomerChooseStaffHint {
     return Intl.message(
-      'Se disattivato, il sistema assegna automaticamente il fornitore dei servizi',
+      'If disabled, the system assigns the service provider automatically',
       name: 'teamLocationAllowCustomerChooseStaffHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Preavviso minimo prenotazione`
+  /// `Minimum booking notice`
   String get teamLocationMinBookingNoticeLabel {
     return Intl.message(
-      'Preavviso minimo prenotazione',
+      'Minimum booking notice',
       name: 'teamLocationMinBookingNoticeLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Quanto tempo prima devono prenotare i clienti`
+  /// `How far in advance customers must book`
   String get teamLocationMinBookingNoticeHint {
     return Intl.message(
-      'Quanto tempo prima devono prenotare i clienti',
+      'How far in advance customers must book',
       name: 'teamLocationMinBookingNoticeHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione massima anticipata`
+  /// `Maximum booking advance`
   String get teamLocationMaxBookingAdvanceLabel {
     return Intl.message(
-      'Prenotazione massima anticipata',
+      'Maximum booking advance',
       name: 'teamLocationMaxBookingAdvanceLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Fino a quanto tempo in anticipo possono prenotare`
+  /// `How far ahead customers can book`
   String get teamLocationMaxBookingAdvanceHint {
     return Intl.message(
-      'Fino a quanto tempo in anticipo possono prenotare',
+      'How far ahead customers can book',
       name: 'teamLocationMaxBookingAdvanceHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Finestra modifica/cancellazione`
+  /// `Modify/cancel window`
   String get teamLocationCancellationHoursLabel {
     return Intl.message(
-      'Finestra modifica/cancellazione',
+      'Modify/cancel window',
       name: 'teamLocationCancellationHoursLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tempo minimo prima dell'appuntamento entro cui il cliente può ancora modificare o cancellare`
+  /// `Minimum time before the appointment during which customers can still modify or cancel`
   String get teamLocationCancellationHoursHint {
     return Intl.message(
-      'Tempo minimo prima dell\'appuntamento entro cui il cliente può ancora modificare o cancellare',
+      'Minimum time before the appointment during which customers can still modify or cancel',
       name: 'teamLocationCancellationHoursHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Usa policy del business`
+  /// `Use business policy`
   String get teamLocationCancellationHoursUseBusiness {
     return Intl.message(
-      'Usa policy del business',
+      'Use business policy',
       name: 'teamLocationCancellationHoursUseBusiness',
       desc: '',
       args: [],
     );
   }
 
-  /// `Usa policy del business ({value})`
+  /// `Use business policy ({value})`
   String teamLocationCancellationHoursUseBusinessWithValue(String value) {
     return Intl.message(
-      'Usa policy del business ($value)',
+      'Use business policy ($value)',
       name: 'teamLocationCancellationHoursUseBusinessWithValue',
       desc: '',
       args: [value],
     );
   }
 
-  /// `Sempre`
+  /// `Always`
   String get teamLocationCancellationHoursAlways {
     return Intl.message(
-      'Sempre',
+      'Always',
       name: 'teamLocationCancellationHoursAlways',
       desc: '',
       args: [],
     );
   }
 
-  /// `Mai`
+  /// `Never`
   String get teamLocationCancellationHoursNever {
     return Intl.message(
-      'Mai',
+      'Never',
       name: 'teamLocationCancellationHoursNever',
       desc: '',
       args: [],
     );
   }
 
-  /// `{count, plural, =1{1 ora} other{{count} ore}}`
+  /// `{count, plural, =1{1 hour} other{{count} hours}}`
   String teamLocationHours(int count) {
     return Intl.plural(
       count,
-      one: '1 ora',
-      other: '$count ore',
+      one: '1 hour',
+      other: '$count hours',
       name: 'teamLocationHours',
       desc: '',
       args: [count],
     );
   }
 
-  /// `{count, plural, =1{1 giorno} other{{count} giorni}}`
+  /// `{count, plural, =1{1 day} other{{count} days}}`
   String teamLocationDays(int count) {
     return Intl.plural(
       count,
-      one: '1 giorno',
-      other: '$count giorni',
+      one: '1 day',
+      other: '$count days',
       name: 'teamLocationDays',
       desc: '',
       args: [count],
     );
   }
 
-  /// `{count, plural, =1{1 minuto} other{{count} minuti}}`
+  /// `{count, plural, =1{1 minute} other{{count} minutes}}`
   String teamLocationMinutes(int count) {
     return Intl.plural(
       count,
-      one: '1 minuto',
-      other: '$count minuti',
+      one: '1 minute',
+      other: '$count minutes',
       name: 'teamLocationMinutes',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Fasce orarie intelligenti`
+  /// `Smart time slots`
   String get teamLocationSmartSlotSection {
     return Intl.message(
-      'Fasce orarie intelligenti',
+      'Smart time slots',
       name: 'teamLocationSmartSlotSection',
       desc: '',
       args: [],
     );
   }
 
-  /// `Configura come vengono mostrati gli orari disponibili ai clienti che prenotano online. Non modifica il planning dello staff.`
+  /// `Configure how available times are shown to customers booking online. This does not change staff planning.`
   String get teamLocationSmartSlotDescription {
     return Intl.message(
-      'Configura come vengono mostrati gli orari disponibili ai clienti che prenotano online. Non modifica il planning dello staff.',
+      'Configure how available times are shown to customers booking online. This does not change staff planning.',
       name: 'teamLocationSmartSlotDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Intervallo tra gli orari`
+  /// `Time slot interval`
   String get teamLocationSlotIntervalLabel {
     return Intl.message(
-      'Intervallo tra gli orari',
+      'Time slot interval',
       name: 'teamLocationSlotIntervalLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ogni quanti minuti mostrare un orario disponibile nelle prenotazioni online (non influisce sugli slot del planning staff)`
+  /// `How many minutes between each available slot in online booking (does not affect staff planning slots)`
   String get teamLocationSlotIntervalHint {
     return Intl.message(
-      'Ogni quanti minuti mostrare un orario disponibile nelle prenotazioni online (non influisce sugli slot del planning staff)',
+      'How many minutes between each available slot in online booking (does not affect staff planning slots)',
       name: 'teamLocationSlotIntervalHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modalità visualizzazione`
+  /// `Display mode`
   String get teamLocationSlotDisplayModeLabel {
     return Intl.message(
-      'Modalità visualizzazione',
+      'Display mode',
       name: 'teamLocationSlotDisplayModeLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Massima disponibilità`
+  /// `Maximum availability`
   String get teamLocationSlotDisplayModeAll {
     return Intl.message(
-      'Massima disponibilità',
+      'Maximum availability',
       name: 'teamLocationSlotDisplayModeAll',
       desc: '',
       args: [],
     );
   }
 
-  /// `Riduci spazi vuoti`
+  /// `Reduce empty gaps`
   String get teamLocationSlotDisplayModeMinGap {
     return Intl.message(
-      'Riduci spazi vuoti',
+      'Reduce empty gaps',
       name: 'teamLocationSlotDisplayModeMinGap',
       desc: '',
       args: [],
     );
   }
 
-  /// `Mostra tutti gli orari disponibili`
+  /// `Show all available time slots`
   String get teamLocationSlotDisplayModeAllHint {
     return Intl.message(
-      'Mostra tutti gli orari disponibili',
+      'Show all available time slots',
       name: 'teamLocationSlotDisplayModeAllHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nasconde orari che creerebbero buchi troppo piccoli`
+  /// `Hide slots that would create gaps too small to fill`
   String get teamLocationSlotDisplayModeMinGapHint {
     return Intl.message(
-      'Nasconde orari che creerebbero buchi troppo piccoli',
+      'Hide slots that would create gaps too small to fill',
       name: 'teamLocationSlotDisplayModeMinGapHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Gap minimo accettabile`
+  /// `Minimum acceptable gap`
   String get teamLocationMinGapLabel {
     return Intl.message(
-      'Gap minimo accettabile',
+      'Minimum acceptable gap',
       name: 'teamLocationMinGapLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non mostrare orari che lasciano meno di questo tempo libero`
+  /// `Hide time slots that leave less than this time free`
   String get teamLocationMinGapHint {
     return Intl.message(
-      'Non mostrare orari che lasciano meno di questo tempo libero',
+      'Hide time slots that leave less than this time free',
       name: 'teamLocationMinGapHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuovo membro del team`
+  /// `New team member`
   String get teamNewStaffTitle {
     return Intl.message(
-      'Nuovo membro del team',
+      'New team member',
       name: 'teamNewStaffTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica membro del team`
+  /// `Edit team member`
   String get teamEditStaffTitle {
     return Intl.message(
-      'Modifica membro del team',
+      'Edit team member',
       name: 'teamEditStaffTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nome`
+  /// `First name`
   String get teamStaffNameLabel {
-    return Intl.message('Nome', name: 'teamStaffNameLabel', desc: '', args: []);
+    return Intl.message(
+      'First name',
+      name: 'teamStaffNameLabel',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `Cognome`
+  /// `Last name`
   String get teamStaffSurnameLabel {
     return Intl.message(
-      'Cognome',
+      'Last name',
       name: 'teamStaffSurnameLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Colore`
+  /// `Color`
   String get teamStaffColorLabel {
     return Intl.message(
-      'Colore',
+      'Color',
       name: 'teamStaffColorLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sedi associate`
+  /// `Assigned locations`
   String get teamStaffLocationsLabel {
     return Intl.message(
-      'Sedi associate',
+      'Assigned locations',
       name: 'teamStaffLocationsLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Se il membro lavora su più sedi, ricorda di allineare disponibilità e orari con le sedi selezionate.`
+  /// `If the member works across multiple locations, make sure availability aligns with the selected locations.`
   String get teamStaffMultiLocationWarning {
     return Intl.message(
-      'Se il membro lavora su più sedi, ricorda di allineare disponibilità e orari con le sedi selezionate.',
+      'If the member works across multiple locations, make sure availability aligns with the selected locations.',
       name: 'teamStaffMultiLocationWarning',
       desc: '',
       args: [],
     );
   }
 
-  /// `Team abilitato`
+  /// `Eligible team members`
   String get teamEligibleStaffLabel {
     return Intl.message(
-      'Team abilitato',
+      'Eligible team members',
       name: 'teamEligibleStaffLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizi abilitati`
+  /// `Eligible services`
   String get teamEligibleServicesLabel {
     return Intl.message(
-      'Servizi abilitati',
+      'Eligible services',
       name: 'teamEligibleServicesLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona tutto`
+  /// `Select all`
   String get teamSelectAllServices {
     return Intl.message(
-      'Seleziona tutto',
+      'Select all',
       name: 'teamSelectAllServices',
       desc: '',
       args: [],
     );
   }
 
-  /// `{count} servizi abilitati`
+  /// `{count} eligible services`
   String teamEligibleServicesCount(int count) {
     return Intl.message(
-      '$count servizi abilitati',
+      '$count eligible services',
       name: 'teamEligibleServicesCount',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Nessun servizio abilitato`
+  /// `No eligible services`
   String get teamEligibleServicesNone {
     return Intl.message(
-      'Nessun servizio abilitato',
+      'No eligible services',
       name: 'teamEligibleServicesNone',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizi selezionati`
+  /// `Selected services`
   String get teamSelectedServicesButton {
     return Intl.message(
-      'Servizi selezionati',
+      'Selected services',
       name: 'teamSelectedServicesButton',
       desc: '',
       args: [],
     );
   }
 
-  /// `{selected} su {total}`
+  /// `{selected} of {total}`
   String teamSelectedServicesCount(int selected, int total) {
     return Intl.message(
-      '$selected su $total',
+      '$selected of $total',
       name: 'teamSelectedServicesCount',
       desc: '',
       args: [selected, total],
     );
   }
 
-  /// `Servizi`
+  /// `Services`
   String get teamServicesLabel {
     return Intl.message(
-      'Servizi',
+      'Services',
       name: 'teamServicesLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona sedi`
+  /// `Select locations`
   String get teamChooseLocationsButton {
     return Intl.message(
-      'Seleziona sedi',
+      'Select locations',
       name: 'teamChooseLocationsButton',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona la sede`
+  /// `Select location`
   String get teamChooseLocationSingleButton {
     return Intl.message(
-      'Seleziona la sede',
+      'Select location',
       name: 'teamChooseLocationSingleButton',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sede`
+  /// `Location`
   String get teamLocationLabel {
-    return Intl.message('Sede', name: 'teamLocationLabel', desc: '', args: []);
+    return Intl.message(
+      'Location',
+      name: 'teamLocationLabel',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `Seleziona tutto`
+  /// `Select all`
   String get teamSelectAllLocations {
     return Intl.message(
-      'Seleziona tutto',
+      'Select all',
       name: 'teamSelectAllLocations',
       desc: '',
       args: [],
     );
   }
 
-  /// `Abilitato alle prenotazioni online`
+  /// `Enabled for online bookings`
   String get teamStaffBookableOnlineLabel {
     return Intl.message(
-      'Abilitato alle prenotazioni online',
+      'Enabled for online bookings',
       name: 'teamStaffBookableOnlineLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non prenotabile online`
+  /// `Not bookable online`
   String get staffNotBookableOnlineTooltip {
     return Intl.message(
-      'Non prenotabile online',
+      'Not bookable online',
       name: 'staffNotBookableOnlineTooltip',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non prenotabile online`
+  /// `Not bookable online`
   String get staffNotBookableOnlineTitle {
     return Intl.message(
-      'Non prenotabile online',
+      'Not bookable online',
       name: 'staffNotBookableOnlineTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questo membro del team non è abilitato alle prenotazioni online. Puoi modificare l’impostazione dal form di modifica dello staff.`
+  /// `This team member is not enabled for online bookings. You can change this in the staff edit form.`
   String get staffNotBookableOnlineMessage {
     return Intl.message(
-      'Questo membro del team non è abilitato alle prenotazioni online. Puoi modificare l’impostazione dal form di modifica dello staff.',
+      'This team member is not enabled for online bookings. You can change this in the staff edit form.',
       name: 'staffNotBookableOnlineMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `{count} membri abilitati`
+  /// `{count} eligible team members`
   String serviceEligibleStaffCount(int count) {
     return Intl.message(
-      '$count membri abilitati',
+      '$count eligible team members',
       name: 'serviceEligibleStaffCount',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Nessun membro abilitato`
+  /// `No eligible team members`
   String get serviceEligibleStaffNone {
     return Intl.message(
-      'Nessun membro abilitato',
+      'No eligible team members',
       name: 'serviceEligibleStaffNone',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sedi disponibili`
+  /// `Available locations`
   String get serviceLocationsLabel {
     return Intl.message(
-      'Sedi disponibili',
+      'Available locations',
       name: 'serviceLocationsLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `{count} di {total} sedi`
+  /// `{count} of {total} locations`
   String serviceLocationsCount(int count, int total) {
     return Intl.message(
-      '$count di $total sedi',
+      '$count of $total locations',
       name: 'serviceLocationsCount',
       desc: '',
       args: [count, total],
     );
   }
 
-  /// `Riordina sedi e membri del team trascinandoli. Seleziona se ordinare sedi o team. L’ordine sarà lo stesso anche nella sezione agenda.`
+  /// `Reorder locations and team members by dragging them. Select whether to sort locations or team. The order will also apply in the agenda section.`
   String get teamReorderHelpDescription {
     return Intl.message(
-      'Riordina sedi e membri del team trascinandoli. Seleziona se ordinare sedi o team. L’ordine sarà lo stesso anche nella sezione agenda.',
+      'Reorder locations and team members by dragging them. Select whether to sort locations or team. The order will also apply in the agenda section.',
       name: 'teamReorderHelpDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuova categoria`
+  /// `New category`
   String get createCategoryButtonLabel {
     return Intl.message(
-      'Nuova categoria',
+      'New category',
       name: 'createCategoryButtonLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuovo servizio`
+  /// `New service`
   String get servicesNewServiceMenu {
     return Intl.message(
-      'Nuovo servizio',
+      'New service',
       name: 'servicesNewServiceMenu',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica ordinamento`
+  /// `Reorder`
   String get reorderTitle {
-    return Intl.message(
-      'Modifica ordinamento',
-      name: 'reorderTitle',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Reorder', name: 'reorderTitle', desc: '', args: []);
   }
 
-  /// `Aggiungi servizio`
+  /// `Add service`
   String get addServiceTooltip {
     return Intl.message(
-      'Aggiungi servizio',
+      'Add service',
       name: 'addServiceTooltip',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile eliminare`
+  /// `Cannot delete`
   String get cannotDeleteTitle {
     return Intl.message(
-      'Impossibile eliminare',
+      'Cannot delete',
       name: 'cannotDeleteTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `La categoria contiene uno o più servizi.`
+  /// `This category contains one or more services.`
   String get cannotDeleteCategoryContent {
     return Intl.message(
-      'La categoria contiene uno o più servizi.',
+      'This category contains one or more services.',
       name: 'cannotDeleteCategoryContent',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun servizio in questa categoria`
+  /// `No services in this category`
   String get noServicesInCategory {
     return Intl.message(
-      'Nessun servizio in questa categoria',
+      'No services in this category',
       name: 'noServicesInCategory',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non abilitato a prenotare online`
+  /// `Not bookable online`
   String get notBookableOnline {
     return Intl.message(
-      'Non abilitato a prenotare online',
+      'Not bookable online',
       name: 'notBookableOnline',
       desc: '',
       args: [],
     );
   }
 
-  /// `Duplica`
+  /// `Duplicate`
   String get duplicateAction {
-    return Intl.message('Duplica', name: 'duplicateAction', desc: '', args: []);
+    return Intl.message(
+      'Duplicate',
+      name: 'duplicateAction',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `Eliminare il servizio?`
+  /// `Delete this service?`
   String get deleteServiceQuestion {
     return Intl.message(
-      'Eliminare il servizio?',
+      'Delete this service?',
       name: 'deleteServiceQuestion',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questa azione non può essere annullata.`
+  /// `This action cannot be undone.`
   String get cannotUndoWarning {
     return Intl.message(
-      'Questa azione non può essere annullata.',
+      'This action cannot be undone.',
       name: 'cannotUndoWarning',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuova categoria`
+  /// `New category`
   String get newCategoryTitle {
     return Intl.message(
-      'Nuova categoria',
+      'New category',
       name: 'newCategoryTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica categoria`
+  /// `Edit category`
   String get editCategoryTitle {
     return Intl.message(
-      'Modifica categoria',
+      'Edit category',
       name: 'editCategoryTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nome *`
+  /// `Name *`
   String get fieldNameRequiredLabel {
     return Intl.message(
-      'Nome *',
+      'Name *',
       name: 'fieldNameRequiredLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il nome è obbligatorio`
+  /// `Name is required`
   String get fieldNameRequiredError {
     return Intl.message(
-      'Il nome è obbligatorio',
+      'Name is required',
       name: 'fieldNameRequiredError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Esiste già una categoria con questo nome`
+  /// `A category with this name already exists`
   String get categoryDuplicateError {
     return Intl.message(
-      'Esiste già una categoria con questo nome',
+      'A category with this name already exists',
       name: 'categoryDuplicateError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Descrizione`
+  /// `Description`
   String get fieldDescriptionLabel {
     return Intl.message(
-      'Descrizione',
+      'Description',
       name: 'fieldDescriptionLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Colore servizio`
+  /// `Service color`
   String get serviceColorLabel {
     return Intl.message(
-      'Colore servizio',
+      'Service color',
       name: 'serviceColorLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuovo servizio`
+  /// `New service`
   String get newServiceTitle {
     return Intl.message(
-      'Nuovo servizio',
+      'New service',
       name: 'newServiceTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica servizio`
+  /// `Edit service`
   String get editServiceTitle {
     return Intl.message(
-      'Modifica servizio',
+      'Edit service',
       name: 'editServiceTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Categoria *`
+  /// `Category *`
   String get fieldCategoryRequiredLabel {
     return Intl.message(
-      'Categoria *',
+      'Category *',
       name: 'fieldCategoryRequiredLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Durata *`
+  /// `Duration *`
   String get fieldDurationRequiredLabel {
     return Intl.message(
-      'Durata *',
+      'Duration *',
       name: 'fieldDurationRequiredLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona una durata`
+  /// `Please select a duration`
   String get fieldDurationRequiredError {
     return Intl.message(
-      'Seleziona una durata',
+      'Please select a duration',
       name: 'fieldDurationRequiredError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prezzo`
+  /// `Price`
   String get fieldPriceLabel {
-    return Intl.message('Prezzo', name: 'fieldPriceLabel', desc: '', args: []);
+    return Intl.message('Price', name: 'fieldPriceLabel', desc: '', args: []);
   }
 
-  /// `Tempo di lavorazione`
+  /// `Processing time`
   String get fieldProcessingTimeLabel {
     return Intl.message(
-      'Tempo di lavorazione',
+      'Processing time',
       name: 'fieldProcessingTimeLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tempo bloccato`
+  /// `Blocked time`
   String get fieldBlockedTimeLabel {
     return Intl.message(
-      'Tempo bloccato',
+      'Blocked time',
       name: 'fieldBlockedTimeLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tempo aggiuntivo`
+  /// `Additional time`
   String get additionalTimeSwitch {
     return Intl.message(
-      'Tempo aggiuntivo',
+      'Additional time',
       name: 'additionalTimeSwitch',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tempo di lavorazione`
+  /// `Processing time`
   String get additionalTimeOptionProcessing {
     return Intl.message(
-      'Tempo di lavorazione',
+      'Processing time',
       name: 'additionalTimeOptionProcessing',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tempo bloccato`
+  /// `Blocked time`
   String get additionalTimeOptionBlocked {
     return Intl.message(
-      'Tempo bloccato',
+      'Blocked time',
       name: 'additionalTimeOptionBlocked',
       desc: '',
       args: [],
     );
   }
 
-  /// `Abilitato a prenotare online`
+  /// `Bookable online`
   String get bookableOnlineSwitch {
     return Intl.message(
-      'Abilitato a prenotare online',
+      'Bookable online',
       name: 'bookableOnlineSwitch',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizio gratuito`
+  /// `Free service`
   String get freeServiceSwitch {
     return Intl.message(
-      'Servizio gratuito',
+      'Free service',
       name: 'freeServiceSwitch',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prezzo "a partire da"`
+  /// `Price “starting from”`
   String get priceStartingFromSwitch {
     return Intl.message(
-      'Prezzo "a partire da"',
+      'Price “starting from”',
       name: 'priceStartingFromSwitch',
       desc: '',
       args: [],
     );
   }
 
-  /// `Imposta un prezzo per abilitarlo`
+  /// `Set a price to enable this option`
   String get setPriceToEnable {
     return Intl.message(
-      'Imposta un prezzo per abilitarlo',
+      'Set a price to enable this option',
       name: 'setPriceToEnable',
       desc: '',
       args: [],
     );
   }
 
-  /// `Esiste già un servizio con questo nome`
+  /// `A service with this name already exists`
   String get serviceDuplicateError {
     return Intl.message(
-      'Esiste già un servizio con questo nome',
+      'A service with this name already exists',
       name: 'serviceDuplicateError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Riordina categorie e servizi trascinandoli: l’ordine sarà lo stesso anche nella prenotazione online. Seleziona se ordinare categorie o servizi.`
+  /// `Reorder categories and services by dragging them: the same order will be applied to online booking. Select whether to sort categories or services.`
   String get reorderHelpDescription {
     return Intl.message(
-      'Riordina categorie e servizi trascinandoli: l’ordine sarà lo stesso anche nella prenotazione online. Seleziona se ordinare categorie o servizi.',
+      'Reorder categories and services by dragging them: the same order will be applied to online booking. Select whether to sort categories or services.',
       name: 'reorderHelpDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Categorie`
+  /// `Categories`
   String get reorderCategoriesLabel {
     return Intl.message(
-      'Categorie',
+      'Categories',
       name: 'reorderCategoriesLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizi`
+  /// `Services`
   String get reorderServicesLabel {
     return Intl.message(
-      'Servizi',
+      'Services',
       name: 'reorderServicesLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Le categorie senza servizi non sono riordinabili e restano in coda.`
+  /// `Categories without services cannot be reordered and stay at the end.`
   String get emptyCategoriesNotReorderableNote {
     return Intl.message(
-      'Le categorie senza servizi non sono riordinabili e restano in coda.',
+      'Categories without services cannot be reordered and stay at the end.',
       name: 'emptyCategoriesNotReorderableNote',
       desc: '',
       args: [],
     );
   }
 
-  /// `Trattamenti Corpo`
+  /// `Body Treatments`
   String get serviceSeedCategoryBodyName {
     return Intl.message(
-      'Trattamenti Corpo',
+      'Body Treatments',
       name: 'serviceSeedCategoryBodyName',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizi dedicati al benessere del corpo`
+  /// `Services dedicated to body wellness`
   String get serviceSeedCategoryBodyDescription {
     return Intl.message(
-      'Servizi dedicati al benessere del corpo',
+      'Services dedicated to body wellness',
       name: 'serviceSeedCategoryBodyDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Trattamenti Sportivi`
+  /// `Sports Treatments`
   String get serviceSeedCategorySportsName {
     return Intl.message(
-      'Trattamenti Sportivi',
+      'Sports Treatments',
       name: 'serviceSeedCategorySportsName',
       desc: '',
       args: [],
     );
   }
 
-  /// `Percorsi pensati per atleti e persone attive`
+  /// `Programs designed for athletes and active people`
   String get serviceSeedCategorySportsDescription {
     return Intl.message(
-      'Percorsi pensati per atleti e persone attive',
+      'Programs designed for athletes and active people',
       name: 'serviceSeedCategorySportsDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Trattamenti Viso`
+  /// `Facial Treatments`
   String get serviceSeedCategoryFaceName {
     return Intl.message(
-      'Trattamenti Viso',
+      'Facial Treatments',
       name: 'serviceSeedCategoryFaceName',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cura estetica e rigenerante per il viso`
+  /// `Aesthetic and rejuvenating care for the face`
   String get serviceSeedCategoryFaceDescription {
     return Intl.message(
-      'Cura estetica e rigenerante per il viso',
+      'Aesthetic and rejuvenating care for the face',
       name: 'serviceSeedCategoryFaceDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Massaggio Relax`
+  /// `Relax Massage`
   String get serviceSeedServiceRelaxName {
     return Intl.message(
-      'Massaggio Relax',
+      'Relax Massage',
       name: 'serviceSeedServiceRelaxName',
       desc: '',
       args: [],
     );
   }
 
-  /// `Trattamento rilassante da 30 minuti`
+  /// `Relaxing 30-minute treatment`
   String get serviceSeedServiceRelaxDescription {
     return Intl.message(
-      'Trattamento rilassante da 30 minuti',
+      'Relaxing 30-minute treatment',
       name: 'serviceSeedServiceRelaxDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Massaggio Sportivo`
+  /// `Sports Massage`
   String get serviceSeedServiceSportName {
     return Intl.message(
-      'Massaggio Sportivo',
+      'Sports Massage',
       name: 'serviceSeedServiceSportName',
       desc: '',
       args: [],
     );
   }
 
-  /// `Trattamento decontratturante intensivo`
+  /// `Intensive decontracting treatment`
   String get serviceSeedServiceSportDescription {
     return Intl.message(
-      'Trattamento decontratturante intensivo',
+      'Intensive decontracting treatment',
       name: 'serviceSeedServiceSportDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Trattamento Viso`
+  /// `Facial Treatment`
   String get serviceSeedServiceFaceName {
     return Intl.message(
-      'Trattamento Viso',
+      'Facial Treatment',
       name: 'serviceSeedServiceFaceName',
       desc: '',
       args: [],
     );
   }
 
-  /// `Pulizia e trattamento illuminante`
+  /// `Cleansing and illuminating treatment`
   String get serviceSeedServiceFaceDescription {
     return Intl.message(
-      'Pulizia e trattamento illuminante',
+      'Cleansing and illuminating treatment',
       name: 'serviceSeedServiceFaceDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Copia`
+  /// `Copy`
   String get serviceDuplicateCopyWord {
     return Intl.message(
-      'Copia',
+      'Copy',
       name: 'serviceDuplicateCopyWord',
       desc: '',
       args: [],
     );
   }
 
-  /// `Confermi lo spostamento?`
+  /// `Confirm move?`
   String get moveAppointmentConfirmTitle {
     return Intl.message(
-      'Confermi lo spostamento?',
+      'Confirm move?',
       name: 'moveAppointmentConfirmTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Inviare notifica al cliente?`
+  /// `Send notification to client?`
   String get rescheduleNotifyDecisionTitle {
     return Intl.message(
-      'Inviare notifica al cliente?',
+      'Send notification to client?',
       name: 'rescheduleNotifyDecisionTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `L'orario di inizio della prenotazione è cambiato. Vuoi inviare una notifica al cliente? I promemoria non ancora inviati verranno adeguati automaticamente.`
+  /// `The booking start time changed. Do you want to send a client notification? Unsent reminders will be adjusted automatically.`
   String get rescheduleNotifyDecisionMessage {
     return Intl.message(
-      'L\'orario di inizio della prenotazione è cambiato. Vuoi inviare una notifica al cliente? I promemoria non ancora inviati verranno adeguati automaticamente.',
+      'The booking start time changed. Do you want to send a client notification? Unsent reminders will be adjusted automatically.',
       name: 'rescheduleNotifyDecisionMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Invia notifica`
+  /// `Send notification`
   String get rescheduleNotifyDecisionSend {
     return Intl.message(
-      'Invia notifica',
+      'Send notification',
       name: 'rescheduleNotifyDecisionSend',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non inviare`
+  /// `Do not send`
   String get rescheduleNotifyDecisionSkip {
     return Intl.message(
-      'Non inviare',
+      'Do not send',
       name: 'rescheduleNotifyDecisionSkip',
       desc: '',
       args: [],
     );
   }
 
-  /// `Invia notifica al cliente e adegua i promemoria non ancora inviati`
+  /// `Send client notification and adjust unsent reminders`
   String get moveConfirmNotifyCheckbox {
     return Intl.message(
-      'Invia notifica al cliente e adegua i promemoria non ancora inviati',
+      'Send client notification and adjust unsent reminders',
       name: 'moveConfirmNotifyCheckbox',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione con più servizi`
+  /// `Multi-service booking`
   String get multiServiceMoveDecisionTitle {
     return Intl.message(
-      'Prenotazione con più servizi',
+      'Multi-service booking',
       name: 'multiServiceMoveDecisionTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questa prenotazione contiene più servizi. Scegli come procedere.`
+  /// `This booking contains multiple services. Choose how to proceed.`
   String get multiServiceMoveDecisionMessage {
     return Intl.message(
-      'Questa prenotazione contiene più servizi. Scegli come procedere.',
+      'This booking contains multiple services. Choose how to proceed.',
       name: 'multiServiceMoveDecisionMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sposta intera prenotazione`
+  /// `Move entire booking`
   String get multiServiceMoveDecisionMoveBooking {
     return Intl.message(
-      'Sposta intera prenotazione',
+      'Move entire booking',
       name: 'multiServiceMoveDecisionMoveBooking',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sposta solo questo servizio`
+  /// `Move only this service`
   String get multiServiceMoveDecisionSplitService {
     return Intl.message(
-      'Sposta solo questo servizio',
+      'Move only this service',
       name: 'multiServiceMoveDecisionSplitService',
       desc: '',
       args: [],
     );
   }
 
-  /// `Spostamento non disponibile`
+  /// `Move not available`
   String get multiServiceMoveSplitUnavailableTitle {
     return Intl.message(
-      'Spostamento non disponibile',
+      'Move not available',
       name: 'multiServiceMoveSplitUnavailableTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Lo spostamento di un singolo servizio richiede uno split atomico non disponibile con l'API corrente. Usa "Sposta intera prenotazione".`
+  /// `Moving a single service requires an atomic split not available in the current API. Use "Move entire booking".`
   String get multiServiceMoveSplitUnavailableMessage {
     return Intl.message(
-      'Lo spostamento di un singolo servizio richiede uno split atomico non disponibile con l\'API corrente. Usa "Sposta intera prenotazione".',
+      'Moving a single service requires an atomic split not available in the current API. Use "Move entire booking".',
       name: 'multiServiceMoveSplitUnavailableMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Spostamento bloccato`
+  /// `Move blocked`
   String get multiServiceNonFirstMoveBlockedTitle {
     return Intl.message(
-      'Spostamento bloccato',
+      'Move blocked',
       name: 'multiServiceNonFirstMoveBlockedTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nelle prenotazioni multi-servizio puoi spostare solo il primo servizio.`
+  /// `For multi-service bookings, only the first service can be moved.`
   String get multiServiceNonFirstMoveBlockedMessage {
     return Intl.message(
-      'Nelle prenotazioni multi-servizio puoi spostare solo il primo servizio.',
+      'For multi-service bookings, only the first service can be moved.',
       name: 'multiServiceNonFirstMoveBlockedMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `L'appuntamento verrà spostato alle {newTime} per {staffName}.`
+  /// `The appointment will be moved to {newTime} for {staffName}.`
   String moveAppointmentConfirmMessage(String newTime, String staffName) {
     return Intl.message(
-      'L\'appuntamento verrà spostato alle $newTime per $staffName.',
+      'The appointment will be moved to $newTime for $staffName.',
       name: 'moveAppointmentConfirmMessage',
       desc: '',
       args: [newTime, staffName],
     );
   }
 
-  /// `Modifiche non salvate`
+  /// `Unsaved changes`
   String get discardChangesTitle {
     return Intl.message(
-      'Modifiche non salvate',
+      'Unsaved changes',
       name: 'discardChangesTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Hai delle modifiche non salvate. Vuoi scartarle?`
+  /// `You have unsaved changes. Do you want to discard them?`
   String get discardChangesMessage {
     return Intl.message(
-      'Hai delle modifiche non salvate. Vuoi scartarle?',
+      'You have unsaved changes. Do you want to discard them?',
       name: 'discardChangesMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Annulla`
+  /// `Cancel`
   String get actionDiscard {
-    return Intl.message('Annulla', name: 'actionDiscard', desc: '', args: []);
+    return Intl.message('Cancel', name: 'actionDiscard', desc: '', args: []);
   }
 
-  /// `Continua a modificare`
+  /// `Keep editing`
   String get actionKeepEditing {
     return Intl.message(
-      'Continua a modificare',
+      'Keep editing',
       name: 'actionKeepEditing',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eliminare il cliente?`
+  /// `Delete client?`
   String get deleteClientConfirmTitle {
     return Intl.message(
-      'Eliminare il cliente?',
+      'Delete client?',
       name: 'deleteClientConfirmTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il cliente verrà eliminato definitivamente. Questa azione non può essere annullata.`
+  /// `The client will be permanently deleted. This action cannot be undone.`
   String get deleteClientConfirmMessage {
     return Intl.message(
-      'Il cliente verrà eliminato definitivamente. Questa azione non può essere annullata.',
+      'The client will be permanently deleted. This action cannot be undone.',
       name: 'deleteClientConfirmMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nome (A-Z)`
+  /// `Name (A-Z)`
   String get sortByNameAsc {
     return Intl.message(
-      'Nome (A-Z)',
+      'Name (A-Z)',
       name: 'sortByNameAsc',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nome (Z-A)`
+  /// `Name (Z-A)`
   String get sortByNameDesc {
     return Intl.message(
-      'Nome (Z-A)',
+      'Name (Z-A)',
       name: 'sortByNameDesc',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cognome (A-Z)`
+  /// `Last name (A-Z)`
   String get sortByLastNameAsc {
     return Intl.message(
-      'Cognome (A-Z)',
+      'Last name (A-Z)',
       name: 'sortByLastNameAsc',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cognome (Z-A)`
+  /// `Last name (Z-A)`
   String get sortByLastNameDesc {
     return Intl.message(
-      'Cognome (Z-A)',
+      'Last name (Z-A)',
       name: 'sortByLastNameDesc',
       desc: '',
       args: [],
     );
   }
 
-  /// `Data creazione (nuovi)`
+  /// `Created (newest)`
   String get sortByCreatedAtDesc {
     return Intl.message(
-      'Data creazione (nuovi)',
+      'Created (newest)',
       name: 'sortByCreatedAtDesc',
       desc: '',
       args: [],
     );
   }
 
-  /// `Data creazione (vecchi)`
+  /// `Created (oldest)`
   String get sortByCreatedAtAsc {
     return Intl.message(
-      'Data creazione (vecchi)',
+      'Created (oldest)',
       name: 'sortByCreatedAtAsc',
       desc: '',
       args: [],
     );
   }
 
-  /// `Appuntamenti di {clientName}`
+  /// `{clientName}'s appointments`
   String clientAppointmentsTitle(String clientName) {
     return Intl.message(
-      'Appuntamenti di $clientName',
+      '$clientName\'s appointments',
       name: 'clientAppointmentsTitle',
       desc: '',
       args: [clientName],
     );
   }
 
-  /// `Prossimi`
+  /// `Upcoming`
   String get clientAppointmentsUpcoming {
     return Intl.message(
-      'Prossimi',
+      'Upcoming',
       name: 'clientAppointmentsUpcoming',
       desc: '',
       args: [],
     );
   }
 
-  /// `Passati`
+  /// `Past`
   String get clientAppointmentsPast {
     return Intl.message(
-      'Passati',
+      'Past',
       name: 'clientAppointmentsPast',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun appuntamento`
+  /// `No appointments`
   String get clientAppointmentsEmpty {
     return Intl.message(
-      'Nessun appuntamento',
+      'No appointments',
       name: 'clientAppointmentsEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Filtra team`
+  /// `Filter team`
   String get staffFilterTooltip {
     return Intl.message(
-      'Filtra team',
+      'Filter team',
       name: 'staffFilterTooltip',
       desc: '',
       args: [],
     );
   }
 
-  /// `Filtra team`
+  /// `Filter team`
   String get staffFilterTitle {
     return Intl.message(
-      'Filtra team',
+      'Filter team',
       name: 'staffFilterTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tutto il team`
+  /// `All team`
   String get staffFilterAllTeam {
     return Intl.message(
-      'Tutto il team',
+      'All team',
       name: 'staffFilterAllTeam',
       desc: '',
       args: [],
     );
   }
 
-  /// `Team di turno`
+  /// `On duty team`
   String get staffFilterOnDuty {
     return Intl.message(
-      'Team di turno',
+      'On duty team',
       name: 'staffFilterOnDuty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun membro del team di turno oggi`
+  /// `No team members on duty today`
   String get agendaNoOnDutyTeamTitle {
     return Intl.message(
-      'Nessun membro del team di turno oggi',
+      'No team members on duty today',
       name: 'agendaNoOnDutyTeamTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun membro del team selezionato`
+  /// `No selected team members`
   String get agendaNoSelectedTeamTitle {
     return Intl.message(
-      'Nessun membro del team selezionato',
+      'No selected team members',
       name: 'agendaNoSelectedTeamTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Visualizza tutto il team`
+  /// `View all team`
   String get agendaShowAllTeamButton {
     return Intl.message(
-      'Visualizza tutto il team',
+      'View all team',
       name: 'agendaShowAllTeamButton',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona membri del team`
+  /// `Select team members`
   String get staffFilterSelectMembers {
     return Intl.message(
-      'Seleziona membri del team',
+      'Select team members',
       name: 'staffFilterSelectMembers',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuovo blocco`
+  /// `New block`
   String get blockDialogTitleNew {
     return Intl.message(
-      'Nuovo blocco',
+      'New block',
       name: 'blockDialogTitleNew',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica blocco`
+  /// `Edit block`
   String get blockDialogTitleEdit {
     return Intl.message(
-      'Modifica blocco',
+      'Edit block',
       name: 'blockDialogTitleEdit',
       desc: '',
       args: [],
     );
   }
 
-  /// `Giornata intera`
+  /// `All day`
   String get blockAllDay {
-    return Intl.message(
-      'Giornata intera',
-      name: 'blockAllDay',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('All day', name: 'blockAllDay', desc: '', args: []);
   }
 
-  /// `Orario inizio`
+  /// `Start time`
   String get blockStartTime {
     return Intl.message(
-      'Orario inizio',
+      'Start time',
       name: 'blockStartTime',
       desc: '',
       args: [],
     );
   }
 
-  /// `Orario fine`
+  /// `End time`
   String get blockEndTime {
-    return Intl.message(
-      'Orario fine',
-      name: 'blockEndTime',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('End time', name: 'blockEndTime', desc: '', args: []);
   }
 
-  /// `Seleziona team`
+  /// `Select team`
   String get blockSelectStaff {
     return Intl.message(
-      'Seleziona team',
+      'Select team',
       name: 'blockSelectStaff',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona almeno un team`
+  /// `Select at least one team member`
   String get blockSelectStaffError {
     return Intl.message(
-      'Seleziona almeno un team',
+      'Select at least one team member',
       name: 'blockSelectStaffError',
       desc: '',
       args: [],
     );
   }
 
-  /// `L'ora di fine deve essere successiva all'ora di inizio`
+  /// `End time must be after start time`
   String get blockTimeError {
     return Intl.message(
-      'L\'ora di fine deve essere successiva all\'ora di inizio',
+      'End time must be after start time',
       name: 'blockTimeError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Motivo (opzionale)`
+  /// `Reason (optional)`
   String get blockReason {
     return Intl.message(
-      'Motivo (opzionale)',
+      'Reason (optional)',
       name: 'blockReason',
       desc: '',
       args: [],
     );
   }
 
-  /// `Es. Riunione, Pausa, ecc.`
+  /// `E.g. Meeting, Break, etc.`
   String get blockReasonHint {
     return Intl.message(
-      'Es. Riunione, Pausa, ecc.',
+      'E.g. Meeting, Break, etc.',
       name: 'blockReasonHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile aggiungere il servizio: l'orario supera la mezzanotte. Modifica l'orario di inizio o l'operatore.`
+  /// `Cannot add service: the time exceeds midnight. Change the start time or staff member.`
   String get serviceStartsAfterMidnight {
     return Intl.message(
-      'Impossibile aggiungere il servizio: l\'orario supera la mezzanotte. Modifica l\'orario di inizio o l\'operatore.',
+      'Cannot add service: the time exceeds midnight. Change the start time or staff member.',
       name: 'serviceStartsAfterMidnight',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ordina per`
+  /// `Sort by`
   String get sortByTitle {
-    return Intl.message('Ordina per', name: 'sortByTitle', desc: '', args: []);
+    return Intl.message('Sort by', name: 'sortByTitle', desc: '', args: []);
   }
 
-  /// `Seleziona team`
+  /// `Select team`
   String get selectStaffTitle {
     return Intl.message(
-      'Seleziona team',
+      'Select team',
       name: 'selectStaffTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Aggiungi un cliente all'appuntamento`
+  /// `Add a client to the appointment`
   String get addClientToAppointment {
     return Intl.message(
-      'Aggiungi un cliente all\'appuntamento',
+      'Add a client to the appointment',
       name: 'addClientToAppointment',
       desc: '',
       args: [],
     );
   }
 
-  /// `Lascia il campo vuoto se non vuoi associare un cliente all'appuntamento`
+  /// `Leave empty if you don't want to associate a client with the appointment`
   String get clientOptionalHint {
     return Intl.message(
-      'Lascia il campo vuoto se non vuoi associare un cliente all\'appuntamento',
+      'Leave empty if you don\'t want to associate a client with the appointment',
       name: 'clientOptionalHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona cliente`
+  /// `Select client`
   String get selectClientTitle {
     return Intl.message(
-      'Seleziona cliente',
+      'Select client',
       name: 'selectClientTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Rimuovi cliente`
+  /// `Remove client`
   String get removeClient {
     return Intl.message(
-      'Rimuovi cliente',
+      'Remove client',
       name: 'removeClient',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cerca cliente...`
+  /// `Search client...`
   String get searchClientPlaceholder {
     return Intl.message(
-      'Cerca cliente...',
+      'Search client...',
       name: 'searchClientPlaceholder',
       desc: '',
       args: [],
     );
   }
 
-  /// `Crea nuovo cliente`
+  /// `Create new client`
   String get createNewClient {
     return Intl.message(
-      'Crea nuovo cliente',
+      'Create new client',
       name: 'createNewClient',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun cliente per l'appuntamento`
+  /// `No client for the appointment`
   String get noClientForAppointment {
     return Intl.message(
-      'Nessun cliente per l\'appuntamento',
+      'No client for the appointment',
       name: 'noClientForAppointment',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizi`
+  /// `Services`
   String get formServices {
-    return Intl.message('Servizi', name: 'formServices', desc: '', args: []);
+    return Intl.message('Services', name: 'formServices', desc: '', args: []);
   }
 
-  /// `Cerca servizio...`
+  /// `Search service...`
   String get searchServices {
     return Intl.message(
-      'Cerca servizio...',
+      'Search service...',
       name: 'searchServices',
       desc: '',
       args: [],
     );
   }
 
-  /// `Mostra tutti i servizi`
+  /// `Show all services`
   String get showAllServices {
     return Intl.message(
-      'Mostra tutti i servizi',
+      'Show all services',
       name: 'showAllServices',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun servizio trovato`
+  /// `No services found`
   String get noServicesFound {
     return Intl.message(
-      'Nessun servizio trovato',
+      'No services found',
       name: 'noServicesFound',
       desc: '',
       args: [],
     );
   }
 
-  /// `{count, plural, =1{1 servizio selezionato} other{{count} servizi selezionati}}`
+  /// `{count, plural, =1{1 service selected} other{{count} services selected}}`
   String servicesSelectedCount(int count) {
     return Intl.plural(
       count,
-      one: '1 servizio selezionato',
-      other: '$count servizi selezionati',
+      one: '1 service selected',
+      other: '$count services selected',
       name: 'servicesSelectedCount',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Aggiungi un servizio`
+  /// `Add service`
   String get addService {
-    return Intl.message(
-      'Aggiungi un servizio',
-      name: 'addService',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Add service', name: 'addService', desc: '', args: []);
   }
 
-  /// `Aggiungi un servizio/pacchetto`
+  /// `Add service/package`
   String get addServiceOrPackage {
     return Intl.message(
-      'Aggiungi un servizio/pacchetto',
+      'Add service/package',
       name: 'addServiceOrPackage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona un servizio`
+  /// `Select service`
   String get selectService {
     return Intl.message(
-      'Seleziona un servizio',
+      'Select service',
       name: 'selectService',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun servizio aggiunto`
+  /// `No services added`
   String get noServicesAdded {
     return Intl.message(
-      'Nessun servizio aggiunto',
+      'No services added',
       name: 'noServicesAdded',
       desc: '',
       args: [],
     );
   }
 
-  /// `Aggiungi almeno un servizio`
+  /// `Add at least one service`
   String get atLeastOneServiceRequired {
     return Intl.message(
-      'Aggiungi almeno un servizio',
+      'Add at least one service',
       name: 'atLeastOneServiceRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Note sull'appuntamento...`
+  /// `Notes about the appointment...`
   String get notesPlaceholder {
     return Intl.message(
-      'Note sull\'appuntamento...',
+      'Notes about the appointment...',
       name: 'notesPlaceholder',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun team disponibile`
+  /// `No team available`
   String get noStaffAvailable {
     return Intl.message(
-      'Nessun team disponibile',
+      'No team available',
       name: 'noStaffAvailable',
       desc: '',
       args: [],
     );
   }
 
-  /// `Orario settimanale`
+  /// `Weekly`
   String get weeklyScheduleTitle {
     return Intl.message(
-      'Orario settimanale',
+      'Weekly',
       name: 'weeklyScheduleTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `{hours} ore totale`
+  /// `{hours} hours total`
   String weeklyScheduleTotalHours(int hours) {
     return Intl.message(
-      '$hours ore totale',
+      '$hours hours total',
       name: 'weeklyScheduleTotalHours',
       desc: '',
       args: [hours],
     );
   }
 
-  /// `Non lavora`
+  /// `Not working`
   String get weeklyScheduleNotWorking {
     return Intl.message(
-      'Non lavora',
+      'Not working',
       name: 'weeklyScheduleNotWorking',
       desc: '',
       args: [],
     );
   }
 
-  /// `-`
+  /// `to`
   String get weeklyScheduleFor {
-    return Intl.message('-', name: 'weeklyScheduleFor', desc: '', args: []);
+    return Intl.message('to', name: 'weeklyScheduleFor', desc: '', args: []);
   }
 
-  /// `Aggiungi turno`
+  /// `Add shift`
   String get weeklyScheduleAddShift {
     return Intl.message(
-      'Aggiungi turno',
+      'Add shift',
       name: 'weeklyScheduleAddShift',
       desc: '',
       args: [],
     );
   }
 
-  /// `Rimuovi turno`
+  /// `Remove shift`
   String get weeklyScheduleRemoveShift {
     return Intl.message(
-      'Rimuovi turno',
+      'Remove shift',
       name: 'weeklyScheduleRemoveShift',
       desc: '',
       args: [],
     );
   }
 
-  /// `lunedì`
+  /// `Monday`
   String get dayMondayFull {
-    return Intl.message('lunedì', name: 'dayMondayFull', desc: '', args: []);
+    return Intl.message('Monday', name: 'dayMondayFull', desc: '', args: []);
   }
 
-  /// `martedì`
+  /// `Tuesday`
   String get dayTuesdayFull {
-    return Intl.message('martedì', name: 'dayTuesdayFull', desc: '', args: []);
+    return Intl.message('Tuesday', name: 'dayTuesdayFull', desc: '', args: []);
   }
 
-  /// `mercoledì`
+  /// `Wednesday`
   String get dayWednesdayFull {
     return Intl.message(
-      'mercoledì',
+      'Wednesday',
       name: 'dayWednesdayFull',
       desc: '',
       args: [],
     );
   }
 
-  /// `giovedì`
+  /// `Thursday`
   String get dayThursdayFull {
-    return Intl.message('giovedì', name: 'dayThursdayFull', desc: '', args: []);
+    return Intl.message(
+      'Thursday',
+      name: 'dayThursdayFull',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `venerdì`
+  /// `Friday`
   String get dayFridayFull {
-    return Intl.message('venerdì', name: 'dayFridayFull', desc: '', args: []);
+    return Intl.message('Friday', name: 'dayFridayFull', desc: '', args: []);
   }
 
-  /// `sabato`
+  /// `Saturday`
   String get daySaturdayFull {
-    return Intl.message('sabato', name: 'daySaturdayFull', desc: '', args: []);
+    return Intl.message(
+      'Saturday',
+      name: 'daySaturdayFull',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `domenica`
+  /// `Sunday`
   String get daySundayFull {
-    return Intl.message('domenica', name: 'daySundayFull', desc: '', args: []);
+    return Intl.message('Sunday', name: 'daySundayFull', desc: '', args: []);
   }
 
-  /// `Nuova eccezione`
+  /// `New exception`
   String get exceptionDialogTitleNew {
     return Intl.message(
-      'Nuova eccezione',
+      'New exception',
       name: 'exceptionDialogTitleNew',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica eccezione`
+  /// `Edit exception`
   String get exceptionDialogTitleEdit {
     return Intl.message(
-      'Modifica eccezione',
+      'Edit exception',
       name: 'exceptionDialogTitleEdit',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tipo eccezione`
+  /// `Exception type`
   String get exceptionType {
     return Intl.message(
-      'Tipo eccezione',
+      'Exception type',
       name: 'exceptionType',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non disponibile`
+  /// `Unavailable`
   String get exceptionTypeUnavailable {
     return Intl.message(
-      'Non disponibile',
+      'Unavailable',
       name: 'exceptionTypeUnavailable',
       desc: '',
       args: [],
     );
   }
 
-  /// `Disponibile`
+  /// `Available`
   String get exceptionTypeAvailable {
     return Intl.message(
-      'Disponibile',
+      'Available',
       name: 'exceptionTypeAvailable',
       desc: '',
       args: [],
     );
   }
 
-  /// `Giornata intera`
+  /// `All day`
   String get exceptionAllDay {
-    return Intl.message(
-      'Giornata intera',
-      name: 'exceptionAllDay',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('All day', name: 'exceptionAllDay', desc: '', args: []);
   }
 
-  /// `Orario inizio`
+  /// `Start time`
   String get exceptionStartTime {
     return Intl.message(
-      'Orario inizio',
+      'Start time',
       name: 'exceptionStartTime',
       desc: '',
       args: [],
     );
   }
 
-  /// `Orario fine`
+  /// `End time`
   String get exceptionEndTime {
     return Intl.message(
-      'Orario fine',
+      'End time',
       name: 'exceptionEndTime',
       desc: '',
       args: [],
     );
   }
 
-  /// `Motivo (opzionale)`
+  /// `Reason (optional)`
   String get exceptionReason {
     return Intl.message(
-      'Motivo (opzionale)',
+      'Reason (optional)',
       name: 'exceptionReason',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ferie`
+  /// `Vacation`
   String get exceptionReasonVacation {
     return Intl.message(
-      'Ferie',
+      'Vacation',
       name: 'exceptionReasonVacation',
       desc: '',
       args: [],
     );
   }
 
-  /// `Turno extra`
+  /// `Extra shift`
   String get exceptionReasonExtraShift {
     return Intl.message(
-      'Turno extra',
+      'Extra shift',
       name: 'exceptionReasonExtraShift',
       desc: '',
       args: [],
     );
   }
 
-  /// `Visita medica`
+  /// `Medical visit`
   String get exceptionReasonMedicalVisit {
     return Intl.message(
-      'Visita medica',
+      'Medical visit',
       name: 'exceptionReasonMedicalVisit',
       desc: '',
       args: [],
     );
   }
 
-  /// `Es. Ferie, Visita medica, Turno extra...`
+  /// `E.g. Holiday, Medical visit, Extra shift...`
   String get exceptionReasonHint {
     return Intl.message(
-      'Es. Ferie, Visita medica, Turno extra...',
+      'E.g. Holiday, Medical visit, Extra shift...',
       name: 'exceptionReasonHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `L'ora di fine deve essere successiva all'ora di inizio`
+  /// `End time must be after start time`
   String get exceptionTimeError {
     return Intl.message(
-      'L\'ora di fine deve essere successiva all\'ora di inizio',
+      'End time must be after start time',
       name: 'exceptionTimeError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non puoi aggiungere una non disponibilità in un giorno senza disponibilità base.`
+  /// `You can't add unavailability on a day with no base availability.`
   String get exceptionUnavailableNoBase {
     return Intl.message(
-      'Non puoi aggiungere una non disponibilità in un giorno senza disponibilità base.',
+      'You can\'t add unavailability on a day with no base availability.',
       name: 'exceptionUnavailableNoBase',
       desc: '',
       args: [],
     );
   }
 
-  /// `La non disponibilità deve sovrapporsi alla disponibilità base.`
+  /// `Unavailability must overlap the base availability.`
   String get exceptionUnavailableNoOverlap {
     return Intl.message(
-      'La non disponibilità deve sovrapporsi alla disponibilità base.',
+      'Unavailability must overlap the base availability.',
       name: 'exceptionUnavailableNoOverlap',
       desc: '',
       args: [],
     );
   }
 
-  /// `La disponibilità extra deve aggiungere ore rispetto alla disponibilità base.`
+  /// `Extra availability must add hours beyond the base availability.`
   String get exceptionAvailableNoEffect {
     return Intl.message(
-      'La disponibilità extra deve aggiungere ore rispetto alla disponibilità base.',
+      'Extra availability must add hours beyond the base availability.',
       name: 'exceptionAvailableNoEffect',
       desc: '',
       args: [],
     );
   }
 
-  /// `Alcuni giorni non sono stati salvati: {dates}.`
+  /// `Some days were not saved: {dates}.`
   String exceptionPartialSaveInfo(Object dates) {
     return Intl.message(
-      'Alcuni giorni non sono stati salvati: $dates.',
+      'Some days were not saved: $dates.',
       name: 'exceptionPartialSaveInfo',
       desc: '',
       args: [dates],
     );
   }
 
-  /// `Alcuni giorni non sono stati salvati: {details}.`
+  /// `Some days were not saved: {details}.`
   String exceptionPartialSaveInfoDetailed(Object details) {
     return Intl.message(
-      'Alcuni giorni non sono stati salvati: $details.',
+      'Some days were not saved: $details.',
       name: 'exceptionPartialSaveInfoDetailed',
       desc: '',
       args: [details],
     );
   }
 
-  /// `Eccezioni non salvate`
+  /// `Exceptions not saved`
   String get exceptionPartialSaveTitle {
     return Intl.message(
-      'Eccezioni non salvate',
+      'Exceptions not saved',
       name: 'exceptionPartialSaveTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `I giorni sotto non erano congruenti e non sono stati salvati:`
+  /// `The days below were not congruent and were not saved:`
   String get exceptionPartialSaveMessage {
     return Intl.message(
-      'I giorni sotto non erano congruenti e non sono stati salvati:',
+      'The days below were not congruent and were not saved:',
       name: 'exceptionPartialSaveMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eliminare l'eccezione?`
+  /// `Delete exception?`
   String get exceptionDeleteTitle {
     return Intl.message(
-      'Eliminare l\'eccezione?',
+      'Delete exception?',
       name: 'exceptionDeleteTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `L'eccezione verrà eliminata definitivamente.`
+  /// `The exception will be permanently deleted.`
   String get exceptionDeleteMessage {
     return Intl.message(
-      'L\'eccezione verrà eliminata definitivamente.',
+      'The exception will be permanently deleted.',
       name: 'exceptionDeleteMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona orario`
+  /// `Select time`
   String get exceptionSelectTime {
     return Intl.message(
-      'Seleziona orario',
+      'Select time',
       name: 'exceptionSelectTime',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eccezioni`
+  /// `Exceptions`
   String get exceptionsTitle {
     return Intl.message(
-      'Eccezioni',
+      'Exceptions',
       name: 'exceptionsTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessuna eccezione configurata`
+  /// `No exceptions configured`
   String get exceptionsEmpty {
     return Intl.message(
-      'Nessuna eccezione configurata',
+      'No exceptions configured',
       name: 'exceptionsEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Aggiungi eccezione`
+  /// `Add exception`
   String get exceptionsAdd {
     return Intl.message(
-      'Aggiungi eccezione',
+      'Add exception',
       name: 'exceptionsAdd',
       desc: '',
       args: [],
     );
   }
 
-  /// `Periodo`
+  /// `Period`
   String get exceptionPeriodMode {
     return Intl.message(
-      'Periodo',
+      'Period',
       name: 'exceptionPeriodMode',
       desc: '',
       args: [],
     );
   }
 
-  /// `Giorno singolo`
+  /// `Single day`
   String get exceptionPeriodSingle {
     return Intl.message(
-      'Giorno singolo',
+      'Single day',
       name: 'exceptionPeriodSingle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Da - A`
+  /// `From - To`
   String get exceptionPeriodRange {
     return Intl.message(
-      'Da - A',
+      'From - To',
       name: 'exceptionPeriodRange',
       desc: '',
       args: [],
     );
   }
 
-  /// `Durata`
+  /// `Duration`
   String get exceptionPeriodDuration {
     return Intl.message(
-      'Durata',
+      'Duration',
       name: 'exceptionPeriodDuration',
       desc: '',
       args: [],
     );
   }
 
-  /// `Data inizio`
+  /// `Start date`
   String get exceptionDateFrom {
     return Intl.message(
-      'Data inizio',
+      'Start date',
       name: 'exceptionDateFrom',
       desc: '',
       args: [],
     );
   }
 
-  /// `Data fine`
+  /// `End date`
   String get exceptionDateTo {
     return Intl.message(
-      'Data fine',
+      'End date',
       name: 'exceptionDateTo',
       desc: '',
       args: [],
     );
   }
 
-  /// `Durata (giorni)`
+  /// `Duration (days)`
   String get exceptionDuration {
     return Intl.message(
-      'Durata (giorni)',
+      'Duration (days)',
       name: 'exceptionDuration',
       desc: '',
       args: [],
     );
   }
 
-  /// `{count} {count, plural, =1{giorno} other{giorni}}`
+  /// `{count} {count, plural, =1{day} other{days}}`
   String exceptionDurationDays(int count) {
     return Intl.message(
-      '$count ${Intl.plural(count, one: 'giorno', other: 'giorni')}',
+      '$count ${Intl.plural(count, one: 'day', other: 'days')}',
       name: 'exceptionDurationDays',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Elimina solo questo turno`
+  /// `Delete only this shift`
   String get shiftDeleteThisOnly {
     return Intl.message(
-      'Elimina solo questo turno',
+      'Delete only this shift',
       name: 'shiftDeleteThisOnly',
       desc: '',
       args: [],
     );
   }
 
-  /// `Elimina solo la fascia oraria di {date}`
+  /// `Delete only the time slot of {date}`
   String shiftDeleteThisOnlyDesc(String date) {
     return Intl.message(
-      'Elimina solo la fascia oraria di $date',
+      'Delete only the time slot of $date',
       name: 'shiftDeleteThisOnlyDesc',
       desc: '',
       args: [date],
     );
   }
 
-  /// `Elimina tutti questi turni`
+  /// `Delete all these shifts`
   String get shiftDeleteAll {
     return Intl.message(
-      'Elimina tutti questi turni',
+      'Delete all these shifts',
       name: 'shiftDeleteAll',
       desc: '',
       args: [],
     );
   }
 
-  /// `Elimina la fascia oraria settimanale di ogni {dayName}`
+  /// `Delete the weekly time slot for every {dayName}`
   String shiftDeleteAllDesc(String dayName) {
     return Intl.message(
-      'Elimina la fascia oraria settimanale di ogni $dayName',
+      'Delete the weekly time slot for every $dayName',
       name: 'shiftDeleteAllDesc',
       desc: '',
       args: [dayName],
     );
   }
 
-  /// `Modifica solo questo turno`
+  /// `Edit only this shift`
   String get shiftEditThisOnly {
     return Intl.message(
-      'Modifica solo questo turno',
+      'Edit only this shift',
       name: 'shiftEditThisOnly',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica solo la fascia oraria di {date}`
+  /// `Edit only the time slot of {date}`
   String shiftEditThisOnlyDesc(String date) {
     return Intl.message(
-      'Modifica solo la fascia oraria di $date',
+      'Edit only the time slot of $date',
       name: 'shiftEditThisOnlyDesc',
       desc: '',
       args: [date],
     );
   }
 
-  /// `Modifica tutti questi turni`
+  /// `Edit all these shifts`
   String get shiftEditAll {
     return Intl.message(
-      'Modifica tutti questi turni',
+      'Edit all these shifts',
       name: 'shiftEditAll',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica la fascia oraria settimanale di ogni {dayName}`
+  /// `Edit the weekly time slot for every {dayName}`
   String shiftEditAllDesc(String dayName) {
     return Intl.message(
-      'Modifica la fascia oraria settimanale di ogni $dayName',
+      'Edit the weekly time slot for every $dayName',
       name: 'shiftEditAllDesc',
       desc: '',
       args: [dayName],
     );
   }
 
-  /// `Modifica turno`
+  /// `Edit shift`
   String get shiftEditTitle {
     return Intl.message(
-      'Modifica turno',
+      'Edit shift',
       name: 'shiftEditTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ora inizio`
+  /// `Start time`
   String get shiftStartTime {
     return Intl.message(
-      'Ora inizio',
+      'Start time',
       name: 'shiftStartTime',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ora fine`
+  /// `End time`
   String get shiftEndTime {
-    return Intl.message('Ora fine', name: 'shiftEndTime', desc: '', args: []);
+    return Intl.message('End time', name: 'shiftEndTime', desc: '', args: []);
   }
 
-  /// `Modifica eccezione`
+  /// `Edit exception`
   String get exceptionEditShift {
     return Intl.message(
-      'Modifica eccezione',
+      'Edit exception',
       name: 'exceptionEditShift',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica gli orari di questa eccezione`
+  /// `Edit the times of this exception`
   String get exceptionEditShiftDesc {
     return Intl.message(
-      'Modifica gli orari di questa eccezione',
+      'Edit the times of this exception',
       name: 'exceptionEditShiftDesc',
       desc: '',
       args: [],
     );
   }
 
-  /// `Elimina eccezione`
+  /// `Delete exception`
   String get exceptionDeleteShift {
     return Intl.message(
-      'Elimina eccezione',
+      'Delete exception',
       name: 'exceptionDeleteShift',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ripristina la disponibilità base`
+  /// `Restore base availability`
   String get exceptionDeleteShiftDesc {
     return Intl.message(
-      'Ripristina la disponibilità base',
+      'Restore base availability',
       name: 'exceptionDeleteShiftDesc',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il cliente non può essere modificato per questo appuntamento`
+  /// `Client cannot be changed for this appointment`
   String get clientLockedHint {
     return Intl.message(
-      'Il cliente non può essere modificato per questo appuntamento',
+      'Client cannot be changed for this appointment',
       name: 'clientLockedHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Applicare il cliente a tutta la prenotazione?`
+  /// `Apply client to entire booking?`
   String get applyClientToAllAppointmentsTitle {
     return Intl.message(
-      'Applicare il cliente a tutta la prenotazione?',
+      'Apply client to entire booking?',
       name: 'applyClientToAllAppointmentsTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il cliente verrà associato anche agli appuntamenti di questa prenotazione che sono stati assegnati ad altro operatore.`
+  /// `The client will also be associated with the appointments in this booking that have been assigned to other staff members.`
   String get applyClientToAllAppointmentsMessage {
     return Intl.message(
-      'Il cliente verrà associato anche agli appuntamenti di questa prenotazione che sono stati assegnati ad altro operatore.',
+      'The client will also be associated with the appointments in this booking that have been assigned to other staff members.',
       name: 'applyClientToAllAppointmentsMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Operatori`
+  /// `Operators`
   String get operatorsTitle {
     return Intl.message(
-      'Operatori',
+      'Operators',
       name: 'operatorsTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Gestisci chi può accedere al gestionale`
+  /// `Manage who can access the platform`
   String get operatorsSubtitle {
     return Intl.message(
-      'Gestisci chi può accedere al gestionale',
+      'Manage who can access the platform',
       name: 'operatorsSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Permessi`
+  /// `Permissions`
   String get permissionsTitle {
     return Intl.message(
-      'Permessi',
+      'Permissions',
       name: 'permissionsTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Gestisci accessi e ruoli degli operatori`
+  /// `Manage operator access and roles`
   String get permissionsDescription {
     return Intl.message(
-      'Gestisci accessi e ruoli degli operatori',
+      'Manage operator access and roles',
       name: 'permissionsDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun operatore configurato`
+  /// `No operators configured`
   String get operatorsEmpty {
     return Intl.message(
-      'Nessun operatore configurato',
+      'No operators configured',
       name: 'operatorsEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Invita operatore`
+  /// `Invite operator`
   String get operatorsInviteTitle {
     return Intl.message(
-      'Invita operatore',
+      'Invite operator',
       name: 'operatorsInviteTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Invia un invito via email`
+  /// `Send an invite via email`
   String get operatorsInviteSubtitle {
     return Intl.message(
-      'Invia un invito via email',
+      'Send an invite via email',
       name: 'operatorsInviteSubtitle',
       desc: '',
       args: [],
@@ -4196,620 +4171,620 @@ class L10n {
     );
   }
 
-  /// `Ruolo`
+  /// `Role`
   String get operatorsInviteRole {
     return Intl.message(
-      'Ruolo',
+      'Role',
       name: 'operatorsInviteRole',
       desc: '',
       args: [],
     );
   }
 
-  /// `Invia invito`
+  /// `Send invite`
   String get operatorsInviteSend {
     return Intl.message(
-      'Invia invito',
+      'Send invite',
       name: 'operatorsInviteSend',
       desc: '',
       args: [],
     );
   }
 
-  /// `Invito inviato a {email}`
+  /// `Invite sent to {email}`
   String operatorsInviteSuccess(String email) {
     return Intl.message(
-      'Invito inviato a $email',
+      'Invite sent to $email',
       name: 'operatorsInviteSuccess',
       desc: '',
       args: [email],
     );
   }
 
-  /// `Esiste già un invito in attesa per questa email. Puoi reinviarlo dalla lista degli inviti pendenti.`
+  /// `An invite is already pending for this email. You can resend it from the pending invites list.`
   String get operatorsInviteAlreadyPending {
     return Intl.message(
-      'Esiste già un invito in attesa per questa email. Puoi reinviarlo dalla lista degli inviti pendenti.',
+      'An invite is already pending for this email. You can resend it from the pending invites list.',
       name: 'operatorsInviteAlreadyPending',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questo utente ha già accesso al business.`
+  /// `This user already has access to the business.`
   String get operatorsInviteAlreadyHasAccess {
     return Intl.message(
-      'Questo utente ha già accesso al business.',
+      'This user already has access to the business.',
       name: 'operatorsInviteAlreadyHasAccess',
       desc: '',
       args: [],
     );
   }
 
-  /// `Invio email non disponibile in questo ambiente. Contatta il supporto.`
+  /// `Email sending is unavailable in this environment. Please contact support.`
   String get operatorsInviteEmailUnavailable {
     return Intl.message(
-      'Invio email non disponibile in questo ambiente. Contatta il supporto.',
+      'Email sending is unavailable in this environment. Please contact support.',
       name: 'operatorsInviteEmailUnavailable',
       desc: '',
       args: [],
     );
   }
 
-  /// `AMBIENTE DEMO`
+  /// `DEMO ENVIRONMENT`
   String get environmentDemoBannerTitle {
     return Intl.message(
-      'AMBIENTE DEMO',
+      'DEMO ENVIRONMENT',
       name: 'environmentDemoBannerTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `I dati vengono resettati periodicamente.`
+  /// `Data is reset periodically.`
   String get environmentDemoBannerSubtitle {
     return Intl.message(
-      'I dati vengono resettati periodicamente.',
+      'Data is reset periodically.',
       name: 'environmentDemoBannerSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile inviare l'email di invito. Riprova più tardi.`
+  /// `Unable to send the invitation email. Please try again later.`
   String get operatorsInviteEmailFailed {
     return Intl.message(
-      'Impossibile inviare l\'email di invito. Riprova più tardi.',
+      'Unable to send the invitation email. Please try again later.',
       name: 'operatorsInviteEmailFailed',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile inviare l'invito`
+  /// `Unable to send invite`
   String get operatorsInviteError {
     return Intl.message(
-      'Impossibile inviare l\'invito',
+      'Unable to send invite',
       name: 'operatorsInviteError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Link di invito copiato`
+  /// `Invite link copied`
   String get operatorsInviteCopied {
     return Intl.message(
-      'Link di invito copiato',
+      'Invite link copied',
       name: 'operatorsInviteCopied',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accetta invito`
+  /// `Accept invitation`
   String get invitationAcceptTitle {
     return Intl.message(
-      'Accetta invito',
+      'Accept invitation',
       name: 'invitationAcceptTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Verifica invito in corso...`
+  /// `Checking invitation...`
   String get invitationAcceptLoading {
     return Intl.message(
-      'Verifica invito in corso...',
+      'Checking invitation...',
       name: 'invitationAcceptLoading',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sei stato invitato a collaborare con {businessName} come {role}.`
+  /// `You were invited to collaborate with {businessName} as {role}.`
   String invitationAcceptIntro(String businessName, String role) {
     return Intl.message(
-      'Sei stato invitato a collaborare con $businessName come $role.',
+      'You were invited to collaborate with $businessName as $role.',
       name: 'invitationAcceptIntro',
       desc: '',
       args: [businessName, role],
     );
   }
 
-  /// `Accedi con l'email invitata per continuare.`
+  /// `Sign in with the invited email to continue.`
   String get invitationAcceptLoginRequired {
     return Intl.message(
-      'Accedi con l\'email invitata per continuare.',
+      'Sign in with the invited email to continue.',
       name: 'invitationAcceptLoginRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accetta per continuare`
+  /// `Accept to continue`
   String get invitationAcceptLoginAction {
     return Intl.message(
-      'Accetta per continuare',
+      'Accept to continue',
       name: 'invitationAcceptLoginAction',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accetta e accedi`
+  /// `Accept and sign in`
   String get invitationAcceptAndLoginAction {
     return Intl.message(
-      'Accetta e accedi',
+      'Accept and sign in',
       name: 'invitationAcceptAndLoginAction',
       desc: '',
       args: [],
     );
   }
 
-  /// `Hai già un account? Accedi per accettare l'invito.`
+  /// `Already have an account? Sign in to accept the invitation.`
   String get invitationAcceptHintExistingAccount {
     return Intl.message(
-      'Hai già un account? Accedi per accettare l\'invito.',
+      'Already have an account? Sign in to accept the invitation.',
       name: 'invitationAcceptHintExistingAccount',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non hai un account? Registrati prima.`
+  /// `No account yet? Register first.`
   String get invitationAcceptHintNoAccount {
     return Intl.message(
-      'Non hai un account? Registrati prima.',
+      'No account yet? Register first.',
       name: 'invitationAcceptHintNoAccount',
       desc: '',
       args: [],
     );
   }
 
-  /// `Registrati per accettare`
+  /// `Register to accept`
   String get invitationRegisterAction {
     return Intl.message(
-      'Registrati per accettare',
+      'Register to accept',
       name: 'invitationRegisterAction',
       desc: '',
       args: [],
     );
   }
 
-  /// `Registrati per accettare l'invito`
+  /// `Register to accept invitation`
   String get invitationRegisterTitle {
     return Intl.message(
-      'Registrati per accettare l\'invito',
+      'Register to accept invitation',
       name: 'invitationRegisterTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Registrazione...`
+  /// `Registering...`
   String get invitationRegisterInProgress {
     return Intl.message(
-      'Registrazione...',
+      'Registering...',
       name: 'invitationRegisterInProgress',
       desc: '',
       args: [],
     );
   }
 
-  /// `Conferma password`
+  /// `Confirm password`
   String get invitationRegisterPasswordConfirm {
     return Intl.message(
-      'Conferma password',
+      'Confirm password',
       name: 'invitationRegisterPasswordConfirm',
       desc: '',
       args: [],
     );
   }
 
-  /// `La password deve avere almeno 8 caratteri.`
+  /// `Password must be at least 8 characters long.`
   String get invitationRegisterPasswordTooShort {
     return Intl.message(
-      'La password deve avere almeno 8 caratteri.',
+      'Password must be at least 8 characters long.',
       name: 'invitationRegisterPasswordTooShort',
       desc: '',
       args: [],
     );
   }
 
-  /// `La password deve contenere almeno una maiuscola, una minuscola e un numero.`
+  /// `Password must include at least one uppercase letter, one lowercase letter, and one number.`
   String get invitationRegisterPasswordWeak {
     return Intl.message(
-      'La password deve contenere almeno una maiuscola, una minuscola e un numero.',
+      'Password must include at least one uppercase letter, one lowercase letter, and one number.',
       name: 'invitationRegisterPasswordWeak',
       desc: '',
       args: [],
     );
   }
 
-  /// `Le password non coincidono.`
+  /// `Passwords do not match.`
   String get invitationRegisterPasswordMismatch {
     return Intl.message(
-      'Le password non coincidono.',
+      'Passwords do not match.',
       name: 'invitationRegisterPasswordMismatch',
       desc: '',
       args: [],
     );
   }
 
-  /// `Email già registrata. Accedi per accettare l'invito.`
+  /// `Email already registered. Sign in to accept the invitation.`
   String get invitationRegisterExistingUser {
     return Intl.message(
-      'Email già registrata. Accedi per accettare l\'invito.',
+      'Email already registered. Sign in to accept the invitation.',
       name: 'invitationRegisterExistingUser',
       desc: '',
       args: [],
     );
   }
 
-  /// `Per questa email non esiste ancora un account. Usa Registrati.`
+  /// `No account exists for this email yet. Use Register.`
   String get invitationAcceptRequiresRegistration {
     return Intl.message(
-      'Per questa email non esiste ancora un account. Usa Registrati.',
+      'No account exists for this email yet. Use Register.',
       name: 'invitationAcceptRequiresRegistration',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accetta invito`
+  /// `Accept invitation`
   String get invitationAcceptButton {
     return Intl.message(
-      'Accetta invito',
+      'Accept invitation',
       name: 'invitationAcceptButton',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accettazione in corso...`
+  /// `Accepting invitation...`
   String get invitationAcceptInProgress {
     return Intl.message(
-      'Accettazione in corso...',
+      'Accepting invitation...',
       name: 'invitationAcceptInProgress',
       desc: '',
       args: [],
     );
   }
 
-  /// `Rifiuta invito`
+  /// `Decline invitation`
   String get invitationDeclineButton {
     return Intl.message(
-      'Rifiuta invito',
+      'Decline invitation',
       name: 'invitationDeclineButton',
       desc: '',
       args: [],
     );
   }
 
-  /// `Rifiuto in corso...`
+  /// `Declining invitation...`
   String get invitationDeclineInProgress {
     return Intl.message(
-      'Rifiuto in corso...',
+      'Declining invitation...',
       name: 'invitationDeclineInProgress',
       desc: '',
       args: [],
     );
   }
 
-  /// `Invito accettato`
+  /// `Invitation accepted`
   String get invitationAcceptSuccessTitle {
     return Intl.message(
-      'Invito accettato',
+      'Invitation accepted',
       name: 'invitationAcceptSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ora puoi usare il gestionale con i permessi assegnati.`
+  /// `You can now use the management app with assigned permissions.`
   String get invitationAcceptSuccessMessage {
     return Intl.message(
-      'Ora puoi usare il gestionale con i permessi assegnati.',
+      'You can now use the management app with assigned permissions.',
       name: 'invitationAcceptSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Invito rifiutato`
+  /// `Invitation declined`
   String get invitationDeclineSuccessTitle {
     return Intl.message(
-      'Invito rifiutato',
+      'Invitation declined',
       name: 'invitationDeclineSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Hai rifiutato l'invito. Non è stata aggiunta nessuna autorizzazione.`
+  /// `You declined the invitation. No permission has been granted.`
   String get invitationDeclineSuccessMessage {
     return Intl.message(
-      'Hai rifiutato l\'invito. Non è stata aggiunta nessuna autorizzazione.',
+      'You declined the invitation. No permission has been granted.',
       name: 'invitationDeclineSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Vai al login`
+  /// `Go to login`
   String get invitationDeclineGoLogin {
     return Intl.message(
-      'Vai al login',
+      'Go to login',
       name: 'invitationDeclineGoLogin',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questo invito non è valido.`
+  /// `This invitation is not valid.`
   String get invitationAcceptErrorInvalid {
     return Intl.message(
-      'Questo invito non è valido.',
+      'This invitation is not valid.',
       name: 'invitationAcceptErrorInvalid',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questo invito è scaduto.`
+  /// `This invitation has expired.`
   String get invitationAcceptErrorExpired {
     return Intl.message(
-      'Questo invito è scaduto.',
+      'This invitation has expired.',
       name: 'invitationAcceptErrorExpired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questo invito è associato a un'altra email. Esegui il logout dall'account corrente, poi riapri questo link e accedi con l'email invitata.`
+  /// `This invitation is linked to a different email. Sign out from the current account, then reopen this invitation link and sign in with the invited email.`
   String get invitationAcceptErrorEmailMismatch {
     return Intl.message(
-      'Questo invito è associato a un\'altra email. Esegui il logout dall\'account corrente, poi riapri questo link e accedi con l\'email invitata.',
+      'This invitation is linked to a different email. Sign out from the current account, then reopen this invitation link and sign in with the invited email.',
       name: 'invitationAcceptErrorEmailMismatch',
       desc: '',
       args: [],
     );
   }
 
-  /// `Vai all'applicazione`
+  /// `Go to application`
   String get invitationGoToApplication {
     return Intl.message(
-      'Vai all\'applicazione',
+      'Go to application',
       name: 'invitationGoToApplication',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile completare l'operazione. Riprova.`
+  /// `Unable to complete the operation. Please try again.`
   String get invitationAcceptErrorGeneric {
     return Intl.message(
-      'Impossibile completare l\'operazione. Riprova.',
+      'Unable to complete the operation. Please try again.',
       name: 'invitationAcceptErrorGeneric',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accesso`
+  /// `Access`
   String get operatorsScopeTitle {
     return Intl.message(
-      'Accesso',
+      'Access',
       name: 'operatorsScopeTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tutte le sedi`
+  /// `All locations`
   String get operatorsScopeBusiness {
     return Intl.message(
-      'Tutte le sedi',
+      'All locations',
       name: 'operatorsScopeBusiness',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accesso completo a tutte le sedi del business`
+  /// `Full access to all business locations`
   String get operatorsScopeBusinessDesc {
     return Intl.message(
-      'Accesso completo a tutte le sedi del business',
+      'Full access to all business locations',
       name: 'operatorsScopeBusinessDesc',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sedi specifiche`
+  /// `Specific locations`
   String get operatorsScopeLocations {
     return Intl.message(
-      'Sedi specifiche',
+      'Specific locations',
       name: 'operatorsScopeLocations',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accesso limitato alle sedi selezionate`
+  /// `Access limited to selected locations`
   String get operatorsScopeLocationsDesc {
     return Intl.message(
-      'Accesso limitato alle sedi selezionate',
+      'Access limited to selected locations',
       name: 'operatorsScopeLocationsDesc',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona sedi`
+  /// `Select locations`
   String get operatorsScopeSelectLocations {
     return Intl.message(
-      'Seleziona sedi',
+      'Select locations',
       name: 'operatorsScopeSelectLocations',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona almeno una sede`
+  /// `Select at least one location`
   String get operatorsScopeLocationsRequired {
     return Intl.message(
-      'Seleziona almeno una sede',
+      'Select at least one location',
       name: 'operatorsScopeLocationsRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Inviti in attesa`
+  /// `Pending invites`
   String get operatorsPendingInvites {
     return Intl.message(
-      'Inviti in attesa',
+      'Pending invites',
       name: 'operatorsPendingInvites',
       desc: '',
       args: [],
     );
   }
 
-  /// `{count} inviti in attesa`
+  /// `{count} pending invites`
   String operatorsPendingInvitesCount(int count) {
     return Intl.message(
-      '$count inviti in attesa',
+      '$count pending invites',
       name: 'operatorsPendingInvitesCount',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Revoca invito`
+  /// `Revoke invite`
   String get operatorsRevokeInvite {
     return Intl.message(
-      'Revoca invito',
+      'Revoke invite',
       name: 'operatorsRevokeInvite',
       desc: '',
       args: [],
     );
   }
 
-  /// `Vuoi revocare l'invito per {email}?`
+  /// `Do you want to revoke the invite for {email}?`
   String operatorsRevokeInviteConfirm(String email) {
     return Intl.message(
-      'Vuoi revocare l\'invito per $email?',
+      'Do you want to revoke the invite for $email?',
       name: 'operatorsRevokeInviteConfirm',
       desc: '',
       args: [email],
     );
   }
 
-  /// `Elimina invito`
+  /// `Delete invite`
   String get operatorsDeleteInvite {
     return Intl.message(
-      'Elimina invito',
+      'Delete invite',
       name: 'operatorsDeleteInvite',
       desc: '',
       args: [],
     );
   }
 
-  /// `Vuoi eliminare definitivamente l'invito per {email}?`
+  /// `Do you want to permanently delete the invite for {email}?`
   String operatorsDeleteInviteConfirm(String email) {
     return Intl.message(
-      'Vuoi eliminare definitivamente l\'invito per $email?',
+      'Do you want to permanently delete the invite for $email?',
       name: 'operatorsDeleteInviteConfirm',
       desc: '',
       args: [email],
     );
   }
 
-  /// `Modifica ruolo`
+  /// `Edit role`
   String get operatorsEditRole {
     return Intl.message(
-      'Modifica ruolo',
+      'Edit role',
       name: 'operatorsEditRole',
       desc: '',
       args: [],
     );
   }
 
-  /// `Rimuovi operatore`
+  /// `Remove operator`
   String get operatorsRemove {
     return Intl.message(
-      'Rimuovi operatore',
+      'Remove operator',
       name: 'operatorsRemove',
       desc: '',
       args: [],
     );
   }
 
-  /// `Vuoi rimuovere {name} dal team?`
+  /// `Do you want to remove {name} from the team?`
   String operatorsRemoveConfirm(String name) {
     return Intl.message(
-      'Vuoi rimuovere $name dal team?',
+      'Do you want to remove $name from the team?',
       name: 'operatorsRemoveConfirm',
       desc: '',
       args: [name],
     );
   }
 
-  /// `Operatore rimosso`
+  /// `Operator removed`
   String get operatorsRemoveSuccess {
     return Intl.message(
-      'Operatore rimosso',
+      'Operator removed',
       name: 'operatorsRemoveSuccess',
       desc: '',
       args: [],
     );
   }
 
-  /// `Proprietario`
+  /// `Owner`
   String get operatorsRoleOwner {
     return Intl.message(
-      'Proprietario',
+      'Owner',
       name: 'operatorsRoleOwner',
       desc: '',
       args: [],
     );
   }
 
-  /// `Amministratore`
+  /// `Administrator`
   String get operatorsRoleAdmin {
     return Intl.message(
-      'Amministratore',
+      'Administrator',
       name: 'operatorsRoleAdmin',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accesso completo a tutte le funzionalità. Può gestire altri operatori e modificare impostazioni del business.`
+  /// `Full access to all features. Can manage other operators and modify business settings.`
   String get operatorsRoleAdminDesc {
     return Intl.message(
-      'Accesso completo a tutte le funzionalità. Può gestire altri operatori e modificare impostazioni del business.',
+      'Full access to all features. Can manage other operators and modify business settings.',
       name: 'operatorsRoleAdminDesc',
       desc: '',
       args: [],
@@ -4826,10 +4801,10 @@ class L10n {
     );
   }
 
-  /// `Gestisce agenda e clienti. Vede e gestisce tutti gli appuntamenti, ma non può gestire operatori né impostazioni.`
+  /// `Manages agenda and clients. Can view and manage all appointments, but cannot manage operators or settings.`
   String get operatorsRoleManagerDesc {
     return Intl.message(
-      'Gestisce agenda e clienti. Vede e gestisce tutti gli appuntamenti, ma non può gestire operatori né impostazioni.',
+      'Manages agenda and clients. Can view and manage all appointments, but cannot manage operators or settings.',
       name: 'operatorsRoleManagerDesc',
       desc: '',
       args: [],
@@ -4846,145 +4821,145 @@ class L10n {
     );
   }
 
-  /// `Vede e gestisce solo i propri appuntamenti. Può creare prenotazioni assegnate a sé stesso.`
+  /// `Views and manages only own appointments. Can create bookings assigned to themselves.`
   String get operatorsRoleStaffDesc {
     return Intl.message(
-      'Vede e gestisce solo i propri appuntamenti. Può creare prenotazioni assegnate a sé stesso.',
+      'Views and manages only own appointments. Can create bookings assigned to themselves.',
       name: 'operatorsRoleStaffDesc',
       desc: '',
       args: [],
     );
   }
 
-  /// `Visualizzatore`
+  /// `Viewer`
   String get operatorsRoleViewer {
     return Intl.message(
-      'Visualizzatore',
+      'Viewer',
       name: 'operatorsRoleViewer',
       desc: '',
       args: [],
     );
   }
 
-  /// `Può consultare appuntamenti, servizi, staff e disponibilità. Nessuna modifica consentita.`
+  /// `Can view appointments, services, staff, and availability. No edits allowed.`
   String get operatorsRoleViewerDesc {
     return Intl.message(
-      'Può consultare appuntamenti, servizi, staff e disponibilità. Nessuna modifica consentita.',
+      'Can view appointments, services, staff, and availability. No edits allowed.',
       name: 'operatorsRoleViewerDesc',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona il livello di accesso`
+  /// `Select access level`
   String get operatorsRoleDescription {
     return Intl.message(
-      'Seleziona il livello di accesso',
+      'Select access level',
       name: 'operatorsRoleDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tu`
+  /// `You`
   String get operatorsYou {
-    return Intl.message('Tu', name: 'operatorsYou', desc: '', args: []);
+    return Intl.message('You', name: 'operatorsYou', desc: '', args: []);
   }
 
-  /// `Invitato da {name}`
+  /// `Invited by {name}`
   String operatorsInvitedBy(String name) {
     return Intl.message(
-      'Invitato da $name',
+      'Invited by $name',
       name: 'operatorsInvitedBy',
       desc: '',
       args: [name],
     );
   }
 
-  /// `Scade il {date}`
+  /// `Expires on {date}`
   String operatorsExpires(String date) {
     return Intl.message(
-      'Scade il $date',
+      'Expires on $date',
       name: 'operatorsExpires',
       desc: '',
       args: [date],
     );
   }
 
-  /// `Accettato il {date}`
+  /// `Accepted on {date}`
   String operatorsAcceptedOn(String date) {
     return Intl.message(
-      'Accettato il $date',
+      'Accepted on $date',
       name: 'operatorsAcceptedOn',
       desc: '',
       args: [date],
     );
   }
 
-  /// `{count} inviti archiviati`
+  /// `{count} archived invites`
   String operatorsInvitesHistoryCount(int count) {
     return Intl.message(
-      '$count inviti archiviati',
+      '$count archived invites',
       name: 'operatorsInvitesHistoryCount',
       desc: '',
       args: [count],
     );
   }
 
-  /// `In attesa`
+  /// `Pending`
   String get operatorsInviteStatusPending {
     return Intl.message(
-      'In attesa',
+      'Pending',
       name: 'operatorsInviteStatusPending',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accettato`
+  /// `Accepted`
   String get operatorsInviteStatusAccepted {
     return Intl.message(
-      'Accettato',
+      'Accepted',
       name: 'operatorsInviteStatusAccepted',
       desc: '',
       args: [],
     );
   }
 
-  /// `Rifiutato`
+  /// `Declined`
   String get operatorsInviteStatusDeclined {
     return Intl.message(
-      'Rifiutato',
+      'Declined',
       name: 'operatorsInviteStatusDeclined',
       desc: '',
       args: [],
     );
   }
 
-  /// `Revocato`
+  /// `Revoked`
   String get operatorsInviteStatusRevoked {
     return Intl.message(
-      'Revocato',
+      'Revoked',
       name: 'operatorsInviteStatusRevoked',
       desc: '',
       args: [],
     );
   }
 
-  /// `Scaduto`
+  /// `Expired`
   String get operatorsInviteStatusExpired {
     return Intl.message(
-      'Scaduto',
+      'Expired',
       name: 'operatorsInviteStatusExpired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accedi al gestionale`
+  /// `Sign in to the management system`
   String get authLoginSubtitle {
     return Intl.message(
-      'Accedi al gestionale',
+      'Sign in to the management system',
       name: 'authLoginSubtitle',
       desc: '',
       args: [],
@@ -5001,529 +4976,534 @@ class L10n {
     return Intl.message('Password', name: 'authPassword', desc: '', args: []);
   }
 
-  /// `Accedi`
+  /// `Sign In`
   String get authLogin {
-    return Intl.message('Accedi', name: 'authLogin', desc: '', args: []);
+    return Intl.message('Sign In', name: 'authLogin', desc: '', args: []);
   }
 
-  /// `Esci`
+  /// `Sign Out`
   String get authLogout {
-    return Intl.message('Esci', name: 'authLogout', desc: '', args: []);
+    return Intl.message('Sign Out', name: 'authLogout', desc: '', args: []);
   }
 
-  /// `Ricordami`
+  /// `Remember me`
   String get authRememberMe {
     return Intl.message(
-      'Ricordami',
+      'Remember me',
       name: 'authRememberMe',
       desc: '',
       args: [],
     );
   }
 
-  /// `Password dimenticata?`
+  /// `Forgot password?`
   String get authForgotPassword {
     return Intl.message(
-      'Password dimenticata?',
+      'Forgot password?',
       name: 'authForgotPassword',
       desc: '',
       args: [],
     );
   }
 
-  /// `Contatta l'amministratore di sistema per reimpostare la password.`
+  /// `Contact the system administrator to reset your password.`
   String get authForgotPasswordInfo {
     return Intl.message(
-      'Contatta l\'amministratore di sistema per reimpostare la password.',
+      'Contact the system administrator to reset your password.',
       name: 'authForgotPasswordInfo',
       desc: '',
       args: [],
     );
   }
 
-  /// `Recupera password`
+  /// `Reset password`
   String get authResetPasswordTitle {
     return Intl.message(
-      'Recupera password',
+      'Reset password',
       name: 'authResetPasswordTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Inserisci la tua email. Ti invieremo un link per reimpostare la password.`
+  /// `Enter your email. We will send you a link to reset your password.`
   String get authResetPasswordMessage {
     return Intl.message(
-      'Inserisci la tua email. Ti invieremo un link per reimpostare la password.',
+      'Enter your email. We will send you a link to reset your password.',
       name: 'authResetPasswordMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Invia`
+  /// `Send`
   String get authResetPasswordSend {
     return Intl.message(
-      'Invia',
+      'Send',
       name: 'authResetPasswordSend',
       desc: '',
       args: [],
     );
   }
 
-  /// `Se l'email esiste nel sistema, riceverai un link per reimpostare la password.`
+  /// `If the email exists in our system, you will receive a password reset link.`
   String get authResetPasswordSuccess {
     return Intl.message(
-      'Se l\'email esiste nel sistema, riceverai un link per reimpostare la password.',
+      'If the email exists in our system, you will receive a password reset link.',
       name: 'authResetPasswordSuccess',
       desc: '',
       args: [],
     );
   }
 
-  /// `Si è verificato un errore. Riprova più tardi.`
+  /// `An error occurred. Please try again later.`
   String get authResetPasswordError {
     return Intl.message(
-      'Si è verificato un errore. Riprova più tardi.',
+      'An error occurred. Please try again later.',
       name: 'authResetPasswordError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Campo obbligatorio`
+  /// `Required field`
   String get authRequiredField {
     return Intl.message(
-      'Campo obbligatorio',
+      'Required field',
       name: 'authRequiredField',
       desc: '',
       args: [],
     );
   }
 
-  /// `Email non valida`
+  /// `Invalid email`
   String get authInvalidEmail {
     return Intl.message(
-      'Email non valida',
+      'Invalid email',
       name: 'authInvalidEmail',
       desc: '',
       args: [],
     );
   }
 
-  /// `Password troppo corta`
+  /// `Password too short`
   String get authPasswordTooShort {
     return Intl.message(
-      'Password troppo corta',
+      'Password too short',
       name: 'authPasswordTooShort',
       desc: '',
       args: [],
     );
   }
 
-  /// `Credenziali non valide. Riprova.`
+  /// `Invalid credentials. Please try again.`
   String get authLoginFailed {
     return Intl.message(
-      'Credenziali non valide. Riprova.',
+      'Invalid credentials. Please try again.',
       name: 'authLoginFailed',
       desc: '',
       args: [],
     );
   }
 
-  /// `Connessione al server non riuscita. Controlla la tua connessione internet.`
+  /// `Could not connect to the server. Check your internet connection.`
   String get authNetworkError {
     return Intl.message(
-      'Connessione al server non riuscita. Controlla la tua connessione internet.',
+      'Could not connect to the server. Check your internet connection.',
       name: 'authNetworkError',
       desc: '',
       args: [],
     );
   }
 
-  /// `La connessione ha impiegato troppo tempo. Riprova.`
+  /// `Connection timed out. Please try again.`
   String get networkTimeoutError {
     return Intl.message(
-      'La connessione ha impiegato troppo tempo. Riprova.',
+      'Connection timed out. Please try again.',
       name: 'networkTimeoutError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile raggiungere il server. Controlla la connessione internet.`
+  /// `Could not connect to the server. Check your internet connection.`
   String get networkConnectionError {
     return Intl.message(
-      'Impossibile raggiungere il server. Controlla la connessione internet.',
+      'Could not connect to the server. Check your internet connection.',
       name: 'networkConnectionError',
       desc: '',
       args: [],
     );
   }
 
-  /// `La richiesta è stata annullata prima di completarsi. Riprova.`
+  /// `The request was cancelled before it could complete. Please try again.`
   String get networkRequestCancelled {
     return Intl.message(
-      'La richiesta è stata annullata prima di completarsi. Riprova.',
+      'The request was cancelled before it could complete. Please try again.',
       name: 'networkRequestCancelled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore di rete. Riprova.`
+  /// `Network error. Please try again.`
   String get networkUnknownError {
     return Intl.message(
-      'Errore di rete. Riprova.',
+      'Network error. Please try again.',
       name: 'networkUnknownError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore interno del server. Riprova più tardi.`
+  /// `Internal server error. Please try again later.`
   String get serverError500 {
     return Intl.message(
-      'Errore interno del server. Riprova più tardi.',
+      'Internal server error. Please try again later.',
       name: 'serverError500',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizio temporaneamente non disponibile (gateway). Riprova.`
+  /// `Service temporarily unavailable (bad gateway). Please try again.`
   String get serverError502 {
     return Intl.message(
-      'Servizio temporaneamente non disponibile (gateway). Riprova.',
+      'Service temporarily unavailable (bad gateway). Please try again.',
       name: 'serverError502',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizio temporaneamente non disponibile. Riprova tra poco.`
+  /// `Service temporarily unavailable. Please try again shortly.`
   String get serverError503 {
     return Intl.message(
-      'Servizio temporaneamente non disponibile. Riprova tra poco.',
+      'Service temporarily unavailable. Please try again shortly.',
       name: 'serverError503',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il server ha impiegato troppo tempo a rispondere. Riprova.`
+  /// `Server response timeout. Please try again.`
   String get serverError504 {
     return Intl.message(
-      'Il server ha impiegato troppo tempo a rispondere. Riprova.',
+      'Server response timeout. Please try again.',
       name: 'serverError504',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accesso riservato agli operatori autorizzati`
+  /// `Access reserved for authorized operators`
   String get authLoginFooter {
     return Intl.message(
-      'Accesso riservato agli operatori autorizzati',
+      'Access reserved for authorized operators',
       name: 'authLoginFooter',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nome`
+  /// `First Name`
   String get authFirstName {
-    return Intl.message('Nome', name: 'authFirstName', desc: '', args: []);
+    return Intl.message(
+      'First Name',
+      name: 'authFirstName',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `Cognome`
+  /// `Last Name`
   String get authLastName {
-    return Intl.message('Cognome', name: 'authLastName', desc: '', args: []);
+    return Intl.message('Last Name', name: 'authLastName', desc: '', args: []);
   }
 
-  /// `Telefono`
+  /// `Phone`
   String get authPhone {
-    return Intl.message('Telefono', name: 'authPhone', desc: '', args: []);
+    return Intl.message('Phone', name: 'authPhone', desc: '', args: []);
   }
 
-  /// `Cambia`
+  /// `Switch`
   String get switchBusiness {
-    return Intl.message('Cambia', name: 'switchBusiness', desc: '', args: []);
+    return Intl.message('Switch', name: 'switchBusiness', desc: '', args: []);
   }
 
-  /// `Navigation rail dall'alto`
+  /// `Rail starts at top`
   String get superadminRailStartTopLabel {
     return Intl.message(
-      'Navigation rail dall\'alto',
+      'Rail starts at top',
       name: 'superadminRailStartTopLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Se attivo, su desktop la colonna di navigazione parte dal bordo superiore senza toolbar.`
+  /// `If enabled, on desktop the navigation rail starts from the top edge without toolbar.`
   String get superadminRailStartTopHelp {
     return Intl.message(
-      'Se attivo, su desktop la colonna di navigazione parte dal bordo superiore senza toolbar.',
+      'If enabled, on desktop the navigation rail starts from the top edge without toolbar.',
       name: 'superadminRailStartTopHelp',
       desc: '',
       args: [],
     );
   }
 
-  /// `Profilo`
+  /// `Profile`
   String get profileTitle {
-    return Intl.message('Profilo', name: 'profileTitle', desc: '', args: []);
+    return Intl.message('Profile', name: 'profileTitle', desc: '', args: []);
   }
 
-  /// `Profilo aggiornato con successo`
+  /// `Profile updated successfully`
   String get profileUpdateSuccess {
     return Intl.message(
-      'Profilo aggiornato con successo',
+      'Profile updated successfully',
       name: 'profileUpdateSuccess',
       desc: '',
       args: [],
     );
   }
 
-  /// `Attenzione: cambiando email dovrai usarla per il login`
+  /// `Warning: changing email will update your login credentials`
   String get profileEmailChangeWarning {
     return Intl.message(
-      'Attenzione: cambiando email dovrai usarla per il login',
+      'Warning: changing email will update your login credentials',
       name: 'profileEmailChangeWarning',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cambia password`
+  /// `Change password`
   String get profileChangePassword {
     return Intl.message(
-      'Cambia password',
+      'Change password',
       name: 'profileChangePassword',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cambia business`
+  /// `Switch business`
   String get profileSwitchBusiness {
     return Intl.message(
-      'Cambia business',
+      'Switch business',
       name: 'profileSwitchBusiness',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuovo planning`
+  /// `New planning`
   String get planningCreateTitle {
     return Intl.message(
-      'Nuovo planning',
+      'New planning',
       name: 'planningCreateTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica planning`
+  /// `Edit planning`
   String get planningEditTitle {
     return Intl.message(
-      'Modifica planning',
+      'Edit planning',
       name: 'planningEditTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Elimina planning`
+  /// `Delete planning`
   String get planningDeleteTitle {
     return Intl.message(
-      'Elimina planning',
+      'Delete planning',
       name: 'planningDeleteTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sei sicuro di voler eliminare questo planning? Gli orari settimanali verranno rimossi.`
+  /// `Are you sure you want to delete this planning? Weekly schedules will be removed.`
   String get planningDeleteConfirm {
     return Intl.message(
-      'Sei sicuro di voler eliminare questo planning? Gli orari settimanali verranno rimossi.',
+      'Are you sure you want to delete this planning? Weekly schedules will be removed.',
       name: 'planningDeleteConfirm',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tipo planning`
+  /// `Planning type`
   String get planningType {
     return Intl.message(
-      'Tipo planning',
+      'Planning type',
       name: 'planningType',
       desc: '',
       args: [],
     );
   }
 
-  /// `Settimanale`
+  /// `Weekly`
   String get planningTypeWeekly {
     return Intl.message(
-      'Settimanale',
+      'Weekly',
       name: 'planningTypeWeekly',
       desc: '',
       args: [],
     );
   }
 
-  /// `Bisettimanale`
+  /// `Biweekly`
   String get planningTypeBiweekly {
     return Intl.message(
-      'Bisettimanale',
+      'Biweekly',
       name: 'planningTypeBiweekly',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non disponibile`
+  /// `Unavailable`
   String get planningTypeUnavailable {
     return Intl.message(
-      'Non disponibile',
+      'Unavailable',
       name: 'planningTypeUnavailable',
       desc: '',
       args: [],
     );
   }
 
-  /// `Data inizio validità`
+  /// `Validity start date`
   String get planningValidFrom {
     return Intl.message(
-      'Data inizio validità',
+      'Validity start date',
       name: 'planningValidFrom',
       desc: '',
       args: [],
     );
   }
 
-  /// `Data fine validità`
+  /// `Validity end date`
   String get planningValidTo {
     return Intl.message(
-      'Data fine validità',
+      'Validity end date',
       name: 'planningValidTo',
       desc: '',
       args: [],
     );
   }
 
-  /// `Senza scadenza`
+  /// `No end date`
   String get planningOpenEnded {
     return Intl.message(
-      'Senza scadenza',
+      'No end date',
       name: 'planningOpenEnded',
       desc: '',
       args: [],
     );
   }
 
-  /// `Valida dal {from} al {to}`
+  /// `Valid from {from} to {to}`
   String planningValidFromTo(String from, String to) {
     return Intl.message(
-      'Valida dal $from al $to',
+      'Valid from $from to $to',
       name: 'planningValidFromTo',
       desc: '',
       args: [from, to],
     );
   }
 
-  /// `Valida dal {from}`
+  /// `Valid from {from}`
   String planningValidFromOnly(String from) {
     return Intl.message(
-      'Valida dal $from',
+      'Valid from $from',
       name: 'planningValidFromOnly',
       desc: '',
       args: [from],
     );
   }
 
-  /// `{hours}h/settimana`
+  /// `{hours}h/week`
   String planningWeeklyHours(int hours) {
     return Intl.message(
-      '${hours}h/settimana',
+      '${hours}h/week',
       name: 'planningWeeklyHours',
       desc: '',
       args: [hours],
     );
   }
 
-  /// `Sett. A: {hoursA}h | Sett. B: {hoursB}h | Tot: {total}h`
+  /// `Week A: {hoursA}h | Week B: {hoursB}h | Tot: {total}h`
   String planningBiweeklyHours(int hoursA, int hoursB, int total) {
     return Intl.message(
-      'Sett. A: ${hoursA}h | Sett. B: ${hoursB}h | Tot: ${total}h',
+      'Week A: ${hoursA}h | Week B: ${hoursB}h | Tot: ${total}h',
       name: 'planningBiweeklyHours',
       desc: '',
       args: [hoursA, hoursB, total],
     );
   }
 
-  /// `{duration}/settimana`
+  /// `{duration}/week`
   String planningWeeklyDuration(String duration) {
     return Intl.message(
-      '$duration/settimana',
+      '$duration/week',
       name: 'planningWeeklyDuration',
       desc: '',
       args: [duration],
     );
   }
 
-  /// `Sett. A: {durationA} | Sett. B: {durationB} | Tot: {totalDuration}`
+  /// `Week A: {durationA} | Week B: {durationB} | Tot: {totalDuration}`
   String planningBiweeklyDuration(
     String durationA,
     String durationB,
     String totalDuration,
   ) {
     return Intl.message(
-      'Sett. A: $durationA | Sett. B: $durationB | Tot: $totalDuration',
+      'Week A: $durationA | Week B: $durationB | Tot: $totalDuration',
       name: 'planningBiweeklyDuration',
       desc: '',
       args: [durationA, durationB, totalDuration],
     );
   }
 
-  /// `Mostra planning scaduti ({count})`
+  /// `Show expired ({count})`
   String planningShowExpired(int count) {
     return Intl.message(
-      'Mostra planning scaduti ($count)',
+      'Show expired ($count)',
       name: 'planningShowExpired',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Nascondi planning scaduti`
+  /// `Hide expired`
   String get planningHideExpired {
     return Intl.message(
-      'Nascondi planning scaduti',
+      'Hide expired',
       name: 'planningHideExpired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Imposta data fine`
+  /// `Set end date`
   String get planningSetEndDate {
     return Intl.message(
-      'Imposta data fine',
+      'Set end date',
       name: 'planningSetEndDate',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona data`
+  /// `Select date`
   String get planningSelectDate {
     return Intl.message(
-      'Seleziona data',
+      'Select date',
       name: 'planningSelectDate',
       desc: '',
       args: [],
@@ -5540,1055 +5520,1040 @@ class L10n {
     );
   }
 
-  /// `Nessun planning definito`
+  /// `No planning defined`
   String get planningListEmpty {
     return Intl.message(
-      'Nessun planning definito',
+      'No planning defined',
       name: 'planningListEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Aggiungi planning`
+  /// `Add planning`
   String get planningListAdd {
     return Intl.message(
-      'Aggiungi planning',
+      'Add planning',
       name: 'planningListAdd',
       desc: '',
       args: [],
     );
   }
 
-  /// `Settimana A`
+  /// `Week A`
   String get planningWeekA {
-    return Intl.message(
-      'Settimana A',
-      name: 'planningWeekA',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Week A', name: 'planningWeekA', desc: '', args: []);
   }
 
-  /// `Settimana B`
+  /// `Week B`
   String get planningWeekB {
-    return Intl.message(
-      'Settimana B',
-      name: 'planningWeekB',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Week B', name: 'planningWeekB', desc: '', args: []);
   }
 
-  /// `Settimana attuale: {week}`
+  /// `Current week: {week}`
   String planningCurrentWeek(String week) {
     return Intl.message(
-      'Settimana attuale: $week',
+      'Current week: $week',
       name: 'planningCurrentWeek',
       desc: '',
       args: [week],
     );
   }
 
-  /// `Dal {from} al {to}`
+  /// `From {from} to {to}`
   String planningValidityRange(String from, String to) {
     return Intl.message(
-      'Dal $from al $to',
+      'From $from to $to',
       name: 'planningValidityRange',
       desc: '',
       args: [from, to],
     );
   }
 
-  /// `Dal {from}`
+  /// `From {from}`
   String planningValidityFrom(String from) {
     return Intl.message(
-      'Dal $from',
+      'From $from',
       name: 'planningValidityFrom',
       desc: '',
       args: [from],
     );
   }
 
-  /// `Attivo`
+  /// `Active`
   String get planningActive {
-    return Intl.message('Attivo', name: 'planningActive', desc: '', args: []);
+    return Intl.message('Active', name: 'planningActive', desc: '', args: []);
   }
 
-  /// `Futuro`
+  /// `Future`
   String get planningFuture {
-    return Intl.message('Futuro', name: 'planningFuture', desc: '', args: []);
+    return Intl.message('Future', name: 'planningFuture', desc: '', args: []);
   }
 
-  /// `Passato`
+  /// `Past`
   String get planningPast {
-    return Intl.message('Passato', name: 'planningPast', desc: '', args: []);
+    return Intl.message('Past', name: 'planningPast', desc: '', args: []);
   }
 
-  /// `Prezzo`
+  /// `Price`
   String get appointmentPriceLabel {
     return Intl.message(
-      'Prezzo',
+      'Price',
       name: 'appointmentPriceLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prezzo personalizzato`
+  /// `Custom price`
   String get appointmentPriceHint {
     return Intl.message(
-      'Prezzo personalizzato',
+      'Custom price',
       name: 'appointmentPriceHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ripristina prezzo del servizio`
+  /// `Reset to service price`
   String get appointmentPriceResetTooltip {
     return Intl.message(
-      'Ripristina prezzo del servizio',
+      'Reset to service price',
       name: 'appointmentPriceResetTooltip',
       desc: '',
       args: [],
     );
   }
 
-  /// `Gratuito`
+  /// `Free`
   String get appointmentPriceFree {
     return Intl.message(
-      'Gratuito',
+      'Free',
       name: 'appointmentPriceFree',
       desc: '',
       args: [],
     );
   }
 
-  /// `Storico prenotazione`
+  /// `Booking history`
   String get bookingHistoryTitle {
     return Intl.message(
-      'Storico prenotazione',
+      'Booking history',
       name: 'bookingHistoryTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun evento registrato`
+  /// `No events recorded`
   String get bookingHistoryEmpty {
     return Intl.message(
-      'Nessun evento registrato',
+      'No events recorded',
       name: 'bookingHistoryEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Caricamento storico...`
+  /// `Loading history...`
   String get bookingHistoryLoading {
     return Intl.message(
-      'Caricamento storico...',
+      'Loading history...',
       name: 'bookingHistoryLoading',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore nel caricamento dello storico`
+  /// `Error loading history`
   String get bookingHistoryError {
     return Intl.message(
-      'Errore nel caricamento dello storico',
+      'Error loading history',
       name: 'bookingHistoryError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione creata`
+  /// `Booking created`
   String get bookingHistoryEventCreated {
     return Intl.message(
-      'Prenotazione creata',
+      'Booking created',
       name: 'bookingHistoryEventCreated',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione modificata`
+  /// `Booking updated`
   String get bookingHistoryEventUpdated {
     return Intl.message(
-      'Prenotazione modificata',
+      'Booking updated',
       name: 'bookingHistoryEventUpdated',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione cancellata`
+  /// `Booking cancelled`
   String get bookingHistoryEventCancelled {
     return Intl.message(
-      'Prenotazione cancellata',
+      'Booking cancelled',
       name: 'bookingHistoryEventCancelled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Email inviata al cliente`
+  /// `Email sent to customer`
   String get bookingHistoryEventNotificationSent {
     return Intl.message(
-      'Email inviata al cliente',
+      'Email sent to customer',
       name: 'bookingHistoryEventNotificationSent',
       desc: '',
       args: [],
     );
   }
 
-  /// `Inviata email di tipo: {type}`
+  /// `Email sent of type: {type}`
   String bookingHistoryEventNotificationSentTitle(Object type) {
     return Intl.message(
-      'Inviata email di tipo: $type',
+      'Email sent of type: $type',
       name: 'bookingHistoryEventNotificationSentTitle',
       desc: '',
       args: [type],
     );
   }
 
-  /// `Servizio aggiunto`
+  /// `Service added`
   String get bookingHistoryEventItemAdded {
     return Intl.message(
-      'Servizio aggiunto',
+      'Service added',
       name: 'bookingHistoryEventItemAdded',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizio rimosso`
+  /// `Service removed`
   String get bookingHistoryEventItemDeleted {
     return Intl.message(
-      'Servizio rimosso',
+      'Service removed',
       name: 'bookingHistoryEventItemDeleted',
       desc: '',
       args: [],
     );
   }
 
-  /// `Appuntamento modificato`
+  /// `Appointment updated`
   String get bookingHistoryEventAppointmentUpdated {
     return Intl.message(
-      'Appuntamento modificato',
+      'Appointment updated',
       name: 'bookingHistoryEventAppointmentUpdated',
       desc: '',
       args: [],
     );
   }
 
-  /// `Orario modificato`
+  /// `Time changed`
   String get bookingHistoryEventTimeChanged {
     return Intl.message(
-      'Orario modificato',
+      'Time changed',
       name: 'bookingHistoryEventTimeChanged',
       desc: '',
       args: [],
     );
   }
 
-  /// `Operatore cambiato`
+  /// `Staff changed`
   String get bookingHistoryEventStaffChanged {
     return Intl.message(
-      'Operatore cambiato',
+      'Staff changed',
       name: 'bookingHistoryEventStaffChanged',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prezzo modificato`
+  /// `Price changed`
   String get bookingHistoryEventPriceChanged {
     return Intl.message(
-      'Prezzo modificato',
+      'Price changed',
       name: 'bookingHistoryEventPriceChanged',
       desc: '',
       args: [],
     );
   }
 
-  /// `Durata modificata`
+  /// `Duration changed`
   String get bookingHistoryEventDurationChanged {
     return Intl.message(
-      'Durata modificata',
+      'Duration changed',
       name: 'bookingHistoryEventDurationChanged',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione riprogrammata`
+  /// `Booking rescheduled`
   String get bookingHistoryEventReplaced {
     return Intl.message(
-      'Prenotazione riprogrammata',
+      'Booking rescheduled',
       name: 'bookingHistoryEventReplaced',
       desc: '',
       args: [],
     );
   }
 
-  /// `Operatore`
+  /// `Staff`
   String get bookingHistoryActorStaff {
     return Intl.message(
-      'Operatore',
+      'Staff',
       name: 'bookingHistoryActorStaff',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cliente`
+  /// `Customer`
   String get bookingHistoryActorCustomer {
     return Intl.message(
-      'Cliente',
+      'Customer',
       name: 'bookingHistoryActorCustomer',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sistema`
+  /// `System`
   String get bookingHistoryActorSystem {
     return Intl.message(
-      'Sistema',
+      'System',
       name: 'bookingHistoryActorSystem',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tipo: {channel}`
+  /// `Type: {channel}`
   String bookingHistoryNotificationChannel(Object channel) {
     return Intl.message(
-      'Tipo: $channel',
+      'Type: $channel',
       name: 'bookingHistoryNotificationChannel',
       desc: '',
       args: [channel],
     );
   }
 
-  /// `Destinatario: {email}`
+  /// `Recipient: {email}`
   String bookingHistoryNotificationRecipient(Object email) {
     return Intl.message(
-      'Destinatario: $email',
+      'Recipient: $email',
       name: 'bookingHistoryNotificationRecipient',
       desc: '',
       args: [email],
     );
   }
 
-  /// `Data invio: {dateTime}`
+  /// `Sent at: {dateTime}`
   String bookingHistoryNotificationSentAt(Object dateTime) {
     return Intl.message(
-      'Data invio: $dateTime',
+      'Sent at: $dateTime',
       name: 'bookingHistoryNotificationSentAt',
       desc: '',
       args: [dateTime],
     );
   }
 
-  /// `Oggetto: {subject}`
+  /// `Subject: {subject}`
   String bookingHistoryNotificationSubject(Object subject) {
     return Intl.message(
-      'Oggetto: $subject',
+      'Subject: $subject',
       name: 'bookingHistoryNotificationSubject',
       desc: '',
       args: [subject],
     );
   }
 
-  /// `Conferma prenotazione`
+  /// `Booking confirmation`
   String get bookingHistoryNotificationChannelConfirmed {
     return Intl.message(
-      'Conferma prenotazione',
+      'Booking confirmation',
       name: 'bookingHistoryNotificationChannelConfirmed',
       desc: '',
       args: [],
     );
   }
 
-  /// `Promemoria prenotazione`
+  /// `Booking reminder`
   String get bookingHistoryNotificationChannelReminder {
     return Intl.message(
-      'Promemoria prenotazione',
+      'Booking reminder',
       name: 'bookingHistoryNotificationChannelReminder',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cancellazione prenotazione`
+  /// `Booking cancellation`
   String get bookingHistoryNotificationChannelCancelled {
     return Intl.message(
-      'Cancellazione prenotazione',
+      'Booking cancellation',
       name: 'bookingHistoryNotificationChannelCancelled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Riprogrammazione prenotazione`
+  /// `Booking rescheduled`
   String get bookingHistoryNotificationChannelRescheduled {
     return Intl.message(
-      'Riprogrammazione prenotazione',
+      'Booking rescheduled',
       name: 'bookingHistoryNotificationChannelRescheduled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Campi modificati: {fields}`
+  /// `Changed fields: {fields}`
   String bookingHistoryChangedFields(String fields) {
     return Intl.message(
-      'Campi modificati: $fields',
+      'Changed fields: $fields',
       name: 'bookingHistoryChangedFields',
       desc: '',
       args: [fields],
     );
   }
 
-  /// `CANCELLATO`
+  /// `CANCELLED`
   String get cancelledBadge {
     return Intl.message(
-      'CANCELLATO',
+      'CANCELLED',
       name: 'cancelledBadge',
       desc: '',
       args: [],
     );
   }
 
-  /// `ANNULLATA`
+  /// `CANCELLED`
   String get clientAppointmentsCancelledBadge {
     return Intl.message(
-      'ANNULLATA',
+      'CANCELLED',
       name: 'clientAppointmentsCancelledBadge',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ripeti questo appuntamento`
+  /// `Repeat this appointment`
   String get recurrenceRepeatBooking {
     return Intl.message(
-      'Ripeti questo appuntamento',
+      'Repeat this appointment',
       name: 'recurrenceRepeatBooking',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ripeti questo blocco`
+  /// `Repeat this block`
   String get recurrenceRepeatBlock {
     return Intl.message(
-      'Ripeti questo blocco',
+      'Repeat this block',
       name: 'recurrenceRepeatBlock',
       desc: '',
       args: [],
     );
   }
 
-  /// `Frequenza`
+  /// `Frequency`
   String get recurrenceFrequency {
     return Intl.message(
-      'Frequenza',
+      'Frequency',
       name: 'recurrenceFrequency',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ogni`
+  /// `Every`
   String get recurrenceEvery {
-    return Intl.message('Ogni', name: 'recurrenceEvery', desc: '', args: []);
+    return Intl.message('Every', name: 'recurrenceEvery', desc: '', args: []);
   }
 
-  /// `giorno`
+  /// `day`
   String get recurrenceDay {
-    return Intl.message('giorno', name: 'recurrenceDay', desc: '', args: []);
+    return Intl.message('day', name: 'recurrenceDay', desc: '', args: []);
   }
 
-  /// `giorni`
+  /// `days`
   String get recurrenceDays {
-    return Intl.message('giorni', name: 'recurrenceDays', desc: '', args: []);
+    return Intl.message('days', name: 'recurrenceDays', desc: '', args: []);
   }
 
-  /// `settimana`
+  /// `week`
   String get recurrenceWeek {
-    return Intl.message(
-      'settimana',
-      name: 'recurrenceWeek',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('week', name: 'recurrenceWeek', desc: '', args: []);
   }
 
-  /// `settimane`
+  /// `weeks`
   String get recurrenceWeeks {
-    return Intl.message(
-      'settimane',
-      name: 'recurrenceWeeks',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('weeks', name: 'recurrenceWeeks', desc: '', args: []);
   }
 
-  /// `mese`
+  /// `month`
   String get recurrenceMonth {
-    return Intl.message('mese', name: 'recurrenceMonth', desc: '', args: []);
+    return Intl.message('month', name: 'recurrenceMonth', desc: '', args: []);
   }
 
-  /// `mesi`
+  /// `months`
   String get recurrenceMonths {
-    return Intl.message('mesi', name: 'recurrenceMonths', desc: '', args: []);
+    return Intl.message('months', name: 'recurrenceMonths', desc: '', args: []);
   }
 
-  /// `Termina`
+  /// `Ends`
   String get recurrenceEnds {
-    return Intl.message('Termina', name: 'recurrenceEnds', desc: '', args: []);
+    return Intl.message('Ends', name: 'recurrenceEnds', desc: '', args: []);
   }
 
-  /// `Per un anno`
+  /// `For one year`
   String get recurrenceNever {
     return Intl.message(
-      'Per un anno',
+      'For one year',
       name: 'recurrenceNever',
       desc: '',
       args: [],
     );
   }
 
-  /// `Dopo`
+  /// `After`
   String get recurrenceAfter {
-    return Intl.message('Dopo', name: 'recurrenceAfter', desc: '', args: []);
+    return Intl.message('After', name: 'recurrenceAfter', desc: '', args: []);
   }
 
-  /// `occorrenze`
+  /// `occurrences`
   String get recurrenceOccurrences {
     return Intl.message(
-      'occorrenze',
+      'occurrences',
       name: 'recurrenceOccurrences',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il`
+  /// `On`
   String get recurrenceOnDate {
-    return Intl.message('Il', name: 'recurrenceOnDate', desc: '', args: []);
+    return Intl.message('On', name: 'recurrenceOnDate', desc: '', args: []);
   }
 
-  /// `Seleziona data`
+  /// `Select date`
   String get recurrenceSelectDate {
     return Intl.message(
-      'Seleziona data',
+      'Select date',
       name: 'recurrenceSelectDate',
       desc: '',
       args: [],
     );
   }
 
-  /// `Anteprima appuntamenti`
+  /// `Appointment preview`
   String get recurrencePreviewTitle {
     return Intl.message(
-      'Anteprima appuntamenti',
+      'Appointment preview',
       name: 'recurrencePreviewTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `{count} appuntamenti`
+  /// `{count} appointments`
   String recurrencePreviewCount(int count) {
     return Intl.message(
-      '$count appuntamenti',
+      '$count appointments',
       name: 'recurrencePreviewCount',
       desc: '',
       args: [count],
     );
   }
 
-  /// `{count} selezionati`
+  /// `{count} selected`
   String recurrencePreviewSelected(int count) {
     return Intl.message(
-      '$count selezionati',
+      '$count selected',
       name: 'recurrencePreviewSelected',
       desc: '',
       args: [count],
     );
   }
 
-  /// `{count} conflitti`
+  /// `{count} conflicts`
   String recurrencePreviewConflicts(int count) {
     return Intl.message(
-      '$count conflitti',
+      '$count conflicts',
       name: 'recurrencePreviewConflicts',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Deseleziona le date che non vuoi creare`
+  /// `Uncheck the dates you don't want to create`
   String get recurrencePreviewHint {
     return Intl.message(
-      'Deseleziona le date che non vuoi creare',
+      'Uncheck the dates you don\'t want to create',
       name: 'recurrencePreviewHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Esclusa per conflitto`
+  /// `Skip due to conflict`
   String get recurrencePreviewConflictSkip {
     return Intl.message(
-      'Esclusa per conflitto',
+      'Skip due to conflict',
       name: 'recurrencePreviewConflictSkip',
       desc: '',
       args: [],
     );
   }
 
-  /// `Crea comunque`
+  /// `Create anyway`
   String get recurrencePreviewConflictForce {
     return Intl.message(
-      'Crea comunque',
+      'Create anyway',
       name: 'recurrencePreviewConflictForce',
       desc: '',
       args: [],
     );
   }
 
-  /// `Crea {count} appuntamenti`
+  /// `Create {count} appointments`
   String recurrencePreviewConfirm(int count) {
     return Intl.message(
-      'Crea $count appuntamenti',
+      'Create $count appointments',
       name: 'recurrencePreviewConfirm',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Serie creata`
+  /// `Series created`
   String get recurrenceSummaryTitle {
     return Intl.message(
-      'Serie creata',
+      'Series created',
       name: 'recurrenceSummaryTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `{count} appuntamenti creati`
+  /// `{count} appointments created`
   String recurrenceSummaryCreated(int count) {
     return Intl.message(
-      '$count appuntamenti creati',
+      '$count appointments created',
       name: 'recurrenceSummaryCreated',
       desc: '',
       args: [count],
     );
   }
 
-  /// `{count} saltati per conflitto`
+  /// `{count} skipped due to conflicts`
   String recurrenceSummarySkipped(int count) {
     return Intl.message(
-      '$count saltati per conflitto',
+      '$count skipped due to conflicts',
       name: 'recurrenceSummarySkipped',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Errore nella creazione della serie`
+  /// `Error creating series`
   String get recurrenceSummaryError {
     return Intl.message(
-      'Errore nella creazione della serie',
+      'Error creating series',
       name: 'recurrenceSummaryError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Appuntamenti:`
+  /// `Appointments:`
   String get recurrenceSummaryAppointments {
     return Intl.message(
-      'Appuntamenti:',
+      'Appointments:',
       name: 'recurrenceSummaryAppointments',
       desc: '',
       args: [],
     );
   }
 
-  /// `Saltato per conflitto`
+  /// `Skipped due to conflict`
   String get recurrenceSummaryConflict {
     return Intl.message(
-      'Saltato per conflitto',
+      'Skipped due to conflict',
       name: 'recurrenceSummaryConflict',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eliminato`
+  /// `Deleted`
   String get recurrenceSummaryDeleted {
     return Intl.message(
-      'Eliminato',
+      'Deleted',
       name: 'recurrenceSummaryDeleted',
       desc: '',
       args: [],
     );
   }
 
-  /// `Appuntamento ricorrente`
+  /// `Recurring appointment`
   String get recurrenceSeriesIcon {
     return Intl.message(
-      'Appuntamento ricorrente',
+      'Recurring appointment',
       name: 'recurrenceSeriesIcon',
       desc: '',
       args: [],
     );
   }
 
-  /// `{index} di {total}`
+  /// `{index} of {total}`
   String recurrenceSeriesOf(int index, int total) {
     return Intl.message(
-      '$index di $total',
+      '$index of $total',
       name: 'recurrenceSeriesOf',
       desc: '',
       args: [index, total],
     );
   }
 
-  /// `Elimina appuntamento ricorrente`
+  /// `Delete recurring appointment`
   String get recurringDeleteTitle {
     return Intl.message(
-      'Elimina appuntamento ricorrente',
+      'Delete recurring appointment',
       name: 'recurringDeleteTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questo è l'appuntamento {index} di {total} nella serie.`
+  /// `This is appointment {index} of {total} in the series.`
   String recurringDeleteMessage(int index, int total) {
     return Intl.message(
-      'Questo è l\'appuntamento $index di $total nella serie.',
+      'This is appointment $index of $total in the series.',
       name: 'recurringDeleteMessage',
       desc: '',
       args: [index, total],
     );
   }
 
-  /// `Quali appuntamenti vuoi eliminare?`
+  /// `Which appointments do you want to delete?`
   String get recurringDeleteChooseScope {
     return Intl.message(
-      'Quali appuntamenti vuoi eliminare?',
+      'Which appointments do you want to delete?',
       name: 'recurringDeleteChooseScope',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica appuntamento ricorrente`
+  /// `Edit recurring appointment`
   String get recurringEditTitle {
     return Intl.message(
-      'Modifica appuntamento ricorrente',
+      'Edit recurring appointment',
       name: 'recurringEditTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questo è l'appuntamento {index} di {total} nella serie.`
+  /// `This is appointment {index} of {total} in the series.`
   String recurringEditMessage(int index, int total) {
     return Intl.message(
-      'Questo è l\'appuntamento $index di $total nella serie.',
+      'This is appointment $index of $total in the series.',
       name: 'recurringEditMessage',
       desc: '',
       args: [index, total],
     );
   }
 
-  /// `Quali appuntamenti vuoi modificare?`
+  /// `Which appointments do you want to edit?`
   String get recurringEditChooseScope {
     return Intl.message(
-      'Quali appuntamenti vuoi modificare?',
+      'Which appointments do you want to edit?',
       name: 'recurringEditChooseScope',
       desc: '',
       args: [],
     );
   }
 
-  /// `Solo questo`
+  /// `Only this one`
   String get recurringScopeOnlyThis {
     return Intl.message(
-      'Solo questo',
+      'Only this one',
       name: 'recurringScopeOnlyThis',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questo e futuri`
+  /// `This and future`
   String get recurringScopeThisAndFuture {
     return Intl.message(
-      'Questo e futuri',
+      'This and future',
       name: 'recurringScopeThisAndFuture',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tutti`
+  /// `All`
   String get recurringScopeAll {
-    return Intl.message('Tutti', name: 'recurringScopeAll', desc: '', args: []);
+    return Intl.message('All', name: 'recurringScopeAll', desc: '', args: []);
   }
 
-  /// `Durata totale: {duration}`
+  /// `Total duration: {duration}`
   String bookingTotalDuration(String duration) {
     return Intl.message(
-      'Durata totale: $duration',
+      'Total duration: $duration',
       name: 'bookingTotalDuration',
       desc: '',
       args: [duration],
     );
   }
 
-  /// `Totale: {price}`
+  /// `Total: {price}`
   String bookingTotalPrice(String price) {
     return Intl.message(
-      'Totale: $price',
+      'Total: $price',
       name: 'bookingTotalPrice',
       desc: '',
       args: [price],
     );
   }
 
-  /// `È necessario selezionare un cliente per gli appuntamenti ricorrenti`
+  /// `A client must be selected for recurring appointments`
   String get recurrenceClientRequired {
     return Intl.message(
-      'È necessario selezionare un cliente per gli appuntamenti ricorrenti',
+      'A client must be selected for recurring appointments',
       name: 'recurrenceClientRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sovrapposizioni`
+  /// `Overlaps`
   String get recurrenceConflictHandling {
     return Intl.message(
-      'Sovrapposizioni',
+      'Overlaps',
       name: 'recurrenceConflictHandling',
       desc: '',
       args: [],
     );
   }
 
-  /// `Salta date con conflitti`
+  /// `Skip conflicting dates`
   String get recurrenceConflictSkip {
     return Intl.message(
-      'Salta date con conflitti',
+      'Skip conflicting dates',
       name: 'recurrenceConflictSkip',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non crea appuntamenti se ci sono sovrapposizioni`
+  /// `Don't create appointments if there are overlaps`
   String get recurrenceConflictSkipDescription {
     return Intl.message(
-      'Non crea appuntamenti se ci sono sovrapposizioni',
+      'Don\'t create appointments if there are overlaps',
       name: 'recurrenceConflictSkipDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Crea comunque`
+  /// `Create anyway`
   String get recurrenceConflictForce {
     return Intl.message(
-      'Crea comunque',
+      'Create anyway',
       name: 'recurrenceConflictForce',
       desc: '',
       args: [],
     );
   }
 
-  /// `Crea gli appuntamenti anche se ci sono sovrapposizioni`
+  /// `Create appointments even if there are overlaps`
   String get recurrenceConflictForceDescription {
     return Intl.message(
-      'Crea gli appuntamenti anche se ci sono sovrapposizioni',
+      'Create appointments even if there are overlaps',
       name: 'recurrenceConflictForceDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Report`
+  /// `Reports`
   String get reportsTitle {
-    return Intl.message('Report', name: 'reportsTitle', desc: '', args: []);
+    return Intl.message('Reports', name: 'reportsTitle', desc: '', args: []);
   }
 
-  /// `Nessun dato disponibile`
+  /// `No data available`
   String get reportsNoData {
     return Intl.message(
-      'Nessun dato disponibile',
+      'No data available',
       name: 'reportsNoData',
       desc: '',
       args: [],
     );
   }
 
-  /// `Aggiorna`
+  /// `Refresh`
   String get actionRefresh {
-    return Intl.message('Aggiorna', name: 'actionRefresh', desc: '', args: []);
+    return Intl.message('Refresh', name: 'actionRefresh', desc: '', args: []);
   }
 
-  /// `Preset periodo`
+  /// `Period presets`
   String get reportsPresets {
     return Intl.message(
-      'Preset periodo',
+      'Period presets',
       name: 'reportsPresets',
       desc: '',
       args: [],
     );
   }
 
-  /// `Scegli periodo`
+  /// `Choose period`
   String get reportsPresetCustom {
     return Intl.message(
-      'Scegli periodo',
+      'Choose period',
       name: 'reportsPresetCustom',
       desc: '',
       args: [],
     );
   }
 
-  /// `Oggi`
+  /// `Today`
   String get reportsPresetToday {
-    return Intl.message('Oggi', name: 'reportsPresetToday', desc: '', args: []);
+    return Intl.message(
+      'Today',
+      name: 'reportsPresetToday',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `Ieri`
+  /// `Yesterday`
   String get reportsPresetYesterday {
     return Intl.message(
-      'Ieri',
+      'Yesterday',
       name: 'reportsPresetYesterday',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questa settimana`
+  /// `This week`
   String get reportsPresetWeek {
     return Intl.message(
-      'Questa settimana',
+      'This week',
       name: 'reportsPresetWeek',
       desc: '',
       args: [],
     );
   }
 
-  /// `Mese corrente`
+  /// `Current month`
   String get reportsPresetMonth {
     return Intl.message(
-      'Mese corrente',
+      'Current month',
       name: 'reportsPresetMonth',
       desc: '',
       args: [],
     );
   }
 
-  /// `Mese scorso`
+  /// `Last month`
   String get reportsPresetLastMonth {
     return Intl.message(
-      'Mese scorso',
+      'Last month',
       name: 'reportsPresetLastMonth',
       desc: '',
       args: [],
     );
   }
 
-  /// `Trimestre corrente`
+  /// `Current quarter`
   String get reportsPresetQuarter {
     return Intl.message(
-      'Trimestre corrente',
+      'Current quarter',
       name: 'reportsPresetQuarter',
       desc: '',
       args: [],
     );
   }
 
-  /// `Semestre corrente`
+  /// `Current semester`
   String get reportsPresetSemester {
     return Intl.message(
-      'Semestre corrente',
+      'Current semester',
       name: 'reportsPresetSemester',
       desc: '',
       args: [],
     );
   }
 
-  /// `Anno corrente`
+  /// `Current year`
   String get reportsPresetYear {
     return Intl.message(
-      'Anno corrente',
+      'Current year',
       name: 'reportsPresetYear',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ultimi 3 mesi`
+  /// `Last 3 months`
   String get reportsPresetLast3Months {
     return Intl.message(
-      'Ultimi 3 mesi',
+      'Last 3 months',
       name: 'reportsPresetLast3Months',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ultimi 6 mesi`
+  /// `Last 6 months`
   String get reportsPresetLast6Months {
     return Intl.message(
-      'Ultimi 6 mesi',
+      'Last 6 months',
       name: 'reportsPresetLast6Months',
       desc: '',
       args: [],
     );
   }
 
-  /// `Anno precedente`
+  /// `Previous year`
   String get reportsPresetLastYear {
     return Intl.message(
-      'Anno precedente',
+      'Previous year',
       name: 'reportsPresetLastYear',
       desc: '',
       args: [],
     );
   }
 
-  /// `Includi intero periodo (anche futuro)`
+  /// `Include full period (future included)`
   String get reportsFullPeriodToggle {
     return Intl.message(
-      'Includi intero periodo (anche futuro)',
+      'Include full period (future included)',
       name: 'reportsFullPeriodToggle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sedi`
+  /// `Locations`
   String get reportsFilterLocations {
     return Intl.message(
-      'Sedi',
+      'Locations',
       name: 'reportsFilterLocations',
       desc: '',
       args: [],
@@ -6605,199 +6570,189 @@ class L10n {
     );
   }
 
-  /// `Servizi`
+  /// `Services`
   String get reportsFilterServices {
     return Intl.message(
-      'Servizi',
+      'Services',
       name: 'reportsFilterServices',
       desc: '',
       args: [],
     );
   }
 
-  /// `Stato`
+  /// `Status`
   String get reportsFilterStatus {
     return Intl.message(
-      'Stato',
+      'Status',
       name: 'reportsFilterStatus',
       desc: '',
       args: [],
     );
   }
 
-  /// `Confermato`
+  /// `Confirmed`
   String get statusConfirmed {
     return Intl.message(
-      'Confermato',
+      'Confirmed',
       name: 'statusConfirmed',
       desc: '',
       args: [],
     );
   }
 
-  /// `Completato`
+  /// `Completed`
   String get statusCompleted {
     return Intl.message(
-      'Completato',
+      'Completed',
       name: 'statusCompleted',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cancellato`
+  /// `Cancelled`
   String get statusCancelled {
     return Intl.message(
-      'Cancellato',
+      'Cancelled',
       name: 'statusCancelled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona tutti`
+  /// `Select all`
   String get actionSelectAll {
     return Intl.message(
-      'Seleziona tutti',
+      'Select all',
       name: 'actionSelectAll',
       desc: '',
       args: [],
     );
   }
 
-  /// `Deseleziona tutti`
+  /// `Deselect all`
   String get actionDeselectAll {
     return Intl.message(
-      'Deseleziona tutti',
+      'Deselect all',
       name: 'actionDeselectAll',
       desc: '',
       args: [],
     );
   }
 
-  /// `Applica`
+  /// `Apply`
   String get actionApply {
-    return Intl.message('Applica', name: 'actionApply', desc: '', args: []);
+    return Intl.message('Apply', name: 'actionApply', desc: '', args: []);
   }
 
-  /// `Appuntamenti`
+  /// `Appointments`
   String get reportsTotalAppointments {
     return Intl.message(
-      'Appuntamenti',
+      'Appointments',
       name: 'reportsTotalAppointments',
       desc: '',
       args: [],
     );
   }
 
-  /// `Incasso`
+  /// `Revenue`
   String get reportsTotalRevenue {
     return Intl.message(
-      'Incasso',
+      'Revenue',
       name: 'reportsTotalRevenue',
       desc: '',
       args: [],
     );
   }
 
-  /// `Totale incassato`
+  /// `Total collected`
   String get reportsAppointmentsAmount {
     return Intl.message(
-      'Totale incassato',
+      'Total collected',
       name: 'reportsAppointmentsAmount',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ore lavorate`
+  /// `Hours worked`
   String get reportsTotalHours {
     return Intl.message(
-      'Ore lavorate',
+      'Hours worked',
       name: 'reportsTotalHours',
       desc: '',
       args: [],
     );
   }
 
-  /// `Occupazione`
+  /// `Occupancy`
   String get reportsOccupancyPercentage {
     return Intl.message(
-      'Occupazione',
+      'Occupancy',
       name: 'reportsOccupancyPercentage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Clienti unici`
+  /// `Unique clients`
   String get reportsUniqueClients {
     return Intl.message(
-      'Clienti unici',
+      'Unique clients',
       name: 'reportsUniqueClients',
       desc: '',
       args: [],
     );
   }
 
-  /// `Per operatore`
+  /// `By staff`
   String get reportsByStaff {
-    return Intl.message(
-      'Per operatore',
-      name: 'reportsByStaff',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('By staff', name: 'reportsByStaff', desc: '', args: []);
   }
 
-  /// `Per sede`
+  /// `By location`
   String get reportsByLocation {
     return Intl.message(
-      'Per sede',
+      'By location',
       name: 'reportsByLocation',
       desc: '',
       args: [],
     );
   }
 
-  /// `Per servizio`
+  /// `By service`
   String get reportsByService {
     return Intl.message(
-      'Per servizio',
+      'By service',
       name: 'reportsByService',
       desc: '',
       args: [],
     );
   }
 
-  /// `Per giorno della settimana`
+  /// `By day of week`
   String get reportsByDayOfWeek {
     return Intl.message(
-      'Per giorno della settimana',
+      'By day of week',
       name: 'reportsByDayOfWeek',
       desc: '',
       args: [],
     );
   }
 
-  /// `Per periodo`
+  /// `By period`
   String get reportsByPeriod {
     return Intl.message(
-      'Per periodo',
+      'By period',
       name: 'reportsByPeriod',
       desc: '',
       args: [],
     );
   }
 
-  /// `Per fascia oraria`
+  /// `By hour`
   String get reportsByHour {
-    return Intl.message(
-      'Per fascia oraria',
-      name: 'reportsByHour',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('By hour', name: 'reportsByHour', desc: '', args: []);
   }
 
   /// `Staff`
@@ -6810,10 +6765,10 @@ class L10n {
     );
   }
 
-  /// `Appuntamenti`
+  /// `Appointments`
   String get reportsTabAppointments {
     return Intl.message(
-      'Appuntamenti',
+      'Appointments',
       name: 'reportsTabAppointments',
       desc: '',
       args: [],
@@ -6825,175 +6780,170 @@ class L10n {
     return Intl.message('Team', name: 'reportsTabStaff', desc: '', args: []);
   }
 
-  /// `Riepilogo ore programmate, lavorate e assenze`
+  /// `Summary of scheduled, worked hours and absences`
   String get reportsWorkHoursSubtitle {
     return Intl.message(
-      'Riepilogo ore programmate, lavorate e assenze',
+      'Summary of scheduled, worked hours and absences',
       name: 'reportsWorkHoursSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Programmate`
+  /// `Scheduled`
   String get reportsWorkHoursScheduled {
     return Intl.message(
-      'Programmate',
+      'Scheduled',
       name: 'reportsWorkHoursScheduled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotate`
+  /// `Booked`
   String get reportsWorkHoursWorked {
     return Intl.message(
-      'Prenotate',
+      'Booked',
       name: 'reportsWorkHoursWorked',
       desc: '',
       args: [],
     );
   }
 
-  /// `Blocchi`
+  /// `Blocked`
   String get reportsWorkHoursBlocked {
     return Intl.message(
-      'Blocchi',
+      'Blocked',
       name: 'reportsWorkHoursBlocked',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ferie/Assenze`
+  /// `Time Off`
   String get reportsWorkHoursOff {
     return Intl.message(
-      'Ferie/Assenze',
+      'Time Off',
       name: 'reportsWorkHoursOff',
       desc: '',
       args: [],
     );
   }
 
-  /// `Effettive`
+  /// `Effective`
   String get reportsWorkHoursAvailable {
     return Intl.message(
-      'Effettive',
+      'Effective',
       name: 'reportsWorkHoursAvailable',
       desc: '',
       args: [],
     );
   }
 
-  /// `Occupazione`
+  /// `Occupancy`
   String get reportsWorkHoursUtilization {
     return Intl.message(
-      'Occupazione',
+      'Occupancy',
       name: 'reportsWorkHoursUtilization',
       desc: '',
       args: [],
     );
   }
 
-  /// `Programmate`
+  /// `Scheduled`
   String get reportsColScheduledHours {
     return Intl.message(
-      'Programmate',
+      'Scheduled',
       name: 'reportsColScheduledHours',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotate`
+  /// `Booked`
   String get reportsColWorkedHours {
     return Intl.message(
-      'Prenotate',
+      'Booked',
       name: 'reportsColWorkedHours',
       desc: '',
       args: [],
     );
   }
 
-  /// `Blocchi`
+  /// `Blocked`
   String get reportsColBlockedHours {
     return Intl.message(
-      'Blocchi',
+      'Blocked',
       name: 'reportsColBlockedHours',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ferie/Assenze`
+  /// `Time Off`
   String get reportsColOffHours {
     return Intl.message(
-      'Ferie/Assenze',
+      'Time Off',
       name: 'reportsColOffHours',
       desc: '',
       args: [],
     );
   }
 
-  /// `Effettive`
+  /// `Effective`
   String get reportsColAvailableHours {
     return Intl.message(
-      'Effettive',
+      'Effective',
       name: 'reportsColAvailableHours',
       desc: '',
       args: [],
     );
   }
 
-  /// `Occupazione`
+  /// `Occupancy`
   String get reportsColUtilization {
     return Intl.message(
-      'Occupazione',
+      'Occupancy',
       name: 'reportsColUtilization',
       desc: '',
       args: [],
     );
   }
 
-  /// `Operatore`
+  /// `Staff`
   String get reportsColStaff {
-    return Intl.message(
-      'Operatore',
-      name: 'reportsColStaff',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Staff', name: 'reportsColStaff', desc: '', args: []);
   }
 
-  /// `Appuntamenti`
+  /// `Appointments`
   String get reportsColAppointments {
     return Intl.message(
-      'Appuntamenti',
+      'Appointments',
       name: 'reportsColAppointments',
       desc: '',
       args: [],
     );
   }
 
-  /// `Importo`
+  /// `Amount`
   String get reportsColRevenue {
     return Intl.message(
-      'Importo',
+      'Amount',
       name: 'reportsColRevenue',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ore`
+  /// `Hours`
   String get reportsColHours {
-    return Intl.message('Ore', name: 'reportsColHours', desc: '', args: []);
+    return Intl.message('Hours', name: 'reportsColHours', desc: '', args: []);
   }
 
-  /// `Media`
+  /// `Average`
   String get reportsColAvgRevenue {
     return Intl.message(
-      'Media',
+      'Average',
       name: 'reportsColAvgRevenue',
       desc: '',
       args: [],
@@ -7005,605 +6955,610 @@ class L10n {
     return Intl.message('%', name: 'reportsColPercentage', desc: '', args: []);
   }
 
-  /// `Sede`
+  /// `Location`
   String get reportsColLocation {
-    return Intl.message('Sede', name: 'reportsColLocation', desc: '', args: []);
+    return Intl.message(
+      'Location',
+      name: 'reportsColLocation',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `Servizio`
+  /// `Service`
   String get reportsColService {
     return Intl.message(
-      'Servizio',
+      'Service',
       name: 'reportsColService',
       desc: '',
       args: [],
     );
   }
 
-  /// `Categoria`
+  /// `Category`
   String get reportsColCategory {
     return Intl.message(
-      'Categoria',
+      'Category',
       name: 'reportsColCategory',
       desc: '',
       args: [],
     );
   }
 
-  /// `Durata media`
+  /// `Avg. duration`
   String get reportsColAvgDuration {
     return Intl.message(
-      'Durata media',
+      'Avg. duration',
       name: 'reportsColAvgDuration',
       desc: '',
       args: [],
     );
   }
 
-  /// `Giorno`
+  /// `Day`
   String get reportsColDay {
-    return Intl.message('Giorno', name: 'reportsColDay', desc: '', args: []);
+    return Intl.message('Day', name: 'reportsColDay', desc: '', args: []);
   }
 
-  /// `Periodo`
+  /// `Period`
   String get reportsColPeriod {
-    return Intl.message(
-      'Periodo',
-      name: 'reportsColPeriod',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Period', name: 'reportsColPeriod', desc: '', args: []);
   }
 
-  /// `Ora`
+  /// `Hour`
   String get reportsColHour {
-    return Intl.message('Ora', name: 'reportsColHour', desc: '', args: []);
+    return Intl.message('Hour', name: 'reportsColHour', desc: '', args: []);
   }
 
-  /// `Lunedì`
+  /// `Monday`
   String get dayMonday {
-    return Intl.message('Lunedì', name: 'dayMonday', desc: '', args: []);
+    return Intl.message('Monday', name: 'dayMonday', desc: '', args: []);
   }
 
-  /// `Martedì`
+  /// `Tuesday`
   String get dayTuesday {
-    return Intl.message('Martedì', name: 'dayTuesday', desc: '', args: []);
+    return Intl.message('Tuesday', name: 'dayTuesday', desc: '', args: []);
   }
 
-  /// `Mercoledì`
+  /// `Wednesday`
   String get dayWednesday {
-    return Intl.message('Mercoledì', name: 'dayWednesday', desc: '', args: []);
+    return Intl.message('Wednesday', name: 'dayWednesday', desc: '', args: []);
   }
 
-  /// `Giovedì`
+  /// `Thursday`
   String get dayThursday {
-    return Intl.message('Giovedì', name: 'dayThursday', desc: '', args: []);
+    return Intl.message('Thursday', name: 'dayThursday', desc: '', args: []);
   }
 
-  /// `Venerdì`
+  /// `Friday`
   String get dayFriday {
-    return Intl.message('Venerdì', name: 'dayFriday', desc: '', args: []);
+    return Intl.message('Friday', name: 'dayFriday', desc: '', args: []);
   }
 
-  /// `Sabato`
+  /// `Saturday`
   String get daySaturday {
-    return Intl.message('Sabato', name: 'daySaturday', desc: '', args: []);
+    return Intl.message('Saturday', name: 'daySaturday', desc: '', args: []);
   }
 
-  /// `Domenica`
+  /// `Sunday`
   String get daySunday {
-    return Intl.message('Domenica', name: 'daySunday', desc: '', args: []);
+    return Intl.message('Sunday', name: 'daySunday', desc: '', args: []);
   }
 
-  /// `Risorse richieste`
+  /// `Required resources`
   String get serviceRequiredResourcesLabel {
     return Intl.message(
-      'Risorse richieste',
+      'Required resources',
       name: 'serviceRequiredResourcesLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessuna risorsa richiesta`
+  /// `No resources required`
   String get resourceNoneLabel {
     return Intl.message(
-      'Nessuna risorsa richiesta',
+      'No resources required',
       name: 'resourceNoneLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona risorse`
+  /// `Select resources`
   String get resourceSelectLabel {
     return Intl.message(
-      'Seleziona risorse',
+      'Select resources',
       name: 'resourceSelectLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Risorse`
+  /// `Resources`
   String get resourcesTitle {
-    return Intl.message('Risorse', name: 'resourcesTitle', desc: '', args: []);
+    return Intl.message(
+      'Resources',
+      name: 'resourcesTitle',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `Nessuna risorsa configurata per questa sede`
+  /// `No resources configured for this location`
   String get resourcesEmpty {
     return Intl.message(
-      'Nessuna risorsa configurata per questa sede',
+      'No resources configured for this location',
       name: 'resourcesEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Le risorse sono attrezzature o spazi (es. cabine, lettini) che possono essere associati ai servizi`
+  /// `Resources are equipment or spaces (e.g., cabins, beds) that can be associated with services`
   String get resourcesEmptyHint {
     return Intl.message(
-      'Le risorse sono attrezzature o spazi (es. cabine, lettini) che possono essere associati ai servizi',
+      'Resources are equipment or spaces (e.g., cabins, beds) that can be associated with services',
       name: 'resourcesEmptyHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuova risorsa`
+  /// `New resource`
   String get resourceNew {
     return Intl.message(
-      'Nuova risorsa',
+      'New resource',
       name: 'resourceNew',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica risorsa`
+  /// `Edit resource`
   String get resourceEdit {
     return Intl.message(
-      'Modifica risorsa',
+      'Edit resource',
       name: 'resourceEdit',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nome risorsa`
+  /// `Resource name`
   String get resourceNameLabel {
     return Intl.message(
-      'Nome risorsa',
+      'Resource name',
       name: 'resourceNameLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Quantità disponibile`
+  /// `Available quantity`
   String get resourceQuantityLabel {
     return Intl.message(
-      'Quantità disponibile',
+      'Available quantity',
       name: 'resourceQuantityLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tipo (opzionale)`
+  /// `Type (optional)`
   String get resourceTypeLabel {
     return Intl.message(
-      'Tipo (opzionale)',
+      'Type (optional)',
       name: 'resourceTypeLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Note (opzionale)`
+  /// `Notes (optional)`
   String get resourceNoteLabel {
     return Intl.message(
-      'Note (opzionale)',
+      'Notes (optional)',
       name: 'resourceNoteLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eliminare questa risorsa?`
+  /// `Delete this resource?`
   String get resourceDeleteConfirm {
     return Intl.message(
-      'Eliminare questa risorsa?',
+      'Delete this resource?',
       name: 'resourceDeleteConfirm',
       desc: '',
       args: [],
     );
   }
 
-  /// `I servizi che usano questa risorsa non saranno più vincolati alla sua disponibilità`
+  /// `Services using this resource will no longer be constrained by its availability`
   String get resourceDeleteWarning {
     return Intl.message(
-      'I servizi che usano questa risorsa non saranno più vincolati alla sua disponibilità',
+      'Services using this resource will no longer be constrained by its availability',
       name: 'resourceDeleteWarning',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizi che usano questa risorsa`
+  /// `Services using this resource`
   String get resourceServicesLabel {
     return Intl.message(
-      'Servizi che usano questa risorsa',
+      'Services using this resource',
       name: 'resourceServicesLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun servizio associato`
+  /// `No services associated`
   String get resourceNoServicesSelected {
     return Intl.message(
-      'Nessun servizio associato',
+      'No services associated',
       name: 'resourceNoServicesSelected',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona servizi`
+  /// `Select services`
   String get resourceSelectServices {
     return Intl.message(
-      'Seleziona servizi',
+      'Select services',
       name: 'resourceSelectServices',
       desc: '',
       args: [],
     );
   }
 
-  /// `1 servizio`
+  /// `1 service`
   String get resourceServiceCountSingular {
     return Intl.message(
-      '1 servizio',
+      '1 service',
       name: 'resourceServiceCountSingular',
       desc: '',
       args: [],
     );
   }
 
-  /// `{count} servizi`
+  /// `{count} services`
   String resourceServiceCountPlural(int count) {
     return Intl.message(
-      '$count servizi',
+      '$count services',
       name: 'resourceServiceCountPlural',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Qtà richiesta`
+  /// `Qty required`
   String get resourceQuantityRequired {
     return Intl.message(
-      'Qtà richiesta',
+      'Qty required',
       name: 'resourceQuantityRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Elenco Prenotazioni`
+  /// `Bookings List`
   String get bookingsListTitle {
     return Intl.message(
-      'Elenco Prenotazioni',
+      'Bookings List',
       name: 'bookingsListTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessuna prenotazione trovata`
+  /// `No bookings found`
   String get bookingsListEmpty {
     return Intl.message(
-      'Nessuna prenotazione trovata',
+      'No bookings found',
       name: 'bookingsListEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prova a modificare i filtri di ricerca`
+  /// `Try adjusting your search filters`
   String get bookingsListEmptyHint {
     return Intl.message(
-      'Prova a modificare i filtri di ricerca',
+      'Try adjusting your search filters',
       name: 'bookingsListEmptyHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Filtri`
+  /// `Filters`
   String get bookingsListFilterTitle {
     return Intl.message(
-      'Filtri',
+      'Filters',
       name: 'bookingsListFilterTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sede`
+  /// `Location`
   String get bookingsListFilterLocation {
     return Intl.message(
-      'Sede',
+      'Location',
       name: 'bookingsListFilterLocation',
       desc: '',
       args: [],
     );
   }
 
-  /// `Operatore`
+  /// `Staff`
   String get bookingsListFilterStaff {
     return Intl.message(
-      'Operatore',
+      'Staff',
       name: 'bookingsListFilterStaff',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizio`
+  /// `Service`
   String get bookingsListFilterService {
     return Intl.message(
-      'Servizio',
+      'Service',
       name: 'bookingsListFilterService',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cerca cliente`
+  /// `Search client`
   String get bookingsListFilterClient {
     return Intl.message(
-      'Cerca cliente',
+      'Search client',
       name: 'bookingsListFilterClient',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nome, email o telefono`
+  /// `Name, email or phone`
   String get bookingsListFilterClientHint {
     return Intl.message(
-      'Nome, email o telefono',
+      'Name, email or phone',
       name: 'bookingsListFilterClientHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Stato`
+  /// `Status`
   String get bookingsListFilterStatus {
     return Intl.message(
-      'Stato',
+      'Status',
       name: 'bookingsListFilterStatus',
       desc: '',
       args: [],
     );
   }
 
-  /// `Periodo`
+  /// `Period`
   String get bookingsListFilterPeriod {
     return Intl.message(
-      'Periodo',
+      'Period',
       name: 'bookingsListFilterPeriod',
       desc: '',
       args: [],
     );
   }
 
-  /// `Includi passati`
+  /// `Include past`
   String get bookingsListFilterIncludePast {
     return Intl.message(
-      'Includi passati',
+      'Include past',
       name: 'bookingsListFilterIncludePast',
       desc: '',
       args: [],
     );
   }
 
-  /// `Solo futuri`
+  /// `Future only`
   String get bookingsListFilterFutureOnly {
     return Intl.message(
-      'Solo futuri',
+      'Future only',
       name: 'bookingsListFilterFutureOnly',
       desc: '',
       args: [],
     );
   }
 
-  /// `Data appuntamento`
+  /// `Appointment date`
   String get bookingsListSortByAppointment {
     return Intl.message(
-      'Data appuntamento',
+      'Appointment date',
       name: 'bookingsListSortByAppointment',
       desc: '',
       args: [],
     );
   }
 
-  /// `Data creazione`
+  /// `Creation date`
   String get bookingsListSortByCreated {
     return Intl.message(
-      'Data creazione',
+      'Creation date',
       name: 'bookingsListSortByCreated',
       desc: '',
       args: [],
     );
   }
 
-  /// `Crescente`
+  /// `Ascending`
   String get bookingsListSortAsc {
     return Intl.message(
-      'Crescente',
+      'Ascending',
       name: 'bookingsListSortAsc',
       desc: '',
       args: [],
     );
   }
 
-  /// `Decrescente`
+  /// `Descending`
   String get bookingsListSortDesc {
     return Intl.message(
-      'Decrescente',
+      'Descending',
       name: 'bookingsListSortDesc',
       desc: '',
       args: [],
     );
   }
 
-  /// `Data/Ora`
+  /// `Date/Time`
   String get bookingsListColumnDateTime {
     return Intl.message(
-      'Data/Ora',
+      'Date/Time',
       name: 'bookingsListColumnDateTime',
       desc: '',
       args: [],
     );
   }
 
-  /// `Creato il`
+  /// `Created on`
   String get bookingsListColumnCreatedAt {
     return Intl.message(
-      'Creato il',
+      'Created on',
       name: 'bookingsListColumnCreatedAt',
       desc: '',
       args: [],
     );
   }
 
-  /// `Creato da`
+  /// `Created by`
   String get bookingsListColumnCreatedBy {
     return Intl.message(
-      'Creato da',
+      'Created by',
       name: 'bookingsListColumnCreatedBy',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cliente`
+  /// `Client`
   String get bookingsListColumnClient {
     return Intl.message(
-      'Cliente',
+      'Client',
       name: 'bookingsListColumnClient',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizi`
+  /// `Services`
   String get bookingsListColumnServices {
     return Intl.message(
-      'Servizi',
+      'Services',
       name: 'bookingsListColumnServices',
       desc: '',
       args: [],
     );
   }
 
-  /// `Operatore`
+  /// `Staff`
   String get bookingsListColumnStaff {
     return Intl.message(
-      'Operatore',
+      'Staff',
       name: 'bookingsListColumnStaff',
       desc: '',
       args: [],
     );
   }
 
-  /// `Stato`
+  /// `Status`
   String get bookingsListColumnStatus {
     return Intl.message(
-      'Stato',
+      'Status',
       name: 'bookingsListColumnStatus',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prezzo`
+  /// `Price`
   String get bookingsListColumnPrice {
     return Intl.message(
-      'Prezzo',
+      'Price',
       name: 'bookingsListColumnPrice',
       desc: '',
       args: [],
     );
   }
 
-  /// `Azioni`
+  /// `Actions`
   String get bookingsListColumnActions {
     return Intl.message(
-      'Azioni',
+      'Actions',
       name: 'bookingsListColumnActions',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica`
+  /// `Edit`
   String get bookingsListActionEdit {
     return Intl.message(
-      'Modifica',
+      'Edit',
       name: 'bookingsListActionEdit',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cancella`
+  /// `Cancel`
   String get bookingsListActionCancel {
     return Intl.message(
-      'Cancella',
+      'Cancel',
       name: 'bookingsListActionCancel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Dettagli`
+  /// `Details`
   String get bookingsListActionView {
     return Intl.message(
-      'Dettagli',
+      'Details',
       name: 'bookingsListActionView',
       desc: '',
       args: [],
     );
   }
 
-  /// `Confermato`
+  /// `Confirmed`
   String get bookingsListStatusConfirmed {
     return Intl.message(
-      'Confermato',
+      'Confirmed',
       name: 'bookingsListStatusConfirmed',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cancellato`
+  /// `Cancelled`
   String get bookingsListStatusCancelled {
     return Intl.message(
-      'Cancellato',
+      'Cancelled',
       name: 'bookingsListStatusCancelled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Completato`
+  /// `Completed`
   String get bookingsListStatusCompleted {
     return Intl.message(
-      'Completato',
+      'Completed',
       name: 'bookingsListStatusCompleted',
       desc: '',
       args: [],
@@ -7620,20 +7575,20 @@ class L10n {
     );
   }
 
-  /// `In attesa`
+  /// `Pending`
   String get bookingsListStatusPending {
     return Intl.message(
-      'In attesa',
+      'Pending',
       name: 'bookingsListStatusPending',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sostituito`
+  /// `Replaced`
   String get bookingsListStatusReplaced {
     return Intl.message(
-      'Sostituito',
+      'Replaced',
       name: 'bookingsListStatusReplaced',
       desc: '',
       args: [],
@@ -7650,10 +7605,10 @@ class L10n {
     );
   }
 
-  /// `Telefono`
+  /// `Phone`
   String get bookingsListSourcePhone {
     return Intl.message(
-      'Telefono',
+      'Phone',
       name: 'bookingsListSourcePhone',
       desc: '',
       args: [],
@@ -7670,1164 +7625,1169 @@ class L10n {
     );
   }
 
-  /// `Gestionale`
+  /// `Back office`
   String get bookingsListSourceInternal {
     return Intl.message(
-      'Gestionale',
+      'Back office',
       name: 'bookingsListSourceInternal',
       desc: '',
       args: [],
     );
   }
 
-  /// `{count} prenotazioni`
+  /// `{count} bookings`
   String bookingsListTotalCount(int count) {
     return Intl.message(
-      '$count prenotazioni',
+      '$count bookings',
       name: 'bookingsListTotalCount',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Carica altre`
+  /// `Load more`
   String get bookingsListLoadMore {
     return Intl.message(
-      'Carica altre',
+      'Load more',
       name: 'bookingsListLoadMore',
       desc: '',
       args: [],
     );
   }
 
-  /// `Reset filtri`
+  /// `Reset filters`
   String get bookingsListResetFilters {
     return Intl.message(
-      'Reset filtri',
+      'Reset filters',
       name: 'bookingsListResetFilters',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tutte le sedi`
+  /// `All locations`
   String get bookingsListAllLocations {
     return Intl.message(
-      'Tutte le sedi',
+      'All locations',
       name: 'bookingsListAllLocations',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tutti gli operatori`
+  /// `All staff`
   String get bookingsListAllStaff {
     return Intl.message(
-      'Tutti gli operatori',
+      'All staff',
       name: 'bookingsListAllStaff',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tutti i servizi`
+  /// `All services`
   String get bookingsListAllServices {
     return Intl.message(
-      'Tutti i servizi',
+      'All services',
       name: 'bookingsListAllServices',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tutti gli stati`
+  /// `All statuses`
   String get bookingsListAllStatus {
     return Intl.message(
-      'Tutti gli stati',
+      'All statuses',
       name: 'bookingsListAllStatus',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cancellare prenotazione?`
+  /// `Cancel booking?`
   String get bookingsListCancelConfirmTitle {
     return Intl.message(
-      'Cancellare prenotazione?',
+      'Cancel booking?',
       name: 'bookingsListCancelConfirmTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questa azione non può essere annullata.`
+  /// `This action cannot be undone.`
   String get bookingsListCancelConfirmMessage {
     return Intl.message(
-      'Questa azione non può essere annullata.',
+      'This action cannot be undone.',
       name: 'bookingsListCancelConfirmMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione cancellata`
+  /// `Booking cancelled`
   String get bookingsListCancelSuccess {
     return Intl.message(
-      'Prenotazione cancellata',
+      'Booking cancelled',
       name: 'bookingsListCancelSuccess',
       desc: '',
       args: [],
     );
   }
 
-  /// `Caricamento...`
+  /// `Loading...`
   String get bookingsListLoading {
     return Intl.message(
-      'Caricamento...',
+      'Loading...',
       name: 'bookingsListLoading',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun cliente`
+  /// `No client`
   String get bookingsListNoClient {
     return Intl.message(
-      'Nessun cliente',
+      'No client',
       name: 'bookingsListNoClient',
       desc: '',
       args: [],
     );
   }
 
-  /// `Gestisci i servizi offerti, categorie e listini`
+  /// `Manage services, categories and pricing`
   String get moreServicesDescription {
     return Intl.message(
-      'Gestisci i servizi offerti, categorie e listini',
+      'Manage services, categories and pricing',
       name: 'moreServicesDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Gestisci le sedi del business`
+  /// `Manage business locations`
   String get moreLocationsDescription {
     return Intl.message(
-      'Gestisci le sedi del business',
+      'Manage business locations',
       name: 'moreLocationsDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Gestisci operatori, sedi e orari di lavoro`
+  /// `Manage operators, locations and working hours`
   String get moreTeamDescription {
     return Intl.message(
-      'Gestisci operatori, sedi e orari di lavoro',
+      'Manage operators, locations and working hours',
       name: 'moreTeamDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Visualizza statistiche e andamento attività`
+  /// `View statistics and business performance`
   String get moreReportsDescription {
     return Intl.message(
-      'Visualizza statistiche e andamento attività',
+      'View statistics and business performance',
       name: 'moreReportsDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Consulta lo storico delle prenotazioni`
+  /// `Browse booking history`
   String get moreBookingsDescription {
     return Intl.message(
-      'Consulta lo storico delle prenotazioni',
+      'Browse booking history',
       name: 'moreBookingsDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Visualizza lo storico delle notifiche prenotazioni`
+  /// `View booking notifications history`
   String get moreBookingNotificationsDescription {
     return Intl.message(
-      'Visualizza lo storico delle notifiche prenotazioni',
+      'View booking notifications history',
       name: 'moreBookingNotificationsDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Gestisci i tuoi dati personali e le credenziali`
+  /// `Manage your personal data and credentials`
   String get moreProfileDescription {
     return Intl.message(
-      'Gestisci i tuoi dati personali e le credenziali',
+      'Manage your personal data and credentials',
       name: 'moreProfileDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Passa a un altro business`
+  /// `Switch to another business`
   String get moreSwitchBusinessDescription {
     return Intl.message(
-      'Passa a un altro business',
+      'Switch to another business',
       name: 'moreSwitchBusinessDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Notifiche Prenotazioni`
+  /// `Booking Notifications`
   String get bookingNotificationsTitle {
     return Intl.message(
-      'Notifiche Prenotazioni',
+      'Booking Notifications',
       name: 'bookingNotificationsTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `{count} notifiche`
+  /// `{count} notifications`
   String bookingNotificationsTotalCount(int count) {
     return Intl.message(
-      '$count notifiche',
+      '$count notifications',
       name: 'bookingNotificationsTotalCount',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Nessuna notifica trovata`
+  /// `No notifications found`
   String get bookingNotificationsEmpty {
     return Intl.message(
-      'Nessuna notifica trovata',
+      'No notifications found',
       name: 'bookingNotificationsEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prova a modificare i filtri di ricerca`
+  /// `Try adjusting your search filters`
   String get bookingNotificationsEmptyHint {
     return Intl.message(
-      'Prova a modificare i filtri di ricerca',
+      'Try adjusting your search filters',
       name: 'bookingNotificationsEmptyHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Carica altre`
+  /// `Load more`
   String get bookingNotificationsLoadMore {
     return Intl.message(
-      'Carica altre',
+      'Load more',
       name: 'bookingNotificationsLoadMore',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cerca`
+  /// `Search`
   String get bookingNotificationsSearchLabel {
     return Intl.message(
-      'Cerca',
+      'Search',
       name: 'bookingNotificationsSearchLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cliente, destinatario, oggetto`
+  /// `Client, recipient, subject`
   String get bookingNotificationsSearchHint {
     return Intl.message(
-      'Cliente, destinatario, oggetto',
+      'Client, recipient, subject',
       name: 'bookingNotificationsSearchHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Stato`
+  /// `Status`
   String get bookingNotificationsFilterStatus {
     return Intl.message(
-      'Stato',
+      'Status',
       name: 'bookingNotificationsFilterStatus',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tipo`
+  /// `Type`
   String get bookingNotificationsFilterType {
     return Intl.message(
-      'Tipo',
+      'Type',
       name: 'bookingNotificationsFilterType',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tutti gli stati`
+  /// `All statuses`
   String get bookingNotificationsStatusAll {
     return Intl.message(
-      'Tutti gli stati',
+      'All statuses',
       name: 'bookingNotificationsStatusAll',
       desc: '',
       args: [],
     );
   }
 
-  /// `In coda`
+  /// `Pending`
   String get bookingNotificationsStatusPending {
     return Intl.message(
-      'In coda',
+      'Pending',
       name: 'bookingNotificationsStatusPending',
       desc: '',
       args: [],
     );
   }
 
-  /// `In elaborazione`
+  /// `Processing`
   String get bookingNotificationsStatusProcessing {
     return Intl.message(
-      'In elaborazione',
+      'Processing',
       name: 'bookingNotificationsStatusProcessing',
       desc: '',
       args: [],
     );
   }
 
-  /// `Inviata`
+  /// `Sent`
   String get bookingNotificationsStatusSent {
     return Intl.message(
-      'Inviata',
+      'Sent',
       name: 'bookingNotificationsStatusSent',
       desc: '',
       args: [],
     );
   }
 
-  /// `Fallita`
+  /// `Failed`
   String get bookingNotificationsStatusFailed {
     return Intl.message(
-      'Fallita',
+      'Failed',
       name: 'bookingNotificationsStatusFailed',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tutti i tipi`
+  /// `All types`
   String get bookingNotificationsTypeAll {
     return Intl.message(
-      'Tutti i tipi',
+      'All types',
       name: 'bookingNotificationsTypeAll',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione creata`
+  /// `Booking created`
   String get bookingNotificationsChannelConfirmed {
     return Intl.message(
-      'Prenotazione creata',
+      'Booking created',
       name: 'bookingNotificationsChannelConfirmed',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione riprogrammata`
+  /// `Booking rescheduled`
   String get bookingNotificationsChannelRescheduled {
     return Intl.message(
-      'Prenotazione riprogrammata',
+      'Booking rescheduled',
       name: 'bookingNotificationsChannelRescheduled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione annullata`
+  /// `Booking cancelled`
   String get bookingNotificationsChannelCancelled {
     return Intl.message(
-      'Prenotazione annullata',
+      'Booking cancelled',
       name: 'bookingNotificationsChannelCancelled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Promemoria prenotazione`
+  /// `Booking reminder`
   String get bookingNotificationsChannelReminder {
     return Intl.message(
-      'Promemoria prenotazione',
+      'Booking reminder',
       name: 'bookingNotificationsChannelReminder',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tipo`
+  /// `Type`
   String get bookingNotificationsFieldType {
     return Intl.message(
-      'Tipo',
+      'Type',
       name: 'bookingNotificationsFieldType',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cliente`
+  /// `Client`
   String get bookingNotificationsFieldClient {
     return Intl.message(
-      'Cliente',
+      'Client',
       name: 'bookingNotificationsFieldClient',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sede`
+  /// `Location`
   String get bookingNotificationsFieldLocation {
     return Intl.message(
-      'Sede',
+      'Location',
       name: 'bookingNotificationsFieldLocation',
       desc: '',
       args: [],
     );
   }
 
-  /// `Appuntamento`
+  /// `Appointment`
   String get bookingNotificationsFieldAppointment {
     return Intl.message(
-      'Appuntamento',
+      'Appointment',
       name: 'bookingNotificationsFieldAppointment',
       desc: '',
       args: [],
     );
   }
 
-  /// `Destinatario`
+  /// `Recipient`
   String get bookingNotificationsFieldRecipient {
     return Intl.message(
-      'Destinatario',
+      'Recipient',
       name: 'bookingNotificationsFieldRecipient',
       desc: '',
       args: [],
     );
   }
 
-  /// `Creata il`
+  /// `Created at`
   String get bookingNotificationsFieldCreatedAt {
     return Intl.message(
-      'Creata il',
+      'Created at',
       name: 'bookingNotificationsFieldCreatedAt',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ultimo tentativo`
+  /// `Last attempt`
   String get bookingNotificationsFieldLastAttemptAt {
     return Intl.message(
-      'Ultimo tentativo',
+      'Last attempt',
       name: 'bookingNotificationsFieldLastAttemptAt',
       desc: '',
       args: [],
     );
   }
 
-  /// `Inviata il`
+  /// `Sent at`
   String get bookingNotificationsFieldSentAt {
     return Intl.message(
-      'Inviata il',
+      'Sent at',
       name: 'bookingNotificationsFieldSentAt',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore`
+  /// `Error`
   String get bookingNotificationsFieldError {
     return Intl.message(
-      'Errore',
+      'Error',
       name: 'bookingNotificationsFieldError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Corpo`
+  /// `Body`
   String get bookingNotificationsFieldBody {
     return Intl.message(
-      'Corpo',
+      'Body',
       name: 'bookingNotificationsFieldBody',
       desc: '',
       args: [],
     );
   }
 
-  /// `Visualizza corpo`
+  /// `View body`
   String get bookingNotificationsActionViewBody {
     return Intl.message(
-      'Visualizza corpo',
+      'View body',
       name: 'bookingNotificationsActionViewBody',
       desc: '',
       args: [],
     );
   }
 
-  /// `Corpo notifica`
+  /// `Notification body`
   String get bookingNotificationsBodyDialogTitle {
     return Intl.message(
-      'Corpo notifica',
+      'Notification body',
       name: 'bookingNotificationsBodyDialogTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Corpo notifica non disponibile`
+  /// `Notification body not available`
   String get bookingNotificationsBodyUnavailable {
     return Intl.message(
-      'Corpo notifica non disponibile',
+      'Notification body not available',
       name: 'bookingNotificationsBodyUnavailable',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun oggetto`
+  /// `No subject`
   String get bookingNotificationsNoSubject {
     return Intl.message(
-      'Nessun oggetto',
+      'No subject',
       name: 'bookingNotificationsNoSubject',
       desc: '',
       args: [],
     );
   }
 
-  /// `N/D`
+  /// `N/A`
   String get bookingNotificationsNotAvailable {
     return Intl.message(
-      'N/D',
+      'N/A',
       name: 'bookingNotificationsNotAvailable',
       desc: '',
       args: [],
     );
   }
 
-  /// `Email Notifiche Prenotazioni Online`
+  /// `Online bookings notification email`
   String get businessOnlineBookingsNotificationEmailLabel {
     return Intl.message(
-      'Email Notifiche Prenotazioni Online',
+      'Online bookings notification email',
       name: 'businessOnlineBookingsNotificationEmailLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `es. prenotazioni@salone.it`
+  /// `e.g. bookings@business.com`
   String get businessOnlineBookingsNotificationEmailHint {
     return Intl.message(
-      'es. prenotazioni@salone.it',
+      'e.g. bookings@business.com',
       name: 'businessOnlineBookingsNotificationEmailHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Riceve notifiche solo per prenotazioni eseguite dal cliente`
+  /// `Receives notifications only when customers create/modify/cancel online bookings`
   String get businessOnlineBookingsNotificationEmailHelper {
     return Intl.message(
-      'Riceve notifiche solo per prenotazioni eseguite dal cliente',
+      'Receives notifications only when customers create/modify/cancel online bookings',
       name: 'businessOnlineBookingsNotificationEmailHelper',
       desc: '',
       args: [],
     );
   }
 
-  /// `Palette colori servizi`
+  /// `Service color palette`
   String get businessServiceColorPaletteLabel {
     return Intl.message(
-      'Palette colori servizi',
+      'Service color palette',
       name: 'businessServiceColorPaletteLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Definisce i colori usati nella selezione servizi e nelle card agenda`
+  /// `Defines colors used in service selection and agenda cards`
   String get businessServiceColorPaletteHelper {
     return Intl.message(
-      'Definisce i colori usati nella selezione servizi e nelle card agenda',
+      'Defines colors used in service selection and agenda cards',
       name: 'businessServiceColorPaletteHelper',
       desc: '',
       args: [],
     );
   }
 
-  /// `Scura (consigliata)`
+  /// `Darker (recommended)`
   String get businessServiceColorPaletteEnhanced {
     return Intl.message(
-      'Scura (consigliata)',
+      'Darker (recommended)',
       name: 'businessServiceColorPaletteEnhanced',
       desc: '',
       args: [],
     );
   }
 
-  /// `Originale`
+  /// `Original`
   String get businessServiceColorPaletteLegacy {
     return Intl.message(
-      'Originale',
+      'Original',
       name: 'businessServiceColorPaletteLegacy',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accedi alle altre funzionalità dell'applicazione`
+  /// `Access other application features`
   String get moreSubtitle {
     return Intl.message(
-      'Accedi alle altre funzionalità dell\'applicazione',
+      'Access other application features',
       name: 'moreSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Date di chiusura`
+  /// `Closure dates`
   String get closuresTitle {
     return Intl.message(
-      'Date di chiusura',
+      'Closure dates',
       name: 'closuresTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `A partire da oggi`
+  /// `From today`
   String get closuresFilterFromToday {
     return Intl.message(
-      'A partire da oggi',
+      'From today',
       name: 'closuresFilterFromToday',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tutti`
+  /// `All`
   String get closuresFilterAll {
-    return Intl.message('Tutti', name: 'closuresFilterAll', desc: '', args: []);
+    return Intl.message('All', name: 'closuresFilterAll', desc: '', args: []);
   }
 
-  /// `Nessuna chiusura programmata`
+  /// `No closures scheduled`
   String get closuresEmpty {
     return Intl.message(
-      'Nessuna chiusura programmata',
+      'No closures scheduled',
       name: 'closuresEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessuna chiusura programmata per il periodo selezionato`
+  /// `No closures scheduled for the selected period`
   String get closuresEmptyForPeriod {
     return Intl.message(
-      'Nessuna chiusura programmata per il periodo selezionato',
+      'No closures scheduled for the selected period',
       name: 'closuresEmptyForPeriod',
       desc: '',
       args: [],
     );
   }
 
-  /// `Aggiungi i periodi di chiusura dell'attività (es. festività, ferie)`
+  /// `Add business closure periods (e.g. holidays, vacations)`
   String get closuresEmptyHint {
     return Intl.message(
-      'Aggiungi i periodi di chiusura dell\'attività (es. festività, ferie)',
+      'Add business closure periods (e.g. holidays, vacations)',
       name: 'closuresEmptyHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prossime chiusure`
+  /// `Upcoming closures`
   String get closuresUpcoming {
     return Intl.message(
-      'Prossime chiusure',
+      'Upcoming closures',
       name: 'closuresUpcoming',
       desc: '',
       args: [],
     );
   }
 
-  /// `Chiusure precedenti`
+  /// `Previous closures`
   String get closuresPast {
     return Intl.message(
-      'Chiusure precedenti',
+      'Previous closures',
       name: 'closuresPast',
       desc: '',
       args: [],
     );
   }
 
-  /// `per un totale di {count, plural, =1{1 giorno} other{{count} giorni}}`
+  /// `for a total of {count, plural, =1{1 day} other{{count} days}}`
   String closuresTotalDays(int count) {
     return Intl.message(
-      'per un totale di ${Intl.plural(count, one: '1 giorno', other: '$count giorni')}',
+      'for a total of ${Intl.plural(count, one: '1 day', other: '$count days')}',
       name: 'closuresTotalDays',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Nuova chiusura`
+  /// `New closure`
   String get closuresNewTitle {
     return Intl.message(
-      'Nuova chiusura',
+      'New closure',
       name: 'closuresNewTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica chiusura`
+  /// `Edit closure`
   String get closuresEditTitle {
     return Intl.message(
-      'Modifica chiusura',
+      'Edit closure',
       name: 'closuresEditTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Data inizio`
+  /// `Start date`
   String get closuresStartDate {
     return Intl.message(
-      'Data inizio',
+      'Start date',
       name: 'closuresStartDate',
       desc: '',
       args: [],
     );
   }
 
-  /// `Data fine`
+  /// `End date`
   String get closuresEndDate {
     return Intl.message(
-      'Data fine',
+      'End date',
       name: 'closuresEndDate',
       desc: '',
       args: [],
     );
   }
 
-  /// `Motivo (opzionale)`
+  /// `Reason (optional)`
   String get closuresReason {
     return Intl.message(
-      'Motivo (opzionale)',
+      'Reason (optional)',
       name: 'closuresReason',
       desc: '',
       args: [],
     );
   }
 
-  /// `es. Festività, Ferie estive, Manutenzione...`
+  /// `e.g. Holiday, Summer vacation, Maintenance...`
   String get closuresReasonHint {
     return Intl.message(
-      'es. Festività, Ferie estive, Manutenzione...',
+      'e.g. Holiday, Summer vacation, Maintenance...',
       name: 'closuresReasonHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eliminare questa chiusura?`
+  /// `Delete this closure?`
   String get closuresDeleteConfirm {
     return Intl.message(
-      'Eliminare questa chiusura?',
+      'Delete this closure?',
       name: 'closuresDeleteConfirm',
       desc: '',
       args: [],
     );
   }
 
-  /// `Gli slot di prenotazione in questo periodo torneranno disponibili.`
+  /// `Booking slots during this period will become available again.`
   String get closuresDeleteConfirmMessage {
     return Intl.message(
-      'Gli slot di prenotazione in questo periodo torneranno disponibili.',
+      'Booking slots during this period will become available again.',
       name: 'closuresDeleteConfirmMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Le date si sovrappongono con un'altra chiusura esistente`
+  /// `Dates overlap with an existing closure`
   String get closuresOverlapError {
     return Intl.message(
-      'Le date si sovrappongono con un\'altra chiusura esistente',
+      'Dates overlap with an existing closure',
       name: 'closuresOverlapError',
       desc: '',
       args: [],
     );
   }
 
-  /// `La data di fine deve essere uguale o successiva alla data di inizio`
+  /// `End date must be equal to or after start date`
   String get closuresInvalidDateRange {
     return Intl.message(
-      'La data di fine deve essere uguale o successiva alla data di inizio',
+      'End date must be equal to or after start date',
       name: 'closuresInvalidDateRange',
       desc: '',
       args: [],
     );
   }
 
-  /// `{count, plural, =1{1 giorno} other{{count} giorni}}`
+  /// `{count, plural, =1{1 day} other{{count} days}}`
   String closuresDays(int count) {
     return Intl.plural(
       count,
-      one: '1 giorno',
-      other: '$count giorni',
+      one: '1 day',
+      other: '$count days',
       name: 'closuresDays',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Giorno singolo`
+  /// `Single day`
   String get closuresSingleDay {
     return Intl.message(
-      'Giorno singolo',
+      'Single day',
       name: 'closuresSingleDay',
       desc: '',
       args: [],
     );
   }
 
-  /// `Periodo`
+  /// `Date range`
   String get closuresDateRange {
     return Intl.message(
-      'Periodo',
+      'Date range',
       name: 'closuresDateRange',
       desc: '',
       args: [],
     );
   }
 
-  /// `Chiusura aggiunta`
+  /// `Closure added`
   String get closuresAddSuccess {
     return Intl.message(
-      'Chiusura aggiunta',
+      'Closure added',
       name: 'closuresAddSuccess',
       desc: '',
       args: [],
     );
   }
 
-  /// `Chiusura aggiornata`
+  /// `Closure updated`
   String get closuresUpdateSuccess {
     return Intl.message(
-      'Chiusura aggiornata',
+      'Closure updated',
       name: 'closuresUpdateSuccess',
       desc: '',
       args: [],
     );
   }
 
-  /// `Chiusura eliminata`
+  /// `Closure deleted`
   String get closuresDeleteSuccess {
     return Intl.message(
-      'Chiusura eliminata',
+      'Closure deleted',
       name: 'closuresDeleteSuccess',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sedi interessate`
+  /// `Affected locations`
   String get closuresLocations {
     return Intl.message(
-      'Sedi interessate',
+      'Affected locations',
       name: 'closuresLocations',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona tutte`
+  /// `Select all`
   String get closuresSelectAll {
     return Intl.message(
-      'Seleziona tutte',
+      'Select all',
       name: 'closuresSelectAll',
       desc: '',
       args: [],
     );
   }
 
-  /// `Deseleziona tutte`
+  /// `Deselect all`
   String get closuresDeselectAll {
     return Intl.message(
-      'Deseleziona tutte',
+      'Deselect all',
       name: 'closuresDeselectAll',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona almeno una sede`
+  /// `Select at least one location`
   String get closuresSelectAtLeastOneLocation {
     return Intl.message(
-      'Seleziona almeno una sede',
+      'Select at least one location',
       name: 'closuresSelectAtLeastOneLocation',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessuna sede configurata`
+  /// `No locations configured`
   String get closuresNoLocations {
     return Intl.message(
-      'Nessuna sede configurata',
+      'No locations configured',
       name: 'closuresNoLocations',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tutte le sedi`
+  /// `All locations`
   String get closuresAllLocations {
     return Intl.message(
-      'Tutte le sedi',
+      'All locations',
       name: 'closuresAllLocations',
       desc: '',
       args: [],
     );
   }
 
-  /// `Aggiungi chiusura`
+  /// `Add closure`
   String get closuresAddButton {
     return Intl.message(
-      'Aggiungi chiusura',
+      'Add closure',
       name: 'closuresAddButton',
       desc: '',
       args: [],
     );
   }
 
-  /// `Importa festività`
+  /// `Import holidays`
   String get closuresImportHolidays {
     return Intl.message(
-      'Importa festività',
+      'Import holidays',
       name: 'closuresImportHolidays',
       desc: '',
       args: [],
     );
   }
 
-  /// `Importa festività nazionali`
+  /// `Import national holidays`
   String get closuresImportHolidaysTitle {
     return Intl.message(
-      'Importa festività nazionali',
+      'Import national holidays',
       name: 'closuresImportHolidaysTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Anno:`
+  /// `Year:`
   String get closuresImportHolidaysYear {
     return Intl.message(
-      'Anno:',
+      'Year:',
       name: 'closuresImportHolidaysYear',
       desc: '',
       args: [],
     );
   }
 
-  /// `Applica alle sedi:`
+  /// `Apply to locations:`
   String get closuresImportHolidaysLocations {
     return Intl.message(
-      'Applica alle sedi:',
+      'Apply to locations:',
       name: 'closuresImportHolidaysLocations',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona le festività da importare:`
+  /// `Select holidays to import:`
   String get closuresImportHolidaysList {
     return Intl.message(
-      'Seleziona le festività da importare:',
+      'Select holidays to import:',
       name: 'closuresImportHolidaysList',
       desc: '',
       args: [],
     );
   }
 
-  /// `Importa {count, plural, =1{1 festività} other{{count} festività}}`
+  /// `Import {count, plural, =1{1 holiday} other{{count} holidays}}`
   String closuresImportHolidaysAction(int count) {
     return Intl.message(
-      'Importa ${Intl.plural(count, one: '1 festività', other: '$count festività')}',
+      'Import ${Intl.plural(count, one: '1 holiday', other: '$count holidays')}',
       name: 'closuresImportHolidaysAction',
       desc: '',
       args: [count],
     );
   }
 
-  /// `{count, plural, =1{1 festività importata} other{{count} festività importate}}`
+  /// `{count, plural, =1{1 holiday imported} other{{count} holidays imported}}`
   String closuresImportHolidaysSuccess(int count) {
     return Intl.plural(
       count,
-      one: '1 festività importata',
-      other: '$count festività importate',
+      one: '1 holiday imported',
+      other: '$count holidays imported',
       name: 'closuresImportHolidaysSuccess',
       desc: '',
       args: [count],
     );
   }
 
-  /// `{count, plural, =1{1 festività già presente} other{{count} festività già presenti}} (contrassegnate con ✓)`
+  /// `{count, plural, =1{1 holiday already added} other{{count} holidays already added}} (marked with ✓)`
   String closuresImportHolidaysAlreadyAdded(int count) {
     return Intl.message(
-      '${Intl.plural(count, one: '1 festività già presente', other: '$count festività già presenti')} (contrassegnate con ✓)',
+      '${Intl.plural(count, one: '1 holiday already added', other: '$count holidays already added')} (marked with ✓)',
       name: 'closuresImportHolidaysAlreadyAdded',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Le festività automatiche non sono disponibili per il paese configurato nella sede.`
+  /// `Automatic holidays are not available for the country configured in the location.`
   String get closuresImportHolidaysUnsupportedCountry {
     return Intl.message(
-      'Le festività automatiche non sono disponibili per il paese configurato nella sede.',
+      'Automatic holidays are not available for the country configured in the location.',
       name: 'closuresImportHolidaysUnsupportedCountry',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessuna classe nel giorno selezionato.`
+  /// `No classes in the selected day.`
   String get classEventsEmpty {
     return Intl.message(
-      'Nessuna classe nel giorno selezionato.',
+      'No classes in the selected day.',
       name: 'classEventsEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Classi`
+  /// `Classes`
   String get classEventsTitle {
-    return Intl.message('Classi', name: 'classEventsTitle', desc: '', args: []);
+    return Intl.message(
+      'Classes',
+      name: 'classEventsTitle',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `Classe`
+  /// `Class`
   String get classEventsUntitled {
     return Intl.message(
-      'Classe',
+      'Class',
       name: 'classEventsUntitled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenota`
+  /// `Book`
   String get classEventsActionBook {
     return Intl.message(
-      'Prenota',
+      'Book',
       name: 'classEventsActionBook',
       desc: '',
       args: [],
     );
   }
 
-  /// `Annulla prenotazione`
+  /// `Cancel booking`
   String get classEventsActionCancelBooking {
     return Intl.message(
-      'Annulla prenotazione',
+      'Cancel booking',
       name: 'classEventsActionCancelBooking',
       desc: '',
       args: [],
     );
   }
 
-  /// `Aggiungi`
+  /// `Add`
   String get classEventsAddButton {
     return Intl.message(
-      'Aggiungi',
+      'Add',
       name: 'classEventsAddButton',
       desc: '',
       args: [],
     );
   }
 
-  /// `Programmazione`
+  /// `Scheduling`
   String get classEventsCreateTitle {
     return Intl.message(
-      'Programmazione',
+      'Scheduling',
       name: 'classEventsCreateTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuova programmazione`
+  /// `New schedule`
   String get classEventsNewScheduleButton {
     return Intl.message(
-      'Nuova programmazione',
+      'New schedule',
       name: 'classEventsNewScheduleButton',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica programmazione`
+  /// `Edit scheduling`
   String get classEventsEditTitle {
     return Intl.message(
-      'Modifica programmazione',
+      'Edit scheduling',
       name: 'classEventsEditTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modalità modifica`
+  /// `Edit mode`
   String get classEventsEditModeLabel {
     return Intl.message(
-      'Modalità modifica',
+      'Edit mode',
       name: 'classEventsEditModeLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Titolo (opzionale)`
+  /// `Title (optional)`
   String get classEventsFieldTitleOptional {
     return Intl.message(
-      'Titolo (opzionale)',
+      'Title (optional)',
       name: 'classEventsFieldTitleOptional',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tipo classe`
+  /// `Class type`
   String get classEventsFieldClassType {
     return Intl.message(
-      'Tipo classe',
+      'Class type',
       name: 'classEventsFieldClassType',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sede`
+  /// `Location`
   String get classEventsFieldLocation {
     return Intl.message(
-      'Sede',
+      'Location',
       name: 'classEventsFieldLocation',
       desc: '',
       args: [],
@@ -8844,170 +8804,170 @@ class L10n {
     );
   }
 
-  /// `Data`
+  /// `Date`
   String get classEventsFieldDate {
     return Intl.message(
-      'Data',
+      'Date',
       name: 'classEventsFieldDate',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ora inizio`
+  /// `Start time`
   String get classEventsFieldStartTime {
     return Intl.message(
-      'Ora inizio',
+      'Start time',
       name: 'classEventsFieldStartTime',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ora fine`
+  /// `End time`
   String get classEventsFieldEndTime {
     return Intl.message(
-      'Ora fine',
+      'End time',
       name: 'classEventsFieldEndTime',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ripeti programmazione`
+  /// `Repeat schedule`
   String get classEventsRepeatSchedule {
     return Intl.message(
-      'Ripeti programmazione',
+      'Repeat schedule',
       name: 'classEventsRepeatSchedule',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non crea programmazioni se ci sono sovrapposizioni`
+  /// `Do not create schedules if there are overlaps`
   String get classEventsRecurrenceConflictSkipDescription {
     return Intl.message(
-      'Non crea programmazioni se ci sono sovrapposizioni',
+      'Do not create schedules if there are overlaps',
       name: 'classEventsRecurrenceConflictSkipDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Crea le programmazioni anche se ci sono sovrapposizioni`
+  /// `Create schedules even if there are overlaps`
   String get classEventsRecurrenceConflictForceDescription {
     return Intl.message(
-      'Crea le programmazioni anche se ci sono sovrapposizioni',
+      'Create schedules even if there are overlaps',
       name: 'classEventsRecurrenceConflictForceDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Anteprima programmazioni`
+  /// `Schedule preview`
   String get classEventsRecurrencePreviewTitle {
     return Intl.message(
-      'Anteprima programmazioni',
+      'Schedule preview',
       name: 'classEventsRecurrencePreviewTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Deseleziona le programmazioni che non vuoi creare`
+  /// `Deselect schedules you do not want to create`
   String get classEventsRecurrencePreviewHint {
     return Intl.message(
-      'Deseleziona le programmazioni che non vuoi creare',
+      'Deselect schedules you do not want to create',
       name: 'classEventsRecurrencePreviewHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Crea {count} programmazioni`
+  /// `Create {count} schedules`
   String classEventsRecurrencePreviewConfirm(int count) {
     return Intl.message(
-      'Crea $count programmazioni',
+      'Create $count schedules',
       name: 'classEventsRecurrencePreviewConfirm',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Capienza`
+  /// `Capacity`
   String get classEventsFieldCapacity {
     return Intl.message(
-      'Capienza',
+      'Capacity',
       name: 'classEventsFieldCapacity',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessuna sede abilitata per questo tipo classe`
+  /// `No enabled location for this class type`
   String get classEventsNoLocationsForClassType {
     return Intl.message(
-      'Nessuna sede abilitata per questo tipo classe',
+      'No enabled location for this class type',
       name: 'classEventsNoLocationsForClassType',
       desc: '',
       args: [],
     );
   }
 
-  /// `Compila tutti i campi obbligatori`
+  /// `Fill all required fields`
   String get classEventsValidationRequired {
     return Intl.message(
-      'Compila tutti i campi obbligatori',
+      'Fill all required fields',
       name: 'classEventsValidationRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `L'ora di fine deve essere successiva all'ora di inizio`
+  /// `End time must be after start time`
   String get classEventsValidationEndAfterStart {
     return Intl.message(
-      'L\'ora di fine deve essere successiva all\'ora di inizio',
+      'End time must be after start time',
       name: 'classEventsValidationEndAfterStart',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun tipo classe disponibile`
+  /// `No class types available`
   String get classEventsNoClassTypes {
     return Intl.message(
-      'Nessun tipo classe disponibile',
+      'No class types available',
       name: 'classEventsNoClassTypes',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessuno staff disponibile per la sede selezionata`
+  /// `No staff available for selected location`
   String get classEventsNoStaffForLocation {
     return Intl.message(
-      'Nessuno staff disponibile per la sede selezionata',
+      'No staff available for selected location',
       name: 'classEventsNoStaffForLocation',
       desc: '',
       args: [],
     );
   }
 
-  /// `Programmazioni esistenti`
+  /// `Existing schedules`
   String get classEventsSchedulesListTitle {
     return Intl.message(
-      'Programmazioni esistenti',
+      'Existing schedules',
       name: 'classEventsSchedulesListTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessuna programmazione`
+  /// `No schedules`
   String get classEventsSchedulesListEmpty {
     return Intl.message(
-      'Nessuna programmazione',
+      'No schedules',
       name: 'classEventsSchedulesListEmpty',
       desc: '',
       args: [],
@@ -9024,795 +8984,900 @@ class L10n {
     );
   }
 
-  /// `Scadute`
+  /// `Expired`
   String get classEventsExpiredBadge {
     return Intl.message(
-      'Scadute',
+      'Expired',
       name: 'classEventsExpiredBadge',
       desc: '',
       args: [],
     );
   }
 
-  /// `Mostra anche scadute`
+  /// `Show expired too`
   String get classEventsShowExpiredSchedules {
     return Intl.message(
-      'Mostra anche scadute',
+      'Show expired too',
       name: 'classEventsShowExpiredSchedules',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eliminare la programmazione?`
+  /// `Delete schedule?`
   String get classEventsSchedulesDeleteConfirmTitle {
     return Intl.message(
-      'Eliminare la programmazione?',
+      'Delete schedule?',
       name: 'classEventsSchedulesDeleteConfirmTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eliminando la programmazione verranno eliminate anche le eventuali prenotazioni esistenti.`
+  /// `Deleting the schedule will also delete any existing bookings.`
   String get classEventsSchedulesDeleteConfirmMessage {
     return Intl.message(
-      'Eliminando la programmazione verranno eliminate anche le eventuali prenotazioni esistenti.',
+      'Deleting the schedule will also delete any existing bookings.',
       name: 'classEventsSchedulesDeleteConfirmMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Programmazione eliminata`
+  /// `Schedule deleted`
   String get classEventsSchedulesDeleteSuccessTitle {
     return Intl.message(
-      'Programmazione eliminata',
+      'Schedule deleted',
       name: 'classEventsSchedulesDeleteSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `La programmazione e le prenotazioni collegate sono state eliminate`
+  /// `The schedule and related bookings have been deleted`
   String get classEventsSchedulesDeleteSuccessMessage {
     return Intl.message(
-      'La programmazione e le prenotazioni collegate sono state eliminate',
+      'The schedule and related bookings have been deleted',
       name: 'classEventsSchedulesDeleteSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Programmazione aggiornata`
+  /// `Schedule updated`
   String get classEventsSchedulesUpdateSuccessTitle {
     return Intl.message(
-      'Programmazione aggiornata',
+      'Schedule updated',
       name: 'classEventsSchedulesUpdateSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `La programmazione è stata aggiornata correttamente`
+  /// `Schedule updated successfully`
   String get classEventsSchedulesUpdateSuccessMessage {
     return Intl.message(
-      'La programmazione è stata aggiornata correttamente',
+      'Schedule updated successfully',
       name: 'classEventsSchedulesUpdateSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Classe creata`
+  /// `Class created`
   String get classEventsCreateSuccessTitle {
     return Intl.message(
-      'Classe creata',
+      'Class created',
       name: 'classEventsCreateSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `La classe è stata creata correttamente`
+  /// `The class was created successfully`
   String get classEventsCreateSuccessMessage {
     return Intl.message(
-      'La classe è stata creata correttamente',
+      'The class was created successfully',
       name: 'classEventsCreateSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile creare la classe`
+  /// `Unable to create class`
   String get classEventsCreateErrorMessage {
     return Intl.message(
-      'Impossibile creare la classe',
+      'Unable to create class',
       name: 'classEventsCreateErrorMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tipi classe`
+  /// `Class types`
   String get classTypesManageButton {
     return Intl.message(
-      'Tipi classe',
+      'Class types',
       name: 'classTypesManageButton',
       desc: '',
       args: [],
     );
   }
 
-  /// `Gestione tipi classe`
+  /// `Class types`
   String get classTypesManageTitle {
     return Intl.message(
-      'Gestione tipi classe',
+      'Class types',
       name: 'classTypesManageTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuovo tipo`
+  /// `New type`
   String get classTypesAddButton {
     return Intl.message(
-      'Nuovo tipo',
+      'New type',
       name: 'classTypesAddButton',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun tipo classe configurato`
+  /// `No class types configured`
   String get classTypesEmpty {
     return Intl.message(
-      'Nessun tipo classe configurato',
+      'No class types configured',
       name: 'classTypesEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Attivo`
+  /// `Active`
   String get classTypesStatusActive {
     return Intl.message(
-      'Attivo',
+      'Active',
       name: 'classTypesStatusActive',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non attivo`
+  /// `Inactive`
   String get classTypesStatusInactive {
     return Intl.message(
-      'Non attivo',
+      'Inactive',
       name: 'classTypesStatusInactive',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuovo tipo classe`
+  /// `New class type`
   String get classTypesCreateTitle {
     return Intl.message(
-      'Nuovo tipo classe',
+      'New class type',
       name: 'classTypesCreateTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica tipo classe`
+  /// `Edit class type`
   String get classTypesEditTitle {
     return Intl.message(
-      'Modifica tipo classe',
+      'Edit class type',
       name: 'classTypesEditTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nome`
+  /// `Name`
   String get classTypesFieldName {
     return Intl.message(
-      'Nome',
+      'Name',
       name: 'classTypesFieldName',
       desc: '',
       args: [],
     );
   }
 
-  /// `Descrizione (opzionale)`
+  /// `Description (optional)`
   String get classTypesFieldDescriptionOptional {
     return Intl.message(
-      'Descrizione (opzionale)',
+      'Description (optional)',
       name: 'classTypesFieldDescriptionOptional',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tipo attivo`
+  /// `Type active`
   String get classTypesFieldIsActive {
     return Intl.message(
-      'Tipo attivo',
+      'Type active',
       name: 'classTypesFieldIsActive',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tipo classe creato`
+  /// `Class type created`
   String get classTypesCreateSuccessTitle {
     return Intl.message(
-      'Tipo classe creato',
+      'Class type created',
       name: 'classTypesCreateSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il tipo classe è stato creato correttamente`
+  /// `Class type created successfully`
   String get classTypesCreateSuccessMessage {
     return Intl.message(
-      'Il tipo classe è stato creato correttamente',
+      'Class type created successfully',
       name: 'classTypesCreateSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tipo classe aggiornato`
+  /// `Class type updated`
   String get classTypesUpdateSuccessTitle {
     return Intl.message(
-      'Tipo classe aggiornato',
+      'Class type updated',
       name: 'classTypesUpdateSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il tipo classe è stato aggiornato correttamente`
+  /// `Class type updated successfully`
   String get classTypesUpdateSuccessMessage {
     return Intl.message(
-      'Il tipo classe è stato aggiornato correttamente',
+      'Class type updated successfully',
       name: 'classTypesUpdateSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Programmazione`
+  /// `Scheduling`
   String get classTypesActionScheduleClass {
     return Intl.message(
-      'Programmazione',
+      'Scheduling',
       name: 'classTypesActionScheduleClass',
       desc: '',
       args: [],
     );
   }
 
-  /// `Duplica`
+  /// `Duplicate`
   String get classTypesActionClone {
     return Intl.message(
-      'Duplica',
+      'Duplicate',
       name: 'classTypesActionClone',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cancella`
+  /// `Delete`
   String get classTypesActionDeactivate {
     return Intl.message(
-      'Cancella',
+      'Delete',
       name: 'classTypesActionDeactivate',
       desc: '',
       args: [],
     );
   }
 
-  /// `Riattiva`
+  /// `Reactivate`
   String get classTypesActionReactivate {
     return Intl.message(
-      'Riattiva',
+      'Reactivate',
       name: 'classTypesActionReactivate',
       desc: '',
       args: [],
     );
   }
 
-  /// `Copia`
+  /// `Copy`
   String get classTypesCloneSuffix {
     return Intl.message(
-      'Copia',
+      'Copy',
       name: 'classTypesCloneSuffix',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tipo classe duplicato`
+  /// `Class type duplicated`
   String get classTypesCloneSuccessTitle {
     return Intl.message(
-      'Tipo classe duplicato',
+      'Class type duplicated',
       name: 'classTypesCloneSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il tipo classe è stato duplicato correttamente`
+  /// `Class type duplicated successfully`
   String get classTypesCloneSuccessMessage {
     return Intl.message(
-      'Il tipo classe è stato duplicato correttamente',
+      'Class type duplicated successfully',
       name: 'classTypesCloneSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eliminare il tipo classe?`
+  /// `Delete class type?`
   String get classTypesDeleteConfirmTitle {
     return Intl.message(
-      'Eliminare il tipo classe?',
+      'Delete class type?',
       name: 'classTypesDeleteConfirmTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questa azione elimina definitivamente il tipo classe.`
+  /// `This action permanently deletes the class type.`
   String get classTypesDeleteConfirmMessage {
     return Intl.message(
-      'Questa azione elimina definitivamente il tipo classe.',
+      'This action permanently deletes the class type.',
       name: 'classTypesDeleteConfirmMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tipo classe eliminato`
+  /// `Class type deleted`
   String get classTypesDeleteSuccessTitle {
     return Intl.message(
-      'Tipo classe eliminato',
+      'Class type deleted',
       name: 'classTypesDeleteSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il tipo classe è stato eliminato`
+  /// `Class type has been deleted`
   String get classTypesDeleteSuccessMessage {
     return Intl.message(
-      'Il tipo classe è stato eliminato',
+      'Class type has been deleted',
       name: 'classTypesDeleteSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile eliminare il tipo classe perché esistono programmazioni associate`
+  /// `Cannot delete class type because there are associated schedules`
   String get classTypesDeleteInUseErrorMessage {
     return Intl.message(
-      'Impossibile eliminare il tipo classe perché esistono programmazioni associate',
+      'Cannot delete class type because there are associated schedules',
       name: 'classTypesDeleteInUseErrorMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cancellare il tipo classe?`
+  /// `Delete class type?`
   String get classTypesDeactivateConfirmTitle {
     return Intl.message(
-      'Cancellare il tipo classe?',
+      'Delete class type?',
       name: 'classTypesDeactivateConfirmTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il tipo classe verrà disattivato e non sarà selezionabile per nuove programmazioni.`
+  /// `The class type will be deactivated and unavailable for new schedules.`
   String get classTypesDeactivateConfirmMessage {
     return Intl.message(
-      'Il tipo classe verrà disattivato e non sarà selezionabile per nuove programmazioni.',
+      'The class type will be deactivated and unavailable for new schedules.',
       name: 'classTypesDeactivateConfirmMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Riattivare il tipo classe?`
+  /// `Reactivate class type?`
   String get classTypesReactivateConfirmTitle {
     return Intl.message(
-      'Riattivare il tipo classe?',
+      'Reactivate class type?',
       name: 'classTypesReactivateConfirmTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il tipo classe tornerà disponibile per nuove programmazioni.`
+  /// `The class type will be available again for new schedules.`
   String get classTypesReactivateConfirmMessage {
     return Intl.message(
-      'Il tipo classe tornerà disponibile per nuove programmazioni.',
+      'The class type will be available again for new schedules.',
       name: 'classTypesReactivateConfirmMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tipo classe cancellato`
+  /// `Class type deleted`
   String get classTypesDeactivateSuccessTitle {
     return Intl.message(
-      'Tipo classe cancellato',
+      'Class type deleted',
       name: 'classTypesDeactivateSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il tipo classe è stato disattivato`
+  /// `Class type has been deactivated`
   String get classTypesDeactivateSuccessMessage {
     return Intl.message(
-      'Il tipo classe è stato disattivato',
+      'Class type has been deactivated',
       name: 'classTypesDeactivateSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Tipo classe riattivato`
+  /// `Class type reactivated`
   String get classTypesReactivateSuccessTitle {
     return Intl.message(
-      'Tipo classe riattivato',
+      'Class type reactivated',
       name: 'classTypesReactivateSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il tipo classe è stato riattivato`
+  /// `Class type has been reactivated`
   String get classTypesReactivateSuccessMessage {
     return Intl.message(
-      'Il tipo classe è stato riattivato',
+      'Class type has been reactivated',
       name: 'classTypesReactivateSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile salvare il tipo classe`
+  /// `Unable to save class type`
   String get classTypesMutationErrorMessage {
     return Intl.message(
-      'Impossibile salvare il tipo classe',
+      'Unable to save class type',
       name: 'classTypesMutationErrorMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Partecipanti`
+  /// `Participants`
   String get classEventsParticipantsTitle {
     return Intl.message(
-      'Partecipanti',
+      'Participants',
       name: 'classEventsParticipantsTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Confermati: {confirmed}/{capacity} • Lista attesa: {waitlist}`
+  /// `Confirmed: {confirmed}/{capacity} • Waitlist: {waitlist}`
   String classEventsCapacitySummary(int confirmed, int capacity, int waitlist) {
     return Intl.message(
-      'Confermati: $confirmed/$capacity • Lista attesa: $waitlist',
+      'Confirmed: $confirmed/$capacity • Waitlist: $waitlist',
       name: 'classEventsCapacitySummary',
       desc: '',
       args: [confirmed, capacity, waitlist],
     );
   }
 
-  /// `Cliente {customerId}`
+  /// `Customer {customerId}`
   String classEventsParticipantCustomer(int customerId) {
     return Intl.message(
-      'Cliente $customerId',
+      'Customer $customerId',
       name: 'classEventsParticipantCustomer',
       desc: '',
       args: [customerId],
     );
   }
 
-  /// `Pagamento`
+  /// `Payment`
   String get paymentDialogTitle {
     return Intl.message(
-      'Pagamento',
+      'Payment',
       name: 'paymentDialogTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Pagamento`
+  /// `Payment`
   String get actionPayment {
-    return Intl.message('Pagamento', name: 'actionPayment', desc: '', args: []);
+    return Intl.message('Payment', name: 'actionPayment', desc: '', args: []);
   }
 
-  /// `Contanti`
+  /// `Cash`
   String get paymentMethodCash {
-    return Intl.message(
-      'Contanti',
-      name: 'paymentMethodCash',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Cash', name: 'paymentMethodCash', desc: '', args: []);
   }
 
-  /// `Bancomat/Carta di credito`
+  /// `Debit/Credit Card`
   String get paymentMethodCard {
     return Intl.message(
-      'Bancomat/Carta di credito',
+      'Debit/Credit Card',
       name: 'paymentMethodCard',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sconto`
+  /// `Discount`
   String get paymentMethodDiscount {
     return Intl.message(
-      'Sconto',
+      'Discount',
       name: 'paymentMethodDiscount',
       desc: '',
       args: [],
     );
   }
 
-  /// `Buono/Pacchetto`
+  /// `Voucher/Package`
   String get paymentMethodVoucher {
     return Intl.message(
-      'Buono/Pacchetto',
+      'Voucher/Package',
       name: 'paymentMethodVoucher',
       desc: '',
       args: [],
     );
   }
 
-  /// `Altro`
+  /// `Other`
   String get paymentMethodOther {
     return Intl.message(
-      'Altro',
+      'Other',
       name: 'paymentMethodOther',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ancora da pagare`
+  /// `Still to pay`
   String get paymentMethodPending {
     return Intl.message(
-      'Ancora da pagare',
+      'Still to pay',
       name: 'paymentMethodPending',
       desc: '',
       args: [],
     );
   }
 
-  /// `Costo prenotazione`
+  /// `Booking cost`
   String get paymentTotalCost {
     return Intl.message(
-      'Costo prenotazione',
+      'Booking cost',
       name: 'paymentTotalCost',
       desc: '',
       args: [],
     );
   }
 
-  /// `Importo prenotazione`
+  /// `Booking amount`
   String get paymentBookingAmount {
     return Intl.message(
-      'Importo prenotazione',
+      'Booking amount',
       name: 'paymentBookingAmount',
       desc: '',
       args: [],
     );
   }
 
-  /// `Importo da pagare`
+  /// `Amount due`
   String get paymentAmountDue {
     return Intl.message(
-      'Importo da pagare',
+      'Amount due',
       name: 'paymentAmountDue',
       desc: '',
       args: [],
     );
   }
 
-  /// `Totale appuntamenti`
+  /// `Total appointments`
   String get paymentRequired {
     return Intl.message(
-      'Totale appuntamenti',
+      'Total appointments',
       name: 'paymentRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Totale appuntamenti da incassare`
+  /// `Total appointments to collect`
   String get paymentAppointmentsToCollect {
     return Intl.message(
-      'Totale appuntamenti da incassare',
+      'Total appointments to collect',
       name: 'paymentAppointmentsToCollect',
       desc: '',
       args: [],
     );
   }
 
-  /// `Totale da incassare`
+  /// `Total to collect`
   String get paymentTotalToCollect {
     return Intl.message(
-      'Totale da incassare',
+      'Total to collect',
       name: 'paymentTotalToCollect',
       desc: '',
       args: [],
     );
   }
 
-  /// `Totale incassato`
+  /// `Total collected`
   String get paymentEntered {
     return Intl.message(
-      'Totale incassato',
+      'Total collected',
       name: 'paymentEntered',
       desc: '',
       args: [],
     );
   }
 
-  /// `Importo pagato`
+  /// `Paid amount`
   String get paymentTotalPaid {
     return Intl.message(
-      'Importo pagato',
+      'Paid amount',
       name: 'paymentTotalPaid',
       desc: '',
       args: [],
     );
   }
 
-  /// `Totale contanti e carte`
+  /// `Total cash and cards`
   String get paymentCashAndCardTotal {
     return Intl.message(
-      'Totale contanti e carte',
+      'Total cash and cards',
       name: 'paymentCashAndCardTotal',
       desc: '',
       args: [],
     );
   }
 
-  /// `Residuo da incassare`
+  /// `Outstanding to collect`
   String get paymentOutstanding {
     return Intl.message(
-      'Residuo da incassare',
+      'Outstanding to collect',
       name: 'paymentOutstanding',
       desc: '',
       args: [],
     );
   }
 
-  /// `Rimanente`
+  /// `Remaining`
   String get paymentRemaining {
     return Intl.message(
-      'Rimanente',
+      'Remaining',
       name: 'paymentRemaining',
       desc: '',
       args: [],
     );
   }
 
-  /// `I pagamenti e le altre coperture gia inseriti superano il nuovo importo dovuto. Modifica prima il pagamento e poi salva la prenotazione.`
+  /// `The payments and other coverages already entered exceed the new amount due. Update the payment first, then save the booking.`
   String get bookingPaymentExceedsDueMessage {
     return Intl.message(
-      'I pagamenti e le altre coperture gia inseriti superano il nuovo importo dovuto. Modifica prima il pagamento e poi salva la prenotazione.',
+      'The payments and other coverages already entered exceed the new amount due. Update the payment first, then save the booking.',
       name: 'bookingPaymentExceedsDueMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Note pagamento`
+  /// `Payment notes`
   String get paymentNotesLabel {
     return Intl.message(
-      'Note pagamento',
+      'Payment notes',
       name: 'paymentNotesLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Note sul pagamento...`
+  /// `Notes about the payment...`
   String get paymentNotesPlaceholder {
     return Intl.message(
-      'Note sul pagamento...',
+      'Notes about the payment...',
       name: 'paymentNotesPlaceholder',
       desc: '',
       args: [],
     );
   }
 
-  /// `Configurazione attività`
+  /// `Payment methods`
+  String get paymentMethodsTitle {
+    return Intl.message(
+      'Payment methods',
+      name: 'paymentMethodsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manage business payment method types`
+  String get paymentMethodsDescription {
+    return Intl.message(
+      'Manage business payment method types',
+      name: 'paymentMethodsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You can change the payment type order by dragging them.`
+  String get paymentMethodsReorderHint {
+    return Intl.message(
+      'You can change the payment type order by dragging them.',
+      name: 'paymentMethodsReorderHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No payment methods available`
+  String get paymentMethodsEmpty {
+    return Intl.message(
+      'No payment methods available',
+      name: 'paymentMethodsEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add method`
+  String get paymentMethodsAdd {
+    return Intl.message(
+      'Add method',
+      name: 'paymentMethodsAdd',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit method`
+  String get paymentMethodsEdit {
+    return Intl.message(
+      'Edit method',
+      name: 'paymentMethodsEdit',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Name`
+  String get paymentMethodsFieldName {
+    return Intl.message(
+      'Name',
+      name: 'paymentMethodsFieldName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Order`
+  String get paymentMethodsFieldSort {
+    return Intl.message(
+      'Order',
+      name: 'paymentMethodsFieldSort',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter a payment method name`
+  String get paymentMethodsNameRequired {
+    return Intl.message(
+      'Enter a payment method name',
+      name: 'paymentMethodsNameRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Delete payment method`
+  String get paymentMethodsDeleteTitle {
+    return Intl.message(
+      'Delete payment method',
+      name: 'paymentMethodsDeleteTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Do you want to delete "{name}"?`
+  String paymentMethodsDeleteMessage(Object name) {
+    return Intl.message(
+      'Do you want to delete "$name"?',
+      name: 'paymentMethodsDeleteMessage',
+      desc: '',
+      args: [name],
+    );
+  }
+
+  /// `Business Configuration`
   String get moreSectionBusinessConfig {
     return Intl.message(
-      'Configurazione attività',
+      'Business Configuration',
       name: 'moreSectionBusinessConfig',
       desc: '',
       args: [],
     );
   }
 
-  /// `Analisi dati`
+  /// `Data Analysis`
   String get moreSectionDataAnalysis {
     return Intl.message(
-      'Analisi dati',
+      'Data Analysis',
       name: 'moreSectionDataAnalysis',
       desc: '',
       args: [],
     );
   }
 
-  /// `Gestisci il tuo profilo`
+  /// `Manage your profile`
   String get moreSectionProfileManage {
     return Intl.message(
-      'Gestisci il tuo profilo',
+      'Manage your profile',
       name: 'moreSectionProfileManage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Gestisci classi e programmazioni di gruppo`
+  /// `Manage classes and group schedules`
   String get moreClassEventsDescription {
     return Intl.message(
-      'Gestisci classi e programmazioni di gruppo',
+      'Manage classes and group schedules',
       name: 'moreClassEventsDescription',
       desc: '',
       args: [],
     );
   }
 
-  /// `Report giornaliero`
+  /// `Daily report`
   String get agendaDailyReportAction {
     return Intl.message(
-      'Report giornaliero',
+      'Daily report',
       name: 'agendaDailyReportAction',
       desc: '',
       args: [],
     );
   }
 
-  /// `Report settimanale`
+  /// `Weekly report`
   String get agendaWeeklyReportAction {
     return Intl.message(
-      'Report settimanale',
+      'Weekly report',
       name: 'agendaWeeklyReportAction',
       desc: '',
       args: [],
     );
   }
 
-  /// `Report giornata`
+  /// `Report displayed date`
   String get agendaReportDisplayedDateAction {
     return Intl.message(
-      'Report giornata',
+      'Report displayed date',
       name: 'agendaReportDisplayedDateAction',
       desc: '',
       args: [],
     );
   }
 
-  /// `Report settimana`
+  /// `Report displayed week`
   String get agendaReportDisplayedWeekAction {
     return Intl.message(
-      'Report settimana',
+      'Report displayed week',
       name: 'agendaReportDisplayedWeekAction',
       desc: '',
       args: [],
@@ -9829,50 +9894,45 @@ class L10n {
     );
   }
 
-  /// `Integrazione WhatsApp`
+  /// `WhatsApp integration`
   String get whatsappPanelTitle {
     return Intl.message(
-      'Integrazione WhatsApp',
+      'WhatsApp integration',
       name: 'whatsappPanelTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Configurazione numeri, mapping sedi, test invio e monitor outbox`
+  /// `Manage numbers, location mappings, test sends, and outbox monitoring`
   String get whatsappPanelSubtitle {
     return Intl.message(
-      'Configurazione numeri, mapping sedi, test invio e monitor outbox',
+      'Manage numbers, location mappings, test sends, and outbox monitoring',
       name: 'whatsappPanelSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona un business per gestire l'integrazione WhatsApp.`
+  /// `Select one business to manage WhatsApp integration.`
   String get whatsappSelectBusinessHint {
     return Intl.message(
-      'Seleziona un business per gestire l\'integrazione WhatsApp.',
+      'Select one business to manage WhatsApp integration.',
       name: 'whatsappSelectBusinessHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Aggiorna`
+  /// `Refresh`
   String get whatsappRefresh {
-    return Intl.message(
-      'Aggiorna',
-      name: 'whatsappRefresh',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Refresh', name: 'whatsappRefresh', desc: '', args: []);
   }
 
-  /// `Esegui worker`
+  /// `Run worker`
   String get whatsappRunWorker {
     return Intl.message(
-      'Esegui worker',
+      'Run worker',
       name: 'whatsappRunWorker',
       desc: '',
       args: [],
@@ -9889,230 +9949,230 @@ class L10n {
     );
   }
 
-  /// `Verifica go-live business`
+  /// `Go-live check business`
   String get whatsappGoLiveCheckBusiness {
     return Intl.message(
-      'Verifica go-live business',
+      'Go-live check business',
       name: 'whatsappGoLiveCheckBusiness',
       desc: '',
       args: [],
     );
   }
 
-  /// `Verifica go-live location`
+  /// `Go-live check location`
   String get whatsappGoLiveCheckLocation {
     return Intl.message(
-      'Verifica go-live location',
+      'Go-live check location',
       name: 'whatsappGoLiveCheckLocation',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ambito: business`
+  /// `Scope: business`
   String get whatsappGoLiveScopeBusiness {
     return Intl.message(
-      'Ambito: business',
+      'Scope: business',
       name: 'whatsappGoLiveScopeBusiness',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessuna location attiva`
+  /// `No active locations`
   String get whatsappNoLocationBannerTitle {
     return Intl.message(
-      'Nessuna location attiva',
+      'No active locations',
       name: 'whatsappNoLocationBannerTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Per usare WhatsApp devi prima creare almeno una sede attiva.`
+  /// `To use WhatsApp, create at least one active location first.`
   String get whatsappNoLocationBannerMessage {
     return Intl.message(
-      'Per usare WhatsApp devi prima creare almeno una sede attiva.',
+      'To use WhatsApp, create at least one active location first.',
       name: 'whatsappNoLocationBannerMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Crea location`
+  /// `Create location`
   String get whatsappCreateLocationCta {
     return Intl.message(
-      'Crea location',
+      'Create location',
       name: 'whatsappCreateLocationCta',
       desc: '',
       args: [],
     );
   }
 
-  /// `Esegui il controllo per verificare se il business è pronto alla messa in produzione.`
+  /// `Run checks to verify if this business is ready for production go-live.`
   String get whatsappGoLiveHint {
     return Intl.message(
-      'Esegui il controllo per verificare se il business è pronto alla messa in produzione.',
+      'Run checks to verify if this business is ready for production go-live.',
       name: 'whatsappGoLiveHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Configurazione pronta al go-live`
+  /// `Configuration ready for go-live`
   String get whatsappGoLiveReady {
     return Intl.message(
-      'Configurazione pronta al go-live',
+      'Configuration ready for go-live',
       name: 'whatsappGoLiveReady',
       desc: '',
       args: [],
     );
   }
 
-  /// `Configurazione incompleta`
+  /// `Configuration is incomplete`
   String get whatsappGoLiveNotReady {
     return Intl.message(
-      'Configurazione incompleta',
+      'Configuration is incomplete',
       name: 'whatsappGoLiveNotReady',
       desc: '',
       args: [],
     );
   }
 
-  /// `Numero WhatsApp attivo`
+  /// `WhatsApp number active`
   String get whatsappCheckPhoneNumberActive {
     return Intl.message(
-      'Numero WhatsApp attivo',
+      'WhatsApp number active',
       name: 'whatsappCheckPhoneNumberActive',
       desc: '',
       args: [],
     );
   }
 
-  /// `Webhook verificato`
+  /// `Webhook verified`
   String get whatsappCheckWebhookVerified {
     return Intl.message(
-      'Webhook verificato',
+      'Webhook verified',
       name: 'whatsappCheckWebhookVerified',
       desc: '',
       args: [],
     );
   }
 
-  /// `Template utility approvato`
+  /// `Utility template approved`
   String get whatsappCheckTemplateApproved {
     return Intl.message(
-      'Template utility approvato',
+      'Utility template approved',
       name: 'whatsappCheckTemplateApproved',
       desc: '',
       args: [],
     );
   }
 
-  /// `Opt-in clienti attivo`
+  /// `Client opt-in active`
   String get whatsappCheckOptInActive {
     return Intl.message(
-      'Opt-in clienti attivo',
+      'Client opt-in active',
       name: 'whatsappCheckOptInActive',
       desc: '',
       args: [],
     );
   }
 
-  /// `Configurazioni`
+  /// `Configurations`
   String get whatsappStatsConfigs {
     return Intl.message(
-      'Configurazioni',
+      'Configurations',
       name: 'whatsappStatsConfigs',
       desc: '',
       args: [],
     );
   }
 
-  /// `Mapping sedi`
+  /// `Location mappings`
   String get whatsappStatsMappings {
     return Intl.message(
-      'Mapping sedi',
+      'Location mappings',
       name: 'whatsappStatsMappings',
       desc: '',
       args: [],
     );
   }
 
-  /// `Messaggi in coda`
+  /// `Queued messages`
   String get whatsappStatsQueued {
     return Intl.message(
-      'Messaggi in coda',
+      'Queued messages',
       name: 'whatsappStatsQueued',
       desc: '',
       args: [],
     );
   }
 
-  /// `Messaggi falliti`
+  /// `Failed messages`
   String get whatsappStatsFailed {
     return Intl.message(
-      'Messaggi falliti',
+      'Failed messages',
       name: 'whatsappStatsFailed',
       desc: '',
       args: [],
     );
   }
 
-  /// `Numeri e configurazioni`
+  /// `Numbers and configurations`
   String get whatsappConfigsTitle {
     return Intl.message(
-      'Numeri e configurazioni',
+      'Numbers and configurations',
       name: 'whatsappConfigsTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuova configurazione`
+  /// `New configuration`
   String get whatsappAddConfig {
     return Intl.message(
-      'Nuova configurazione',
+      'New configuration',
       name: 'whatsappAddConfig',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessuna configurazione presente.`
+  /// `No configurations found.`
   String get whatsappNoConfigs {
     return Intl.message(
-      'Nessuna configurazione presente.',
+      'No configurations found.',
       name: 'whatsappNoConfigs',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica configurazione`
+  /// `Edit configuration`
   String get whatsappEditConfig {
     return Intl.message(
-      'Modifica configurazione',
+      'Edit configuration',
       name: 'whatsappEditConfig',
       desc: '',
       args: [],
     );
   }
 
-  /// `Eliminare configurazione WhatsApp?`
+  /// `Delete WhatsApp configuration?`
   String get whatsappDeleteConfigTitle {
     return Intl.message(
-      'Eliminare configurazione WhatsApp?',
+      'Delete WhatsApp configuration?',
       name: 'whatsappDeleteConfigTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questa azione rimuove la configurazione e i mapping associati.`
+  /// `This action removes the configuration and related mappings.`
   String get whatsappDeleteConfigMessage {
     return Intl.message(
-      'Questa azione rimuove la configurazione e i mapping associati.',
+      'This action removes the configuration and related mappings.',
       name: 'whatsappDeleteConfigMessage',
       desc: '',
       args: [],
@@ -10149,110 +10209,110 @@ class L10n {
     );
   }
 
-  /// `Stato`
+  /// `Status`
   String get whatsappFieldStatus {
     return Intl.message(
-      'Stato',
+      'Status',
       name: 'whatsappFieldStatus',
       desc: '',
       args: [],
     );
   }
 
-  /// `Predefinita`
+  /// `Default`
   String get whatsappFieldDefault {
     return Intl.message(
-      'Predefinita',
+      'Default',
       name: 'whatsappFieldDefault',
       desc: '',
       args: [],
     );
   }
 
-  /// `Attiva`
+  /// `Active`
   String get whatsappStatusActive {
     return Intl.message(
-      'Attiva',
+      'Active',
       name: 'whatsappStatusActive',
       desc: '',
       args: [],
     );
   }
 
-  /// `Inattiva`
+  /// `Inactive`
   String get whatsappStatusInactive {
     return Intl.message(
-      'Inattiva',
+      'Inactive',
       name: 'whatsappStatusInactive',
       desc: '',
       args: [],
     );
   }
 
-  /// `In attesa`
+  /// `Pending`
   String get whatsappStatusPending {
     return Intl.message(
-      'In attesa',
+      'Pending',
       name: 'whatsappStatusPending',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore`
+  /// `Error`
   String get whatsappStatusError {
     return Intl.message(
-      'Errore',
+      'Error',
       name: 'whatsappStatusError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Mapping location → numero`
+  /// `Location to number mapping`
   String get whatsappLocationMappingTitle {
     return Intl.message(
-      'Mapping location → numero',
+      'Location to number mapping',
       name: 'whatsappLocationMappingTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Una sola location attiva: mapping non necessario.`
+  /// `Only one active location: mapping is not required.`
   String get whatsappSingleLocationMappingHint {
     return Intl.message(
-      'Una sola location attiva: mapping non necessario.',
+      'Only one active location: mapping is not required.',
       name: 'whatsappSingleLocationMappingHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessuna location attiva disponibile.`
+  /// `No active locations available.`
   String get whatsappNoLocations {
     return Intl.message(
-      'Nessuna location attiva disponibile.',
+      'No active locations available.',
       name: 'whatsappNoLocations',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessuna assegnazione`
+  /// `Unassigned`
   String get whatsappUnassigned {
     return Intl.message(
-      'Nessuna assegnazione',
+      'Unassigned',
       name: 'whatsappUnassigned',
       desc: '',
       args: [],
     );
   }
 
-  /// `Invio test template`
+  /// `Template test send`
   String get whatsappTestSendTitle {
     return Intl.message(
-      'Invio test template',
+      'Template test send',
       name: 'whatsappTestSendTitle',
       desc: '',
       args: [],
@@ -10289,290 +10349,280 @@ class L10n {
     );
   }
 
-  /// `Numero destinatario`
+  /// `Recipient phone`
   String get whatsappFieldRecipientPhone {
     return Intl.message(
-      'Numero destinatario',
+      'Recipient phone',
       name: 'whatsappFieldRecipientPhone',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nome template`
+  /// `Template name`
   String get whatsappFieldTemplateName {
     return Intl.message(
-      'Nome template',
+      'Template name',
       name: 'whatsappFieldTemplateName',
       desc: '',
       args: [],
     );
   }
 
-  /// `Variabili template (JSON)`
+  /// `Template variables (JSON)`
   String get whatsappFieldTemplateVariables {
     return Intl.message(
-      'Variabili template (JSON)',
+      'Template variables (JSON)',
       name: 'whatsappFieldTemplateVariables',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accoda test`
+  /// `Queue test`
   String get whatsappQueueTest {
     return Intl.message(
-      'Accoda test',
+      'Queue test',
       name: 'whatsappQueueTest',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accoda e invia`
+  /// `Queue and send`
   String get whatsappQueueAndSendTest {
     return Intl.message(
-      'Accoda e invia',
+      'Queue and send',
       name: 'whatsappQueueAndSendTest',
       desc: '',
       args: [],
     );
   }
 
-  /// `Outbox WhatsApp`
+  /// `WhatsApp outbox`
   String get whatsappOutboxTitle {
     return Intl.message(
-      'Outbox WhatsApp',
+      'WhatsApp outbox',
       name: 'whatsappOutboxTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun messaggio presente in outbox.`
+  /// `No messages in outbox.`
   String get whatsappOutboxEmpty {
     return Intl.message(
-      'Nessun messaggio presente in outbox.',
+      'No messages in outbox.',
       name: 'whatsappOutboxEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Consegnato`
+  /// `Delivered`
   String get whatsappOutboxDelivered {
     return Intl.message(
-      'Consegnato',
+      'Delivered',
       name: 'whatsappOutboxDelivered',
       desc: '',
       args: [],
     );
   }
 
-  /// `Letto`
+  /// `Read`
   String get whatsappOutboxRead {
-    return Intl.message(
-      'Letto',
-      name: 'whatsappOutboxRead',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Read', name: 'whatsappOutboxRead', desc: '', args: []);
   }
 
-  /// `Invia ora`
+  /// `Send now`
   String get whatsappSendNow {
     return Intl.message(
-      'Invia ora',
+      'Send now',
       name: 'whatsappSendNow',
       desc: '',
       args: [],
     );
   }
 
-  /// `Riprova`
+  /// `Retry`
   String get whatsappRetryNow {
-    return Intl.message(
-      'Riprova',
-      name: 'whatsappRetryNow',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Retry', name: 'whatsappRetryNow', desc: '', args: []);
   }
 
-  /// `Ultimo aggiornamento`
+  /// `Last update`
   String get whatsappLastUpdate {
     return Intl.message(
-      'Ultimo aggiornamento',
+      'Last update',
       name: 'whatsappLastUpdate',
       desc: '',
       args: [],
     );
   }
 
-  /// `Compila tutti i campi obbligatori.`
+  /// `Fill in all required fields.`
   String get whatsappValidationRequired {
     return Intl.message(
-      'Compila tutti i campi obbligatori.',
+      'Fill in all required fields.',
       name: 'whatsappValidationRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `JSON variabili non valido.`
+  /// `Template variables JSON is invalid.`
   String get whatsappInvalidJson {
     return Intl.message(
-      'JSON variabili non valido.',
+      'Template variables JSON is invalid.',
       name: 'whatsappInvalidJson',
       desc: '',
       args: [],
     );
   }
 
-  /// `WhatsApp aggiornato`
+  /// `WhatsApp updated`
   String get whatsappSavedSuccessTitle {
     return Intl.message(
-      'WhatsApp aggiornato',
+      'WhatsApp updated',
       name: 'whatsappSavedSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifiche WhatsApp salvate correttamente.`
+  /// `WhatsApp changes were saved successfully.`
   String get whatsappSavedSuccessMessage {
     return Intl.message(
-      'Modifiche WhatsApp salvate correttamente.',
+      'WhatsApp changes were saved successfully.',
       name: 'whatsappSavedSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Worker outbox eseguito con successo.`
+  /// `Outbox worker completed successfully.`
   String get whatsappWorkerCompleted {
     return Intl.message(
-      'Worker outbox eseguito con successo.',
+      'Outbox worker completed successfully.',
       name: 'whatsappWorkerCompleted',
       desc: '',
       args: [],
     );
   }
 
-  /// `Messaggio accodato correttamente.`
+  /// `Message queued successfully.`
   String get whatsappQueuedOnly {
     return Intl.message(
-      'Messaggio accodato correttamente.',
+      'Message queued successfully.',
       name: 'whatsappQueuedOnly',
       desc: '',
       args: [],
     );
   }
 
-  /// `Messaggio accodato e inviato.`
+  /// `Message queued and sent.`
   String get whatsappQueuedAndSent {
     return Intl.message(
-      'Messaggio accodato e inviato.',
+      'Message queued and sent.',
       name: 'whatsappQueuedAndSent',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impostazioni di visualizzazione`
+  /// `Display settings`
   String get agendaDisplaySettingsAction {
     return Intl.message(
-      'Impostazioni di visualizzazione',
+      'Display settings',
       name: 'agendaDisplaySettingsAction',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impostazioni di visualizzazione`
+  /// `Agenda Settings`
   String get agendaDisplaySettingsSuperadminTitle {
     return Intl.message(
-      'Impostazioni di visualizzazione',
+      'Agenda Settings',
       name: 'agendaDisplaySettingsSuperadminTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Zoom testo`
+  /// `Card text zoom`
   String get agendaDisplaySettingsCardTextZoomLabel {
     return Intl.message(
-      'Zoom testo',
+      'Card text zoom',
       name: 'agendaDisplaySettingsCardTextZoomLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Intensità colori appuntamenti`
+  /// `Color intensity`
   String get agendaDisplaySettingsCardColorOpacityLabel {
     return Intl.message(
-      'Intensità colori appuntamenti',
+      'Color intensity',
       name: 'agendaDisplaySettingsCardColorOpacityLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Intensità colori tempo aggiuntivo`
+  /// `Additional extra-band intensity`
   String get agendaDisplaySettingsExtraMinutesBandIntensityLabel {
     return Intl.message(
-      'Intensità colori tempo aggiuntivo',
+      'Additional extra-band intensity',
       name: 'agendaDisplaySettingsExtraMinutesBandIntensityLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Intensità del colore su appuntamenti diversi da quelli selezionati`
+  /// `Unrelated card dimming intensity (desktop hover)`
   String get agendaDisplaySettingsHoverUnrelatedDimIntensityLabel {
     return Intl.message(
-      'Intensità del colore su appuntamenti diversi da quelli selezionati',
+      'Unrelated card dimming intensity (desktop hover)',
       name: 'agendaDisplaySettingsHoverUnrelatedDimIntensityLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Visualizza importi`
+  /// `Show prices in cards`
   String get agendaDisplaySettingsShowPricesLabel {
     return Intl.message(
-      'Visualizza importi',
+      'Show prices in cards',
       name: 'agendaDisplaySettingsShowPricesLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Mostra appuntamenti cancellati`
+  /// `Show cancelled appointments`
   String get agendaDisplaySettingsShowCancelledLabel {
     return Intl.message(
-      'Mostra appuntamenti cancellati',
+      'Show cancelled appointments',
       name: 'agendaDisplaySettingsShowCancelledLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Imposta colori da:`
+  /// `Card colors from:`
   String get agendaDisplaySettingsServiceColorsLabel {
     return Intl.message(
-      'Imposta colori da:',
+      'Card colors from:',
       name: 'agendaDisplaySettingsServiceColorsLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ripristina default`
+  /// `Reset defaults`
   String get agendaDisplaySettingsResetDefaultsAction {
     return Intl.message(
-      'Ripristina default',
+      'Reset defaults',
       name: 'agendaDisplaySettingsResetDefaultsAction',
       desc: '',
       args: [],
@@ -10585,8 +10635,8 @@ class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {
 
   List<Locale> get supportedLocales {
     return const <Locale>[
-      Locale.fromSubtags(languageCode: 'it'),
       Locale.fromSubtags(languageCode: 'en'),
+      Locale.fromSubtags(languageCode: 'it'),
     ];
   }
 

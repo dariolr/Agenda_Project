@@ -6,6 +6,8 @@ namespace Agenda\Infrastructure\Notifications;
 
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Support\Json;
+use DateTimeImmutable;
+use DateTimeZone;
 
 /**
  * Repository for notification queue operations.
@@ -80,29 +82,43 @@ final class NotificationRepository
         if ($reminderLookaheadHours < 0) {
             $reminderLookaheadHours = 0;
         }
-        $reminderLookaheadHoursSql = (string) $reminderLookaheadHours;
+
+        $candidateLimit = max($limit * 5, $limit);
+        if ($candidateLimit > 5000) {
+            $candidateLimit = 5000;
+        }
 
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT * FROM notification_queue 
-             WHERE status = "pending"
-               AND (
-                    -- Non-reminder: original behavior.
-                    (channel <> "booking_reminder" AND (scheduled_at IS NULL OR scheduled_at <= NOW()))
-                    -- Reminder: small look-ahead so worker can apply per-location timezone check.
-                    OR (channel = "booking_reminder" AND (scheduled_at IS NULL OR scheduled_at <= DATE_ADD(NOW(), INTERVAL ' . $reminderLookaheadHoursSql . ' HOUR)))
-               )
-               AND attempts < max_attempts
+            'SELECT nq.*, l.timezone AS location_timezone
+             FROM notification_queue nq
+             LEFT JOIN bookings b ON b.id = nq.booking_id
+             LEFT JOIN locations l ON l.id = b.location_id
+             WHERE nq.status = "pending"
+               AND nq.attempts < nq.max_attempts
              ORDER BY
-                priority ASC,
-                CASE WHEN channel = "booking_reminder" THEN COALESCE(scheduled_at, created_at) ELSE created_at END ASC,
-                created_at ASC
+                nq.priority ASC,
+                CASE WHEN nq.channel = "booking_reminder" THEN COALESCE(nq.scheduled_at, nq.created_at) ELSE nq.created_at END ASC,
+                nq.created_at ASC
              LIMIT :limit
              FOR UPDATE SKIP LOCKED'
         );
-        $stmt->bindValue('limit', $limit, \PDO::PARAM_INT);
+        $stmt->bindValue('limit', $candidateLimit, \PDO::PARAM_INT);
         $stmt->execute();
-        
-        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $ready = [];
+        foreach ($rows as $row) {
+            if (!$this->isNotificationReadyBySchedule($row, $reminderLookaheadHours)) {
+                continue;
+            }
+
+            $ready[] = $row;
+            if (count($ready) >= $limit) {
+                break;
+            }
+        }
+
+        return $ready;
     }
 
     /**
@@ -110,12 +126,16 @@ final class NotificationRepository
      */
     public function markProcessing(int $id): void
     {
+        $now = $this->resolveCurrentTimeForNotification($id);
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE notification_queue 
-             SET status = "processing", attempts = attempts + 1, last_attempt_at = NOW()
+             SET status = "processing", attempts = attempts + 1, last_attempt_at = :last_attempt_at
              WHERE id = :id'
         );
-        $stmt->execute(['id' => $id]);
+        $stmt->execute([
+            'id' => $id,
+            'last_attempt_at' => $now->format('Y-m-d H:i:s'),
+        ]);
     }
 
     /**
@@ -127,10 +147,11 @@ final class NotificationRepository
         ?string $providerUsed = null,
     ): void
     {
+        $now = $this->resolveCurrentTimeForNotification($id);
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE notification_queue 
              SET status = "sent",
-                 sent_at = NOW(),
+                 sent_at = :sent_at,
                  error_message = NULL,
                  failed_at = NULL,
                  provider_used = :provider_used
@@ -138,6 +159,7 @@ final class NotificationRepository
         );
         $stmt->execute([
             'id' => $id,
+            'sent_at' => $now->format('Y-m-d H:i:s'),
             'provider_used' => $providerUsed,
         ]);
 
@@ -151,10 +173,11 @@ final class NotificationRepository
      */
     public function markFailed(int $id, string $error, ?string $retryScheduledAt = null): void
     {
+        $now = $this->resolveCurrentTimeForNotification($id);
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE notification_queue 
              SET status = CASE WHEN attempts >= max_attempts THEN "failed" ELSE "pending" END,
-                 failed_at = CASE WHEN attempts >= max_attempts THEN NOW() ELSE NULL END,
+                 failed_at = CASE WHEN attempts >= max_attempts THEN :failed_at ELSE NULL END,
                  scheduled_at = CASE
                     WHEN attempts >= max_attempts THEN scheduled_at
                     WHEN :retry_scheduled_at_check IS NOT NULL THEN :retry_scheduled_at_value
@@ -166,6 +189,7 @@ final class NotificationRepository
         $stmt->execute([
             'id' => $id,
             'error' => $error,
+            'failed_at' => $now->format('Y-m-d H:i:s'),
             'retry_scheduled_at_check' => $retryScheduledAt,
             'retry_scheduled_at_value' => $retryScheduledAt,
         ]);
@@ -309,20 +333,21 @@ final class NotificationRepository
                 return;
             }
 
+            $createdAt = $this->resolveCurrentTimeForBooking($bookingId);
             $payload = Json::encode([
                 'notification_id' => (int) ($notification['id'] ?? $notificationId),
                 'channel' => (string) ($notification['channel'] ?? ''),
                 'recipient_email' => $notification['recipient_email'] ?? null,
                 'subject' => $notification['subject'] ?? null,
                 'provider_used' => $notification['provider_used'] ?? null,
-                'sent_at' => gmdate('Y-m-d H:i:s'),
+                'sent_at' => $createdAt->format('Y-m-d H:i:s'),
             ]);
 
             $insert = $this->db->getPdo()->prepare(
                 'INSERT INTO booking_events
                  (booking_id, event_type, actor_type, actor_id, actor_name, payload_json, correlation_id, created_at)
                  VALUES
-                 (:booking_id, :event_type, :actor_type, NULL, :actor_name, :payload_json, NULL, NOW())'
+                 (:booking_id, :event_type, :actor_type, NULL, :actor_name, :payload_json, NULL, :created_at)'
             );
             $insert->execute([
                 'booking_id' => $bookingId,
@@ -330,10 +355,88 @@ final class NotificationRepository
                 'actor_type' => 'system',
                 'actor_name' => 'Notification Worker',
                 'payload_json' => $payload ?: '{}',
+                'created_at' => $createdAt->format('Y-m-d H:i:s'),
             ]);
         } catch (\Throwable $e) {
             error_log("Failed to create booking_notification_sent event for notification {$notificationId}: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Reminder candidates are considered ready inside a configurable look-ahead
+     * window using the booking location timezone.
+     *
+     * @param array<string, mixed> $notification
+     */
+    private function isNotificationReadyBySchedule(array $notification, int $lookaheadHours): bool
+    {
+        $scheduledAtRaw = $notification['scheduled_at'] ?? null;
+        if (!is_string($scheduledAtRaw) || trim($scheduledAtRaw) === '') {
+            return true;
+        }
+
+        $timezone = $this->safeTimezone((string) ($notification['location_timezone'] ?? 'Europe/Rome'));
+        try {
+            $scheduledAt = new DateTimeImmutable($scheduledAtRaw, $timezone);
+        } catch (\Throwable) {
+            return true;
+        }
+
+        $hoursAhead = 0;
+        if (($notification['channel'] ?? '') === 'booking_reminder') {
+            $hoursAhead = max(0, $lookaheadHours);
+        }
+
+        $readyUntil = (new DateTimeImmutable('now', $timezone))
+            ->modify('+' . $hoursAhead . ' hours');
+
+        return $scheduledAt <= $readyUntil;
+    }
+
+    private function resolveCurrentTimeForNotification(int $notificationId): DateTimeImmutable
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT l.timezone
+             FROM notification_queue nq
+             LEFT JOIN bookings b ON b.id = nq.booking_id
+             LEFT JOIN locations l ON l.id = b.location_id
+             WHERE nq.id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$notificationId]);
+        $timezoneName = (string) ($stmt->fetchColumn() ?: 'Europe/Rome');
+
+        return new DateTimeImmutable('now', $this->safeTimezone($timezoneName));
+    }
+
+    private function safeTimezone(string $timezoneName): DateTimeZone
+    {
+        try {
+            return new DateTimeZone($timezoneName);
+        } catch (\Throwable) {
+            return new DateTimeZone('Europe/Rome');
+        }
+    }
+
+    private function resolveCurrentTimeForBooking(int $bookingId): DateTimeImmutable
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT l.timezone
+             FROM bookings b
+             JOIN locations l ON l.id = b.location_id
+             WHERE b.id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$bookingId]);
+        $timezoneName = (string) ($stmt->fetchColumn() ?: 'Europe/Rome');
+
+        try {
+            $timezone = new DateTimeZone($timezoneName);
+        } catch (\Throwable) {
+            $timezone = new DateTimeZone('Europe/Rome');
+        }
+
+        return new DateTimeImmutable('now', $timezone);
     }
 
     /**

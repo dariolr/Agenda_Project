@@ -2147,6 +2147,32 @@ ALTER TABLE `webhook_endpoints`
   ADD CONSTRAINT `fk_webhook_endpoints_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 --
+-- Struttura della tabella `business_payment_methods`
+--
+CREATE TABLE `business_payment_methods` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `business_id` int UNSIGNED NOT NULL,
+  `code` varchar(40) NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `sort_order` int NOT NULL DEFAULT 0,
+  `icon_key` varchar(32) DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `updated_by_user_id` int UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_business_payment_method_code` (`business_id`,`code`),
+  KEY `idx_business_payment_methods_business_active` (`business_id`,`is_active`),
+  KEY `idx_business_payment_methods_updated_by` (`updated_by_user_id`),
+  CONSTRAINT `fk_business_payment_methods_business`
+    FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_business_payment_methods_updated_by`
+    FOREIGN KEY (`updated_by_user_id`) REFERENCES `users` (`id`)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
 -- Struttura della tabella `booking_payments`
 --
 CREATE TABLE `booking_payments` (
@@ -2176,7 +2202,7 @@ CREATE TABLE `booking_payments` (
 CREATE TABLE `booking_payment_lines` (
   `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
   `booking_payment_id` int UNSIGNED NOT NULL,
-  `type` enum('cash','card','discount','voucher','other') NOT NULL,
+  `type` varchar(40) NOT NULL,
   `amount_cents` int UNSIGNED NOT NULL DEFAULT 0,
   `meta_json` json NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
