@@ -43,6 +43,8 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
       effectiveUseServiceColorsForAppointmentsProvider,
     );
     final notifier = ref.read(agendaDisplaySettingsProvider.notifier);
+    final hoverUnrelatedVisualIntensity =
+        (1.0 - settings.hoverUnrelatedCardDimIntensity).clamp(0.0, 1.0);
 
     return AppFormScaffold(
       title: Text(context.l10n.agendaDisplaySettingsSuperadminTitle),
@@ -220,7 +222,7 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
                 IconButton(
                   onPressed: () {
                     notifier.setHoverUnrelatedCardDimIntensity(
-                      settings.hoverUnrelatedCardDimIntensity - 0.05,
+                      settings.hoverUnrelatedCardDimIntensity + 0.05,
                     );
                   },
                   icon: const Icon(Icons.remove),
@@ -230,21 +232,23 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
                     min: 0.0,
                     max: 1.0,
                     divisions: 20,
-                    value: settings.hoverUnrelatedCardDimIntensity,
-                    onChanged: notifier.setHoverUnrelatedCardDimIntensity,
+                    value: hoverUnrelatedVisualIntensity,
+                    onChanged: (value) {
+                      notifier.setHoverUnrelatedCardDimIntensity(1.0 - value);
+                    },
                   ),
                 ),
                 IconButton(
                   onPressed: () {
                     notifier.setHoverUnrelatedCardDimIntensity(
-                      settings.hoverUnrelatedCardDimIntensity + 0.05,
+                      settings.hoverUnrelatedCardDimIntensity - 0.05,
                     );
                   },
                   icon: const Icon(Icons.add),
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  '${(settings.hoverUnrelatedCardDimIntensity * 100).round()}%',
+                  '${(hoverUnrelatedVisualIntensity * 100).round()}%',
                 ),
               ],
             ),
