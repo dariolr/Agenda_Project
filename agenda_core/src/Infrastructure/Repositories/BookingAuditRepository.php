@@ -67,10 +67,11 @@ final class BookingAuditRepository
         ?int $actorId,
         ?string $reason = null
     ): int {
+        $createdAt = $this->resolveCurrentTimeForBooking($newBookingId);
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO booking_replacements 
              (original_booking_id, new_booking_id, actor_type, actor_id, reason, created_at)
-             VALUES (?, ?, ?, ?, ?, NOW())'
+             VALUES (?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $originalBookingId,
@@ -78,6 +79,7 @@ final class BookingAuditRepository
             $actorType,
             $actorId,
             $reason,
+            $createdAt->format('Y-m-d H:i:s'),
         ]);
 
         return (int) $this->db->getPdo()->lastInsertId();
@@ -134,10 +136,11 @@ final class BookingAuditRepository
         ?string $correlationId = null,
         ?string $actorName = null
     ): int {
+        $createdAt = $this->resolveCurrentTimeForBooking($bookingId);
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO booking_events 
              (booking_id, event_type, actor_type, actor_id, actor_name, payload_json, correlation_id, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, NOW())'
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $bookingId,
@@ -147,9 +150,31 @@ final class BookingAuditRepository
             $actorName,
             Json::encode($payload),
             $correlationId,
+            $createdAt->format('Y-m-d H:i:s'),
         ]);
 
         return (int) $this->db->getPdo()->lastInsertId();
+    }
+
+    private function resolveCurrentTimeForBooking(int $bookingId): DateTimeImmutable
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT l.timezone
+             FROM bookings b
+             JOIN locations l ON l.id = b.location_id
+             WHERE b.id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$bookingId]);
+        $timezoneName = (string) ($stmt->fetchColumn() ?: 'Europe/Rome');
+
+        try {
+            $timezone = new \DateTimeZone($timezoneName);
+        } catch (\Throwable) {
+            $timezone = new \DateTimeZone('Europe/Rome');
+        }
+
+        return new DateTimeImmutable('now', $timezone);
     }
 
     /**
