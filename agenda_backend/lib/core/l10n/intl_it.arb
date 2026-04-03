@@ -1510,6 +1510,22 @@
   "bookingPaymentExceedsDueMessage": "I pagamenti e le altre coperture gia inseriti superano il nuovo importo dovuto. Modifica prima il pagamento e poi salva la prenotazione.",
   "paymentNotesLabel": "Note pagamento",
   "paymentNotesPlaceholder": "Note sul pagamento...",
+  "paymentMethodsTitle": "Metodi di pagamento",
+  "paymentMethodsDescription": "Gestisci le tipologie di pagamento del business",
+  "paymentMethodsReorderHint": "Puoi cambiare l’ordine dei tipi di pagamento trascinandoli.",
+  "paymentMethodsEmpty": "Nessun metodo di pagamento disponibile",
+  "paymentMethodsAdd": "Aggiungi metodo",
+  "paymentMethodsEdit": "Modifica metodo",
+  "paymentMethodsFieldName": "Nome",
+  "paymentMethodsFieldSort": "Ordine",
+  "paymentMethodsNameRequired": "Inserisci un nome per il metodo di pagamento",
+  "paymentMethodsDeleteTitle": "Elimina metodo di pagamento",
+  "paymentMethodsDeleteMessage": "Vuoi eliminare \"{name}\"?",
+  "@paymentMethodsDeleteMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
   "moreSectionBusinessConfig": "Configurazione attività",
   "moreSectionDataAnalysis": "Analisi dati",
   "moreSectionProfileManage": "Gestisci il tuo profilo",

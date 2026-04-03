@@ -336,13 +336,13 @@ final class ClassEventRepository
             SELECT
                 ce.*,
                 ct.name AS class_type_name,
-                COALESCE(l.timezone, "Europe/Rome") AS location_timezone,
+                l.timezone AS location_timezone,
                 cb.status AS my_booking_status
             FROM class_events ce
             LEFT JOIN class_types ct
               ON ct.id = ce.class_type_id
              AND ct.business_id = ce.business_id
-            LEFT JOIN locations l
+            INNER JOIN locations l
               ON l.id = ce.location_id
             LEFT JOIN class_bookings cb
                 ON cb.business_id = ce.business_id
@@ -411,13 +411,13 @@ final class ClassEventRepository
             SELECT
                 ce.*,
                 ct.name AS class_type_name,
-                COALESCE(l.timezone, "Europe/Rome") AS location_timezone,
+                l.timezone AS location_timezone,
                 cb.status AS my_booking_status
             FROM class_events ce
             LEFT JOIN class_types ct
               ON ct.id = ce.class_type_id
              AND ct.business_id = ce.business_id
-            LEFT JOIN locations l
+            INNER JOIN locations l
               ON l.id = ce.location_id
             LEFT JOIN class_bookings cb
                 ON cb.business_id = ce.business_id
@@ -441,9 +441,15 @@ final class ClassEventRepository
         $sql = '
             SELECT
                 cb.*,
+                l.timezone AS location_timezone,
                 c.first_name AS customer_first_name,
                 c.last_name AS customer_last_name
             FROM class_bookings cb
+            INNER JOIN class_events ce
+              ON ce.id = cb.class_event_id
+             AND ce.business_id = cb.business_id
+            INNER JOIN locations l
+              ON l.id = ce.location_id
             LEFT JOIN clients c ON c.id = cb.customer_id
             WHERE cb.business_id = :business_id
               AND cb.class_event_id = :class_event_id';
@@ -474,6 +480,7 @@ final class ClassEventRepository
         $pdo = $this->db->getPdo();
         $pdo->beginTransaction();
         try {
+            $currentUtc = $this->resolveCurrentUtcForLocationId($pdo, (int) $data['location_id']);
             $stmt = $pdo->prepare(
                 '
                 INSERT INTO class_events (
@@ -482,14 +489,16 @@ final class ClassEventRepository
                     location_id, staff_id,
                     capacity_total, capacity_reserved, confirmed_count, waitlist_count,
                     waitlist_enabled, booking_open_at, booking_close_at,
-                    cancel_cutoff_minutes, status, visibility, price_cents, currency
+                    cancel_cutoff_minutes, status, visibility, price_cents, currency,
+                    created_at, updated_at
                 ) VALUES (
                     :business_id, :class_type_id,
                     :starts_at, :ends_at,
                     :location_id, :staff_id,
                     :capacity_total, :capacity_reserved, :confirmed_count, :waitlist_count,
                     :waitlist_enabled, :booking_open_at, :booking_close_at,
-                    :cancel_cutoff_minutes, :status, :visibility, :price_cents, :currency
+                    :cancel_cutoff_minutes, :status, :visibility, :price_cents, :currency,
+                    :created_at, :updated_at
                 )'
             );
             $stmt->execute([
@@ -511,6 +520,8 @@ final class ClassEventRepository
                 'visibility' => $data['visibility'] ?? 'PUBLIC',
                 'price_cents' => $data['price_cents'] ?? null,
                 'currency' => $data['currency'] ?? null,
+                'created_at' => $currentUtc,
+                'updated_at' => $currentUtc,
             ]);
             $classEventId = (int) $pdo->lastInsertId();
 
@@ -575,7 +586,14 @@ final class ClassEventRepository
         $pdo = $this->db->getPdo();
         $pdo->beginTransaction();
         try {
+            $locationIdForTimestamp = array_key_exists('location_id', $data)
+                ? (int) $data['location_id']
+                : $this->resolveLocationIdForClassEvent($pdo, $businessId, $classEventId);
+            $currentUtc = $this->resolveCurrentUtcForLocationId($pdo, $locationIdForTimestamp);
+
             if (!empty($fields)) {
+                $fields[] = 'updated_at = :updated_at';
+                $params['updated_at'] = $currentUtc;
                 $sql = 'UPDATE class_events SET ' . implode(', ', $fields) . '
                         WHERE business_id = :business_id AND id = :class_event_id';
                 $stmt = $pdo->prepare($sql);
@@ -643,14 +661,19 @@ final class ClassEventRepository
 
     public function cancelEvent(int $businessId, int $classEventId): bool
     {
+        $pdo = $this->db->getPdo();
+        $locationId = $this->resolveLocationIdForClassEvent($pdo, $businessId, $classEventId);
+        $currentUtc = $this->resolveCurrentUtcForLocationId($pdo, $locationId);
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE class_events
-             SET status = "CANCELLED"
+             SET status = "CANCELLED",
+                 updated_at = :updated_at
              WHERE business_id = :business_id AND id = :class_event_id'
         );
         return $stmt->execute([
             'business_id' => $businessId,
             'class_event_id' => $classEventId,
+            'updated_at' => $currentUtc,
         ]);
     }
 
@@ -708,9 +731,10 @@ final class ClassEventRepository
 
             if ($existing && in_array($existing['status'], ['CONFIRMED', 'WAITLISTED'], true)) {
                 $pdo->commit();
-                return $existing;
+                return $this->findBookingByCustomer($businessId, $classEventId, $customerId) ?? [];
             }
 
+            $currentUtc = $this->resolveCurrentUtcForClassEvent($pdo, $businessId, $classEventId);
             $spotsLeft = (int) $event['capacity_total'] - (int) $event['capacity_reserved'] - (int) $event['confirmed_count'];
             if ($spotsLeft > 0) {
                 $this->upsertBooking(
@@ -720,15 +744,18 @@ final class ClassEventRepository
                     $classEventId,
                     $customerId,
                     'CONFIRMED',
-                    null
+                    null,
+                    $currentUtc
                 );
                 $pdo->prepare(
                     'UPDATE class_events
-                     SET confirmed_count = confirmed_count + 1
+                     SET confirmed_count = confirmed_count + 1,
+                         updated_at = :updated_at
                      WHERE business_id = :business_id AND id = :class_event_id'
                 )->execute([
                     'business_id' => $businessId,
                     'class_event_id' => $classEventId,
+                    'updated_at' => $currentUtc,
                 ]);
             } elseif ((int) ($event['waitlist_enabled'] ?? 0) === 1) {
                 $waitlistPos = (int) $event['waitlist_count'] + 1;
@@ -739,15 +766,18 @@ final class ClassEventRepository
                     $classEventId,
                     $customerId,
                     'WAITLISTED',
-                    $waitlistPos
+                    $waitlistPos,
+                    $currentUtc
                 );
                 $pdo->prepare(
                     'UPDATE class_events
-                     SET waitlist_count = waitlist_count + 1
+                     SET waitlist_count = waitlist_count + 1,
+                         updated_at = :updated_at
                      WHERE business_id = :business_id AND id = :class_event_id'
                 )->execute([
                     'business_id' => $businessId,
                     'class_event_id' => $classEventId,
+                    'updated_at' => $currentUtc,
                 ]);
             } else {
                 $pdo->rollBack();
@@ -803,21 +833,27 @@ final class ClassEventRepository
             }
 
             if ($booking['status'] === 'CONFIRMED') {
+                $cancelledAtUtc = $this->resolveCurrentUtcForClassEvent($pdo, $businessId, $classEventId);
                 $pdo->prepare(
                     'UPDATE class_bookings
                      SET status = "CANCELLED_BY_CUSTOMER",
-                         cancelled_at = UTC_TIMESTAMP(),
+                         cancelled_at = :cancelled_at,
                          waitlist_position = NULL
                      WHERE id = :id'
-                )->execute(['id' => $booking['id']]);
+                )->execute([
+                    'id' => $booking['id'],
+                    'cancelled_at' => $cancelledAtUtc,
+                ]);
 
                 $pdo->prepare(
                     'UPDATE class_events
-                     SET confirmed_count = GREATEST(0, confirmed_count - 1)
+                     SET confirmed_count = GREATEST(0, confirmed_count - 1),
+                         updated_at = :updated_at
                      WHERE business_id = :business_id AND id = :class_event_id'
                 )->execute([
                     'business_id' => $businessId,
                     'class_event_id' => $classEventId,
+                    'updated_at' => $cancelledAtUtc,
                 ]);
 
                 $nextStmt = $pdo->prepare(
@@ -845,30 +881,38 @@ final class ClassEventRepository
                     $pdo->prepare(
                         'UPDATE class_events
                          SET waitlist_count = GREATEST(0, waitlist_count - 1),
-                             confirmed_count = confirmed_count + 1
+                             confirmed_count = confirmed_count + 1,
+                             updated_at = :updated_at
                          WHERE business_id = :business_id AND id = :class_event_id'
                     )->execute([
                         'business_id' => $businessId,
                         'class_event_id' => $classEventId,
+                        'updated_at' => $cancelledAtUtc,
                     ]);
                     $this->repackWaitlist($pdo, $businessId, $classEventId);
                 }
             } elseif ($booking['status'] === 'WAITLISTED') {
+                $cancelledAtUtc = $this->resolveCurrentUtcForClassEvent($pdo, $businessId, $classEventId);
                 $pdo->prepare(
                     'UPDATE class_bookings
                      SET status = "CANCELLED_BY_CUSTOMER",
-                         cancelled_at = UTC_TIMESTAMP(),
+                         cancelled_at = :cancelled_at,
                          waitlist_position = NULL
                      WHERE id = :id'
-                )->execute(['id' => $booking['id']]);
+                )->execute([
+                    'id' => $booking['id'],
+                    'cancelled_at' => $cancelledAtUtc,
+                ]);
 
                 $pdo->prepare(
                     'UPDATE class_events
-                     SET waitlist_count = GREATEST(0, waitlist_count - 1)
+                     SET waitlist_count = GREATEST(0, waitlist_count - 1),
+                         updated_at = :updated_at
                      WHERE business_id = :business_id AND id = :class_event_id'
                 )->execute([
                     'business_id' => $businessId,
                     'class_event_id' => $classEventId,
+                    'updated_at' => $cancelledAtUtc,
                 ]);
                 $this->repackWaitlist($pdo, $businessId, $classEventId);
             }
@@ -903,11 +947,16 @@ final class ClassEventRepository
     public function findBookingByCustomer(int $businessId, int $classEventId, int $customerId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT *
-             FROM class_bookings
-             WHERE business_id = :business_id
-               AND class_event_id = :class_event_id
-               AND customer_id = :customer_id
+            'SELECT cb.*, l.timezone AS location_timezone
+             FROM class_bookings cb
+             INNER JOIN class_events ce
+               ON ce.id = cb.class_event_id
+              AND ce.business_id = cb.business_id
+             INNER JOIN locations l
+               ON l.id = ce.location_id
+             WHERE cb.business_id = :business_id
+               AND cb.class_event_id = :class_event_id
+               AND cb.customer_id = :customer_id
              LIMIT 1'
         );
         $stmt->execute([
@@ -926,21 +975,24 @@ final class ClassEventRepository
         int $classEventId,
         int $customerId,
         string $status,
-        ?int $waitlistPosition
+        ?int $waitlistPosition,
+        string $currentUtc
     ): void {
         if ($existing) {
             $stmt = $pdo->prepare(
                 'UPDATE class_bookings
                  SET status = :status,
                      waitlist_position = :waitlist_position,
-                     booked_at = UTC_TIMESTAMP(),
+                     booked_at = :booked_at,
                      cancelled_at = NULL,
-                     updated_at = UTC_TIMESTAMP()
+                     updated_at = :updated_at
                  WHERE id = :id'
             );
             $stmt->execute([
                 'status' => $status,
                 'waitlist_position' => $waitlistPosition,
+                'booked_at' => $currentUtc,
+                'updated_at' => $currentUtc,
                 'id' => $existing['id'],
             ]);
             return;
@@ -948,9 +1000,9 @@ final class ClassEventRepository
 
         $stmt = $pdo->prepare(
             'INSERT INTO class_bookings (
-                business_id, class_event_id, customer_id, status, waitlist_position, booked_at
+                business_id, class_event_id, customer_id, status, waitlist_position, booked_at, created_at, updated_at
              ) VALUES (
-                :business_id, :class_event_id, :customer_id, :status, :waitlist_position, UTC_TIMESTAMP()
+                :business_id, :class_event_id, :customer_id, :status, :waitlist_position, :booked_at, :created_at, :updated_at
              )'
         );
         $stmt->execute([
@@ -959,7 +1011,87 @@ final class ClassEventRepository
             'customer_id' => $customerId,
             'status' => $status,
             'waitlist_position' => $waitlistPosition,
+            'booked_at' => $currentUtc,
+            'created_at' => $currentUtc,
+            'updated_at' => $currentUtc,
         ]);
+    }
+
+    private function resolveCurrentUtcForClassEvent(\PDO $pdo, int $businessId, int $classEventId): string
+    {
+        $stmt = $pdo->prepare(
+            'SELECT l.timezone
+             FROM class_events ce
+             INNER JOIN locations l ON l.id = ce.location_id
+             WHERE ce.business_id = :business_id
+               AND ce.id = :class_event_id
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'business_id' => $businessId,
+            'class_event_id' => $classEventId,
+        ]);
+        $timezoneName = (string) $stmt->fetchColumn();
+        if ($timezoneName === '') {
+            throw new \RuntimeException('Missing location timezone for class event');
+        }
+
+        try {
+            $locationTimezone = new \DateTimeZone($timezoneName);
+        } catch (\Throwable) {
+            throw new \RuntimeException('Invalid location timezone for class event');
+        }
+
+        return (new \DateTimeImmutable('now', $locationTimezone))
+            ->setTimezone(new \DateTimeZone('UTC'))
+            ->format('Y-m-d H:i:s');
+    }
+
+    private function resolveLocationIdForClassEvent(\PDO $pdo, int $businessId, int $classEventId): int
+    {
+        $stmt = $pdo->prepare(
+            'SELECT location_id
+             FROM class_events
+             WHERE business_id = :business_id
+               AND id = :class_event_id
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'business_id' => $businessId,
+            'class_event_id' => $classEventId,
+        ]);
+        $locationId = $stmt->fetchColumn();
+        $locationIdInt = $locationId !== false ? (int) $locationId : 0;
+        if ($locationIdInt <= 0) {
+            throw new \RuntimeException('Class event location not found');
+        }
+
+        return $locationIdInt;
+    }
+
+    private function resolveCurrentUtcForLocationId(\PDO $pdo, int $locationId): string
+    {
+        $stmt = $pdo->prepare(
+            'SELECT timezone
+             FROM locations
+             WHERE id = :location_id
+             LIMIT 1'
+        );
+        $stmt->execute(['location_id' => $locationId]);
+        $timezoneName = (string) $stmt->fetchColumn();
+        if ($timezoneName === '') {
+            throw new \RuntimeException('Missing location timezone');
+        }
+
+        try {
+            $locationTimezone = new \DateTimeZone($timezoneName);
+        } catch (\Throwable) {
+            throw new \RuntimeException('Invalid location timezone');
+        }
+
+        return (new \DateTimeImmutable('now', $locationTimezone))
+            ->setTimezone(new \DateTimeZone('UTC'))
+            ->format('Y-m-d H:i:s');
     }
 
     private function repackWaitlist(\PDO $pdo, int $businessId, int $classEventId): void

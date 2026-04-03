@@ -14,6 +14,8 @@
 4. Non usare `StateProvider` (Riverpod 3.x): usare `Notifier` + `NotifierProvider`.
 5. Non usare `SnackBar`: usare `FeedbackDialog`.
 6. Non cambiare indici route `StatefulShellRoute` senza richiesta esplicita.
+7. Ogni modifica DB deve avere una query SQL unica e operativa (phpMyAdmin-ready) in `config/migrations/`.
+8. Ogni modifica DB deve aggiornare anche `config/migrations/FULL_DATABASE_SCHEMA.sql`.
 
 ## Terminologia Obbligatoria
 - `frontend` = progetto `agenda_frontend` (clienti)

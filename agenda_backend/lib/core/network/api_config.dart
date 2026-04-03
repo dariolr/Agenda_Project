@@ -73,6 +73,14 @@ class ApiConfig {
   static String bookingPayment(int bookingId) =>
       '/v1/bookings/$bookingId/payment';
 
+  /// Metodi di pagamento configurabili per business
+  static String businessPaymentMethods(int businessId) =>
+      '/v1/businesses/$businessId/payment-methods';
+
+  /// Singolo metodo di pagamento business-scoped
+  static String businessPaymentMethod(int businessId, int methodId) =>
+      '/v1/businesses/$businessId/payment-methods/$methodId';
+
   /// Lista bookings filtrata per business (gestionale)
   static String bookingsList(int businessId) =>
       '/v1/businesses/$businessId/bookings/list';

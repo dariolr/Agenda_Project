@@ -770,7 +770,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     );
     final numberFormat = NumberFormat.decimalPattern(locale);
     final percentFormat = NumberFormat.decimalPattern(locale);
-    final cashAndCardTotal = (summary.cashCents + summary.cardCents) / 100;
+    final totalCollected = summary.paidCents / 100;
 
     final cards = [
       _SummaryCardData(
@@ -782,7 +782,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       _SummaryCardData(
         icon: Icons.euro,
         label: l10n.reportsAppointmentsAmount,
-        value: currencyFormat.format(cashAndCardTotal),
+        value: currencyFormat.format(totalCollected),
         color: Colors.green,
       ),
       _SummaryCardData(
@@ -837,17 +837,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     );
 
     String cents(int value) => currencyFormat.format(value / 100);
-    final cashAndCardCents = summary.cashCents + summary.cardCents;
-    final totalToCollectCents =
-        (summary.dueCents -
-                summary.discountCents -
-                summary.voucherCents -
-                summary.otherCents)
-            .clamp(0, 1 << 31);
-    final outstandingCents = (summary.dueCents -
-            summary.paidCents -
-            summary.discountCents)
+    final collectedCents = summary.paidCents;
+    final totalToCollectCents = (summary.dueCents - summary.discountCents)
         .clamp(0, 1 << 31);
+    final outstandingCents =
+        (summary.dueCents - summary.paidCents - summary.discountCents).clamp(
+          0,
+          1 << 31,
+        );
 
     double? percentageOfDue(int value, {bool hideWhenFull = false}) {
       if (summary.dueCents <= 0) {
@@ -876,29 +873,39 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         ),
       (
         label: l10n.paymentEntered,
-        valueCents: cashAndCardCents,
-        percentage: percentageOfDue(cashAndCardCents),
+        valueCents: collectedCents,
+        percentage: percentageOfDue(collectedCents),
       ),
-      (
-        label: l10n.paymentMethodCash,
-        valueCents: summary.cashCents,
-        percentage: percentageOfDue(summary.cashCents),
-      ),
-      (
-        label: l10n.paymentMethodCard,
-        valueCents: summary.cardCents,
-        percentage: percentageOfDue(summary.cardCents),
-      ),
-      (
-        label: l10n.paymentMethodVoucher,
-        valueCents: summary.voucherCents,
-        percentage: percentageOfDue(summary.voucherCents),
-      ),
-      (
-        label: l10n.paymentMethodOther,
-        valueCents: summary.otherCents,
-        percentage: percentageOfDue(summary.otherCents),
-      ),
+      if (summary.paymentMethodBreakdown.isNotEmpty)
+        ...summary.paymentMethodBreakdown.map(
+          (entry) => (
+            label: entry.methodName,
+            valueCents: entry.amountCents,
+            percentage: percentageOfDue(entry.amountCents),
+          ),
+        )
+      else ...[
+        (
+          label: l10n.paymentMethodCash,
+          valueCents: summary.cashCents,
+          percentage: percentageOfDue(summary.cashCents),
+        ),
+        (
+          label: l10n.paymentMethodCard,
+          valueCents: summary.cardCents,
+          percentage: percentageOfDue(summary.cardCents),
+        ),
+        (
+          label: l10n.paymentMethodVoucher,
+          valueCents: summary.voucherCents,
+          percentage: percentageOfDue(summary.voucherCents),
+        ),
+        (
+          label: l10n.paymentMethodOther,
+          valueCents: summary.otherCents,
+          percentage: percentageOfDue(summary.otherCents),
+        ),
+      ],
       (
         label: l10n.paymentMethodDiscount,
         valueCents: summary.discountCents,
@@ -945,9 +952,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                         DataCell(
                           Text(
                             cents(row.valueCents),
-                            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w400,
-                            ),
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(fontWeight: FontWeight.w400),
                           ),
                         ),
                         DataCell(

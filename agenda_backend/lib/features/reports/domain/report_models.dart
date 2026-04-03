@@ -5,6 +5,28 @@ import 'package:flutter/foundation.dart';
 
 /// Summary metrics for the report.
 @immutable
+class PaymentMethodReportEntry {
+  const PaymentMethodReportEntry({
+    required this.methodCode,
+    required this.methodName,
+    required this.amountCents,
+  });
+
+  final String methodCode;
+  final String methodName;
+  final int amountCents;
+
+  factory PaymentMethodReportEntry.fromJson(Map<String, dynamic> json) {
+    return PaymentMethodReportEntry(
+      methodCode: json['method_code'] as String? ?? '',
+      methodName: json['method_name'] as String? ?? '',
+      amountCents: json['amount_cents'] as int? ?? 0,
+    );
+  }
+}
+
+/// Summary metrics for the report.
+@immutable
 class ReportSummary {
   const ReportSummary({
     required this.totalAppointments,
@@ -24,6 +46,7 @@ class ReportSummary {
     required this.discountCents,
     required this.paidCents,
     required this.dueCents,
+    required this.paymentMethodBreakdown,
   });
 
   final int totalAppointments;
@@ -43,6 +66,7 @@ class ReportSummary {
   final int discountCents;
   final int paidCents;
   final int dueCents;
+  final List<PaymentMethodReportEntry> paymentMethodBreakdown;
 
   factory ReportSummary.fromJson(Map<String, dynamic> json) {
     return ReportSummary(
@@ -64,6 +88,11 @@ class ReportSummary {
       discountCents: json['discount_cents'] as int? ?? 0,
       paidCents: json['paid_cents'] as int? ?? 0,
       dueCents: json['due_cents'] as int? ?? 0,
+      paymentMethodBreakdown:
+          (json['payment_method_breakdown'] as List<dynamic>? ?? const [])
+              .whereType<Map<String, dynamic>>()
+              .map(PaymentMethodReportEntry.fromJson)
+              .toList(),
     );
   }
 
@@ -128,6 +157,7 @@ class LocationReportRow {
     required this.discountCents,
     required this.paidCents,
     required this.dueCents,
+    required this.paymentMethodBreakdown,
   });
 
   final int locationId;
@@ -142,6 +172,7 @@ class LocationReportRow {
   final int discountCents;
   final int paidCents;
   final int dueCents;
+  final List<PaymentMethodReportEntry> paymentMethodBreakdown;
 
   factory LocationReportRow.fromJson(Map<String, dynamic> json) {
     return LocationReportRow(
@@ -157,6 +188,11 @@ class LocationReportRow {
       discountCents: json['discount_cents'] as int? ?? 0,
       paidCents: json['paid_cents'] as int? ?? 0,
       dueCents: json['due_cents'] as int? ?? 0,
+      paymentMethodBreakdown:
+          (json['payment_method_breakdown'] as List<dynamic>? ?? const [])
+              .whereType<Map<String, dynamic>>()
+              .map(PaymentMethodReportEntry.fromJson)
+              .toList(),
     );
   }
 

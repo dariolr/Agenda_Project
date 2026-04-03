@@ -1510,6 +1510,22 @@
   "bookingPaymentExceedsDueMessage": "The payments and other coverages already entered exceed the new amount due. Update the payment first, then save the booking.",
   "paymentNotesLabel": "Payment notes",
   "paymentNotesPlaceholder": "Notes about the payment...",
+  "paymentMethodsTitle": "Payment methods",
+  "paymentMethodsDescription": "Manage business payment method types",
+  "paymentMethodsReorderHint": "You can change the payment type order by dragging them.",
+  "paymentMethodsEmpty": "No payment methods available",
+  "paymentMethodsAdd": "Add method",
+  "paymentMethodsEdit": "Edit method",
+  "paymentMethodsFieldName": "Name",
+  "paymentMethodsFieldSort": "Order",
+  "paymentMethodsNameRequired": "Enter a payment method name",
+  "paymentMethodsDeleteTitle": "Delete payment method",
+  "paymentMethodsDeleteMessage": "Do you want to delete \"{name}\"?",
+  "@paymentMethodsDeleteMessage": {
+    "placeholders": {
+      "name": {}
+    }
+  },
   "moreSectionBusinessConfig": "Business Configuration",
   "moreSectionDataAnalysis": "Data Analysis",
   "moreSectionProfileManage": "Manage your profile",

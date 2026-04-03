@@ -31,7 +31,9 @@ class MoreScreen extends ConsumerWidget {
     final isSuperadmin = ref.watch(
       authProvider.select((s) => s.user?.isSuperadmin ?? false),
     );
-    final businessOwner = isSuperadmin ? ref.watch(businessOwnerProvider) : null;
+    final businessOwner = isSuperadmin
+        ? ref.watch(businessOwnerProvider)
+        : null;
     final showProfile = !isSuperadmin || businessOwner != null;
 
     final configurationItems = [
@@ -76,6 +78,14 @@ class MoreScreen extends ConsumerWidget {
           description: l10n.resourcesEmptyHint,
           color: const Color(0xFF8BC34A),
           onTap: () => context.go(_withFromAltro('/altro/risorse')),
+        ),
+      if (canManageSettings)
+        _MoreItem(
+          icon: Icons.payments_outlined,
+          title: l10n.paymentMethodsTitle,
+          description: l10n.paymentMethodsDescription,
+          color: const Color(0xFF6D4C41),
+          onTap: () => context.go(_withFromAltro('/altro/metodi-pagamento')),
         ),
       // Permessi - visibile solo a chi può gestire operatori
       if (canManageOperators)
@@ -140,7 +150,10 @@ class MoreScreen extends ConsumerWidget {
           items: configurationItems,
         ),
       if (analyticsItems.isNotEmpty)
-        _MoreSection(title: l10n.moreSectionDataAnalysis, items: analyticsItems),
+        _MoreSection(
+          title: l10n.moreSectionDataAnalysis,
+          items: analyticsItems,
+        ),
       if (profileItems.isNotEmpty)
         _MoreSection(title: l10n.moreSectionProfileManage, items: profileItems),
     ];
@@ -350,27 +363,27 @@ class _MoreCardDesktopState extends State<_MoreCardDesktop> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                      // Titolo
-                      Text(
-                        item.title,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 6),
-                      // Descrizione
-                      Text(
-                        item.description,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.onSurfaceVariant,
-                          height: 1.4,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                  // Titolo
+                  Text(
+                    item.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 6),
+                  // Descrizione
+                  Text(
+                    item.description,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      height: 1.4,
+                    ),
+                    maxLines: 3,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ],
               ),
             ),

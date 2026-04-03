@@ -978,6 +978,45 @@ class ApiClient {
     return put(ApiConfig.bookingPayment(bookingId), data: payload);
   }
 
+  /// GET /v1/businesses/{business_id}/payment-methods
+  Future<Map<String, dynamic>> getBusinessPaymentMethods({
+    required int businessId,
+    bool includeInactive = false,
+  }) async {
+    return get(
+      ApiConfig.businessPaymentMethods(businessId),
+      queryParameters: includeInactive ? {'include_inactive': '1'} : null,
+    );
+  }
+
+  /// POST /v1/businesses/{business_id}/payment-methods
+  Future<Map<String, dynamic>> createBusinessPaymentMethod({
+    required int businessId,
+    required Map<String, dynamic> payload,
+  }) async {
+    return post(ApiConfig.businessPaymentMethods(businessId), data: payload);
+  }
+
+  /// PUT /v1/businesses/{business_id}/payment-methods/{id}
+  Future<Map<String, dynamic>> updateBusinessPaymentMethod({
+    required int businessId,
+    required int methodId,
+    required Map<String, dynamic> payload,
+  }) async {
+    return put(
+      ApiConfig.businessPaymentMethod(businessId, methodId),
+      data: payload,
+    );
+  }
+
+  /// DELETE /v1/businesses/{business_id}/payment-methods/{id}
+  Future<Map<String, dynamic>> deleteBusinessPaymentMethod({
+    required int businessId,
+    required int methodId,
+  }) async {
+    return delete(ApiConfig.businessPaymentMethod(businessId, methodId));
+  }
+
   /// GET /v1/businesses/{business_id}/bookings/list
   /// Lista prenotazioni con filtri avanzati per il gestionale.
   Future<Map<String, dynamic>> getBookingsList({

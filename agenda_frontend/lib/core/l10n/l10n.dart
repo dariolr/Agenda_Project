@@ -54,340 +54,335 @@ class L10n {
     return Localizations.of<L10n>(context, L10n);
   }
 
-  /// `Prenota Online`
+  /// `Book Online`
   String get appTitle {
-    return Intl.message('Prenota Online', name: 'appTitle', desc: '', args: []);
+    return Intl.message('Book Online', name: 'appTitle', desc: '', args: []);
   }
 
-  /// `Indietro`
+  /// `Back`
   String get actionBack {
-    return Intl.message('Indietro', name: 'actionBack', desc: '', args: []);
+    return Intl.message('Back', name: 'actionBack', desc: '', args: []);
   }
 
-  /// `Avanti`
+  /// `Next`
   String get actionNext {
-    return Intl.message('Avanti', name: 'actionNext', desc: '', args: []);
+    return Intl.message('Next', name: 'actionNext', desc: '', args: []);
   }
 
-  /// `Conferma`
+  /// `Confirm`
   String get actionConfirm {
-    return Intl.message('Conferma', name: 'actionConfirm', desc: '', args: []);
+    return Intl.message('Confirm', name: 'actionConfirm', desc: '', args: []);
   }
 
-  /// `Annulla`
+  /// `Cancel`
   String get actionCancel {
-    return Intl.message('Annulla', name: 'actionCancel', desc: '', args: []);
+    return Intl.message('Cancel', name: 'actionCancel', desc: '', args: []);
   }
 
-  /// `Elimina`
+  /// `Delete`
   String get actionDelete {
-    return Intl.message('Elimina', name: 'actionDelete', desc: '', args: []);
+    return Intl.message('Delete', name: 'actionDelete', desc: '', args: []);
   }
 
-  /// `Chiudi`
+  /// `Close`
   String get actionClose {
-    return Intl.message('Chiudi', name: 'actionClose', desc: '', args: []);
+    return Intl.message('Close', name: 'actionClose', desc: '', args: []);
   }
 
-  /// `Riprova`
+  /// `Retry`
   String get actionRetry {
-    return Intl.message('Riprova', name: 'actionRetry', desc: '', args: []);
+    return Intl.message('Retry', name: 'actionRetry', desc: '', args: []);
   }
 
-  /// `Accedi`
+  /// `Login`
   String get actionLogin {
-    return Intl.message('Accedi', name: 'actionLogin', desc: '', args: []);
+    return Intl.message('Login', name: 'actionLogin', desc: '', args: []);
   }
 
-  /// `Registrati`
+  /// `Register`
   String get actionRegister {
-    return Intl.message(
-      'Registrati',
-      name: 'actionRegister',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Register', name: 'actionRegister', desc: '', args: []);
   }
 
-  /// `Esci`
+  /// `Logout`
   String get actionLogout {
-    return Intl.message('Esci', name: 'actionLogout', desc: '', args: []);
+    return Intl.message('Logout', name: 'actionLogout', desc: '', args: []);
   }
 
-  /// `Caricamento...`
+  /// `Loading...`
   String get loadingGeneric {
     return Intl.message(
-      'Caricamento...',
+      'Loading...',
       name: 'loadingGeneric',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sessione scaduta. Effettua nuovamente l'accesso.`
+  /// `Session expired. Please log in again.`
   String get sessionExpired {
     return Intl.message(
-      'Sessione scaduta. Effettua nuovamente l\'accesso.',
+      'Session expired. Please log in again.',
       name: 'sessionExpired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore`
+  /// `Error`
   String get errorTitle {
-    return Intl.message('Errore', name: 'errorTitle', desc: '', args: []);
+    return Intl.message('Error', name: 'errorTitle', desc: '', args: []);
   }
 
-  /// `Si è verificato un errore`
+  /// `An error occurred`
   String get errorGeneric {
     return Intl.message(
-      'Si è verificato un errore',
+      'An error occurred',
       name: 'errorGeneric',
       desc: '',
       args: [],
     );
   }
 
-  /// `Pagina non trovata: {path}`
+  /// `Page not found: {path}`
   String errorNotFound(String path) {
     return Intl.message(
-      'Pagina non trovata: $path',
+      'Page not found: $path',
       name: 'errorNotFound',
       desc: '',
       args: [path],
     );
   }
 
-  /// `Nessuna disponibilità per la data selezionata`
+  /// `No availability for the selected date`
   String get errorNoAvailability {
     return Intl.message(
-      'Nessuna disponibilità per la data selezionata',
+      'No availability for the selected date',
       name: 'errorNoAvailability',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile caricare i servizi. Verifica la connessione e riprova.`
+  /// `Unable to load services. Check your connection and try again.`
   String get errorLoadingServices {
     return Intl.message(
-      'Impossibile caricare i servizi. Verifica la connessione e riprova.',
+      'Unable to load services. Check your connection and try again.',
       name: 'errorLoadingServices',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile caricare gli operatori. Verifica la connessione e riprova.`
+  /// `Unable to load staff. Check your connection and try again.`
   String get errorLoadingStaff {
     return Intl.message(
-      'Impossibile caricare gli operatori. Verifica la connessione e riprova.',
+      'Unable to load staff. Check your connection and try again.',
       name: 'errorLoadingStaff',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile caricare le disponibilità. Verifica la connessione e riprova.`
+  /// `Unable to load availability. Check your connection and try again.`
   String get errorLoadingAvailability {
     return Intl.message(
-      'Impossibile caricare le disponibilità. Verifica la connessione e riprova.',
+      'Unable to load availability. Check your connection and try again.',
       name: 'errorLoadingAvailability',
       desc: '',
       args: [],
     );
   }
 
-  /// `Caricamento disponibilità...`
+  /// `Loading availability...`
   String get loadingAvailability {
     return Intl.message(
-      'Caricamento disponibilità...',
+      'Loading availability...',
       name: 'loadingAvailability',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun servizio disponibile al momento`
+  /// `No services available at the moment`
   String get servicesEmpty {
     return Intl.message(
-      'Nessun servizio disponibile al momento',
+      'No services available at the moment',
       name: 'servicesEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non ci sono servizi prenotabili online per questa attività`
+  /// `There are no services available for online booking at this business`
   String get servicesEmptySubtitle {
     return Intl.message(
-      'Non ci sono servizi prenotabili online per questa attività',
+      'There are no services available for online booking at this business',
       name: 'servicesEmptySubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun operatore disponibile al momento`
+  /// `No staff available at the moment`
   String get staffEmpty {
     return Intl.message(
-      'Nessun operatore disponibile al momento',
+      'No staff available at the moment',
       name: 'staffEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun operatore può eseguire tutti i servizi selezionati. Prova a selezionare meno servizi o servizi diversi.`
+  /// `No staff member can perform all selected services. Try selecting fewer or different services.`
   String get noStaffForAllServices {
     return Intl.message(
-      'Nessun operatore può eseguire tutti i servizi selezionati. Prova a selezionare meno servizi o servizi diversi.',
+      'No staff member can perform all selected services. Try selecting fewer or different services.',
       name: 'noStaffForAllServices',
       desc: '',
       args: [],
     );
   }
 
-  /// `La connessione sta impiegando troppo tempo. Riprova.`
+  /// `The connection is taking too long. Please try again.`
   String get errorConnectionTimeout {
     return Intl.message(
-      'La connessione sta impiegando troppo tempo. Riprova.',
+      'The connection is taking too long. Please try again.',
       name: 'errorConnectionTimeout',
       desc: '',
       args: [],
     );
   }
 
-  /// `AMBIENTE DEMO`
+  /// `DEMO ENVIRONMENT`
   String get environmentDemoBannerTitle {
     return Intl.message(
-      'AMBIENTE DEMO',
+      'DEMO ENVIRONMENT',
       name: 'environmentDemoBannerTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `I dati vengono resettati periodicamente.`
+  /// `Data is reset periodically.`
   String get environmentDemoBannerSubtitle {
     return Intl.message(
-      'I dati vengono resettati periodicamente.',
+      'Data is reset periodically.',
       name: 'environmentDemoBannerSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Attività non trovata`
+  /// `Business not found`
   String get errorBusinessNotFound {
     return Intl.message(
-      'Attività non trovata',
+      'Business not found',
       name: 'errorBusinessNotFound',
       desc: '',
       args: [],
     );
   }
 
-  /// `L'attività richiesta non esiste. Verifica l'indirizzo o contatta direttamente l'attività.`
+  /// `The requested business does not exist. Please check the URL or contact the business directly.`
   String get errorBusinessNotFoundSubtitle {
     return Intl.message(
-      'L\'attività richiesta non esiste. Verifica l\'indirizzo o contatta direttamente l\'attività.',
+      'The requested business does not exist. Please check the URL or contact the business directly.',
       name: 'errorBusinessNotFoundSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Attività non attiva`
+  /// `Business not active`
   String get errorBusinessNotActive {
     return Intl.message(
-      'Attività non attiva',
+      'Business not active',
       name: 'errorBusinessNotActive',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questa attività non è ancora configurata per le prenotazioni online. Contatta direttamente l'attività.`
+  /// `This business is not yet configured for online bookings. Please contact the business directly.`
   String get errorBusinessNotActiveSubtitle {
     return Intl.message(
-      'Questa attività non è ancora configurata per le prenotazioni online. Contatta direttamente l\'attività.',
+      'This business is not yet configured for online bookings. Please contact the business directly.',
       name: 'errorBusinessNotActiveSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sede non disponibile`
+  /// `Location not available`
   String get errorLocationNotFound {
     return Intl.message(
-      'Sede non disponibile',
+      'Location not available',
       name: 'errorLocationNotFound',
       desc: '',
       args: [],
     );
   }
 
-  /// `La sede selezionata non è attiva. Contatta l'attività per maggiori informazioni.`
+  /// `The selected location is not active. Contact the business for more information.`
   String get errorLocationNotFoundSubtitle {
     return Intl.message(
-      'La sede selezionata non è attiva. Contatta l\'attività per maggiori informazioni.',
+      'The selected location is not active. Contact the business for more information.',
       name: 'errorLocationNotFoundSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizio temporaneamente non disponibile`
+  /// `Service temporarily unavailable`
   String get errorServiceUnavailable {
     return Intl.message(
-      'Servizio temporaneamente non disponibile',
+      'Service temporarily unavailable',
       name: 'errorServiceUnavailable',
       desc: '',
       args: [],
     );
   }
 
-  /// `{label} temporaneamente non disponibile`
+  /// `{label} temporarily unavailable`
   String errorServiceUnavailableCustom(String label) {
     return Intl.message(
-      '$label temporaneamente non disponibile',
+      '$label temporarily unavailable',
       name: 'errorServiceUnavailableCustom',
       desc: '',
       args: [label],
     );
   }
 
-  /// `Stiamo lavorando per risolvere il problema. Riprova tra qualche minuto.`
+  /// `We are working to fix the issue. Please try again in a few minutes.`
   String get errorServiceUnavailableSubtitle {
     return Intl.message(
-      'Stiamo lavorando per risolvere il problema. Riprova tra qualche minuto.',
+      'We are working to fix the issue. Please try again in a few minutes.',
       name: 'errorServiceUnavailableSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Benvenuto`
+  /// `Welcome`
   String get authWelcome {
-    return Intl.message('Benvenuto', name: 'authWelcome', desc: '', args: []);
+    return Intl.message('Welcome', name: 'authWelcome', desc: '', args: []);
   }
 
-  /// `Accedi al tuo account`
+  /// `Login to your account`
   String get authLoginTitle {
     return Intl.message(
-      'Accedi al tuo account',
+      'Login to your account',
       name: 'authLoginTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Crea un nuovo account`
+  /// `Create a new account`
   String get authRegisterTitle {
     return Intl.message(
-      'Crea un nuovo account',
+      'Create a new account',
       name: 'authRegisterTitle',
       desc: '',
       args: [],
@@ -404,783 +399,783 @@ class L10n {
     return Intl.message('Password', name: 'authPassword', desc: '', args: []);
   }
 
-  /// `Conferma password`
+  /// `Confirm password`
   String get authConfirmPassword {
     return Intl.message(
-      'Conferma password',
+      'Confirm password',
       name: 'authConfirmPassword',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nome`
+  /// `First name`
   String get authFirstName {
-    return Intl.message('Nome', name: 'authFirstName', desc: '', args: []);
+    return Intl.message(
+      'First name',
+      name: 'authFirstName',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `Cognome`
+  /// `Last name`
   String get authLastName {
-    return Intl.message('Cognome', name: 'authLastName', desc: '', args: []);
+    return Intl.message('Last name', name: 'authLastName', desc: '', args: []);
   }
 
-  /// `Telefono`
+  /// `Phone`
   String get authPhone {
-    return Intl.message('Telefono', name: 'authPhone', desc: '', args: []);
+    return Intl.message('Phone', name: 'authPhone', desc: '', args: []);
   }
 
-  /// `Password dimenticata?`
+  /// `Forgot password?`
   String get authForgotPassword {
     return Intl.message(
-      'Password dimenticata?',
+      'Forgot password?',
       name: 'authForgotPassword',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non hai un account?`
+  /// `Don't have an account?`
   String get authNoAccount {
     return Intl.message(
-      'Non hai un account?',
+      'Don\'t have an account?',
       name: 'authNoAccount',
       desc: '',
       args: [],
     );
   }
 
-  /// `Hai già un account?`
+  /// `Already have an account?`
   String get authHaveAccount {
     return Intl.message(
-      'Hai già un account?',
+      'Already have an account?',
       name: 'authHaveAccount',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ricordami`
+  /// `Remember me`
   String get authRememberMe {
     return Intl.message(
-      'Ricordami',
+      'Remember me',
       name: 'authRememberMe',
       desc: '',
       args: [],
     );
   }
 
-  /// `Email non valida`
+  /// `Invalid email`
   String get authInvalidEmail {
     return Intl.message(
-      'Email non valida',
+      'Invalid email',
       name: 'authInvalidEmail',
       desc: '',
       args: [],
     );
   }
 
-  /// `La password deve contenere almeno 8 caratteri, una maiuscola, una minuscola e un numero`
+  /// `Password must contain at least 8 characters, one uppercase, one lowercase and one number`
   String get authInvalidPassword {
     return Intl.message(
-      'La password deve contenere almeno 8 caratteri, una maiuscola, una minuscola e un numero',
+      'Password must contain at least 8 characters, one uppercase, one lowercase and one number',
       name: 'authInvalidPassword',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore di validazione: {message}`
+  /// `Validation error: {message}`
   String authPasswordValidationError(Object message) {
     return Intl.message(
-      'Errore di validazione: $message',
+      'Validation error: $message',
       name: 'authPasswordValidationError',
       desc: '',
       args: [message],
     );
   }
 
-  /// `Le password non coincidono`
+  /// `Passwords don't match`
   String get authPasswordMismatch {
     return Intl.message(
-      'Le password non coincidono',
+      'Passwords don\'t match',
       name: 'authPasswordMismatch',
       desc: '',
       args: [],
     );
   }
 
-  /// `Campo obbligatorio`
+  /// `Required field`
   String get authRequiredField {
     return Intl.message(
-      'Campo obbligatorio',
+      'Required field',
       name: 'authRequiredField',
       desc: '',
       args: [],
     );
   }
 
-  /// `Numero di telefono non valido`
+  /// `Invalid phone number`
   String get authInvalidPhone {
     return Intl.message(
-      'Numero di telefono non valido',
+      'Invalid phone number',
       name: 'authInvalidPhone',
       desc: '',
       args: [],
     );
   }
 
-  /// `Accesso effettuato`
+  /// `Login successful`
   String get authLoginSuccess {
     return Intl.message(
-      'Accesso effettuato',
+      'Login successful',
       name: 'authLoginSuccess',
       desc: '',
       args: [],
     );
   }
 
-  /// `Registrazione completata`
+  /// `Registration completed`
   String get authRegisterSuccess {
     return Intl.message(
-      'Registrazione completata',
+      'Registration completed',
       name: 'authRegisterSuccess',
       desc: '',
       args: [],
     );
   }
 
-  /// `Credenziali non valide`
+  /// `Invalid credentials`
   String get authLoginFailed {
     return Intl.message(
-      'Credenziali non valide',
+      'Invalid credentials',
       name: 'authLoginFailed',
       desc: '',
       args: [],
     );
   }
 
-  /// `Registrazione fallita`
+  /// `Registration failed`
   String get authRegisterFailed {
     return Intl.message(
-      'Registrazione fallita',
+      'Registration failed',
       name: 'authRegisterFailed',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile caricare le informazioni del business. Riprova.`
+  /// `Unable to load business information. Please try again.`
   String get authBusinessNotFound {
     return Intl.message(
-      'Impossibile caricare le informazioni del business. Riprova.',
+      'Unable to load business information. Please try again.',
       name: 'authBusinessNotFound',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questa email è già registrata. Prova ad accedere.`
+  /// `This email is already registered. Try logging in.`
   String get authEmailAlreadyRegistered {
     return Intl.message(
-      'Questa email è già registrata. Prova ad accedere.',
+      'This email is already registered. Try logging in.',
       name: 'authEmailAlreadyRegistered',
       desc: '',
       args: [],
     );
   }
 
-  /// `Email o password non valide`
+  /// `Invalid email or password`
   String get authErrorInvalidCredentials {
     return Intl.message(
-      'Email o password non valide',
+      'Invalid email or password',
       name: 'authErrorInvalidCredentials',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il tuo account è disabilitato`
+  /// `Your account is disabled`
   String get authErrorAccountDisabled {
     return Intl.message(
-      'Il tuo account è disabilitato',
+      'Your account is disabled',
       name: 'authErrorAccountDisabled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Per qualsiasi esigenza sugli appuntamenti ti invitiamo a contattarci. Grazie`
+  /// `For any appointment needs, please contact us. Thank you.`
   String get blockedCustomerContactMessage {
     return Intl.message(
-      'Per qualsiasi esigenza sugli appuntamenti ti invitiamo a contattarci. Grazie',
+      'For any appointment needs, please contact us. Thank you.',
       name: 'blockedCustomerContactMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sessione scaduta. Effettua di nuovo il login.`
+  /// `Your session has expired. Please log in again.`
   String get authErrorTokenExpired {
     return Intl.message(
-      'Sessione scaduta. Effettua di nuovo il login.',
+      'Your session has expired. Please log in again.',
       name: 'authErrorTokenExpired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sessione non valida. Effettua di nuovo il login.`
+  /// `Your session is not valid. Please log in again.`
   String get authErrorTokenInvalid {
     return Intl.message(
-      'Sessione non valida. Effettua di nuovo il login.',
+      'Your session is not valid. Please log in again.',
       name: 'authErrorTokenInvalid',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sessione revocata. Effettua di nuovo il login.`
+  /// `Your session has been revoked. Please log in again.`
   String get authErrorSessionRevoked {
     return Intl.message(
-      'Sessione revocata. Effettua di nuovo il login.',
+      'Your session has been revoked. Please log in again.',
       name: 'authErrorSessionRevoked',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questa email è già registrata. Prova ad accedere.`
+  /// `This email is already registered. Try logging in.`
   String get authErrorEmailAlreadyExists {
     return Intl.message(
-      'Questa email è già registrata. Prova ad accedere.',
+      'This email is already registered. Try logging in.',
       name: 'authErrorEmailAlreadyExists',
       desc: '',
       args: [],
     );
   }
 
-  /// `Password troppo debole. Scegline una più sicura.`
+  /// `Password too weak. Please choose a stronger password.`
   String get authErrorWeakPassword {
     return Intl.message(
-      'Password troppo debole. Scegline una più sicura.',
+      'Password too weak. Please choose a stronger password.',
       name: 'authErrorWeakPassword',
       desc: '',
       args: [],
     );
   }
 
-  /// `Token di reset password non valido`
+  /// `Invalid password reset token`
   String get authErrorInvalidResetToken {
     return Intl.message(
-      'Token di reset password non valido',
+      'Invalid password reset token',
       name: 'authErrorInvalidResetToken',
       desc: '',
       args: [],
     );
   }
 
-  /// `Token di reset password scaduto`
+  /// `Password reset token has expired`
   String get authErrorResetTokenExpired {
     return Intl.message(
-      'Token di reset password scaduto',
+      'Password reset token has expired',
       name: 'authErrorResetTokenExpired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Recupera password`
+  /// `Reset password`
   String get authResetPasswordTitle {
     return Intl.message(
-      'Recupera password',
+      'Reset password',
       name: 'authResetPasswordTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Inserisci la tua email e ti invieremo le istruzioni per reimpostare la password.`
+  /// `Enter your email and we'll send you instructions to reset your password.`
   String get authResetPasswordMessage {
     return Intl.message(
-      'Inserisci la tua email e ti invieremo le istruzioni per reimpostare la password.',
+      'Enter your email and we\'ll send you instructions to reset your password.',
       name: 'authResetPasswordMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Invia`
+  /// `Send`
   String get authResetPasswordSend {
     return Intl.message(
-      'Invia',
+      'Send',
       name: 'authResetPasswordSend',
       desc: '',
       args: [],
     );
   }
 
-  /// `Email inviata! Controlla la tua casella di posta.`
+  /// `Email sent! Check your inbox.`
   String get authResetPasswordSuccess {
     return Intl.message(
-      'Email inviata! Controlla la tua casella di posta.',
+      'Email sent! Check your inbox.',
       name: 'authResetPasswordSuccess',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore durante l'invio. Riprova.`
+  /// `Error sending email. Please try again.`
   String get authResetPasswordError {
     return Intl.message(
-      'Errore durante l\'invio. Riprova.',
+      'Error sending email. Please try again.',
       name: 'authResetPasswordError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Email non trovata nel sistema. Verifica l'indirizzo o registrati.`
+  /// `Email not found in our system. Please check the address or register.`
   String get authResetPasswordEmailNotFound {
     return Intl.message(
-      'Email non trovata nel sistema. Verifica l\'indirizzo o registrati.',
+      'Email not found in our system. Please check the address or register.',
       name: 'authResetPasswordEmailNotFound',
       desc: '',
       args: [],
     );
   }
 
-  /// `Reimposta password`
+  /// `Reset password`
   String get authResetPasswordConfirmTitle {
     return Intl.message(
-      'Reimposta password',
+      'Reset password',
       name: 'authResetPasswordConfirmTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Inserisci la nuova password`
+  /// `Enter your new password`
   String get authResetPasswordConfirmMessage {
     return Intl.message(
-      'Inserisci la nuova password',
+      'Enter your new password',
       name: 'authResetPasswordConfirmMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nuova password`
+  /// `New password`
   String get authNewPassword {
     return Intl.message(
-      'Nuova password',
+      'New password',
       name: 'authNewPassword',
       desc: '',
       args: [],
     );
   }
 
-  /// `Password reimpostata con successo!`
+  /// `Password reset successful!`
   String get authResetPasswordConfirmSuccess {
     return Intl.message(
-      'Password reimpostata con successo!',
+      'Password reset successful!',
       name: 'authResetPasswordConfirmSuccess',
       desc: '',
       args: [],
     );
   }
 
-  /// `Token non valido o scaduto`
+  /// `Invalid or expired token`
   String get authResetPasswordConfirmError {
     return Intl.message(
-      'Token non valido o scaduto',
+      'Invalid or expired token',
       name: 'authResetPasswordConfirmError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cambia password`
+  /// `Change password`
   String get authChangePasswordTitle {
     return Intl.message(
-      'Cambia password',
+      'Change password',
       name: 'authChangePasswordTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Password attuale`
+  /// `Current password`
   String get authCurrentPassword {
     return Intl.message(
-      'Password attuale',
+      'Current password',
       name: 'authCurrentPassword',
       desc: '',
       args: [],
     );
   }
 
-  /// `Password modificata con successo`
+  /// `Password changed successfully`
   String get authChangePasswordSuccess {
     return Intl.message(
-      'Password modificata con successo',
+      'Password changed successfully',
       name: 'authChangePasswordSuccess',
       desc: '',
       args: [],
     );
   }
 
-  /// `Password attuale non corretta`
+  /// `Current password is incorrect`
   String get authChangePasswordError {
     return Intl.message(
-      'Password attuale non corretta',
+      'Current password is incorrect',
       name: 'authChangePasswordError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Password troppo corta (min. 8 caratteri)`
+  /// `Password too short (min. 8 characters)`
   String get authPasswordTooShort {
     return Intl.message(
-      'Password troppo corta (min. 8 caratteri)',
+      'Password too short (min. 8 characters)',
       name: 'authPasswordTooShort',
       desc: '',
       args: [],
     );
   }
 
-  /// `La password deve contenere: maiuscola, minuscola, numero`
+  /// `Password must contain: uppercase, lowercase, number`
   String get authPasswordRequirements {
     return Intl.message(
-      'La password deve contenere: maiuscola, minuscola, numero',
+      'Password must contain: uppercase, lowercase, number',
       name: 'authPasswordRequirements',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cambia password`
+  /// `Change password`
   String get authChangePassword {
     return Intl.message(
-      'Cambia password',
+      'Change password',
       name: 'authChangePassword',
       desc: '',
       args: [],
     );
   }
 
-  /// `Per visualizzare i tuoi appuntamenti, accedi con il tuo account o registrati se non ne hai ancora uno.`
+  /// `To view your appointments, log in with your account or register if you don't have one yet.`
   String get authRedirectFromMyBookings {
     return Intl.message(
-      'Per visualizzare i tuoi appuntamenti, accedi con il tuo account o registrati se non ne hai ancora uno.',
+      'To view your appointments, log in with your account or register if you don\'t have one yet.',
       name: 'authRedirectFromMyBookings',
       desc: '',
       args: [],
     );
   }
 
-  /// `Per prenotare un appuntamento, accedi con il tuo account o registrati se non ne hai ancora uno.`
+  /// `To book an appointment, log in with your account or register if you don't have one yet.`
   String get authRedirectFromBooking {
     return Intl.message(
-      'Per prenotare un appuntamento, accedi con il tuo account o registrati se non ne hai ancora uno.',
+      'To book an appointment, log in with your account or register if you don\'t have one yet.',
       name: 'authRedirectFromBooking',
       desc: '',
       args: [],
     );
   }
 
-  /// `Profilo`
+  /// `Profile`
   String get profileTitle {
-    return Intl.message('Profilo', name: 'profileTitle', desc: '', args: []);
+    return Intl.message('Profile', name: 'profileTitle', desc: '', args: []);
   }
 
-  /// `Prenota appuntamento`
+  /// `Book appointment`
   String get bookingTitle {
     return Intl.message(
-      'Prenota appuntamento',
+      'Book appointment',
       name: 'bookingTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `servizio`
+  /// `service`
   String get bookingServiceSingularLabel {
     return Intl.message(
-      'servizio',
+      'service',
       name: 'bookingServiceSingularLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sede`
+  /// `Location`
   String get bookingStepLocation {
     return Intl.message(
-      'Sede',
+      'Location',
       name: 'bookingStepLocation',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizi`
+  /// `Services`
   String get bookingStepServices {
     return Intl.message(
-      'Servizi',
+      'Services',
       name: 'bookingStepServices',
       desc: '',
       args: [],
     );
   }
 
-  /// `Operatore`
+  /// `Staff`
   String get bookingStepStaff {
-    return Intl.message(
-      'Operatore',
-      name: 'bookingStepStaff',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Staff', name: 'bookingStepStaff', desc: '', args: []);
   }
 
-  /// `Data e ora`
+  /// `Date & Time`
   String get bookingStepDateTime {
     return Intl.message(
-      'Data e ora',
+      'Date & Time',
       name: 'bookingStepDateTime',
       desc: '',
       args: [],
     );
   }
 
-  /// `Riepilogo`
+  /// `Summary`
   String get bookingStepSummary {
     return Intl.message(
-      'Riepilogo',
+      'Summary',
       name: 'bookingStepSummary',
       desc: '',
       args: [],
     );
   }
 
-  /// `Scegli {label}`
+  /// `Choose {label}`
   String bookingChooseCustomLabel(String label) {
     return Intl.message(
-      'Scegli $label',
+      'Choose $label',
       name: 'bookingChooseCustomLabel',
       desc: '',
       args: [label],
     );
   }
 
-  /// `Scegli la sede`
+  /// `Choose location`
   String get locationTitle {
     return Intl.message(
-      'Scegli la sede',
+      'Choose location',
       name: 'locationTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona dove vuoi effettuare la prenotazione`
+  /// `Select where you want to book`
   String get locationSubtitle {
     return Intl.message(
-      'Seleziona dove vuoi effettuare la prenotazione',
+      'Select where you want to book',
       name: 'locationSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessuna sede disponibile`
+  /// `No location available`
   String get locationEmpty {
     return Intl.message(
-      'Nessuna sede disponibile',
+      'No location available',
       name: 'locationEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun {label} disponibile`
+  /// `No {label} available`
   String locationEmptyCustom(String label) {
     return Intl.message(
-      'Nessun $label disponibile',
+      'No $label available',
       name: 'locationEmptyCustom',
       desc: '',
       args: [label],
     );
   }
 
-  /// `Scegli i servizi`
+  /// `Choose services`
   String get servicesTitle {
     return Intl.message(
-      'Scegli i servizi',
+      'Choose services',
       name: 'servicesTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Puoi selezionare uno o più servizi`
+  /// `You can select one or more services`
   String get servicesSubtitle {
     return Intl.message(
-      'Puoi selezionare uno o più servizi',
+      'You can select one or more services',
       name: 'servicesSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Puoi selezionare uno o più {label}`
+  /// `You can select one or more {label}`
   String servicesSubtitleCustom(String label) {
     return Intl.message(
-      'Puoi selezionare uno o più $label',
+      'You can select one or more $label',
       name: 'servicesSubtitleCustom',
       desc: '',
       args: [label],
     );
   }
 
-  /// `Pacchetti`
+  /// `Packages`
   String get servicePackagesTitle {
     return Intl.message(
-      'Pacchetti',
+      'Packages',
       name: 'servicePackagesTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Oppure scegli un pacchetto pronto`
+  /// `Or pick a ready-made package`
   String get servicePackagesSubtitle {
     return Intl.message(
-      'Oppure scegli un pacchetto pronto',
+      'Or pick a ready-made package',
       name: 'servicePackagesSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Caricamento pacchetti...`
+  /// `Loading packages...`
   String get servicePackagesLoading {
     return Intl.message(
-      'Caricamento pacchetti...',
+      'Loading packages...',
       name: 'servicePackagesLoading',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile caricare i pacchetti.`
+  /// `Unable to load packages.`
   String get servicePackagesLoadError {
     return Intl.message(
-      'Impossibile caricare i pacchetti.',
+      'Unable to load packages.',
       name: 'servicePackagesLoadError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Pacchetto`
+  /// `Package`
   String get servicePackageLabel {
     return Intl.message(
-      'Pacchetto',
+      'Package',
       name: 'servicePackageLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Categoria {id}`
+  /// `Category {id}`
   String servicesCategoryFallbackName(int id) {
     return Intl.message(
-      'Categoria $id',
+      'Category $id',
       name: 'servicesCategoryFallbackName',
       desc: '',
       args: [id],
     );
   }
 
-  /// `Impossibile espandere il pacchetto selezionato.`
+  /// `Unable to expand the selected package.`
   String get servicePackageExpandError {
     return Intl.message(
-      'Impossibile espandere il pacchetto selezionato.',
+      'Unable to expand the selected package.',
       name: 'servicePackageExpandError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun {label} disponibile al momento`
+  /// `No {label} available at the moment`
   String servicesEmptyCustom(String label) {
     return Intl.message(
-      'Nessun $label disponibile al momento',
+      'No $label available at the moment',
       name: 'servicesEmptyCustom',
       desc: '',
       args: [label],
     );
   }
 
-  /// `Non ci sono {label} prenotabili online per questa attività`
+  /// `There are no {label} available for online booking at this business`
   String servicesEmptySubtitleCustom(String label) {
     return Intl.message(
-      'Non ci sono $label prenotabili online per questa attività',
+      'There are no $label available for online booking at this business',
       name: 'servicesEmptySubtitleCustom',
       desc: '',
       args: [label],
     );
   }
 
-  /// `{count, plural, =0{Nessun servizio selezionato} =1{1 servizio selezionato} other{{count} servizi selezionati}}`
+  /// `{count, plural, =0{No service selected} =1{1 service selected} other{{count} services selected}}`
   String servicesSelected(int count) {
     return Intl.plural(
       count,
-      zero: 'Nessun servizio selezionato',
-      one: '1 servizio selezionato',
-      other: '$count servizi selezionati',
+      zero: 'No service selected',
+      one: '1 service selected',
+      other: '$count services selected',
       name: 'servicesSelected',
       desc: '',
       args: [count],
     );
   }
 
-  /// `Nessun {label} selezionato`
+  /// `No {label} selected`
   String servicesSelectedNoneCustom(String label) {
     return Intl.message(
-      'Nessun $label selezionato',
+      'No $label selected',
       name: 'servicesSelectedNoneCustom',
       desc: '',
       args: [label],
     );
   }
 
-  /// `1 {label} selezionato`
+  /// `1 {label} selected`
   String servicesSelectedOneCustom(String label) {
     return Intl.message(
-      '1 $label selezionato',
+      '1 $label selected',
       name: 'servicesSelectedOneCustom',
       desc: '',
       args: [label],
     );
   }
 
-  /// `{count} {label} selezionati`
+  /// `{count} {label} selected`
   String servicesSelectedManyCustom(int count, String label) {
     return Intl.message(
-      '$count $label selezionati',
+      '$count $label selected',
       name: 'servicesSelectedManyCustom',
       desc: '',
       args: [count, label],
     );
   }
 
-  /// `Totale: {total}`
+  /// `Total: {total}`
   String servicesTotal(String total) {
     return Intl.message(
-      'Totale: $total',
+      'Total: $total',
       name: 'servicesTotal',
       desc: '',
       args: [total],
@@ -1197,610 +1192,610 @@ class L10n {
     );
   }
 
-  /// `Gratis`
+  /// `Free`
   String get servicesFree {
-    return Intl.message('Gratis', name: 'servicesFree', desc: '', args: []);
+    return Intl.message('Free', name: 'servicesFree', desc: '', args: []);
   }
 
-  /// `da {price}`
+  /// `from {price}`
   String servicesPriceFrom(String price) {
     return Intl.message(
-      'da $price',
+      'from $price',
       name: 'servicesPriceFrom',
       desc: '',
       args: [price],
     );
   }
 
-  /// `Scegli l'operatore`
+  /// `Choose staff member`
   String get staffTitle {
     return Intl.message(
-      'Scegli l\'operatore',
+      'Choose staff member',
       name: 'staffTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona con chi desideri essere servito`
+  /// `Select who you want to be served by`
   String get staffSubtitle {
     return Intl.message(
-      'Seleziona con chi desideri essere servito',
+      'Select who you want to be served by',
       name: 'staffSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona {label} che preferisci`
+  /// `Select your preferred {label}`
   String staffSubtitleCustom(String label) {
     return Intl.message(
-      'Seleziona $label che preferisci',
+      'Select your preferred $label',
       name: 'staffSubtitleCustom',
       desc: '',
       args: [label],
     );
   }
 
-  /// `Qualsiasi operatore disponibile`
+  /// `Any available staff`
   String get staffAnyOperator {
     return Intl.message(
-      'Qualsiasi operatore disponibile',
+      'Any available staff',
       name: 'staffAnyOperator',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ti assegneremo il primo operatore libero`
+  /// `We'll assign you the first available staff member`
   String get staffAnyOperatorSubtitle {
     return Intl.message(
-      'Ti assegneremo il primo operatore libero',
+      'We\'ll assign you the first available staff member',
       name: 'staffAnyOperatorSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Qualsiasi {label} disponibile`
+  /// `Any available {label}`
   String staffAnyOperatorCustom(String label) {
     return Intl.message(
-      'Qualsiasi $label disponibile',
+      'Any available $label',
       name: 'staffAnyOperatorCustom',
       desc: '',
       args: [label],
     );
   }
 
-  /// `Ti assegneremo il primo {label} disponibile`
+  /// `We'll assign you the first available {label}`
   String staffAnyOperatorSubtitleCustom(String label) {
     return Intl.message(
-      'Ti assegneremo il primo $label disponibile',
+      'We\'ll assign you the first available $label',
       name: 'staffAnyOperatorSubtitleCustom',
       desc: '',
       args: [label],
     );
   }
 
-  /// `Nessun {label} disponibile al momento`
+  /// `No {label} available at the moment`
   String staffEmptyCustom(String label) {
     return Intl.message(
-      'Nessun $label disponibile al momento',
+      'No $label available at the moment',
       name: 'staffEmptyCustom',
       desc: '',
       args: [label],
     );
   }
 
-  /// `Nessun {staffLabel} può eseguire tutti i {serviceLabel} selezionati. Prova a selezionare meno {serviceLabel} o {serviceLabel} diversi.`
+  /// `No {staffLabel} can perform all selected {serviceLabel}. Try selecting fewer or different {serviceLabel}.`
   String noStaffForAllServicesCustom(String staffLabel, String serviceLabel) {
     return Intl.message(
-      'Nessun $staffLabel può eseguire tutti i $serviceLabel selezionati. Prova a selezionare meno $serviceLabel o $serviceLabel diversi.',
+      'No $staffLabel can perform all selected $serviceLabel. Try selecting fewer or different $serviceLabel.',
       name: 'noStaffForAllServicesCustom',
       desc: '',
       args: [staffLabel, serviceLabel],
     );
   }
 
-  /// `Scegli data e ora`
+  /// `Choose date and time`
   String get dateTimeTitle {
     return Intl.message(
-      'Scegli data e ora',
+      'Choose date and time',
       name: 'dateTimeTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona quando desideri prenotare`
+  /// `Select when you want to book`
   String get dateTimeSubtitle {
     return Intl.message(
-      'Seleziona quando desideri prenotare',
+      'Select when you want to book',
       name: 'dateTimeSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prima disponibilità: {date}`
+  /// `First available: {date}`
   String dateTimeFirstAvailable(String date) {
     return Intl.message(
-      'Prima disponibilità: $date',
+      'First available: $date',
       name: 'dateTimeFirstAvailable',
       desc: '',
       args: [date],
     );
   }
 
-  /// `Vai alla prima data disponibile`
+  /// `Go to first available date`
   String get dateTimeGoToFirst {
     return Intl.message(
-      'Vai alla prima data disponibile',
+      'Go to first available date',
       name: 'dateTimeGoToFirst',
       desc: '',
       args: [],
     );
   }
 
-  /// `Vai alla prossima data disponibile`
+  /// `Go to next available date`
   String get dateTimeGoToNext {
     return Intl.message(
-      'Vai alla prossima data disponibile',
+      'Go to next available date',
       name: 'dateTimeGoToNext',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun orario disponibile per questa data`
+  /// `No time slots available for this date`
   String get dateTimeNoSlots {
     return Intl.message(
-      'Nessun orario disponibile per questa data',
+      'No time slots available for this date',
       name: 'dateTimeNoSlots',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona una data`
+  /// `Select a date`
   String get dateTimeSelectDate {
     return Intl.message(
-      'Seleziona una data',
+      'Select a date',
       name: 'dateTimeSelectDate',
       desc: '',
       args: [],
     );
   }
 
-  /// `Mattina`
+  /// `Morning`
   String get dateTimeMorning {
-    return Intl.message('Mattina', name: 'dateTimeMorning', desc: '', args: []);
+    return Intl.message('Morning', name: 'dateTimeMorning', desc: '', args: []);
   }
 
-  /// `Pomeriggio`
+  /// `Afternoon`
   String get dateTimeAfternoon {
     return Intl.message(
-      'Pomeriggio',
+      'Afternoon',
       name: 'dateTimeAfternoon',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sera`
+  /// `Evening`
   String get dateTimeEvening {
-    return Intl.message('Sera', name: 'dateTimeEvening', desc: '', args: []);
+    return Intl.message('Evening', name: 'dateTimeEvening', desc: '', args: []);
   }
 
-  /// `Riepilogo prenotazione`
+  /// `Booking summary`
   String get summaryTitle {
     return Intl.message(
-      'Riepilogo prenotazione',
+      'Booking summary',
       name: 'summaryTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Controlla i dettagli prima di confermare`
+  /// `Review the details before confirming`
   String get summarySubtitle {
     return Intl.message(
-      'Controlla i dettagli prima di confermare',
+      'Review the details before confirming',
       name: 'summarySubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizi selezionati`
+  /// `Selected services`
   String get summaryServices {
     return Intl.message(
-      'Servizi selezionati',
+      'Selected services',
       name: 'summaryServices',
       desc: '',
       args: [],
     );
   }
 
-  /// `{label} selezionati`
+  /// `Selected {label}`
   String summaryServicesCustom(String label) {
     return Intl.message(
-      '$label selezionati',
+      'Selected $label',
       name: 'summaryServicesCustom',
       desc: '',
       args: [label],
     );
   }
 
-  /// `Operatore`
+  /// `Staff member`
   String get summaryOperator {
     return Intl.message(
-      'Operatore',
+      'Staff member',
       name: 'summaryOperator',
       desc: '',
       args: [],
     );
   }
 
-  /// `Data e ora`
+  /// `Date and time`
   String get summaryDateTime {
     return Intl.message(
-      'Data e ora',
+      'Date and time',
       name: 'summaryDateTime',
       desc: '',
       args: [],
     );
   }
 
-  /// `Policy modifica/cancellazione`
+  /// `Modify/cancel policy`
   String get summaryCancellationPolicyTitle {
     return Intl.message(
-      'Policy modifica/cancellazione',
+      'Modify/cancel policy',
       name: 'summaryCancellationPolicyTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sempre`
+  /// `Always`
   String get summaryCancellationPolicyAlways {
     return Intl.message(
-      'Sempre',
+      'Always',
       name: 'summaryCancellationPolicyAlways',
       desc: '',
       args: [],
     );
   }
 
-  /// `Mai (non consentita dopo la prenotazione)`
+  /// `Never (not allowed after booking)`
   String get summaryCancellationPolicyNever {
     return Intl.message(
-      'Mai (non consentita dopo la prenotazione)',
+      'Never (not allowed after booking)',
       name: 'summaryCancellationPolicyNever',
       desc: '',
       args: [],
     );
   }
 
-  /// `Fino a {hours} ore prima`
+  /// `Up to {hours} hours before`
   String summaryCancellationPolicyHours(int hours) {
     return Intl.message(
-      'Fino a $hours ore prima',
+      'Up to $hours hours before',
       name: 'summaryCancellationPolicyHours',
       desc: '',
       args: [hours],
     );
   }
 
-  /// `{days, plural, =1{Fino a 1 giorno prima} other{Fino a {days} giorni prima}}`
+  /// `{days, plural, =1{Up to 1 day before} other{Up to {days} days before}}`
   String summaryCancellationPolicyDays(int days) {
     return Intl.plural(
       days,
-      one: 'Fino a 1 giorno prima',
-      other: 'Fino a $days giorni prima',
+      one: 'Up to 1 day before',
+      other: 'Up to $days days before',
       name: 'summaryCancellationPolicyDays',
       desc: '',
       args: [days],
     );
   }
 
-  /// `Accetto la policy di modifica/cancellazione`
+  /// `I accept the modify/cancel policy`
   String get summaryCancellationPolicyAcceptLabel {
     return Intl.message(
-      'Accetto la policy di modifica/cancellazione',
+      'I accept the modify/cancel policy',
       name: 'summaryCancellationPolicyAcceptLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Per confermare devi accettare la policy di modifica/cancellazione.`
+  /// `To confirm, you must accept the modify/cancel policy.`
   String get summaryCancellationPolicyAcceptRequiredError {
     return Intl.message(
-      'Per confermare devi accettare la policy di modifica/cancellazione.',
+      'To confirm, you must accept the modify/cancel policy.',
       name: 'summaryCancellationPolicyAcceptRequiredError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Durata totale`
+  /// `Total duration`
   String get summaryDuration {
     return Intl.message(
-      'Durata totale',
+      'Total duration',
       name: 'summaryDuration',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prezzo totale`
+  /// `Total price`
   String get summaryPrice {
     return Intl.message(
-      'Prezzo totale',
+      'Total price',
       name: 'summaryPrice',
       desc: '',
       args: [],
     );
   }
 
-  /// `Note (opzionale)`
+  /// `Notes (optional)`
   String get summaryNotes {
     return Intl.message(
-      'Note (opzionale)',
+      'Notes (optional)',
       name: 'summaryNotes',
       desc: '',
       args: [],
     );
   }
 
-  /// `Aggiungi eventuali note per l'appuntamento...`
+  /// `Add any notes for the appointment...`
   String get summaryNotesHint {
     return Intl.message(
-      'Aggiungi eventuali note per l\'appuntamento...',
+      'Add any notes for the appointment...',
       name: 'summaryNotesHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `L'orario selezionato non è più disponibile`
+  /// `The selected time slot is no longer available`
   String get bookingErrorSlotConflict {
     return Intl.message(
-      'L\'orario selezionato non è più disponibile',
+      'The selected time slot is no longer available',
       name: 'bookingErrorSlotConflict',
       desc: '',
       args: [],
     );
   }
 
-  /// `Uno o più servizi selezionati non sono disponibili`
+  /// `One or more selected services are not available`
   String get bookingErrorInvalidService {
     return Intl.message(
-      'Uno o più servizi selezionati non sono disponibili',
+      'One or more selected services are not available',
       name: 'bookingErrorInvalidService',
       desc: '',
       args: [],
     );
   }
 
-  /// `Uno o più {serviceLabel} selezionati non sono disponibili`
+  /// `One or more selected {serviceLabel} are not available`
   String bookingErrorInvalidServiceCustom(String serviceLabel) {
     return Intl.message(
-      'Uno o più $serviceLabel selezionati non sono disponibili',
+      'One or more selected $serviceLabel are not available',
       name: 'bookingErrorInvalidServiceCustom',
       desc: '',
       args: [serviceLabel],
     );
   }
 
-  /// `L'operatore selezionato non è disponibile per questi servizi`
+  /// `The selected staff member is not available for these services`
   String get bookingErrorInvalidStaff {
     return Intl.message(
-      'L\'operatore selezionato non è disponibile per questi servizi',
+      'The selected staff member is not available for these services',
       name: 'bookingErrorInvalidStaff',
       desc: '',
       args: [],
     );
   }
 
-  /// `{staffLabel} selezionato non è disponibile per questi {serviceLabel}`
+  /// `The selected {staffLabel} is not available for these {serviceLabel}`
   String bookingErrorInvalidStaffCustom(
     String staffLabel,
     String serviceLabel,
   ) {
     return Intl.message(
-      '$staffLabel selezionato non è disponibile per questi $serviceLabel',
+      'The selected $staffLabel is not available for these $serviceLabel',
       name: 'bookingErrorInvalidStaffCustom',
       desc: '',
       args: [staffLabel, serviceLabel],
     );
   }
 
-  /// `La sede selezionata non è disponibile`
+  /// `The selected location is not available`
   String get bookingErrorInvalidLocation {
     return Intl.message(
-      'La sede selezionata non è disponibile',
+      'The selected location is not available',
       name: 'bookingErrorInvalidLocation',
       desc: '',
       args: [],
     );
   }
 
-  /// `{locationLabel} selezionata non è disponibile`
+  /// `The selected {locationLabel} is not available`
   String bookingErrorInvalidLocationCustom(String locationLabel) {
     return Intl.message(
-      '$locationLabel selezionata non è disponibile',
+      'The selected $locationLabel is not available',
       name: 'bookingErrorInvalidLocationCustom',
       desc: '',
       args: [locationLabel],
     );
   }
 
-  /// `Il cliente selezionato non è valido`
+  /// `The selected client is not valid`
   String get bookingErrorInvalidClient {
     return Intl.message(
-      'Il cliente selezionato non è valido',
+      'The selected client is not valid',
       name: 'bookingErrorInvalidClient',
       desc: '',
       args: [],
     );
   }
 
-  /// `L'orario selezionato non è valido`
+  /// `The selected time is not valid`
   String get bookingErrorInvalidTime {
     return Intl.message(
-      'L\'orario selezionato non è valido',
+      'The selected time is not valid',
       name: 'bookingErrorInvalidTime',
       desc: '',
       args: [],
     );
   }
 
-  /// `L'operatore selezionato non è disponibile in questo orario`
+  /// `The selected staff member is not available at this time`
   String get bookingErrorStaffUnavailable {
     return Intl.message(
-      'L\'operatore selezionato non è disponibile in questo orario',
+      'The selected staff member is not available at this time',
       name: 'bookingErrorStaffUnavailable',
       desc: '',
       args: [],
     );
   }
 
-  /// `{staffLabel} selezionato non è disponibile in questo orario`
+  /// `The selected {staffLabel} is not available at this time`
   String bookingErrorStaffUnavailableCustom(String staffLabel) {
     return Intl.message(
-      '$staffLabel selezionato non è disponibile in questo orario',
+      'The selected $staffLabel is not available at this time',
       name: 'bookingErrorStaffUnavailableCustom',
       desc: '',
       args: [staffLabel],
     );
   }
 
-  /// `Impossibile recuperare i servizi della prenotazione`
+  /// `Unable to load booking services`
   String get bookingErrorMissingServices {
     return Intl.message(
-      'Impossibile recuperare i servizi della prenotazione',
+      'Unable to load booking services',
       name: 'bookingErrorMissingServices',
       desc: '',
       args: [],
     );
   }
 
-  /// `Impossibile recuperare i {serviceLabel} della prenotazione`
+  /// `Unable to load booking {serviceLabel}`
   String bookingErrorMissingServicesCustom(String serviceLabel) {
     return Intl.message(
-      'Impossibile recuperare i $serviceLabel della prenotazione',
+      'Unable to load booking $serviceLabel',
       name: 'bookingErrorMissingServicesCustom',
       desc: '',
       args: [serviceLabel],
     );
   }
 
-  /// `L'orario selezionato è fuori dall'orario di lavoro`
+  /// `The selected time is outside working hours`
   String get bookingErrorOutsideWorkingHours {
     return Intl.message(
-      'L\'orario selezionato è fuori dall\'orario di lavoro',
+      'The selected time is outside working hours',
       name: 'bookingErrorOutsideWorkingHours',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione non trovata`
+  /// `Booking not found`
   String get bookingErrorNotFound {
     return Intl.message(
-      'Prenotazione non trovata',
+      'Booking not found',
       name: 'bookingErrorNotFound',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non sei autorizzato a completare questa azione`
+  /// `You are not authorized to complete this action`
   String get bookingErrorUnauthorized {
     return Intl.message(
-      'Non sei autorizzato a completare questa azione',
+      'You are not authorized to complete this action',
       name: 'bookingErrorUnauthorized',
       desc: '',
       args: [],
     );
   }
 
-  /// `Controlla i dati inseriti`
+  /// `Please check the entered data`
   String get bookingErrorValidation {
     return Intl.message(
-      'Controlla i dati inseriti',
+      'Please check the entered data',
       name: 'bookingErrorValidation',
       desc: '',
       args: [],
     );
   }
 
-  /// `Si è verificato un errore. Riprova più tardi`
+  /// `Something went wrong. Please try again`
   String get bookingErrorServer {
     return Intl.message(
-      'Si è verificato un errore. Riprova più tardi',
+      'Something went wrong. Please try again',
       name: 'bookingErrorServer',
       desc: '',
       args: [],
     );
   }
 
-  /// `Questa prenotazione non può essere modificata`
+  /// `This booking cannot be modified`
   String get bookingErrorNotModifiable {
     return Intl.message(
-      'Questa prenotazione non può essere modificata',
+      'This booking cannot be modified',
       name: 'bookingErrorNotModifiable',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione confermata!`
+  /// `Booking confirmed!`
   String get confirmationTitle {
     return Intl.message(
-      'Prenotazione confermata!',
+      'Booking confirmed!',
       name: 'confirmationTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ti abbiamo inviato un'email di conferma`
+  /// `We've sent you a confirmation email`
   String get confirmationSubtitle {
     return Intl.message(
-      'Ti abbiamo inviato un\'email di conferma',
+      'We\'ve sent you a confirmation email',
       name: 'confirmationSubtitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Codice prenotazione: {id}`
+  /// `Booking code: {id}`
   String confirmationBookingId(String id) {
     return Intl.message(
-      'Codice prenotazione: $id',
+      'Booking code: $id',
       name: 'confirmationBookingId',
       desc: '',
       args: [id],
     );
   }
 
-  /// `Nuova prenotazione`
+  /// `New booking`
   String get confirmationNewBooking {
     return Intl.message(
-      'Nuova prenotazione',
+      'New booking',
       name: 'confirmationNewBooking',
       desc: '',
       args: [],
     );
   }
 
-  /// `Torna alla home`
+  /// `Go to home`
   String get confirmationGoHome {
     return Intl.message(
-      'Torna alla home',
+      'Go to home',
       name: 'confirmationGoHome',
       desc: '',
       args: [],
@@ -1827,20 +1822,20 @@ class L10n {
     );
   }
 
-  /// `{hours} ora`
+  /// `{hours} hour`
   String durationHour(int hours) {
     return Intl.message(
-      '$hours ora',
+      '$hours hour',
       name: 'durationHour',
       desc: '',
       args: [hours],
     );
   }
 
-  /// `{hours} ora {minutes} min`
+  /// `{hours} hour {minutes} min`
   String durationHourMinute(int hours, int minutes) {
     return Intl.message(
-      '$hours ora $minutes min',
+      '$hours hour $minutes min',
       name: 'durationHourMinute',
       desc: '',
       args: [hours, minutes],
@@ -1857,275 +1852,270 @@ class L10n {
     );
   }
 
-  /// `Gennaio`
+  /// `January`
   String get monthJanuary {
-    return Intl.message('Gennaio', name: 'monthJanuary', desc: '', args: []);
+    return Intl.message('January', name: 'monthJanuary', desc: '', args: []);
   }
 
-  /// `Febbraio`
+  /// `February`
   String get monthFebruary {
-    return Intl.message('Febbraio', name: 'monthFebruary', desc: '', args: []);
+    return Intl.message('February', name: 'monthFebruary', desc: '', args: []);
   }
 
-  /// `Marzo`
+  /// `March`
   String get monthMarch {
-    return Intl.message('Marzo', name: 'monthMarch', desc: '', args: []);
+    return Intl.message('March', name: 'monthMarch', desc: '', args: []);
   }
 
-  /// `Aprile`
+  /// `April`
   String get monthApril {
-    return Intl.message('Aprile', name: 'monthApril', desc: '', args: []);
+    return Intl.message('April', name: 'monthApril', desc: '', args: []);
   }
 
-  /// `Maggio`
+  /// `May`
   String get monthMay {
-    return Intl.message('Maggio', name: 'monthMay', desc: '', args: []);
+    return Intl.message('May', name: 'monthMay', desc: '', args: []);
   }
 
-  /// `Giugno`
+  /// `June`
   String get monthJune {
-    return Intl.message('Giugno', name: 'monthJune', desc: '', args: []);
+    return Intl.message('June', name: 'monthJune', desc: '', args: []);
   }
 
-  /// `Luglio`
+  /// `July`
   String get monthJuly {
-    return Intl.message('Luglio', name: 'monthJuly', desc: '', args: []);
+    return Intl.message('July', name: 'monthJuly', desc: '', args: []);
   }
 
-  /// `Agosto`
+  /// `August`
   String get monthAugust {
-    return Intl.message('Agosto', name: 'monthAugust', desc: '', args: []);
+    return Intl.message('August', name: 'monthAugust', desc: '', args: []);
   }
 
-  /// `Settembre`
+  /// `September`
   String get monthSeptember {
     return Intl.message(
-      'Settembre',
+      'September',
       name: 'monthSeptember',
       desc: '',
       args: [],
     );
   }
 
-  /// `Ottobre`
+  /// `October`
   String get monthOctober {
-    return Intl.message('Ottobre', name: 'monthOctober', desc: '', args: []);
+    return Intl.message('October', name: 'monthOctober', desc: '', args: []);
   }
 
-  /// `Novembre`
+  /// `November`
   String get monthNovember {
-    return Intl.message('Novembre', name: 'monthNovember', desc: '', args: []);
+    return Intl.message('November', name: 'monthNovember', desc: '', args: []);
   }
 
-  /// `Dicembre`
+  /// `December`
   String get monthDecember {
-    return Intl.message('Dicembre', name: 'monthDecember', desc: '', args: []);
+    return Intl.message('December', name: 'monthDecember', desc: '', args: []);
   }
 
-  /// `Lun`
+  /// `Mon`
   String get weekdayMon {
-    return Intl.message('Lun', name: 'weekdayMon', desc: '', args: []);
+    return Intl.message('Mon', name: 'weekdayMon', desc: '', args: []);
   }
 
-  /// `Mar`
+  /// `Tue`
   String get weekdayTue {
-    return Intl.message('Mar', name: 'weekdayTue', desc: '', args: []);
+    return Intl.message('Tue', name: 'weekdayTue', desc: '', args: []);
   }
 
-  /// `Mer`
+  /// `Wed`
   String get weekdayWed {
-    return Intl.message('Mer', name: 'weekdayWed', desc: '', args: []);
+    return Intl.message('Wed', name: 'weekdayWed', desc: '', args: []);
   }
 
-  /// `Gio`
+  /// `Thu`
   String get weekdayThu {
-    return Intl.message('Gio', name: 'weekdayThu', desc: '', args: []);
+    return Intl.message('Thu', name: 'weekdayThu', desc: '', args: []);
   }
 
-  /// `Ven`
+  /// `Fri`
   String get weekdayFri {
-    return Intl.message('Ven', name: 'weekdayFri', desc: '', args: []);
+    return Intl.message('Fri', name: 'weekdayFri', desc: '', args: []);
   }
 
-  /// `Sab`
+  /// `Sat`
   String get weekdaySat {
-    return Intl.message('Sab', name: 'weekdaySat', desc: '', args: []);
+    return Intl.message('Sat', name: 'weekdaySat', desc: '', args: []);
   }
 
-  /// `Dom`
+  /// `Sun`
   String get weekdaySun {
-    return Intl.message('Dom', name: 'weekdaySun', desc: '', args: []);
+    return Intl.message('Sun', name: 'weekdaySun', desc: '', args: []);
   }
 
-  /// `Le mie prenotazioni`
+  /// `My bookings`
   String get myBookings {
-    return Intl.message(
-      'Le mie prenotazioni',
-      name: 'myBookings',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('My bookings', name: 'myBookings', desc: '', args: []);
   }
 
-  /// `Prossime`
+  /// `Upcoming`
   String get upcomingBookings {
     return Intl.message(
-      'Prossime',
+      'Upcoming',
       name: 'upcomingBookings',
       desc: '',
       args: [],
     );
   }
 
-  /// `Passate`
+  /// `Past`
   String get pastBookings {
-    return Intl.message('Passate', name: 'pastBookings', desc: '', args: []);
+    return Intl.message('Past', name: 'pastBookings', desc: '', args: []);
   }
 
-  /// `Annullate`
+  /// `Cancelled`
   String get cancelledBookings {
     return Intl.message(
-      'Annullate',
+      'Cancelled',
       name: 'cancelledBookings',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non hai prenotazioni in programma`
+  /// `You have no upcoming bookings`
   String get noUpcomingBookings {
     return Intl.message(
-      'Non hai prenotazioni in programma',
+      'You have no upcoming bookings',
       name: 'noUpcomingBookings',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non hai prenotazioni passate`
+  /// `You have no past bookings`
   String get noPastBookings {
     return Intl.message(
-      'Non hai prenotazioni passate',
+      'You have no past bookings',
       name: 'noPastBookings',
       desc: '',
       args: [],
     );
   }
 
-  /// `Non hai prenotazioni annullate`
+  /// `You have no cancelled bookings`
   String get noCancelledBookings {
     return Intl.message(
-      'Non hai prenotazioni annullate',
+      'You have no cancelled bookings',
       name: 'noCancelledBookings',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore nel caricamento delle prenotazioni`
+  /// `Error loading bookings`
   String get errorLoadingBookings {
     return Intl.message(
-      'Errore nel caricamento delle prenotazioni',
+      'Error loading bookings',
       name: 'errorLoadingBookings',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modificabile`
+  /// `Modifiable`
   String get modifiable {
-    return Intl.message('Modificabile', name: 'modifiable', desc: '', args: []);
+    return Intl.message('Modifiable', name: 'modifiable', desc: '', args: []);
   }
 
-  /// `Non modificabile`
+  /// `Not modifiable`
   String get notModifiable {
     return Intl.message(
-      'Non modificabile',
+      'Not modifiable',
       name: 'notModifiable',
       desc: '',
       args: [],
     );
   }
 
-  /// `{days, plural, =1{Modificabile fino a domani} other{Modificabile fino a {days} giorni}}`
+  /// `{days, plural, =1{Modifiable until tomorrow} other{Modifiable for {days} days}}`
   String modifiableUntilDays(int days) {
     return Intl.plural(
       days,
-      one: 'Modificabile fino a domani',
-      other: 'Modificabile fino a $days giorni',
+      one: 'Modifiable until tomorrow',
+      other: 'Modifiable for $days days',
       name: 'modifiableUntilDays',
       desc: '',
       args: [days],
     );
   }
 
-  /// `{hours, plural, =1{Modificabile fino a 1 ora} other{Modificabile fino a {hours} ore}}`
+  /// `{hours, plural, =1{Modifiable for 1 hour} other{Modifiable for {hours} hours}}`
   String modifiableUntilHours(int hours) {
     return Intl.plural(
       hours,
-      one: 'Modificabile fino a 1 ora',
-      other: 'Modificabile fino a $hours ore',
+      one: 'Modifiable for 1 hour',
+      other: 'Modifiable for $hours hours',
       name: 'modifiableUntilHours',
       desc: '',
       args: [hours],
     );
   }
 
-  /// `{minutes, plural, =1{Modificabile fino a 1 minuto} other{Modificabile fino a {minutes} minuti}}`
+  /// `{minutes, plural, =1{Modifiable for 1 minute} other{Modifiable for {minutes} minutes}}`
   String modifiableUntilMinutes(int minutes) {
     return Intl.plural(
       minutes,
-      one: 'Modificabile fino a 1 minuto',
-      other: 'Modificabile fino a $minutes minuti',
+      one: 'Modifiable for 1 minute',
+      other: 'Modifiable for $minutes minutes',
       name: 'modifiableUntilMinutes',
       desc: '',
       args: [minutes],
     );
   }
 
-  /// `Modificabile fino al {dateTime}`
+  /// `Modifiable until {dateTime}`
   String modifiableUntilDateTime(Object dateTime) {
     return Intl.message(
-      'Modificabile fino al $dateTime',
+      'Modifiable until $dateTime',
       name: 'modifiableUntilDateTime',
       desc: '',
       args: [dateTime],
     );
   }
 
-  /// `Il tempo per modificare o annullare questa prenotazione è scaduto.`
+  /// `The time window to modify or cancel this booking has expired.`
   String get modificationWindowExpired {
     return Intl.message(
-      'Il tempo per modificare o annullare questa prenotazione è scaduto.',
+      'The time window to modify or cancel this booking has expired.',
       name: 'modificationWindowExpired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Il termine per modificare o annullare è scaduto il {dateTime}.`
+  /// `The deadline to modify or cancel expired on {dateTime}.`
   String modificationWindowExpiredDateTime(Object dateTime) {
     return Intl.message(
-      'Il termine per modificare o annullare è scaduto il $dateTime.',
+      'The deadline to modify or cancel expired on $dateTime.',
       name: 'modificationWindowExpiredDateTime',
       desc: '',
       args: [dateTime],
     );
   }
 
-  /// `Riprogramma`
+  /// `Reschedule`
   String get modify {
-    return Intl.message('Riprogramma', name: 'modify', desc: '', args: []);
+    return Intl.message('Reschedule', name: 'modify', desc: '', args: []);
   }
 
-  /// `Annulla`
+  /// `Cancel`
   String get cancel {
-    return Intl.message('Annulla', name: 'cancel', desc: '', args: []);
+    return Intl.message('Cancel', name: 'cancel', desc: '', args: []);
   }
 
-  /// `Sì`
+  /// `Yes`
   String get yes {
-    return Intl.message('Sì', name: 'yes', desc: '', args: []);
+    return Intl.message('Yes', name: 'yes', desc: '', args: []);
   }
 
   /// `No`
@@ -2133,351 +2123,345 @@ class L10n {
     return Intl.message('No', name: 'no', desc: '', args: []);
   }
 
-  /// `Annulla prenotazione`
+  /// `Cancel booking`
   String get cancelBookingTitle {
     return Intl.message(
-      'Annulla prenotazione',
+      'Cancel booking',
       name: 'cancelBookingTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sei sicuro di voler annullare questa prenotazione?`
+  /// `Are you sure you want to cancel this booking?`
   String get cancelBookingConfirm {
     return Intl.message(
-      'Sei sicuro di voler annullare questa prenotazione?',
+      'Are you sure you want to cancel this booking?',
       name: 'cancelBookingConfirm',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione annullata con successo`
+  /// `Booking cancelled successfully`
   String get bookingCancelled {
     return Intl.message(
-      'Prenotazione annullata con successo',
+      'Booking cancelled successfully',
       name: 'bookingCancelled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore durante l'annullamento della prenotazione. Riprova.`
+  /// `Error cancelling booking`
   String get bookingCancelFailed {
     return Intl.message(
-      'Errore durante l\'annullamento della prenotazione. Riprova.',
+      'Error cancelling booking',
       name: 'bookingCancelFailed',
       desc: '',
       args: [],
     );
   }
 
-  /// `Annulla`
+  /// `Cancel`
   String get actionCancelBooking {
     return Intl.message(
-      'Annulla',
+      'Cancel',
       name: 'actionCancelBooking',
-      desc:
-          'Azione per annullare una prenotazione dal punto di vista del cliente',
+      desc: 'Action to cancel a booking from the customer app',
       args: [],
     );
   }
 
-  /// `Funzione di modifica in sviluppo`
+  /// `Modify feature under development`
   String get modifyNotImplemented {
     return Intl.message(
-      'Funzione di modifica in sviluppo',
+      'Modify feature under development',
       name: 'modifyNotImplemented',
       desc: '',
       args: [],
     );
   }
 
-  /// `Modifica prenotazione`
+  /// `Modify booking`
   String get rescheduleBookingTitle {
     return Intl.message(
-      'Modifica prenotazione',
+      'Modify booking',
       name: 'rescheduleBookingTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione attuale`
+  /// `Current booking`
   String get currentBooking {
     return Intl.message(
-      'Prenotazione attuale',
+      'Current booking',
       name: 'currentBooking',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona nuova data`
+  /// `Select new date`
   String get selectNewDate {
     return Intl.message(
-      'Seleziona nuova data',
+      'Select new date',
       name: 'selectNewDate',
       desc: '',
       args: [],
     );
   }
 
-  /// `Seleziona data`
+  /// `Select date`
   String get selectDate {
-    return Intl.message(
-      'Seleziona data',
-      name: 'selectDate',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Select date', name: 'selectDate', desc: '', args: []);
   }
 
-  /// `Seleziona nuovo orario`
+  /// `Select new time`
   String get selectNewTime {
     return Intl.message(
-      'Seleziona nuovo orario',
+      'Select new time',
       name: 'selectNewTime',
       desc: '',
       args: [],
     );
   }
 
-  /// `Conferma modifica`
+  /// `Confirm changes`
   String get confirmReschedule {
     return Intl.message(
-      'Conferma modifica',
+      'Confirm changes',
       name: 'confirmReschedule',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione modificata con successo`
+  /// `Booking modified successfully`
   String get bookingRescheduled {
     return Intl.message(
-      'Prenotazione modificata con successo',
+      'Booking modified successfully',
       name: 'bookingRescheduled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Lo slot non è più disponibile. La prenotazione originale è rimasta invariata.`
+  /// `The time slot is no longer available. Your original booking remains unchanged.`
   String get slotNoLongerAvailable {
     return Intl.message(
-      'Lo slot non è più disponibile. La prenotazione originale è rimasta invariata.',
+      'The time slot is no longer available. Your original booking remains unchanged.',
       name: 'slotNoLongerAvailable',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione aggiornata`
+  /// `Booking updated`
   String get bookingUpdatedTitle {
     return Intl.message(
-      'Prenotazione aggiornata',
+      'Booking updated',
       name: 'bookingUpdatedTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Campo obbligatorio`
+  /// `Required field`
   String get validationRequired {
     return Intl.message(
-      'Campo obbligatorio',
+      'Required field',
       name: 'validationRequired',
       desc: '',
       args: [],
     );
   }
 
-  /// `Email non valida`
+  /// `Invalid email`
   String get validationInvalidEmail {
     return Intl.message(
-      'Email non valida',
+      'Invalid email',
       name: 'validationInvalidEmail',
       desc: '',
       args: [],
     );
   }
 
-  /// `Telefono non valido`
+  /// `Invalid phone`
   String get validationInvalidPhone {
     return Intl.message(
-      'Telefono non valido',
+      'Invalid phone',
       name: 'validationInvalidPhone',
       desc: '',
       args: [],
     );
   }
 
-  /// `Storico prenotazione`
+  /// `Booking history`
   String get bookingHistoryTitle {
     return Intl.message(
-      'Storico prenotazione',
+      'Booking history',
       name: 'bookingHistoryTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Nessun evento registrato`
+  /// `No events recorded`
   String get bookingHistoryEmpty {
     return Intl.message(
-      'Nessun evento registrato',
+      'No events recorded',
       name: 'bookingHistoryEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Caricamento storico...`
+  /// `Loading history...`
   String get bookingHistoryLoading {
     return Intl.message(
-      'Caricamento storico...',
+      'Loading history...',
       name: 'bookingHistoryLoading',
       desc: '',
       args: [],
     );
   }
 
-  /// `Errore nel caricamento dello storico`
+  /// `Error loading history`
   String get bookingHistoryError {
     return Intl.message(
-      'Errore nel caricamento dello storico',
+      'Error loading history',
       name: 'bookingHistoryError',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione creata`
+  /// `Booking created`
   String get bookingHistoryEventCreated {
     return Intl.message(
-      'Prenotazione creata',
+      'Booking created',
       name: 'bookingHistoryEventCreated',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione modificata`
+  /// `Booking updated`
   String get bookingHistoryEventUpdated {
     return Intl.message(
-      'Prenotazione modificata',
+      'Booking updated',
       name: 'bookingHistoryEventUpdated',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione annullata`
+  /// `Booking cancelled`
   String get bookingHistoryEventCancelled {
     return Intl.message(
-      'Prenotazione annullata',
+      'Booking cancelled',
       name: 'bookingHistoryEventCancelled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizio aggiunto`
+  /// `Service added`
   String get bookingHistoryEventItemAdded {
     return Intl.message(
-      'Servizio aggiunto',
+      'Service added',
       name: 'bookingHistoryEventItemAdded',
       desc: '',
       args: [],
     );
   }
 
-  /// `Servizio rimosso`
+  /// `Service removed`
   String get bookingHistoryEventItemDeleted {
     return Intl.message(
-      'Servizio rimosso',
+      'Service removed',
       name: 'bookingHistoryEventItemDeleted',
       desc: '',
       args: [],
     );
   }
 
-  /// `Appuntamento modificato`
+  /// `Appointment updated`
   String get bookingHistoryEventAppointmentUpdated {
     return Intl.message(
-      'Appuntamento modificato',
+      'Appointment updated',
       name: 'bookingHistoryEventAppointmentUpdated',
       desc: '',
       args: [],
     );
   }
 
-  /// `Orario modificato`
+  /// `Time changed`
   String get bookingHistoryEventTimeChanged {
     return Intl.message(
-      'Orario modificato',
+      'Time changed',
       name: 'bookingHistoryEventTimeChanged',
       desc: '',
       args: [],
     );
   }
 
-  /// `Operatore cambiato`
+  /// `Staff changed`
   String get bookingHistoryEventStaffChanged {
     return Intl.message(
-      'Operatore cambiato',
+      'Staff changed',
       name: 'bookingHistoryEventStaffChanged',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prezzo modificato`
+  /// `Price changed`
   String get bookingHistoryEventPriceChanged {
     return Intl.message(
-      'Prezzo modificato',
+      'Price changed',
       name: 'bookingHistoryEventPriceChanged',
       desc: '',
       args: [],
     );
   }
 
-  /// `Durata modificata`
+  /// `Duration changed`
   String get bookingHistoryEventDurationChanged {
     return Intl.message(
-      'Durata modificata',
+      'Duration changed',
       name: 'bookingHistoryEventDurationChanged',
       desc: '',
       args: [],
     );
   }
 
-  /// `Prenotazione sostituita`
+  /// `Booking replaced`
   String get bookingHistoryEventReplaced {
     return Intl.message(
-      'Prenotazione sostituita',
+      'Booking replaced',
       name: 'bookingHistoryEventReplaced',
       desc: '',
       args: [],
     );
   }
 
-  /// `Inviata email di tipo: {type}`
+  /// `Email sent of type: {type}`
   String bookingHistoryEventNotificationSentTitle(Object type) {
     return Intl.message(
-      'Inviata email di tipo: $type',
+      'Email sent of type: $type',
       name: 'bookingHistoryEventNotificationSentTitle',
       desc: '',
       args: [type],
     );
   }
 
-  /// `Cliente`
+  /// `Customer`
   String get bookingHistoryActorCustomer {
     return Intl.message(
-      'Cliente',
+      'Customer',
       name: 'bookingHistoryActorCustomer',
       desc: '',
       args: [],
@@ -2494,140 +2478,140 @@ class L10n {
     );
   }
 
-  /// `Sistema`
+  /// `System`
   String get bookingHistoryActorSystem {
     return Intl.message(
-      'Sistema',
+      'System',
       name: 'bookingHistoryActorSystem',
       desc: '',
       args: [],
     );
   }
 
-  /// `Destinatario: {email}`
+  /// `Recipient: {email}`
   String bookingHistoryNotificationRecipient(Object email) {
     return Intl.message(
-      'Destinatario: $email',
+      'Recipient: $email',
       name: 'bookingHistoryNotificationRecipient',
       desc: '',
       args: [email],
     );
   }
 
-  /// `Data invio: {dateTime}`
+  /// `Sent at: {dateTime}`
   String bookingHistoryNotificationSentAt(Object dateTime) {
     return Intl.message(
-      'Data invio: $dateTime',
+      'Sent at: $dateTime',
       name: 'bookingHistoryNotificationSentAt',
       desc: '',
       args: [dateTime],
     );
   }
 
-  /// `Conferma prenotazione`
+  /// `Booking confirmation`
   String get bookingHistoryNotificationChannelConfirmed {
     return Intl.message(
-      'Conferma prenotazione',
+      'Booking confirmation',
       name: 'bookingHistoryNotificationChannelConfirmed',
       desc: '',
       args: [],
     );
   }
 
-  /// `Promemoria prenotazione`
+  /// `Booking reminder`
   String get bookingHistoryNotificationChannelReminder {
     return Intl.message(
-      'Promemoria prenotazione',
+      'Booking reminder',
       name: 'bookingHistoryNotificationChannelReminder',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cancellazione prenotazione`
+  /// `Booking cancellation`
   String get bookingHistoryNotificationChannelCancelled {
     return Intl.message(
-      'Cancellazione prenotazione',
+      'Booking cancellation',
       name: 'bookingHistoryNotificationChannelCancelled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Riprogrammazione prenotazione`
+  /// `Booking rescheduled`
   String get bookingHistoryNotificationChannelRescheduled {
     return Intl.message(
-      'Riprogrammazione prenotazione',
+      'Booking rescheduled',
       name: 'bookingHistoryNotificationChannelRescheduled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Campi modificati: {fields}`
+  /// `Changed fields: {fields}`
   String bookingHistoryChangedFields(String fields) {
     return Intl.message(
-      'Campi modificati: $fields',
+      'Changed fields: $fields',
       name: 'bookingHistoryChangedFields',
       desc: '',
       args: [fields],
     );
   }
 
-  /// `ANNULLATA`
+  /// `CANCELLED`
   String get cancelledBadge {
     return Intl.message(
-      'ANNULLATA',
+      'CANCELLED',
       name: 'cancelledBadge',
       desc: '',
       args: [],
     );
   }
 
-  /// `Attività non trovata`
+  /// `Business not found`
   String get businessNotFound {
     return Intl.message(
-      'Attività non trovata',
+      'Business not found',
       name: 'businessNotFound',
       desc: '',
       args: [],
     );
   }
 
-  /// `Verifica l'indirizzo o contatta direttamente l'attività.`
+  /// `Please check the URL or contact the business directly.`
   String get businessNotFoundHint {
     return Intl.message(
-      'Verifica l\'indirizzo o contatta direttamente l\'attività.',
+      'Please check the URL or contact the business directly.',
       name: 'businessNotFoundHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Account associato ad un'altra attività`
+  /// `Account linked to another business`
   String get wrongBusinessAuthTitle {
     return Intl.message(
-      'Account associato ad un\'altra attività',
+      'Account linked to another business',
       name: 'wrongBusinessAuthTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Per prenotare su {businessName}, devi accedere con un account registrato qui.`
+  /// `To book at {businessName}, you need to log in with an account registered here.`
   String wrongBusinessAuthMessage(String businessName) {
     return Intl.message(
-      'Per prenotare su $businessName, devi accedere con un account registrato qui.',
+      'To book at $businessName, you need to log in with an account registered here.',
       name: 'wrongBusinessAuthMessage',
       desc: '',
       args: [businessName],
     );
   }
 
-  /// `Esci e accedi qui`
+  /// `Log out and sign in here`
   String get wrongBusinessAuthAction {
     return Intl.message(
-      'Esci e accedi qui',
+      'Log out and sign in here',
       name: 'wrongBusinessAuthAction',
       desc: '',
       args: [],
@@ -2640,8 +2624,8 @@ class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {
 
   List<Locale> get supportedLocales {
     return const <Locale>[
-      Locale.fromSubtags(languageCode: 'it'),
       Locale.fromSubtags(languageCode: 'en'),
+      Locale.fromSubtags(languageCode: 'it'),
     ];
   }
 

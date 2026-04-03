@@ -126,18 +126,20 @@ foreach ($notifications as $notification) {
         $sendDecision = getReminderSendDecision($db->getPdo(), (int) $bookingId);
         if ($sendDecision['skip_send']) {
             $discardReason = 'Promemoria non inviato: notifica generata in ritardo e fuori finestra -24h (' . $sendDecision['reason'] . ').';
+            $failedAt = resolveCurrentTimeForBooking($db->getPdo(), (int) $bookingId);
             if ($verbose) {
                 echo "SKIPPED ({$sendDecision['reason']}) - marking failed\n";
             }
             $discardStmt = $db->getPdo()->prepare(
                 'UPDATE notification_queue
                  SET status = "failed",
-                     failed_at = NOW(),
+                     failed_at = :failed_at,
                      error_message = :error_message
                  WHERE id = :id'
             );
             $discardStmt->execute([
                 'id' => $id,
+                'failed_at' => $failedAt,
                 'error_message' => $discardReason,
             ]);
             $failed++;
@@ -299,7 +301,7 @@ foreach ($notifications as $notification) {
     } catch (\Throwable $e) {
         $error = $e->getMessage();
         if (isHardFailure($error)) {
-            markHardFailed($db->getPdo(), $id, $error);
+            markHardFailed($db->getPdo(), $id, $error, is_numeric($bookingId) ? (int) $bookingId : null);
             $failed++;
             if ($verbose) {
                 echo "FAILED (hard): {$error}\n";
@@ -363,19 +365,50 @@ function isHardFailure(string $error): bool
 /**
  * Mark notification as failed immediately (no further retries).
  */
-function markHardFailed(\PDO $pdo, int $id, string $error): void
+function markHardFailed(\PDO $pdo, int $id, string $error, ?int $bookingId = null): void
 {
+    $failedAt = resolveCurrentTimeForBooking($pdo, $bookingId);
     $stmt = $pdo->prepare(
         'UPDATE notification_queue
          SET status = "failed",
-             failed_at = NOW(),
+             failed_at = :failed_at,
              error_message = :error
          WHERE id = :id'
     );
     $stmt->execute([
         'id' => $id,
+        'failed_at' => $failedAt,
         'error' => $error,
     ]);
+}
+
+/**
+ * Returns current timestamp in booking location timezone.
+ */
+function resolveCurrentTimeForBooking(\PDO $pdo, ?int $bookingId): string
+{
+    if ($bookingId === null || $bookingId <= 0) {
+        return (new \DateTimeImmutable('now', new \DateTimeZone('Europe/Rome')))
+            ->format('Y-m-d H:i:s');
+    }
+
+    $stmt = $pdo->prepare(
+        'SELECT l.timezone
+         FROM bookings b
+         JOIN locations l ON l.id = b.location_id
+         WHERE b.id = :booking_id
+         LIMIT 1'
+    );
+    $stmt->execute(['booking_id' => $bookingId]);
+    $timezoneName = (string) ($stmt->fetchColumn() ?: 'Europe/Rome');
+
+    try {
+        $timezone = new \DateTimeZone($timezoneName);
+    } catch (\Throwable) {
+        $timezone = new \DateTimeZone('Europe/Rome');
+    }
+
+    return (new \DateTimeImmutable('now', $timezone))->format('Y-m-d H:i:s');
 }
 
 /**

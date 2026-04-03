@@ -9,6 +9,7 @@ use Agenda\Http\Response;
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Environment\EnvironmentPolicy;
 use Agenda\Infrastructure\Repositories\BookingPaymentRepository;
+use Agenda\Infrastructure\Repositories\BusinessPaymentMethodRepository;
 use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
@@ -16,18 +17,13 @@ use Throwable;
 
 final class BookingPaymentsController
 {
-    private const ALLOWED_TYPES = [
-        'cash',
-        'card',
-        'discount',
-        'voucher',
-        'other',
-    ];
+    private const DISCOUNT_LINE_TYPE = 'discount';
 
     public function __construct(
         private readonly Connection $db,
         private readonly BookingRepository $bookingRepo,
         private readonly BookingPaymentRepository $bookingPaymentRepo,
+        private readonly BusinessPaymentMethodRepository $paymentMethodRepo,
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
     ) {}
@@ -70,7 +66,7 @@ final class BookingPaymentsController
         }
 
         $payload = $request->getBody() ?? [];
-        $validationError = $this->validatePayload($payload);
+        $validationError = $this->validatePayload($payload, (int) $booking['business_id']);
         if ($validationError !== null) {
             return $validationError;
         }
@@ -113,7 +109,7 @@ final class BookingPaymentsController
         return Response::success($this->formatPayload($stored));
     }
 
-    private function validatePayload(array $payload): ?Response
+    private function validatePayload(array $payload, int $businessId): ?Response
     {
         $totalDueCents = $payload['total_due_cents'] ?? null;
         if (!is_int($totalDueCents) || $totalDueCents < 0) {
@@ -131,13 +127,15 @@ final class BookingPaymentsController
             return Response::validationError('lines must be an array');
         }
 
+        $allowedPaidTypes = $this->allowedPaidTypesForBusiness($businessId);
+
         foreach (($payload['lines'] ?? []) as $line) {
             if (!is_array($line)) {
                 return Response::validationError('each payment line must be an object');
             }
 
             $type = (string) ($line['type'] ?? '');
-            if (!in_array($type, self::ALLOWED_TYPES, true)) {
+            if (!$this->isAllowedLineType($type, $allowedPaidTypes)) {
                 return Response::validationError('invalid payment line type');
             }
 
@@ -195,9 +193,9 @@ final class BookingPaymentsController
         foreach ($lines as $line) {
             $type = (string) ($line['type'] ?? '');
             $amount = (int) ($line['amount_cents'] ?? 0);
-            if (in_array($type, ['cash', 'card', 'voucher', 'other'], true)) {
+            if ($type !== self::DISCOUNT_LINE_TYPE) {
                 $paidCents += $amount;
-            } elseif ($type === 'discount') {
+            } elseif ($type === self::DISCOUNT_LINE_TYPE) {
                 $discountCents += $amount;
             }
         }
@@ -223,6 +221,34 @@ final class BookingPaymentsController
                 'balance_cents' => (int) ($payment['total_due_cents'] ?? 0) - $paidCents - $discountCents,
             ],
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function allowedPaidTypesForBusiness(int $businessId): array
+    {
+        $methods = $this->paymentMethodRepo->listActiveByBusinessId($businessId);
+        if (empty($methods)) {
+            return ['cash', 'card', 'voucher', 'other'];
+        }
+
+        return array_values(array_unique(array_map(
+            static fn(array $method): string => (string) ($method['code'] ?? ''),
+            $methods,
+        )));
+    }
+
+    /**
+     * @param list<string> $allowedPaidTypes
+     */
+    private function isAllowedLineType(string $type, array $allowedPaidTypes): bool
+    {
+        if ($type === self::DISCOUNT_LINE_TYPE) {
+            return true;
+        }
+
+        return in_array($type, $allowedPaidTypes, true);
     }
 
     private function hasBusinessAccess(Request $request, int $businessId, bool $allowReadOnly): bool

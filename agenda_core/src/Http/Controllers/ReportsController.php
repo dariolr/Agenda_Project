@@ -6,6 +6,7 @@ namespace Agenda\Http\Controllers;
 
 use Agenda\Http\Request;
 use Agenda\Http\Response;
+use Agenda\Infrastructure\Repositories\BusinessPaymentMethodRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\LocationClosureRepository;
@@ -24,6 +25,7 @@ final class ReportsController
     
     public function __construct(
         private Connection $db,
+        private BusinessPaymentMethodRepository $paymentMethodRepo,
         private BusinessUserRepository $businessUserRepo,
         private UserRepository $userRepo,
         ?LocationClosureRepository $locationClosureRepo = null
@@ -85,6 +87,7 @@ final class ReportsController
                     'discount_cents' => 0,
                     'paid_cents' => 0,
                     'due_cents' => 0,
+                    'payment_method_breakdown' => [],
                 ],
                 'by_staff' => [],
                 'by_location' => [],
@@ -174,6 +177,7 @@ final class ReportsController
     private function buildReport(int $businessId, string $startDate, string $endDate, array $locationIds, array $staffIds, array $serviceIds, array $statuses): array
     {
         $pdo = $this->db->getPdo();
+        $paymentMethods = $this->paymentMethodRepo->listActiveByBusinessId($businessId);
 
         $conditions = ['b.business_id = ?', 'DATE(bi.start_time) >= ?', 'DATE(bi.start_time) <= ?'];
         $params = [$businessId, $startDate, $endDate];
@@ -291,8 +295,8 @@ final class ReportsController
         $stmt->execute($params);
         $byHour = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $paymentSummary = $this->buildPaymentSummary($pdo, $whereClause, $params);
-        $paymentByLocation = $this->buildPaymentByLocation($pdo, $whereClause, $params);
+        $paymentSummary = $this->buildPaymentSummary($pdo, $whereClause, $params, $paymentMethods);
+        $paymentByLocation = $this->buildPaymentByLocation($pdo, $whereClause, $params, $paymentMethods);
 
         $summary['total_appointments'] = (int) $summary['total_appointments'];
         $summary['total_bookings'] = (int) $summary['total_bookings'];
@@ -366,7 +370,7 @@ final class ReportsController
         ];
     }
 
-    private function buildPaymentSummary(PDO $pdo, string $whereClause, array $params): array
+    private function buildPaymentSummary(PDO $pdo, string $whereClause, array $params, array $paymentMethods): array
     {
         $sql = "SELECT
                 COALESCE(SUM(COALESCE(pay.cash_cents, 0)), 0) AS cash_cents,
@@ -394,7 +398,7 @@ final class ReportsController
                     SUM(CASE WHEN bpl.type = 'voucher' THEN bpl.amount_cents ELSE 0 END) AS voucher_cents,
                     SUM(CASE WHEN bpl.type = 'other' THEN bpl.amount_cents ELSE 0 END) AS other_cents,
                     SUM(CASE WHEN bpl.type = 'discount' THEN bpl.amount_cents ELSE 0 END) AS discount_cents,
-                    SUM(CASE WHEN bpl.type IN ('cash', 'card', 'voucher', 'other') THEN bpl.amount_cents ELSE 0 END) AS paid_cents
+                    SUM(CASE WHEN bpl.type <> 'discount' THEN bpl.amount_cents ELSE 0 END) AS paid_cents
                 FROM booking_payments bp
                 LEFT JOIN booking_payment_lines bpl ON bpl.booking_payment_id = bp.id
                 WHERE bp.is_active = 1
@@ -413,10 +417,16 @@ final class ReportsController
             'discount_cents' => (int) ($row['discount_cents'] ?? 0),
             'paid_cents' => (int) ($row['paid_cents'] ?? 0),
             'due_cents' => (int) ($row['due_cents'] ?? 0),
+            'payment_method_breakdown' => $this->buildPaymentMethodBreakdown(
+                $pdo,
+                $whereClause,
+                $params,
+                $paymentMethods
+            ),
         ];
     }
 
-    private function buildPaymentByLocation(PDO $pdo, string $whereClause, array $params): array
+    private function buildPaymentByLocation(PDO $pdo, string $whereClause, array $params, array $paymentMethods): array
     {
         $sql = "SELECT
                 fb.location_id,
@@ -445,7 +455,7 @@ final class ReportsController
                     SUM(CASE WHEN bpl.type = 'voucher' THEN bpl.amount_cents ELSE 0 END) AS voucher_cents,
                     SUM(CASE WHEN bpl.type = 'other' THEN bpl.amount_cents ELSE 0 END) AS other_cents,
                     SUM(CASE WHEN bpl.type = 'discount' THEN bpl.amount_cents ELSE 0 END) AS discount_cents,
-                    SUM(CASE WHEN bpl.type IN ('cash', 'card', 'voucher', 'other') THEN bpl.amount_cents ELSE 0 END) AS paid_cents
+                    SUM(CASE WHEN bpl.type <> 'discount' THEN bpl.amount_cents ELSE 0 END) AS paid_cents
                 FROM booking_payments bp
                 LEFT JOIN booking_payment_lines bpl ON bpl.booking_payment_id = bp.id
                 WHERE bp.is_active = 1
@@ -468,6 +478,13 @@ final class ReportsController
                 'discount_cents' => (int) ($row['discount_cents'] ?? 0),
                 'paid_cents' => (int) ($row['paid_cents'] ?? 0),
                 'due_cents' => (int) ($row['due_cents'] ?? 0),
+                'payment_method_breakdown' => $this->buildPaymentMethodBreakdownForLocation(
+                    $pdo,
+                    $whereClause,
+                    $params,
+                    $locationId,
+                    $paymentMethods
+                ),
             ];
         }
 
@@ -484,7 +501,123 @@ final class ReportsController
             'discount_cents' => 0,
             'paid_cents' => 0,
             'due_cents' => 0,
+            'payment_method_breakdown' => [],
         ];
+    }
+
+    /**
+     * @param list<array<string,mixed>> $paymentMethods
+     * @return list<array<string,mixed>>
+     */
+    private function buildPaymentMethodBreakdown(PDO $pdo, string $whereClause, array $params, array $paymentMethods): array
+    {
+        $sql = "SELECT
+                bpl.type AS method_code,
+                SUM(bpl.amount_cents) AS amount_cents
+            FROM booking_payment_lines bpl
+            JOIN booking_payments bp ON bp.id = bpl.booking_payment_id AND bp.is_active = 1
+            JOIN (
+                SELECT DISTINCT b.id AS booking_id
+                FROM booking_items bi
+                JOIN bookings b ON bi.booking_id = b.id
+                WHERE $whereClause
+            ) fb ON fb.booking_id = bp.booking_id
+            WHERE bpl.type <> 'discount'
+            GROUP BY bpl.type";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $amountByCode = [];
+        foreach ($rows as $row) {
+            $code = (string) ($row['method_code'] ?? '');
+            if ($code === '') {
+                continue;
+            }
+            $amountByCode[$code] = (int) ($row['amount_cents'] ?? 0);
+        }
+
+        return $this->formatPaymentMethodBreakdown($paymentMethods, $amountByCode);
+    }
+
+    /**
+     * @param list<array<string,mixed>> $paymentMethods
+     * @return list<array<string,mixed>>
+     */
+    private function buildPaymentMethodBreakdownForLocation(
+        PDO $pdo,
+        string $whereClause,
+        array $params,
+        int $locationId,
+        array $paymentMethods
+    ): array {
+        $sql = "SELECT
+                bpl.type AS method_code,
+                SUM(bpl.amount_cents) AS amount_cents
+            FROM booking_payment_lines bpl
+            JOIN booking_payments bp ON bp.id = bpl.booking_payment_id AND bp.is_active = 1
+            JOIN (
+                SELECT DISTINCT b.id AS booking_id, b.location_id
+                FROM booking_items bi
+                JOIN bookings b ON bi.booking_id = b.id
+                WHERE $whereClause
+            ) fb ON fb.booking_id = bp.booking_id
+            WHERE bpl.type <> 'discount'
+              AND fb.location_id = ?
+            GROUP BY bpl.type";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute(array_merge($params, [$locationId]));
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $amountByCode = [];
+        foreach ($rows as $row) {
+            $code = (string) ($row['method_code'] ?? '');
+            if ($code === '') {
+                continue;
+            }
+            $amountByCode[$code] = (int) ($row['amount_cents'] ?? 0);
+        }
+
+        return $this->formatPaymentMethodBreakdown($paymentMethods, $amountByCode);
+    }
+
+    /**
+     * @param list<array<string,mixed>> $paymentMethods
+     * @param array<string,int> $amountByCode
+     * @return list<array<string,mixed>>
+     */
+    private function formatPaymentMethodBreakdown(array $paymentMethods, array $amountByCode): array
+    {
+        $result = [];
+        $knownCodes = [];
+
+        foreach ($paymentMethods as $method) {
+            $code = (string) ($method['code'] ?? '');
+            if ($code === '') {
+                continue;
+            }
+            $knownCodes[$code] = true;
+            $result[] = [
+                'method_code' => $code,
+                'method_name' => (string) ($method['name'] ?? $code),
+                'amount_cents' => (int) ($amountByCode[$code] ?? 0),
+            ];
+        }
+
+        foreach ($amountByCode as $code => $amountCents) {
+            if (isset($knownCodes[$code])) {
+                continue;
+            }
+            $result[] = [
+                'method_code' => $code,
+                'method_name' => $code,
+                'amount_cents' => (int) $amountCents,
+            ];
+        }
+
+        return $result;
     }
 
     /**

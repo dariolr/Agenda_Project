@@ -25,6 +25,7 @@ import '../../agenda/providers/weekly_appointments_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
 import '../../clients/providers/clients_providers.dart';
 import '../../class_events/providers/class_events_providers.dart';
+import '../../payments/providers/payment_methods_provider.dart';
 import '../../services/providers/service_categories_provider.dart';
 import '../../services/providers/services_provider.dart';
 import '../../staff/providers/availability_exceptions_provider.dart';
@@ -99,6 +100,8 @@ void invalidateBusinessScopedProviders(Object refObj) {
   ref.invalidate(serviceVariantsProvider);
   ref.invalidate(serviceCategoriesProvider);
   ref.invalidate(serviceStaffEligibilityProvider);
+  ref.invalidate(paymentMethodsProvider);
+  ref.invalidate(paymentMethodsWithInactiveProvider);
 
   // Clients
   ref.invalidate(clientsProvider);
