@@ -36,6 +36,9 @@ void main() {
             agendaExtraMinutesBandIntensityProvider.overrideWith(
               (ref) => 0.25,
             ),
+            agendaHoverUnrelatedCardDimIntensityProvider.overrideWith(
+              (ref) => 0.0,
+            ),
             agendaCardTextScaleProvider.overrideWith((ref) => 1.0),
             currentUserCanManageBookingsProvider.overrideWith((ref) => false),
             agendaCardHoverProvider.overrideWith(_TestAgendaCardHoverNotifier.new),
