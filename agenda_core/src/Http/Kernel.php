@@ -470,7 +470,7 @@ final class Kernel
         $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $notificationRepo, $computeAvailability, $bookingAuditRepo, $locationClosureRepo, $classEventRepo);
         $createRecurringBooking = new CreateRecurringBooking($this->db, $bookingRepo, $recurrenceRuleRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $computeAvailability, $notificationRepo, $bookingAuditRepo);
         $previewRecurringBooking = new PreviewRecurringBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo);
-        $modifyRecurringSeries = new ModifyRecurringSeries($this->db, $bookingRepo, $recurrenceRuleRepo, $staffRepo, $bookingAuditRepo);
+        $modifyRecurringSeries = new ModifyRecurringSeries($this->db, $bookingRepo, $recurrenceRuleRepo, $staffRepo, $bookingAuditRepo, $notificationRepo);
         $updateBooking = new UpdateBooking($bookingRepo, $this->db, $clientRepo, $notificationRepo, $bookingAuditRepo, $classEventRepo);
         $deleteBooking = new DeleteBooking($bookingRepo, $this->db, $notificationRepo, $bookingAuditRepo);
         $getMyBookings = new GetMyBookings($this->db);
