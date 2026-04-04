@@ -1483,9 +1483,11 @@ class ApiClient {
     required int businessId,
     required String name,
     String? address,
+    String? country,
     String? phone,
     String? email,
     String? timezone,
+    String? bookingDefaultLocale,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
     Map<String, dynamic>? bookingTextOverrides,
@@ -1499,9 +1501,12 @@ class ApiClient {
       data: {
         'name': name,
         if (address != null && address.isNotEmpty) 'address': address,
+        if (country != null && country.isNotEmpty) 'country': country,
         if (phone != null && phone.isNotEmpty) 'phone': phone,
         if (email != null && email.isNotEmpty) 'email': email,
         if (timezone != null && timezone.isNotEmpty) 'timezone': timezone,
+        if (bookingDefaultLocale != null)
+          'booking_default_locale': bookingDefaultLocale,
         if (minBookingNoticeHours != null)
           'min_booking_notice_hours': minBookingNoticeHours,
         if (maxBookingAdvanceDays != null)
@@ -1530,9 +1535,11 @@ class ApiClient {
     required int locationId,
     String? name,
     String? address,
+    String? country,
     String? phone,
     String? email,
     String? timezone,
+    String? bookingDefaultLocale,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
     Map<String, dynamic>? bookingTextOverrides,
@@ -1549,9 +1556,12 @@ class ApiClient {
       data: {
         if (name != null) 'name': name,
         if (address != null) 'address': address,
+        if (country != null) 'country': country,
         if (phone != null) 'phone': phone,
         if (email != null) 'email': email,
         if (timezone != null) 'timezone': timezone,
+        if (bookingDefaultLocale != null)
+          'booking_default_locale': bookingDefaultLocale,
         if (minBookingNoticeHours != null)
           'min_booking_notice_hours': minBookingNoticeHours,
         if (maxBookingAdvanceDays != null)

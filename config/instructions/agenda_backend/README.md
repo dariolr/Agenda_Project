@@ -209,6 +209,31 @@ Provider e servizi da usare:
 Riferimento dettagliato:
 - [TIMEZONE_LOCATION_POLICY.md](TIMEZONE_LOCATION_POLICY.md)
 
+### 7. Aggiornamenti Importanti (04/04/2026)
+
+#### Locale UI gestionale (admin)
+
+- Rimossa la forzatura hardcoded della lingua a italiano.
+- Introdotta preferenza persistita per lingua gestionale (`it`/`en`) con fallback robusto:
+  1. preferenza utente salvata
+  2. locale sistema/browser supportata
+  3. fallback finale `it`
+
+#### Location: country/timezone e lingua booking separati
+
+- `country` e `timezone` sono gestiti in modo esplicito nel form location.
+- Aggiunto campo opzionale location: `booking_default_locale` (`it`/`en`).
+- Il campo è collocato nella sezione "Configurazione prenotazione online".
+- Visibilità del campo:
+  - solo superadmin
+  - solo se "Sede attiva" è `true`
+
+#### Regola architetturale
+
+- `booking_default_locale` controlla solo la lingua iniziale del frontend prenotazioni.
+- Non modifica timezone location.
+- Non modifica la lingua del gestionale backend.
+
 ---
 
 ## 🎨 UI/UX Guidelines

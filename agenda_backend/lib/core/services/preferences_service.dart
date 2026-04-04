@@ -101,6 +101,7 @@ class PrefsKeys {
 
   /// Preferenza globale UI: rail desktop dall'alto o sotto toolbar.
   static const desktopRailStartsAtTop = 'desktop_rail_starts_at_top';
+  static const adminLocaleCode = 'admin_locale_code';
 }
 
 /// Service per gestire le preferenze utente.
@@ -509,6 +510,25 @@ class PreferencesService {
   }
 
   // ============================================
+  // Admin Locale
+  // ============================================
+
+  String? getAdminLocaleCode() {
+    final value = _prefs.getString(PrefsKeys.adminLocaleCode)?.trim();
+    if (value == null || value.isEmpty) return null;
+    return value.toLowerCase();
+  }
+
+  Future<void> setAdminLocaleCode(String? code) async {
+    final normalized = code?.trim().toLowerCase();
+    if (normalized == null || normalized.isEmpty) {
+      await _prefs.remove(PrefsKeys.adminLocaleCode);
+      return;
+    }
+    await _prefs.setString(PrefsKeys.adminLocaleCode, normalized);
+  }
+
+  // ============================================
   // Superadmin Last Business ID
   // ============================================
 
@@ -599,7 +619,8 @@ class PreferencesService {
           key.startsWith('agenda_use_service_colors_override_') ||
           key.startsWith('agenda_show_cancelled_appointments_') ||
           key.startsWith('current_location_id') ||
-          key == PrefsKeys.desktopRailStartsAtTop) {
+          key == PrefsKeys.desktopRailStartsAtTop ||
+          key == PrefsKeys.adminLocaleCode) {
         await _prefs.remove(key);
       }
     }

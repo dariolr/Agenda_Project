@@ -1,5 +1,8 @@
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+
 // Gestione delle festività nazionali per paese.
-//
 // Supporta festività fisse e mobili (come Pasqua e derivate).
 
 /// Rappresenta una festività nazionale.
@@ -111,43 +114,193 @@ class ItalianHolidaysProvider extends PublicHolidaysProvider {
 
 /// Factory per ottenere il provider di festività per un paese.
 class PublicHolidaysFactory {
-  /// Mappa dei codici paese supportati.
-  static const supportedCountries = {'IT': 'Italia', 'Italy': 'Italia'};
+  static const Map<String, String> _countryAliases = {
+    'IT': 'IT',
+    'ITALY': 'IT',
+    'ITALIA': 'IT',
+    'FR': 'FR',
+    'FRANCE': 'FR',
+    'FRANCIA': 'FR',
+    'ES': 'ES',
+    'SPAIN': 'ES',
+    'SPAGNA': 'ES',
+    'DE': 'DE',
+    'GERMANY': 'DE',
+    'GERMANIA': 'DE',
+    'GB': 'GB',
+    'UK': 'GB',
+    'UNITED KINGDOM': 'GB',
+    'REGNO UNITO': 'GB',
+    'US': 'US',
+    'USA': 'US',
+    'UNITED STATES': 'US',
+    'STATI UNITI': 'US',
+    'CH': 'CH',
+    'SWITZERLAND': 'CH',
+    'SVIZZERA': 'CH',
+    'AT': 'AT',
+    'AUSTRIA': 'AT',
+    'PT': 'PT',
+    'PORTUGAL': 'PT',
+    'PORTOGALLO': 'PT',
+    'NL': 'NL',
+    'NETHERLANDS': 'NL',
+    'PAESI BASSI': 'NL',
+    'BE': 'BE',
+    'BELGIUM': 'BE',
+    'BELGIO': 'BE',
+  };
+
+  static String? normalizeCountryCode(String? countryCode) {
+    if (countryCode == null) return null;
+    final normalized = countryCode.toUpperCase().trim();
+    return _countryAliases[normalized];
+  }
 
   /// Restituisce il provider di festività per il paese specificato.
   /// Se il paese non è supportato, restituisce null.
   static PublicHolidaysProvider? getProvider(String? countryCode) {
-    if (countryCode == null) return null;
-
-    final normalized = countryCode.toUpperCase().trim();
-
-    if (normalized == 'IT' || normalized == 'ITALY' || normalized == 'ITALIA') {
+    final isoCode = normalizeCountryCode(countryCode);
+    if (isoCode == 'IT') {
       return ItalianHolidaysProvider();
     }
-
-    // Aggiungi altri paesi qui in futuro
-    // if (normalized == 'FR' || normalized == 'FRANCE') {
-    //   return FrenchHolidaysProvider();
-    // }
-
-    return null;
+    return null; // Fallback locale attualmente disponibile solo per Italia.
   }
 
   /// Restituisce true se il paese è supportato.
   static bool isSupported(String? countryCode) {
-    return getProvider(countryCode) != null;
+    return normalizeCountryCode(countryCode) != null;
   }
 
   /// Restituisce il nome del paese dal codice.
   static String? getCountryName(String? countryCode) {
-    if (countryCode == null) return null;
+    switch (normalizeCountryCode(countryCode)) {
+      case 'IT':
+        return 'Italia';
+      case 'FR':
+        return 'Francia';
+      case 'ES':
+        return 'Spagna';
+      case 'DE':
+        return 'Germania';
+      case 'GB':
+        return 'Regno Unito';
+      case 'US':
+        return 'Stati Uniti';
+      case 'CH':
+        return 'Svizzera';
+      case 'AT':
+        return 'Austria';
+      case 'PT':
+        return 'Portogallo';
+      case 'NL':
+        return 'Paesi Bassi';
+      case 'BE':
+        return 'Belgio';
+      default:
+        return null;
+    }
+  }
 
-    final normalized = countryCode.toUpperCase().trim();
+  /// Recupera festività nazionali da API pubblica (Nager.Date).
+  /// Endpoint: /api/v3/PublicHolidays/{year}/{countryCode}
+  static Future<List<PublicHoliday>> fetchHolidaysFromApi({
+    required String countryCode,
+    required List<int> years,
+    http.Client? client,
+  }) async {
+    final httpClient = client ?? http.Client();
+    final shouldCloseClient = client == null;
+    final normalizedCountryCode = countryCode.toUpperCase().trim();
+    final holidays = <PublicHoliday>[];
 
-    if (normalized == 'IT' || normalized == 'ITALY' || normalized == 'ITALIA') {
-      return 'Italia';
+    try {
+      for (final year in years) {
+        final uri = Uri.parse(
+          'https://date.nager.at/api/v3/PublicHolidays/$year/$normalizedCountryCode',
+        );
+        final response = await httpClient
+            .get(uri)
+            .timeout(const Duration(seconds: 10));
+        if (response.statusCode != 200) {
+          continue;
+        }
+
+        final decoded = jsonDecode(response.body);
+        if (decoded is! List) {
+          continue;
+        }
+
+        for (final rawHoliday in decoded) {
+          if (rawHoliday is! Map<String, dynamic>) {
+            continue;
+          }
+
+          // Considera solo festività nazionali realmente "public":
+          // - global == true (non regionali/locali)
+          // - types contiene "Public"
+          final isGlobal = rawHoliday['global'] == true;
+          final types = rawHoliday['types'];
+          final isPublicType =
+              types is List &&
+              types.any(
+                (t) => t is String && t.toLowerCase() == 'public',
+              );
+          final counties = rawHoliday['counties'];
+          final hasRegionalCounties =
+              counties is List && counties.isNotEmpty;
+          if (!isGlobal || !isPublicType || hasRegionalCounties) {
+            continue;
+          }
+
+          final dateRaw = rawHoliday['date'] as String?;
+          final parsedDate = dateRaw != null ? DateTime.tryParse(dateRaw) : null;
+          if (parsedDate == null) {
+            continue;
+          }
+
+          final localName = (rawHoliday['localName'] as String?)?.trim();
+          final englishName = (rawHoliday['name'] as String?)?.trim();
+          final displayName =
+              (localName != null && localName.isNotEmpty)
+              ? localName
+              : (englishName ?? '');
+          if (displayName.isEmpty) {
+            continue;
+          }
+
+          holidays.add(
+            PublicHoliday(
+              date: DateTime(
+                parsedDate.year,
+                parsedDate.month,
+                parsedDate.day,
+              ),
+              name: displayName,
+              nameEn:
+                  (englishName != null && englishName.isNotEmpty)
+                  ? englishName
+                  : displayName,
+            ),
+          );
+        }
+      }
+    } finally {
+      if (shouldCloseClient) {
+        httpClient.close();
+      }
     }
 
-    return null;
+    final seen = <String>{};
+    final deduplicated = <PublicHoliday>[];
+    for (final holiday in holidays) {
+      final key =
+          '${holiday.date.year}-${holiday.date.month}-${holiday.date.day}-${holiday.name.toLowerCase()}';
+      if (seen.add(key)) {
+        deduplicated.add(holiday);
+      }
+    }
+    deduplicated.sort((a, b) => a.date.compareTo(b.date));
+    return deduplicated;
   }
 }

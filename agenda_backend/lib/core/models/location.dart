@@ -12,6 +12,7 @@ class Location {
   final double? longitude;
   final String? currency;
   final String timezone;
+  final String? bookingDefaultLocale;
   final int minBookingNoticeHours;
   final int maxBookingAdvanceDays;
   final bool allowCustomerChooseStaff;
@@ -39,6 +40,7 @@ class Location {
     this.longitude,
     this.currency,
     this.timezone = 'Europe/Rome',
+    this.bookingDefaultLocale,
     this.minBookingNoticeHours = 1,
     this.maxBookingAdvanceDays = 90,
     this.allowCustomerChooseStaff = false,
@@ -67,6 +69,7 @@ class Location {
     double? longitude,
     String? currency,
     String? timezone,
+    String? bookingDefaultLocale,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
     bool? allowCustomerChooseStaff,
@@ -94,6 +97,7 @@ class Location {
       longitude: longitude ?? this.longitude,
       currency: currency ?? this.currency,
       timezone: timezone ?? this.timezone,
+      bookingDefaultLocale: bookingDefaultLocale ?? this.bookingDefaultLocale,
       minBookingNoticeHours:
           minBookingNoticeHours ?? this.minBookingNoticeHours,
       maxBookingAdvanceDays:
@@ -129,6 +133,7 @@ class Location {
       longitude: (json['longitude'] as num?)?.toDouble(),
       currency: json['currency'] as String?,
       timezone: json['timezone'] as String? ?? 'Europe/Rome',
+      bookingDefaultLocale: json['booking_default_locale'] as String?,
       minBookingNoticeHours: json['min_booking_notice_hours'] as int? ?? 1,
       maxBookingAdvanceDays: json['max_booking_advance_days'] as int? ?? 90,
       allowCustomerChooseStaff:
@@ -163,6 +168,8 @@ class Location {
       if (longitude != null) 'longitude': longitude,
       if (currency != null) 'currency': currency,
       'timezone': timezone,
+      if (bookingDefaultLocale != null)
+        'booking_default_locale': bookingDefaultLocale,
       'min_booking_notice_hours': minBookingNoticeHours,
       'max_booking_advance_days': maxBookingAdvanceDays,
       'allow_customer_choose_staff': allowCustomerChooseStaff,

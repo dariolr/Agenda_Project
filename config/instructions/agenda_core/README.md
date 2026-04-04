@@ -62,6 +62,31 @@ php -S localhost:8080 -t public
 
 **Risultati attesi**: 98 test, 195 asserzioni, 100% pass
 
+## Aggiornamenti Importanti (04/04/2026)
+
+### Locations: nuovo campo `booking_default_locale`
+
+- Aggiunta migrazione additiva:
+  - `config/migrations/20260404_locations_booking_default_locale.sql`
+- Schema completo aggiornato:
+  - `config/migrations/FULL_DATABASE_SCHEMA.sql`
+
+Nuova colonna:
+
+- `locations.booking_default_locale` (`VARCHAR(10)`, nullable)
+- valori supportati lato API: `it`, `en`
+
+### API locations (admin + public)
+
+Il campo `booking_default_locale` è ora:
+
+- accettato in create/update location
+- validato lato controller (`it|en`, `null` consentito)
+- restituito nelle response JSON location admin
+- restituito nelle response JSON location pubbliche (`/locations/public`)
+
+Implementazione additiva e backward-compatible: nessun breaking change su payload esistenti.
+
 ## Endpoints
 
 ### Auth (pubblici)

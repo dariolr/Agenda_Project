@@ -56,3 +56,5 @@ Il database timezone è inizializzato in avvio app:
 
 - `normalizeTimezone` valida il timezone e applica fallback sicuro.
 - I provider timezone sono business/location-scoped: quando cambia business/location, ricalcolare i dati dipendenti.
+- `booking_default_locale` (se impostato sulla location) non influenza in alcun modo la logica temporale.
+- `country` è metadato geografico: non deve essere usato per calcolare date/ora operative.

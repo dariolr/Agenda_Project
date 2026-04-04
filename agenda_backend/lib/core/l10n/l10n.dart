@@ -1438,6 +1438,206 @@ class L10n {
     );
   }
 
+  /// `Country`
+  String get teamLocationCountryLabel {
+    return Intl.message(
+      'Country',
+      name: 'teamLocationCountryLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `e.g. IT`
+  String get teamLocationCountryHint {
+    return Intl.message(
+      'e.g. IT',
+      name: 'teamLocationCountryHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Italy`
+  String get teamLocationCountryItaly {
+    return Intl.message(
+      'Italy',
+      name: 'teamLocationCountryItaly',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `France`
+  String get teamLocationCountryFrance {
+    return Intl.message(
+      'France',
+      name: 'teamLocationCountryFrance',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Spain`
+  String get teamLocationCountrySpain {
+    return Intl.message(
+      'Spain',
+      name: 'teamLocationCountrySpain',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Germany`
+  String get teamLocationCountryGermany {
+    return Intl.message(
+      'Germany',
+      name: 'teamLocationCountryGermany',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `United Kingdom`
+  String get teamLocationCountryUnitedKingdom {
+    return Intl.message(
+      'United Kingdom',
+      name: 'teamLocationCountryUnitedKingdom',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `United States`
+  String get teamLocationCountryUnitedStates {
+    return Intl.message(
+      'United States',
+      name: 'teamLocationCountryUnitedStates',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Switzerland`
+  String get teamLocationCountrySwitzerland {
+    return Intl.message(
+      'Switzerland',
+      name: 'teamLocationCountrySwitzerland',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Austria`
+  String get teamLocationCountryAustria {
+    return Intl.message(
+      'Austria',
+      name: 'teamLocationCountryAustria',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Portugal`
+  String get teamLocationCountryPortugal {
+    return Intl.message(
+      'Portugal',
+      name: 'teamLocationCountryPortugal',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Netherlands`
+  String get teamLocationCountryNetherlands {
+    return Intl.message(
+      'Netherlands',
+      name: 'teamLocationCountryNetherlands',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Belgium`
+  String get teamLocationCountryBelgium {
+    return Intl.message(
+      'Belgium',
+      name: 'teamLocationCountryBelgium',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Timezone`
+  String get teamLocationTimezoneLabel {
+    return Intl.message(
+      'Timezone',
+      name: 'teamLocationTimezoneLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `e.g. Europe/Rome`
+  String get teamLocationTimezoneHint {
+    return Intl.message(
+      'e.g. Europe/Rome',
+      name: 'teamLocationTimezoneHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Default online booking language`
+  String get teamLocationBookingDefaultLocaleLabel {
+    return Intl.message(
+      'Default online booking language',
+      name: 'teamLocationBookingDefaultLocaleLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sets the initial language for the booking frontend. It does not change timezone or admin app language.`
+  String get teamLocationBookingDefaultLocaleHint {
+    return Intl.message(
+      'Sets the initial language for the booking frontend. It does not change timezone or admin app language.',
+      name: 'teamLocationBookingDefaultLocaleHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Automatic`
+  String get teamLocationBookingDefaultLocaleAuto {
+    return Intl.message(
+      'Automatic',
+      name: 'teamLocationBookingDefaultLocaleAuto',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Italian`
+  String get teamLocationBookingDefaultLocaleItalian {
+    return Intl.message(
+      'Italian',
+      name: 'teamLocationBookingDefaultLocaleItalian',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `English`
+  String get teamLocationBookingDefaultLocaleEnglish {
+    return Intl.message(
+      'English',
+      name: 'teamLocationBookingDefaultLocaleEnglish',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Email`
   String get teamLocationEmailLabel {
     return Intl.message(
@@ -5286,6 +5486,46 @@ class L10n {
     );
   }
 
+  /// `Admin language`
+  String get profileLanguageLabel {
+    return Intl.message(
+      'Admin language',
+      name: 'profileLanguageLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Italian`
+  String get profileLanguageItalian {
+    return Intl.message(
+      'Italian',
+      name: 'profileLanguageItalian',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `English`
+  String get profileLanguageEnglish {
+    return Intl.message(
+      'English',
+      name: 'profileLanguageEnglish',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Use system language`
+  String get profileLanguageUseSystem {
+    return Intl.message(
+      'Use system language',
+      name: 'profileLanguageUseSystem',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Switch business`
   String get profileSwitchBusiness {
     return Intl.message(
@@ -8572,10 +8812,10 @@ class L10n {
     );
   }
 
-  /// `Import holidays`
+  /// `Import national holidays`
   String get closuresImportHolidays {
     return Intl.message(
-      'Import holidays',
+      'Import national holidays',
       name: 'closuresImportHolidays',
       desc: '',
       args: [],
@@ -8587,6 +8827,36 @@ class L10n {
     return Intl.message(
       'Import national holidays',
       name: 'closuresImportHolidaysTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Holidays are determined by an external service: Nager.Date`
+  String get closuresImportHolidaysExternalSourceInfo {
+    return Intl.message(
+      'Holidays are determined by an external service: Nager.Date',
+      name: 'closuresImportHolidaysExternalSourceInfo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Copy link`
+  String get closuresImportHolidaysCopyLinkAction {
+    return Intl.message(
+      'Copy link',
+      name: 'closuresImportHolidaysCopyLinkAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Link copied`
+  String get closuresImportHolidaysLinkCopied {
+    return Intl.message(
+      'Link copied',
+      name: 'closuresImportHolidaysLinkCopied',
       desc: '',
       args: [],
     );

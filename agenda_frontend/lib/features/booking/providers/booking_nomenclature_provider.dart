@@ -150,11 +150,24 @@ final bookingStaffIconProvider = Provider<IconData>((ref) {
 });
 
 Map<String, String>? _resolveOverridesForAllUsers(
-  Map<String, Map<String, String>>? allOverrides,
-) {
+  Map<String, Map<String, String>>? allOverrides, {
+  required Locale locale,
+  String fallbackLanguageCode = 'it',
+}) {
   // Regola prodotto: se la location imposta override, vale per tutti gli utenti.
   if (allOverrides == null || allOverrides.isEmpty) {
     return null;
+  }
+
+  final localeCandidates = <String>{
+    locale.toLanguageTag().toLowerCase(),
+    locale.languageCode.toLowerCase(),
+  };
+  for (final key in localeCandidates) {
+    final localeOverride = allOverrides[key];
+    if (localeOverride != null && localeOverride.isNotEmpty) {
+      return localeOverride;
+    }
   }
 
   // Priorità esplicita chiavi globali.
@@ -163,6 +176,11 @@ Map<String, String>? _resolveOverridesForAllUsers(
     if (global != null && global.isNotEmpty) {
       return global;
     }
+  }
+
+  final fallbackOverride = allOverrides[fallbackLanguageCode];
+  if (fallbackOverride != null && fallbackOverride.isNotEmpty) {
+    return fallbackOverride;
   }
 
   // Se non ci sono chiavi globali, usa il primo blocco disponibile (globale di fatto).
@@ -176,11 +194,10 @@ Map<String, String>? _resolveOverridesForAllUsers(
 
 final bookingTextOverridesForLocaleProvider =
     Provider.family<Map<String, String>?, Locale>((ref, locale) {
-      // `locale` mantenuto nel provider per compatibilità con i call site esistenti.
-      locale.toLanguageTag();
       final effectiveLocation = ref.watch(effectiveLocationProvider);
       return _resolveOverridesForAllUsers(
         effectiveLocation?.bookingTextOverrides,
+        locale: locale,
       );
     });
 

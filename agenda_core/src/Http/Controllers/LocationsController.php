@@ -31,6 +31,8 @@ final class LocationsController
         'pet',
         'generic',
     ];
+    private const COUNTRY_PATTERN = '/^[A-Z]{2}$/';
+    private const ALLOWED_BOOKING_DEFAULT_LOCALES = ['it', 'en'];
 
     public function __construct(
         private readonly LocationRepository $locationRepo,
@@ -136,6 +138,7 @@ final class LocationsController
             'longitude' => $row['longitude'] ? (float) $row['longitude'] : null,
             'currency' => $row['currency'],
             'timezone' => $row['timezone'] ?? 'Europe/Rome',
+            'booking_default_locale' => $row['booking_default_locale'],
             'min_booking_notice_hours' => (int) ($row['min_booking_notice_hours'] ?? 1),
             'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
             'allow_customer_choose_staff' => (bool) ($row['allow_customer_choose_staff'] ?? false),
@@ -166,6 +169,8 @@ final class LocationsController
             'city' => $row['city'],
             'phone' => $row['phone'],
             'timezone' => $row['timezone'] ?? 'Europe/Rome',
+            'country' => $row['country'],
+            'booking_default_locale' => $row['booking_default_locale'],
             'min_booking_notice_hours' => (int) ($row['min_booking_notice_hours'] ?? 1),
             'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
             'allow_customer_choose_staff' => (bool) ($row['allow_customer_choose_staff'] ?? false),
@@ -196,6 +201,26 @@ final class LocationsController
         // Validate required fields
         if (empty($body['name'])) {
             return Response::error('Name is required', 'validation_error', 400, $request->traceId);
+        }
+
+        $countryError = null;
+        $country = $this->normalizeCountry($body['country'] ?? null, true, $countryError);
+        if ($countryError !== null) {
+            return Response::error($countryError, 'validation_error', 400, $request->traceId);
+        }
+
+        $timezoneError = null;
+        $timezone = $this->normalizeTimezone($body['timezone'] ?? 'Europe/Rome', true, $timezoneError);
+        if ($timezoneError !== null) {
+            return Response::error($timezoneError, 'validation_error', 400, $request->traceId);
+        }
+        $bookingDefaultLocaleError = null;
+        $bookingDefaultLocale = $this->normalizeBookingDefaultLocale(
+            $body['booking_default_locale'] ?? null,
+            $bookingDefaultLocaleError,
+        );
+        if ($bookingDefaultLocaleError !== null) {
+            return Response::error($bookingDefaultLocaleError, 'validation_error', 400, $request->traceId);
         }
 
         $cancellationHours = null;
@@ -229,9 +254,11 @@ final class LocationsController
 
         $locationId = $this->locationRepo->create($businessId, $body['name'], [
             'address' => $body['address'] ?? null,
+            'country' => $country,
             'phone' => $body['phone'] ?? null,
             'email' => $body['email'] ?? null,
-            'timezone' => $body['timezone'] ?? 'Europe/Rome',
+            'timezone' => $timezone,
+            'booking_default_locale' => $bookingDefaultLocale,
             'min_booking_notice_hours' => $body['min_booking_notice_hours'] ?? 1,
             'max_booking_advance_days' => $body['max_booking_advance_days'] ?? 90,
             'allow_customer_choose_staff' => $body['allow_customer_choose_staff'] ?? false,
@@ -275,9 +302,37 @@ final class LocationsController
             'address' => array_key_exists('address', $body) ? $body['address'] : $location['address'],
             'phone' => array_key_exists('phone', $body) ? $body['phone'] : $location['phone'],
             'email' => array_key_exists('email', $body) ? $body['email'] : $location['email'],
-            'timezone' => $body['timezone'] ?? $location['timezone'],
             'is_active' => array_key_exists('is_active', $body) ? $body['is_active'] : $location['is_active'],
         ];
+
+        if (array_key_exists('country', $body)) {
+            $countryError = null;
+            $country = $this->normalizeCountry($body['country'], true, $countryError);
+            if ($countryError !== null) {
+                return Response::error($countryError, 'validation_error', 400, $request->traceId);
+            }
+            $updateData['country'] = $country;
+        }
+
+        if (array_key_exists('timezone', $body)) {
+            $timezoneError = null;
+            $timezone = $this->normalizeTimezone($body['timezone'], true, $timezoneError);
+            if ($timezoneError !== null) {
+                return Response::error($timezoneError, 'validation_error', 400, $request->traceId);
+            }
+            $updateData['timezone'] = $timezone;
+        }
+        if (array_key_exists('booking_default_locale', $body)) {
+            $bookingDefaultLocaleError = null;
+            $bookingDefaultLocale = $this->normalizeBookingDefaultLocale(
+                $body['booking_default_locale'],
+                $bookingDefaultLocaleError,
+            );
+            if ($bookingDefaultLocaleError !== null) {
+                return Response::error($bookingDefaultLocaleError, 'validation_error', 400, $request->traceId);
+            }
+            $updateData['booking_default_locale'] = $bookingDefaultLocale;
+        }
 
         if (array_key_exists('allow_customer_choose_staff', $body)) {
             $updateData['allow_customer_choose_staff'] = (bool) $body['allow_customer_choose_staff'];
@@ -516,6 +571,64 @@ final class LocationsController
         }
 
         return $encoded;
+    }
+
+    private function normalizeCountry(mixed $raw, bool $required, ?string &$error): ?string
+    {
+        $error = null;
+        $country = strtoupper(trim((string) ($raw ?? '')));
+
+        if ($country === '') {
+            if ($required) {
+                $error = 'country is required';
+            }
+            return null;
+        }
+
+        if (!preg_match(self::COUNTRY_PATTERN, $country)) {
+            $error = 'country must be an ISO 3166-1 alpha-2 code';
+            return null;
+        }
+
+        return $country;
+    }
+
+    private function normalizeTimezone(mixed $raw, bool $required, ?string &$error): ?string
+    {
+        $error = null;
+        $timezone = trim((string) ($raw ?? ''));
+
+        if ($timezone === '') {
+            if ($required) {
+                $error = 'timezone is required';
+            }
+            return null;
+        }
+
+        try {
+            new \DateTimeZone($timezone);
+        } catch (\Throwable) {
+            $error = 'timezone must be a valid IANA timezone';
+            return null;
+        }
+
+        return $timezone;
+    }
+
+    private function normalizeBookingDefaultLocale(mixed $raw, ?string &$error): ?string
+    {
+        $error = null;
+        $locale = strtolower(trim((string) ($raw ?? '')));
+        if ($locale === '') {
+            return null;
+        }
+
+        if (!in_array($locale, self::ALLOWED_BOOKING_DEFAULT_LOCALES, true)) {
+            $error = 'booking_default_locale must be one of: it, en';
+            return null;
+        }
+
+        return $locale;
     }
 
     private function normalizeStaffIconKey(mixed $value, bool $strict = false): ?string

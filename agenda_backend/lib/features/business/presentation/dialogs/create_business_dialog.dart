@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/models/business.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/network_providers.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../agenda/providers/business_providers.dart';
+import '../../../agenda/providers/tenant_time_provider.dart';
+import '../../domain/public_holidays.dart';
 import '../../providers/business_providers.dart';
+import '../../providers/locations_providers.dart';
 
 /// Dialog per creare un nuovo business (solo superadmin).
 /// Richiede l'email dell'admin che riceverà una mail di benvenuto.
@@ -18,6 +23,9 @@ class CreateBusinessDialog extends ConsumerStatefulWidget {
 }
 
 class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
+  static const String _defaultBusinessCountryCode = 'IT';
+  static const String _defaultBusinessTimezone = 'Europe/Rome';
+
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _slugController = TextEditingController();
@@ -80,7 +88,7 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
     try {
       final repository = ref.read(businessRepositoryProvider);
 
-      await repository.createBusiness(
+      final createdBusiness = await repository.createBusiness(
         name: _nameController.text.trim(),
         slug: _slugController.text.trim(),
         adminEmail: _adminEmailController.text.trim().isEmpty
@@ -97,7 +105,10 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
             ? null
             : _onlineBookingsNotificationEmailController.text.trim(),
         serviceColorPalette: _selectedServiceColorPalette,
+        timezone: _defaultBusinessTimezone,
       );
+
+      await _importNationalHolidaysForNewBusiness(createdBusiness);
 
       // Invalida il provider per ricaricare la lista
       ref.invalidate(businessesProvider);
@@ -118,6 +129,77 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
         _error = e.toString();
         _isLoading = false;
       });
+    }
+  }
+
+  Future<void> _importNationalHolidaysForNewBusiness(Business business) async {
+    final locationsRepository = ref.read(locationsRepositoryProvider);
+    final apiClient = ref.read(apiClientProvider);
+    final currentYear = ref.read(tenantTodayProvider).year;
+    final years = [currentYear, currentYear + 1, currentYear + 2];
+
+    final locations = await locationsRepository.getByBusinessId(business.id);
+    if (locations.isEmpty) return;
+
+    final locationIdsByCountry = <String, List<int>>{};
+    for (final location in locations) {
+      if (!location.isActive) continue;
+      final countryCode =
+          PublicHolidaysFactory.normalizeCountryCode(location.country) ??
+          _defaultBusinessCountryCode;
+      locationIdsByCountry.putIfAbsent(countryCode, () => <int>[]).add(
+        location.id,
+      );
+    }
+    if (locationIdsByCountry.isEmpty) return;
+
+    for (final entry in locationIdsByCountry.entries) {
+      final countryCode = entry.key;
+      final locationIds = entry.value;
+      if (locationIds.isEmpty) continue;
+
+      List<PublicHoliday> holidays;
+      try {
+        holidays = await PublicHolidaysFactory.fetchHolidaysFromApi(
+          countryCode: countryCode,
+          years: years,
+        );
+      } catch (_) {
+        holidays = const [];
+      }
+
+      if (holidays.isEmpty) {
+        final localProvider = PublicHolidaysFactory.getProvider(countryCode);
+        if (localProvider == null) continue;
+        holidays = [
+          for (final year in years) ...localProvider.getHolidays(year),
+        ]..sort((a, b) => a.date.compareTo(b.date));
+      }
+
+      // Una chiusura per giorno: evita overlap nello stesso giorno.
+      final uniqueHolidaysByDate = <DateTime, PublicHoliday>{};
+      for (final holiday in holidays) {
+        final dateOnly = DateTime(
+          holiday.date.year,
+          holiday.date.month,
+          holiday.date.day,
+        );
+        uniqueHolidaysByDate.putIfAbsent(dateOnly, () => holiday);
+      }
+
+      for (final holiday in uniqueHolidaysByDate.values) {
+        try {
+          await apiClient.createClosure(
+            businessId: business.id,
+            locationIds: locationIds,
+            startDate: holiday.date,
+            endDate: holiday.date,
+            reason: holiday.name,
+          );
+        } catch (_) {
+          // Non bloccare la creazione business se import singola festività fallisce.
+        }
+      }
     }
   }
 
