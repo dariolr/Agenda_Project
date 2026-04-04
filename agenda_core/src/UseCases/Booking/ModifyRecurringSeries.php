@@ -9,7 +9,9 @@ use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\RecurrenceRuleRepository;
 use Agenda\Infrastructure\Repositories\StaffRepository;
 use Agenda\Infrastructure\Repositories\BookingAuditRepository;
+use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Domain\Exceptions\BookingException;
+use Agenda\UseCases\Notifications\QueueBookingReminder;
 use DateTimeImmutable;
 
 /**
@@ -32,6 +34,7 @@ final class ModifyRecurringSeries
         private readonly RecurrenceRuleRepository $recurrenceRuleRepository,
         private readonly StaffRepository $staffRepository,
         private readonly ?BookingAuditRepository $auditRepository = null,
+        private readonly ?NotificationRepository $notificationRepository = null,
     ) {}
 
     /**
@@ -180,6 +183,11 @@ final class ModifyRecurringSeries
                     }
                 }
 
+                // If time changed for recurring instances, refresh reminder payload/schedule.
+                if ($newTime !== null) {
+                    $this->refreshBookingReminder($bookingId);
+                }
+
                 $modifiedCount++;
             }
 
@@ -263,6 +271,21 @@ final class ModifyRecurringSeries
                 $newEnd->format('Y-m-d H:i:s'),
                 $item['id'],
             ]);
+        }
+    }
+
+    private function refreshBookingReminder(int $bookingId): void
+    {
+        if ($this->notificationRepository === null) {
+            return;
+        }
+
+        try {
+            $reminderUseCase = new QueueBookingReminder($this->db, $this->notificationRepository);
+            $reminderUseCase->refreshReminder($bookingId);
+        } catch (\Throwable $e) {
+            // Keep series modification non-blocking on reminder errors.
+            error_log("Failed to refresh reminder for recurring booking {$bookingId}: " . $e->getMessage());
         }
     }
 }

@@ -13,6 +13,7 @@ use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\UseCases\Notifications\QueueBookingRescheduled;
+use Agenda\UseCases\Notifications\QueueBookingReminder;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -147,6 +148,9 @@ final class UpdateBooking
                 $oldStartTime,
                 isset($data['locale']) ? (string) $data['locale'] : null
             );
+
+            // Keep reminder aligned with the new booking start after reschedule.
+            $this->refreshBookingReminder($bookingId);
 
             return $updatedBooking;
         }
@@ -441,6 +445,21 @@ final class UpdateBooking
         } catch (\Throwable $e) {
             // Non bloccare l'operazione per errori nelle notifiche
             error_log("Failed to queue reschedule notification for booking {$booking['id']}: " . $e->getMessage());
+        }
+    }
+
+    private function refreshBookingReminder(int $bookingId): void
+    {
+        if ($this->notificationRepo === null) {
+            return;
+        }
+
+        try {
+            $reminderUseCase = new QueueBookingReminder($this->db, $this->notificationRepo);
+            $reminderUseCase->refreshReminder($bookingId);
+        } catch (\Throwable $e) {
+            // Non bloccare l'operazione principale per errori reminder.
+            error_log("Failed to refresh reminder for booking {$bookingId}: " . $e->getMessage());
         }
     }
 
