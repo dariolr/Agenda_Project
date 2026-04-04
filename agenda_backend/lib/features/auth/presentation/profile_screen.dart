@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../app/providers/app_locale_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/network_providers.dart';
@@ -162,6 +163,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     final user = authState.user;
     final businessOwner = ref.watch(businessOwnerProvider);
     final isOwnerMode = businessOwner != null;
+    final localeNotifier = ref.read(appLocaleProvider.notifier);
+    final selectedLocaleCode =
+        ref.watch(appLocaleProvider)?.languageCode ??
+        Localizations.localeOf(context).languageCode;
 
     // Popola i controller quando l'owner cambia (primo caricamento o cambio business)
     if (isOwnerMode && businessOwner.userId != _initializedOwnerUserId) {
@@ -427,6 +432,43 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       const SizedBox(height: 36),
 
                       // Azioni account
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        value: selectedLocaleCode == 'en' ? 'en' : 'it',
+                        decoration: InputDecoration(
+                          labelText: l10n.profileLanguageLabel,
+                          prefixIcon: const Icon(Icons.language_outlined),
+                        ),
+                        items: [
+                          DropdownMenuItem(
+                            value: 'it',
+                            child: Text(l10n.profileLanguageItalian),
+                          ),
+                          DropdownMenuItem(
+                            value: 'en',
+                            child: Text(l10n.profileLanguageEnglish),
+                          ),
+                        ],
+                        onChanged: _isLoading
+                            ? null
+                            : (value) {
+                                if (value == null) return;
+                                localeNotifier.setLocale(Locale(value));
+                              },
+                      ),
+                      const SizedBox(height: 8),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: _isLoading
+                              ? null
+                              : () {
+                                  localeNotifier.clearLocalePreference();
+                                },
+                          child: Text(l10n.profileLanguageUseSystem),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                       _ActionTile(
                         icon: Icons.lock_outline,
                         title: l10n.profileChangePassword,

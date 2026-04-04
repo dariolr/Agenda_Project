@@ -203,10 +203,10 @@ class _UserMenuButton extends ConsumerWidget {
         ),
       ],
       padding: EdgeInsets.zero,
-      splashRadius: 24,
+      splashRadius: 26,
       icon: Container(
-        width: 36,
-        height: 36,
+        width: 44,
+        height: 44,
         decoration: BoxDecoration(
           color: colorScheme.primary.withOpacity(0.1),
           shape: BoxShape.circle,
@@ -214,9 +214,9 @@ class _UserMenuButton extends ConsumerWidget {
         child: Center(
           child: Text(
             initials,
-            style: theme.textTheme.labelMedium?.copyWith(
+            style: theme.textTheme.titleSmall?.copyWith(
               color: colorScheme.primary,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
             ),
           ),
         ),

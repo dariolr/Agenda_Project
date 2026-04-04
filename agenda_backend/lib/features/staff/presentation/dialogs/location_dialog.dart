@@ -50,6 +50,9 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
   final _emailController = TextEditingController();
+  String _selectedCountryCode = 'IT';
+  String _selectedTimezone = 'Europe/Rome';
+  String? _selectedBookingDefaultLocale;
   final Map<String, TextEditingController> _nomenclatureControllers = {};
   bool _isActive = true;
   int _minBookingNoticeHours = 1;
@@ -125,6 +128,94 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     );
   }
 
+  String _fallbackTimezoneFromBusiness() {
+    final businessTimezone = ref.read(currentBusinessProvider).timezone?.trim();
+    if (businessTimezone != null && businessTimezone.isNotEmpty) {
+      return businessTimezone;
+    }
+
+    final locations = ref.read(locationsProvider);
+    for (final location in locations) {
+      final timezone = location.timezone.trim();
+      if (timezone.isNotEmpty) {
+        return timezone;
+      }
+    }
+
+    return 'Europe/Rome';
+  }
+
+  String _businessTimezoneOrDefault() {
+    final tz = ref.read(currentBusinessProvider).timezone?.trim();
+    if (tz != null && tz.isNotEmpty) {
+      return tz;
+    }
+    return 'Europe/Rome';
+  }
+
+  String? _inferCountryFromTimezone(String timezone) {
+    return switch (timezone.trim()) {
+      'Europe/Rome' => 'IT',
+      'Europe/Paris' => 'FR',
+      'Europe/Madrid' || 'Atlantic/Canary' => 'ES',
+      'Europe/Berlin' => 'DE',
+      'Europe/London' => 'GB',
+      'Europe/Zurich' => 'CH',
+      'Europe/Vienna' => 'AT',
+      'Europe/Lisbon' || 'Atlantic/Azores' || 'Atlantic/Madeira' => 'PT',
+      'Europe/Amsterdam' => 'NL',
+      'Europe/Brussels' => 'BE',
+      'America/New_York' ||
+      'America/Chicago' ||
+      'America/Denver' ||
+      'America/Los_Angeles' ||
+      'America/Anchorage' ||
+      'America/Adak' ||
+      'Pacific/Honolulu' => 'US',
+      _ => null,
+    };
+  }
+
+  String _fallbackCountryFromBusiness() {
+    final locations = ref.read(locationsProvider);
+    for (final location in locations) {
+      final country = location.country?.trim().toUpperCase();
+      if (country != null && country.isNotEmpty) {
+        return country;
+      }
+    }
+
+    final inferred = _inferCountryFromTimezone(_fallbackTimezoneFromBusiness());
+    return inferred ?? 'IT';
+  }
+
+  String _businessCountryOrDefault() {
+    final inferred = _inferCountryFromTimezone(_businessTimezoneOrDefault());
+    return inferred ?? 'IT';
+  }
+
+  List<String> _timezonesForCountry(String countryCode) {
+    return _countryTimezones[countryCode] ?? const ['Europe/Rome'];
+  }
+
+  String _countryLabel(BuildContext context, String countryCode) {
+    final l10n = context.l10n;
+    return switch (countryCode) {
+      'IT' => l10n.teamLocationCountryItaly,
+      'FR' => l10n.teamLocationCountryFrance,
+      'ES' => l10n.teamLocationCountrySpain,
+      'DE' => l10n.teamLocationCountryGermany,
+      'GB' => l10n.teamLocationCountryUnitedKingdom,
+      'US' => l10n.teamLocationCountryUnitedStates,
+      'CH' => l10n.teamLocationCountrySwitzerland,
+      'AT' => l10n.teamLocationCountryAustria,
+      'PT' => l10n.teamLocationCountryPortugal,
+      'NL' => l10n.teamLocationCountryNetherlands,
+      'BE' => l10n.teamLocationCountryBelgium,
+      _ => countryCode,
+    };
+  }
+
   static final List<int> _onlineBookingSlotIntervalOptions = [
     for (int minutes = 5; minutes <= 120; minutes += 5) minutes,
   ];
@@ -177,6 +268,27 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     'pet',
     'generic',
   ];
+  static const Map<String, List<String>> _countryTimezones = {
+    'IT': ['Europe/Rome'],
+    'FR': ['Europe/Paris'],
+    'ES': ['Europe/Madrid', 'Atlantic/Canary'],
+    'DE': ['Europe/Berlin'],
+    'GB': ['Europe/London'],
+    'US': [
+      'America/New_York',
+      'America/Chicago',
+      'America/Denver',
+      'America/Los_Angeles',
+      'America/Anchorage',
+      'America/Adak',
+      'Pacific/Honolulu',
+    ],
+    'CH': ['Europe/Zurich'],
+    'AT': ['Europe/Vienna'],
+    'PT': ['Europe/Lisbon', 'Atlantic/Azores', 'Atlantic/Madeira'],
+    'NL': ['Europe/Amsterdam'],
+    'BE': ['Europe/Brussels'],
+  };
 
   IconData _staffIconForKey(String key) {
     switch (key) {
@@ -221,6 +333,28 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     if (widget.initial != null) {
       _nameController.text = widget.initial!.name;
       _addressController.text = widget.initial!.address ?? '';
+      _selectedCountryCode =
+          (widget.initial!.country?.trim().isNotEmpty ?? false)
+          ? widget.initial!.country!.trim().toUpperCase()
+          : _fallbackCountryFromBusiness();
+      _selectedTimezone = widget.initial!.timezone.trim().isNotEmpty
+          ? widget.initial!.timezone.trim()
+          : _fallbackTimezoneFromBusiness();
+      final allowedTimezones = _timezonesForCountry(_selectedCountryCode);
+      if (!allowedTimezones.contains(_selectedTimezone)) {
+        _selectedTimezone = allowedTimezones.first;
+      }
+      final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
+      if (!isSuperadmin) {
+        _selectedTimezone = _businessTimezoneOrDefault();
+        _selectedCountryCode = _businessCountryOrDefault();
+      }
+      final initialBookingLocale =
+          widget.initial!.bookingDefaultLocale?.trim().toLowerCase();
+      _selectedBookingDefaultLocale =
+          (initialBookingLocale == 'it' || initialBookingLocale == 'en')
+          ? initialBookingLocale
+          : null;
       _emailController.text = widget.initial!.email ?? '';
       final defaultMap = widget.initial!.bookingTextOverrides?['default'];
       for (final key in _nomenclatureFieldOrder) {
@@ -266,6 +400,28 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       }
 
       if (lastLocation != null) {
+        _selectedCountryCode =
+            (lastLocation.country?.trim().isNotEmpty ?? false)
+            ? lastLocation.country!.trim().toUpperCase()
+            : _fallbackCountryFromBusiness();
+        _selectedTimezone = lastLocation.timezone.trim().isNotEmpty
+            ? lastLocation.timezone.trim()
+            : _fallbackTimezoneFromBusiness();
+        final allowedTimezones = _timezonesForCountry(_selectedCountryCode);
+        if (!allowedTimezones.contains(_selectedTimezone)) {
+          _selectedTimezone = allowedTimezones.first;
+        }
+        final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
+        if (!isSuperadmin) {
+          _selectedTimezone = _businessTimezoneOrDefault();
+          _selectedCountryCode = _businessCountryOrDefault();
+        }
+        final lastBookingLocale =
+            lastLocation.bookingDefaultLocale?.trim().toLowerCase();
+        _selectedBookingDefaultLocale =
+            (lastBookingLocale == 'it' || lastBookingLocale == 'en')
+            ? lastBookingLocale
+            : null;
         _isActive = lastLocation.isActive;
         _minBookingNoticeHours = lastLocation.minBookingNoticeHours;
         _maxBookingAdvanceDays = lastLocation.maxBookingAdvanceDays;
@@ -276,6 +432,19 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
             lastLocation.onlineBookingSlotIntervalMinutes;
         _slotDisplayMode = lastLocation.slotDisplayMode;
         _minGapMinutes = lastLocation.minGapMinutes;
+      } else {
+        _selectedCountryCode = _fallbackCountryFromBusiness();
+        _selectedTimezone = _fallbackTimezoneFromBusiness();
+        final allowedTimezones = _timezonesForCountry(_selectedCountryCode);
+        if (!allowedTimezones.contains(_selectedTimezone)) {
+          _selectedTimezone = allowedTimezones.first;
+        }
+        final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
+        if (!isSuperadmin) {
+          _selectedTimezone = _businessTimezoneOrDefault();
+          _selectedCountryCode = _businessCountryOrDefault();
+        }
+        _selectedBookingDefaultLocale = null;
       }
     }
   }
@@ -359,6 +528,82 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       ),
     );
 
+    final countryField = LabeledFormField(
+      label: l10n.teamLocationCountryLabel,
+      child: DropdownButtonFormField<String>(
+        value: _selectedCountryCode,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          isDense: true,
+        ),
+        items: _countryTimezones.keys
+            .map(
+              (code) => DropdownMenuItem(
+                value: code,
+                child: Text('${_countryLabel(context, code)} ($code)'),
+              ),
+            )
+            .toList(),
+        onChanged: (value) {
+          if (value == null) return;
+          setState(() {
+            _selectedCountryCode = value;
+            final allowedTimezones = _timezonesForCountry(value);
+            if (!allowedTimezones.contains(_selectedTimezone)) {
+              _selectedTimezone = allowedTimezones.first;
+            }
+          });
+        },
+      ),
+    );
+
+    final timezoneField = LabeledFormField(
+      label: l10n.teamLocationTimezoneLabel,
+      child: DropdownButtonFormField<String>(
+        value: _selectedTimezone,
+        decoration: const InputDecoration(
+          border: OutlineInputBorder(),
+          isDense: true,
+        ),
+        items: _timezonesForCountry(_selectedCountryCode)
+            .map((tz) => DropdownMenuItem(value: tz, child: Text(tz)))
+            .toList(),
+        onChanged: (value) {
+          if (value == null) return;
+          setState(() => _selectedTimezone = value);
+        },
+      ),
+    );
+
+    final bookingDefaultLocaleField = LabeledFormField(
+      label: l10n.teamLocationBookingDefaultLocaleLabel,
+      child: DropdownButtonFormField<String?>(
+        value: _selectedBookingDefaultLocale,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          isDense: true,
+          helperText: l10n.teamLocationBookingDefaultLocaleHint,
+        ),
+        items: [
+          DropdownMenuItem<String?>(
+            value: null,
+            child: Text(l10n.teamLocationBookingDefaultLocaleAuto),
+          ),
+          DropdownMenuItem<String?>(
+            value: 'it',
+            child: Text(l10n.teamLocationBookingDefaultLocaleItalian),
+          ),
+          DropdownMenuItem<String?>(
+            value: 'en',
+            child: Text(l10n.teamLocationBookingDefaultLocaleEnglish),
+          ),
+        ],
+        onChanged: (value) {
+          setState(() => _selectedBookingDefaultLocale = value);
+        },
+      ),
+    );
+
     final emailField = LabeledFormField(
       label: locationEmailLabel,
       child: TextFormField(
@@ -390,6 +635,12 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           nameField,
           const SizedBox(height: AppSpacing.formRowSpacing),
           addressField,
+          if (isSuperadmin) ...[
+            const SizedBox(height: AppSpacing.formRowSpacing),
+            countryField,
+            const SizedBox(height: AppSpacing.formRowSpacing),
+            timezoneField,
+          ],
           const SizedBox(height: AppSpacing.formRowSpacing),
           emailField,
           const SizedBox(height: AppSpacing.formRowSpacing),
@@ -413,6 +664,10 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
             contentPadding: EdgeInsets.zero,
           ),
           if (_isActive) ...[
+            if (isSuperadmin) ...[
+              const SizedBox(height: AppSpacing.formRowSpacing),
+              bookingDefaultLocaleField,
+            ],
             const SizedBox(height: AppSpacing.formRowSpacing),
             // Sezione Limiti Prenotazione Online
             Text(
@@ -861,8 +1116,19 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     final notifier = ref.read(locationsProvider.notifier);
     final name = _nameController.text.trim();
     final address = _addressController.text.trim();
-    final email = _emailController.text.trim();
     final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
+    final rawCountry = _selectedCountryCode.trim().toUpperCase();
+    final country = isSuperadmin
+        ? (rawCountry.isEmpty ? _fallbackCountryFromBusiness() : rawCountry)
+        : _businessCountryOrDefault();
+    final rawTimezone = _selectedTimezone.trim();
+    final timezone = isSuperadmin
+        ? (rawTimezone.isEmpty ? _fallbackTimezoneFromBusiness() : rawTimezone)
+        : _businessTimezoneOrDefault();
+    final bookingDefaultLocale = isSuperadmin
+        ? _selectedBookingDefaultLocale?.trim().toLowerCase()
+        : null;
+    final email = _emailController.text.trim();
     final bookingTextOverrides = isSuperadmin
         ? _buildBookingTextOverrides(context.l10n)
         : null;
@@ -878,7 +1144,10 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           locationId: widget.initial!.id,
           name: name,
           address: address.isEmpty ? null : address,
+          country: country,
           email: email.isEmpty ? null : email,
+          timezone: timezone,
+          bookingDefaultLocale: bookingDefaultLocale,
           isActive: _isActive,
           minBookingNoticeHours: _minBookingNoticeHours,
           maxBookingAdvanceDays: _maxBookingAdvanceDays,
@@ -895,7 +1164,10 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
         await notifier.create(
           name: name,
           address: address.isEmpty ? null : address,
+          country: country,
           email: email.isEmpty ? null : email,
+          timezone: timezone,
+          bookingDefaultLocale: bookingDefaultLocale,
           isActive: _isActive,
           minBookingNoticeHours: _minBookingNoticeHours,
           maxBookingAdvanceDays: _maxBookingAdvanceDays,
@@ -1014,7 +1286,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
 
   String _resolveDefaultLanguageCode(BuildContext context) {
     // Fonte primaria: locale della location (derivato dal country code).
-    final country = widget.initial?.country?.trim().toUpperCase();
+    final country = _selectedCountryCode.trim().toUpperCase();
     final locationLanguage = switch (country) {
       'IT' || 'SM' || 'VA' => 'it',
       'US' || 'GB' || 'IE' || 'AU' || 'CA' || 'NZ' => 'en',

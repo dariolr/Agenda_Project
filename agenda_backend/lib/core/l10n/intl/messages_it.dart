@@ -1073,10 +1073,19 @@ class MessageLookup extends MessageLookupByLibrary {
       "A partire da oggi",
     ),
     "closuresImportHolidays": MessageLookupByLibrary.simpleMessage(
-      "Importa festività",
+      "Importa festività nazionali",
     ),
     "closuresImportHolidaysAction": m17,
     "closuresImportHolidaysAlreadyAdded": m18,
+    "closuresImportHolidaysCopyLinkAction":
+        MessageLookupByLibrary.simpleMessage("Copia link"),
+    "closuresImportHolidaysExternalSourceInfo":
+        MessageLookupByLibrary.simpleMessage(
+          "Le festività sono determinate da un servizio esterno: Nager.Date",
+        ),
+    "closuresImportHolidaysLinkCopied": MessageLookupByLibrary.simpleMessage(
+      "Link copiato",
+    ),
     "closuresImportHolidaysList": MessageLookupByLibrary.simpleMessage(
       "Seleziona le festività da importare:",
     ),
@@ -1811,6 +1820,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "profileEmailChangeWarning": MessageLookupByLibrary.simpleMessage(
       "Attenzione: cambiando email dovrai usarla per il login",
     ),
+    "profileLanguageEnglish": MessageLookupByLibrary.simpleMessage("English"),
+    "profileLanguageItalian": MessageLookupByLibrary.simpleMessage("Italiano"),
+    "profileLanguageLabel": MessageLookupByLibrary.simpleMessage(
+      "Lingua gestionale",
+    ),
+    "profileLanguageUseSystem": MessageLookupByLibrary.simpleMessage(
+      "Usa lingua di sistema",
+    ),
     "profileSwitchBusiness": MessageLookupByLibrary.simpleMessage(
       "Cambia business",
     ),
@@ -2401,6 +2418,19 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage(
           "Consenti ai clienti di scegliere il fornitore dei servizi",
         ),
+    "teamLocationBookingDefaultLocaleAuto":
+        MessageLookupByLibrary.simpleMessage("Automatico"),
+    "teamLocationBookingDefaultLocaleEnglish":
+        MessageLookupByLibrary.simpleMessage("English"),
+    "teamLocationBookingDefaultLocaleHint": MessageLookupByLibrary.simpleMessage(
+      "Imposta la lingua iniziale del frontend prenotazioni. Non modifica timezone o lingua del gestionale.",
+    ),
+    "teamLocationBookingDefaultLocaleItalian":
+        MessageLookupByLibrary.simpleMessage("Italiano"),
+    "teamLocationBookingDefaultLocaleLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Lingua predefinita prenotazioni online",
+        ),
     "teamLocationBookingLimitsSection": MessageLookupByLibrary.simpleMessage(
       "Limiti prenotazione online",
     ),
@@ -2437,6 +2467,37 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationCancellationHoursUseBusiness":
         MessageLookupByLibrary.simpleMessage("Usa policy del business"),
     "teamLocationCancellationHoursUseBusinessWithValue": m73,
+    "teamLocationCountryAustria": MessageLookupByLibrary.simpleMessage(
+      "Austria",
+    ),
+    "teamLocationCountryBelgium": MessageLookupByLibrary.simpleMessage(
+      "Belgio",
+    ),
+    "teamLocationCountryFrance": MessageLookupByLibrary.simpleMessage(
+      "Francia",
+    ),
+    "teamLocationCountryGermany": MessageLookupByLibrary.simpleMessage(
+      "Germania",
+    ),
+    "teamLocationCountryHint": MessageLookupByLibrary.simpleMessage("es. IT"),
+    "teamLocationCountryItaly": MessageLookupByLibrary.simpleMessage("Italia"),
+    "teamLocationCountryLabel": MessageLookupByLibrary.simpleMessage("Paese"),
+    "teamLocationCountryNetherlands": MessageLookupByLibrary.simpleMessage(
+      "Paesi Bassi",
+    ),
+    "teamLocationCountryPortugal": MessageLookupByLibrary.simpleMessage(
+      "Portogallo",
+    ),
+    "teamLocationCountrySpain": MessageLookupByLibrary.simpleMessage("Spagna"),
+    "teamLocationCountrySwitzerland": MessageLookupByLibrary.simpleMessage(
+      "Svizzera",
+    ),
+    "teamLocationCountryUnitedKingdom": MessageLookupByLibrary.simpleMessage(
+      "Regno Unito",
+    ),
+    "teamLocationCountryUnitedStates": MessageLookupByLibrary.simpleMessage(
+      "Stati Uniti",
+    ),
     "teamLocationDays": m74,
     "teamLocationEmailHint": MessageLookupByLibrary.simpleMessage(
       "Email per notifiche ai clienti",
@@ -2557,6 +2618,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "teamLocationStaffIconKeyLabel": MessageLookupByLibrary.simpleMessage(
       "Icona selezione fornitore dei servizi",
+    ),
+    "teamLocationTimezoneHint": MessageLookupByLibrary.simpleMessage(
+      "es. Europe/Rome",
+    ),
+    "teamLocationTimezoneLabel": MessageLookupByLibrary.simpleMessage(
+      "Fuso orario",
     ),
     "teamLocationsLabel": MessageLookupByLibrary.simpleMessage("Sedi"),
     "teamNewLocationTitle": MessageLookupByLibrary.simpleMessage("Nuova sede"),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -6,6 +7,7 @@ import '/core/l10n/l10_extension.dart';
 import '/core/models/location.dart';
 import '/core/models/location_closure.dart';
 import '/core/widgets/app_buttons.dart';
+import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/tenant_time_provider.dart';
 import '/features/business/domain/public_holidays.dart';
 import '/features/business/providers/location_closures_provider.dart';
@@ -28,6 +30,7 @@ class ImportHolidaysDialog extends ConsumerStatefulWidget {
   }) {
     return showDialog<int>(
       context: context,
+      barrierDismissible: false,
       builder: (context) => ImportHolidaysDialog(
         locations: locations,
         existingClosures: existingClosures,
@@ -41,44 +44,81 @@ class ImportHolidaysDialog extends ConsumerStatefulWidget {
 }
 
 class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
-  late int _selectedYear;
+  static const int _minYearCount = 1;
+  static const int _maxYearCount = 10;
+  static const String _holidaysSourceUrl = 'https://date.nager.at';
+
+  late int _baseYear;
+  int _selectedYearCount = 1;
   final Set<int> _selectedLocationIds = {};
   final Set<int> _selectedHolidayIndices = {};
   bool _isSaving = false;
+  bool _isLoadingHolidays = false;
+  int _holidaysRequestId = 0;
 
-  late List<PublicHoliday> _holidays;
-  late PublicHolidaysProvider? _holidaysProvider;
+  List<PublicHoliday> _holidays = const [];
+  PublicHolidaysProvider? _localHolidaysProvider;
+  String? _countryCode;
 
   @override
   void initState() {
     super.initState();
-    _selectedYear = ref.read(tenantTodayProvider).year;
+    _baseYear = ref.read(tenantTodayProvider).year;
 
     // Seleziona tutte le location di default
     _selectedLocationIds.addAll(widget.locations.map((l) => l.id));
 
     // Determina il provider di festività dal paese della prima location
     final country = widget.locations.firstOrNull?.country;
-    _holidaysProvider = PublicHolidaysFactory.getProvider(country);
+    _countryCode = PublicHolidaysFactory.normalizeCountryCode(country);
+    _localHolidaysProvider = PublicHolidaysFactory.getProvider(country);
 
     _loadHolidays();
   }
 
-  void _loadHolidays() {
-    if (_holidaysProvider == null) {
-      _holidays = [];
-      return;
+  Future<void> _loadHolidays() async {
+    final countryCode = _countryCode;
+    final localHolidaysProvider = _localHolidaysProvider;
+    final years = List<int>.generate(
+      _selectedYearCount,
+      (index) => _baseYear + index,
+    );
+
+    final requestId = ++_holidaysRequestId;
+    if (mounted) {
+      setState(() => _isLoadingHolidays = true);
     }
 
-    _holidays = _holidaysProvider!.getHolidays(_selectedYear);
-
-    // Seleziona tutte le festività non ancora presenti
-    _selectedHolidayIndices.clear();
-    for (var i = 0; i < _holidays.length; i++) {
-      if (!_isHolidayAlreadyAdded(_holidays[i])) {
-        _selectedHolidayIndices.add(i);
+    var loadedHolidays = <PublicHoliday>[];
+    if (countryCode != null) {
+      try {
+        loadedHolidays = await PublicHolidaysFactory.fetchHolidaysFromApi(
+          countryCode: countryCode,
+          years: years,
+        );
+      } catch (_) {
+        // Fallback locale sotto.
       }
     }
+
+    if (loadedHolidays.isEmpty && localHolidaysProvider != null) {
+      loadedHolidays = [
+        for (final year in years) ...localHolidaysProvider.getHolidays(year),
+      ]..sort((a, b) => a.date.compareTo(b.date));
+    }
+
+    if (!mounted || requestId != _holidaysRequestId) return;
+
+    setState(() {
+      _holidays = loadedHolidays;
+      _selectedHolidayIndices.clear();
+      for (var i = 0; i < _holidays.length; i++) {
+        if (!_isHolidayAlreadyAdded(_holidays[i])) {
+          _selectedHolidayIndices.add(i);
+        }
+      }
+      _isLoadingHolidays = false;
+    });
   }
 
   bool _isHolidayAlreadyAdded(PublicHoliday holiday) {
@@ -134,11 +174,23 @@ class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
     } catch (e) {
       if (mounted) {
         setState(() => _isSaving = false);
-        ScaffoldMessenger.of(
+        await FeedbackDialog.showError(
           context,
-        ).showSnackBar(SnackBar(content: Text(e.toString())));
+          title: context.l10n.errorTitle,
+          message: e.toString(),
+        );
       }
     }
+  }
+
+  Future<void> _copySourceWebsiteLink() async {
+    await Clipboard.setData(const ClipboardData(text: _holidaysSourceUrl));
+    if (!mounted) return;
+    await FeedbackDialog.showSuccess(
+      context,
+      title: context.l10n.closuresImportHolidaysLinkCopied,
+      message: '',
+    );
   }
 
   @override
@@ -146,9 +198,9 @@ class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final currentYear = ref.watch(tenantTodayProvider).year;
+    final endYear = _baseYear + _selectedYearCount - 1;
 
-    if (_holidaysProvider == null) {
+    if (_countryCode == null && _localHolidaysProvider == null) {
       return AlertDialog(
         title: Text(l10n.closuresImportHolidaysTitle),
         content: Text(l10n.closuresImportHolidaysUnsupportedCountry),
@@ -161,14 +213,18 @@ class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
       );
     }
 
-    final dateFormat = DateFormat('EEEE d MMMM', 'it');
+    final dateFormat = DateFormat('EEEE d MMMM y', 'it');
     final alreadyAddedCount = _holidays.where(_isHolidayAlreadyAdded).length;
 
-    return AlertDialog(
-      title: Text(l10n.closuresImportHolidaysTitle),
-      content: SizedBox(
-        width: 500,
-        child: Column(
+    return PopScope(
+      canPop: !_isSaving,
+      child: AlertDialog(
+        title: Text(l10n.closuresImportHolidaysTitle),
+        content: AbsorbPointer(
+          absorbing: _isSaving,
+          child: SizedBox(
+            width: 500,
+            child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -177,46 +233,69 @@ class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
               children: [
                 Text(l10n.closuresImportHolidaysYear),
                 const SizedBox(width: 16),
-                // Chip per anno corrente
-                ChoiceChip(
-                  label: Text('$currentYear'),
-                  selected: _selectedYear == currentYear,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        _selectedYear = currentYear;
-                        _loadHolidays();
-                      });
-                    }
-                  },
+                IconButton(
+                  onPressed:
+                      _isLoadingHolidays ||
+                          _selectedYearCount <= _minYearCount
+                      ? null
+                      : () {
+                          setState(() {
+                            _selectedYearCount--;
+                          });
+                          _loadHolidays();
+                        },
+                  icon: const Icon(Icons.remove_circle_outline),
                 ),
-                const SizedBox(width: 8),
-                // Chip per anno successivo
-                ChoiceChip(
-                  label: Text('${currentYear + 1}'),
-                  selected: _selectedYear == currentYear + 1,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        _selectedYear = currentYear + 1;
-                        _loadHolidays();
-                      });
-                    }
-                  },
+                Text(
+                  '$_selectedYearCount',
+                  style: theme.textTheme.titleMedium,
                 ),
-                const SizedBox(width: 8),
-                // Chip per anno +2
-                ChoiceChip(
-                  label: Text('${currentYear + 2}'),
-                  selected: _selectedYear == currentYear + 2,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() {
-                        _selectedYear = currentYear + 2;
-                        _loadHolidays();
-                      });
-                    }
-                  },
+                IconButton(
+                  onPressed:
+                      _isLoadingHolidays ||
+                          _selectedYearCount >= _maxYearCount
+                      ? null
+                      : () {
+                          setState(() {
+                            _selectedYearCount++;
+                          });
+                          _loadHolidays();
+                        },
+                  icon: const Icon(Icons.add_circle_outline),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    endYear == _baseYear
+                        ? '$_baseYear'
+                        : '$_baseYear - $endYear',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              l10n.closuresImportHolidaysExternalSourceInfo,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  _holidaysSourceUrl,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.primary,
+                  ),
+                ),
+                IconButton(
+                  onPressed: _isSaving ? null : _copySourceWebsiteLink,
+                  icon: const Icon(Icons.copy_outlined, size: 18),
                 ),
               ],
             ),
@@ -244,8 +323,8 @@ class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
                         } else {
                           _selectedLocationIds.remove(location.id);
                         }
-                        _loadHolidays(); // Ricalcola quelle già aggiunte
                       });
+                      _loadHolidays(); // Ricalcola quelle già aggiunte
                     },
                   );
                 }).toList(),
@@ -296,55 +375,59 @@ class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
                 border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: ListView.builder(
-                itemCount: _holidays.length,
-                itemBuilder: (context, index) {
-                  final holiday = _holidays[index];
-                  final isAlreadyAdded = _isHolidayAlreadyAdded(holiday);
-                  final isSelected = _selectedHolidayIndices.contains(index);
+              child: _isLoadingHolidays
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      itemCount: _holidays.length,
+                      itemBuilder: (context, index) {
+                        final holiday = _holidays[index];
+                        final isAlreadyAdded = _isHolidayAlreadyAdded(holiday);
+                        final isSelected = _selectedHolidayIndices.contains(
+                          index,
+                        );
 
-                  return CheckboxListTile(
-                    value: isSelected,
-                    onChanged: isAlreadyAdded
-                        ? null
-                        : (value) {
-                            setState(() {
-                              if (value == true) {
-                                _selectedHolidayIndices.add(index);
-                              } else {
-                                _selectedHolidayIndices.remove(index);
-                              }
-                            });
-                          },
-                    title: Text(
-                      holiday.name,
-                      style: TextStyle(
-                        color: isAlreadyAdded
-                            ? colorScheme.outline
-                            : colorScheme.onSurface,
-                        decoration: isAlreadyAdded
-                            ? TextDecoration.lineThrough
-                            : null,
-                      ),
+                        return CheckboxListTile(
+                          value: isSelected,
+                          onChanged: isAlreadyAdded
+                              ? null
+                              : (value) {
+                                  setState(() {
+                                    if (value == true) {
+                                      _selectedHolidayIndices.add(index);
+                                    } else {
+                                      _selectedHolidayIndices.remove(index);
+                                    }
+                                  });
+                                },
+                          title: Text(
+                            holiday.name,
+                            style: TextStyle(
+                              color: isAlreadyAdded
+                                  ? colorScheme.outline
+                                  : colorScheme.onSurface,
+                              decoration: isAlreadyAdded
+                                  ? TextDecoration.lineThrough
+                                  : null,
+                            ),
+                          ),
+                          subtitle: Text(
+                            dateFormat.format(holiday.date),
+                            style: TextStyle(
+                              color: isAlreadyAdded
+                                  ? colorScheme.outline
+                                  : colorScheme.onSurfaceVariant,
+                            ),
+                          ),
+                          secondary: isAlreadyAdded
+                              ? Icon(
+                                  Icons.check_circle,
+                                  color: colorScheme.primary,
+                                  size: 20,
+                                )
+                              : null,
+                        );
+                      },
                     ),
-                    subtitle: Text(
-                      dateFormat.format(holiday.date),
-                      style: TextStyle(
-                        color: isAlreadyAdded
-                            ? colorScheme.outline
-                            : colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    secondary: isAlreadyAdded
-                        ? Icon(
-                            Icons.check_circle,
-                            color: colorScheme.primary,
-                            size: 20,
-                          )
-                        : null,
-                  );
-                },
-              ),
             ),
 
             // Seleziona tutti / nessuno
@@ -373,26 +456,29 @@ class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
               ],
             ),
           ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
-          child: Text(l10n.actionCancel),
-        ),
-        AppAsyncFilledButton(
-          onPressed:
-              _selectedHolidayIndices.isEmpty ||
-                  _selectedLocationIds.isEmpty ||
-                  _isSaving
-              ? null
-              : _onSave,
-          isLoading: _isSaving,
-          child: Text(
-            l10n.closuresImportHolidaysAction(_selectedHolidayIndices.length),
+            ),
           ),
         ),
-      ],
+        actions: [
+          TextButton(
+            onPressed: _isSaving ? null : () => Navigator.of(context).pop(),
+            child: Text(l10n.actionCancel),
+          ),
+          AppAsyncFilledButton(
+            onPressed:
+                _selectedHolidayIndices.isEmpty ||
+                    _selectedLocationIds.isEmpty ||
+                    _isLoadingHolidays ||
+                    _isSaving
+                ? null
+                : _onSave,
+            isLoading: _isSaving,
+            child: Text(
+              l10n.closuresImportHolidaysAction(_selectedHolidayIndices.length),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

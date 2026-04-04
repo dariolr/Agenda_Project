@@ -147,6 +147,34 @@ File `.arb` in `lib/core/l10n/`:
 
 Dopo modifiche: `dart run intl_utils:generate`
 
+## Aggiornamenti Importanti (04/04/2026)
+
+### Booking locale: separazione `country` / `timezone` / `language`
+
+È stata introdotta una strategia centralizzata per risolvere la lingua del booking frontend, senza usare più il paese come regola primaria.
+
+Ordine di risoluzione:
+
+1. query param URL `?lang=it|en`
+2. `location.booking_default_locale`
+3. locale browser/device (se supportata)
+4. hint da `location.country` (fallback debole)
+5. fallback finale deterministico: `it`
+
+Riferimento policy: `BOOKING_LOCALE_POLICY.md`
+
+### Nuovo campo location (API pubblica)
+
+Le location pubbliche ora includono anche:
+
+- `booking_default_locale` (nullable, `it|en`)
+
+Questo campo è additivo e backward-compatible.
+
+### App locale non hardcoded
+
+L'app booking non è più forzata a `Locale('it')`: usa il resolver centralizzato.
+
 ## Features
 
 - ✅ Multi-business path-based URL (`/:slug/booking`)

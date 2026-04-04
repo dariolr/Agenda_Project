@@ -16,6 +16,7 @@ class Location {
   final double? longitude;
   final String? currency;
   final String timezone;
+  final String? bookingDefaultLocale;
   final bool allowCustomerChooseStaff;
   final String staffIconKey;
   final int? cancellationHours;
@@ -38,6 +39,7 @@ class Location {
     this.longitude,
     this.currency,
     this.timezone = 'Europe/Rome',
+    this.bookingDefaultLocale,
     this.allowCustomerChooseStaff = false,
     this.staffIconKey = 'person',
     this.cancellationHours,
@@ -66,6 +68,7 @@ class Location {
           : null,
       currency: json['currency'] as String?,
       timezone: json['timezone'] as String? ?? 'Europe/Rome',
+      bookingDefaultLocale: json['booking_default_locale'] as String?,
       allowCustomerChooseStaff:
           json['allow_customer_choose_staff'] as bool? ?? false,
       staffIconKey: (json['staff_icon_key'] as String?) ?? 'person',
@@ -95,6 +98,7 @@ class Location {
       'longitude': longitude,
       'currency': currency,
       'timezone': timezone,
+      'booking_default_locale': bookingDefaultLocale,
       'allow_customer_choose_staff': allowCustomerChooseStaff,
       'staff_icon_key': staffIconKey,
       if (cancellationHours != null) 'cancellation_hours': cancellationHours,

@@ -10,6 +10,7 @@ import 'package:agenda_backend/features/agenda/presentation/screens/week_view/we
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/features/agenda/providers/agenda_display_settings_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/agenda_bootstrap_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/booking_reschedule_capability_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/booking_reschedule_provider.dart';
@@ -71,6 +72,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   int _weekAutoScrollRequestId = 0;
   DateTime? _weekAutoScrollTargetDate;
   String? _exceptionsLoadKey;
+  bool _didApplyInitialEmptyStaffFilterFallback = false;
 
   void _ensureExceptionsLoadedForVisibleRange({
     required int businessId,
@@ -299,6 +301,21 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   @override
   Widget build(BuildContext context) {
     final ref = this.ref;
+
+    ref.listen<bool>(agendaBootstrapUnlockedProvider, (prev, next) {
+      if (!next || _didApplyInitialEmptyStaffFilterFallback) return;
+
+      final mode = ref.read(staffFilterModeProvider);
+      final selectedIds = ref.read(selectedStaffIdsProvider);
+
+      if (mode == StaffFilterMode.custom && selectedIds.isEmpty) {
+        ref
+            .read(staffFilterModeProvider.notifier)
+            .set(StaffFilterMode.onDutyTeam);
+      }
+
+      _didApplyInitialEmptyStaffFilterFallback = true;
+    });
 
     // Controlla se i dati sono ancora in caricamento
     final staffAsync = ref.watch(allStaffProvider);

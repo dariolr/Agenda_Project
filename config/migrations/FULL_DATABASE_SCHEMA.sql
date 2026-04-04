@@ -451,6 +451,7 @@ CREATE TABLE `locations` (
   `latitude` decimal(10,8) DEFAULT NULL,
   `longitude` decimal(11,8) DEFAULT NULL,
   `timezone` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'Europe/Rome' COMMENT 'Location timezone',
+  `booking_default_locale` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Default booking UI locale for this location (it/en)',
   `currency` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Override business currency',
   `cancellation_hours` int UNSIGNED DEFAULT NULL COMMENT 'Override business cancellation policy. NULL = use business default',
   `min_booking_notice_hours` int UNSIGNED NOT NULL DEFAULT '1' COMMENT 'Minimum hours before appointment for online booking. Default 1 hour.',

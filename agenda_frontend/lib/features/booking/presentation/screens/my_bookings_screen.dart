@@ -285,7 +285,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
           locations.where((l) => l.id == booking.locationId).firstOrNull,
       orElse: () => null,
     );
-    final locale = _localeForLocation(context, location?.country);
+    final locale = _localeForLocation(context);
     final business = ref.watch(currentBusinessProvider).value;
     final showLocation = locationsAsync.maybeWhen(
       data: (locations) => locations.length > 1,
@@ -704,10 +704,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     return booking.canModifyUntil!;
   }
 
-  static String _localeForLocation(BuildContext context, String? country) {
-    final upper = (country ?? '').toUpperCase();
-    if (upper == 'IT') return 'it';
-
+  static String _localeForLocation(BuildContext context) {
     final appLocale = Localizations.localeOf(context);
     return appLocale.languageCode == 'it' ? 'it' : 'en';
   }

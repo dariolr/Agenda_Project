@@ -11,6 +11,7 @@ import '../core/widgets/environment_banner.dart';
 import '../features/auth/domain/auth_state.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/booking/providers/business_provider.dart';
+import '../features/booking/providers/booking_locale_provider.dart';
 import 'router.dart';
 import 'theme/theme.dart';
 import 'theme/theme_provider.dart';
@@ -63,6 +64,7 @@ class _AppState extends ConsumerState<App> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final router = ref.watch(routerProvider);
+    final bookingLocale = ref.watch(bookingResolvedLocaleProvider);
 
     final themeConfig = ref.watch(themeNotifierProvider);
     final businessAsync = ref.watch(currentBusinessProvider);
@@ -102,7 +104,16 @@ class _AppState extends ConsumerState<App> {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: L10n.delegate.supportedLocales,
-      locale: const Locale('it'),
+      locale: bookingLocale,
+      localeResolutionCallback: (locale, supportedLocales) {
+        for (final supported in supportedLocales) {
+          if (supported.languageCode.toLowerCase() ==
+              bookingLocale.languageCode.toLowerCase()) {
+            return supported;
+          }
+        }
+        return supportedLocales.first;
+      },
       builder: (context, child) {
         if (authResolving) {
           return const AppLoadingScreen();

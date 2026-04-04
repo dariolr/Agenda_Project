@@ -3,10 +3,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/l10n/l10_extension.dart';
+import '/core/l10n/locale_resolution.dart';
 import '/core/l10n/l10n.dart';
 import '/core/widgets/environment_banner.dart';
 import '../core/widgets/layout_config_auto_listener.dart';
 import '../core/widgets/session_expired_listener.dart';
+import 'providers/app_locale_provider.dart';
 import 'router_provider.dart';
 import 'theme/theme.dart';
 import 'theme/theme_provider.dart';
@@ -18,6 +20,7 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeConfig = ref.watch(themeNotifierProvider);
     final router = ref.watch(routerProvider);
+    final appLocale = ref.watch(appLocaleProvider);
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'Agenda Platform',
@@ -31,7 +34,13 @@ class MyApp extends ConsumerWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       supportedLocales: L10n.delegate.supportedLocales,
-      locale: const Locale('it'),
+      locale: appLocale,
+      localeResolutionCallback: (locale, supportedLocales) {
+        return resolveSupportedLocale(
+          locale,
+          supportedLocales: supportedLocales,
+        );
+      },
 
       // 2. SPOSTA IL LISTENER QUI
       builder: (context, child) {

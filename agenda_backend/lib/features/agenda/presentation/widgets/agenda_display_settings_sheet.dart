@@ -1,9 +1,17 @@
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
+import 'package:agenda_backend/core/models/appointment.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
 import 'package:agenda_backend/core/widgets/app_form.dart';
+import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/agenda_display_settings_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/calendar_view_mode_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/weekly_appointments_provider.dart';
+import 'package:agenda_backend/features/services/providers/services_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -42,6 +50,40 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
     final useServiceColors = ref.watch(
       effectiveUseServiceColorsForAppointmentsProvider,
     );
+    final calendarViewMode = ref.watch(calendarViewModeProvider);
+    final agendaDate = ref.watch(agendaDateProvider);
+    final location = ref.watch(currentLocationProvider);
+    final business = ref.watch(currentBusinessProvider);
+    final services = ref.watch(servicesProvider).value ?? const [];
+    final hasAnyServiceWithAdditionalTime = services.any(
+      (service) => (service.processingTime ?? 0) > 0 || (service.blockedTime ?? 0) > 0,
+    );
+    final hasAnyAppointmentWithAdditionalTime = switch (calendarViewMode) {
+      CalendarViewMode.day => _hasAnyAppointmentWithAdditionalTime(
+          ref.watch(appointmentsProvider).value ?? const [],
+        ),
+      CalendarViewMode.week => () {
+          if (location.id <= 0 || business.id <= 0) return false;
+          final selectedDate = DateUtils.dateOnly(agendaDate);
+          final weekStart = selectedDate.subtract(
+            Duration(days: selectedDate.weekday - DateTime.monday),
+          );
+          final request = WeeklyAppointmentsRequest(
+            weekStart: weekStart,
+            locationId: location.id,
+            businessId: business.id,
+          );
+          final weeklyAppointments = ref.watch(
+            weeklyAppointmentsProvider(request),
+          );
+          return _hasAnyAppointmentWithAdditionalTime(
+            weeklyAppointments.value?.appointments ?? const [],
+          );
+        }(),
+    };
+    final showExtraMinutesBandIntensitySetting =
+        hasAnyServiceWithAdditionalTime ||
+        hasAnyAppointmentWithAdditionalTime;
     final notifier = ref.read(agendaDisplaySettingsProvider.notifier);
     final hoverUnrelatedVisualIntensity =
         (1.0 - settings.hoverUnrelatedCardDimIntensity).clamp(0.0, 1.0);
@@ -175,42 +217,44 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
               Text('${(settings.cardColorOpacity * 100).round()}%'),
             ],
           ),
-          const SizedBox(height: _sectionSpacing),
-          Text(
-            context.l10n.agendaDisplaySettingsExtraMinutesBandIntensityLabel,
-            style: settingLabelStyle,
-          ),
-          Row(
-            children: [
-              IconButton(
-                onPressed: () {
-                  notifier.setExtraMinutesBandIntensity(
-                    settings.extraMinutesBandIntensity - 0.05,
-                  );
-                },
-                icon: const Icon(Icons.remove),
-              ),
-              Expanded(
-                child: Slider(
-                  min: 0.0,
-                  max: 1.0,
-                  divisions: 20,
-                  value: settings.extraMinutesBandIntensity,
-                  onChanged: notifier.setExtraMinutesBandIntensity,
+          if (showExtraMinutesBandIntensitySetting) ...[
+            const SizedBox(height: _sectionSpacing),
+            Text(
+              context.l10n.agendaDisplaySettingsExtraMinutesBandIntensityLabel,
+              style: settingLabelStyle,
+            ),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () {
+                    notifier.setExtraMinutesBandIntensity(
+                      settings.extraMinutesBandIntensity - 0.05,
+                    );
+                  },
+                  icon: const Icon(Icons.remove),
                 ),
-              ),
-              IconButton(
-                onPressed: () {
-                  notifier.setExtraMinutesBandIntensity(
-                    settings.extraMinutesBandIntensity + 0.05,
-                  );
-                },
-                icon: const Icon(Icons.add),
-              ),
-              const SizedBox(width: 6),
-              Text('${(settings.extraMinutesBandIntensity * 100).round()}%'),
-            ],
-          ),
+                Expanded(
+                  child: Slider(
+                    min: 0.0,
+                    max: 1.0,
+                    divisions: 20,
+                    value: settings.extraMinutesBandIntensity,
+                    onChanged: notifier.setExtraMinutesBandIntensity,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    notifier.setExtraMinutesBandIntensity(
+                      settings.extraMinutesBandIntensity + 0.05,
+                    );
+                  },
+                  icon: const Icon(Icons.add),
+                ),
+                const SizedBox(width: 6),
+                Text('${(settings.extraMinutesBandIntensity * 100).round()}%'),
+              ],
+            ),
+          ],
           if (isDesktop) ...[
             const SizedBox(height: _sectionSpacing),
             Text(
@@ -276,6 +320,15 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
           ),
         ),
       ],
+    );
+  }
+
+  bool _hasAnyAppointmentWithAdditionalTime(List<Appointment> appointments) {
+    return appointments.any(
+      (appointment) =>
+          appointment.blockedExtraMinutes > 0 ||
+          appointment.processingExtraMinutes > 0 ||
+          (appointment.extraMinutes ?? 0) > 0,
     );
   }
 }

@@ -17,6 +17,7 @@ final class LocationRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT l.id, l.business_id, l.name, l.address, l.city, l.region, l.country,
                     l.phone, l.email, l.latitude, l.longitude, l.currency, l.timezone,
+                    l.booking_default_locale,
                     l.allow_customer_choose_staff, l.is_default, l.is_active, l.created_at, l.updated_at,
                     l.cancellation_hours,
                     l.online_booking_slot_interval_minutes, l.slot_display_mode, l.min_gap_minutes,
@@ -44,6 +45,7 @@ final class LocationRepository
     {
         $sql = 'SELECT l.id, l.business_id, l.name, l.address, l.city, l.region, l.country,
                     l.phone, l.email, l.latitude, l.longitude, l.currency, l.timezone,
+                    l.booking_default_locale,
                     l.allow_customer_choose_staff,
                     l.cancellation_hours,
                     l.online_booking_slot_interval_minutes, l.slot_display_mode, l.min_gap_minutes,
@@ -130,6 +132,7 @@ final class LocationRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT l.id, l.business_id, l.name, l.address, l.city, l.region, l.country,
                     l.phone, l.email, l.latitude, l.longitude, l.currency, l.timezone,
+                    l.booking_default_locale,
                     l.allow_customer_choose_staff,
                     l.booking_text_overrides_json,
                     l.staff_icon_key,
@@ -149,6 +152,7 @@ final class LocationRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT l.id, l.business_id, l.name, l.address, l.city, l.region, l.country,
                     l.phone, l.email, l.latitude, l.longitude, l.currency, l.timezone,
+                    l.booking_default_locale,
                     l.allow_customer_choose_staff,
                     l.booking_text_overrides_json,
                     l.staff_icon_key,
@@ -169,21 +173,23 @@ final class LocationRepository
         $isActive = $data['is_active'] ?? 1;
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO locations (
-                business_id, name, address, phone, email, timezone,
+                business_id, name, address, country, phone, email, timezone, booking_default_locale,
                 min_booking_notice_hours, max_booking_advance_days,
                 allow_customer_choose_staff, cancellation_hours,
                 booking_text_overrides_json,
                 staff_icon_key,
                 is_active
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $businessId,
             $name,
             $data['address'] ?? null,
+            $data['country'] ?? null,
             $data['phone'] ?? null,
             $data['email'] ?? null,
             $data['timezone'] ?? 'Europe/Rome',
+            $data['booking_default_locale'] ?? null,
             $data['min_booking_notice_hours'] ?? 1,
             $data['max_booking_advance_days'] ?? 90,
             !empty($data['allow_customer_choose_staff']) ? 1 : 0,
@@ -201,7 +207,7 @@ final class LocationRepository
         $fields = [];
         $values = [];
 
-        foreach (['name', 'address', 'phone', 'email', 'timezone', 'booking_text_overrides_json', 'staff_icon_key'] as $field) {
+        foreach (['name', 'address', 'country', 'phone', 'email', 'timezone', 'booking_default_locale', 'booking_text_overrides_json', 'staff_icon_key'] as $field) {
             if (array_key_exists($field, $data)) {
                 $fields[] = "{$field} = ?";
                 $values[] = $data[$field];

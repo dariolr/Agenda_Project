@@ -146,12 +146,13 @@ class _RescheduleBookingDialogState
     final firstDate = now;
     final lastDate = now.add(const Duration(days: 90));
 
+    final pickerLocale = Localizations.localeOf(context);
     final picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? now,
       firstDate: firstDate,
       lastDate: lastDate,
-      locale: const Locale('it'),
+      locale: pickerLocale,
     );
 
     if (picked != null && mounted) {
@@ -240,7 +241,10 @@ class _RescheduleBookingDialogState
 
   @override
   Widget build(BuildContext context) {
-    final dateFormat = DateFormat('dd/MM/yyyy', 'it');
+    final dateFormat = DateFormat(
+      'dd/MM/yyyy',
+      Localizations.localeOf(context).languageCode,
+    );
 
     return AlertDialog(
       title: Text(context.l10n.rescheduleBookingTitle),
