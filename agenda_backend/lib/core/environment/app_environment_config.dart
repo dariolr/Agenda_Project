@@ -19,6 +19,10 @@ class AppEnvironmentRawConfig {
     required this.showDemoBanner,
     required this.demoResetExpected,
     required this.demoAutoLoginEnabled,
+    required this.metaAppId,
+    required this.metaGraphVersion,
+    required this.metaEmbeddedSignupRedirectUri,
+    required this.metaEmbeddedSignupScopes,
   });
 
   final String appEnv;
@@ -35,6 +39,10 @@ class AppEnvironmentRawConfig {
   final bool? showDemoBanner;
   final bool? demoResetExpected;
   final bool? demoAutoLoginEnabled;
+  final String metaAppId;
+  final String metaGraphVersion;
+  final String metaEmbeddedSignupRedirectUri;
+  final String metaEmbeddedSignupScopes;
 }
 
 @immutable
@@ -57,6 +65,10 @@ class AppEnvironmentConfig {
     required this.allowRealExports,
     required this.demoResetExpected,
     required this.demoAutoLoginEnabled,
+    required this.metaAppId,
+    required this.metaGraphVersion,
+    required this.metaEmbeddedSignupRedirectUri,
+    required this.metaEmbeddedSignupScopes,
   });
 
   final AppEnvironment environment;
@@ -78,6 +90,10 @@ class AppEnvironmentConfig {
   final bool allowRealExports;
   final bool demoResetExpected;
   final bool demoAutoLoginEnabled;
+  final String metaAppId;
+  final String metaGraphVersion;
+  final String metaEmbeddedSignupRedirectUri;
+  final String metaEmbeddedSignupScopes;
 
   static late final AppEnvironmentConfig current;
 
@@ -116,6 +132,15 @@ class AppEnvironmentConfig {
     final showDemoBanner = raw.showDemoBanner ?? isDemo;
     final demoResetExpected = raw.demoResetExpected ?? isDemo;
     final demoAutoLoginEnabled = raw.demoAutoLoginEnabled ?? false;
+    final metaAppId = raw.metaAppId.trim();
+    final metaGraphVersion = raw.metaGraphVersion.trim().isEmpty
+        ? 'v21.0'
+        : raw.metaGraphVersion.trim();
+    final metaEmbeddedSignupRedirectUri =
+        raw.metaEmbeddedSignupRedirectUri.trim();
+    final metaEmbeddedSignupScopes = raw.metaEmbeddedSignupScopes.trim().isEmpty
+        ? 'business_management,whatsapp_business_management,whatsapp_business_messaging'
+        : raw.metaEmbeddedSignupScopes.trim();
 
     if (isDemo) {
       if (allowRealEmails ||
@@ -159,6 +184,10 @@ class AppEnvironmentConfig {
       allowRealExports: allowRealExports,
       demoResetExpected: demoResetExpected,
       demoAutoLoginEnabled: demoAutoLoginEnabled,
+      metaAppId: metaAppId,
+      metaGraphVersion: metaGraphVersion,
+      metaEmbeddedSignupRedirectUri: metaEmbeddedSignupRedirectUri,
+      metaEmbeddedSignupScopes: metaEmbeddedSignupScopes,
     );
   }
 
@@ -222,5 +251,19 @@ class AppEnvironmentConfig {
         demoAutoLoginEnabled: bool.hasEnvironment('DEMO_AUTO_LOGIN_ENABLED')
             ? bool.fromEnvironment('DEMO_AUTO_LOGIN_ENABLED')
             : null,
+        metaAppId: String.fromEnvironment('META_APP_ID', defaultValue: ''),
+        metaGraphVersion: String.fromEnvironment(
+          'META_GRAPH_VERSION',
+          defaultValue: 'v21.0',
+        ),
+        metaEmbeddedSignupRedirectUri: String.fromEnvironment(
+          'META_EMBEDDED_SIGNUP_REDIRECT_URI',
+          defaultValue: '',
+        ),
+        metaEmbeddedSignupScopes: String.fromEnvironment(
+          'META_EMBEDDED_SIGNUP_SCOPES',
+          defaultValue:
+              'business_management,whatsapp_business_management,whatsapp_business_messaging',
+        ),
       );
 }

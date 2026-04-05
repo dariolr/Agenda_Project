@@ -776,7 +776,7 @@ class _WhatsappManagementPanelState
                       OutlinedButton.icon(
                         onPressed: state.isLoading ? null : _loadIfPossible,
                         icon: const Icon(Icons.refresh),
-                        label: Text(l10n.whatsappRefresh),
+                        label: Text(l10n.actionRefresh),
                       ),
                       FilledButton.icon(
                         onPressed: _isRunningCheck || !hasActiveConfig

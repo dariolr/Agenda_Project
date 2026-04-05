@@ -10,7 +10,9 @@ use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\WhatsappRepository;
+use Agenda\Infrastructure\Security\TokenCipher;
 use Agenda\Infrastructure\Support\Json;
+use Agenda\Infrastructure\Whatsapp\MetaWhatsAppEmbeddedSignupService;
 
 final class WhatsappController
 {
@@ -24,6 +26,8 @@ final class WhatsappController
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
         private readonly LocationRepository $locationRepo,
+        private readonly TokenCipher $tokenCipher,
+        private readonly MetaWhatsAppEmbeddedSignupService $metaEmbeddedSignupService,
     ) {}
 
     public function configsIndex(Request $request): Response
@@ -47,16 +51,18 @@ final class WhatsappController
         $body = $request->getBody() ?? [];
         $wabaId = trim((string) ($body['waba_id'] ?? ''));
         $phoneNumberId = trim((string) ($body['phone_number_id'] ?? ''));
-        $token = trim((string) ($body['access_token_encrypted'] ?? ''));
+        $tokenInput = trim((string) ($body['access_token_encrypted'] ?? ''));
         $status = strtolower(trim((string) ($body['status'] ?? 'pending')));
         $isDefault = (bool) ($body['is_default'] ?? false);
 
-        if ($wabaId === '' || $phoneNumberId === '' || $token === '') {
+        if ($wabaId === '' || $phoneNumberId === '' || $tokenInput === '') {
             return Response::validationError('waba_id, phone_number_id e access_token_encrypted sono obbligatori', $request->traceId);
         }
         if (!in_array($status, self::ALLOWED_CONFIG_STATUS, true)) {
             return Response::validationError('status non valido', $request->traceId);
         }
+
+        $token = $this->encryptTokenIfNeeded($tokenInput);
 
         $id = $this->whatsappRepo->createConfig(
             $businessId,
@@ -93,7 +99,9 @@ final class WhatsappController
             $data['phone_number_id'] = trim((string) $body['phone_number_id']);
         }
         if (array_key_exists('access_token_encrypted', $body)) {
-            $data['access_token_encrypted'] = trim((string) $body['access_token_encrypted']);
+            $data['access_token_encrypted'] = $this->encryptTokenIfNeeded(
+                trim((string) $body['access_token_encrypted'])
+            );
         }
         if (array_key_exists('status', $body)) {
             $status = strtolower(trim((string) $body['status']));
@@ -426,26 +434,165 @@ final class WhatsappController
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
-
-        $body = $request->getBody() ?? [];
-        $wabaId = trim((string) ($body['waba_id'] ?? ''));
-        $phoneNumberId = trim((string) ($body['phone_number_id'] ?? ''));
-        $token = trim((string) ($body['token'] ?? ''));
-        if ($wabaId === '' || $phoneNumberId === '' || $token === '') {
-            return Response::validationError('waba_id, phone_number_id e token sono obbligatori', $request->traceId);
+        if (!$this->isEmbeddedSignupEnabled($businessId)) {
+            return Response::error(
+                'Embedded signup non abilitato per questo business',
+                'whatsapp_embedded_signup_disabled',
+                403,
+                $request->traceId
+            );
         }
 
-        $id = $this->whatsappRepo->createConfig(
+        $body = $request->getBody() ?? [];
+        $code = trim((string) ($body['code'] ?? ''));
+        $state = trim((string) ($body['state'] ?? ''));
+        $wabaId = trim((string) ($body['waba_id'] ?? ''));
+        $phoneNumberId = trim((string) ($body['phone_number_id'] ?? ''));
+        $displayPhoneNumber = isset($body['display_phone_number'])
+            ? trim((string) $body['display_phone_number'])
+            : null;
+        $sessionInfoVersion = isset($body['session_info_version'])
+            ? (int) $body['session_info_version']
+            : null;
+
+        if ($code === '') {
+            return Response::validationError('code obbligatorio', $request->traceId);
+        }
+        if (array_key_exists('state', $body) && $state === '') {
+            return Response::validationError('state non valido', $request->traceId);
+        }
+
+        try {
+            $meta = $this->metaEmbeddedSignupService->completeSignup(
+                $code,
+                $wabaId !== '' ? $wabaId : null,
+                $phoneNumberId !== '' ? $phoneNumberId : null,
+                $displayPhoneNumber
+            );
+        } catch (\RuntimeException $e) {
+            return Response::error(
+                'Impossibile completare la connessione Meta. Verifica permessi o riprova.',
+                'meta_embedded_signup_failed',
+                422,
+                $request->traceId,
+                ['reason' => $e->getMessage()]
+            );
+        }
+
+        $encryptedToken = $this->tokenCipher->encrypt((string) $meta['access_token']);
+        $existing = $this->whatsappRepo->findConfigByPhoneNumberId($businessId, (string) $meta['phone_number_id']);
+        $configs = $this->whatsappRepo->getConfigsByBusinessId($businessId);
+        $isDefault = $existing !== null
+            ? ((int) ($existing['is_default'] ?? 0) === 1)
+            : count($configs) === 0;
+
+        $id = $this->whatsappRepo->upsertConfigByPhoneNumberId(
             $businessId,
-            $wabaId,
-            $phoneNumberId,
-            $token,
+            (string) $meta['waba_id'],
+            (string) $meta['phone_number_id'],
+            $encryptedToken,
             'active',
-            false
+            $isDefault,
+            $meta['display_phone_number'] ?? null
         );
         $config = $this->whatsappRepo->findConfigById($businessId, $id);
 
-        return Response::success(['config' => $config ?? ['id' => $id]]);
+        $autoMappedLocationIds = [];
+        $activeLocations = $this->locationRepo->findByBusinessId($businessId);
+        if (count($activeLocations) === 1) {
+            $locationId = (int) ($activeLocations[0]['id'] ?? 0);
+            if ($locationId > 0) {
+                $existingMapping = $this->whatsappRepo->findMappingByLocation($businessId, $locationId);
+                if ($existingMapping === null) {
+                    $this->whatsappRepo->upsertMapping($businessId, $locationId, $id);
+                    $autoMappedLocationIds[] = $locationId;
+                }
+            }
+        }
+
+        $goLive = $this->computeGoLiveCheck($businessId, null);
+        $nextSteps = [];
+        if (!$goLive['webhook']) {
+            $nextSteps[] = 'verify_webhook';
+        }
+        if (!$goLive['template']) {
+            $nextSteps[] = 'create_utility_template';
+        }
+        if (!$goLive['optin']) {
+            $nextSteps[] = 'collect_opt_in';
+        }
+        if (count($activeLocations) > 1) {
+            $nextSteps[] = 'complete_location_mapping';
+        }
+
+        return Response::success([
+            'config' => $config ?? ['id' => $id],
+            'auto_mapped_location_ids' => $autoMappedLocationIds,
+            'go_live_check' => $goLive,
+            'next_steps' => $nextSteps,
+            'session_info_version' => $sessionInfoVersion,
+        ]);
+    }
+
+    public function webhookPublicVerify(Request $request): Response
+    {
+        $mode = (string) ($request->queryParam('hub.mode') ?? '');
+        $verifyToken = (string) ($request->queryParam('hub.verify_token') ?? '');
+        $challenge = (string) ($request->queryParam('hub.challenge') ?? '');
+        $expected = trim((string) ($_ENV['WHATSAPP_WEBHOOK_VERIFY_TOKEN'] ?? getenv('WHATSAPP_WEBHOOK_VERIFY_TOKEN') ?? ''));
+
+        if ($mode === 'subscribe' && $expected !== '' && hash_equals($expected, $verifyToken)) {
+            return new Response(
+                200,
+                ['Content-Type' => 'text/plain; charset=UTF-8'],
+                $challenge !== '' ? $challenge : 'ok'
+            );
+        }
+
+        return Response::error('Webhook verify failed', 'webhook_verify_failed', 403, $request->traceId);
+    }
+
+    public function webhookPublicIngest(Request $request): Response
+    {
+        $payload = $request->getBody() ?? [];
+        if (!is_array($payload) || $payload === []) {
+            return Response::validationError('payload obbligatorio', $request->traceId);
+        }
+
+        $phoneNumberId = $this->extractPhoneNumberIdFromWebhook($payload);
+        if ($phoneNumberId === null) {
+            return Response::success(['processed' => false, 'reason' => 'phone_number_id_not_found']);
+        }
+
+        $config = $this->whatsappRepo->findConfigByPhoneNumberIdGlobal($phoneNumberId);
+        if ($config === null) {
+            return Response::success(['processed' => false, 'reason' => 'unmapped_phone_number_id']);
+        }
+
+        $businessId = (int) ($config['business_id'] ?? 0);
+        if ($businessId <= 0) {
+            return Response::success(['processed' => false, 'reason' => 'invalid_business']);
+        }
+
+        $eventId = trim((string) ($this->extractWebhookEventId($payload) ?? ''));
+        if ($eventId === '') {
+            $eventId = 'wh_' . md5(Json::encode($payload));
+        }
+        if ($this->whatsappRepo->isWebhookEventProcessed($eventId)) {
+            return Response::success(['processed' => false, 'duplicate' => true, 'event_id' => $eventId]);
+        }
+
+        $this->whatsappRepo->storeWebhookEvent($eventId, $businessId, $payload);
+        $updated = $this->applyWebhookStatuses($businessId, $payload);
+        $optOuts = $this->applyWebhookOptOutKeywords($businessId, $payload);
+
+        return Response::success([
+            'processed' => true,
+            'duplicate' => false,
+            'event_id' => $eventId,
+            'updated_count' => $updated,
+            'opt_out_updates' => $optOuts,
+        ]);
     }
 
     private function hasBusinessAccess(Request $request, int $businessId): bool
@@ -577,6 +724,136 @@ final class WhatsappController
             }
         }
         return $configs[0] ?? null;
+    }
+
+    /**
+     * @return array{phone:bool,webhook:bool,template:bool,optin:bool}
+     */
+    private function computeGoLiveCheck(int $businessId, ?int $locationId): array
+    {
+        $config = $locationId !== null && $locationId > 0
+            ? $this->whatsappRepo->findConfigForLocation($businessId, $locationId)
+            : $this->findDefaultOrActiveConfig($businessId);
+
+        return [
+            'phone' => $config !== null && ($config['status'] ?? '') === 'active',
+            'webhook' => $this->whatsappRepo->hasWebhookEventForBusiness($businessId),
+            'template' => $this->whatsappRepo->hasApprovedUtilityTemplate($businessId),
+            'optin' => $this->whatsappRepo->hasActiveOptIn($businessId),
+        ];
+    }
+
+    private function isEmbeddedSignupEnabled(int $businessId): bool
+    {
+        $defaultEnabled = in_array(
+            strtolower(trim((string) ($_ENV['WHATSAPP_EMBEDDED_SIGNUP_DEFAULT_ENABLED'] ?? getenv('WHATSAPP_EMBEDDED_SIGNUP_DEFAULT_ENABLED') ?? 'false'))),
+            ['1', 'true', 'yes', 'on'],
+            true
+        );
+        return $this->whatsappRepo->isEmbeddedSignupEnabled($businessId, $defaultEnabled);
+    }
+
+    private function encryptTokenIfNeeded(string $input): string
+    {
+        $trimmed = trim($input);
+        if ($trimmed === '') {
+            return $trimmed;
+        }
+        if (str_starts_with($trimmed, 'v1:')) {
+            return $trimmed;
+        }
+        return $this->tokenCipher->encrypt($trimmed);
+    }
+
+    private function extractPhoneNumberIdFromWebhook(array $payload): ?string
+    {
+        $entry = $payload['entry'] ?? null;
+        if (!is_array($entry)) {
+            return null;
+        }
+        foreach ($entry as $entryItem) {
+            if (!is_array($entryItem)) {
+                continue;
+            }
+            $changes = $entryItem['changes'] ?? null;
+            if (!is_array($changes)) {
+                continue;
+            }
+            foreach ($changes as $change) {
+                if (!is_array($change)) {
+                    continue;
+                }
+                $value = $change['value'] ?? null;
+                if (!is_array($value)) {
+                    continue;
+                }
+                $metadata = $value['metadata'] ?? null;
+                if (is_array($metadata)) {
+                    $candidate = trim((string) ($metadata['phone_number_id'] ?? ''));
+                    if ($candidate !== '') {
+                        return $candidate;
+                    }
+                }
+                $candidate = trim((string) ($value['phone_number_id'] ?? ''));
+                if ($candidate !== '') {
+                    return $candidate;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function applyWebhookOptOutKeywords(int $businessId, array $payload): int
+    {
+        $optOutCount = 0;
+        $entry = $payload['entry'] ?? null;
+        if (!is_array($entry)) {
+            return 0;
+        }
+
+        $keywords = ['STOP', 'STOPPA', 'ANNULLA', 'DISISCRIVI'];
+        foreach ($entry as $entryItem) {
+            if (!is_array($entryItem)) {
+                continue;
+            }
+            $changes = $entryItem['changes'] ?? null;
+            if (!is_array($changes)) {
+                continue;
+            }
+            foreach ($changes as $change) {
+                if (!is_array($change)) {
+                    continue;
+                }
+                $value = $change['value'] ?? null;
+                if (!is_array($value)) {
+                    continue;
+                }
+                $messages = $value['messages'] ?? null;
+                if (!is_array($messages)) {
+                    continue;
+                }
+                foreach ($messages as $message) {
+                    if (!is_array($message)) {
+                        continue;
+                    }
+                    $from = trim((string) ($message['from'] ?? ''));
+                    $textBody = trim((string) (($message['text']['body'] ?? null) ?? ''));
+                    if ($from === '' || $textBody === '') {
+                        continue;
+                    }
+                    $normalized = strtoupper(trim($textBody));
+                    if (!in_array($normalized, $keywords, true)) {
+                        continue;
+                    }
+                    if ($this->whatsappRepo->optOutByPhone($businessId, $from, 'whatsapp_stop')) {
+                        $optOutCount++;
+                    }
+                }
+            }
+        }
+
+        return $optOutCount;
     }
 
     /**

@@ -142,6 +142,7 @@ class _ScaffoldWithNavigationState
     final isMoreResources = currentPath == '/altro/risorse';
     final isMoreLocations = currentPath == '/altro/sedi';
     final isMorePaymentMethods = currentPath == '/altro/metodi-pagamento';
+    final isMoreWhatsappBusiness = currentPath == '/altro/whatsapp-business';
     final hasAltroBack =
         !isAltroRoot &&
         ((isMore && currentPath.startsWith('/altro/')) ||
@@ -156,7 +157,8 @@ class _ScaffoldWithNavigationState
             isClassEvents ||
             isMoreResources ||
             isMoreLocations ||
-            isMorePaymentMethods);
+            isMorePaymentMethods ||
+            isMoreWhatsappBusiness);
     final backTarget = isReport && fromAgendaEntry ? '/agenda' : '/altro';
     final showCloseBackButton = fromAltroEntry || (isReport && fromAgendaEntry);
     final agendaDate = ref.watch(agendaDateProvider);
@@ -317,6 +319,8 @@ class _ScaffoldWithNavigationState
                       ? Text(context.l10n.teamLocationsLabel)
                       : isMorePaymentMethods
                       ? Text(context.l10n.paymentMethodsTitle)
+                      : isMoreWhatsappBusiness
+                      ? Text(context.l10n.moreWhatsappBusinessTitle)
                       : isBookingNotifications
                       ? Text(context.l10n.bookingNotificationsTitle)
                       : isClosures
@@ -410,6 +414,8 @@ class _ScaffoldWithNavigationState
                                 ? Text(context.l10n.teamLocationsLabel)
                                 : isMorePaymentMethods
                                 ? Text(context.l10n.paymentMethodsTitle)
+                                : isMoreWhatsappBusiness
+                                ? Text(context.l10n.moreWhatsappBusinessTitle)
                                 : isBookingNotifications
                                 ? Text(context.l10n.bookingNotificationsTitle)
                                 : isClosures
@@ -526,6 +532,8 @@ class _ScaffoldWithNavigationState
                     ? Text(context.l10n.teamLocationsLabel)
                     : isMorePaymentMethods
                     ? Text(context.l10n.paymentMethodsTitle)
+                    : isMoreWhatsappBusiness
+                    ? Text(context.l10n.moreWhatsappBusinessTitle)
                     : isBookingNotifications
                     ? Text(context.l10n.bookingNotificationsTitle)
                     : isClosures

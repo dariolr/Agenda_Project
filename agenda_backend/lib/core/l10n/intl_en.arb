@@ -239,7 +239,9 @@
   "teamLocationNomenclatureDefaultValue": "Default: {value}.",
   "@teamLocationNomenclatureDefaultValue": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": {
+        "type": "String"
+      }
     }
   },
   "teamLocationNomenclatureLeaveEmptyHint": "Leave empty to keep default.",
@@ -275,7 +277,9 @@
   "teamLocationCancellationHoursUseBusinessWithValue": "Use business policy ({value})",
   "@teamLocationCancellationHoursUseBusinessWithValue": {
     "placeholders": {
-      "value": { "type": "String" }
+      "value": {
+        "type": "String"
+      }
     }
   },
   "teamLocationCancellationHoursAlways": "Always",
@@ -283,19 +287,25 @@
   "teamLocationHours": "{count, plural, =1{1 hour} other{{count} hours}}",
   "@teamLocationHours": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "teamLocationDays": "{count, plural, =1{1 day} other{{count} days}}",
   "@teamLocationDays": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "teamLocationMinutes": "{count, plural, =1{1 minute} other{{count} minutes}}",
   "@teamLocationMinutes": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "teamLocationSmartSlotSection": "Smart time slots",
@@ -635,7 +645,6 @@
   "clientLockedHint": "Client cannot be changed for this appointment",
   "applyClientToAllAppointmentsTitle": "Apply client to entire booking?",
   "applyClientToAllAppointmentsMessage": "The client will also be associated with the appointments in this booking that have been assigned to other staff members.",
-
   "operatorsTitle": "Operators",
   "operatorsSubtitle": "Manage who can access the platform",
   "permissionsTitle": "Permissions",
@@ -796,7 +805,6 @@
   "operatorsInviteStatusDeclined": "Declined",
   "operatorsInviteStatusRevoked": "Revoked",
   "operatorsInviteStatusExpired": "Expired",
-  
   "authLoginSubtitle": "Sign in to the management system",
   "authEmail": "Email",
   "authPassword": "Password",
@@ -853,48 +861,72 @@
   "planningValidFromTo": "Valid from {from} to {to}",
   "@planningValidFromTo": {
     "placeholders": {
-      "from": { "type": "String" },
-      "to": { "type": "String" }
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
     }
   },
   "planningValidFromOnly": "Valid from {from}",
   "@planningValidFromOnly": {
     "placeholders": {
-      "from": { "type": "String" }
+      "from": {
+        "type": "String"
+      }
     }
   },
   "planningWeeklyHours": "{hours}h/week",
   "@planningWeeklyHours": {
     "placeholders": {
-      "hours": { "type": "int" }
+      "hours": {
+        "type": "int"
+      }
     }
   },
   "planningBiweeklyHours": "Week A: {hoursA}h | Week B: {hoursB}h | Tot: {total}h",
   "@planningBiweeklyHours": {
     "placeholders": {
-      "hoursA": { "type": "int" },
-      "hoursB": { "type": "int" },
-      "total": { "type": "int" }
+      "hoursA": {
+        "type": "int"
+      },
+      "hoursB": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "planningWeeklyDuration": "{duration}/week",
   "@planningWeeklyDuration": {
     "placeholders": {
-      "duration": { "type": "String" }
+      "duration": {
+        "type": "String"
+      }
     }
   },
   "planningBiweeklyDuration": "Week A: {durationA} | Week B: {durationB} | Tot: {totalDuration}",
   "@planningBiweeklyDuration": {
     "placeholders": {
-      "durationA": { "type": "String" },
-      "durationB": { "type": "String" },
-      "totalDuration": { "type": "String" }
+      "durationA": {
+        "type": "String"
+      },
+      "durationB": {
+        "type": "String"
+      },
+      "totalDuration": {
+        "type": "String"
+      }
     }
   },
   "planningShowExpired": "Show expired ({count})",
   "@planningShowExpired": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "planningHideExpired": "Hide expired",
@@ -916,25 +948,29 @@
   "planningValidityRange": "From {from} to {to}",
   "@planningValidityRange": {
     "placeholders": {
-      "from": { "type": "String" },
-      "to": { "type": "String" }
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
     }
   },
   "planningValidityFrom": "From {from}",
   "@planningValidityFrom": {
     "placeholders": {
-      "from": { "type": "String" }
+      "from": {
+        "type": "String"
+      }
     }
   },
   "planningActive": "Active",
   "planningFuture": "Future",
   "planningPast": "Past",
-
   "appointmentPriceLabel": "Price",
   "appointmentPriceHint": "Custom price",
   "appointmentPriceResetTooltip": "Reset to service price",
   "appointmentPriceFree": "Free",
-
   "bookingHistoryTitle": "Booking history",
   "bookingHistoryEmpty": "No events recorded",
   "bookingHistoryLoading": "Loading history...",
@@ -991,12 +1027,13 @@
   "bookingHistoryChangedFields": "Changed fields: {fields}",
   "@bookingHistoryChangedFields": {
     "placeholders": {
-      "fields": { "type": "String" }
+      "fields": {
+        "type": "String"
+      }
     }
   },
   "cancelledBadge": "CANCELLED",
   "clientAppointmentsCancelledBadge": "CANCELLED",
-
   "recurrenceRepeatBooking": "Repeat this appointment",
   "recurrenceRepeatBlock": "Repeat this block",
   "recurrenceFrequency": "Frequency",
@@ -1017,19 +1054,25 @@
   "recurrencePreviewCount": "{count} appointments",
   "@recurrencePreviewCount": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "recurrencePreviewSelected": "{count} selected",
   "@recurrencePreviewSelected": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "recurrencePreviewConflicts": "{count} conflicts",
   "@recurrencePreviewConflicts": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "recurrencePreviewHint": "Uncheck the dates you don't want to create",
@@ -1038,20 +1081,26 @@
   "recurrencePreviewConfirm": "Create {count} appointments",
   "@recurrencePreviewConfirm": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "recurrenceSummaryTitle": "Series created",
   "recurrenceSummaryCreated": "{count} appointments created",
   "@recurrenceSummaryCreated": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "recurrenceSummarySkipped": "{count} skipped due to conflicts",
   "@recurrenceSummarySkipped": {
     "placeholders": {
-      "count": { "type": "int" }
+      "count": {
+        "type": "int"
+      }
     }
   },
   "recurrenceSummaryError": "Error creating series",
@@ -1062,16 +1111,24 @@
   "recurrenceSeriesOf": "{index} of {total}",
   "@recurrenceSeriesOf": {
     "placeholders": {
-      "index": { "type": "int" },
-      "total": { "type": "int" }
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "recurringDeleteTitle": "Delete recurring appointment",
   "recurringDeleteMessage": "This is appointment {index} of {total} in the series.",
   "@recurringDeleteMessage": {
     "placeholders": {
-      "index": { "type": "int" },
-      "total": { "type": "int" }
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "recurringDeleteChooseScope": "Which appointments do you want to delete?",
@@ -1079,8 +1136,12 @@
   "recurringEditMessage": "This is appointment {index} of {total} in the series.",
   "@recurringEditMessage": {
     "placeholders": {
-      "index": { "type": "int" },
-      "total": { "type": "int" }
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
     }
   },
   "recurringEditChooseScope": "Which appointments do you want to edit?",
@@ -1090,13 +1151,17 @@
   "bookingTotalDuration": "Total duration: {duration}",
   "@bookingTotalDuration": {
     "placeholders": {
-      "duration": { "type": "String" }
+      "duration": {
+        "type": "String"
+      }
     }
   },
   "bookingTotalPrice": "Total: {price}",
   "@bookingTotalPrice": {
     "placeholders": {
-      "price": { "type": "String" }
+      "price": {
+        "type": "String"
+      }
     }
   },
   "recurrenceClientRequired": "A client must be selected for recurring appointments",
@@ -1105,7 +1170,6 @@
   "recurrenceConflictSkipDescription": "Don't create appointments if there are overlaps",
   "recurrenceConflictForce": "Create anyway",
   "recurrenceConflictForceDescription": "Create appointments even if there are overlaps",
-
   "reportsTitle": "Reports",
   "reportsNoData": "No data available",
   "actionRefresh": "Refresh",
@@ -1208,7 +1272,6 @@
     }
   },
   "resourceQuantityRequired": "Qty required",
-
   "bookingsListTitle": "Bookings List",
   "bookingsListEmpty": "No bookings found",
   "bookingsListEmptyHint": "Try adjusting your search filters",
@@ -1267,7 +1330,6 @@
   "bookingsListCancelSuccess": "Booking cancelled",
   "bookingsListLoading": "Loading...",
   "bookingsListNoClient": "No client",
-
   "moreServicesDescription": "Manage services, categories and pricing",
   "moreLocationsDescription": "Manage business locations",
   "moreTeamDescription": "Manage operators, locations and working hours",
@@ -1317,7 +1379,6 @@
   "bookingNotificationsBodyUnavailable": "Notification body not available",
   "bookingNotificationsNoSubject": "No subject",
   "bookingNotificationsNotAvailable": "N/A",
-
   "businessOnlineBookingsNotificationEmailLabel": "Online bookings notification email",
   "businessOnlineBookingsNotificationEmailHint": "e.g. bookings@business.com",
   "businessOnlineBookingsNotificationEmailHelper": "Receives notifications only when customers create/modify/cancel online bookings",
@@ -1326,7 +1387,6 @@
   "businessServiceColorPaletteEnhanced": "Darker (recommended)",
   "businessServiceColorPaletteLegacy": "Original",
   "moreSubtitle": "Access other application features",
-
   "closuresTitle": "Closure dates",
   "closuresFilterFromToday": "From today",
   "closuresFilterAll": "All",
@@ -1556,6 +1616,10 @@
   "moreSectionBusinessConfig": "Business Configuration",
   "moreSectionDataAnalysis": "Data Analysis",
   "moreSectionProfileManage": "Manage your profile",
+  "moreWhatsappBusinessTitle": "WhatsApp Business",
+  "moreWhatsappBusinessDescription": "Enable and configure WhatsApp messaging for booking confirmations, reminders, and notifications.",
+  "moreWhatsappBusinessGuidePlaceholderTitle": "Setup guide",
+  "moreWhatsappBusinessGuidePlaceholderBody": "This area will show the step-by-step operational guide to activate WhatsApp messaging.",
   "moreClassEventsDescription": "Manage classes and group schedules",
   "agendaDailyReportAction": "Daily report",
   "agendaWeeklyReportAction": "Weekly report",
@@ -1564,6 +1628,29 @@
   "whatsappTabTitle": "WhatsApp",
   "whatsappPanelTitle": "WhatsApp integration",
   "whatsappPanelSubtitle": "Manage numbers, location mappings, test sends, and outbox monitoring",
+  "whatsappConnectMeta": "Connect with Meta",
+  "whatsappReconnectMeta": "Reconnect with Meta",
+  "whatsappEmbeddedSignupTitle": "Complete Meta onboarding",
+  "whatsappEmbeddedSignupHint": "Paste the code returned by Embedded Signup. Other fields are optional and help initial matching.",
+  "whatsappEmbeddedSignupCode": "Code",
+  "whatsappEmbeddedSignupState": "Anti-CSRF state",
+  "whatsappEmbeddedSignupSessionVersion": "Session info version",
+  "whatsappEmbeddedSignupDisplayPhone": "Display phone number (+39...)",
+  "whatsappEmbeddedSignupConfirm": "Complete connection",
+  "whatsappEmbeddedSignupSuccessTitle": "WhatsApp connection completed",
+  "whatsappEmbeddedSignupSuccessMessage": "Onboarding completed. Next steps: {steps}",
+  "@whatsappEmbeddedSignupSuccessMessage": {
+    "placeholders": {
+      "steps": {}
+    }
+  },
+  "whatsappEmbeddedSignupSuccessWithMapping": "Onboarding completed. Auto-mapped locations: {locations}. Next steps: {steps}",
+  "@whatsappEmbeddedSignupSuccessWithMapping": {
+    "placeholders": {
+      "locations": {},
+      "steps": {}
+    }
+  },
   "whatsappSelectBusinessHint": "Select one business to manage WhatsApp integration.",
   "whatsappRefresh": "Refresh",
   "whatsappRunWorker": "Run worker",
@@ -1637,5 +1724,27 @@
   "agendaDisplaySettingsShowPricesLabel": "Show prices in cards",
   "agendaDisplaySettingsShowCancelledLabel": "Show cancelled appointments",
   "agendaDisplaySettingsServiceColorsLabel": "Card colors from:",
-  "agendaDisplaySettingsResetDefaultsAction": "Reset defaults"
+  "agendaDisplaySettingsResetDefaultsAction": "Reset defaults",
+  "whatsappGuideTitle": "Guide to activating WhatsApp for your business",
+  "whatsappGuideIntro": "To send automatic reminders to your clients, we need to connect one of your numbers to Meta's professional platform (the company that owns Facebook and WhatsApp).\nFollow these steps to get started right away.",
+  "whatsappGuideNeedsTitle": "What you need to get started",
+  "whatsappGuideNeedDedicatedNumber": "A dedicated number: You can use your shop landline or a new SIM. Important: this number must not have an active WhatsApp account on any mobile phone during the connection setup process.",
+  "whatsappGuideNeedPaymentCard": "A payment card: You will need it to pay Meta directly for messages. Cost is about 4 euro cents for each client you message (even more than once) within 24 hours.",
+  "whatsappGuideNeedVat": "Your VAT number: by adding it, you can avoid Meta charging Irish VAT on the invoice. You should still consult your accountant, since you will receive the invoice from Meta, which is effectively a foreign invoice.",
+  "whatsappGuidePaymentsTitle": "Payments and security",
+  "whatsappGuidePaymentsBody": "Card data is entered only in Meta's secure window: the management system never sees card number, expiry date, or CVV.",
+  "whatsappGuideProfessionalTitle": "Why do you need a dedicated number?",
+  "whatsappGuideProfessionalBody": "A regular WhatsApp account cannot send automatic messages. Using a dedicated number linked to your business allows the management system to send accurate reminders with your official business name, improving your image, reducing missed appointments, and increasing your clients' trust.",
+  "whatsappGuideManageNumberTitle": "How to manage the phone number",
+  "whatsappGuideManageNumberNewSim": "If you use a new SIM: insert it into a phone only to receive the initial verification code. Once setup is confirmed, you can remove the SIM; the system will keep working even with the phone turned off.",
+  "whatsappGuideManageNumberLandline": "If you use a landline: choose \"Voice call\" during verification. You will receive a call to the shop landline with the code to enter.",
+  "whatsappGuideManageNumberCurrent": "If you want to use your current number: first delete the WhatsApp account from your smartphone (Settings > Account > Delete account). Warning: this removes old messages.",
+  "whatsappGuideStepsTitle": "Steps to follow",
+  "whatsappGuideStep1": "Click the \"Connect with Meta\" button at the bottom of this guide.",
+  "whatsappGuideStep2": "Sign in with your Facebook page account (the one managing the shop page, not your personal profile account).",
+  "whatsappGuideStep3": "Follow the instructions to enter the business name (what your clients will see), card details, and VAT number.",
+  "whatsappGuideStep4": "When you receive the code by SMS or call, you will need to enter it in the admin panel to complete the connection. Make note of it.",
+  "whatsappGuideCodeImportant": "Important: without entering the verification code in the admin panel, WhatsApp connection will not be activated.",
+  "whatsappGuideTipTitle": "A small tip",
+  "whatsappGuideTipBody": "If you use a dedicated SIM, remember to do a small top-up at least once per year to keep the number active. Also keep Meta payment methods updated and ensure there is always available balance; otherwise Meta may suspend the service."
 }

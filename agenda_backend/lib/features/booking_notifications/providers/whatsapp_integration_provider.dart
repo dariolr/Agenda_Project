@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/models/whatsapp_location_mapping.dart';
 import '/core/models/whatsapp_config.dart';
+import '/core/models/whatsapp_embedded_signup_result.dart';
 import '/core/models/whatsapp_go_live_check.dart';
 import '/core/models/whatsapp_outbox_item.dart';
 import '/core/network/api_client.dart';
@@ -262,6 +263,28 @@ class WhatsappIntegrationNotifier extends Notifier<WhatsappIntegrationState> {
       businessId: businessId,
       locationId: locationId,
     );
+  }
+
+  Future<WhatsappEmbeddedSignupResult> completeEmbeddedSignup({
+    required int businessId,
+    required String code,
+    String? state,
+    int? sessionInfoVersion,
+    String? wabaId,
+    String? phoneNumberId,
+    String? displayPhoneNumber,
+  }) async {
+    final result = await _api.completeWhatsappEmbeddedSignup(
+      businessId: businessId,
+      code: code,
+      state: state,
+      sessionInfoVersion: sessionInfoVersion,
+      wabaId: wabaId,
+      phoneNumberId: phoneNumberId,
+      displayPhoneNumber: displayPhoneNumber,
+    );
+    await loadBusinessWhatsappData(businessId);
+    return result;
   }
 
   String? _extractWebhookEventId(Map<String, dynamic> payload) {

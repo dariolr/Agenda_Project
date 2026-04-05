@@ -204,6 +204,11 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m80(hours) => "${hours} ore totale";
 
+  static String m81(steps) => "Onboarding completato. Prossimi step: ${steps}";
+
+  static String m82(locations, steps) =>
+      "Onboarding completato. Sedi auto-mappate: ${locations}. Prossimi step: ${steps}";
+
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
     "actionApply": MessageLookupByLibrary.simpleMessage("Applica"),
@@ -1487,6 +1492,18 @@ class MessageLookup extends MessageLookupByLibrary {
     "moreTeamDescription": MessageLookupByLibrary.simpleMessage(
       "Gestisci operatori, sedi e orari di lavoro",
     ),
+    "moreWhatsappBusinessDescription": MessageLookupByLibrary.simpleMessage(
+      "Abilita e configura la messaggistica WhatsApp per conferme, promemoria e notifiche prenotazioni.",
+    ),
+    "moreWhatsappBusinessGuidePlaceholderBody":
+        MessageLookupByLibrary.simpleMessage(
+          "Qui verrà mostrata la guida operativa passo-passo per attivare la messaggistica WhatsApp.",
+        ),
+    "moreWhatsappBusinessGuidePlaceholderTitle":
+        MessageLookupByLibrary.simpleMessage("Guida configurazione"),
+    "moreWhatsappBusinessTitle": MessageLookupByLibrary.simpleMessage(
+      "WhatsApp Business",
+    ),
     "moveAppointmentConfirmMessage": m34,
     "moveAppointmentConfirmTitle": MessageLookupByLibrary.simpleMessage(
       "Confermi lo spostamento?",
@@ -2708,6 +2725,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappConfigsTitle": MessageLookupByLibrary.simpleMessage(
       "Numeri e configurazioni",
     ),
+    "whatsappConnectMeta": MessageLookupByLibrary.simpleMessage(
+      "Connetti con Meta",
+    ),
     "whatsappCreateLocationCta": MessageLookupByLibrary.simpleMessage(
       "Crea location",
     ),
@@ -2719,6 +2739,29 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappEditConfig": MessageLookupByLibrary.simpleMessage(
       "Modifica configurazione",
+    ),
+    "whatsappEmbeddedSignupCode": MessageLookupByLibrary.simpleMessage("Code"),
+    "whatsappEmbeddedSignupConfirm": MessageLookupByLibrary.simpleMessage(
+      "Completa connessione",
+    ),
+    "whatsappEmbeddedSignupDisplayPhone": MessageLookupByLibrary.simpleMessage(
+      "Numero visualizzato (+39...)",
+    ),
+    "whatsappEmbeddedSignupHint": MessageLookupByLibrary.simpleMessage(
+      "Inserisci il code restituito dal flusso Embedded Signup. Gli altri campi sono opzionali e aiutano il match iniziale.",
+    ),
+    "whatsappEmbeddedSignupSessionVersion":
+        MessageLookupByLibrary.simpleMessage("Session info version"),
+    "whatsappEmbeddedSignupState": MessageLookupByLibrary.simpleMessage(
+      "State anti-CSRF",
+    ),
+    "whatsappEmbeddedSignupSuccessMessage": m81,
+    "whatsappEmbeddedSignupSuccessTitle": MessageLookupByLibrary.simpleMessage(
+      "Connessione WhatsApp completata",
+    ),
+    "whatsappEmbeddedSignupSuccessWithMapping": m82,
+    "whatsappEmbeddedSignupTitle": MessageLookupByLibrary.simpleMessage(
+      "Completa onboarding Meta",
     ),
     "whatsappFieldAccessToken": MessageLookupByLibrary.simpleMessage(
       "Access token",
@@ -2763,6 +2806,72 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappGoLiveScopeBusiness": MessageLookupByLibrary.simpleMessage(
       "Ambito: business",
+    ),
+    "whatsappGuideCodeImportant": MessageLookupByLibrary.simpleMessage(
+      "Importante: senza l\'inserimento del codice di verifica nel gestionale, la connessione WhatsApp non verrà attivata.",
+    ),
+    "whatsappGuideIntro": MessageLookupByLibrary.simpleMessage(
+      "Per inviare promemoria automatici ai tuoi clienti, dobbiamo collegare un tuo numero alla piattaforma professionale di Meta (la società che possiede Facebook e WhatsApp).\nSegui questi passaggi per iniziare subito.",
+    ),
+    "whatsappGuideManageNumberCurrent": MessageLookupByLibrary.simpleMessage(
+      "Se vuoi usare il tuo numero attuale: Devi prima cancellare l\'account WhatsApp dal tuo smartphone (Impostazioni > Account > Elimina account). Attenzione: perderai i vecchi messaggi.",
+    ),
+    "whatsappGuideManageNumberLandline": MessageLookupByLibrary.simpleMessage(
+      "Se usi il numero fisso: Scegli l\'opzione \"Chiamata vocale\" durante la verifica. Riceverai una telefonata sul fisso del negozio che ti detterà il codice da inserire.",
+    ),
+    "whatsappGuideManageNumberNewSim": MessageLookupByLibrary.simpleMessage(
+      "Se usi una nuova SIM: Inseriscila in un telefono solo per ricevere il codice di verifica iniziale. Una volta confermato il collegamento, puoi togliere la SIM; il sistema funzionerà anche a telefono spento.",
+    ),
+    "whatsappGuideManageNumberTitle": MessageLookupByLibrary.simpleMessage(
+      "Come gestire il numero di telefono",
+    ),
+    "whatsappGuideNeedDedicatedNumber": MessageLookupByLibrary.simpleMessage(
+      "Un numero dedicato: Puoi usare il numero fisso del tuo negozio oppure una nuova scheda SIM. Importante: Questo numero non deve avere un account WhatsApp attivo su qualsiasi cellulare durante la procedura di collegamento.",
+    ),
+    "whatsappGuideNeedPaymentCard": MessageLookupByLibrary.simpleMessage(
+      "Una carta di pagamento: Ti servirà per pagare i messaggi direttamente a Meta. Il costo è di circa 4 centesimi per ogni cliente a cui invii messaggi nell\'arco di una giornata.",
+    ),
+    "whatsappGuideNeedVat": MessageLookupByLibrary.simpleMessage(
+      "La tua Partita IVA: Inserendola eviterai che Meta ti addebiti IVA irlandese in fattura, dovrai però consultare il tuo commercialista in quanto riceverai da Meta la fattura che di fatto è una fattura estera.",
+    ),
+    "whatsappGuideNeedsTitle": MessageLookupByLibrary.simpleMessage(
+      "Cosa ti serve per iniziare",
+    ),
+    "whatsappGuidePaymentsBody": MessageLookupByLibrary.simpleMessage(
+      "I dati della carta vengono inseriti solo nella finestra protetta di Meta: il gestionale non vede mai numero carta, scadenza o CVV.",
+    ),
+    "whatsappGuidePaymentsTitle": MessageLookupByLibrary.simpleMessage(
+      "Pagamenti e sicurezza",
+    ),
+    "whatsappGuideProfessionalBody": MessageLookupByLibrary.simpleMessage(
+      "Un account WhatsApp normale non può inviare messaggi automatici. Usando un numero dedicato e associato alla tua attività consentirà al gestionale di inviare promemoria precisi con il nome ufficiale della tua attività, migliorando la tua immagine, riducendo gli appuntamenti dimenticati e aumentando la fiducia dei tuoi clienti.",
+    ),
+    "whatsappGuideProfessionalTitle": MessageLookupByLibrary.simpleMessage(
+      "Perché serve un numero dedicato?",
+    ),
+    "whatsappGuideStep1": MessageLookupByLibrary.simpleMessage(
+      "Clicca sul tasto in basso a questa guida \"Connetti con Meta\".",
+    ),
+    "whatsappGuideStep2": MessageLookupByLibrary.simpleMessage(
+      "Accedi con l\'account della tua pagina Facebook (quello che gestisce la pagina del negozio, non quello del tuo profilo personale).",
+    ),
+    "whatsappGuideStep3": MessageLookupByLibrary.simpleMessage(
+      "Segui le istruzioni per inserire nome attività (quello che vedranno i tuoi clienti), i dati della carta e Partita IVA.",
+    ),
+    "whatsappGuideStep4": MessageLookupByLibrary.simpleMessage(
+      "Quando ricevi il codice tramite SMS o chiamata, dovrai inserirlo nel gestionale per completare il collegamento, prendine nota.",
+    ),
+    "whatsappGuideStepsTitle": MessageLookupByLibrary.simpleMessage(
+      "I passaggi da seguire",
+    ),
+    "whatsappGuideTipBody": MessageLookupByLibrary.simpleMessage(
+      "Se usi una SIM dedicata, ricordati di fare una piccola ricarica almeno una volta all\'anno per mantenerla attiva. Ricordati anche di tenere aggiornati i metodi di pagamento su Meta e verificare che ci sia sempre saldo disponibile: in caso contrario, Meta potrebbe sospendere il servizio.",
+    ),
+    "whatsappGuideTipTitle": MessageLookupByLibrary.simpleMessage(
+      "Un piccolo consiglio",
+    ),
+    "whatsappGuideTitle": MessageLookupByLibrary.simpleMessage(
+      "Guida per l\'attivazione di WhatsApp per la tua attività",
     ),
     "whatsappInvalidJson": MessageLookupByLibrary.simpleMessage(
       "JSON variabili non valido.",
@@ -2810,6 +2919,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappQueuedOnly": MessageLookupByLibrary.simpleMessage(
       "Messaggio accodato correttamente.",
+    ),
+    "whatsappReconnectMeta": MessageLookupByLibrary.simpleMessage(
+      "Riconnetti con Meta",
     ),
     "whatsappRefresh": MessageLookupByLibrary.simpleMessage("Aggiorna"),
     "whatsappRetryNow": MessageLookupByLibrary.simpleMessage("Riprova"),

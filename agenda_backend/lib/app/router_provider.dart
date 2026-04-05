@@ -9,6 +9,7 @@ import '../features/agenda/providers/business_providers.dart';
 import '../features/auth/domain/auth_state.dart';
 import '../features/auth/presentation/change_password_screen.dart';
 import '../features/auth/presentation/login_screen.dart';
+import '../features/auth/presentation/meta_whatsapp_callback_screen.dart';
 import '../features/auth/presentation/profile_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
@@ -23,8 +24,9 @@ import '../features/business/presentation/user_business_switch_screen.dart';
 import '../features/business/providers/superadmin_selected_business_provider.dart';
 import '../features/class_events/presentation/class_events_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
-import '../features/more/presentation/more_screen.dart';
 import '../features/more/presentation/locations_screen.dart';
+import '../features/more/presentation/more_screen.dart';
+import '../features/more/presentation/whatsapp_business_screen.dart';
 import '../features/payments/presentation/payment_methods_screen.dart';
 import '../features/reports/presentation/reports_screen.dart';
 import '../features/services/presentation/services_screen.dart';
@@ -101,6 +103,8 @@ final routerProvider = Provider<GoRouter>((ref) {
           state.matchedLocation == '/businesses/notifiche-prenotazioni';
       final isOnUserBusinessSwitch = state.matchedLocation == '/my-businesses';
       final isOnChangePassword = state.matchedLocation == '/change-password';
+      final isMetaWhatsappCallbackPage =
+          state.matchedLocation == '/auth/meta-whatsapp-callback';
       final invitationPath = state.uri.path;
       final isInvitationPage =
           invitationPath == '/invitation' ||
@@ -128,6 +132,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isPublicPage =
           isLoggingIn ||
           state.matchedLocation.startsWith('/reset-password') ||
+          isMetaWhatsappCallbackPage ||
           isInvitationPage;
 
       // Se non loggato e non su pagina pubblica, vai al login
@@ -205,6 +210,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (path == '/altro/metodi-pagamento' && !canManageBusinessSettings) {
           return '/agenda';
         }
+        if (path == '/altro/whatsapp-business') return '/agenda';
         if (path == '/permessi' && !canManageOperators) return '/agenda';
         if (path.startsWith('/operatori/') && !canManageOperators) {
           return '/agenda';
@@ -251,6 +257,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           return ResetPasswordScreen(token: token);
         },
       ),
+      GoRoute(
+        path: '/auth/meta-whatsapp-callback',
+        name: 'meta-whatsapp-callback',
+        builder: (context, state) => const MetaWhatsappCallbackScreen(),
+      ),
 
       // Route lista business per superadmin (fuori dalla shell)
       GoRoute(
@@ -261,9 +272,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/businesses/notifiche-prenotazioni',
         name: 'superadmin-booking-notifications',
-        builder: (context, state) => const BookingNotificationsScreen(
+        builder: (context, state) => BookingNotificationsScreen(
           enableBusinessSelectorForSuperadmin: true,
           showStandaloneAppBar: true,
+          initialTabIndex: state.uri.queryParameters['tab'] == 'whatsapp'
+              ? 1
+              : 0,
         ),
       ),
 
@@ -388,6 +402,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                     pageBuilder: (BuildContext context, GoRouterState state) =>
                         const NoTransitionPage(child: PaymentMethodsScreen()),
                   ),
+                  GoRoute(
+                    path: 'whatsapp-business',
+                    name: 'more-whatsapp-business',
+                    pageBuilder: (BuildContext context, GoRouterState state) =>
+                        const NoTransitionPage(
+                          child: WhatsappBusinessScreen(),
+                        ),
+                  ),
                 ],
               ),
             ],
@@ -435,8 +457,13 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: '/notifiche-prenotazioni',
                 name: 'notifiche-prenotazioni',
-                builder: (BuildContext context, GoRouterState state) =>
-                    const BookingNotificationsScreen(),
+                builder: (BuildContext context, GoRouterState state) {
+                  final initialTab =
+                      state.uri.queryParameters['tab'] == 'whatsapp' ? 1 : 0;
+                  return BookingNotificationsScreen(
+                    initialTabIndex: initialTab,
+                  );
+                },
               ),
             ],
           ),

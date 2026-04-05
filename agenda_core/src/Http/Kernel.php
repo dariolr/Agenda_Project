@@ -67,6 +67,8 @@ use Agenda\Infrastructure\Repositories\ForgotPasswordRateLimitRepository;
 use Agenda\Infrastructure\Repositories\WhatsappRepository;
 use Agenda\Infrastructure\Security\JwtService;
 use Agenda\Infrastructure\Security\PasswordHasher;
+use Agenda\Infrastructure\Security\TokenCipher;
+use Agenda\Infrastructure\Whatsapp\MetaWhatsAppEmbeddedSignupService;
 use Agenda\UseCases\Auth\GetMe;
 use Agenda\UseCases\Auth\LoginUser;
 use Agenda\UseCases\Auth\LogoutUser;
@@ -159,6 +161,9 @@ final class Kernel
         $this->router->get('/v1/businesses/by-slug/{slug}', BusinessController::class, 'showBySlug');
         // Public locations for a business (for booking flow)
         $this->router->get('/v1/businesses/{business_id}/locations/public', LocationsController::class, 'indexPublic');
+        // Public Meta webhook endpoint (verification + events)
+        $this->router->get('/v1/whatsapp/webhook', WhatsappController::class, 'webhookPublicVerify');
+        $this->router->post('/v1/whatsapp/webhook', WhatsappController::class, 'webhookPublicIngest');
         
         // Calendar ICS download (public, token-protected)
 
@@ -437,6 +442,8 @@ final class Kernel
         // Services
         $jwtService = new JwtService();
         $passwordHasher = new PasswordHasher();
+        $tokenCipher = new TokenCipher();
+        $metaEmbeddedSignupService = new MetaWhatsAppEmbeddedSignupService();
 
         // Operator Auth Use Cases
         $loginUser = new LoginUser($userRepo, $sessionRepo, $jwtService, $passwordHasher);
@@ -509,7 +516,14 @@ final class Kernel
             ReportsController::class => new ReportsController($this->db, $paymentMethodRepo, $businessUserRepo, $userRepo, $locationClosureRepo),
             LocationClosuresController::class => new LocationClosuresController($locationClosureRepo, $locationRepo, $businessUserRepo, $userRepo),
             ClassEventsController::class => new ClassEventsController($classEventRepo, $businessUserRepo, $locationRepo, $userRepo),
-            WhatsappController::class => new WhatsappController($whatsappRepo, $businessUserRepo, $userRepo, $locationRepo),
+            WhatsappController::class => new WhatsappController(
+                $whatsappRepo,
+                $businessUserRepo,
+                $userRepo,
+                $locationRepo,
+                $tokenCipher,
+                $metaEmbeddedSignupService
+            ),
         ];
     }
 

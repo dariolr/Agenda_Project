@@ -18,6 +18,11 @@ void main() {
     bool? showDemoBanner,
     bool? demoResetExpected,
     bool? demoAutoLoginEnabled,
+    String metaAppId = '',
+    String metaGraphVersion = 'v21.0',
+    String metaEmbeddedSignupRedirectUri = '',
+    String metaEmbeddedSignupScopes =
+        'business_management,whatsapp_business_management,whatsapp_business_messaging',
   }) {
     return AppEnvironmentRawConfig(
       appEnv: appEnv,
@@ -34,6 +39,10 @@ void main() {
       showDemoBanner: showDemoBanner,
       demoResetExpected: demoResetExpected,
       demoAutoLoginEnabled: demoAutoLoginEnabled,
+      metaAppId: metaAppId,
+      metaGraphVersion: metaGraphVersion,
+      metaEmbeddedSignupRedirectUri: metaEmbeddedSignupRedirectUri,
+      metaEmbeddedSignupScopes: metaEmbeddedSignupScopes,
     );
   }
 

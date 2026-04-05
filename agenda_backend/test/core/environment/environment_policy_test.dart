@@ -23,6 +23,11 @@ void main() {
       allowRealExports: false,
       demoResetExpected: true,
       demoAutoLoginEnabled: false,
+      metaAppId: '',
+      metaGraphVersion: 'v21.0',
+      metaEmbeddedSignupRedirectUri: '',
+      metaEmbeddedSignupScopes:
+          'business_management,whatsapp_business_management,whatsapp_business_messaging',
     );
 
     final policy = EnvironmentPolicy(config);

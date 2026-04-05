@@ -17,6 +17,7 @@ import '/features/agenda/providers/business_providers.dart';
 import '/features/agenda/providers/location_providers.dart';
 import '/features/agenda/providers/tenant_time_provider.dart';
 import '/features/auth/providers/auth_provider.dart';
+import '/features/auth/providers/current_business_user_provider.dart';
 import '/features/booking_notifications/providers/booking_notifications_provider.dart';
 import '/features/booking_notifications/providers/whatsapp_integration_provider.dart';
 import '/features/booking_notifications/presentation/whatsapp_management_panel.dart';
@@ -26,10 +27,12 @@ class BookingNotificationsScreen extends ConsumerStatefulWidget {
     super.key,
     this.enableBusinessSelectorForSuperadmin = false,
     this.showStandaloneAppBar = false,
+    this.initialTabIndex = 0,
   });
 
   final bool enableBusinessSelectorForSuperadmin;
   final bool showStandaloneAppBar;
+  final int initialTabIndex;
 
   @override
   ConsumerState<BookingNotificationsScreen> createState() =>
@@ -49,6 +52,7 @@ class _BookingNotificationsScreenState
   @override
   void initState() {
     super.initState();
+    _selectedTabIndex = widget.initialTabIndex == 1 ? 1 : 0;
     _scrollController.addListener(_onScroll);
     if (_canSelectBusiness) {
       _selectedStatus = 'failed';
@@ -188,7 +192,9 @@ class _BookingNotificationsScreenState
     final state = ref.watch(bookingNotificationsProvider);
     final formFactor = ref.watch(formFactorProvider);
     final isDesktop = formFactor == AppFormFactor.desktop;
-    final canAccessWhatsappSection = _isSuperadmin;
+    final canAccessWhatsappSection = ref.watch(
+      canManageBusinessSettingsProvider,
+    );
     final selectedTabIndex = canAccessWhatsappSection ? _selectedTabIndex : 0;
     final businesses = ref
         .watch(businessesProvider)

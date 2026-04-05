@@ -10,6 +10,7 @@ import '/core/models/class_type.dart';
 import '/core/models/location_closure.dart';
 import '/core/models/whatsapp_location_mapping.dart';
 import '/core/models/whatsapp_config.dart';
+import '/core/models/whatsapp_embedded_signup_result.dart';
 import '/core/models/whatsapp_go_live_check.dart';
 import '/core/models/whatsapp_outbox_item.dart';
 import 'api_config.dart';
@@ -2796,24 +2797,29 @@ class ApiClient {
     return WhatsappGoLiveCheck.fromJson(map);
   }
 
-  Future<WhatsappConfig> completeWhatsappEmbeddedSignup({
+  Future<WhatsappEmbeddedSignupResult> completeWhatsappEmbeddedSignup({
     required int businessId,
-    required String wabaId,
-    required String phoneNumberId,
-    required String token,
+    required String code,
+    String? state,
+    int? sessionInfoVersion,
+    String? wabaId,
+    String? phoneNumberId,
+    String? displayPhoneNumber,
   }) async {
     final response = await post(
       ApiConfig.whatsappEmbeddedSignupComplete(businessId),
       data: {
-        'waba_id': wabaId,
-        'phone_number_id': phoneNumberId,
-        'token': token,
+        'code': code,
+        if (state != null && state.trim().isNotEmpty) 'state': state,
+        if (sessionInfoVersion != null) 'session_info_version': sessionInfoVersion,
+        if (wabaId != null && wabaId.trim().isNotEmpty) 'waba_id': wabaId,
+        if (phoneNumberId != null && phoneNumberId.trim().isNotEmpty)
+          'phone_number_id': phoneNumberId,
+        if (displayPhoneNumber != null && displayPhoneNumber.trim().isNotEmpty)
+          'display_phone_number': displayPhoneNumber,
       },
     );
-    final map = Map<String, dynamic>.from(
-      (response['config'] as Map?) ?? response,
-    );
-    return WhatsappConfig.fromJson(map);
+    return WhatsappEmbeddedSignupResult.fromJson(response);
   }
 
   // ==========================================================================

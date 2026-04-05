@@ -48,7 +48,8 @@ final class WhatsappRepository
         string $phoneNumberId,
         string $accessTokenEncrypted,
         string $status,
-        bool $isDefault
+        bool $isDefault,
+        ?string $displayPhoneNumber = null
     ): int {
         if ($isDefault) {
             $this->clearDefaultConfig($businessId);
@@ -56,19 +57,104 @@ final class WhatsappRepository
 
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO whatsapp_business_config
-             (business_id, waba_id, phone_number_id, access_token_encrypted, status, is_default)
-             VALUES (?, ?, ?, ?, ?, ?)'
+             (business_id, waba_id, phone_number_id, display_phone_number, access_token_encrypted, status, is_default)
+             VALUES (?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $businessId,
             $wabaId,
             $phoneNumberId,
+            $displayPhoneNumber,
             $accessTokenEncrypted,
             $status,
             $isDefault ? 1 : 0,
         ]);
 
         return (int) $this->db->getPdo()->lastInsertId();
+    }
+
+    public function findConfigByPhoneNumberId(int $businessId, string $phoneNumberId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
+                    access_token_encrypted, status, is_default, created_at, updated_at
+             FROM whatsapp_business_config
+             WHERE business_id = ? AND phone_number_id = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$businessId, $phoneNumberId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
+
+    public function findConfigByPhoneNumberIdGlobal(string $phoneNumberId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
+                    access_token_encrypted, status, is_default, created_at, updated_at
+             FROM whatsapp_business_config
+             WHERE phone_number_id = ?
+             ORDER BY id DESC
+             LIMIT 1'
+        );
+        $stmt->execute([$phoneNumberId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
+
+    public function upsertConfigByPhoneNumberId(
+        int $businessId,
+        string $wabaId,
+        string $phoneNumberId,
+        string $accessTokenEncrypted,
+        string $status,
+        bool $isDefault,
+        ?string $displayPhoneNumber = null
+    ): int {
+        $existing = $this->findConfigByPhoneNumberId($businessId, $phoneNumberId);
+        if ($isDefault) {
+            $this->clearDefaultConfig($businessId);
+        }
+
+        if ($existing !== null) {
+            $fields = [
+                'waba_id = ?',
+                'display_phone_number = ?',
+                'access_token_encrypted = ?',
+                'status = ?',
+                'is_default = ?',
+                'updated_at = NOW()',
+            ];
+            $params = [
+                $wabaId,
+                $displayPhoneNumber,
+                $accessTokenEncrypted,
+                $status,
+                $isDefault ? 1 : 0,
+                $businessId,
+                (int) $existing['id'],
+            ];
+            $stmt = $this->db->getPdo()->prepare(
+                'UPDATE whatsapp_business_config
+                 SET ' . implode(', ', $fields) . '
+                 WHERE business_id = ? AND id = ?'
+            );
+            $stmt->execute($params);
+
+            return (int) $existing['id'];
+        }
+
+        return $this->createConfig(
+            $businessId,
+            $wabaId,
+            $phoneNumberId,
+            $accessTokenEncrypted,
+            $status,
+            $isDefault,
+            $displayPhoneNumber
+        );
     }
 
     public function updateConfig(int $businessId, int $configId, array $data): bool
@@ -388,6 +474,37 @@ final class WhatsappRepository
         $stmt->execute([$businessId, $clientId, $optIn ? 1 : 0]);
     }
 
+    public function optOutByPhone(int $businessId, string $rawPhone, string $source = 'whatsapp_stop'): bool
+    {
+        $normalized = preg_replace('/[^\d+]/', '', $rawPhone) ?? '';
+        if ($normalized === '') {
+            return false;
+        }
+
+        $clientStmt = $this->db->getPdo()->prepare(
+            'SELECT id
+             FROM clients
+             WHERE business_id = ?
+               AND is_archived = 0
+               AND REPLACE(REPLACE(REPLACE(phone, " ", ""), "-", ""), ".", "") = ?
+             LIMIT 1'
+        );
+        $clientStmt->execute([$businessId, $normalized]);
+        $clientId = $clientStmt->fetchColumn();
+        if ($clientId === false) {
+            return false;
+        }
+
+        $stmt = $this->db->getPdo()->prepare(
+            'INSERT INTO whatsapp_client_optins (business_id, client_id, opt_in, source, updated_at)
+             VALUES (?, ?, 0, ?, NOW())
+             ON DUPLICATE KEY UPDATE opt_in = 0, source = VALUES(source), updated_at = NOW()'
+        );
+        $stmt->execute([$businessId, (int) $clientId, $source]);
+
+        return true;
+    }
+
     public function hasActiveOptIn(int $businessId): bool
     {
         $stmt = $this->db->getPdo()->prepare(
@@ -422,6 +539,42 @@ final class WhatsappRepository
         $stmt->execute([$businessId]);
 
         return $stmt->fetchColumn() !== false;
+    }
+
+    public function isEmbeddedSignupEnabled(
+        int $businessId,
+        bool $defaultEnabled = false
+    ): bool {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT setting_value
+             FROM business_application_settings
+             WHERE business_id = ? AND setting_key = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$businessId, 'whatsapp_embedded_signup_enabled']);
+        $raw = $stmt->fetchColumn();
+        if ($raw === false || $raw === null) {
+            return $defaultEnabled;
+        }
+
+        $decoded = json_decode((string) $raw, true);
+        if (json_last_error() !== JSON_ERROR_NONE) {
+            $decoded = null;
+        }
+        if (is_array($decoded) && array_key_exists('enabled', $decoded)) {
+            return (bool) $decoded['enabled'];
+        }
+        if (is_bool($decoded)) {
+            return $decoded;
+        }
+        if (is_numeric($decoded)) {
+            return ((int) $decoded) === 1;
+        }
+        if (is_string($decoded)) {
+            return in_array(strtolower(trim($decoded)), ['1', 'true', 'yes', 'on'], true);
+        }
+
+        return $defaultEnabled;
     }
 
     public function findConfigForLocation(int $businessId, int $locationId): ?array
@@ -480,7 +633,7 @@ final class WhatsappRepository
         $stmt->execute([$businessId]);
     }
 
-    private function findMappingByLocation(int $businessId, int $locationId): ?array
+    public function findMappingByLocation(int $businessId, int $locationId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, location_id, whatsapp_config_id, created_at, updated_at

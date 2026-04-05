@@ -10104,6 +10104,46 @@ class L10n {
     );
   }
 
+  /// `WhatsApp Business`
+  String get moreWhatsappBusinessTitle {
+    return Intl.message(
+      'WhatsApp Business',
+      name: 'moreWhatsappBusinessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enable and configure WhatsApp messaging for booking confirmations, reminders, and notifications.`
+  String get moreWhatsappBusinessDescription {
+    return Intl.message(
+      'Enable and configure WhatsApp messaging for booking confirmations, reminders, and notifications.',
+      name: 'moreWhatsappBusinessDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Setup guide`
+  String get moreWhatsappBusinessGuidePlaceholderTitle {
+    return Intl.message(
+      'Setup guide',
+      name: 'moreWhatsappBusinessGuidePlaceholderTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This area will show the step-by-step operational guide to activate WhatsApp messaging.`
+  String get moreWhatsappBusinessGuidePlaceholderBody {
+    return Intl.message(
+      'This area will show the step-by-step operational guide to activate WhatsApp messaging.',
+      name: 'moreWhatsappBusinessGuidePlaceholderBody',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Manage classes and group schedules`
   String get moreClassEventsDescription {
     return Intl.message(
@@ -10181,6 +10221,129 @@ class L10n {
       name: 'whatsappPanelSubtitle',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `Connect with Meta`
+  String get whatsappConnectMeta {
+    return Intl.message(
+      'Connect with Meta',
+      name: 'whatsappConnectMeta',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reconnect with Meta`
+  String get whatsappReconnectMeta {
+    return Intl.message(
+      'Reconnect with Meta',
+      name: 'whatsappReconnectMeta',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Complete Meta onboarding`
+  String get whatsappEmbeddedSignupTitle {
+    return Intl.message(
+      'Complete Meta onboarding',
+      name: 'whatsappEmbeddedSignupTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Paste the code returned by Embedded Signup. Other fields are optional and help initial matching.`
+  String get whatsappEmbeddedSignupHint {
+    return Intl.message(
+      'Paste the code returned by Embedded Signup. Other fields are optional and help initial matching.',
+      name: 'whatsappEmbeddedSignupHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Code`
+  String get whatsappEmbeddedSignupCode {
+    return Intl.message(
+      'Code',
+      name: 'whatsappEmbeddedSignupCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Anti-CSRF state`
+  String get whatsappEmbeddedSignupState {
+    return Intl.message(
+      'Anti-CSRF state',
+      name: 'whatsappEmbeddedSignupState',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Session info version`
+  String get whatsappEmbeddedSignupSessionVersion {
+    return Intl.message(
+      'Session info version',
+      name: 'whatsappEmbeddedSignupSessionVersion',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Display phone number (+39...)`
+  String get whatsappEmbeddedSignupDisplayPhone {
+    return Intl.message(
+      'Display phone number (+39...)',
+      name: 'whatsappEmbeddedSignupDisplayPhone',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Complete connection`
+  String get whatsappEmbeddedSignupConfirm {
+    return Intl.message(
+      'Complete connection',
+      name: 'whatsappEmbeddedSignupConfirm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp connection completed`
+  String get whatsappEmbeddedSignupSuccessTitle {
+    return Intl.message(
+      'WhatsApp connection completed',
+      name: 'whatsappEmbeddedSignupSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Onboarding completed. Next steps: {steps}`
+  String whatsappEmbeddedSignupSuccessMessage(Object steps) {
+    return Intl.message(
+      'Onboarding completed. Next steps: $steps',
+      name: 'whatsappEmbeddedSignupSuccessMessage',
+      desc: '',
+      args: [steps],
+    );
+  }
+
+  /// `Onboarding completed. Auto-mapped locations: {locations}. Next steps: {steps}`
+  String whatsappEmbeddedSignupSuccessWithMapping(
+    Object locations,
+    Object steps,
+  ) {
+    return Intl.message(
+      'Onboarding completed. Auto-mapped locations: $locations. Next steps: $steps',
+      name: 'whatsappEmbeddedSignupSuccessWithMapping',
+      desc: '',
+      args: [locations, steps],
     );
   }
 
@@ -10904,6 +11067,226 @@ class L10n {
     return Intl.message(
       'Reset defaults',
       name: 'agendaDisplaySettingsResetDefaultsAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Guide to activating WhatsApp for your business`
+  String get whatsappGuideTitle {
+    return Intl.message(
+      'Guide to activating WhatsApp for your business',
+      name: 'whatsappGuideTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `To send automatic reminders to your clients, we need to connect one of your numbers to Meta's professional platform (the company that owns Facebook and WhatsApp).\nFollow these steps to get started right away.`
+  String get whatsappGuideIntro {
+    return Intl.message(
+      'To send automatic reminders to your clients, we need to connect one of your numbers to Meta\'s professional platform (the company that owns Facebook and WhatsApp).\nFollow these steps to get started right away.',
+      name: 'whatsappGuideIntro',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `What you need to get started`
+  String get whatsappGuideNeedsTitle {
+    return Intl.message(
+      'What you need to get started',
+      name: 'whatsappGuideNeedsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `A dedicated number: You can use your shop landline or a new SIM. Important: this number must not have an active WhatsApp account on any mobile phone during the connection setup process.`
+  String get whatsappGuideNeedDedicatedNumber {
+    return Intl.message(
+      'A dedicated number: You can use your shop landline or a new SIM. Important: this number must not have an active WhatsApp account on any mobile phone during the connection setup process.',
+      name: 'whatsappGuideNeedDedicatedNumber',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `A payment card: You will need it to pay Meta directly for messages. Cost is about 4 euro cents for each client you message (even more than once) within 24 hours.`
+  String get whatsappGuideNeedPaymentCard {
+    return Intl.message(
+      'A payment card: You will need it to pay Meta directly for messages. Cost is about 4 euro cents for each client you message (even more than once) within 24 hours.',
+      name: 'whatsappGuideNeedPaymentCard',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your VAT number: by adding it, you can avoid Meta charging Irish VAT on the invoice. You should still consult your accountant, since you will receive the invoice from Meta, which is effectively a foreign invoice.`
+  String get whatsappGuideNeedVat {
+    return Intl.message(
+      'Your VAT number: by adding it, you can avoid Meta charging Irish VAT on the invoice. You should still consult your accountant, since you will receive the invoice from Meta, which is effectively a foreign invoice.',
+      name: 'whatsappGuideNeedVat',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Payments and security`
+  String get whatsappGuidePaymentsTitle {
+    return Intl.message(
+      'Payments and security',
+      name: 'whatsappGuidePaymentsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Card data is entered only in Meta's secure window: the management system never sees card number, expiry date, or CVV.`
+  String get whatsappGuidePaymentsBody {
+    return Intl.message(
+      'Card data is entered only in Meta\'s secure window: the management system never sees card number, expiry date, or CVV.',
+      name: 'whatsappGuidePaymentsBody',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Why do you need a dedicated number?`
+  String get whatsappGuideProfessionalTitle {
+    return Intl.message(
+      'Why do you need a dedicated number?',
+      name: 'whatsappGuideProfessionalTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `A regular WhatsApp account cannot send automatic messages. Using a dedicated number linked to your business allows the management system to send accurate reminders with your official business name, improving your image, reducing missed appointments, and increasing your clients' trust.`
+  String get whatsappGuideProfessionalBody {
+    return Intl.message(
+      'A regular WhatsApp account cannot send automatic messages. Using a dedicated number linked to your business allows the management system to send accurate reminders with your official business name, improving your image, reducing missed appointments, and increasing your clients\' trust.',
+      name: 'whatsappGuideProfessionalBody',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `How to manage the phone number`
+  String get whatsappGuideManageNumberTitle {
+    return Intl.message(
+      'How to manage the phone number',
+      name: 'whatsappGuideManageNumberTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `If you use a new SIM: insert it into a phone only to receive the initial verification code. Once setup is confirmed, you can remove the SIM; the system will keep working even with the phone turned off.`
+  String get whatsappGuideManageNumberNewSim {
+    return Intl.message(
+      'If you use a new SIM: insert it into a phone only to receive the initial verification code. Once setup is confirmed, you can remove the SIM; the system will keep working even with the phone turned off.',
+      name: 'whatsappGuideManageNumberNewSim',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `If you use a landline: choose "Voice call" during verification. You will receive a call to the shop landline with the code to enter.`
+  String get whatsappGuideManageNumberLandline {
+    return Intl.message(
+      'If you use a landline: choose "Voice call" during verification. You will receive a call to the shop landline with the code to enter.',
+      name: 'whatsappGuideManageNumberLandline',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `If you want to use your current number: first delete the WhatsApp account from your smartphone (Settings > Account > Delete account). Warning: this removes old messages.`
+  String get whatsappGuideManageNumberCurrent {
+    return Intl.message(
+      'If you want to use your current number: first delete the WhatsApp account from your smartphone (Settings > Account > Delete account). Warning: this removes old messages.',
+      name: 'whatsappGuideManageNumberCurrent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Steps to follow`
+  String get whatsappGuideStepsTitle {
+    return Intl.message(
+      'Steps to follow',
+      name: 'whatsappGuideStepsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Click the "Connect with Meta" button at the bottom of this guide.`
+  String get whatsappGuideStep1 {
+    return Intl.message(
+      'Click the "Connect with Meta" button at the bottom of this guide.',
+      name: 'whatsappGuideStep1',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sign in with your Facebook page account (the one managing the shop page, not your personal profile account).`
+  String get whatsappGuideStep2 {
+    return Intl.message(
+      'Sign in with your Facebook page account (the one managing the shop page, not your personal profile account).',
+      name: 'whatsappGuideStep2',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Follow the instructions to enter the business name (what your clients will see), card details, and VAT number.`
+  String get whatsappGuideStep3 {
+    return Intl.message(
+      'Follow the instructions to enter the business name (what your clients will see), card details, and VAT number.',
+      name: 'whatsappGuideStep3',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `When you receive the code by SMS or call, you will need to enter it in the admin panel to complete the connection. Make note of it.`
+  String get whatsappGuideStep4 {
+    return Intl.message(
+      'When you receive the code by SMS or call, you will need to enter it in the admin panel to complete the connection. Make note of it.',
+      name: 'whatsappGuideStep4',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Important: without entering the verification code in the admin panel, WhatsApp connection will not be activated.`
+  String get whatsappGuideCodeImportant {
+    return Intl.message(
+      'Important: without entering the verification code in the admin panel, WhatsApp connection will not be activated.',
+      name: 'whatsappGuideCodeImportant',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `A small tip`
+  String get whatsappGuideTipTitle {
+    return Intl.message(
+      'A small tip',
+      name: 'whatsappGuideTipTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `If you use a dedicated SIM, remember to do a small top-up at least once per year to keep the number active. Also keep Meta payment methods updated and ensure there is always available balance; otherwise Meta may suspend the service.`
+  String get whatsappGuideTipBody {
+    return Intl.message(
+      'If you use a dedicated SIM, remember to do a small top-up at least once per year to keep the number active. Also keep Meta payment methods updated and ensure there is always available balance; otherwise Meta may suspend the service.',
+      name: 'whatsappGuideTipBody',
       desc: '',
       args: [],
     );

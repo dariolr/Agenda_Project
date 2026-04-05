@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/providers/form_factor_provider.dart';
@@ -86,6 +87,17 @@ class MoreScreen extends ConsumerWidget {
           description: l10n.paymentMethodsDescription,
           color: const Color(0xFF6D4C41),
           onTap: () => context.go(_withFromAltro('/altro/metodi-pagamento')),
+        ),
+      if (canManageSettings && isSuperadmin)
+        _MoreItem(
+          icon: Icons.chat_rounded,
+          svgAssetPath: 'assets/icons/whatsapp.svg',
+          svgInsetFactor: 0.0,
+          svgScale: 0.86,
+          title: l10n.moreWhatsappBusinessTitle,
+          description: l10n.moreWhatsappBusinessDescription,
+          color: const Color(0xFF25D366),
+          onTap: () => context.go(_withFromAltro('/altro/whatsapp-business')),
         ),
       // Permessi - visibile solo a chi può gestire operatori
       if (canManageOperators)
@@ -278,6 +290,9 @@ class _MoreSection {
 
 class _MoreItem {
   final IconData icon;
+  final String? svgAssetPath;
+  final double svgInsetFactor;
+  final double svgScale;
   final String title;
   final String description;
   final Color color;
@@ -285,11 +300,42 @@ class _MoreItem {
 
   const _MoreItem({
     required this.icon,
+    this.svgAssetPath,
+    this.svgInsetFactor = 0.14,
+    this.svgScale = 1.0,
     required this.title,
     required this.description,
     required this.color,
     required this.onTap,
   });
+}
+
+Widget _buildMoreItemIcon(_MoreItem item, {required double size}) {
+  if (item.svgAssetPath != null && item.svgAssetPath!.isNotEmpty) {
+    final inset = size * item.svgInsetFactor;
+    return SizedBox.square(
+      dimension: size,
+      child: Padding(
+        padding: EdgeInsets.all(inset),
+        child: Center(
+          child: Transform.scale(
+            scale: item.svgScale,
+            child: SvgPicture.asset(
+              item.svgAssetPath!,
+              width: size - (inset * 2),
+              height: size - (inset * 2),
+              fit: BoxFit.contain,
+              colorFilter: ColorFilter.mode(item.color, BlendMode.srcIn),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  return SizedBox.square(
+    dimension: size,
+    child: Icon(item.icon, size: size, color: item.color),
+  );
 }
 
 /// Card per desktop (layout verticale compatto)
@@ -349,7 +395,7 @@ class _MoreCardDesktopState extends State<_MoreCardDesktop> {
                           color: item.color.withOpacity(0.12),
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        child: Icon(item.icon, size: 26, color: item.color),
+                        child: _buildMoreItemIcon(item, size: 26),
                       ),
                       const Spacer(),
                       // Freccia di navigazione
@@ -428,7 +474,7 @@ class _MoreCardMobile extends StatelessWidget {
                   color: item.color.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(item.icon, size: 24, color: item.color),
+                child: _buildMoreItemIcon(item, size: 24),
               ),
               const SizedBox(width: 16),
               // Testo (si espande e si adatta)

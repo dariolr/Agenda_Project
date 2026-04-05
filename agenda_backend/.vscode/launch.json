@@ -22,7 +22,11 @@
         "--dart-define=ALLOW_REAL_EXPORTS=true",
         "--dart-define=SHOW_DEMO_BANNER=false",
         "--dart-define=DEMO_RESET_EXPECTED=false",
-        "--dart-define=DEMO_AUTO_LOGIN_ENABLED=false"
+        "--dart-define=DEMO_AUTO_LOGIN_ENABLED=false",
+        "--dart-define=META_APP_ID=2025478641711692",
+        "--dart-define=META_GRAPH_VERSION=v21.0",
+        "--dart-define=META_EMBEDDED_SIGNUP_REDIRECT_URI=https://gestionale.romeolab.it/auth/meta-whatsapp-callback",
+        "--dart-define=META_EMBEDDED_SIGNUP_SCOPES=business_management,whatsapp_business_management,whatsapp_business_messaging"
       ]
     },
     {
@@ -47,7 +51,11 @@
         "--dart-define=ALLOW_REAL_EXPORTS=false",
         "--dart-define=SHOW_DEMO_BANNER=false",
         "--dart-define=DEMO_RESET_EXPECTED=false",
-        "--dart-define=DEMO_AUTO_LOGIN_ENABLED=false"
+        "--dart-define=DEMO_AUTO_LOGIN_ENABLED=false",
+        "--dart-define=META_APP_ID=2025478641711692",
+        "--dart-define=META_GRAPH_VERSION=v21.0",
+        "--dart-define=META_EMBEDDED_SIGNUP_REDIRECT_URI=http://localhost:3001/auth/meta-whatsapp-callback",
+        "--dart-define=META_EMBEDDED_SIGNUP_SCOPES=business_management,whatsapp_business_management,whatsapp_business_messaging"
       ]
     },
     {
@@ -72,7 +80,11 @@
         "--dart-define=ALLOW_REAL_EXPORTS=false",
         "--dart-define=SHOW_DEMO_BANNER=true",
         "--dart-define=DEMO_RESET_EXPECTED=true",
-        "--dart-define=DEMO_AUTO_LOGIN_ENABLED=false"
+        "--dart-define=DEMO_AUTO_LOGIN_ENABLED=false",
+        "--dart-define=META_APP_ID=2025478641711692",
+        "--dart-define=META_GRAPH_VERSION=v21.0",
+        "--dart-define=META_EMBEDDED_SIGNUP_REDIRECT_URI=https://demo-gestionale.romeolab.it/auth/meta-whatsapp-callback",
+        "--dart-define=META_EMBEDDED_SIGNUP_SCOPES=business_management,whatsapp_business_management,whatsapp_business_messaging"
       ]
     },
     {
@@ -97,7 +109,11 @@
         "--dart-define=ALLOW_REAL_EXPORTS=false",
         "--dart-define=SHOW_DEMO_BANNER=true",
         "--dart-define=DEMO_RESET_EXPECTED=true",
-        "--dart-define=DEMO_AUTO_LOGIN_ENABLED=false"
+        "--dart-define=DEMO_AUTO_LOGIN_ENABLED=false",
+        "--dart-define=META_APP_ID=2025478641711692",
+        "--dart-define=META_GRAPH_VERSION=v21.0",
+        "--dart-define=META_EMBEDDED_SIGNUP_REDIRECT_URI=http://localhost:3001/auth/meta-whatsapp-callback",
+        "--dart-define=META_EMBEDDED_SIGNUP_SCOPES=business_management,whatsapp_business_management,whatsapp_business_messaging"
       ]
     }
   ]
