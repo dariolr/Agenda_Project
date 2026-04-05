@@ -50,7 +50,12 @@ final class QueueBookingRescheduled
 
         // Check if notifications are enabled
         $settings = $this->notificationRepo->getSettings((int) $booking['business_id']);
-        if ($settings && !($settings['email_booking_rescheduled'] ?? true)) {
+        if (
+            $settings
+            && array_key_exists('email_booking_rescheduled', $settings)
+            && $settings['email_booking_rescheduled'] !== null
+            && (int) $settings['email_booking_rescheduled'] === 0
+        ) {
             return 0;
         }
 

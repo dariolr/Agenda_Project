@@ -215,7 +215,10 @@ foreach ($notifications as $notification) {
                     ?? null,
         });
         $defaultFromEmail = normalizeEmail($_ENV['MAIL_FROM_ADDRESS'] ?? null);
-        $fromName = $variables['business_name'] ?? null; // Show business name as sender name
+        $fromName = $variables['sender_name']
+            ?? $variables['location_name']
+            ?? $variables['business_name']
+            ?? null;
         
         // Reply-To: use business/location email so replies go to the business
         $replyTo = normalizeEmail(
@@ -423,6 +426,18 @@ function renderTemplate(string $channel, array $payload): array
     if (!isset($variables['year'])) {
         $variables['year'] = date('Y');
     }
+    if (!isset($variables['recurring_schedule_html'])) {
+        $variables['recurring_schedule_html'] = '';
+    }
+    if (!isset($variables['recurring_schedule_text'])) {
+        $variables['recurring_schedule_text'] = '';
+    }
+    if (!isset($variables['recurring_cancellation_policy_html'])) {
+        $variables['recurring_cancellation_policy_html'] = '';
+    }
+    if (!isset($variables['recurring_cancellation_policy_text'])) {
+        $variables['recurring_cancellation_policy_text'] = '';
+    }
     
     // Get locale from variables, default to 'it'
     $locale = $variables['locale'] ?? 'it';
@@ -430,7 +445,11 @@ function renderTemplate(string $channel, array $payload): array
     // Get template based on channel
     switch ($channel) {
         case 'booking_confirmed':
-            $template = EmailTemplateRenderer::bookingConfirmed($locale);
+            $isRecurringConfirmation = isset($variables['is_recurring_confirmation'])
+                && (string) $variables['is_recurring_confirmation'] === '1';
+            $template = $isRecurringConfirmation
+                ? EmailTemplateRenderer::bookingConfirmedRecurring($locale)
+                : EmailTemplateRenderer::bookingConfirmed($locale);
             break;
             
         case 'booking_cancelled':

@@ -65,7 +65,12 @@ final class QueueBookingReminder
 
         // Get settings
         $settings = $this->notificationRepo->getSettings((int) $booking['business_id']);
-        if ($settings && !$settings['email_reminder_enabled']) {
+        if (
+            $settings
+            && array_key_exists('email_reminder_enabled', $settings)
+            && $settings['email_reminder_enabled'] !== null
+            && (int) $settings['email_reminder_enabled'] === 0
+        ) {
             return 0;
         }
         
@@ -261,10 +266,7 @@ final class QueueBookingReminder
                 $booking['client_name'] = $booking['client_first_name'];
             }
             $booking['sender_email'] = $this->resolveSenderEmail($booking) ?? '';
-            $booking['sender_name'] = $this->resolveSenderName(
-                $booking,
-                $booking['sender_email']
-            ) ?? '';
+            $booking['sender_name'] = $this->resolveSenderName($booking) ?? '';
             // Build manage_url from business slug
             $slug = $booking['business_slug'] ?? '';
             $booking['manage_url'] = $frontendUrl . '/' . $slug . '/my-bookings';
@@ -436,10 +438,7 @@ final class QueueBookingReminder
         $slug = $booking['business_slug'] ?? '';
         $booking['manage_url'] = $frontendUrl . '/' . $slug . '/my-bookings';
         $booking['sender_email'] = $this->resolveSenderEmail($booking) ?? '';
-        $booking['sender_name'] = $this->resolveSenderName(
-            $booking,
-            $booking['sender_email']
-        ) ?? '';
+        $booking['sender_name'] = $this->resolveSenderName($booking) ?? '';
         
         return $booking;
     }
@@ -455,14 +454,12 @@ final class QueueBookingReminder
         return $businessEmail !== '' ? $businessEmail : null;
     }
 
-    private function resolveSenderName(array $booking, ?string $resolvedSenderEmail): ?string
+    private function resolveSenderName(array $booking): ?string
     {
-        $locationEmail = trim((string) ($booking['location_email'] ?? ''));
-        if ($resolvedSenderEmail !== null && $locationEmail !== '' && $resolvedSenderEmail === $locationEmail) {
-            $locationName = trim((string) ($booking['location_name'] ?? ''));
-            return $locationName !== '' ? $locationName : null;
+        $locationName = trim((string) ($booking['location_name'] ?? ''));
+        if ($locationName !== '') {
+            return $locationName;
         }
-
         $businessName = trim((string) ($booking['business_name'] ?? ''));
         return $businessName !== '' ? $businessName : null;
     }

@@ -134,7 +134,7 @@ final class EmailTemplateRenderer
 
         $templates = [
             'it' => [
-                'subject' => 'Prenotazione confermata - {{business_name}}',
+                'subject' => 'Prenotazione confermata',
                 'html' => <<<HTML
 <!DOCTYPE html>
 <html lang="it">
@@ -172,6 +172,7 @@ final class EmailTemplateRenderer
                                         <strong style="color:#333;">{{date}} alle {{time}}</strong>
                                     </td>
                                 </tr>
+                                {{recurring_schedule_html}}
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                                         <span style="color:#666;font-size:13px;">Cosa</span><br>
@@ -227,6 +228,7 @@ La tua prenotazione presso {{business_name}} è stata confermata.
 
 {{location_block_text}}
 • Quando: {{date}} alle {{time}}
+{{recurring_schedule_text}}
 • Cosa: {{services}}
 • Totale: €{{total_price}}
 
@@ -241,7 +243,7 @@ Il team di {{business_name}}
 TEXT,
             ],
             'en' => [
-                'subject' => 'Booking confirmed - {{business_name}}',
+                'subject' => 'Booking confirmed',
                 'html' => <<<HTML
 <!DOCTYPE html>
 <html lang="en">
@@ -279,6 +281,7 @@ TEXT,
                                         <strong style="color:#333;">{{date}} at {{time}}</strong>
                                     </td>
                                 </tr>
+                                {{recurring_schedule_html}}
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                                         <span style="color:#666;font-size:13px;">What</span><br>
@@ -334,12 +337,203 @@ Your booking at {{business_name}} has been confirmed.
 
 {{location_block_text}}
 • When: {{date}} at {{time}}
+{{recurring_schedule_text}}
 • What: {{services}}
 • Total: €{{total_price}}
 
 You can change or cancel your booking until {{cancel_deadline}}.
 
 Manage booking: {{manage_url}}
+
+---
+The {{business_name}} Team
+{{location_address}}, {{location_city}}
+{{location_phone}}
+TEXT,
+            ],
+        ];
+
+        return $templates[$locale];
+    }
+
+    /**
+     * Booking confirmation template dedicated to recurring bookings.
+     * Shows occurrences list and services only (no single "when", no total cost).
+     */
+    public static function bookingConfirmedRecurring(string $locale = 'it'): array
+    {
+        $locale = self::normalizeLocale($locale);
+
+        $templates = [
+            'it' => [
+                'subject' => 'Prenotazione ricorrente confermata',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prenotazione Ricorrente Confermata</title>
+</head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+        <tr>
+            <td style="padding:40px 30px;text-align:center;background-color:#2196F3;">
+                <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">
+                    ✓ Prenotazione Ricorrente Confermata
+                </h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:30px;">
+                <p style="margin:0 0 20px;font-size:16px;color:#333;">
+                    Ciao <strong>{{client_name}}</strong>,
+                </p>
+                <p style="margin:0 0 25px;font-size:16px;color:#333;">
+                    La tua prenotazione ricorrente presso <strong>{{business_name}}</strong> è stata confermata.
+                </p>
+
+                <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
+                    <tr>
+                        <td style="padding:20px;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                {{location_block_html}}
+                                {{recurring_schedule_html}}
+                                <tr>
+                                    <td style="padding:8px 0;">
+                                        <span style="color:#666;font-size:13px;">Cosa</span><br>
+                                        <strong style="color:#333;">{{services}}</strong>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+                {{recurring_cancellation_policy_html}}
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="text-align:center;">
+                            <a href="{{manage_url}}" style="display:inline-block;padding:14px 30px;background-color:#2196F3;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">
+                                Gestisci Prenotazioni
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+                <p style="margin:0;font-size:12px;color:#999;">
+                    Il team di {{business_name}}<br>
+                    {{location_address}}, {{location_city}}<br>
+                    {{location_phone}}
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+HTML,
+                'text' => <<<TEXT
+PRENOTAZIONE RICORRENTE CONFERMATA
+
+Ciao {{client_name}},
+
+La tua prenotazione ricorrente presso {{business_name}} è stata confermata.
+
+{{location_block_text}}
+{{recurring_schedule_text}}
+• Cosa: {{services}}
+{{recurring_cancellation_policy_text}}
+Gestisci prenotazioni: {{manage_url}}
+
+---
+Il team di {{business_name}}
+{{location_address}}, {{location_city}}
+{{location_phone}}
+TEXT,
+            ],
+            'en' => [
+                'subject' => 'Recurring booking confirmed',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recurring Booking Confirmed</title>
+</head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+        <tr>
+            <td style="padding:40px 30px;text-align:center;background-color:#2196F3;">
+                <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">
+                    ✓ Recurring Booking Confirmed
+                </h1>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:30px;">
+                <p style="margin:0 0 20px;font-size:16px;color:#333;">
+                    Hi <strong>{{client_name}}</strong>,
+                </p>
+                <p style="margin:0 0 25px;font-size:16px;color:#333;">
+                    Your recurring booking at <strong>{{business_name}}</strong> has been confirmed.
+                </p>
+
+                <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
+                    <tr>
+                        <td style="padding:20px;">
+                            <table width="100%" cellpadding="0" cellspacing="0">
+                                {{location_block_html}}
+                                {{recurring_schedule_html}}
+                                <tr>
+                                    <td style="padding:8px 0;">
+                                        <span style="color:#666;font-size:13px;">What</span><br>
+                                        <strong style="color:#333;">{{services}}</strong>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+                {{recurring_cancellation_policy_html}}
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="text-align:center;">
+                            <a href="{{manage_url}}" style="display:inline-block;padding:14px 30px;background-color:#2196F3;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">
+                                Manage Bookings
+                            </a>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+                <p style="margin:0;font-size:12px;color:#999;">
+                    The {{business_name}} Team<br>
+                    {{location_address}}, {{location_city}}<br>
+                    {{location_phone}}
+                </p>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+HTML,
+                'text' => <<<TEXT
+RECURRING BOOKING CONFIRMED
+
+Hi {{client_name}},
+
+Your recurring booking at {{business_name}} has been confirmed.
+
+{{location_block_text}}
+{{recurring_schedule_text}}
+• What: {{services}}
+{{recurring_cancellation_policy_text}}
+Manage bookings: {{manage_url}}
 
 ---
 The {{business_name}} Team
@@ -361,7 +555,7 @@ TEXT,
 
         $templates = [
             'it' => [
-                'subject' => 'Prenotazione cancellata - {{business_name}}',
+                'subject' => 'Prenotazione cancellata',
                 'html' => <<<HTML
 <!DOCTYPE html>
 <html lang="it">
@@ -455,7 +649,7 @@ Il team di {{business_name}}
 TEXT,
             ],
             'en' => [
-                'subject' => 'Booking cancelled - {{business_name}}',
+                'subject' => 'Booking cancelled',
                 'html' => <<<HTML
 <!DOCTYPE html>
 <html lang="en">
@@ -562,7 +756,7 @@ TEXT,
 
         $templates = [
             'it' => [
-                'subject' => 'Promemoria: domani hai un appuntamento - {{business_name}}',
+                'subject' => 'Promemoria: domani hai un appuntamento',
                 'html' => <<<HTML
 <!DOCTYPE html>
 <html lang="it">
@@ -655,7 +849,7 @@ Il team di {{business_name}} | {{location_phone}}
 TEXT,
             ],
             'en' => [
-                'subject' => 'Reminder: you have an appointment tomorrow - {{business_name}}',
+                'subject' => 'Reminder: you have an appointment tomorrow',
                 'html' => <<<HTML
 <!DOCTYPE html>
 <html lang="en">
@@ -761,7 +955,7 @@ TEXT,
 
         $templates = [
             'it' => [
-                'subject' => 'Prenotazione modificata - {{business_name}}',
+                'subject' => 'Prenotazione modificata',
                 'html' => <<<HTML
 <!DOCTYPE html>
 <html lang="it">
@@ -857,7 +1051,7 @@ Il team di {{business_name}}
 TEXT,
             ],
             'en' => [
-                'subject' => 'Booking rescheduled - {{business_name}}',
+                'subject' => 'Booking rescheduled',
                 'html' => <<<HTML
 <!DOCTYPE html>
 <html lang="en">
@@ -1177,7 +1371,7 @@ TEXT,
 
         $templates = [
             'it' => [
-                'subject' => 'Reimposta la tua password - {{business_name}}',
+                'subject' => 'Reimposta la tua password',
                 'html' => <<<HTML
 <!DOCTYPE html>
 <html lang="it">
@@ -1254,7 +1448,7 @@ Il team di {{business_name}}
 TEXT,
             ],
             'en' => [
-                'subject' => 'Reset your password - {{business_name}}',
+                'subject' => 'Reset your password',
                 'html' => <<<HTML
 <!DOCTYPE html>
 <html lang="en">

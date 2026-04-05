@@ -10609,6 +10609,16 @@ class L10n {
     );
   }
 
+  /// `Booking ID`
+  String get appointmentDialogBookingId {
+    return Intl.message(
+      'Booking ID',
+      name: 'appointmentDialogBookingId',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Client ID`
   String get whatsappFieldClientId {
     return Intl.message(

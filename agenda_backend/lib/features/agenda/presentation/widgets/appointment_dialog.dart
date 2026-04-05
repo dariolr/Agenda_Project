@@ -235,6 +235,23 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     showBookingHistoryDialog(context, ref, bookingId: bookingId);
   }
 
+  Widget _buildBookingIdTag(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Text(
+        '${l10n.appointmentDialogBookingId}: #${widget.initial.bookingId}',
+        style: theme.textTheme.labelMedium,
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _notesController.dispose();
@@ -832,9 +849,16 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                     Row(
                       children: [
                         Expanded(
-                          child: Text(
-                            title,
-                            style: Theme.of(context).textTheme.headlineSmall,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                title,
+                                style: Theme.of(context).textTheme.headlineSmall,
+                              ),
+                              const SizedBox(height: 6),
+                              _buildBookingIdTag(context),
+                            ],
                           ),
                         ),
                         IconButton(
@@ -908,9 +932,16 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                 child: Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        title,
-                        style: Theme.of(context).textTheme.titleLarge,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                          const SizedBox(height: 6),
+                          _buildBookingIdTag(context),
+                        ],
                       ),
                     ),
                     IconButton(

@@ -1607,6 +1607,7 @@
   "whatsappTestSendTitle": "Template test send",
   "whatsappFieldLocation": "Location",
   "whatsappFieldBookingId": "Booking ID",
+  "appointmentDialogBookingId": "Booking ID",
   "whatsappFieldClientId": "Client ID",
   "whatsappFieldRecipientPhone": "Recipient phone",
   "whatsappFieldTemplateName": "Template name",

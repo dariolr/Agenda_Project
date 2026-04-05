@@ -322,6 +322,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "applyClientToAllAppointmentsTitle": MessageLookupByLibrary.simpleMessage(
       "Apply client to entire booking?",
     ),
+    "appointmentDialogBookingId": MessageLookupByLibrary.simpleMessage(
+      "Booking ID",
+    ),
     "appointmentDialogTitleEdit": MessageLookupByLibrary.simpleMessage(
       "Edit appointment",
     ),

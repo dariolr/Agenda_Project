@@ -1,0 +1,6 @@
+booking_id,business_id,location_id,client_id,client_first_name,client_last_name,client_name,source,status,booking_created_at_utc,booking_item_id,service_id,service_name_snapshot,staff_id,item_start_time_utc,item_end_time_utc
+10410,7,7,16458,Eleonora,Russo,"Eleonora Russo",online,confirmed,"2026-04-04 19:41:19",13727,588,Glutei,49,"2026-04-11 09:30:00","2026-04-11 09:40:00"
+10410,7,7,16458,Eleonora,Russo,"Eleonora Russo",online,confirmed,"2026-04-04 19:41:19",13728,590,"Gamba Intera + Inguine",49,"2026-04-11 09:50:00","2026-04-11 10:20:00"
+10411,7,7,18755,Alice,Ripamonti,"Alice Ripamonti",online,confirmed,"2026-04-05 07:02:48",13729,655,Sopracciglia,56,"2026-04-09 13:15:00","2026-04-09 13:25:00"
+10412,7,8,18755,Alice,Ripamonti,"Alice Ripamonti",online,confirmed,"2026-04-05 07:04:55",13730,641,Shatush,48,"2026-05-16 13:30:00","2026-05-16 15:30:00"
+10412,7,8,18755,Alice,Ripamonti,"Alice Ripamonti",online,confirmed,"2026-04-05 07:04:55",13731,630,"Taglio + Piega",48,"2026-05-16 15:30:00","2026-05-16 16:30:00"

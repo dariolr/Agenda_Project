@@ -1,0 +1,9 @@
+Generated UTC: 2026-04-05 08:37:09
+Booking IDs: 10410,10411,10412
+bookings rows: 3
+booking_items rows: 5
+booking_events rows: 6
+notification_queue rows: 6
+notification_queue sent rows: 3
+notification_queue pending rows: 3
+booking_replacements rows: 0

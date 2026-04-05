@@ -515,9 +515,14 @@ Future<void> showServiceDialog(
     for (final c in palette)
       if (seen.add(c.value)) c,
   ];
-  final serviceColor = existingVariant?.colorHex != null
-      ? ColorUtils.fromHex(existingVariant!.colorHex!)
+  final serviceColorHex = existingVariant?.colorHex ?? service?.color;
+  final serviceColor = serviceColorHex != null
+      ? ColorUtils.fromHex(serviceColorHex)
       : null;
+  if (serviceColor != null &&
+      !uniquePalette.any((c) => c.value == serviceColor.value)) {
+    uniquePalette.insert(0, serviceColor);
+  }
   final hasPreselectedColor =
       preselectedColor != null &&
       uniquePalette.any((c) => c.value == preselectedColor.value);

@@ -15,6 +15,7 @@ use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\BookingAuditRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
+use Agenda\UseCases\Notifications\QueueBookingConfirmation;
 use Agenda\UseCases\Notifications\QueueBookingReminder;
 use Agenda\Domain\Booking\RecurrenceRule;
 use Agenda\Domain\Exceptions\BookingException;
@@ -302,9 +303,6 @@ final class CreateRecurringBooking
                     'is_recurrence_parent' => $isParent,
                 ];
 
-                // Reminder notifications are queued post-commit for each created occurrence.
-                // TODO(phase-2-notifications): queue booking_confirmed for recurring occurrences.
-
                 // Log audit event
                 if ($this->auditRepository !== null) {
                     try {
@@ -324,6 +322,19 @@ final class CreateRecurringBooking
             }
 
             $pdo->commit();
+
+            // Non-blocking: queue one confirmation email for the whole recurring series.
+            $this->queueConfirmationNotificationForRecurringSeries(
+                createdBookings: $createdBookings,
+                itemTemplates: $itemTemplates,
+                location: $location,
+                client: $client,
+                clientId: (int) $clientId,
+                businessId: $businessId,
+                requestedLocale: is_string($requestedLocale) ? $requestedLocale : null,
+                recurrenceFrequency: (string) ($recurrenceData['frequency'] ?? 'weekly'),
+                recurrenceIntervalValue: (int) ($recurrenceData['interval_value'] ?? 1)
+            );
 
             // Non-blocking: queue reminder notifications only after successful commit.
             $this->queueReminderNotificationsForCreatedBookings(
@@ -375,6 +386,115 @@ final class CreateRecurringBooking
         );
 
         return !empty($existingBookings);
+    }
+
+    /**
+     * Queue one confirmation email for the whole recurring series.
+     * Runs outside transaction and never throws.
+     *
+     * @param array<int,array{id:int,start_time:string,end_time:string}> $createdBookings
+     * @param array<int,array{service_name:string,price:float|int}> $itemTemplates
+     * @param array<string,mixed> $location
+     * @param array<string,mixed> $client
+     */
+    private function queueConfirmationNotificationForRecurringSeries(
+        array $createdBookings,
+        array $itemTemplates,
+        array $location,
+        array $client,
+        int $clientId,
+        int $businessId,
+        ?string $requestedLocale = null,
+        string $recurrenceFrequency = 'weekly',
+        int $recurrenceIntervalValue = 1
+    ): void {
+        if ($this->notificationRepo === null || $createdBookings === []) {
+            return;
+        }
+
+        $clientEmail = trim((string) ($client['email'] ?? ''));
+        if ($clientEmail === '') {
+            return;
+        }
+
+        $clientName = trim((string) (($client['first_name'] ?? '') . ' ' . ($client['last_name'] ?? '')));
+        $locationEmail = trim((string) ($location['email'] ?? ''));
+        $businessEmail = trim((string) ($location['business_email'] ?? ''));
+        $senderEmail = $locationEmail !== '' ? $locationEmail : ($businessEmail !== '' ? $businessEmail : null);
+        $locationName = trim((string) ($location['name'] ?? ''));
+        $businessName = trim((string) ($location['business_name'] ?? ''));
+        $senderName = $locationName !== '' ? $locationName : ($businessName !== '' ? $businessName : null);
+        $serviceNames = array_values(array_unique(array_map(
+            static fn (array $template): string => (string) ($template['service_name'] ?? ''),
+            $itemTemplates
+        )));
+        $services = implode(', ', array_filter($serviceNames, static fn (string $name): bool => $name !== ''));
+        $occurrencePrice = array_reduce(
+            $itemTemplates,
+            static fn (float $sum, array $template): float => $sum + (float) ($template['price'] ?? 0),
+            0.0
+        );
+        $locale = EmailTemplateRenderer::resolvePreferredLocale(
+            $requestedLocale,
+            $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? null,
+            $_ENV['DEFAULT_LOCALE'] ?? 'it'
+        );
+        $frontendUrl = $_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it';
+        $businessSlug = (string) ($location['business_slug'] ?? '');
+        $parentBooking = $createdBookings[0];
+        $occurrencesCount = count($createdBookings);
+        $occurrences = array_map(
+            static fn (array $booking): array => [
+                'id' => (int) ($booking['id'] ?? 0),
+                'start_time' => (string) ($booking['start_time'] ?? ''),
+                'end_time' => (string) ($booking['end_time'] ?? ''),
+            ],
+            $createdBookings
+        );
+
+        try {
+            $notificationData = [
+                'booking_id' => (int) $parentBooking['id'],
+                'client_id' => $clientId,
+                'client_email' => $clientEmail,
+                'client_name' => $clientName,
+                'business_id' => $businessId,
+                'business_name' => $location['business_name'] ?? '',
+                'business_email' => $location['business_email'] ?? '',
+                'location_name' => $location['name'] ?? '',
+                'location_email' => $location['email'] ?? '',
+                'location_address' => $location['address'] ?? '',
+                'location_city' => $location['city'] ?? '',
+                'location_phone' => $location['phone'] ?? '',
+                'location_timezone' => $location['timezone'] ?? 'Europe/Rome',
+                'sender_email' => $senderEmail,
+                'sender_name' => $senderName,
+                'start_time' => (string) $parentBooking['start_time'],
+                'end_time' => (string) $parentBooking['end_time'],
+                'services' => $services,
+                'total_price' => $occurrencePrice,
+                'cancellation_hours' => $location['cancellation_hours'] ?? 24,
+                'manage_url' => $frontendUrl . '/' . $businessSlug . '/my-bookings',
+                'booking_url' => $frontendUrl . '/' . $businessSlug . '/booking',
+                'locale' => $locale,
+                'is_recurring' => $occurrencesCount >= 2,
+                'recurrence_frequency' => $recurrenceFrequency,
+                'recurrence_interval_value' => $recurrenceIntervalValue,
+                'recurring_occurrences_count' => $occurrencesCount,
+                'recurring_occurrences' => $occurrences,
+            ];
+
+            $confirmationUseCase = new QueueBookingConfirmation($this->db, $this->notificationRepo);
+            $confirmationUseCase->execute($notificationData);
+        } catch (\Throwable $e) {
+            error_log(
+                sprintf(
+                    'Failed to queue recurring confirmation for booking %d: %s',
+                    (int) $parentBooking['id'],
+                    $e->getMessage()
+                )
+            );
+        }
     }
 
     /**

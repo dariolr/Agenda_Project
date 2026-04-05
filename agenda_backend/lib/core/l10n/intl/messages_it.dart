@@ -335,6 +335,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "applyClientToAllAppointmentsTitle": MessageLookupByLibrary.simpleMessage(
       "Applicare il cliente a tutta la prenotazione?",
     ),
+    "appointmentDialogBookingId": MessageLookupByLibrary.simpleMessage(
+      "Booking ID",
+    ),
     "appointmentDialogTitleEdit": MessageLookupByLibrary.simpleMessage(
       "Modifica appuntamento",
     ),
@@ -1548,7 +1551,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Nessun team disponibile",
     ),
     "notBookableOnline": MessageLookupByLibrary.simpleMessage(
-      "Non abilitato a prenotare online",
+      "Non prenotabile online",
     ),
     "notesPlaceholder": MessageLookupByLibrary.simpleMessage(
       "Note sull\'appuntamento...",
@@ -2348,10 +2351,10 @@ class MessageLookup extends MessageLookupByLibrary {
       "Questo membro del team non è abilitato alle prenotazioni online. Puoi modificare l’impostazione dal form di modifica dello staff.",
     ),
     "staffNotBookableOnlineTitle": MessageLookupByLibrary.simpleMessage(
-      "Non prenotabile online",
+      "Non abilitato alla prenotazione online",
     ),
     "staffNotBookableOnlineTooltip": MessageLookupByLibrary.simpleMessage(
-      "Non prenotabile online",
+      "Non abilitato alla prenotazione online",
     ),
     "staffScreenPlaceholder": MessageLookupByLibrary.simpleMessage(
       "Schermata Team",

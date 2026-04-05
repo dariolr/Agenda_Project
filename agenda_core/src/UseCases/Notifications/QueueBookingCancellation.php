@@ -45,7 +45,12 @@ final class QueueBookingCancellation
 
         // Check if notifications are enabled
         $settings = $this->notificationRepo->getSettings((int) $booking['business_id']);
-        if ($settings && !$settings['email_booking_cancelled']) {
+        if (
+            $settings
+            && array_key_exists('email_booking_cancelled', $settings)
+            && $settings['email_booking_cancelled'] !== null
+            && (int) $settings['email_booking_cancelled'] === 0
+        ) {
             return 0;
         }
 

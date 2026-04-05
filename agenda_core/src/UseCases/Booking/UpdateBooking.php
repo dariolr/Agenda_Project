@@ -398,9 +398,9 @@ final class UpdateBooking
             $locationEmail = trim((string) ($locationData['location_email'] ?? ''));
             $businessEmail = trim((string) ($locationData['business_email'] ?? ''));
             $senderEmail = $locationEmail !== '' ? $locationEmail : ($businessEmail !== '' ? $businessEmail : null);
-            $senderName = $locationEmail !== ''
-                ? ($locationData['location_name'] ?? null)
-                : ($businessEmail !== '' ? ($locationData['business_name'] ?? null) : null);
+            $locationName = trim((string) ($locationData['location_name'] ?? ''));
+            $businessName = trim((string) ($locationData['business_name'] ?? ''));
+            $senderName = $locationName !== '' ? $locationName : ($businessName !== '' ? $businessName : null);
 
             // Get new start time from booking items
             $newStartTime = $booking['items'][0]['start_time'] ?? null;
