@@ -1,9 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/preferences_service.dart';
-import '../../agenda/providers/agenda_scroll_provider.dart';
-import '../../agenda/providers/agenda_display_settings_provider.dart';
 import '../../agenda/providers/agenda_bootstrap_provider.dart';
+import '../../agenda/providers/agenda_display_settings_provider.dart';
+import '../../agenda/providers/agenda_scroll_provider.dart';
 import '../../agenda/providers/appointment_providers.dart';
 import '../../agenda/providers/booking_reschedule_provider.dart';
 import '../../agenda/providers/bookings_provider.dart';
@@ -23,8 +23,8 @@ import '../../agenda/providers/temp_drag_time_provider.dart';
 import '../../agenda/providers/time_blocks_provider.dart';
 import '../../agenda/providers/weekly_appointments_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
-import '../../clients/providers/clients_providers.dart';
 import '../../class_events/providers/class_events_providers.dart';
+import '../../clients/providers/clients_providers.dart';
 import '../../payments/providers/payment_methods_provider.dart';
 import '../../services/providers/service_categories_provider.dart';
 import '../../services/providers/services_provider.dart';
@@ -92,7 +92,7 @@ void invalidateBusinessScopedProviders(Object refObj) {
   ref.invalidate(allStaffProvider);
 
   // Locations
-  ref.invalidate(locationsProvider);
+  ref.invalidate(locationsAsyncProvider);
   ref.invalidate(currentLocationProvider);
 
   // Services

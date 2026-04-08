@@ -1,10 +1,12 @@
 import 'dart:math' as math;
 
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
+import 'package:agenda_backend/app/widgets/agenda_control_components.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/l10n/l10n.dart';
 import 'package:agenda_backend/core/models/location.dart';
 import 'package:agenda_backend/features/agenda/domain/config/layout_config.dart';
+import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
@@ -119,6 +121,14 @@ class TopControlsScaffold extends ConsumerWidget {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final formFactor = ref.watch(formFactorProvider);
     final locations = ref.watch(locationsProvider);
+    final locationsAsync = ref.watch(locationsAsyncProvider);
+    final currentBusinessId = ref.watch(currentBusinessIdProvider);
+    if (currentBusinessId == 0) {
+      return const SizedBox(height: kAgendaControlHeight);
+    }
+    if (locations.isEmpty && locationsAsync.isLoading) {
+      return const SizedBox(height: kAgendaControlHeight);
+    }
     if (locations.isEmpty) {
       return const SizedBox.shrink();
     }

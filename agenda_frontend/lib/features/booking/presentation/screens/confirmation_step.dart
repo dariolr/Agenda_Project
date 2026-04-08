@@ -4,14 +4,53 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/providers/route_slug_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/network/network_providers.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/locations_provider.dart';
 
-class ConfirmationStep extends ConsumerWidget {
+class ConfirmationStep extends ConsumerStatefulWidget {
   const ConfirmationStep({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ConfirmationStep> createState() => _ConfirmationStepState();
+}
+
+class _ConfirmationStepState extends ConsumerState<ConfirmationStep> {
+  bool _showFirstFiveHint = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final shouldShow = await _shouldShowFirstFiveHint();
+      if (!mounted) return;
+      setState(() => _showFirstFiveHint = shouldShow);
+    });
+  }
+
+  Future<bool> _shouldShowFirstFiveHint() async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final response = await apiClient.getCustomerBookings();
+      final upcoming = response['upcoming'] as List<dynamic>? ?? const [];
+      final past = response['past'] as List<dynamic>? ?? const [];
+      final allBookings = [...upcoming, ...past];
+
+      final totalBookings = allBookings.where((booking) {
+        if (booking is! Map<String, dynamic>) return false;
+        final status = booking['status']?.toString();
+        return status != 'replaced';
+      }).length;
+
+      return totalBookings <= 5;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final bookingState = ref.watch(bookingFlowProvider);
@@ -60,8 +99,8 @@ class ConfirmationStep extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
 
-            // Codice prenotazione
-            if (bookingState.confirmedBookingId != null)
+            // Codice prenotazione + hint "prime 5 prenotazioni" nello stesso box
+            if (bookingState.confirmedBookingId != null || _showFirstFiveHint)
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
@@ -71,12 +110,30 @@ class ConfirmationStep extends ConsumerWidget {
                   color: theme.colorScheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
-                  l10n.confirmationBookingId(bookingState.confirmedBookingId!),
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (bookingState.confirmedBookingId != null)
+                      Text(
+                        l10n.confirmationBookingId(bookingState.confirmedBookingId!),
+                        textAlign: TextAlign.center,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
+                    if (bookingState.confirmedBookingId != null &&
+                        _showFirstFiveHint)
+                      const SizedBox(height: 24),
+                    if (_showFirstFiveHint)
+                      Text(
+                        l10n.confirmationPostRegistrationMyBookingsHint,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                  ],
                 ),
               ),
 

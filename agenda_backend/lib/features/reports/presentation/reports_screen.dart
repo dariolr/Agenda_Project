@@ -771,6 +771,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     final numberFormat = NumberFormat.decimalPattern(locale);
     final percentFormat = NumberFormat.decimalPattern(locale);
     final totalCollected = summary.paidCents / 100;
+    final hasRevenuePaymentMethod = summary.paymentMethodBreakdown.any(
+      (entry) => entry.isRevenue,
+    );
 
     final cards = [
       _SummaryCardData(
@@ -779,12 +782,13 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         value: numberFormat.format(summary.totalAppointments),
         color: colorScheme.primary,
       ),
-      _SummaryCardData(
-        icon: Icons.euro,
-        label: l10n.reportsAppointmentsAmount,
-        value: currencyFormat.format(totalCollected),
-        color: Colors.green,
-      ),
+      if (hasRevenuePaymentMethod)
+        _SummaryCardData(
+          icon: Icons.euro,
+          label: l10n.reportsAppointmentsAmount,
+          value: currencyFormat.format(totalCollected),
+          color: Colors.green,
+        ),
       _SummaryCardData(
         icon: Icons.pie_chart,
         label: l10n.reportsOccupancyPercentage,
@@ -845,6 +849,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
           0,
           1 << 31,
         );
+    final hasRevenuePaymentMethod = summary.paymentMethodBreakdown.any(
+      (entry) => entry.isRevenue,
+    );
 
     double? percentageOfDue(int value, {bool hideWhenFull = false}) {
       if (summary.dueCents <= 0) {
@@ -857,64 +864,114 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       return percentage;
     }
 
-    final rows = <({String label, int valueCents, double? percentage})>[
+    final revenueMethodEntries = summary.paymentMethodBreakdown
+        .where((entry) => entry.isRevenue)
+        .toList(growable: false);
+    final nonRevenueMethodEntries = summary.paymentMethodBreakdown
+        .where((entry) => !entry.isRevenue)
+        .toList(growable: false);
+
+    final rows = <({
+      String label,
+      int valueCents,
+      double? percentage,
+      Color? backgroundColor,
+    })>[
       (
-        label: totalToCollectCents == summary.dueCents
-            ? l10n.paymentAppointmentsToCollect
+        label: hasRevenuePaymentMethod
+            ? (totalToCollectCents == summary.dueCents
+                  ? l10n.paymentAppointmentsToCollect
+                  : l10n.paymentRequired)
             : l10n.paymentRequired,
         valueCents: summary.dueCents,
         percentage: percentageOfDue(summary.dueCents, hideWhenFull: true),
+        backgroundColor: null,
       ),
       if (totalToCollectCents != summary.dueCents)
         (
           label: l10n.paymentTotalToCollect,
           valueCents: totalToCollectCents,
           percentage: percentageOfDue(totalToCollectCents),
+          backgroundColor: null,
         ),
-      (
-        label: l10n.paymentEntered,
-        valueCents: collectedCents,
-        percentage: percentageOfDue(collectedCents),
-      ),
-      if (summary.paymentMethodBreakdown.isNotEmpty)
-        ...summary.paymentMethodBreakdown.map(
+      if (summary.paymentMethodBreakdown.isNotEmpty) ...[
+        if (hasRevenuePaymentMethod)
+          (
+            label: l10n.paymentEntered,
+            valueCents: collectedCents,
+            percentage: percentageOfDue(collectedCents),
+            backgroundColor: null,
+          ),
+        if (hasRevenuePaymentMethod)
+          (
+            label: l10n.paymentOutstanding,
+            valueCents: outstandingCents,
+            percentage: percentageOfDue(outstandingCents),
+            backgroundColor: null,
+          ),
+        ...revenueMethodEntries.map(
           (entry) => (
             label: entry.methodName,
             valueCents: entry.amountCents,
             percentage: percentageOfDue(entry.amountCents),
+            backgroundColor: null,
           ),
-        )
-      else ...[
+        ),
+        ...nonRevenueMethodEntries.map(
+          (entry) => (
+            label: entry.methodName,
+            valueCents: entry.amountCents,
+            percentage: percentageOfDue(entry.amountCents),
+            backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(
+              0.35,
+            ),
+          ),
+        ),
+      ] else ...[
+        if (hasRevenuePaymentMethod)
+          (
+            label: l10n.paymentEntered,
+            valueCents: collectedCents,
+            percentage: percentageOfDue(collectedCents),
+            backgroundColor: null,
+          ),
         (
           label: l10n.paymentMethodCash,
           valueCents: summary.cashCents,
           percentage: percentageOfDue(summary.cashCents),
+          backgroundColor: null,
         ),
         (
           label: l10n.paymentMethodCard,
           valueCents: summary.cardCents,
           percentage: percentageOfDue(summary.cardCents),
+          backgroundColor: null,
         ),
         (
           label: l10n.paymentMethodVoucher,
           valueCents: summary.voucherCents,
           percentage: percentageOfDue(summary.voucherCents),
+          backgroundColor: null,
         ),
         (
           label: l10n.paymentMethodOther,
           valueCents: summary.otherCents,
           percentage: percentageOfDue(summary.otherCents),
+          backgroundColor: null,
         ),
+        if (hasRevenuePaymentMethod)
+          (
+            label: l10n.paymentOutstanding,
+            valueCents: outstandingCents,
+            percentage: percentageOfDue(outstandingCents),
+            backgroundColor: null,
+          ),
       ],
       (
         label: l10n.paymentMethodDiscount,
         valueCents: summary.discountCents,
         percentage: percentageOfDue(summary.discountCents),
-      ),
-      (
-        label: l10n.paymentOutstanding,
-        valueCents: outstandingCents,
-        percentage: percentageOfDue(outstandingCents),
+        backgroundColor: null,
       ),
     ];
 
@@ -947,6 +1004,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                   ],
                   rows: rows.map((row) {
                     return DataRow(
+                      color: row.backgroundColor == null
+                          ? null
+                          : WidgetStatePropertyAll<Color>(row.backgroundColor!),
                       cells: [
                         DataCell(Text(row.label)),
                         DataCell(

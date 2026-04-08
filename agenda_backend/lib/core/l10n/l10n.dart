@@ -10034,6 +10034,46 @@ class L10n {
     );
   }
 
+  /// `Count as revenue`
+  String get paymentMethodsFieldIsRevenue {
+    return Intl.message(
+      'Count as revenue',
+      name: 'paymentMethodsFieldIsRevenue',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `If enabled, payments with this method are counted as real revenue in reports. Disable for gift vouchers, gift cards, or prepaid packages.`
+  String get paymentMethodsFieldIsRevenueHelp {
+    return Intl.message(
+      'If enabled, payments with this method are counted as real revenue in reports. Disable for gift vouchers, gift cards, or prepaid packages.',
+      name: 'paymentMethodsFieldIsRevenueHelp',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Real revenue`
+  String get paymentMethodsRevenueBadge {
+    return Intl.message(
+      'Real revenue',
+      name: 'paymentMethodsRevenueBadge',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Non-revenue`
+  String get paymentMethodsNonRevenueBadge {
+    return Intl.message(
+      'Non-revenue',
+      name: 'paymentMethodsNonRevenueBadge',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Order`
   String get paymentMethodsFieldSort {
     return Intl.message(

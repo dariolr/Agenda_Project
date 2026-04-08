@@ -649,6 +649,16 @@ class L10n {
     );
   }
 
+  /// `Unable to contact the server. Check your connection and try again shortly.`
+  String get authNetworkError {
+    return Intl.message(
+      'Unable to contact the server. Check your connection and try again shortly.',
+      name: 'authNetworkError',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `This email is already registered. Try logging in.`
   String get authErrorEmailAlreadyExists {
     return Intl.message(
@@ -1779,6 +1789,16 @@ class L10n {
       name: 'confirmationBookingId',
       desc: '',
       args: [id],
+    );
+  }
+
+  /// `You will find your booking list in the top-right Profile section.`
+  String get confirmationPostRegistrationMyBookingsHint {
+    return Intl.message(
+      'You will find your booking list in the top-right Profile section.',
+      name: 'confirmationPostRegistrationMyBookingsHint',
+      desc: '',
+      args: [],
     );
   }
 

@@ -9,17 +9,20 @@ class PaymentMethodReportEntry {
   const PaymentMethodReportEntry({
     required this.methodCode,
     required this.methodName,
+    required this.isRevenue,
     required this.amountCents,
   });
 
   final String methodCode;
   final String methodName;
+  final bool isRevenue;
   final int amountCents;
 
   factory PaymentMethodReportEntry.fromJson(Map<String, dynamic> json) {
     return PaymentMethodReportEntry(
       methodCode: json['method_code'] as String? ?? '',
       methodName: json['method_name'] as String? ?? '',
+      isRevenue: (json['is_revenue'] as bool?) ?? true,
       amountCents: json['amount_cents'] as int? ?? 0,
     );
   }

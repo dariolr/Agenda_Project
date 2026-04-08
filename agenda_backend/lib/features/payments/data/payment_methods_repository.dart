@@ -26,11 +26,13 @@ class PaymentMethodsRepository {
   Future<BusinessPaymentMethod> create({
     required int businessId,
     required String name,
+    required bool isRevenue,
     String? code,
     int? sortOrder,
   }) async {
     final payload = <String, dynamic>{
       'name': name,
+      'is_revenue': isRevenue,
       if (code != null && code.trim().isNotEmpty) 'code': code.trim(),
       if (sortOrder != null) 'sort_order': sortOrder,
     };
@@ -49,10 +51,12 @@ class PaymentMethodsRepository {
     required int businessId,
     required int methodId,
     required String name,
+    required bool isRevenue,
     int? sortOrder,
   }) async {
     final payload = <String, dynamic>{
       'name': name,
+      'is_revenue': isRevenue,
       if (sortOrder != null) 'sort_order': sortOrder,
     };
 

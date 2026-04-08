@@ -398,9 +398,19 @@ final class ReportsController
                     SUM(CASE WHEN bpl.type = 'voucher' THEN bpl.amount_cents ELSE 0 END) AS voucher_cents,
                     SUM(CASE WHEN bpl.type = 'other' THEN bpl.amount_cents ELSE 0 END) AS other_cents,
                     SUM(CASE WHEN bpl.type = 'discount' THEN bpl.amount_cents ELSE 0 END) AS discount_cents,
-                    SUM(CASE WHEN bpl.type <> 'discount' THEN bpl.amount_cents ELSE 0 END) AS paid_cents
+                    SUM(
+                        CASE
+                            WHEN bpl.type <> 'discount' AND COALESCE(bpm.is_revenue, 1) = 1
+                                THEN bpl.amount_cents
+                            ELSE 0
+                        END
+                    ) AS paid_cents
                 FROM booking_payments bp
+                JOIN bookings b ON b.id = bp.booking_id
                 LEFT JOIN booking_payment_lines bpl ON bpl.booking_payment_id = bp.id
+                LEFT JOIN business_payment_methods bpm
+                    ON bpm.business_id = b.business_id
+                   AND bpm.code = bpl.type
                 WHERE bp.is_active = 1
                 GROUP BY bp.booking_id
             ) pay ON pay.booking_id = fb.booking_id";
@@ -455,9 +465,19 @@ final class ReportsController
                     SUM(CASE WHEN bpl.type = 'voucher' THEN bpl.amount_cents ELSE 0 END) AS voucher_cents,
                     SUM(CASE WHEN bpl.type = 'other' THEN bpl.amount_cents ELSE 0 END) AS other_cents,
                     SUM(CASE WHEN bpl.type = 'discount' THEN bpl.amount_cents ELSE 0 END) AS discount_cents,
-                    SUM(CASE WHEN bpl.type <> 'discount' THEN bpl.amount_cents ELSE 0 END) AS paid_cents
+                    SUM(
+                        CASE
+                            WHEN bpl.type <> 'discount' AND COALESCE(bpm.is_revenue, 1) = 1
+                                THEN bpl.amount_cents
+                            ELSE 0
+                        END
+                    ) AS paid_cents
                 FROM booking_payments bp
+                JOIN bookings b ON b.id = bp.booking_id
                 LEFT JOIN booking_payment_lines bpl ON bpl.booking_payment_id = bp.id
+                LEFT JOIN business_payment_methods bpm
+                    ON bpm.business_id = b.business_id
+                   AND bpm.code = bpl.type
                 WHERE bp.is_active = 1
                 GROUP BY bp.booking_id
             ) pay ON pay.booking_id = fb.booking_id
@@ -602,6 +622,7 @@ final class ReportsController
             $result[] = [
                 'method_code' => $code,
                 'method_name' => (string) ($method['name'] ?? $code),
+                'is_revenue' => (bool) ($method['is_revenue'] ?? true),
                 'amount_cents' => (int) ($amountByCode[$code] ?? 0),
             ];
         }
@@ -613,6 +634,7 @@ final class ReportsController
             $result[] = [
                 'method_code' => $code,
                 'method_name' => $code,
+                'is_revenue' => true,
                 'amount_cents' => (int) $amountCents,
             ];
         }

@@ -10,10 +10,10 @@ use PDO;
 final class BusinessPaymentMethodRepository
 {
     private const DEFAULT_METHODS = [
-        ['code' => 'cash', 'name' => 'Contanti', 'sort_order' => 10, 'icon_key' => 'cash'],
-        ['code' => 'card', 'name' => 'Carte di Pagamento/Bancomat', 'sort_order' => 20, 'icon_key' => 'card'],
-        ['code' => 'voucher', 'name' => 'Buono/Pacchetto', 'sort_order' => 30, 'icon_key' => 'voucher'],
-        ['code' => 'other', 'name' => 'Altro', 'sort_order' => 40, 'icon_key' => 'other'],
+        ['code' => 'cash', 'name' => 'Contanti', 'sort_order' => 10, 'icon_key' => 'cash', 'is_revenue' => true],
+        ['code' => 'card', 'name' => 'Carte di Pagamento/Bancomat', 'sort_order' => 20, 'icon_key' => 'card', 'is_revenue' => true],
+        ['code' => 'voucher', 'name' => 'Buono/Pacchetto', 'sort_order' => 30, 'icon_key' => 'voucher', 'is_revenue' => false],
+        ['code' => 'other', 'name' => 'Altro', 'sort_order' => 40, 'icon_key' => 'other', 'is_revenue' => true],
     ];
 
     public function __construct(
@@ -33,8 +33,8 @@ final class BusinessPaymentMethodRepository
 
         $insertStmt = $pdo->prepare(
             'INSERT INTO business_payment_methods
-                (business_id, code, name, sort_order, icon_key, is_active, updated_by_user_id)
-             VALUES (?, ?, ?, ?, ?, 1, ?)'
+                (business_id, code, name, sort_order, icon_key, is_revenue, is_active, updated_by_user_id)
+             VALUES (?, ?, ?, ?, ?, ?, 1, ?)'
         );
 
         foreach (self::DEFAULT_METHODS as $method) {
@@ -44,6 +44,7 @@ final class BusinessPaymentMethodRepository
                 $method['name'],
                 $method['sort_order'],
                 $method['icon_key'],
+                $method['is_revenue'] ? 1 : 0,
                 $updatedByUserId,
             ]);
         }
@@ -56,7 +57,7 @@ final class BusinessPaymentMethodRepository
     {
         $this->ensureDefaultsForBusiness($businessId);
 
-        $sql = 'SELECT id, business_id, code, name, sort_order, icon_key, is_active
+        $sql = 'SELECT id, business_id, code, name, sort_order, icon_key, is_revenue, is_active
                 FROM business_payment_methods
                 WHERE business_id = ?';
 
@@ -77,6 +78,7 @@ final class BusinessPaymentMethodRepository
                 'name' => (string) $row['name'],
                 'sort_order' => (int) $row['sort_order'],
                 'icon_key' => $row['icon_key'] !== null ? (string) $row['icon_key'] : null,
+                'is_revenue' => (bool) ((int) ($row['is_revenue'] ?? 1)),
                 'is_active' => (bool) ((int) ($row['is_active'] ?? 0)),
             ],
             $stmt->fetchAll(PDO::FETCH_ASSOC)
@@ -94,7 +96,7 @@ final class BusinessPaymentMethodRepository
     public function findByIdInBusiness(int $businessId, int $methodId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT id, business_id, code, name, sort_order, icon_key, is_active
+            'SELECT id, business_id, code, name, sort_order, icon_key, is_revenue, is_active
              FROM business_payment_methods
              WHERE business_id = ? AND id = ?
              LIMIT 1'
@@ -113,6 +115,7 @@ final class BusinessPaymentMethodRepository
             'name' => (string) $row['name'],
             'sort_order' => (int) $row['sort_order'],
             'icon_key' => $row['icon_key'] !== null ? (string) $row['icon_key'] : null,
+            'is_revenue' => (bool) ((int) ($row['is_revenue'] ?? 1)),
             'is_active' => (bool) ((int) ($row['is_active'] ?? 0)),
         ];
     }
@@ -139,8 +142,8 @@ final class BusinessPaymentMethodRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO business_payment_methods
-                (business_id, code, name, sort_order, icon_key, is_active, updated_by_user_id)
-             VALUES (?, ?, ?, ?, ?, 1, ?)'
+                (business_id, code, name, sort_order, icon_key, is_revenue, is_active, updated_by_user_id)
+             VALUES (?, ?, ?, ?, ?, ?, 1, ?)'
         );
 
         $stmt->execute([
@@ -149,6 +152,7 @@ final class BusinessPaymentMethodRepository
             $payload['name'],
             $payload['sort_order'],
             $payload['icon_key'] ?? null,
+            !empty($payload['is_revenue']) ? 1 : 0,
             $payload['updated_by_user_id'] ?? null,
         ]);
 
@@ -161,6 +165,7 @@ final class BusinessPaymentMethodRepository
             'name' => (string) $payload['name'],
             'sort_order' => (int) $payload['sort_order'],
             'icon_key' => $payload['icon_key'] ?? null,
+            'is_revenue' => !empty($payload['is_revenue']),
             'is_active' => true,
         ];
     }
@@ -169,7 +174,7 @@ final class BusinessPaymentMethodRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE business_payment_methods
-             SET name = ?, sort_order = ?, icon_key = ?, updated_by_user_id = ?, updated_at = CURRENT_TIMESTAMP
+             SET name = ?, sort_order = ?, icon_key = ?, is_revenue = ?, updated_by_user_id = ?, updated_at = CURRENT_TIMESTAMP
              WHERE business_id = ? AND id = ?'
         );
 
@@ -177,6 +182,7 @@ final class BusinessPaymentMethodRepository
             $payload['name'],
             $payload['sort_order'],
             $payload['icon_key'] ?? null,
+            !empty($payload['is_revenue']) ? 1 : 0,
             $payload['updated_by_user_id'] ?? null,
             $businessId,
             $methodId,

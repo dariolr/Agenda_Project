@@ -141,6 +141,7 @@ class _PaymentMethodsScreenState extends ConsumerState<PaymentMethodsScreen> {
           businessId: businessId,
           methodId: method.id,
           name: method.name,
+          isRevenue: method.isRevenue,
           sortOrder: nextSortOrder,
         );
       }

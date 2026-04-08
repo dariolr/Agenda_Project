@@ -78,7 +78,16 @@ class CurrentBusinessId extends Notifier<int> {
 
         final selectedBusiness = ref.read(superadminSelectedBusinessProvider);
 
-        if (isSuperadmin && selectedBusiness != null) {
+        if (isSuperadmin) {
+          // Superadmin senza selezione esplicita: nessun business attivo.
+          if (selectedBusiness == null) {
+            if (state != 0) {
+              _lastKnownBusinessId = 0;
+              state = 0;
+            }
+            return;
+          }
+
           final exists = businesses.any((b) => b.id == selectedBusiness);
           if (exists) {
             if (state != selectedBusiness) {
@@ -88,13 +97,13 @@ class CurrentBusinessId extends Notifier<int> {
             return;
           }
 
-          // Business non più valido: pulisci preferenze e fallback al primo
+          // Business selezionato non più valido: azzera selezione.
           ref
               .read(superadminSelectedBusinessProvider.notifier)
               .clearCompletely();
-          if (state != businesses.first.id) {
-            _lastKnownBusinessId = businesses.first.id;
-            state = businesses.first.id;
+          if (state != 0) {
+            _lastKnownBusinessId = 0;
+            state = 0;
           }
           return;
         }
@@ -123,11 +132,17 @@ class CurrentBusinessId extends Notifier<int> {
       data: (businesses) {
         if (businesses.isEmpty) return 0;
         final selectedBusiness = ref.watch(superadminSelectedBusinessProvider);
-        if (isSuperadmin && selectedBusiness != null) {
+        if (isSuperadmin) {
+          if (selectedBusiness == null) {
+            _lastKnownBusinessId = 0;
+            return 0;
+          }
           if (businesses.any((b) => b.id == selectedBusiness)) {
             _lastKnownBusinessId = selectedBusiness;
             return selectedBusiness;
           }
+          _lastKnownBusinessId = 0;
+          return 0;
         }
         _lastKnownBusinessId = businesses.first.id;
         return businesses.first.id;

@@ -327,6 +327,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
           selectedServiceIds: selectedServiceIds,
           selectedPackageIds: selectedPackageIds,
           selectedServices: selectedServices,
+          serviceById: serviceById,
           isCollapsible: isCollapsible,
           onServiceTap: (service) {
             ref.read(bookingFlowProvider.notifier).toggleService(service);
@@ -429,6 +430,7 @@ class _CategorySection extends StatefulWidget {
   final Set<int> selectedServiceIds;
   final Set<int> selectedPackageIds;
   final List<Service> selectedServices;
+  final Map<int, Service> serviceById;
   final void Function(Service) onServiceTap;
   final void Function(ServicePackage) onPackageTap;
   final bool isCollapsible;
@@ -440,6 +442,7 @@ class _CategorySection extends StatefulWidget {
     required this.selectedServiceIds,
     required this.selectedPackageIds,
     required this.selectedServices,
+    required this.serviceById,
     required this.onServiceTap,
     required this.onPackageTap,
     this.isCollapsible = false,
@@ -569,6 +572,7 @@ class _CategorySectionState extends State<_CategorySection> {
                   if (entry.isPackage)
                     _PackageTile(
                       package: entry.package!,
+                      serviceById: widget.serviceById,
                       isSelected: widget.selectedPackageIds.contains(
                         entry.package!.id,
                       ),
@@ -680,7 +684,7 @@ class _ServiceTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       context.localizedDurationLabel(
-                        service.totalDurationMinutes,
+                        service.customerVisibleDurationMinutes,
                       ),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.6),
@@ -725,12 +729,14 @@ class _CategoryEntry {
 
 class _PackageTile extends StatelessWidget {
   final ServicePackage package;
+  final Map<int, Service> serviceById;
   final bool isSelected;
   final bool isDisabled;
   final VoidCallback? onTap;
 
   const _PackageTile({
     required this.package,
+    required this.serviceById,
     required this.isSelected,
     required this.isDisabled,
     required this.onTap,
@@ -802,7 +808,7 @@ class _PackageTile extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         context.localizedDurationLabel(
-                          package.effectiveDurationMinutes,
+                          package.customerVisibleDurationMinutes(serviceById),
                         ),
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: theme.colorScheme.onSurface.withOpacity(0.6),

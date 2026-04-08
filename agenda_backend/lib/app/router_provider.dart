@@ -513,6 +513,19 @@ class _AuthNotifier extends ChangeNotifier {
       }
       notifyListeners();
     });
+
+    // Importante per superadmin: se cambia la selezione business
+    // deve rieseguire subito le redirect guard (es. /agenda -> /businesses).
+    _ref.listen<int?>(superadminSelectedBusinessProvider, (previous, next) {
+      if (previous == next) return;
+      notifyListeners();
+    });
+
+    // Riesegue i redirect anche quando cambia il business corrente effettivo.
+    _ref.listen<int>(currentBusinessIdProvider, (previous, next) {
+      if (previous == next) return;
+      notifyListeners();
+    });
   }
 
   final Ref _ref;

@@ -1,3 +1,5 @@
+import 'service.dart';
+
 class ServicePackageItem {
   final int serviceId;
   final int sortOrder;
@@ -70,6 +72,25 @@ class ServicePackage {
   List<int> get orderedServiceIds {
     final ordered = [...items]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     return ordered.map((item) => item.serviceId).toList();
+  }
+
+  /// Durata mostrata al cliente per il pacchetto:
+  /// somma le durate visibili dei servizi componenti quando disponibili.
+  /// Fallback su effectiveDurationMinutes se i servizi non sono risolti.
+  int customerVisibleDurationMinutes(Map<int, Service> serviceById) {
+    final ids = orderedServiceIds;
+    if (ids.isEmpty) return effectiveDurationMinutes;
+
+    var foundAny = false;
+    var sum = 0;
+    for (final serviceId in ids) {
+      final service = serviceById[serviceId];
+      if (service == null) continue;
+      foundAny = true;
+      sum += service.customerVisibleDurationMinutes;
+    }
+
+    return foundAny ? sum : effectiveDurationMinutes;
   }
 
   factory ServicePackage.fromJson(Map<String, dynamic> json) {

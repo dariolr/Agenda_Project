@@ -1733,13 +1733,25 @@ class MessageLookup extends MessageLookupByLibrary {
     "paymentMethodsEmpty": MessageLookupByLibrary.simpleMessage(
       "Nessun metodo di pagamento disponibile",
     ),
+    "paymentMethodsFieldIsRevenue": MessageLookupByLibrary.simpleMessage(
+      "Conteggia come incasso",
+    ),
+    "paymentMethodsFieldIsRevenueHelp": MessageLookupByLibrary.simpleMessage(
+      "Se attivo, i pagamenti con questo metodo vengono conteggiati come incasso reale nei report. Disattiva per buoni regalo, gift card o pacchetti prepagati.",
+    ),
     "paymentMethodsFieldName": MessageLookupByLibrary.simpleMessage("Nome"),
     "paymentMethodsFieldSort": MessageLookupByLibrary.simpleMessage("Ordine"),
     "paymentMethodsNameRequired": MessageLookupByLibrary.simpleMessage(
       "Inserisci un nome per il metodo di pagamento",
     ),
+    "paymentMethodsNonRevenueBadge": MessageLookupByLibrary.simpleMessage(
+      "Non incasso",
+    ),
     "paymentMethodsReorderHint": MessageLookupByLibrary.simpleMessage(
       "Puoi cambiare l’ordine dei tipi di pagamento trascinandoli.",
+    ),
+    "paymentMethodsRevenueBadge": MessageLookupByLibrary.simpleMessage(
+      "Incasso reale",
     ),
     "paymentMethodsTitle": MessageLookupByLibrary.simpleMessage(
       "Metodi di pagamento",
@@ -2850,7 +2862,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Perché serve un numero dedicato?",
     ),
     "whatsappGuideStep1": MessageLookupByLibrary.simpleMessage(
-      "Clicca sul tasto in basso a questa guida \"Connetti con Meta\".",
+      "Clicca sul tasto \"Connetti con Meta\" in basso a questa guida.",
     ),
     "whatsappGuideStep2": MessageLookupByLibrary.simpleMessage(
       "Accedi con l\'account della tua pagina Facebook (quello che gestisce la pagina del negozio, non quello del tuo profilo personale).",

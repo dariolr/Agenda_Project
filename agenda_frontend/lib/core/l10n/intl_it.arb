@@ -81,6 +81,7 @@
   "authErrorTokenExpired": "Sessione scaduta. Effettua di nuovo il login.",
   "authErrorTokenInvalid": "Sessione non valida. Effettua di nuovo il login.",
   "authErrorSessionRevoked": "Sessione revocata. Effettua di nuovo il login.",
+  "authNetworkError": "Impossibile contattare il server. Verifica la connessione o riprova tra poco.",
   "authErrorEmailAlreadyExists": "Questa email è già registrata. Prova ad accedere.",
   "authErrorWeakPassword": "Password troppo debole. Scegline una più sicura.",
   "authErrorInvalidResetToken": "Token di reset password non valido",
@@ -348,6 +349,7 @@
       "id": { "type": "String" }
     }
   },
+  "confirmationPostRegistrationMyBookingsHint": "Troverai l'elenco delle tue prenotazioni in alto a destra, nella sezione Profilo.",
   "confirmationNewBooking": "Nuova prenotazione",
   "confirmationGoHome": "Torna alla home",
   

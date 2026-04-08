@@ -2157,6 +2157,7 @@ CREATE TABLE `business_payment_methods` (
   `name` varchar(100) NOT NULL,
   `sort_order` int NOT NULL DEFAULT 0,
   `icon_key` varchar(32) DEFAULT NULL,
+  `is_revenue` tinyint(1) NOT NULL DEFAULT '1',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `updated_by_user_id` int UNSIGNED DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,

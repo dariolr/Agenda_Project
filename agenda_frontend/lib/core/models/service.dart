@@ -38,6 +38,10 @@ class Service {
   int get totalDurationMinutes =>
       durationMinutes + processingTime + blockedTime;
 
+  /// Durata mostrata al cliente nel frontend:
+  /// include eventuale processing_time ma esclude blocked_time.
+  int get customerVisibleDurationMinutes => durationMinutes + processingTime;
+
   Service copyWith({
     int? id,
     int? businessId,

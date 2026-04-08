@@ -13,6 +13,7 @@ Future<bool> showPaymentMethodDialog(
   BusinessPaymentMethod? existing,
 }) async {
   final nameController = TextEditingController(text: existing?.name ?? '');
+  var isRevenue = existing?.isRevenue ?? true;
 
   final result = await showDialog<bool>(
     context: context,
@@ -23,12 +24,28 @@ Future<bool> showPaymentMethodDialog(
               ? context.l10n.paymentMethodsAdd
               : context.l10n.paymentMethodsEdit,
         ),
-        content: TextField(
-          controller: nameController,
-          decoration: InputDecoration(
-            labelText: context.l10n.paymentMethodsFieldName,
+        content: StatefulBuilder(
+          builder: (context, setState) => Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: InputDecoration(
+                  labelText: context.l10n.paymentMethodsFieldName,
+                ),
+                textInputAction: TextInputAction.done,
+              ),
+              const SizedBox(height: 12),
+              SwitchListTile.adaptive(
+                value: isRevenue,
+                contentPadding: EdgeInsets.zero,
+                title: Text(context.l10n.paymentMethodsFieldIsRevenue),
+                subtitle: Text(context.l10n.paymentMethodsFieldIsRevenueHelp),
+                onChanged: (value) => setState(() => isRevenue = value),
+              ),
+            ],
           ),
-          textInputAction: TextInputAction.done,
         ),
         actions: [
           TextButton(
@@ -62,12 +79,17 @@ Future<bool> showPaymentMethodDialog(
   try {
     final repository = ref.read(paymentMethodsRepositoryProvider);
     if (existing == null) {
-      await repository.create(businessId: businessId, name: name);
+      await repository.create(
+        businessId: businessId,
+        name: name,
+        isRevenue: isRevenue,
+      );
     } else {
       await repository.update(
         businessId: businessId,
         methodId: existing.id,
         name: name,
+        isRevenue: isRevenue,
         sortOrder: existing.sortOrder,
       );
     }

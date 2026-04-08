@@ -215,6 +215,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "authLoginTitle": MessageLookupByLibrary.simpleMessage(
       "Login to your account",
     ),
+    "authNetworkError": MessageLookupByLibrary.simpleMessage(
+      "Unable to contact the server. Check your connection and try again shortly.",
+    ),
     "authNewPassword": MessageLookupByLibrary.simpleMessage("New password"),
     "authNoAccount": MessageLookupByLibrary.simpleMessage(
       "Don\'t have an account?",
@@ -433,6 +436,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "confirmationNewBooking": MessageLookupByLibrary.simpleMessage(
       "New booking",
     ),
+    "confirmationPostRegistrationMyBookingsHint":
+        MessageLookupByLibrary.simpleMessage(
+          "You will find your booking list in the top-right Profile section.",
+        ),
     "confirmationSubtitle": MessageLookupByLibrary.simpleMessage(
       "We\'ve sent you a confirmation email",
     ),

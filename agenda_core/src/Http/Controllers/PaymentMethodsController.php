@@ -72,6 +72,9 @@ final class PaymentMethodsController
         $sortOrder = isset($body['sort_order']) && is_int($body['sort_order'])
             ? (int) $body['sort_order']
             : ($this->paymentMethodRepo->countActiveByBusinessId($businessId) + 1) * 10;
+        $isRevenue = array_key_exists('is_revenue', $body)
+            ? $this->parseBoolean($body['is_revenue'], true)
+            : true;
 
         $created = $this->paymentMethodRepo->create([
             'business_id' => $businessId,
@@ -79,6 +82,7 @@ final class PaymentMethodsController
             'name' => $name,
             'sort_order' => $sortOrder,
             'icon_key' => isset($body['icon_key']) ? trim((string) $body['icon_key']) : null,
+            'is_revenue' => $isRevenue,
             'updated_by_user_id' => $request->userId(),
         ]);
 
@@ -112,11 +116,15 @@ final class PaymentMethodsController
         $sortOrder = isset($body['sort_order']) && is_int($body['sort_order'])
             ? (int) $body['sort_order']
             : (int) ($existing['sort_order'] ?? 0);
+        $isRevenue = array_key_exists('is_revenue', $body)
+            ? $this->parseBoolean($body['is_revenue'], (bool) ($existing['is_revenue'] ?? true))
+            : (bool) ($existing['is_revenue'] ?? true);
 
         $updated = $this->paymentMethodRepo->updateInBusiness($businessId, $methodId, [
             'name' => $name,
             'sort_order' => $sortOrder,
             'icon_key' => isset($body['icon_key']) ? trim((string) $body['icon_key']) : ($existing['icon_key'] ?? null),
+            'is_revenue' => $isRevenue,
             'updated_by_user_id' => $request->userId(),
         ]);
 
@@ -226,7 +234,36 @@ final class PaymentMethodsController
             'name' => (string) ($method['name'] ?? ''),
             'sort_order' => (int) ($method['sort_order'] ?? 0),
             'icon_key' => $method['icon_key'] ?? null,
+            'is_revenue' => (bool) ($method['is_revenue'] ?? true),
             'is_active' => (bool) ($method['is_active'] ?? false),
         ];
+    }
+
+    private function parseBoolean(mixed $value, bool $default): bool
+    {
+        if (is_bool($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return ((int) $value) === 1;
+        }
+
+        if (is_string($value)) {
+            $normalized = strtolower(trim($value));
+            if ($normalized === '') {
+                return $default;
+            }
+
+            if (in_array($normalized, ['1', 'true', 'yes', 'on'], true)) {
+                return true;
+            }
+
+            if (in_array($normalized, ['0', 'false', 'no', 'off'], true)) {
+                return false;
+            }
+        }
+
+        return $default;
     }
 }

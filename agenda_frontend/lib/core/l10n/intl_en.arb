@@ -81,6 +81,7 @@
   "authErrorTokenExpired": "Your session has expired. Please log in again.",
   "authErrorTokenInvalid": "Your session is not valid. Please log in again.",
   "authErrorSessionRevoked": "Your session has been revoked. Please log in again.",
+  "authNetworkError": "Unable to contact the server. Check your connection and try again shortly.",
   "authErrorEmailAlreadyExists": "This email is already registered. Try logging in.",
   "authErrorWeakPassword": "Password too weak. Please choose a stronger password.",
   "authErrorInvalidResetToken": "Invalid password reset token",
@@ -348,6 +349,7 @@
       "id": { "type": "String" }
     }
   },
+  "confirmationPostRegistrationMyBookingsHint": "You will find your booking list in the top-right Profile section.",
   "confirmationNewBooking": "New booking",
   "confirmationGoHome": "Go to home",
   

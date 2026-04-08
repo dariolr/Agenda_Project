@@ -1279,9 +1279,10 @@ final bookingTotalsProvider = Provider<BookingTotals>((ref) {
 
   var totalPrice = 0.0;
   var totalDuration = 0;
+  final selectedServiceById = {for (final service in services) service.id: service};
   for (final pkg in selectedPackages) {
     totalPrice += pkg.effectivePrice;
-    totalDuration += pkg.effectiveDurationMinutes;
+    totalDuration += pkg.customerVisibleDurationMinutes(selectedServiceById);
   }
 
   final remainingServices = services
@@ -1289,8 +1290,7 @@ final bookingTotalsProvider = Provider<BookingTotals>((ref) {
       .toList();
   for (final service in remainingServices) {
     totalPrice += service.isFree ? 0 : service.price;
-    totalDuration +=
-        service.totalDurationMinutes; // Include processing_time + blocked_time
+    totalDuration += service.customerVisibleDurationMinutes;
   }
 
   final selectedItemCount = selectedPackages.length + remainingServices.length;

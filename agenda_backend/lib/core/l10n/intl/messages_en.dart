@@ -1659,13 +1659,25 @@ class MessageLookup extends MessageLookupByLibrary {
     "paymentMethodsEmpty": MessageLookupByLibrary.simpleMessage(
       "No payment methods available",
     ),
+    "paymentMethodsFieldIsRevenue": MessageLookupByLibrary.simpleMessage(
+      "Count as revenue",
+    ),
+    "paymentMethodsFieldIsRevenueHelp": MessageLookupByLibrary.simpleMessage(
+      "If enabled, payments with this method are counted as real revenue in reports. Disable for gift vouchers, gift cards, or prepaid packages.",
+    ),
     "paymentMethodsFieldName": MessageLookupByLibrary.simpleMessage("Name"),
     "paymentMethodsFieldSort": MessageLookupByLibrary.simpleMessage("Order"),
     "paymentMethodsNameRequired": MessageLookupByLibrary.simpleMessage(
       "Enter a payment method name",
     ),
+    "paymentMethodsNonRevenueBadge": MessageLookupByLibrary.simpleMessage(
+      "Non-revenue",
+    ),
     "paymentMethodsReorderHint": MessageLookupByLibrary.simpleMessage(
       "You can change the payment type order by dragging them.",
+    ),
+    "paymentMethodsRevenueBadge": MessageLookupByLibrary.simpleMessage(
+      "Real revenue",
     ),
     "paymentMethodsTitle": MessageLookupByLibrary.simpleMessage(
       "Payment methods",

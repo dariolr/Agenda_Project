@@ -58,6 +58,9 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
     );
     final request = bookingState.request;
     final totals = ref.watch(bookingTotalsProvider);
+    final selectedServiceById = {
+      for (final service in request.services) service.id: service,
+    };
     final location = ref.watch(effectiveLocationProvider);
     final business = ref.watch(currentBusinessProvider).value;
     final cancellationHours =
@@ -147,7 +150,9 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                       if (totals.selectedItemCount > 1)
                                         Text(
                                           context.localizedDurationLabel(
-                                            package.effectiveDurationMinutes,
+                                            package.customerVisibleDurationMinutes(
+                                              selectedServiceById,
+                                            ),
                                           ),
                                           style: theme.textTheme.bodySmall
                                               ?.copyWith(
@@ -232,7 +237,8 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                             !isCovered)
                                           Text(
                                             context.localizedDurationLabel(
-                                              service.totalDurationMinutes,
+                                              service
+                                                  .customerVisibleDurationMinutes,
                                             ),
                                             style: theme.textTheme.bodySmall
                                                 ?.copyWith(

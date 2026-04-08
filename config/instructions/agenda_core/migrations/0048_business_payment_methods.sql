@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS business_payment_methods (
   name VARCHAR(100) NOT NULL,
   sort_order INT NOT NULL DEFAULT 0,
   icon_key VARCHAR(32) DEFAULT NULL,
+  is_revenue TINYINT(1) NOT NULL DEFAULT 1,
   is_active TINYINT(1) NOT NULL DEFAULT 1,
   updated_by_user_id INT UNSIGNED DEFAULT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -29,9 +30,18 @@ CREATE TABLE IF NOT EXISTS business_payment_methods (
 ALTER TABLE booking_payment_lines
   MODIFY COLUMN type VARCHAR(40) NOT NULL;
 
--- 3) Seed default methods for every business (idempotent)
-INSERT INTO business_payment_methods (business_id, code, name, sort_order, icon_key, is_active)
-SELECT b.id, 'cash', 'Contanti', 10, 'cash', 1
+-- 3) Add revenue flag if table already existed before this migration
+ALTER TABLE business_payment_methods
+  ADD COLUMN IF NOT EXISTS is_revenue TINYINT(1) NOT NULL DEFAULT 1 AFTER icon_key;
+
+-- 4) Align existing defaults: voucher-like methods are non-revenue
+UPDATE business_payment_methods
+SET is_revenue = 0
+WHERE code = 'voucher';
+
+-- 5) Seed default methods for every business (idempotent)
+INSERT INTO business_payment_methods (business_id, code, name, sort_order, icon_key, is_revenue, is_active)
+SELECT b.id, 'cash', 'Contanti', 10, 'cash', 1, 1
 FROM businesses b
 WHERE NOT EXISTS (
   SELECT 1
@@ -40,8 +50,8 @@ WHERE NOT EXISTS (
     AND bpm.code = 'cash'
 );
 
-INSERT INTO business_payment_methods (business_id, code, name, sort_order, icon_key, is_active)
-SELECT b.id, 'card', 'Carte di Pagamento/Bancomat', 20, 'card', 1
+INSERT INTO business_payment_methods (business_id, code, name, sort_order, icon_key, is_revenue, is_active)
+SELECT b.id, 'card', 'Carte di Pagamento/Bancomat', 20, 'card', 1, 1
 FROM businesses b
 WHERE NOT EXISTS (
   SELECT 1
@@ -50,8 +60,8 @@ WHERE NOT EXISTS (
     AND bpm.code = 'card'
 );
 
-INSERT INTO business_payment_methods (business_id, code, name, sort_order, icon_key, is_active)
-SELECT b.id, 'voucher', 'Buono/Pacchetto', 30, 'voucher', 1
+INSERT INTO business_payment_methods (business_id, code, name, sort_order, icon_key, is_revenue, is_active)
+SELECT b.id, 'voucher', 'Buono/Pacchetto', 30, 'voucher', 0, 1
 FROM businesses b
 WHERE NOT EXISTS (
   SELECT 1
@@ -60,8 +70,8 @@ WHERE NOT EXISTS (
     AND bpm.code = 'voucher'
 );
 
-INSERT INTO business_payment_methods (business_id, code, name, sort_order, icon_key, is_active)
-SELECT b.id, 'other', 'Altro', 40, 'other', 1
+INSERT INTO business_payment_methods (business_id, code, name, sort_order, icon_key, is_revenue, is_active)
+SELECT b.id, 'other', 'Altro', 40, 'other', 1, 1
 FROM businesses b
 WHERE NOT EXISTS (
   SELECT 1
