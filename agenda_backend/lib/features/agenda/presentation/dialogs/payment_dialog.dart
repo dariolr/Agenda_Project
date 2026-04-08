@@ -236,8 +236,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
 
   bool _supportsQuickChips(String methodCode) => true;
 
-  bool _isMethodEditable(String methodCode) =>
-      methodCode != _discountMethodCode;
+  bool _isMethodEditable(String methodCode) => true;
 
   List<String> _paymentPriorityOrder() => <String>[
     ..._paidMethodCodes,
@@ -246,11 +245,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
 
   List<String> _visiblePaymentMethods() {
     final methods = List<String>.from(_paidMethodCodes);
-    final discountAmount = _amountForMethod(_discountMethodCode) ?? 0;
-    if (discountAmount > 0) {
-      methods.add(_discountMethodCode);
-    }
-
+    methods.add(_discountMethodCode);
     return methods;
   }
 
@@ -629,6 +624,53 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
     }
   }
 
+  BusinessPaymentMethod? _findBusinessMethod(String methodCode) {
+    for (final method in _businessPaymentMethods) {
+      if (method.code == methodCode) return method;
+    }
+    return null;
+  }
+
+  bool _isRevenueMethod(String methodCode) {
+    if (methodCode == _discountMethodCode) return false;
+    final method = _findBusinessMethod(methodCode);
+    if (method != null) return method.isRevenue;
+    return true;
+  }
+
+  Widget _buildMethodTypeBadge(BuildContext context, String methodCode) {
+    if (methodCode == _discountMethodCode) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+    final isRevenue = _isRevenueMethod(methodCode);
+    final color = isRevenue
+        ? Colors.green.shade700
+        : theme.colorScheme.onSurfaceVariant;
+    final background = isRevenue
+        ? Colors.green.withOpacity(0.08)
+        : theme.colorScheme.surfaceContainerHighest.withOpacity(0.6);
+    final text = isRevenue
+        ? context.l10n.paymentMethodsRevenueBadge
+        : context.l10n.paymentMethodsNonRevenueBadge;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        text,
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: color,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
   Widget _buildQuickChips(BuildContext context, String methodCode) {
     final theme = Theme.of(context);
     final selectedPercent = _selectedPercentForMethod(methodCode);
@@ -938,14 +980,19 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
             padding: EdgeInsets.zero,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: i.isEven
-                    ? Color.alphaBlend(
-                        theme.colorScheme.outlineVariant.withOpacity(0.02),
-                        theme.colorScheme.surfaceContainerHighest.withOpacity(
-                          0.1,
-                        ),
-                      )
-                    : Colors.transparent,
+                color: _isRevenueMethod(visibleMethods[i])
+                    ? (i.isEven
+                          ? Color.alphaBlend(
+                              theme.colorScheme.outlineVariant.withOpacity(
+                                0.02,
+                              ),
+                              theme.colorScheme.surfaceContainerHighest
+                                  .withOpacity(0.1),
+                            )
+                          : Colors.transparent)
+                    : theme.colorScheme.surfaceContainerHighest.withOpacity(
+                        0.24,
+                      ),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Padding(
@@ -978,6 +1025,8 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
                                   ),
                                 ),
                               ),
+                              const SizedBox(width: 8),
+                              _buildMethodTypeBadge(context, visibleMethods[i]),
                             ],
                           ),
                           if (_supportsQuickChips(visibleMethods[i]))
