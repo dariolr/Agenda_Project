@@ -385,7 +385,6 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
     // Dati usati dalle condizioni di bootstrap iniziale
     final staffData = staffAsync.asData?.value;
-    final appointmentsData = appointmentsAsync.asData?.value;
     final staffList = ref.watch(filteredStaffProvider);
     final staffInCurrentLocation = ref.watch(staffForCurrentLocationProvider);
     final staffPlannings = ref.watch(staffPlanningsProvider);
@@ -440,7 +439,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     final isInitialAppointmentsLoad =
         appointmentsAsync.isLoading &&
         !_isPolling &&
-        (appointmentsData?.isEmpty ?? true);
+        !appointmentsAsync.hasValue;
     final isPlanningBootstrapLoading =
         staffFilterMode == StaffFilterMode.onDutyTeam &&
         staffInCurrentLocation.isNotEmpty &&

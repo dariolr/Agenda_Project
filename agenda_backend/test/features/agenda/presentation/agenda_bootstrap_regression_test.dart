@@ -63,6 +63,25 @@ class _TestAppointmentsNotifier extends AppointmentsNotifier {
   Future<List<Appointment>> build() async => const <Appointment>[];
 }
 
+class _TestAppointmentsWithDataNotifier extends AppointmentsNotifier {
+  @override
+  Future<List<Appointment>> build() async => <Appointment>[
+    Appointment(
+      id: 1,
+      bookingId: 1,
+      businessId: 11,
+      locationId: 7,
+      staffId: 19,
+      serviceId: 1,
+      serviceVariantId: 1,
+      clientName: 'Test',
+      serviceName: 'Taglio',
+      startTime: DateTime(2026, 4, 3, 10),
+      endTime: DateTime(2026, 4, 3, 11),
+    ),
+  ];
+}
+
 class _TestServiceVariantsNotifier extends ServiceVariantsNotifier {
   @override
   Future<List<ServiceVariant>> build() async => const <ServiceVariant>[];
@@ -193,6 +212,127 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
       expect(find.byType(CircularProgressIndicator), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'AgendaScreen non mostra lo spinner di bootstrap durante il refresh post-prenotazione',
+    (tester) async {
+      // Riproduce il bug: ref.invalidate(appointmentsProvider) dopo una nuova prenotazione
+      // causava isInitialAppointmentsLoad=true → isBootstrapLoading=true →
+      // agendaContent rimosso dall'albero → MultiStaffDayView smontato → scroll a 0.
+      tester.view.physicalSize = const Size(1440, 1200);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      const location = Location(
+        id: 7,
+        businessId: 11,
+        name: 'Roma Centro',
+        isDefault: true,
+      );
+      const staff = Staff(
+        id: 19,
+        businessId: 11,
+        name: 'Patrizia',
+        surname: 'Franco',
+        color: Colors.pink,
+        locationIds: <int>[7],
+      );
+      SharedPreferences.setMockInitialValues(const <String, Object>{});
+      final prefs = await SharedPreferences.getInstance();
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          currentBusinessIdProvider.overrideWith(_TestCurrentBusinessId.new),
+          currentLocationIdProvider.overrideWith(_TestCurrentLocationId.new),
+          locationsProvider.overrideWith(
+            () => _TestLocationsNotifier([location]),
+          ),
+          locationsLoadedProvider.overrideWith((ref) => true),
+          allStaffProvider.overrideWith(() => _TestStaffNotifier([staff])),
+          filteredStaffProvider.overrideWith((ref) => const <Staff>[staff]),
+          staffForCurrentLocationProvider.overrideWith(
+            (ref) => const <Staff>[staff],
+          ),
+          // Notifier con dati già presenti (simula stato post-caricamento iniziale)
+          appointmentsProvider.overrideWith(
+            _TestAppointmentsWithDataNotifier.new,
+          ),
+          serviceVariantsProvider.overrideWith(_TestServiceVariantsNotifier.new),
+          staffPlanningsProvider.overrideWith(_TestStaffPlanningsNotifier.new),
+          staffFilterModeProvider.overrideWith(_TestStaffFilterModeNotifier.new),
+          calendarViewModeProvider.overrideWith(
+            _TestCalendarViewModeNotifier.new,
+          ),
+          agendaDateProvider.overrideWith(_TestAgendaDateNotifier.new),
+          canUseBookingRescheduleProvider.overrideWith((ref) => true),
+          effectiveUseServiceColorsForAppointmentsProvider.overrideWith(
+            (ref) => false,
+          ),
+          effectiveTenantTimezoneProvider.overrideWith((ref) => 'Europe/Rome'),
+          availabilityExceptionsProvider.overrideWith(
+            _TestAvailabilityExceptionsNotifier.new,
+          ),
+          unavailableSlotRangesProvider.overrideWith(
+            (ref, staffId) => const <({int startIndex, int count})>[],
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp(
+            locale: const Locale('it'),
+            localizationsDelegates: const [
+              L10n.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: L10n.delegate.supportedLocales,
+            home: const Scaffold(body: AgendaScreen()),
+          ),
+        ),
+      );
+
+      // Attendi caricamento dati + bootstrap iniziale
+      await tester.pumpAndSettle(const Duration(milliseconds: 500));
+      container.read(initialScrollDoneProvider.notifier).markDone();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Stato stabile: nessuno spinner
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      // Precondizione: il provider ha dati (hasValue = true)
+      expect(container.read(appointmentsProvider).hasValue, true);
+
+      // Simula il refresh post-prenotazione (equivalente a ref.invalidate in _createSingleBooking)
+      container.invalidate(appointmentsProvider);
+      await tester.pump();
+
+      // REGRESSIONE: dopo l'invalidate, AsyncLoading deve mantenere hasValue=true (Riverpod 3).
+      // Se hasValue fosse false, isInitialAppointmentsLoad diventerebbe true →
+      // isBootstrapLoading=true → lo spinner apparirebbe e il widget verrebbe smontato.
+      final stateAfterInvalidate = container.read(appointmentsProvider);
+      expect(
+        stateAfterInvalidate.hasValue,
+        true,
+        reason:
+            'Riverpod 3 deve mantenere il valore precedente in AsyncLoading dopo invalidate',
+      );
+
+      // Nessuno spinner di bootstrap deve apparire durante il refresh
+      expect(
+        find.byType(CircularProgressIndicator),
+        findsNothing,
+        reason:
+            'Lo spinner non deve apparire durante il refresh degli appuntamenti post-prenotazione',
+      );
     },
   );
 }
