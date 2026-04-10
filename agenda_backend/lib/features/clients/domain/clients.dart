@@ -9,6 +9,7 @@ class Client {
   final DateTime? birthDate;
   final String? city;
   final String? notes;
+  final String? colorHex;
   final DateTime createdAt;
   final DateTime? lastVisit;
   final int? loyaltyPoints;
@@ -27,6 +28,7 @@ class Client {
     this.birthDate,
     this.city,
     this.notes,
+    this.colorHex,
     required this.createdAt,
     this.lastVisit,
     this.loyaltyPoints,
@@ -106,6 +108,7 @@ class Client {
     DateTime? birthDate,
     String? city,
     String? notes,
+    String? colorHex,
     DateTime? createdAt,
     DateTime? lastVisit,
     int? loyaltyPoints,
@@ -124,6 +127,7 @@ class Client {
       birthDate: birthDate ?? this.birthDate,
       city: city ?? this.city,
       notes: notes ?? this.notes,
+      colorHex: colorHex ?? this.colorHex,
       createdAt: createdAt ?? this.createdAt,
       lastVisit: lastVisit ?? this.lastVisit,
       loyaltyPoints: loyaltyPoints ?? this.loyaltyPoints,

@@ -378,6 +378,7 @@ CREATE TABLE `clients` (
   `birth_date` date DEFAULT NULL,
   `city` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `color_hex` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Colore cliente in formato #RRGGBB',
   `loyalty_points` int NOT NULL DEFAULT '0',
   `last_visit` timestamp NULL DEFAULT NULL,
   `is_archived` tinyint(1) NOT NULL DEFAULT '0',

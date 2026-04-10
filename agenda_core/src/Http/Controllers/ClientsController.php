@@ -125,8 +125,8 @@ final class ClientsController
 
         // Create client
         $stmt = $this->clientRepo->db()->getPdo()->prepare(
-            'INSERT INTO clients (business_id, first_name, last_name, email, phone, notes, is_archived, blocked)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO clients (business_id, first_name, last_name, email, phone, notes, color_hex, is_archived, blocked)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $blocked = $this->resolveBlocked($body, null);
         $stmt->execute([
@@ -136,6 +136,7 @@ final class ClientsController
             $body['email'] ?? null,
             $body['phone'] ?? null,
             $body['notes'] ?? null,
+            $body['color_hex'] ?? null,
             (int) ((bool) ($body['is_archived'] ?? false)),
             $blocked === null ? 0 : (int) $blocked,
         ]);
@@ -167,7 +168,7 @@ final class ClientsController
 
         // Update allowed fields
         $data = [];
-        foreach (['first_name', 'last_name', 'email', 'phone', 'notes'] as $field) {
+        foreach (['first_name', 'last_name', 'email', 'phone', 'notes', 'color_hex'] as $field) {
             if (array_key_exists($field, $body)) {
                 $data[$field] = $body[$field];
             }
@@ -315,6 +316,7 @@ final class ClientsController
             'email' => $client['email'],
             'phone' => $client['phone'],
             'notes' => $client['notes'],
+            'color_hex' => $client['color_hex'] ?? null,
             'is_archived' => (bool) ($client['is_archived'] ?? false),
             'blocked' => (bool) ($client['blocked'] ?? false),
             'is_bookable_online' => !(bool) ($client['blocked'] ?? false),
@@ -339,6 +341,7 @@ final class ClientsController
             'phone' => null, // Hidden in masked mode
             'phone_masked' => DataMasker::maskPhone($client['phone']),
             'notes' => null, // Hidden in masked mode
+            'color_hex' => $client['color_hex'] ?? null,
             'is_archived' => (bool) ($client['is_archived'] ?? false),
             'blocked' => (bool) ($client['blocked'] ?? false),
             'is_bookable_online' => !(bool) ($client['blocked'] ?? false),

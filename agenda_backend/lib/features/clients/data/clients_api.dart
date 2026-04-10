@@ -114,6 +114,7 @@ class ClientsApi {
           : null,
       city: json['city'] as String?,
       notes: json['notes'] as String?,
+      colorHex: json['color_hex'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       lastVisit: json['last_visit'] != null
           ? DateTime.parse(json['last_visit'] as String)
@@ -141,6 +142,7 @@ class ClientsApi {
       'birth_date': client.birthDate?.toIso8601String().split('T')[0],
       'city': client.city,
       'notes': client.notes,
+      'color_hex': client.colorHex,
       'tags': client.tags,
       'is_archived': client.isArchived,
       'blocked': client.blocked,

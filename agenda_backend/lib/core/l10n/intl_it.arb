@@ -123,6 +123,7 @@
   "formEmail": "Email",
   "formPhone": "Telefono",
   "formNotes": "Note (non visibili al cliente)",
+  "clientColorLabel": "Colore cliente",
   "validationRequired": "Richiesto",
   "validationInvalidEmail": "Email non valida",
   "validationInvalidPhone": "Telefono non valido",

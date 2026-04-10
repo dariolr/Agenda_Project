@@ -41,6 +41,7 @@ import 'package:agenda_backend/features/agenda/presentation/widgets/booking_dial
 import 'package:agenda_backend/features/agenda/utils/week_range.dart';
 import 'package:agenda_backend/features/agenda/utils/client_color_utils.dart';
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
+import 'package:agenda_backend/features/clients/providers/clients_providers.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
@@ -723,10 +724,12 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     }
 
     if (cardColorSource == AgendaCardColorSource.clients) {
+      final clientsById = ref.watch(clientsByIdProvider);
       for (final appointment in appointments) {
         colors[appointment.id] = resolveClientColorForAppointment(
           context,
           appointment,
+          clientColorHex: clientsById[appointment.clientId]?.colorHex,
         );
       }
       return colors;

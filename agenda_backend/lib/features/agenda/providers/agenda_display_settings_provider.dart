@@ -6,10 +6,10 @@ import 'business_providers.dart';
 import 'layout_config_provider.dart';
 import 'location_providers.dart';
 
-const int _clientsDefaultColorBusinessId = 18;
+const Set<int> _clientsDefaultColorBusinessIds = {18, 19};
 
 AgendaCardColorSource _defaultCardColorSourceForBusiness(int businessId) {
-  if (businessId == _clientsDefaultColorBusinessId) {
+  if (_clientsDefaultColorBusinessIds.contains(businessId)) {
     return AgendaCardColorSource.clients;
   }
   return AgendaCardColorSource.services;

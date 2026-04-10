@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../app/theme/app_spacing.dart';
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/utils/color_utils.dart';
 import '../../../../core/utils/string_utils.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../../core/widgets/phone_input_field.dart';
@@ -37,6 +38,32 @@ class ClientFormState extends ConsumerState<ClientForm> {
     text: widget.initial?.notes ?? '',
   );
   late bool _isBookableOnline = !(widget.initial?.blocked ?? false);
+  String? _selectedColorHex;
+
+  static const List<Color> _clientPalette = [
+    Color(0xFFE53935),
+    Color(0xFFD81B60),
+    Color(0xFF8E24AA),
+    Color(0xFF5E35B1),
+    Color(0xFF3949AB),
+    Color(0xFF1E88E5),
+    Color(0xFF039BE5),
+    Color(0xFF00ACC1),
+    Color(0xFF00897B),
+    Color(0xFF43A047),
+    Color(0xFF7CB342),
+    Color(0xFFC0CA33),
+    Color(0xFFFDD835),
+    Color(0xFFFFB300),
+    Color(0xFFFB8C00),
+    Color(0xFFF4511E),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedColorHex = widget.initial?.colorHex;
+  }
 
   @override
   void dispose() {
@@ -66,6 +93,7 @@ class ClientFormState extends ConsumerState<ClientForm> {
       email: _email.text.trim().isEmpty ? null : _email.text.trim(),
       phone: (fullPhone == null || fullPhone.isEmpty) ? null : fullPhone,
       notes: _notes.text.trim().isEmpty ? null : _notes.text.trim(),
+      colorHex: _selectedColorHex,
       createdAt: base?.createdAt ?? now,
       lastVisit: base?.lastVisit,
       loyaltyPoints: base?.loyaltyPoints,
@@ -188,6 +216,33 @@ class ClientFormState extends ConsumerState<ClientForm> {
       ),
     );
 
+    final colorField = LabeledFormField(
+      label: l10n.clientColorLabel,
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          _ColorChoiceDot(
+            color: null,
+            selected: _selectedColorHex == null,
+            onTap: () {
+              setState(() => _selectedColorHex = null);
+              widget.onChanged?.call();
+            },
+          ),
+          for (final color in _clientPalette)
+            _ColorChoiceDot(
+              color: color,
+              selected: _selectedColorHex == ColorUtils.toHex(color),
+              onTap: () {
+                setState(() => _selectedColorHex = ColorUtils.toHex(color));
+                widget.onChanged?.call();
+              },
+            ),
+        ],
+      ),
+    );
+
     final onlineBookingField = SwitchListTile.adaptive(
       contentPadding: EdgeInsets.zero,
       dense: true,
@@ -215,6 +270,8 @@ class ClientFormState extends ConsumerState<ClientForm> {
             phoneField,
             const SizedBox(height: AppSpacing.formRowSpacing),
             onlineBookingField,
+            const SizedBox(height: AppSpacing.formRowSpacing),
+            colorField,
             const SizedBox(height: AppSpacing.formRowSpacing),
             notesField,
           ] else ...[
@@ -244,10 +301,55 @@ class ClientFormState extends ConsumerState<ClientForm> {
             onlineBookingField,
             const SizedBox(height: AppSpacing.formRowSpacing),
 
-            // Riga 4: Note (sempre full width)
+            // Riga 4: Colore cliente (full width)
+            colorField,
+            const SizedBox(height: AppSpacing.formRowSpacing),
+
+            // Riga 5: Note (sempre full width)
             notesField,
           ],
         ],
+      ),
+    );
+  }
+}
+
+class _ColorChoiceDot extends StatelessWidget {
+  const _ColorChoiceDot({
+    required this.color,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final Color? color;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final borderColor = selected
+        ? Theme.of(context).colorScheme.primary
+        : Theme.of(context).colorScheme.outline.withOpacity(0.4);
+    final fill = color ?? Theme.of(context).colorScheme.surface;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: onTap,
+      child: Container(
+        width: 28,
+        height: 28,
+        decoration: BoxDecoration(
+          color: fill,
+          shape: BoxShape.circle,
+          border: Border.all(color: borderColor, width: selected ? 2 : 1),
+        ),
+        child: color == null
+            ? Icon(
+                Icons.remove,
+                size: 16,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              )
+            : null,
       ),
     );
   }

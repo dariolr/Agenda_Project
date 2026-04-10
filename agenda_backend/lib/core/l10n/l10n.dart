@@ -718,6 +718,16 @@ class L10n {
     );
   }
 
+  /// `Client color`
+  String get clientColorLabel {
+    return Intl.message(
+      'Client color',
+      name: 'clientColorLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Required`
   String get validationRequired {
     return Intl.message(

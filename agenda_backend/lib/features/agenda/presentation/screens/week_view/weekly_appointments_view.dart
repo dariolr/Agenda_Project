@@ -32,6 +32,7 @@ import 'package:agenda_backend/features/agenda/utils/week_range.dart';
 import 'package:agenda_backend/features/agenda/utils/client_color_utils.dart';
 import 'package:agenda_backend/features/business/providers/location_closures_provider.dart';
 import 'package:agenda_backend/features/class_events/providers/class_events_providers.dart';
+import 'package:agenda_backend/features/clients/providers/clients_providers.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
 import 'package:agenda_backend/features/staff/providers/availability_exceptions_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
@@ -983,7 +984,12 @@ class _WeeklyAppointmentTileState
       return fallbackColor;
     }
     if (cardColorSource == AgendaCardColorSource.clients) {
-      return resolveClientColorForAppointment(context, currentAppointment);
+      final clientsById = ref.watch(clientsByIdProvider);
+      return resolveClientColorForAppointment(
+        context,
+        currentAppointment,
+        clientColorHex: clientsById[currentAppointment.clientId]?.colorHex,
+      );
     }
 
     final variantsAsync = ref.watch(serviceVariantsProvider);

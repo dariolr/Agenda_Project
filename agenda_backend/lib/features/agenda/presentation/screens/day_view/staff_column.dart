@@ -719,6 +719,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final cardColorSource = ref.watch(effectiveAgendaCardColorSourceProvider);
     final useServiceColors = cardColorSource == AgendaCardColorSource.services;
+    final clientsById = ref.watch(clientsByIdProvider);
     // 🔹 Watch fuori dal loop per evitare rebuild multipli
     final pendingDrop = ref.watch(pendingDropProvider);
     final variantsAsync = useServiceColors
@@ -843,7 +844,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           cardColor = widget.staff.color;
           break;
         case AgendaCardColorSource.clients:
-          cardColor = resolveClientColorForAppointment(context, originalAppt);
+          cardColor = resolveClientColorForAppointment(
+            context,
+            originalAppt,
+            clientColorHex: clientsById[originalAppt.clientId]?.colorHex,
+          );
           break;
       }
 
@@ -960,7 +965,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             cardColor = widget.staff.color;
             break;
           case AgendaCardColorSource.clients:
-            cardColor = resolveClientColorForAppointment(context, originalAppt);
+            cardColor = resolveClientColorForAppointment(
+              context,
+              originalAppt,
+              clientColorHex: clientsById[originalAppt.clientId]?.colorHex,
+            );
             break;
         }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/models/appointment.dart';
+import '../../../core/utils/color_utils.dart';
 
 const int _noClientColorSeed = -1;
 // Hue sequence intentionally ordered to maximize contrast between neighbors.
@@ -30,8 +31,17 @@ const List<double> _lightnessVariantsDark = [0.56, 0.50, 0.62];
 
 Color resolveClientColorForAppointment(
   BuildContext context,
-  Appointment appointment,
-) {
+  Appointment appointment, {
+  String? clientColorHex,
+}) {
+  if (clientColorHex != null && clientColorHex.isNotEmpty) {
+    try {
+      return ColorUtils.fromHex(clientColorHex);
+    } catch (_) {
+      // Fallback to generated color if malformed.
+    }
+  }
+
   final seed = appointment.clientId ?? _noClientColorSeed;
   final hash = _stableHash(seed);
   final hueIndex = hash % _hueSequence.length;

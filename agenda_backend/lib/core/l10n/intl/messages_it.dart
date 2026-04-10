@@ -1029,6 +1029,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "clientAppointmentsUpcoming": MessageLookupByLibrary.simpleMessage(
       "Prossimi",
     ),
+    "clientColorLabel": MessageLookupByLibrary.simpleMessage("Colore cliente"),
     "clientLockedHint": MessageLookupByLibrary.simpleMessage(
       "Il cliente non può essere modificato per questo appuntamento",
     ),

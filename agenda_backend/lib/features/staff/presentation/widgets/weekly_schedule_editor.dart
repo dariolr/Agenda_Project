@@ -339,14 +339,51 @@ class _WeeklyScheduleEditorState extends State<WeeklyScheduleEditor> {
 
   void _updateShift(int day, int shiftIndex, WorkShift newShift) {
     final currentDay = _schedule.days[day]!;
+    final previousShift = currentDay.shifts[shiftIndex];
+    final normalizedShift = _normalizeShiftForEditing(
+      candidate: newShift,
+      previous: previousShift,
+    );
     final newShifts = List<WorkShift>.from(currentDay.shifts);
-    newShifts[shiftIndex] = newShift;
+    newShifts[shiftIndex] = normalizedShift;
     _updateSchedule(
       _schedule.copyWith(
         days: {
           ..._schedule.days,
           day: currentDay.copyWith(shifts: newShifts),
         },
+      ),
+    );
+  }
+
+  WorkShift _normalizeShiftForEditing({
+    required WorkShift candidate,
+    required WorkShift previous,
+  }) {
+    final startMinutes =
+        candidate.startTime.hour * 60 + candidate.startTime.minute;
+    final endMinutes = candidate.endTime.hour * 60 + candidate.endTime.minute;
+
+    if (endMinutes > startMinutes) {
+      return candidate;
+    }
+
+    final stepMinutes = widget.displayStepMinutes.clamp(1, 60);
+    final previousDuration = previous.durationMinutes;
+    final targetDuration = previousDuration > 0
+        ? previousDuration
+        : stepMinutes;
+
+    // TimeOfDay non supporta 24:00, quindi il massimo rappresentabile è 23:59.
+    final adjustedEndMinutes = (startMinutes + targetDuration).clamp(
+      startMinutes + 1,
+      (23 * 60) + 59,
+    );
+
+    return candidate.copyWith(
+      endTime: TimeOfDay(
+        hour: adjustedEndMinutes ~/ 60,
+        minute: adjustedEndMinutes % 60,
       ),
     );
   }
