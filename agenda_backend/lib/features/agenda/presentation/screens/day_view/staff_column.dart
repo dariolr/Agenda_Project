@@ -872,12 +872,20 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         height: visualHeight,
         child: Opacity(
           opacity: opacity,
-          child: AppointmentCard(
-            appointment: originalAppt,
-            color: cardColor,
-            columnWidth: effectiveWidth,
-            columnOffset: effectiveLeft,
-            dragTargetWidth: fullColumnWidth,
+          child: GestureDetector(
+            onSecondaryTapDown: (details) => _handleAppointmentSecondaryTap(
+              appointment: originalAppt,
+              details: details,
+              cardTop: visualTop,
+              cardHeight: visualHeight,
+            ),
+            child: AppointmentCard(
+              appointment: originalAppt,
+              color: cardColor,
+              columnWidth: effectiveWidth,
+              columnOffset: effectiveLeft,
+              dragTargetWidth: fullColumnWidth,
+            ),
           ),
         ),
       );
@@ -1419,6 +1427,44 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ref,
       date: DateUtils.dateOnly(dt),
       time: TimeOfDay(hour: dt.hour, minute: dt.minute),
+      initialStaffId: widget.staff.id,
+    );
+  }
+
+  Future<void> _handleAppointmentSecondaryTap({
+    required Appointment appointment,
+    required TapDownDetails details,
+    required double cardTop,
+    required double cardHeight,
+  }) async {
+    final layoutConfig = ref.read(layoutConfigProvider);
+    final dayStart = DateTime(
+      appointment.startTime.year,
+      appointment.startTime.month,
+      appointment.startTime.day,
+    );
+    final maxAgendaHeight = layoutConfig.heightForMinutes(
+      LayoutConfig.hoursInDay * 60,
+    );
+    final slotStepMinutes = layoutConfig.minutesPerSlot;
+    final totalMinutes = LayoutConfig.hoursInDay * 60;
+    final localY = details.localPosition.dy.clamp(0.0, cardHeight).toDouble();
+    final absoluteY = (cardTop + localY).clamp(0.0, maxAgendaHeight);
+    final rawMinutes = layoutConfig.minutesFromHeight(absoluteY);
+    final roundedMinutes = (((rawMinutes / slotStepMinutes).round() *
+                slotStepMinutes)
+            .clamp(
+              0,
+              math.max(totalMinutes - slotStepMinutes, 0),
+            ))
+        .toInt();
+    final targetStart = dayStart.add(Duration(minutes: roundedMinutes));
+
+    await showBookingDialog(
+      context,
+      ref,
+      date: DateUtils.dateOnly(targetStart),
+      time: TimeOfDay(hour: targetStart.hour, minute: targetStart.minute),
       initialStaffId: widget.staff.id,
     );
   }

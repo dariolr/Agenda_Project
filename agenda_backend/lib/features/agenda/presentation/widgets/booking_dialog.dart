@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
@@ -17,6 +19,7 @@ import '../../../../core/models/booking.dart';
 import '../../../../core/models/booking_payment.dart';
 import '../../../../core/models/booking_payment_computed.dart';
 import '../../../../core/models/recurrence_rule.dart';
+import '../../../../core/models/service.dart';
 import '../../../../core/models/service_package.dart';
 import '../../../../core/models/service_variant.dart';
 import '../../../../core/network/api_client.dart';
@@ -1581,10 +1584,80 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
     if (!mounted) return;
     if (triggerServiceAutoOpen && !dismissed) {
-      setState(() {
-        _shouldAutoOpenServicePicker = true;
-      });
+      final autoSelected = await _tryAutoSelectSingleEntryForFirstServiceItem();
+      if (!mounted) return;
+      if (!autoSelected) {
+        setState(() {
+          _shouldAutoOpenServicePicker = true;
+        });
+      }
     }
+  }
+
+  Future<bool> _tryAutoSelectSingleEntryForFirstServiceItem() async {
+    if (_serviceItems.isEmpty) return false;
+
+    final firstIndex = 0;
+    final firstItem = _serviceItems[firstIndex];
+    if (firstItem.serviceId != null) return false;
+
+    final variants = ref.read(serviceVariantsProvider).value ?? [];
+    final allServices = ref.read(servicesProvider).value ?? [];
+    final allPackages = ref.read(servicePackagesProvider).value ?? [];
+
+    List<Service> selectableServices = allServices;
+    List<ServicePackage> selectablePackages = allPackages
+        .where((p) => p.isActive && !p.isBroken)
+        .toList();
+
+    final staffId = firstItem.staffId;
+    if (staffId != null) {
+      final staffServiceIds = ref
+          .read(staffForCurrentLocationProvider)
+          .where((s) => s.id == staffId)
+          .firstOrNull
+          ?.serviceIds;
+      if (staffServiceIds != null && staffServiceIds.isNotEmpty) {
+        final allowedServiceIds = staffServiceIds;
+        selectableServices = selectableServices
+            .where((s) => allowedServiceIds.contains(s.id))
+            .toList();
+        selectablePackages = selectablePackages.where((p) {
+          return p.orderedServiceIds.every(allowedServiceIds.contains);
+        }).toList();
+      }
+    }
+
+    final selectableCount =
+        selectableServices.length + selectablePackages.length;
+    if (selectableCount != 1) return false;
+
+    if (selectableServices.length == 1 && selectablePackages.isEmpty) {
+      final onlyService = selectableServices.first;
+      final variant = variants.where((v) => v.serviceId == onlyService.id).firstOrNull;
+      final resolvedStaffId = staffId ?? _findBestStaff(onlyService.id);
+      setState(() {
+        _serviceItems[firstIndex] = _serviceItems[firstIndex].copyWith(
+          serviceId: onlyService.id,
+          serviceVariantId: variant?.id,
+          durationMinutes: variant?.durationMinutes ?? 30,
+          staffId: resolvedStaffId,
+          blockedExtraMinutes: variant?.blockedTime ?? 0,
+          processingExtraMinutes: variant?.processingTime ?? 0,
+          listPrice: variant?.price,
+          price: variant?.price,
+        );
+        _clearMidnightWarningIfResolved(variants.cast());
+      });
+      return true;
+    }
+
+    if (selectablePackages.length == 1 && selectableServices.isEmpty) {
+      await _onPackageSelectedFromPicker(selectablePackages.first, firstIndex);
+      return true;
+    }
+
+    return false;
   }
 
   void _onServicePickerAutoOpened() {
@@ -1603,6 +1676,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
   void _addService() {
     final variants = ref.read(serviceVariantsProvider).value ?? [];
+    final services = ref.read(servicesProvider).value ?? [];
+    final packages = ref.read(servicePackagesProvider).value ?? [];
     // Calcola l'orario di inizio per il nuovo servizio
     TimeOfDay nextStart;
     if (_serviceItems.isEmpty) {
@@ -1627,6 +1702,76 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     int? smartStaffId = _serviceItems.isNotEmpty
         ? _serviceItems.last.staffId
         : widget.initialStaffId;
+
+    List<Service> selectableServices = services;
+    List<ServicePackage> selectablePackages = packages
+        .where((p) => p.isActive && !p.isBroken)
+        .toList();
+
+    if (smartStaffId != null) {
+      final staffServiceIds = ref
+          .read(staffForCurrentLocationProvider)
+          .where((s) => s.id == smartStaffId)
+          .firstOrNull
+          ?.serviceIds;
+      if (staffServiceIds != null && staffServiceIds.isNotEmpty) {
+        final allowedServiceIds = staffServiceIds;
+        selectableServices = selectableServices
+            .where((s) => allowedServiceIds.contains(s.id))
+            .toList();
+        selectablePackages = selectablePackages.where((p) {
+          return p.orderedServiceIds.every(allowedServiceIds.contains);
+        }).toList();
+      }
+    }
+
+    final selectableCount =
+        selectableServices.length + selectablePackages.length;
+    if (selectableCount == 1) {
+      if (selectableServices.length == 1 && selectablePackages.isEmpty) {
+        final onlyService = selectableServices.first;
+        final variant = variants
+            .where((v) => v.serviceId == onlyService.id)
+            .firstOrNull;
+        final resolvedStaffId = smartStaffId ?? _findBestStaff(onlyService.id);
+        setState(() {
+          _clearMidnightWarningIfResolved(variants.cast());
+          _serviceItems.add(
+            ServiceItemData(
+              key: _nextItemKey(),
+              serviceId: onlyService.id,
+              serviceVariantId: variant?.id,
+              startTime: nextStart,
+              durationMinutes: variant?.durationMinutes ?? 30,
+              staffId: resolvedStaffId,
+              blockedExtraMinutes: variant?.blockedTime ?? 0,
+              processingExtraMinutes: variant?.processingTime ?? 0,
+              listPrice: variant?.price,
+              price: variant?.price,
+            ),
+          );
+        });
+        return;
+      }
+
+      if (selectablePackages.length == 1 && selectableServices.isEmpty) {
+        final newIndex = _serviceItems.length;
+        setState(() {
+          _clearMidnightWarningIfResolved(variants.cast());
+          _serviceItems.add(
+            ServiceItemData(
+              key: _nextItemKey(),
+              startTime: nextStart,
+              staffId: smartStaffId,
+            ),
+          );
+        });
+        unawaited(
+          _onPackageSelectedFromPicker(selectablePackages.first, newIndex),
+        );
+        return;
+      }
+    }
 
     final newIndex = _serviceItems.length;
     setState(() {
