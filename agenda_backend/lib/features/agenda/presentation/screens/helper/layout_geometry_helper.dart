@@ -29,7 +29,12 @@ Map<int, EventGeometry> computeLayoutGeometry(
   if (entries.isEmpty) return const {};
 
   final sorted = entries.toList()
-    ..sort((a, b) => a.start.compareTo(b.start));
+    ..sort((a, b) {
+      final compareStart = a.start.compareTo(b.start);
+      if (compareStart != 0) return compareStart;
+      // Ordine stabile: evita salti di colonna quando cambia solo la durata.
+      return a.id.compareTo(b.id);
+    });
   final clusters = <List<LayoutEntry>>[];
 
   var currentCluster = <LayoutEntry>[];
@@ -141,6 +146,9 @@ Map<int, int> _assignColumns(List<LayoutEntry> cluster) {
     ..sort((a, b) {
       final compareStart = a.start.compareTo(b.start);
       if (compareStart != 0) return compareStart;
+      // Usa un tie-break stabile per mantenere la colonna durante resize.
+      final compareId = a.id.compareTo(b.id);
+      if (compareId != 0) return compareId;
       return a.end.compareTo(b.end);
     });
 
