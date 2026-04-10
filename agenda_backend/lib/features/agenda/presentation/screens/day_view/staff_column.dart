@@ -722,6 +722,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final clientsById = ref.watch(clientsByIdProvider);
     // 🔹 Watch fuori dal loop per evitare rebuild multipli
     final pendingDrop = ref.watch(pendingDropProvider);
+    final selectedAppts = ref.watch(selectedAppointmentProvider);
     final variantsAsync = useServiceColors
         ? ref.watch(serviceVariantsProvider)
         : const AsyncData(<ServiceVariant>[]);
@@ -751,6 +752,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     }).toList();
 
     final positionedEntries = <Widget>[];
+    final expandedEntries = <Widget>[];
 
     final originalAppointmentsMap = {for (var a in appointments) a.id: a};
     final layoutEntries =
@@ -852,25 +854,39 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           break;
       }
 
-      positionedEntries.add(
-        Positioned(
-          key: ValueKey(originalAppt.id),
-          top: visualTop,
-          left: cardLeft,
-          width: cardWidth,
-          height: visualHeight,
-          child: Opacity(
-            opacity: opacity,
-            child: AppointmentCard(
-              appointment: originalAppt,
-              color: cardColor,
-              columnWidth: cardWidth,
-              columnOffset: cardLeft,
-              dragTargetWidth: fullColumnWidth,
-            ),
+      final isExpanded =
+          selectedAppts.contains(originalAppt.id) &&
+          !isDragged &&
+          cardWidth < fullColumnWidth - 1.0;
+
+      final effectiveLeft = isExpanded ? padding : cardLeft;
+      final effectiveWidth = isExpanded ? fullColumnWidth : cardWidth;
+
+      final cardWidget = AnimatedPositioned(
+        key: ValueKey(originalAppt.id),
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOutCubic,
+        top: visualTop,
+        left: effectiveLeft,
+        width: effectiveWidth,
+        height: visualHeight,
+        child: Opacity(
+          opacity: opacity,
+          child: AppointmentCard(
+            appointment: originalAppt,
+            color: cardColor,
+            columnWidth: effectiveWidth,
+            columnOffset: effectiveLeft,
+            dragTargetWidth: fullColumnWidth,
           ),
         ),
       );
+
+      if (isExpanded) {
+        expandedEntries.add(cardWidget);
+      } else {
+        positionedEntries.add(cardWidget);
+      }
     }
 
     for (final classEvent in classEvents) {
@@ -1004,11 +1020,14 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       }
     }
 
-    positionedEntries.sort((a, b) {
-      final aTop = (a as Positioned).top ?? 0;
-      final bTop = (b as Positioned).top ?? 0;
-      return aTop.compareTo(bTop);
-    });
+    double topOf(Widget w) {
+      if (w is Positioned) return w.top ?? 0;
+      if (w is AnimatedPositioned) return w.top ?? 0;
+      return 0;
+    }
+
+    positionedEntries.sort((a, b) => topOf(a).compareTo(topOf(b)));
+    positionedEntries.addAll(expandedEntries);
     return positionedEntries;
   }
 
