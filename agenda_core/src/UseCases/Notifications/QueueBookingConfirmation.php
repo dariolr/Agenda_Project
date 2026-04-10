@@ -160,10 +160,32 @@ final class QueueBookingConfirmation
         $cancelDeadline = isset($booking['cancellation_hours']) 
             ? $startTime->modify("-{$booking['cancellation_hours']} hours")
             : $startTime->modify('-24 hours');
+        $isEnglish = EmailTemplateRenderer::normalizeLocale($locale) === 'en';
         $locationName = $booking['location_name'] ?? '';
         $locationAddress = $booking['location_address'] ?? '';
         $strings = EmailTemplateRenderer::strings($locale);
         $hasMultipleLocations = $this->hasMultipleLocations((int) ($booking['business_id'] ?? 0));
+        $businessName = $this->sanitizeBusinessName($booking['business_name'] ?? '');
+        $totalPriceValue = (float) ($booking['total_price'] ?? 0);
+        $formattedTotalPrice = number_format($totalPriceValue, 2, ',', '.');
+        $totalRowHtml = '';
+        $totalRowText = '';
+        if ($totalPriceValue > 0) {
+            $label = $isEnglish ? 'Total' : 'Totale';
+            $totalRowHtml = sprintf(
+                '<tr>
+                                    <td style="padding:8px 0;">
+                                        <span style="color:#666;font-size:13px;">%s</span><br>
+                                        <strong style="color:#333;">€%s</strong>
+                                    </td>
+                                </tr>',
+                $label,
+                $formattedTotalPrice
+            );
+            $totalRowText = $isEnglish
+                ? sprintf("• Total: €%s\n", $formattedTotalPrice)
+                : sprintf("• Totale: €%s\n", $formattedTotalPrice);
+        }
         $locationBlockHtml = $hasMultipleLocations ? sprintf(
             '<tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
@@ -191,7 +213,7 @@ final class QueueBookingConfirmation
 
         return [
             'client_name' => $this->extractFirstName($booking['client_name'] ?? $strings['client_fallback']),
-            'business_name' => $booking['business_name'] ?? '',
+            'business_name' => $businessName,
             'business_email' => $booking['business_email'] ?? '',
             'location_name' => $locationName,
             'location_email' => $booking['location_email'] ?? '',
@@ -203,8 +225,14 @@ final class QueueBookingConfirmation
             'date' => EmailTemplateRenderer::formatLongDate($startTime, $locale),
             'time' => $startTime->format('H:i'),
             'services' => $booking['services'] ?? '',
-            'total_price' => number_format((float) ($booking['total_price'] ?? 0), 2, ',', '.'),
+            'total_price' => $formattedTotalPrice,
+            'total_row_html' => $totalRowHtml,
+            'total_row_text' => $totalRowText,
             'cancel_deadline' => EmailTemplateRenderer::formatLongDateTime($cancelDeadline, $locale),
+            'cancel_deadline_date' => EmailTemplateRenderer::formatLongDate($cancelDeadline, $locale),
+            'cancel_deadline_time' => $isEnglish
+                ? sprintf('at %s', $cancelDeadline->format('H:i'))
+                : sprintf('alle %s', $cancelDeadline->format('H:i')),
             'manage_url' => $booking['manage_url'] ?? '#',
             'booking_url' => $booking['booking_url'] ?? '#',
             'location_block_html' => $locationBlockHtml,
@@ -480,6 +508,14 @@ final class QueueBookingConfirmation
         return EmailTemplateRenderer::normalizeLocale(
             $booking['locale'] ?? $booking['business_locale'] ?? null
         );
+    }
+
+    private function sanitizeBusinessName(string $value): string
+    {
+        $normalized = trim((string) preg_replace('/[\x{00A0}\x{200B}\x{200C}\x{200D}\x{2060}\x{FEFF}]+/u', ' ', $value));
+        $normalized = (string) preg_replace('/[\x00-\x1F\x7F]/u', '', $normalized);
+        $normalized = trim((string) preg_replace('/\s+/u', ' ', $normalized));
+        return $normalized;
     }
 
     /**

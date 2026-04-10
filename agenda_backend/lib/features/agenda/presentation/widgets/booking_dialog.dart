@@ -37,6 +37,7 @@ import '../../../services/providers/service_categories_provider.dart';
 import '../../../services/providers/service_packages_provider.dart';
 import '../../../services/providers/service_packages_repository_provider.dart';
 import '../../../services/providers/services_provider.dart';
+import '../../../business/providers/location_closures_provider.dart';
 import '../../data/bookings_api.dart';
 import '../../domain/booking_payment_preview.dart';
 import '../../domain/service_item_data.dart';
@@ -633,24 +634,26 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       AppOutlinedActionButton(
         onPressed: totalPrice > 0
             ? () async {
-              final navigator = Navigator.of(context);
-              final previewPayment = widget.existing == null
-                  ? _buildPaymentPreviewForDraft(
-                      referenceTotalPrice: referenceTotalPrice,
-                      currentTotalPrice: totalPrice,
-                    )
-                  : await _buildPaymentPreviewForExistingDraft(
-                      bookingId: widget.existing!.id,
-                      referenceTotalPrice: referenceTotalPrice,
-                      currentTotalPrice: totalPrice,
-                    );
-              if (!context.mounted) return;
-              final payment = await showPaymentDialog(
+                final navigator = Navigator.of(context);
+                final previewPayment = widget.existing == null
+                    ? _buildPaymentPreviewForDraft(
+                        referenceTotalPrice: referenceTotalPrice,
+                        currentTotalPrice: totalPrice,
+                      )
+                    : await _buildPaymentPreviewForExistingDraft(
+                        bookingId: widget.existing!.id,
+                        referenceTotalPrice: referenceTotalPrice,
+                        currentTotalPrice: totalPrice,
+                      );
+                if (!context.mounted) return;
+                final payment = await showPaymentDialog(
                   context,
                   ref,
                   totalPrice: widget.existing == null
                       ? _baseTotalDueCents(
-                              referenceTotalCents: _toCents(referenceTotalPrice),
+                              referenceTotalCents: _toCents(
+                                referenceTotalPrice,
+                              ),
                               currentTotalCents: _toCents(totalPrice),
                             ) /
                             100
@@ -662,7 +665,9 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                 if (!mounted || payment == null) return;
                 if (widget.existing == null) {
                   setState(() {
-                    _pendingPayment = _isEmptyPaymentDraft(payment) ? null : payment;
+                    _pendingPayment = _isEmptyPaymentDraft(payment)
+                        ? null
+                        : payment;
                   });
                   return;
                 }
@@ -857,8 +862,9 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
               orElse: () => null,
             )
           : null;
-      final preselectedStaffServiceIds =
-          selectedStaff != null ? (selectedStaff.serviceIds as List<int>) : null;
+      final preselectedStaffServiceIds = selectedStaff != null
+          ? (selectedStaff.serviceIds as List<int>)
+          : null;
       final TimeOfDay? suggestedStartTime = i > 0
           ? _resolveServiceEndTime(_serviceItems[i - 1], variants.cast())
           : null;
@@ -1360,32 +1366,28 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final classEventsByStaff = <int, List<DateTimeRange>>{};
     final flags = <bool>[];
 
-    final selectedDayAppointments =
-        location.id > 0 && business.id > 0
-        ? ref.watch(
-            appointmentsForLocationDayProvider(
-              (
-                day: _date,
-                locationId: location.id,
-                businessId: business.id,
-              ),
-            ),
-          )
-              .value ??
+    final selectedDayAppointments = location.id > 0 && business.id > 0
+        ? ref
+                  .watch(
+                    appointmentsForLocationDayProvider((
+                      day: _date,
+                      locationId: location.id,
+                      businessId: business.id,
+                    )),
+                  )
+                  .value ??
               const <Appointment>[]
         : const <Appointment>[];
-    final selectedDayClassEvents =
-        location.id > 0 && business.id > 0
-        ? ref.watch(
-            classEventsForLocationDayProvider(
-              (
-                day: _date,
-                locationId: location.id,
-                businessId: business.id,
-              ),
-            ),
-          )
-              .value ??
+    final selectedDayClassEvents = location.id > 0 && business.id > 0
+        ? ref
+                  .watch(
+                    classEventsForLocationDayProvider((
+                      day: _date,
+                      locationId: location.id,
+                      businessId: business.id,
+                    )),
+                  )
+                  .value ??
               const []
         : const [];
 
@@ -1764,8 +1766,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
             .firstOrNull;
         final duration = variant?.durationMinutes ?? 30;
         final listPrice = variant?.price;
-        final packageItemPriceCents =
-            index < distributedPackageCents.length
+        final packageItemPriceCents = index < distributedPackageCents.length
             ? distributedPackageCents[index]
             : null;
         final packageItemPrice = packageItemPriceCents != null
@@ -2151,7 +2152,9 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
             ? item.processingExtraMinutes
             : null,
         listPrice: item.listPrice,
-        listPriceCents: item.listPrice != null ? _toCents(item.listPrice!) : null,
+        listPriceCents: item.listPrice != null
+            ? _toCents(item.listPrice!)
+            : null,
         appliedPriceCents: item.price != null ? _toCents(item.price!) : null,
         packageId: item.packageId,
         pricingSource: item.pricingSource,
@@ -2230,8 +2233,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       referenceTotalCents: referenceTotalCents,
       currentTotalCents: bookingTotalCents,
     );
-    final desiredAutoDiscountCents =
-        (baseTotalDueCents - bookingTotalCents).clamp(0, 1 << 30);
+    final desiredAutoDiscountCents = (baseTotalDueCents - bookingTotalCents)
+        .clamp(0, 1 << 30);
     if (pendingPayment == null && desiredAutoDiscountCents <= 0) {
       return;
     }
@@ -2447,10 +2450,32 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
     if (!mounted) return;
 
+    final unavailableIndices = _computeRecurringUnavailableIndices(
+      preview: preview,
+      recurringItems: recurringItems,
+      validItems: validItems,
+      singleStaffId: singleStaffId,
+      staffByService: staffByService,
+    );
+    final adjustedPreview = RecurringPreviewResult(
+      totalDates: preview.totalDates,
+      dates: preview.dates
+          .map(
+            (date) => PreviewDateItem(
+              recurrenceIndex: date.recurrenceIndex,
+              startTime: date.startTime,
+              endTime: date.endTime,
+              hasConflict: date.hasConflict,
+              isUnavailable: unavailableIndices.contains(date.recurrenceIndex),
+            ),
+          )
+          .toList(),
+    );
+
     // Mostra dialog anteprima con possibilità di escludere date
     final excludedIndices = await RecurrencePreviewDialog.show(
       context,
-      preview,
+      adjustedPreview,
     );
 
     // Se utente ha annullato, esci
@@ -2515,6 +2540,80 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         ),
       );
     }
+  }
+
+  Set<int> _computeRecurringUnavailableIndices({
+    required RecurringPreviewResult preview,
+    required List<RecurringBookingItemRequest> recurringItems,
+    required List<ServiceItemData> validItems,
+    required int? singleStaffId,
+    required Map<String, int>? staffByService,
+  }) {
+    final unavailableIndices = <int>{};
+    if (preview.dates.isEmpty) return unavailableIndices;
+
+    final durationByServiceId = <int, int>{
+      for (final item in validItems)
+        if (item.serviceId != null) item.serviceId!: item.durationMinutes,
+    };
+    final layout = ref.read(layoutConfigProvider);
+
+    for (final date in preview.dates) {
+      final day = DateUtils.dateOnly(date.startTime);
+      if (ref.read(isDateClosedProvider(day))) {
+        unavailableIndices.add(date.recurrenceIndex);
+        continue;
+      }
+
+      var occurrenceUnavailable = false;
+      for (final item in recurringItems) {
+        final staffId =
+            item.staffId ??
+            singleStaffId ??
+            staffByService?[item.serviceId.toString()];
+        if (staffId == null) {
+          continue;
+        }
+
+        final offsetMinutes = item.startOffsetMinutes ?? 0;
+        final durationMinutes =
+            item.durationMinutes ?? durationByServiceId[item.serviceId] ?? 0;
+        if (durationMinutes <= 0) {
+          continue;
+        }
+
+        final itemStart = date.startTime.add(Duration(minutes: offsetMinutes));
+        final itemDay = DateUtils.dateOnly(itemStart);
+        final available = ref.read(
+          staffSlotAvailabilityForDateProvider((
+            staffId: staffId,
+            date: itemDay,
+          )),
+        );
+        if (available.isEmpty) {
+          occurrenceUnavailable = true;
+          break;
+        }
+
+        final startMinutes = itemStart.hour * 60 + itemStart.minute;
+        final endMinutes = startMinutes + durationMinutes;
+        final startSlot = startMinutes ~/ layout.minutesPerSlot;
+        final endSlot = (endMinutes / layout.minutesPerSlot).ceil();
+        for (int slot = startSlot; slot < endSlot; slot++) {
+          if (!available.contains(slot)) {
+            occurrenceUnavailable = true;
+            break;
+          }
+        }
+        if (occurrenceUnavailable) break;
+      }
+
+      if (occurrenceUnavailable) {
+        unavailableIndices.add(date.recurrenceIndex);
+      }
+    }
+
+    return unavailableIndices;
   }
 }
 

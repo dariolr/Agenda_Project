@@ -6,8 +6,8 @@
   <title>Accedi al tuo account</title>
   <style>
     :root {
-      --surface: #ffffff;
-      --page: #ffffff;
+      --surface: #fefefe;
+      --page: #fefefe;
       --primary: #2196f3;
       --primary-soft: rgba(33, 150, 243, 0.12);
       --primary-border: rgba(33, 150, 243, 0.3);
@@ -318,6 +318,14 @@
       const slug = (params.get("slug") || "").trim();
       const from = (params.get("from") || "booking").trim();
       const routeFrom = new Set(["booking", "my-bookings", "profile", "change-password"]).has(from) ? from : "booking";
+
+      // Applica subito il colore dalla cache (evita flash blu prima della risposta API)
+      if (slug) {
+        try {
+          const cached = localStorage.getItem(`agenda_primary_color_${slug}`);
+          if (cached) applyPrimaryColor(cached);
+        } catch (_) {}
+      }
 
       function resolveStorage() {
         const candidates = [];

@@ -1357,73 +1357,99 @@ class AgendaViewModeButton extends ConsumerWidget {
     WidgetRef ref,
     CalendarViewMode currentMode,
     List<({CalendarViewMode value, String label, IconData icon})> items,
-  ) async {
+  ) {
     final l10n = context.l10n;
+    final formFactor = ref.read(formFactorProvider);
 
-    final result = await AppBottomSheet.show<CalendarViewMode>(
-      context: context,
-      useRootNavigator: true,
-      padding: EdgeInsets.zero,
-      builder: (ctx) {
-        final theme = Theme.of(ctx);
-        final colorScheme = theme.colorScheme;
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-              child: Text(
-                l10n.agendaViewMode,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
+    Widget buildModeSelectorContent(BuildContext ctx) {
+      final theme = Theme.of(ctx);
+      final colorScheme = theme.colorScheme;
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Text(
+              l10n.agendaViewMode,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const AppDivider(height: 1),
+          for (final item in items)
+            InkWell(
+              onTap: () => Navigator.of(ctx).pop(item.value),
+              splashColor: Colors.transparent,
+              highlightColor: Colors.transparent,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 14,
+                  horizontal: 16,
+                ),
+                color: item.value == currentMode
+                    ? colorScheme.primary.withOpacity(0.08)
+                    : Colors.transparent,
+                child: Row(
+                  children: [
+                    Icon(item.icon, size: 20, color: colorScheme.onSurface),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        item.label,
+                        style: TextStyle(
+                          color: colorScheme.onSurface,
+                          fontWeight: item.value == currentMode
+                              ? FontWeight.w600
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                    if (item.value == currentMode)
+                      Icon(Icons.check, size: 20, color: colorScheme.primary),
+                  ],
                 ),
               ),
             ),
-            const AppDivider(height: 1),
-            for (final item in items)
-              InkWell(
-                onTap: () => Navigator.of(ctx).pop(item.value),
-                splashColor: Colors.transparent,
-                highlightColor: Colors.transparent,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 14,
-                    horizontal: 16,
-                  ),
-                  color: item.value == currentMode
-                      ? colorScheme.primary.withOpacity(0.08)
-                      : Colors.transparent,
-                  child: Row(
-                    children: [
-                      Icon(item.icon, size: 20, color: colorScheme.onSurface),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          item.label,
-                          style: TextStyle(
-                            color: colorScheme.onSurface,
-                            fontWeight: item.value == currentMode
-                                ? FontWeight.w600
-                                : FontWeight.normal,
-                          ),
-                        ),
-                      ),
-                      if (item.value == currentMode)
-                        Icon(Icons.check, size: 20, color: colorScheme.primary),
-                    ],
-                  ),
-                ),
-              ),
-            SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),
-          ],
-        );
-      },
-    );
-
-    if (result != null) {
-      ref.read(calendarViewModeProvider.notifier).setMode(result);
+          SizedBox(height: MediaQuery.of(ctx).viewPadding.bottom),
+        ],
+      );
     }
+
+    final Future<CalendarViewMode?> selectionFuture =
+        formFactor == AppFormFactor.desktop
+        ? showDialog<CalendarViewMode>(
+            context: context,
+            useRootNavigator: true,
+            builder: (ctx) => Dialog(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 32,
+                vertical: 24,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: 360,
+                  maxWidth: 420,
+                  maxHeight: 520,
+                ),
+                child: buildModeSelectorContent(ctx),
+              ),
+            ),
+          )
+        : AppBottomSheet.show<CalendarViewMode>(
+            context: context,
+            useRootNavigator: true,
+            padding: EdgeInsets.zero,
+            builder: buildModeSelectorContent,
+          );
+
+    return selectionFuture.then((result) {
+      if (result != null) {
+        ref.read(calendarViewModeProvider.notifier).setMode(result);
+      }
+    });
   }
 }
 

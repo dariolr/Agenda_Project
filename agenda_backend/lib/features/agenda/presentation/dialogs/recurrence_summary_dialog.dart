@@ -30,12 +30,14 @@ class PreviewDateItem {
   final DateTime startTime;
   final DateTime endTime;
   final bool hasConflict;
+  final bool isUnavailable;
 
   const PreviewDateItem({
     required this.recurrenceIndex,
     required this.startTime,
     required this.endTime,
     required this.hasConflict,
+    this.isUnavailable = false,
   });
 
   factory PreviewDateItem.fromJson(Map<String, dynamic> json) {
@@ -44,6 +46,7 @@ class PreviewDateItem {
       startTime: DateTime.parse(json['start_time'] as String),
       endTime: DateTime.parse(json['end_time'] as String),
       hasConflict: json['has_conflict'] as bool? ?? false,
+      isUnavailable: json['is_unavailable'] as bool? ?? false,
     );
   }
 }
@@ -517,6 +520,11 @@ class RecurrencePreviewDialog extends StatefulWidget {
 }
 
 class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
+  static const String _excludedForConflictText =
+      'Esclusa per presenza altro appuntamento';
+  static const String _excludedForUnavailableText =
+      "Esclusa in quanto l'appuntamento cade in fascia oraria impostata come non disponibile";
+
   late Set<int> _excludedIndices;
 
   @override
@@ -524,7 +532,7 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
     super.initState();
     _excludedIndices = widget.excludeConflictsByDefault
         ? widget.preview.dates
-              .where((d) => d.hasConflict)
+              .where((d) => d.hasConflict || d.isUnavailable)
               .map((d) => d.recurrenceIndex)
               .toSet()
         : <int>{};
@@ -548,6 +556,14 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
     Navigator.of(context).pop(_excludedIndices.toList());
   }
 
+  String _blockedCountLabel(BuildContext context, int count) {
+    final locale = Localizations.localeOf(context).languageCode.toLowerCase();
+    if (locale == 'it') {
+      return count == 1 ? '1 data esclusa' : '$count date escluse';
+    }
+    return count == 1 ? '1 excluded date' : '$count excluded dates';
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -556,8 +572,8 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
     final timeFormat = DateFormat('HH:mm', 'it');
 
     final selectedCount = widget.preview.dates.length - _excludedIndices.length;
-    final conflictCount = widget.preview.dates
-        .where((d) => d.hasConflict)
+    final blockedCount = widget.preview.dates
+        .where((d) => d.hasConflict || d.isUnavailable)
         .length;
 
     return AlertDialog(
@@ -565,7 +581,9 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
         children: [
           Icon(Icons.preview, color: theme.colorScheme.primary, size: 28),
           const SizedBox(width: 12),
-          Expanded(child: Text(widget.titleText ?? l10n.recurrencePreviewTitle)),
+          Expanded(
+            child: Text(widget.titleText ?? l10n.recurrencePreviewTitle),
+          ),
         ],
       ),
       content: SizedBox(
@@ -591,13 +609,13 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  if (conflictCount > 0) ...[
+                  if (blockedCount > 0) ...[
                     const SizedBox(width: 16),
                     Expanded(
                       child: _StatItem(
-                        icon: Icons.warning_amber,
-                        value: '$conflictCount',
-                        label: l10n.recurrencePreviewConflicts(conflictCount),
+                        icon: Icons.block_outlined,
+                        value: '$blockedCount',
+                        label: _blockedCountLabel(context, blockedCount),
                         color: theme.colorScheme.error,
                       ),
                     ),
@@ -628,6 +646,8 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
                     date.recurrenceIndex,
                   );
                   final hasConflict = date.hasConflict;
+                  final isUnavailable = date.isUnavailable;
+                  final hasBlockingIssue = hasConflict || isUnavailable;
 
                   return CheckboxListTile(
                     dense: true,
@@ -635,11 +655,15 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
                     controlAffinity: ListTileControlAffinity.leading,
                     value: !isExcluded,
                     onChanged: (val) => _toggleDate(date.recurrenceIndex),
-                    secondary: hasConflict
+                    secondary: hasBlockingIssue
                         ? Tooltip(
-                            message: l10n.recurrenceSummaryConflict,
+                            message: isUnavailable
+                                ? _excludedForUnavailableText
+                                : _excludedForConflictText,
                             child: Icon(
-                              Icons.warning_amber,
+                              isUnavailable
+                                  ? Icons.event_busy_outlined
+                                  : Icons.warning_amber,
                               color: theme.colorScheme.error,
                               size: 20,
                             ),
@@ -656,15 +680,13 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
                             : null,
                       ),
                     ),
-                    subtitle: hasConflict
+                    subtitle: hasBlockingIssue
                         ? Text(
-                            isExcluded
-                                ? l10n.recurrencePreviewConflictSkip
-                                : l10n.recurrencePreviewConflictForce,
+                            isUnavailable
+                                ? _excludedForUnavailableText
+                                : _excludedForConflictText,
                             style: theme.textTheme.labelSmall?.copyWith(
-                              color: isExcluded
-                                  ? theme.colorScheme.error
-                                  : theme.colorScheme.primary,
+                              color: theme.colorScheme.error,
                             ),
                           )
                         : Text(

@@ -179,19 +179,15 @@ final class EmailTemplateRenderer
                                         <strong style="color:#333;">{{services}}</strong>
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td style="padding:8px 0;">
-                                        <span style="color:#666;font-size:13px;">Totale</span><br>
-                                        <strong style="color:#333;">€{{total_price}}</strong>
-                                    </td>
-                                </tr>
+                                {{total_row_html}}
                             </table>
                         </td>
                     </tr>
                 </table>
                 
                 <p style="margin:0 0 20px;font-size:14px;color:#666;">
-                    Puoi modificare o cancellare la prenotazione fino a <strong>{{cancel_deadline}}</strong>.
+                    Puoi modificare o cancellare la prenotazione fino a:<br>
+                    <strong>{{cancel_deadline}}</strong>.
                 </p>
                 
                 <table width="100%" cellpadding="0" cellspacing="0">
@@ -230,9 +226,10 @@ La tua prenotazione presso {{business_name}} è stata confermata.
 • Quando: {{date}} alle {{time}}
 {{recurring_schedule_text}}
 • Cosa: {{services}}
-• Totale: €{{total_price}}
+{{total_row_text}}
 
-Puoi modificare o cancellare fino a {{cancel_deadline}}.
+Puoi modificare o cancellare fino a:
+{{cancel_deadline}}.
 
 Gestisci prenotazione: {{manage_url}}
 
@@ -288,19 +285,15 @@ TEXT,
                                         <strong style="color:#333;">{{services}}</strong>
                                     </td>
                                 </tr>
-                                <tr>
-                                    <td style="padding:8px 0;">
-                                        <span style="color:#666;font-size:13px;">Total</span><br>
-                                        <strong style="color:#333;">€{{total_price}}</strong>
-                                    </td>
-                                </tr>
+                                {{total_row_html}}
                             </table>
                         </td>
                     </tr>
                 </table>
                 
                 <p style="margin:0 0 20px;font-size:14px;color:#666;">
-                    You can change or cancel your booking until <strong>{{cancel_deadline}}</strong>.
+                    You can change or cancel your booking until:<br>
+                    <strong>{{cancel_deadline}}</strong>.
                 </p>
                 
                 <table width="100%" cellpadding="0" cellspacing="0">
@@ -339,9 +332,10 @@ Your booking at {{business_name}} has been confirmed.
 • When: {{date}} at {{time}}
 {{recurring_schedule_text}}
 • What: {{services}}
-• Total: €{{total_price}}
+{{total_row_text}}
 
-You can change or cancel your booking until {{cancel_deadline}}.
+You can change or cancel your booking until:
+{{cancel_deadline}}.
 
 Manage booking: {{manage_url}}
 

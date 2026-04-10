@@ -143,10 +143,23 @@ class _ConfirmationStepState extends ConsumerState<ConfirmationStep> {
             ElevatedButton(
               onPressed: () {
                 final slug = ref.read(routeSlugProvider);
-                final locationId = ref.read(effectiveLocationProvider)?.id;
+                final location = ref.read(effectiveLocationProvider);
+                final hasMultipleLocations = ref.read(
+                  hasMultipleLocationsProvider,
+                );
                 ref.read(bookingFlowProvider.notifier).reset();
-                if (locationId != null) {
-                  context.go('/$slug/booking?location=$locationId');
+                if (hasMultipleLocations) {
+                  // Su business multi-location la nuova prenotazione deve
+                  // ripartire dalla scelta sede.
+                  ref.read(urlLocationIdProvider.notifier).state = null;
+                  ref.read(selectedLocationProvider.notifier).clear();
+                  context.go('/$slug/booking');
+                } else if (location != null) {
+                  // Re-applica subito la location nel nuovo flow per mantenere
+                  // anche la regola "allow_customer_choose_staff".
+                  ref.read(urlLocationIdProvider.notifier).state = location.id;
+                  ref.read(selectedLocationProvider.notifier).select(location);
+                  context.go('/$slug/booking?location=${location.id}');
                 } else {
                   context.go('/$slug/booking');
                 }

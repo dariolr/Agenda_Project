@@ -101,8 +101,16 @@ class TopControls extends ConsumerWidget {
             child: AgendaLocationSelector(
               locations: data.locations,
               current: data.currentLocation,
-              onSelected: (locationId) {
-                data.locationController.set(locationId);
+              onSelected: (locationId) async {
+                if (mode == TopControlsMode.agenda) {
+                  await data.locationController.setKeepingAgendaDate(
+                    locationId,
+                    agendaDate: data.agendaDate,
+                    tenantToday: data.tenantToday,
+                  );
+                } else {
+                  data.locationController.set(locationId);
+                }
                 if (mode == TopControlsMode.staff) {
                   ref
                       .read(staffSectionLocationIdProvider.notifier)
@@ -195,8 +203,16 @@ class TopControls extends ConsumerWidget {
                 child: AgendaLocationSelector(
                   locations: data.locations,
                   current: data.currentLocation,
-                  onSelected: (locationId) {
-                    data.locationController.set(locationId);
+                  onSelected: (locationId) async {
+                    if (mode == TopControlsMode.agenda) {
+                      await data.locationController.setKeepingAgendaDate(
+                        locationId,
+                        agendaDate: data.agendaDate,
+                        tenantToday: data.tenantToday,
+                      );
+                    } else {
+                      data.locationController.set(locationId);
+                    }
                     if (mode == TopControlsMode.staff) {
                       ref
                           .read(staffSectionLocationIdProvider.notifier)
@@ -363,7 +379,12 @@ class TopControls extends ConsumerWidget {
               child: AgendaLocationSelector(
                 locations: data.locations,
                 current: data.currentLocation,
-                onSelected: data.locationController.set,
+                onSelected: (locationId) =>
+                    data.locationController.setKeepingAgendaDate(
+                      locationId,
+                      agendaDate: data.agendaDate,
+                      tenantToday: data.tenantToday,
+                    ),
               ),
             ),
         ],

@@ -1024,22 +1024,58 @@ class _AgendaFilterActions extends ConsumerWidget {
     List<Location> locations,
     int currentLocationId,
     String title,
-  ) async {
-    final result = await AppBottomSheet.show<int?>(
-      context: context,
-      builder: (ctx) => LocationSheetContent(
-        locations: locations,
-        currentLocationId: currentLocationId,
-        title: title,
-        onSelected: (id) => Navigator.of(ctx).pop(id),
-      ),
-      useRootNavigator: true,
-      padding: EdgeInsets.zero,
-    );
+  ) {
+    final formFactor = ref.read(formFactorProvider);
+    final Future<int?> selectionFuture = formFactor == AppFormFactor.desktop
+        ? showDialog<int?>(
+            context: context,
+            useRootNavigator: true,
+            builder: (ctx) => Dialog(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 32,
+                vertical: 24,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: 360,
+                  maxWidth: 460,
+                  maxHeight: 560,
+                ),
+                child: LocationSheetContent(
+                  locations: locations,
+                  currentLocationId: currentLocationId,
+                  title: title,
+                  onSelected: (id) => Navigator.of(ctx).pop(id),
+                ),
+              ),
+            ),
+          )
+        : AppBottomSheet.show<int?>(
+            context: context,
+            builder: (ctx) => LocationSheetContent(
+              locations: locations,
+              currentLocationId: currentLocationId,
+              title: title,
+              onSelected: (id) => Navigator.of(ctx).pop(id),
+            ),
+            useRootNavigator: true,
+            padding: EdgeInsets.zero,
+          );
 
-    if (result != null) {
-      ref.read(currentLocationIdProvider.notifier).set(result);
-    }
+    return selectionFuture.then((result) async {
+      if (result != null) {
+        final agendaDate = ref.read(agendaDateProvider);
+        final tenantToday = ref.read(tenantTodayProvider);
+        await ref
+            .read(currentLocationIdProvider.notifier)
+            .setKeepingAgendaDate(
+              result,
+              agendaDate: agendaDate,
+              tenantToday: tenantToday,
+            );
+      }
+    });
   }
 }
 
@@ -1128,22 +1164,58 @@ class _ToolbarLocationSelectorAction extends ConsumerWidget {
     List<Location> locations,
     int currentLocationId,
     String title,
-  ) async {
-    final result = await AppBottomSheet.show<int?>(
-      context: context,
-      builder: (ctx) => LocationSheetContent(
-        locations: locations,
-        currentLocationId: currentLocationId,
-        title: title,
-        onSelected: (id) => Navigator.of(ctx).pop(id),
-      ),
-      useRootNavigator: true,
-      padding: EdgeInsets.zero,
-    );
+  ) {
+    final formFactor = ref.read(formFactorProvider);
+    final Future<int?> selectionFuture = formFactor == AppFormFactor.desktop
+        ? showDialog<int?>(
+            context: context,
+            useRootNavigator: true,
+            builder: (ctx) => Dialog(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 32,
+                vertical: 24,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: 360,
+                  maxWidth: 460,
+                  maxHeight: 560,
+                ),
+                child: LocationSheetContent(
+                  locations: locations,
+                  currentLocationId: currentLocationId,
+                  title: title,
+                  onSelected: (id) => Navigator.of(ctx).pop(id),
+                ),
+              ),
+            ),
+          )
+        : AppBottomSheet.show<int?>(
+            context: context,
+            builder: (ctx) => LocationSheetContent(
+              locations: locations,
+              currentLocationId: currentLocationId,
+              title: title,
+              onSelected: (id) => Navigator.of(ctx).pop(id),
+            ),
+            useRootNavigator: true,
+            padding: EdgeInsets.zero,
+          );
 
-    if (result != null) {
-      ref.read(currentLocationIdProvider.notifier).set(result);
-    }
+    return selectionFuture.then((result) async {
+      if (result != null) {
+        final agendaDate = ref.read(agendaDateProvider);
+        final tenantToday = ref.read(tenantTodayProvider);
+        await ref
+            .read(currentLocationIdProvider.notifier)
+            .setKeepingAgendaDate(
+              result,
+              agendaDate: agendaDate,
+              tenantToday: tenantToday,
+            );
+      }
+    });
   }
 }
 

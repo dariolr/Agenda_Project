@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../features/agenda/domain/agenda_card_color_source.dart';
+
 /// Provider per SharedPreferences (inizializzato in main.dart)
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError(
@@ -442,21 +444,20 @@ class PreferencesService {
     await _prefs.setBool(key, value);
   }
 
-  bool? getAgendaUseServiceColorsOverride(
+  AgendaCardColorSource? getAgendaCardColorSourceOverride(
     int businessId, {
     required int locationId,
   }) {
-    return _prefs.getBool(
-      PrefsKeys.agendaUseServiceColorsOverride(
-        businessId,
-        locationId: locationId,
-      ),
+    final key = PrefsKeys.agendaUseServiceColorsOverride(
+      businessId,
+      locationId: locationId,
     );
+    return agendaCardColorSourceFromStorage(_prefs.get(key));
   }
 
-  Future<void> setAgendaUseServiceColorsOverride(
+  Future<void> setAgendaCardColorSourceOverride(
     int businessId,
-    bool? value, {
+    AgendaCardColorSource? value, {
     required int locationId,
   }) async {
     final key = PrefsKeys.agendaUseServiceColorsOverride(
@@ -467,7 +468,7 @@ class PreferencesService {
       await _prefs.remove(key);
       return;
     }
-    await _prefs.setBool(key, value);
+    await _prefs.setString(key, value.storageValue);
   }
 
   bool getAgendaShowCancelledAppointments(

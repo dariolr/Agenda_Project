@@ -107,7 +107,23 @@ class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
       ]..sort((a, b) => a.date.compareTo(b.date));
     }
 
+    final todayOnly = DateUtils.dateOnly(ref.read(tenantTodayProvider));
+    loadedHolidays = loadedHolidays.where((holiday) {
+      return !DateUtils.dateOnly(holiday.date).isBefore(todayOnly);
+    }).toList()..sort((a, b) => a.date.compareTo(b.date));
+
     if (!mounted || requestId != _holidaysRequestId) return;
+
+    final hasItemsInFirstVisibleYear = loadedHolidays.any(
+      (holiday) => holiday.date.year == _baseYear,
+    );
+    if (!hasItemsInFirstVisibleYear && _baseYear < todayOnly.year + 10) {
+      setState(() {
+        _baseYear += 1;
+      });
+      _loadHolidays();
+      return;
+    }
 
     setState(() {
       _holidays = loadedHolidays;
@@ -225,237 +241,243 @@ class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
           child: SizedBox(
             width: 500,
             child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Anno selector con pulsanti rapidi
-            Row(
-              children: [
-                Text(l10n.closuresImportHolidaysYear),
-                const SizedBox(width: 16),
-                IconButton(
-                  onPressed:
-                      _isLoadingHolidays ||
-                          _selectedYearCount <= _minYearCount
-                      ? null
-                      : () {
-                          setState(() {
-                            _selectedYearCount--;
-                          });
-                          _loadHolidays();
-                        },
-                  icon: const Icon(Icons.remove_circle_outline),
-                ),
-                Text(
-                  '$_selectedYearCount',
-                  style: theme.textTheme.titleMedium,
-                ),
-                IconButton(
-                  onPressed:
-                      _isLoadingHolidays ||
-                          _selectedYearCount >= _maxYearCount
-                      ? null
-                      : () {
-                          setState(() {
-                            _selectedYearCount++;
-                          });
-                          _loadHolidays();
-                        },
-                  icon: const Icon(Icons.add_circle_outline),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    endYear == _baseYear
-                        ? '$_baseYear'
-                        : '$_baseYear - $endYear',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              l10n.closuresImportHolidaysExternalSourceInfo,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Row(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  _holidaysSourceUrl,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: colorScheme.primary,
-                  ),
-                ),
-                IconButton(
-                  onPressed: _isSaving ? null : _copySourceWebsiteLink,
-                  icon: const Icon(Icons.copy_outlined, size: 18),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Location selector (se più di una)
-            if (widget.locations.length > 1) ...[
-              Text(
-                l10n.closuresImportHolidaysLocations,
-                style: theme.textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: widget.locations.map((location) {
-                  final isSelected = _selectedLocationIds.contains(location.id);
-                  return FilterChip(
-                    label: Text(location.name),
-                    selected: isSelected,
-                    onSelected: (selected) {
-                      setState(() {
-                        if (selected) {
-                          _selectedLocationIds.add(location.id);
-                        } else {
-                          _selectedLocationIds.remove(location.id);
-                        }
-                      });
-                      _loadHolidays(); // Ricalcola quelle già aggiunte
-                    },
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 16),
-            ],
-
-            // Info festività già presenti
-            if (alreadyAddedCount > 0)
-              Container(
-                padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
+                // Anno selector con pulsanti rapidi
+                Row(
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      size: 20,
-                      color: colorScheme.primary,
+                    Text(l10n.closuresImportHolidaysYear),
+                    const SizedBox(width: 16),
+                    IconButton(
+                      onPressed:
+                          _isLoadingHolidays ||
+                              _selectedYearCount <= _minYearCount
+                          ? null
+                          : () {
+                              setState(() {
+                                _selectedYearCount--;
+                              });
+                              _loadHolidays();
+                            },
+                      icon: const Icon(Icons.remove_circle_outline),
                     ),
-                    const SizedBox(width: 8),
+                    Text(
+                      '$_selectedYearCount',
+                      style: theme.textTheme.titleMedium,
+                    ),
+                    IconButton(
+                      onPressed:
+                          _isLoadingHolidays ||
+                              _selectedYearCount >= _maxYearCount
+                          ? null
+                          : () {
+                              setState(() {
+                                _selectedYearCount++;
+                              });
+                              _loadHolidays();
+                            },
+                      icon: const Icon(Icons.add_circle_outline),
+                    ),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        l10n.closuresImportHolidaysAlreadyAdded(
-                          alreadyAddedCount,
-                        ),
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: colorScheme.primary,
+                        endYear == _baseYear
+                            ? '$_baseYear'
+                            : '$_baseYear - $endYear',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
                         ),
                       ),
                     ),
                   ],
                 ),
-              ),
-
-            // Lista festività
-            Text(
-              l10n.closuresImportHolidaysList,
-              style: theme.textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-            Container(
-              height: 300,
-              decoration: BoxDecoration(
-                border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: _isLoadingHolidays
-                  ? const Center(child: CircularProgressIndicator())
-                  : ListView.builder(
-                      itemCount: _holidays.length,
-                      itemBuilder: (context, index) {
-                        final holiday = _holidays[index];
-                        final isAlreadyAdded = _isHolidayAlreadyAdded(holiday);
-                        final isSelected = _selectedHolidayIndices.contains(
-                          index,
-                        );
-
-                        return CheckboxListTile(
-                          value: isSelected,
-                          onChanged: isAlreadyAdded
-                              ? null
-                              : (value) {
-                                  setState(() {
-                                    if (value == true) {
-                                      _selectedHolidayIndices.add(index);
-                                    } else {
-                                      _selectedHolidayIndices.remove(index);
-                                    }
-                                  });
-                                },
-                          title: Text(
-                            holiday.name,
-                            style: TextStyle(
-                              color: isAlreadyAdded
-                                  ? colorScheme.outline
-                                  : colorScheme.onSurface,
-                              decoration: isAlreadyAdded
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                            ),
-                          ),
-                          subtitle: Text(
-                            dateFormat.format(holiday.date),
-                            style: TextStyle(
-                              color: isAlreadyAdded
-                                  ? colorScheme.outline
-                                  : colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          secondary: isAlreadyAdded
-                              ? Icon(
-                                  Icons.check_circle,
-                                  color: colorScheme.primary,
-                                  size: 20,
-                                )
-                              : null,
-                        );
-                      },
-                    ),
-            ),
-
-            // Seleziona tutti / nessuno
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _selectedHolidayIndices.clear();
-                      for (var i = 0; i < _holidays.length; i++) {
-                        if (!_isHolidayAlreadyAdded(_holidays[i])) {
-                          _selectedHolidayIndices.add(i);
-                        }
-                      }
-                    });
-                  },
-                  child: Text(l10n.actionSelectAll),
+                const SizedBox(height: 16),
+                Text(
+                  l10n.closuresImportHolidaysExternalSourceInfo,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                 ),
-                TextButton(
-                  onPressed: () {
-                    setState(() => _selectedHolidayIndices.clear());
-                  },
-                  child: Text(l10n.actionDeselectAll),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      _holidaysSourceUrl,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.primary,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: _isSaving ? null : _copySourceWebsiteLink,
+                      icon: const Icon(Icons.copy_outlined, size: 18),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Location selector (se più di una)
+                if (widget.locations.length > 1) ...[
+                  Text(
+                    l10n.closuresImportHolidaysLocations,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 4,
+                    children: widget.locations.map((location) {
+                      final isSelected = _selectedLocationIds.contains(
+                        location.id,
+                      );
+                      return FilterChip(
+                        label: Text(location.name),
+                        selected: isSelected,
+                        onSelected: (selected) {
+                          setState(() {
+                            if (selected) {
+                              _selectedLocationIds.add(location.id);
+                            } else {
+                              _selectedLocationIds.remove(location.id);
+                            }
+                          });
+                          _loadHolidays(); // Ricalcola quelle già aggiunte
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // Info festività già presenti
+                if (alreadyAddedCount > 0)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          size: 20,
+                          color: colorScheme.primary,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            l10n.closuresImportHolidaysAlreadyAdded(
+                              alreadyAddedCount,
+                            ),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: colorScheme.primary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                // Lista festività
+                Text(
+                  l10n.closuresImportHolidaysList,
+                  style: theme.textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  height: 300,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: colorScheme.outline.withOpacity(0.3),
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: _isLoadingHolidays
+                      ? const Center(child: CircularProgressIndicator())
+                      : ListView.builder(
+                          itemCount: _holidays.length,
+                          itemBuilder: (context, index) {
+                            final holiday = _holidays[index];
+                            final isAlreadyAdded = _isHolidayAlreadyAdded(
+                              holiday,
+                            );
+                            final isSelected = _selectedHolidayIndices.contains(
+                              index,
+                            );
+
+                            return CheckboxListTile(
+                              value: isSelected,
+                              onChanged: isAlreadyAdded
+                                  ? null
+                                  : (value) {
+                                      setState(() {
+                                        if (value == true) {
+                                          _selectedHolidayIndices.add(index);
+                                        } else {
+                                          _selectedHolidayIndices.remove(index);
+                                        }
+                                      });
+                                    },
+                              title: Text(
+                                holiday.name,
+                                style: TextStyle(
+                                  color: isAlreadyAdded
+                                      ? colorScheme.outline
+                                      : colorScheme.onSurface,
+                                  decoration: isAlreadyAdded
+                                      ? TextDecoration.lineThrough
+                                      : null,
+                                ),
+                              ),
+                              subtitle: Text(
+                                dateFormat.format(holiday.date),
+                                style: TextStyle(
+                                  color: isAlreadyAdded
+                                      ? colorScheme.outline
+                                      : colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              secondary: isAlreadyAdded
+                                  ? Icon(
+                                      Icons.check_circle,
+                                      color: colorScheme.primary,
+                                      size: 20,
+                                    )
+                                  : null,
+                            );
+                          },
+                        ),
+                ),
+
+                // Seleziona tutti / nessuno
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        setState(() {
+                          _selectedHolidayIndices.clear();
+                          for (var i = 0; i < _holidays.length; i++) {
+                            if (!_isHolidayAlreadyAdded(_holidays[i])) {
+                              _selectedHolidayIndices.add(i);
+                            }
+                          }
+                        });
+                      },
+                      child: Text(l10n.actionSelectAll),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        setState(() => _selectedHolidayIndices.clear());
+                      },
+                      child: Text(l10n.actionDeselectAll),
+                    ),
+                  ],
                 ),
               ],
-            ),
-          ],
             ),
           ),
         ),

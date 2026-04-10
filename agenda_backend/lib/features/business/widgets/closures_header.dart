@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '/app/providers/form_factor_provider.dart';
 import '/app/widgets/agenda_control_components.dart';
 import '/core/l10n/l10_extension.dart';
 import '/core/models/location.dart';
@@ -25,6 +26,8 @@ class ClosuresHeader extends ConsumerWidget {
     final l10n = context.l10n;
     final filterState = ref.watch(closuresFilterProvider);
     final filterNotifier = ref.read(closuresFilterProvider.notifier);
+    final formFactor = ref.watch(formFactorProvider);
+    final isMobile = formFactor == AppFormFactor.mobile;
 
     // Location data
     final locations = ref.watch(locationsProvider);
@@ -96,7 +99,9 @@ class ClosuresHeader extends ConsumerWidget {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        l10n.closuresImportHolidays,
+                        isMobile
+                            ? _mobileImportHolidaysLabel(context)
+                            : l10n.closuresImportHolidays,
                         style: theme.textTheme.bodyMedium,
                       ),
                     ],
@@ -195,6 +200,14 @@ class ClosuresHeader extends ConsumerWidget {
           .read(closuresFilterProvider.notifier)
           .setDateRange(picked.start, picked.end);
     }
+  }
+
+  String _mobileImportHolidaysLabel(BuildContext context) {
+    final locale = Localizations.localeOf(context).languageCode.toLowerCase();
+    if (locale == 'it') {
+      return 'Importa festivita';
+    }
+    return 'Import holidays';
   }
 }
 
@@ -324,7 +337,7 @@ class _PresetDropdown extends StatelessWidget {
             ),
             DropdownMenuItem(
               value: 'from_today',
-              child: Text(l10n.closuresFilterFromToday),
+              child: Text(l10n.closuresUpcoming),
             ),
             DropdownMenuItem(
               value: 'year',

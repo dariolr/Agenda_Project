@@ -21,6 +21,7 @@ import '../../domain/config/layout_config.dart';
 import '../../providers/date_range_provider.dart';
 import '../../providers/tenant_time_provider.dart';
 import '../../providers/time_blocks_provider.dart';
+import 'recurrence_summary_dialog.dart';
 import '../widgets/recurrence_picker.dart';
 
 /// Mostra il dialog per creare o modificare un blocco di non disponibilità.
@@ -665,6 +666,39 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
 
       if (widget.initial == null) {
         if (_recurrenceConfig != null) {
+          final occurrences = _recurrenceConfig!.calculateOccurrences(
+            startDateTime,
+          );
+          final previewDates = <PreviewDateItem>[];
+          for (var i = 0; i < occurrences.length; i++) {
+            final occurrenceStart = occurrences[i];
+            final occurrenceEnd = occurrenceStart.add(
+              endDateTime.difference(startDateTime),
+            );
+            final recurrenceIndex = i + 1;
+            previewDates.add(
+              PreviewDateItem(
+                recurrenceIndex: recurrenceIndex,
+                startTime: occurrenceStart,
+                endTime: occurrenceEnd,
+                hasConflict: false,
+                isUnavailable: false,
+              ),
+            );
+          }
+
+          final excludedIndices = await RecurrencePreviewDialog.show(
+            context,
+            RecurringPreviewResult(
+              totalDates: previewDates.length,
+              dates: previewDates,
+            ),
+            excludeConflictsByDefault: false,
+          );
+          if (excludedIndices == null) {
+            return;
+          }
+
           await ref
               .read(timeBlocksProvider.notifier)
               .addRecurringBlocks(
@@ -672,6 +706,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
                 startTime: startDateTime,
                 endTime: endDateTime,
                 recurrence: _recurrenceConfig!,
+                excludedRecurrenceIndices: excludedIndices.toSet(),
                 reason: reason,
                 isAllDay: _isAllDay,
               );
@@ -797,8 +832,7 @@ class _TimeGridPickerState extends State<_TimeGridPicker> {
     const childAspectRatio = 2.7;
 
     // Usa la larghezza reale della griglia rilevata dal LayoutBuilder
-    final itemWidth =
-        (_gridWidth! - (crossAxisCount - 1) * 6) / crossAxisCount;
+    final itemWidth = (_gridWidth! - (crossAxisCount - 1) * 6) / crossAxisCount;
     final itemHeight = itemWidth / childAspectRatio;
     final rowHeight = itemHeight + mainAxisSpacing;
 

@@ -1,9 +1,19 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/preferences_service.dart';
+import '../domain/agenda_card_color_source.dart';
 import 'business_providers.dart';
 import 'layout_config_provider.dart';
 import 'location_providers.dart';
+
+const int _clientsDefaultColorBusinessId = 18;
+
+AgendaCardColorSource _defaultCardColorSourceForBusiness(int businessId) {
+  if (businessId == _clientsDefaultColorBusinessId) {
+    return AgendaCardColorSource.clients;
+  }
+  return AgendaCardColorSource.services;
+}
 
 class AgendaDisplaySettings {
   const AgendaDisplaySettings({
@@ -12,7 +22,7 @@ class AgendaDisplaySettings {
     this.extraMinutesBandIntensity = 0.5,
     this.hoverUnrelatedCardDimIntensity = 0.0,
     this.showPricesOverride,
-    this.useServiceColorsOverride,
+    this.cardColorSourceOverride,
     this.showCancelledAppointments = false,
   });
 
@@ -21,7 +31,7 @@ class AgendaDisplaySettings {
   final double extraMinutesBandIntensity;
   final double hoverUnrelatedCardDimIntensity;
   final bool? showPricesOverride;
-  final bool? useServiceColorsOverride;
+  final AgendaCardColorSource? cardColorSourceOverride;
   final bool showCancelledAppointments;
 
   AgendaDisplaySettings copyWith({
@@ -30,10 +40,10 @@ class AgendaDisplaySettings {
     double? extraMinutesBandIntensity,
     double? hoverUnrelatedCardDimIntensity,
     bool? showPricesOverride,
-    bool? useServiceColorsOverride,
+    AgendaCardColorSource? cardColorSourceOverride,
     bool? showCancelledAppointments,
     bool clearShowPricesOverride = false,
-    bool clearUseServiceColorsOverride = false,
+    bool clearCardColorSourceOverride = false,
   }) {
     return AgendaDisplaySettings(
       cardTextScale: cardTextScale ?? this.cardTextScale,
@@ -45,9 +55,9 @@ class AgendaDisplaySettings {
       showPricesOverride: clearShowPricesOverride
           ? null
           : (showPricesOverride ?? this.showPricesOverride),
-      useServiceColorsOverride: clearUseServiceColorsOverride
+      cardColorSourceOverride: clearCardColorSourceOverride
           ? null
-          : (useServiceColorsOverride ?? this.useServiceColorsOverride),
+          : (cardColorSourceOverride ?? this.cardColorSourceOverride),
       showCancelledAppointments:
           showCancelledAppointments ?? this.showCancelledAppointments,
     );
@@ -99,7 +109,7 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
         businessId,
         locationId: locationId,
       ),
-      useServiceColorsOverride: prefs.getAgendaUseServiceColorsOverride(
+      cardColorSourceOverride: prefs.getAgendaCardColorSourceOverride(
         businessId,
         locationId: locationId,
       ),
@@ -183,22 +193,24 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
         .setAgendaShowPricesOverride(businessId, value, locationId: locationId);
   }
 
-  Future<void> setUseServiceColorsOverride(bool? value) async {
+  Future<void> setCardColorSourceOverride(AgendaCardColorSource? value) async {
     final businessId = _businessId();
     final locationId = _locationId();
     if (businessId <= 0 || locationId <= 0) return;
     state = value == null
-        ? state.copyWith(clearUseServiceColorsOverride: true)
-        : state.copyWith(useServiceColorsOverride: value);
+        ? state.copyWith(clearCardColorSourceOverride: true)
+        : state.copyWith(cardColorSourceOverride: value);
     await ref
         .read(preferencesServiceProvider)
-        .setAgendaUseServiceColorsOverride(
+        .setAgendaCardColorSourceOverride(
           businessId,
           value,
           locationId: locationId,
         );
     if (value != null) {
-      ref.read(layoutConfigProvider.notifier).setUseServiceColors(value);
+      ref
+          .read(layoutConfigProvider.notifier)
+          .setUseServiceColors(value == AgendaCardColorSource.services);
     }
   }
 
@@ -243,13 +255,15 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
       null,
       locationId: locationId,
     );
-    await prefs.setAgendaUseServiceColorsOverride(
+    await prefs.setAgendaCardColorSourceOverride(
       businessId,
       null,
       locationId: locationId,
     );
-    // Ripristina anche il valore runtime base del layout (default: colori da servizio)
-    ref.read(layoutConfigProvider.notifier).setUseServiceColors(true);
+    final defaultSource = _defaultCardColorSourceForBusiness(businessId);
+    ref
+        .read(layoutConfigProvider.notifier)
+        .setUseServiceColors(defaultSource == AgendaCardColorSource.services);
     await prefs.setAgendaShowCancelledAppointments(
       businessId,
       false,
@@ -290,9 +304,17 @@ final effectiveShowAppointmentPriceInCardProvider = Provider<bool>((ref) {
 });
 
 final effectiveUseServiceColorsForAppointmentsProvider = Provider<bool>((ref) {
-  final base = ref.watch(layoutConfigProvider).useServiceColorsForAppointments;
+  final source = ref.watch(effectiveAgendaCardColorSourceProvider);
+  return source == AgendaCardColorSource.services;
+});
+
+final effectiveAgendaCardColorSourceProvider = Provider<AgendaCardColorSource>((
+  ref,
+) {
+  final businessId = ref.watch(currentBusinessIdProvider);
+  final base = _defaultCardColorSourceForBusiness(businessId);
   final override = ref.watch(
-    agendaDisplaySettingsProvider.select((s) => s.useServiceColorsOverride),
+    agendaDisplaySettingsProvider.select((s) => s.cardColorSourceOverride),
   );
   return override ?? base;
 });

@@ -25,6 +25,7 @@ import '/core/models/time_block.dart';
 import '/core/utils/color_utils.dart';
 import '/core/utils/price_utils.dart';
 import '../../../domain/config/agenda_theme.dart';
+import '../../../domain/agenda_card_color_source.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_display_settings_provider.dart';
@@ -50,6 +51,7 @@ import '../../../providers/staff_columns_geometry_provider.dart';
 import '../../../providers/temp_drag_time_provider.dart';
 import '../../../providers/tenant_time_provider.dart';
 import '../../../providers/time_blocks_provider.dart';
+import '../../../utils/client_color_utils.dart';
 import '../../utils/multi_service_move_guard.dart';
 import '../../dialogs/add_block_dialog.dart';
 import '../../widgets/booking_dialog.dart';
@@ -641,22 +643,30 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         final bookingAppointments = appointmentsNotifier.getByBookingId(
           details.data.bookingId,
         );
-        final confirmResult = await showMoveConfirmDialog(
-          context: context,
-          title: Text(l10n.moveAppointmentConfirmTitle),
-          content: Text(
-            l10n.moveAppointmentConfirmMessage(newTimeStr, staffName),
-          ),
-          confirmLabel: l10n.actionConfirm,
-          cancelLabel: l10n.actionCancel,
-          showNotifyOption:
-              willBookingFirstStartChangeOnSingleMove(
-                movingAppointment: details.data,
-                newStart: dropResult.newStart,
-                bookingAppointments: bookingAppointments,
-              ) &&
-              _hasReachableClientContact(bookingAppointments),
+        final notificationRequired =
+            willBookingFirstStartChangeOnSingleMove(
+              movingAppointment: details.data,
+              newStart: dropResult.newStart,
+              bookingAppointments: bookingAppointments,
+            ) &&
+            _hasReachableClientContact(bookingAppointments);
+        final isSameDayMove = DateUtils.isSameDay(
+          details.data.startTime,
+          dropResult.newStart,
         );
+        final shouldSkipConfirmation = isSameDayMove && !notificationRequired;
+        final confirmResult = shouldSkipConfirmation
+            ? const MoveConfirmResult(confirmed: true, notifyClient: true)
+            : await showMoveConfirmDialog(
+                context: context,
+                title: Text(l10n.moveAppointmentConfirmTitle),
+                content: Text(
+                  l10n.moveAppointmentConfirmMessage(newTimeStr, staffName),
+                ),
+                confirmLabel: l10n.actionConfirm,
+                cancelLabel: l10n.actionCancel,
+                showNotifyOption: notificationRequired,
+              );
 
         // Pulisci sempre lo stato pendente dopo la decisione
         ref.read(pendingDropProvider.notifier).clear();
@@ -707,9 +717,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   ) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
-    final useServiceColors = ref.watch(
-      effectiveUseServiceColorsForAppointmentsProvider,
-    );
+    final cardColorSource = ref.watch(effectiveAgendaCardColorSourceProvider);
+    final useServiceColors = cardColorSource == AgendaCardColorSource.services;
     // 🔹 Watch fuori dal loop per evitare rebuild multipli
     final pendingDrop = ref.watch(pendingDropProvider);
     final variantsAsync = useServiceColors
@@ -810,26 +819,32 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       );
 
       Color cardColor;
-      if (useServiceColors) {
-        if (isInitialVariantsLoading) {
-          cardColor = neutralServiceColor;
-        } else {
-          final serviceColor = serviceColorMap[originalAppt.serviceId];
-          if (serviceColor != null) {
-            cardColor = serviceColor;
+      switch (cardColorSource) {
+        case AgendaCardColorSource.services:
+          if (isInitialVariantsLoading) {
+            cardColor = neutralServiceColor;
           } else {
-            final variant = ref.watch(
-              serviceVariantByIdProvider(originalAppt.serviceVariantId),
-            );
-            if (variant != null && variant.colorHex != null) {
-              cardColor = ColorUtils.fromHex(variant.colorHex!);
+            final serviceColor = serviceColorMap[originalAppt.serviceId];
+            if (serviceColor != null) {
+              cardColor = serviceColor;
             } else {
-              cardColor = neutralServiceColor;
+              final variant = ref.watch(
+                serviceVariantByIdProvider(originalAppt.serviceVariantId),
+              );
+              if (variant != null && variant.colorHex != null) {
+                cardColor = ColorUtils.fromHex(variant.colorHex!);
+              } else {
+                cardColor = neutralServiceColor;
+              }
             }
           }
-        }
-      } else {
-        cardColor = widget.staff.color;
+          break;
+        case AgendaCardColorSource.team:
+          cardColor = widget.staff.color;
+          break;
+        case AgendaCardColorSource.clients:
+          cardColor = resolveClientColorForAppointment(context, originalAppt);
+          break;
       }
 
       positionedEntries.add(
@@ -919,29 +934,34 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         final cardWidth = math.max(columnWidth - padding * 2, 0.0);
 
         Color cardColor;
-        if (useServiceColors) {
-          if (isInitialVariantsLoading) {
-            cardColor = neutralServiceColor;
-          } else {
-            // Priorità: colore del servizio (configurabile dall'operatore).
-            final serviceColor = serviceColorMap[originalAppt.serviceId];
-            if (serviceColor != null) {
-              cardColor = serviceColor;
+        switch (cardColorSource) {
+          case AgendaCardColorSource.services:
+            if (isInitialVariantsLoading) {
+              cardColor = neutralServiceColor;
             } else {
-              final variant = ref.watch(
-                serviceVariantByIdProvider(originalAppt.serviceVariantId),
-              );
-              if (variant != null && variant.colorHex != null) {
-                cardColor = ColorUtils.fromHex(variant.colorHex!);
+              // Priorità: colore del servizio (configurabile dall'operatore).
+              final serviceColor = serviceColorMap[originalAppt.serviceId];
+              if (serviceColor != null) {
+                cardColor = serviceColor;
               } else {
-                // Fallback: colore neutro se servizio senza colore
-                cardColor = neutralServiceColor;
+                final variant = ref.watch(
+                  serviceVariantByIdProvider(originalAppt.serviceVariantId),
+                );
+                if (variant != null && variant.colorHex != null) {
+                  cardColor = ColorUtils.fromHex(variant.colorHex!);
+                } else {
+                  // Fallback: colore neutro se servizio senza colore
+                  cardColor = neutralServiceColor;
+                }
               }
             }
-          }
-        } else {
-          // Se non uso colori servizio, usa colore staff
-          cardColor = widget.staff.color;
+            break;
+          case AgendaCardColorSource.team:
+            cardColor = widget.staff.color;
+            break;
+          case AgendaCardColorSource.clients:
+            cardColor = resolveClientColorForAppointment(context, originalAppt);
+            break;
         }
 
         // Preview card con bordo tratteggiato per indicare la posizione proposta
@@ -1007,7 +1027,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           : block.copyWith(endTime: previewEnd);
 
       // Calcola posizione verticale
-      final startMinutes = effectiveBlock.startTime.difference(dayStart).inMinutes;
+      final startMinutes = effectiveBlock.startTime
+          .difference(dayStart)
+          .inMinutes;
       final endMinutes = effectiveBlock.endTime.difference(dayStart).inMinutes;
 
       // Clamp ai limiti della giornata visualizzata
@@ -1259,25 +1281,33 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final bookingAppointments = ref
         .read(appointmentsProvider.notifier)
         .getByBookingId(rescheduleSession.bookingId);
-    final confirmResult = await showMoveConfirmDialog(
-      context: context,
-      title: Text(l10n.bookingRescheduleConfirmTitle),
-      content: Text(
-        l10n.bookingRescheduleConfirmMessage(
-          targetDateStr,
-          targetTimeStr,
-          widget.staff.displayName,
-        ),
-      ),
-      confirmLabel: l10n.actionConfirm,
-      cancelLabel: l10n.actionCancel,
-      showNotifyOption:
-          willBookingFirstStartChangeForRescheduleSession(
-            session: rescheduleSession,
-            targetStart: targetStart,
-          ) &&
-          _hasReachableClientContact(bookingAppointments),
+    final notificationRequired =
+        willBookingFirstStartChangeForRescheduleSession(
+          session: rescheduleSession,
+          targetStart: targetStart,
+        ) &&
+        _hasReachableClientContact(bookingAppointments);
+    final isSameDayMove = DateUtils.isSameDay(
+      rescheduleSession.originDate,
+      targetStart,
     );
+    final shouldSkipConfirmation = isSameDayMove && !notificationRequired;
+    final confirmResult = shouldSkipConfirmation
+        ? const MoveConfirmResult(confirmed: true, notifyClient: true)
+        : await showMoveConfirmDialog(
+            context: context,
+            title: Text(l10n.bookingRescheduleConfirmTitle),
+            content: Text(
+              l10n.bookingRescheduleConfirmMessage(
+                targetDateStr,
+                targetTimeStr,
+                widget.staff.displayName,
+              ),
+            ),
+            confirmLabel: l10n.actionConfirm,
+            cancelLabel: l10n.actionCancel,
+            showNotifyOption: notificationRequired,
+          );
     if (!confirmResult.confirmed || !mounted) return;
     setState(() => _isApplyingBookingReschedule = true);
     try {

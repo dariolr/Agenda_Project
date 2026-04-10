@@ -10,6 +10,7 @@ import 'package:agenda_backend/core/widgets/feedback_dialog.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/features/agenda/domain/config/agenda_theme.dart';
+import 'package:agenda_backend/features/agenda/domain/agenda_card_color_source.dart';
 import 'package:agenda_backend/features/agenda/domain/config/layout_config.dart';
 import 'package:agenda_backend/features/agenda/providers/agenda_scroll_request_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/agenda_display_settings_provider.dart';
@@ -38,6 +39,7 @@ import 'package:agenda_backend/features/agenda/presentation/utils/multi_service_
 import 'package:agenda_backend/features/agenda/presentation/dialogs/add_block_dialog.dart';
 import 'package:agenda_backend/features/agenda/presentation/widgets/booking_dialog.dart';
 import 'package:agenda_backend/features/agenda/utils/week_range.dart';
+import 'package:agenda_backend/features/agenda/utils/client_color_utils.dart';
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
@@ -640,7 +642,8 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
               );
             }),
           ),
-          for (final block in timeBlocks) _buildTimeBlock(ref, block, layoutConfig),
+          for (final block in timeBlocks)
+            _buildTimeBlock(ref, block, layoutConfig),
           for (final appointment in appointments)
             _buildAppointment(
               context,
@@ -700,9 +703,7 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     BuildContext context,
     WidgetRef ref,
   ) {
-    final useServiceColors = ref.watch(
-      effectiveUseServiceColorsForAppointmentsProvider,
-    );
+    final cardColorSource = ref.watch(effectiveAgendaCardColorSourceProvider);
     final firstStaffId = appointments.isEmpty
         ? null
         : appointments.first.staffId;
@@ -714,9 +715,19 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
         staff?.color ?? Theme.of(context).colorScheme.primary.withOpacity(0.8);
 
     final colors = <int, Color>{};
-    if (!useServiceColors) {
+    if (cardColorSource == AgendaCardColorSource.team) {
       for (final appointment in appointments) {
         colors[appointment.id] = fallbackColor;
+      }
+      return colors;
+    }
+
+    if (cardColorSource == AgendaCardColorSource.clients) {
+      for (final appointment in appointments) {
+        colors[appointment.id] = resolveClientColorForAppointment(
+          context,
+          appointment,
+        );
       }
       return colors;
     }
@@ -874,7 +885,9 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
         ? block
         : block.copyWith(endTime: previewEnd);
     final dayStart = DateTime(day.year, day.month, day.day);
-    final startMinutes = effectiveBlock.startTime.difference(dayStart).inMinutes;
+    final startMinutes = effectiveBlock.startTime
+        .difference(dayStart)
+        .inMinutes;
     final endMinutes = effectiveBlock.endTime.difference(dayStart).inMinutes;
     final clampedStartMinutes = startMinutes.clamp(
       0,

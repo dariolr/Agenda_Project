@@ -597,6 +597,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final hasPackages =
         (ref.watch(servicePackagesProvider).value ?? []).isNotEmpty;
     final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
+    final canManageClients = ref.watch(currentUserCanManageClientsProvider);
     final currentUserRole = ref.watch(currentUserRoleProvider);
     final currentUserStaffId = ref.watch(currentUserStaffIdProvider);
     final forcedStaffId =
@@ -658,6 +659,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                   clientName: _clientName,
                   clients: clients,
                   isLocked: isClientLocked,
+                  canOpenClientProfile: canManageClients,
                   onClientSelected: (id, name) {
                     setState(() {
                       _clientId = id;
@@ -832,77 +834,79 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               await _handleClose();
             },
             child: Dialog(
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 32,
-            vertical: 24,
-          ),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
-            child: LocalLoadingOverlay(
-              isLoading: _isSaving,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 32,
+                vertical: 24,
+              ),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 600, maxWidth: 720),
+                child: LocalLoadingOverlay(
+                  isLoading: _isSaving,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                title,
-                                style: Theme.of(context).textTheme.headlineSmall,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    title,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.headlineSmall,
+                                  ),
+                                  const SizedBox(height: 6),
+                                  _buildBookingIdTag(context),
+                                ],
                               ),
-                              const SizedBox(height: 6),
-                              _buildBookingIdTag(context),
-                            ],
+                            ),
+                            IconButton(
+                              icon: const Icon(Icons.history),
+                              tooltip: l10n.bookingHistoryTitle,
+                              onPressed: () => _showHistory(context),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Flexible(child: content),
+                        const SizedBox(height: AppSpacing.formToActionsSpacing),
+                        Padding(
+                          padding: const EdgeInsets.only(
+                            bottom: AppSpacing.formFirstRowSpacing,
+                          ),
+                          child: _warningBanner(
+                            8,
+                            showAppointmentWarning,
+                            l10n.bookingUnavailableTimeWarningAppointment,
                           ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.history),
-                          tooltip: l10n.bookingHistoryTitle,
-                          onPressed: () => _showHistory(context),
+                        OverflowBar(
+                          alignment: MainAxisAlignment.end,
+                          overflowAlignment: OverflowBarAlignment.end,
+                          spacing: 8,
+                          overflowSpacing: 8,
+                          children: [
+                            for (final action in actions)
+                              SizedBox(
+                                width: AppButtonStyles.dialogButtonWidth,
+                                child: action,
+                              ),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Flexible(child: content),
-                    const SizedBox(height: AppSpacing.formToActionsSpacing),
-                    Padding(
-                      padding: const EdgeInsets.only(
-                        bottom: AppSpacing.formFirstRowSpacing,
-                      ),
-                      child: _warningBanner(
-                        8,
-                        showAppointmentWarning,
-                        l10n.bookingUnavailableTimeWarningAppointment,
-                      ),
-                    ),
-                    OverflowBar(
-                      alignment: MainAxisAlignment.end,
-                      overflowAlignment: OverflowBarAlignment.end,
-                      spacing: 8,
-                      overflowSpacing: 8,
-                      children: [
-                        for (final action in actions)
-                          SizedBox(
-                            width: AppButtonStyles.dialogButtonWidth,
-                            child: action,
-                          ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
           ),
         ),
-      ),
-    ),
-  );
+      );
     }
     const horizontalPadding = 20.0;
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
@@ -974,10 +978,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                   ),
                   child: Column(
                     children: [
-                      SizedBox(
-                        width: double.infinity,
-                        child: cancelAction,
-                      ),
+                      SizedBox(width: double.infinity, child: cancelAction),
                       const SizedBox(height: 8),
                       Row(
                         children: [
@@ -1074,8 +1075,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               orElse: () => null,
             )
           : null;
-      final preselectedStaffServiceIds =
-          selectedStaff != null ? (selectedStaff.serviceIds as List<int>) : null;
+      final preselectedStaffServiceIds = selectedStaff != null
+          ? (selectedStaff.serviceIds as List<int>)
+          : null;
       final TimeOfDay? suggestedStartTime = i > 0
           ? _resolveServiceEndTime(_serviceItems[i - 1], variants.cast())
           : null;
@@ -1763,8 +1765,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             .firstOrNull;
         final duration = variant?.durationMinutes ?? 30;
         final listPrice = variant?.price;
-        final packageItemPriceCents =
-            index < distributedPackageCents.length
+        final packageItemPriceCents = index < distributedPackageCents.length
             ? distributedPackageCents[index]
             : null;
         final packageItemPrice = packageItemPriceCents != null
@@ -2314,11 +2315,11 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     } catch (error) {
       if (mounted) {
         final message = error is ApiException ? error.message : l10n.errorTitle;
-      await FeedbackDialog.showError(
-        context,
-        title: l10n.errorTitle,
-        message: message,
-      );
+        await FeedbackDialog.showError(
+          context,
+          title: l10n.errorTitle,
+          message: message,
+        );
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -2412,6 +2413,7 @@ class _ClientSelectionField extends ConsumerWidget {
     required this.onClientSelected,
     required this.onClientRemoved,
     this.isLocked = false,
+    this.canOpenClientProfile = false,
   });
 
   final int? clientId;
@@ -2420,6 +2422,7 @@ class _ClientSelectionField extends ConsumerWidget {
   final void Function(int? id, String name) onClientSelected;
   final VoidCallback onClientRemoved;
   final bool isLocked;
+  final bool canOpenClientProfile;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2438,7 +2441,11 @@ class _ClientSelectionField extends ConsumerWidget {
         if (hasClient)
           _SelectedClientTile(
             clientName: clientName,
-            onTap: isLocked ? null : () => _showClientPicker(context, ref),
+            onTap: isLocked
+                ? (canOpenClientProfile && clientId != null
+                      ? () => _openClientProfile(context, ref)
+                      : null)
+                : () => _showClientPicker(context, ref),
             onRemove: isLocked ? null : onClientRemoved,
           )
         else
@@ -2479,15 +2486,34 @@ class _ClientSelectionField extends ConsumerWidget {
               ),
             ),
           ),
-        const SizedBox(height: 6),
-        Text(
-          isLocked ? l10n.clientLockedHint : l10n.clientOptionalHint,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+        if (!isLocked) ...[
+          const SizedBox(height: 6),
+          Text(
+            l10n.clientOptionalHint,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
-        ),
+        ],
       ],
     );
+  }
+
+  Future<void> _openClientProfile(BuildContext context, WidgetRef ref) async {
+    final targetClientId = clientId;
+    if (targetClientId == null) return;
+
+    final client = ref.read(clientsByIdProvider)[targetClientId];
+    if (client == null) return;
+
+    final updatedClient = await showClientEditDialog(
+      context,
+      ref,
+      client: client,
+    );
+    if (updatedClient == null) return;
+
+    onClientSelected(updatedClient.id, updatedClient.name);
   }
 
   Future<void> _showClientPicker(BuildContext context, WidgetRef ref) async {
@@ -2525,10 +2551,8 @@ class _ClientSelectionField extends ConsumerWidget {
         useRootNavigator: true,
         padding: EdgeInsets.zero,
         heightFactor: AppBottomSheet.defaultHeightFactor,
-        builder: (ctx) => _ClientPickerSheet(
-          clients: clients,
-          selectedClientId: clientId,
-        ),
+        builder: (ctx) =>
+            _ClientPickerSheet(clients: clients, selectedClientId: clientId),
       );
     }
 
@@ -2642,6 +2666,12 @@ class _SelectedClientTile extends StatelessWidget {
                 tooltip: context.l10n.removeClient,
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              )
+            else if (onTap != null)
+              Icon(
+                Icons.edit_outlined,
+                size: 18,
+                color: theme.colorScheme.primary,
               )
             else if (isLocked)
               Icon(

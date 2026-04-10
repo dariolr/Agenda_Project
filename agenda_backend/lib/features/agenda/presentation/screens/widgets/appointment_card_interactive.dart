@@ -900,6 +900,14 @@ class _AppointmentCardInteractiveState
                     client,
                     info,
                     showNotes: hasNotes && !forFeedback,
+                    notesTooltipMessage: _resolveNotesTooltipMessage(
+                      bookingNotes: hasBookingNotes ? bookingNotes : null,
+                      clientNotes: hasClientNotes ? clientNotes : null,
+                    ),
+                    shortNotesBadgeText: _resolveShortNotesBadgeText(
+                      bookingNotes: hasBookingNotes ? bookingNotes : null,
+                      clientNotes: hasClientNotes ? clientNotes : null,
+                    ),
                     bookingSource: forFeedback
                         ? ''
                         : (widget.appointment.bookingSource ?? ''),
@@ -989,6 +997,8 @@ class _AppointmentCardInteractiveState
     String info, {
     required _CardPresentationModel presentation,
     required bool showNotes,
+    String? notesTooltipMessage,
+    String? shortNotesBadgeText,
     required String bookingSource,
     required String? appointmentPrice,
     required String? bookingTotal,
@@ -1104,17 +1114,30 @@ class _AppointmentCardInteractiveState
         Padding(
           padding: EdgeInsets.only(left: trailingIconLeftPadding),
           child: Tooltip(
-            message: context.l10n.appointmentNotesTitle,
+            message: notesTooltipMessage ?? context.l10n.appointmentNotesTitle,
             child: InkWell(
               onTap: onNotesTap,
               borderRadius: BorderRadius.circular(6),
               child: Padding(
                 padding: const EdgeInsets.all(2),
-                child: Icon(
-                  Icons.sticky_note_2_outlined,
-                  size: scaledTrailingIconSize,
-                  color: Colors.black54,
-                ),
+                child: shortNotesBadgeText != null
+                    ? Text(
+                        shortNotesBadgeText,
+                        style: TextStyle(
+                          color: Colors.black54,
+                          fontWeight: FontWeight.w700,
+                          fontSize: (scaledTrailingIconSize * 0.82).clamp(
+                            8.0,
+                            14.0,
+                          ),
+                          height: 1.0,
+                        ),
+                      )
+                    : Icon(
+                        Icons.sticky_note_2_outlined,
+                        size: scaledTrailingIconSize,
+                        color: Colors.black54,
+                      ),
               ),
             ),
           ),
@@ -1277,6 +1300,12 @@ class _AppointmentCardInteractiveState
           isCompactIconsLayout: isCompactIconsLayout,
         );
         final visibleTrailingIcons = trailingIcons.take(maxIcons).toList();
+        // In colonne estremamente strette (overlap elevato), anche una sola
+        // icona può mandare in overflow la prima riga.
+        final hideTrailingIconsForWidth = constraints.maxWidth < 24;
+        final rowTrailingIcons = hideTrailingIconsForWidth
+            ? const <Widget>[]
+            : visibleTrailingIcons;
         final centerVerticallyForShort = presentation.centerVertically;
         final showInlineServicePrice =
             presentation.showServiceRow &&
@@ -1346,7 +1375,7 @@ class _AppointmentCardInteractiveState
                       ),
                     ),
             ),
-            if (visibleTrailingIcons.isNotEmpty) ...visibleTrailingIcons,
+            if (rowTrailingIcons.isNotEmpty) ...rowTrailingIcons,
           ],
         );
 
@@ -1515,6 +1544,41 @@ class _AppointmentCardInteractiveState
         );
       },
     );
+  }
+
+  String? _resolveShortNotesBadgeText({
+    String? bookingNotes,
+    String? clientNotes,
+  }) {
+    final normalizedBookingNotes = _normalizeNoteText(bookingNotes);
+    final normalizedClientNotes = _normalizeNoteText(clientNotes);
+    final candidates = <String>[
+      if (normalizedBookingNotes != null) normalizedBookingNotes,
+      if (normalizedClientNotes != null) normalizedClientNotes,
+    ];
+    if (candidates.isEmpty) return null;
+
+    final preferred = candidates.first;
+    if (preferred.runes.length <= 3) return preferred;
+    return null;
+  }
+
+  String? _resolveNotesTooltipMessage({
+    String? bookingNotes,
+    String? clientNotes,
+  }) {
+    final normalizedBookingNotes = _normalizeNoteText(bookingNotes);
+    if (normalizedBookingNotes != null) return normalizedBookingNotes;
+
+    final normalizedClientNotes = _normalizeNoteText(clientNotes);
+    return normalizedClientNotes;
+  }
+
+  String? _normalizeNoteText(String? value) {
+    if (value == null) return null;
+    final normalized = value.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (normalized.isEmpty) return null;
+    return normalized;
   }
 
   void _showNotesDialog({String? bookingNotes, String? clientNotes}) {

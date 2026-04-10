@@ -4,6 +4,7 @@ import 'package:agenda_backend/core/models/appointment.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
 import 'package:agenda_backend/core/widgets/app_form.dart';
+import 'package:agenda_backend/features/agenda/domain/agenda_card_color_source.dart';
 import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/agenda_display_settings_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
@@ -47,43 +48,41 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
     final settings = ref.watch(agendaDisplaySettingsProvider);
     final showPrices = ref.watch(effectiveShowAppointmentPriceInCardProvider);
     // final showCancelled = ref.watch(effectiveShowCancelledAppointmentsProvider);
-    final useServiceColors = ref.watch(
-      effectiveUseServiceColorsForAppointmentsProvider,
-    );
+    final cardColorSource = ref.watch(effectiveAgendaCardColorSourceProvider);
     final calendarViewMode = ref.watch(calendarViewModeProvider);
     final agendaDate = ref.watch(agendaDateProvider);
     final location = ref.watch(currentLocationProvider);
     final business = ref.watch(currentBusinessProvider);
     final services = ref.watch(servicesProvider).value ?? const [];
     final hasAnyServiceWithAdditionalTime = services.any(
-      (service) => (service.processingTime ?? 0) > 0 || (service.blockedTime ?? 0) > 0,
+      (service) =>
+          (service.processingTime ?? 0) > 0 || (service.blockedTime ?? 0) > 0,
     );
     final hasAnyAppointmentWithAdditionalTime = switch (calendarViewMode) {
       CalendarViewMode.day => _hasAnyAppointmentWithAdditionalTime(
-          ref.watch(appointmentsProvider).value ?? const [],
-        ),
+        ref.watch(appointmentsProvider).value ?? const [],
+      ),
       CalendarViewMode.week => () {
-          if (location.id <= 0 || business.id <= 0) return false;
-          final selectedDate = DateUtils.dateOnly(agendaDate);
-          final weekStart = selectedDate.subtract(
-            Duration(days: selectedDate.weekday - DateTime.monday),
-          );
-          final request = WeeklyAppointmentsRequest(
-            weekStart: weekStart,
-            locationId: location.id,
-            businessId: business.id,
-          );
-          final weeklyAppointments = ref.watch(
-            weeklyAppointmentsProvider(request),
-          );
-          return _hasAnyAppointmentWithAdditionalTime(
-            weeklyAppointments.value?.appointments ?? const [],
-          );
-        }(),
+        if (location.id <= 0 || business.id <= 0) return false;
+        final selectedDate = DateUtils.dateOnly(agendaDate);
+        final weekStart = selectedDate.subtract(
+          Duration(days: selectedDate.weekday - DateTime.monday),
+        );
+        final request = WeeklyAppointmentsRequest(
+          weekStart: weekStart,
+          locationId: location.id,
+          businessId: business.id,
+        );
+        final weeklyAppointments = ref.watch(
+          weeklyAppointmentsProvider(request),
+        );
+        return _hasAnyAppointmentWithAdditionalTime(
+          weeklyAppointments.value?.appointments ?? const [],
+        );
+      }(),
     };
     final showExtraMinutesBandIntensitySetting =
-        hasAnyServiceWithAdditionalTime ||
-        hasAnyAppointmentWithAdditionalTime;
+        hasAnyServiceWithAdditionalTime || hasAnyAppointmentWithAdditionalTime;
     final notifier = ref.read(agendaDisplaySettingsProvider.notifier);
     final hoverUnrelatedVisualIntensity =
         (1.0 - settings.hoverUnrelatedCardDimIntensity).clamp(0.0, 1.0);
@@ -163,23 +162,31 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: _radioGroupTopSpacing),
-          RadioListTile<bool>(
+          RadioListTile<AgendaCardColorSource>(
             contentPadding: EdgeInsets.zero,
-            value: true,
-            groupValue: useServiceColors,
+            value: AgendaCardColorSource.services,
+            groupValue: cardColorSource,
             title: Text(
               context.l10n.servicesTabLabel,
               style: settingLabelStyle,
             ),
-            onChanged: (value) => notifier.setUseServiceColorsOverride(value),
+            onChanged: notifier.setCardColorSourceOverride,
           ),
           const SizedBox(height: _radioItemSpacing),
-          RadioListTile<bool>(
+          RadioListTile<AgendaCardColorSource>(
             contentPadding: EdgeInsets.zero,
-            value: false,
-            groupValue: useServiceColors,
+            value: AgendaCardColorSource.team,
+            groupValue: cardColorSource,
             title: Text(context.l10n.teamStaffLabel, style: settingLabelStyle),
-            onChanged: (value) => notifier.setUseServiceColorsOverride(value),
+            onChanged: notifier.setCardColorSourceOverride,
+          ),
+          const SizedBox(height: _radioItemSpacing),
+          RadioListTile<AgendaCardColorSource>(
+            contentPadding: EdgeInsets.zero,
+            value: AgendaCardColorSource.clients,
+            groupValue: cardColorSource,
+            title: Text(context.l10n.navClients, style: settingLabelStyle),
+            onChanged: notifier.setCardColorSourceOverride,
           ),
           const SizedBox(height: _sectionSpacing),
           Text(
@@ -291,9 +298,7 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
                   icon: const Icon(Icons.add),
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  '${(hoverUnrelatedVisualIntensity * 100).round()}%',
-                ),
+                Text('${(hoverUnrelatedVisualIntensity * 100).round()}%'),
               ],
             ),
           ],

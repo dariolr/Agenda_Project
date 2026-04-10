@@ -1,4 +1,5 @@
 import 'package:agenda_backend/core/services/preferences_service.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/location.dart';
@@ -321,6 +322,27 @@ class CurrentLocationId extends Notifier<int> {
     if (businessId != null && businessId > 0) {
       ref.read(preferencesServiceProvider).setCurrentLocationId(businessId, id);
     }
+  }
+
+  Future<void> setKeepingAgendaDate(
+    int id, {
+    required DateTime agendaDate,
+    required DateTime tenantToday,
+  }) async {
+    final businessId = ref.read(businessIdForLocationsProvider);
+    if (businessId != null && businessId > 0) {
+      final prefs = ref.read(preferencesServiceProvider);
+      final nextDate = DateUtils.dateOnly(agendaDate);
+      final today = DateUtils.dateOnly(tenantToday);
+      await prefs.setAgendaDate(businessId, locationId: id, date: nextDate);
+      await prefs.setAgendaTodaySeenDate(
+        businessId,
+        locationId: id,
+        date: today,
+      );
+      await prefs.setCurrentLocationId(businessId, id);
+    }
+    state = id;
   }
 }
 

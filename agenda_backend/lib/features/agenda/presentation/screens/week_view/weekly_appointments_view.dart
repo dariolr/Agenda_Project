@@ -11,6 +11,7 @@ import 'package:agenda_backend/core/utils/color_utils.dart';
 import 'package:agenda_backend/core/widgets/adaptive_dropdown.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
+import 'package:agenda_backend/features/agenda/domain/agenda_card_color_source.dart';
 import 'package:agenda_backend/features/agenda/mappers/appointments_by_day.dart';
 import 'package:agenda_backend/features/agenda/presentation/dialogs/add_block_dialog.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/week_view/single_staff_weekly_timeline.dart';
@@ -28,6 +29,7 @@ import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.
 import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/weekly_appointments_provider.dart';
 import 'package:agenda_backend/features/agenda/utils/week_range.dart';
+import 'package:agenda_backend/features/agenda/utils/client_color_utils.dart';
 import 'package:agenda_backend/features/business/providers/location_closures_provider.dart';
 import 'package:agenda_backend/features/class_events/providers/class_events_providers.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
@@ -830,7 +832,8 @@ class _WeeklyAppointmentTile extends ConsumerStatefulWidget {
       _WeeklyAppointmentTileState();
 }
 
-class _WeeklyAppointmentTileState extends ConsumerState<_WeeklyAppointmentTile> {
+class _WeeklyAppointmentTileState
+    extends ConsumerState<_WeeklyAppointmentTile> {
   bool _selectedFromHover = false;
 
   @override
@@ -887,9 +890,7 @@ class _WeeklyAppointmentTileState extends ConsumerState<_WeeklyAppointmentTile> 
         onExit: (_) {
           ref.read(agendaCardHoverProvider.notifier).exit();
           if (_selectedFromHover &&
-              ref
-                  .read(selectedAppointmentProvider)
-                  .contains(appointment.id)) {
+              ref.read(selectedAppointmentProvider).contains(appointment.id)) {
             ref.read(selectedAppointmentProvider.notifier).clear();
             _selectedFromHover = false;
           }
@@ -977,11 +978,12 @@ class _WeeklyAppointmentTileState extends ConsumerState<_WeeklyAppointmentTile> 
     final fallbackColor =
         staff?.color ?? Theme.of(context).colorScheme.primary.withOpacity(0.8);
 
-    final useServiceColors = ref.watch(
-      effectiveUseServiceColorsForAppointmentsProvider,
-    );
-    if (!useServiceColors) {
+    final cardColorSource = ref.watch(effectiveAgendaCardColorSourceProvider);
+    if (cardColorSource == AgendaCardColorSource.team) {
       return fallbackColor;
+    }
+    if (cardColorSource == AgendaCardColorSource.clients) {
+      return resolveClientColorForAppointment(context, currentAppointment);
     }
 
     final variantsAsync = ref.watch(serviceVariantsProvider);
@@ -1051,7 +1053,8 @@ class _WeeklyClassEventTile extends ConsumerWidget {
     final color = theme.colorScheme.tertiaryContainer;
     final cardTextScale = ref.watch(agendaCardTextScaleProvider);
     final effectiveHeightScale = cardTextScale > 1.0 ? cardTextScale : 1.0;
-    final tileHeight = _WeeklyAppointmentTile._tileHeight * effectiveHeightScale;
+    final tileHeight =
+        _WeeklyAppointmentTile._tileHeight * effectiveHeightScale;
     final foreground =
         ThemeData.estimateBrightnessForColor(color) == Brightness.dark
         ? Colors.white

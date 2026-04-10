@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -662,130 +663,157 @@ class _HorizontalDateListState extends State<_HorizontalDateList> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return ListView.builder(
-      controller: _scrollController,
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      itemCount: widget.days.length,
-      itemBuilder: (context, index) {
-        final date = widget.days[index];
-        final isToday =
-            date.year == widget.today.year &&
-            date.month == widget.today.month &&
-            date.day == widget.today.day;
-        final isAvailable = _containsDate(widget.availableDates, date);
-        final isSelected =
-            widget.selectedDate != null &&
-            date.year == widget.selectedDate!.year &&
-            date.month == widget.selectedDate!.month &&
-            date.day == widget.selectedDate!.day;
-        final weekNumber = widget.getWeekNumber(date);
-        final isOddWeek = weekNumber % 2 == 1;
+    return ScrollConfiguration(
+      behavior: const MaterialScrollBehavior().copyWith(
+        dragDevices: {
+          PointerDeviceKind.touch,
+          PointerDeviceKind.mouse,
+          PointerDeviceKind.stylus,
+          PointerDeviceKind.invertedStylus,
+          PointerDeviceKind.unknown,
+        },
+      ),
+      child: Listener(
+        onPointerSignal: (event) {
+          if (event is! PointerScrollEvent || !_scrollController.hasClients) {
+            return;
+          }
+          final delta = event.scrollDelta.dy == 0
+              ? event.scrollDelta.dx
+              : event.scrollDelta.dy;
+          final position = _scrollController.position;
+          final target = (_scrollController.offset + delta).clamp(
+            position.minScrollExtent,
+            position.maxScrollExtent,
+          );
+          _scrollController.jumpTo(target);
+        },
+        child: ListView.builder(
+          controller: _scrollController,
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          itemCount: widget.days.length,
+          itemBuilder: (context, index) {
+            final date = widget.days[index];
+            final isToday =
+                date.year == widget.today.year &&
+                date.month == widget.today.month &&
+                date.day == widget.today.day;
+            final isAvailable = _containsDate(widget.availableDates, date);
+            final isSelected =
+                widget.selectedDate != null &&
+                date.year == widget.selectedDate!.year &&
+                date.month == widget.selectedDate!.month &&
+                date.day == widget.selectedDate!.day;
+            final weekNumber = widget.getWeekNumber(date);
+            final isOddWeek = weekNumber % 2 == 1;
 
-        // Colore sfondo alternato per settimane
-        final weekBgColor = isOddWeek
-            ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.5)
-            : Colors.transparent;
+            // Colore sfondo alternato per settimane
+            final weekBgColor = isOddWeek
+                ? theme.colorScheme.surfaceContainerHighest.withOpacity(0.5)
+                : Colors.transparent;
 
-        // Verifica se questa data è già stata caricata
-        final isLoaded = index < widget.loadedDays;
+            // Verifica se questa data è già stata caricata
+            final isLoaded = index < widget.loadedDays;
 
-        return GestureDetector(
-          // Selezionabile se già caricata (anche se non disponibile)
-          onTap: isLoaded ? () => widget.onDateSelected(date) : null,
-          child: Container(
-            width: _itemWidth,
-            margin: const EdgeInsets.symmetric(horizontal: 2),
-            decoration: BoxDecoration(
-              color: weekBgColor,
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Giorno della settimana
-                Text(
-                  widget.getWeekdayAbbr(date),
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: isAvailable
-                        ? theme.colorScheme.onSurface.withOpacity(0.6)
-                        : theme.colorScheme.onSurface.withOpacity(0.3),
-                    fontWeight: FontWeight.w500,
-                  ),
+            return GestureDetector(
+              // Selezionabile se già caricata (anche se non disponibile)
+              onTap: isLoaded ? () => widget.onDateSelected(date) : null,
+              child: Container(
+                width: _itemWidth,
+                margin: const EdgeInsets.symmetric(horizontal: 2),
+                decoration: BoxDecoration(
+                  color: weekBgColor,
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(height: 4),
-                // Pallino con numero giorno
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isSelected ? theme.colorScheme.primary : null,
-                    border: isToday && !isSelected
-                        ? Border.all(
-                            color: theme.colorScheme.primary,
-                            width: 1.5,
-                          )
-                        : null,
-                  ),
-                  child: Center(
-                    child: Text(
-                      '${date.day}',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: isSelected
-                            ? theme.colorScheme.onPrimary
-                            : isAvailable
-                            ? theme.colorScheme.onSurface
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Giorno della settimana
+                    Text(
+                      widget.getWeekdayAbbr(date),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: isAvailable
+                            ? theme.colorScheme.onSurface.withOpacity(0.6)
                             : theme.colorScheme.onSurface.withOpacity(0.3),
-                        fontWeight: isToday || isSelected
-                            ? FontWeight.bold
-                            : FontWeight.w500,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ),
+                    const SizedBox(height: 4),
+                    // Pallino con numero giorno
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isSelected ? theme.colorScheme.primary : null,
+                        border: isToday && !isSelected
+                            ? Border.all(
+                                color: theme.colorScheme.primary,
+                                width: 1.5,
+                              )
+                            : null,
+                      ),
+                      child: Center(
+                        child: Text(
+                          '${date.day}',
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            color: isSelected
+                                ? theme.colorScheme.onPrimary
+                                : isAvailable
+                                ? theme.colorScheme.onSurface
+                                : theme.colorScheme.onSurface.withOpacity(0.3),
+                            fontWeight: isToday || isSelected
+                                ? FontWeight.bold
+                                : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // Pallino indicatore disponibilità o loading
+                    if (index >= widget.loadedDays)
+                      // Ancora in caricamento per questa data
+                      SizedBox(
+                        width: 6,
+                        height: 6,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 1.5,
+                          color: theme.colorScheme.outline.withOpacity(0.5),
+                        ),
+                      )
+                    else if (isAvailable)
+                      Container(
+                        width: 6,
+                        height: 6,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isOddWeek
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.tertiary,
+                        ),
+                      )
+                    else
+                      const SizedBox(height: 6),
+                    // Indicatore mese quando cambia
+                    if (date.day == 1 || index == 0)
+                      Text(
+                        DateFormat('MMM', 'it').format(date).toUpperCase(),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 9,
+                        ),
+                      )
+                    else
+                      const SizedBox(height: 11),
+                  ],
                 ),
-                const SizedBox(height: 6),
-                // Pallino indicatore disponibilità o loading
-                if (index >= widget.loadedDays)
-                  // Ancora in caricamento per questa data
-                  SizedBox(
-                    width: 6,
-                    height: 6,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 1.5,
-                      color: theme.colorScheme.outline.withOpacity(0.5),
-                    ),
-                  )
-                else if (isAvailable)
-                  Container(
-                    width: 6,
-                    height: 6,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isOddWeek
-                          ? theme.colorScheme.primary
-                          : theme.colorScheme.tertiary,
-                    ),
-                  )
-                else
-                  const SizedBox(height: 6),
-                // Indicatore mese quando cambia
-                if (date.day == 1 || index == 0)
-                  Text(
-                    DateFormat('MMM', 'it').format(date).toUpperCase(),
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 9,
-                    ),
-                  )
-                else
-                  const SizedBox(height: 11),
-              ],
-            ),
-          ),
-        );
-      },
+              ),
+            );
+          },
+        ),
+      ),
     );
   }
 }

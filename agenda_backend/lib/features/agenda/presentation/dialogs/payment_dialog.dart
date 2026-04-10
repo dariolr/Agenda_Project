@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers/form_factor_provider.dart';
+import '../../../../app/theme/extensions.dart';
 import '../../../../core/models/business_payment_method.dart';
 import '../../../../core/models/booking_payment.dart';
 import '../../../../core/models/booking_payment_computed.dart';
@@ -660,6 +661,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
       decoration: BoxDecoration(
         color: background,
         borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withOpacity(0.28), width: 0.8),
       ),
       child: Text(
         text,
@@ -970,6 +972,10 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
 
   Widget _buildContent(BuildContext context) {
     final theme = Theme.of(context);
+    final interactionColors = theme.extension<AppInteractionColors>();
+    final alternatingRowColor =
+        interactionColors?.alternatingRowFill ??
+        theme.colorScheme.surfaceContainerHighest.withOpacity(0.2);
     final visibleMethods = _visiblePaymentMethods();
 
     final methodRows = Column(
@@ -980,19 +986,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
             padding: EdgeInsets.zero,
             child: DecoratedBox(
               decoration: BoxDecoration(
-                color: _isRevenueMethod(visibleMethods[i])
-                    ? (i.isEven
-                          ? Color.alphaBlend(
-                              theme.colorScheme.outlineVariant.withOpacity(
-                                0.02,
-                              ),
-                              theme.colorScheme.surfaceContainerHighest
-                                  .withOpacity(0.1),
-                            )
-                          : Colors.transparent)
-                    : theme.colorScheme.surfaceContainerHighest.withOpacity(
-                        0.24,
-                      ),
+                color: i.isEven ? alternatingRowColor : Colors.transparent,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Padding(

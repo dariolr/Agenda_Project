@@ -10,16 +10,7 @@ class AppLoadingScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFFF5F7FA), // #f5f7fa
-            Color(0xFFE4E8EC), // #e4e8ec
-          ],
-        ),
-      ),
+      color: const Color(0xFFFEFEFE),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -80,18 +71,26 @@ class _LoadingSpinnerState extends State<_LoadingSpinner>
           child: child,
         );
       },
-      child: Container(
-        width: 48,
-        height: 48,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(color: const Color(0xFFE0E0E0), width: 4),
-        ),
-        child: CustomPaint(
-          painter: _SpinnerPainter(
-            color: Theme.of(context).colorScheme.primary,
-          ),
-        ),
+      child: Builder(
+        builder: (context) {
+          final primary = Theme.of(context).colorScheme.primary;
+          return Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              // Binario: tinta del colore primario a bassa opacità,
+              // sempre visibile indipendentemente dallo sfondo
+              border: Border.all(
+                color: primary.withAlpha(38), // ~15% opacità
+                width: 4,
+              ),
+            ),
+            child: CustomPaint(
+              painter: _SpinnerPainter(color: primary),
+            ),
+          );
+        },
       ),
     );
   }

@@ -36,7 +36,7 @@
   
   <!-- Versione app esposta a Flutter -->
   <script>
-    window.appVersion = "20260408-1.56";
+    window.appVersion = "20260409-1.57";
     
     // Localizzazioni per loading screen
     window.loadingTexts = {
@@ -59,22 +59,18 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+      background: #fefefe;
       display: flex;
       flex-direction: column;
       justify-content: center;
       align-items: center;
       z-index: 9999;
-      transition: opacity 0.3s ease-out;
-    }
-    .loading-screen.fade-out {
-      opacity: 0;
-      pointer-events: none;
     }
     .loading-spinner {
       width: 48px;
       height: 48px;
-      border: 4px solid #e0e0e0;
+      /* binario: colore primario a ~15% opacità (aggiornato via JS con colore cache) */
+      border: 4px solid rgba(33, 150, 243, 0.15);
       border-top-color: #2196F3;
       border-radius: 50%;
       animation: spin 1s linear infinite;
@@ -101,6 +97,31 @@
   <script>
     // Imposta testo loading in base alla lingua del browser
     document.getElementById('loading-text').textContent = getLoadingText();
+
+    // Applica il colore del business alla loading screen (se presente in cache)
+    (function() {
+      try {
+        var segments = window.location.pathname.split('/').filter(function(s) { return s.length > 0; });
+        if (segments.length > 0) {
+          var reserved = ['reset-password','login','register','booking','my-bookings','change-password','profile','privacy','terms','login.html'];
+          var slug = segments[0];
+          if (reserved.indexOf(slug) === -1) {
+            var cached = localStorage.getItem('agenda_primary_color_' + slug);
+            if (cached) {
+              var spinner = document.querySelector('.loading-spinner');
+              // Arco attivo: colore pieno del business
+              spinner.style.borderTopColor = cached;
+              // Binario: stessa tinta al 15% di opacità
+              var r = parseInt(cached.slice(1,3),16);
+              var g = parseInt(cached.slice(3,5),16);
+              var b = parseInt(cached.slice(5,7),16);
+              spinner.style.borderColor = 'rgba('+r+','+g+','+b+',0.15)';
+              spinner.style.borderTopColor = cached;
+            }
+          }
+        }
+      } catch(e) {}
+    })();
   </script>
 
   <script>
@@ -108,15 +129,17 @@
   </script>
 
   <script>
-    // Rimuovi loading screen quando Flutter è pronto
+    // Rimuovi loading screen quando Flutter è pronto.
+    // Doppio rAF: assicura che il canvas sia completamente dipinto prima di rimuovere il loader,
+    // evitando il flash bianco tra HTML e Flutter.
     window.addEventListener('flutter-first-frame', function() {
       var loader = document.getElementById('loading-screen');
-      if (loader) {
-        loader.classList.add('fade-out');
-        setTimeout(function() {
+      if (!loader) return;
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
           loader.remove();
-        }, 300);
-      }
+        });
+      });
     });
   </script>
 </body>

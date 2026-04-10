@@ -752,7 +752,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: Text(context.l10n.actionCancelBooking),
+            child: Text(context.l10n.actionConfirm),
           ),
         ],
       ),

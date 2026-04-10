@@ -96,6 +96,7 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
     required DateTime startTime,
     required DateTime endTime,
     required RecurrenceConfig recurrence,
+    Set<int>? excludedRecurrenceIndices,
     String? reason,
     bool isAllDay = false,
   }) async {
@@ -105,7 +106,13 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
     final occurrences = recurrence.calculateOccurrences(startTime);
     final createdBlocks = <TimeBlock>[];
 
-    for (final occurrenceStart in occurrences) {
+    final excluded = excludedRecurrenceIndices ?? const <int>{};
+    for (var i = 0; i < occurrences.length; i++) {
+      final recurrenceIndex = i + 1;
+      if (excluded.contains(recurrenceIndex)) {
+        continue;
+      }
+      final occurrenceStart = occurrences[i];
       final data = await apiClient.createTimeBlock(
         locationId: location.id,
         startTime: _formatDateTime(occurrenceStart),
@@ -211,53 +218,55 @@ final timeBlocksForStaffProvider = Provider.family<List<TimeBlock>, int>((
   ];
 });
 
-final timeBlocksForStaffOnDateProvider = FutureProvider.family<
-  List<TimeBlock>,
-  ({int staffId, DateTime date})
->((ref, params) async {
-  final authState = ref.watch(authProvider);
-  if (!authState.isAuthenticated) {
-    return const [];
-  }
+final timeBlocksForStaffOnDateProvider =
+    FutureProvider.family<List<TimeBlock>, ({int staffId, DateTime date})>((
+      ref,
+      params,
+    ) async {
+      final authState = ref.watch(authProvider);
+      if (!authState.isAuthenticated) {
+        return const [];
+      }
 
-  final location = ref.watch(currentLocationProvider);
-  if (location.id <= 0) {
-    return const [];
-  }
+      final location = ref.watch(currentLocationProvider);
+      if (location.id <= 0) {
+        return const [];
+      }
 
-  final apiClient = ref.watch(apiClientProvider);
-  final dayStart = DateUtils.dateOnly(params.date);
-  final dayEnd = dayStart.add(const Duration(days: 1));
+      final apiClient = ref.watch(apiClientProvider);
+      final dayStart = DateUtils.dateOnly(params.date);
+      final dayEnd = dayStart.add(const Duration(days: 1));
 
-  String formatDateTime(DateTime dt) {
-    return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
-        '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
-  }
+      String formatDateTime(DateTime dt) {
+        return '${dt.year}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')} '
+            '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
+      }
 
-  TimeBlock parseTimeBlock(Map<String, dynamic> json) {
-    return TimeBlock(
-      id: json['id'] as int,
-      businessId: json['business_id'] as int,
-      locationId: json['location_id'] as int,
-      staffIds: (json['staff_ids'] as List).map((e) => e as int).toList(),
-      startTime: DateTime.parse(json['start_time'] as String),
-      endTime: DateTime.parse(json['end_time'] as String),
-      reason: json['reason'] as String?,
-      isAllDay: (json['is_all_day'] as int?) == 1,
-    );
-  }
+      TimeBlock parseTimeBlock(Map<String, dynamic> json) {
+        return TimeBlock(
+          id: json['id'] as int,
+          businessId: json['business_id'] as int,
+          locationId: json['location_id'] as int,
+          staffIds: (json['staff_ids'] as List).map((e) => e as int).toList(),
+          startTime: DateTime.parse(json['start_time'] as String),
+          endTime: DateTime.parse(json['end_time'] as String),
+          reason: json['reason'] as String?,
+          isAllDay: (json['is_all_day'] as int?) == 1,
+        );
+      }
 
-  try {
-    final data = await apiClient.getTimeBlocks(
-      location.id,
-      fromDate: formatDateTime(dayStart),
-      toDate: formatDateTime(dayEnd),
-    );
-    return [
-      for (final raw in data)
-        if (parseTimeBlock(raw).includesStaff(params.staffId)) parseTimeBlock(raw),
-    ];
-  } catch (_) {
-    return const [];
-  }
-});
+      try {
+        final data = await apiClient.getTimeBlocks(
+          location.id,
+          fromDate: formatDateTime(dayStart),
+          toDate: formatDateTime(dayEnd),
+        );
+        return [
+          for (final raw in data)
+            if (parseTimeBlock(raw).includesStaff(params.staffId))
+              parseTimeBlock(raw),
+        ];
+      } catch (_) {
+        return const [];
+      }
+    });
