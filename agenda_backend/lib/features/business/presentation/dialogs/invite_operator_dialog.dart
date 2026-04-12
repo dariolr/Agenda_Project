@@ -412,11 +412,13 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
     final allStaff = ref.watch(allStaffProvider).value ?? const <Staff>[];
     final availableStaff = _availableStaff(allStaff);
 
-    return LocalLoadingOverlay(
-      isLoading: _isLoading,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+    return Material(
+      color: Theme.of(context).colorScheme.surface,
+      child: LocalLoadingOverlay(
+        isLoading: _isLoading,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
           // Header
           Text(
             l10n.operatorsInviteTitle,
@@ -567,7 +569,8 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
               ),
             ],
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

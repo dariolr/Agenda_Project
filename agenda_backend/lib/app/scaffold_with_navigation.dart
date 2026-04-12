@@ -2221,10 +2221,21 @@ class _PermessiAddAction extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: GestureDetector(
-        onTap: () => showDialog(
-          context: context,
-          builder: (ctx) => InviteOperatorDialog(businessId: businessId),
-        ),
+        onTap: () {
+          if (formFactor == AppFormFactor.mobile ||
+              formFactor == AppFormFactor.tablet) {
+            AppBottomSheet.show(
+              context: context,
+              heightFactor: null,
+              builder: (ctx) => InviteOperatorSheet(businessId: businessId),
+            );
+            return;
+          }
+          showDialog(
+            context: context,
+            builder: (ctx) => InviteOperatorDialog(businessId: businessId),
+          );
+        },
         child: Builder(
           builder: (buttonContext) {
             final scheme = Theme.of(buttonContext).colorScheme;
