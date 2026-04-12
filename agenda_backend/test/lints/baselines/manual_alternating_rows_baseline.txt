@@ -1,0 +1,8 @@
+# path|parityCount=<count>
+lib/features/agenda/presentation/dialogs/payment_dialog.dart|parityCount=1
+lib/features/agenda/presentation/widgets/service_picker_field.dart|parityCount=3
+lib/features/services/presentation/widgets/service_eligibility_selector.dart|parityCount=2
+lib/features/services/presentation/widgets/services_list.dart|parityCount=2
+lib/features/staff/presentation/screens/resources_screen.dart|parityCount=1
+lib/features/staff/presentation/widgets/location_item.dart|parityCount=1
+lib/features/staff/presentation/widgets/weekly_schedule_editor.dart|parityCount=2

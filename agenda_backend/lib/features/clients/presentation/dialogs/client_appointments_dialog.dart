@@ -8,6 +8,7 @@ import 'package:intl/intl.dart';
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/appointment.dart';
+import '../../../../core/widgets/app_alternating_row.dart';
 import '../../../../core/widgets/app_form.dart';
 import '../../domain/clients.dart';
 import '../../providers/clients_providers.dart';
@@ -141,7 +142,11 @@ class _AppointmentList extends ConsumerWidget {
       separatorBuilder: (_, __) => const AppDivider(height: 1),
       itemBuilder: (context, index) {
         final appointment = appointments[index];
-        return _AppointmentTile(appointment: appointment);
+        return AppAlternatingRow(
+          index: index,
+          startFromSecond: true,
+          child: _AppointmentTile(appointment: appointment),
+        );
       },
     );
   }
@@ -324,17 +329,20 @@ class ClientAppointmentsBottomSheet extends ConsumerWidget {
               indicatorColor: theme.colorScheme.primary,
             ),
           ),
-          body: TabBarView(
-            children: [
-              _AppointmentList(
-                appointments: data.upcoming,
-                emptyMessage: l10n.clientAppointmentsEmpty,
-              ),
-              _AppointmentList(
-                appointments: data.past,
-                emptyMessage: l10n.clientAppointmentsEmpty,
-              ),
-            ],
+          body: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: TabBarView(
+              children: [
+                _AppointmentList(
+                  appointments: data.upcoming,
+                  emptyMessage: l10n.clientAppointmentsEmpty,
+                ),
+                _AppointmentList(
+                  appointments: data.past,
+                  emptyMessage: l10n.clientAppointmentsEmpty,
+                ),
+              ],
+            ),
           ),
         ),
       ),

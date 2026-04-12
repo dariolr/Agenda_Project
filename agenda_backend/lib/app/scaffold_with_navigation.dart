@@ -52,6 +52,22 @@ import '../features/staff/providers/staff_providers.dart';
 import '../features/staff/providers/staff_reorder_provider.dart';
 import '../features/staff/providers/staff_sorted_providers.dart';
 
+bool isMoreCompactBranchIndex(int index, {required bool includeClients}) {
+  if (index == 0) return false; // Agenda
+  if (includeClients && index == 1) return false; // Clienti
+  return true;
+}
+
+int resolveMoreCompactBranchTarget({
+  required int lastMoreBranchIndex,
+  required bool includeClients,
+}) {
+  if (isMoreCompactBranchIndex(lastMoreBranchIndex, includeClients: includeClients)) {
+    return lastMoreBranchIndex;
+  }
+  return 6; // Fallback: root "Altro"
+}
+
 Widget _buildAddButtonContent({
   required bool showLabelEffective,
   required bool compact,
@@ -95,6 +111,7 @@ class ScaffoldWithNavigation extends ConsumerStatefulWidget {
 class _ScaffoldWithNavigationState
     extends ConsumerState<ScaffoldWithNavigation> {
   int? _lastShellIndex;
+  int _lastMoreBranchIndex = 6;
 
   @override
   Widget build(BuildContext context) {
@@ -182,6 +199,7 @@ class _ScaffoldWithNavigationState
       orElse: () => false,
     );
     final showSwitchBusiness = isSuperadmin || hasMultipleBusinesses;
+    _rememberLastMoreBranchIndex(currentIndex, includeClients: showClientsNav);
 
     // Per mobile e desktop usiamo destinazioni compatte con "Altro"
     final mobileDestinations =
@@ -595,8 +613,8 @@ class _ScaffoldWithNavigationState
     WidgetRef ref, {
     bool forceInitialLocation = false,
   }) {
-    // Protezione: i branch validi sono 0-6
-    if (index < 0 || index > 6) {
+    // Protezione minima: indice negativo non valido.
+    if (index < 0) {
       debugPrint('_goBranch: invalid index $index, ignoring');
       return;
     }
@@ -614,11 +632,35 @@ class _ScaffoldWithNavigationState
       _refreshProvidersForTab(index, ref);
     }
 
-    widget.navigationShell.goBranch(
-      index,
-      initialLocation:
-          forceInitialLocation || index == widget.navigationShell.currentIndex,
+    try {
+      widget.navigationShell.goBranch(
+        index,
+        initialLocation: forceInitialLocation,
+      );
+    } catch (e) {
+      debugPrint('_goBranch: failed for index $index ($e)');
+    }
+  }
+
+  bool _isMoreCompactBranch(int index, {required bool includeClients}) {
+    return isMoreCompactBranchIndex(index, includeClients: includeClients);
+  }
+
+  int _resolveMoreBranchTarget({required bool includeClients}) {
+    return resolveMoreCompactBranchTarget(
+      lastMoreBranchIndex: _lastMoreBranchIndex,
+      includeClients: includeClients,
     );
+  }
+
+  void _rememberLastMoreBranchIndex(
+    int currentIndex, {
+    required bool includeClients,
+  }) {
+    // "Altro" compatto include tutti i branch non mappati su Agenda/Clienti.
+    if (_isMoreCompactBranch(currentIndex, includeClients: includeClients)) {
+      _lastMoreBranchIndex = currentIndex;
+    }
   }
 
   /// Ricarica i provider relativi alla tab selezionata
@@ -635,7 +677,6 @@ class _ScaffoldWithNavigationState
         break;
       case 1: // Clienti
         if (canManageClients) {
-          ref.read(clientsProvider.notifier).setSearchQuery('');
           ref.read(clientsProvider.notifier).refresh();
           ref.read(clientAppointmentsRefreshProvider.notifier).bump();
         }
@@ -694,7 +735,7 @@ class _ScaffoldWithNavigationState
     }
     final moreIndex = includeClients ? 2 : 1;
     if (desktopIndex == moreIndex) {
-      _goBranch(6, ref, forceInitialLocation: true);
+      _goBranch(_resolveMoreBranchTarget(includeClients: includeClients), ref);
     }
   }
 
@@ -738,7 +779,7 @@ class _ScaffoldWithNavigationState
     }
     final moreIndex = includeClients ? 2 : 1;
     if (mobileIndex == moreIndex) {
-      _goBranch(6, ref, forceInitialLocation: true);
+      _goBranch(_resolveMoreBranchTarget(includeClients: includeClients), ref);
     }
   }
 

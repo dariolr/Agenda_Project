@@ -29,6 +29,7 @@ final clientsApiProvider = Provider<ClientsApi>((ref) {
 class ClientsState {
   final List<Client> clients;
   final int total;
+  final int allClientsTotal;
   final bool hasMore;
   final bool isLoadingMore;
   final bool isSearching;
@@ -38,6 +39,7 @@ class ClientsState {
   const ClientsState({
     this.clients = const [],
     this.total = 0,
+    this.allClientsTotal = 0,
     this.hasMore = false,
     this.isLoadingMore = false,
     this.isSearching = false,
@@ -48,6 +50,7 @@ class ClientsState {
   ClientsState copyWith({
     List<Client>? clients,
     int? total,
+    int? allClientsTotal,
     bool? hasMore,
     bool? isLoadingMore,
     bool? isSearching,
@@ -57,6 +60,7 @@ class ClientsState {
     return ClientsState(
       clients: clients ?? this.clients,
       total: total ?? this.total,
+      allClientsTotal: allClientsTotal ?? this.allClientsTotal,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       isSearching: isSearching ?? this.isSearching,
@@ -112,6 +116,7 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
     return ClientsState(
       clients: response.clients,
       total: response.total,
+      allClientsTotal: response.total,
       hasMore: response.hasMore,
     );
   }
@@ -145,6 +150,9 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
       return ClientsState(
         clients: response.clients,
         total: response.total,
+        allClientsTotal: current.searchQuery.trim().isEmpty
+            ? response.total
+            : current.allClientsTotal,
         hasMore: response.hasMore,
         searchQuery: current.searchQuery,
         sortOption: option,
@@ -206,6 +214,11 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
         ClientsState(
           clients: response.clients,
           total: response.total,
+          allClientsTotal: trimmedQuery.isEmpty
+              ? response.total
+              : ((latest.allClientsTotal > 0)
+                    ? latest.allClientsTotal
+                    : response.total),
           hasMore: response.hasMore,
           searchQuery: latest.searchQuery,
           sortOption: latest.sortOption,
@@ -250,6 +263,9 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
         current.copyWith(
           clients: [...current.clients, ...response.clients],
           total: response.total,
+          allClientsTotal: current.searchQuery.trim().isEmpty
+              ? response.total
+              : current.allClientsTotal,
           hasMore: response.hasMore,
           isLoadingMore: false,
         ),
@@ -290,6 +306,11 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
       return ClientsState(
         clients: response.clients,
         total: response.total,
+        allClientsTotal: searchQuery.trim().isEmpty
+            ? response.total
+            : ((current?.allClientsTotal ?? 0) > 0
+                  ? current!.allClientsTotal
+                  : response.total),
         hasMore: response.hasMore,
         searchQuery: searchQuery,
         sortOption: sortOption,
@@ -307,6 +328,7 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
       current.copyWith(
         clients: [newClient, ...current.clients],
         total: current.total + 1,
+        allClientsTotal: current.allClientsTotal + 1,
       ),
     );
     return newClient;
@@ -377,7 +399,7 @@ final clientSearchQueryProvider = Provider<String>((ref) {
 /// Usa il totale dal server, non la lista locale
 final totalClientsCountProvider = Provider<int>((ref) {
   final asyncState = ref.watch(clientsProvider);
-  return asyncState.value?.total ?? 0;
+  return asyncState.value?.allClientsTotal ?? 0;
 });
 
 // Segmenti

@@ -36,8 +36,8 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Errore: $e')),
         data: (clientsState) {
-          final filteredClients = ref.watch(filteredClientsProvider);
-          final totalClients = clientsState.total;
+          final totalClients = clientsState.allClientsTotal;
+          final totalSearchResults = clientsState.total;
           final hasSearch = searchQuery.trim().isNotEmpty;
 
           return Padding(
@@ -64,7 +64,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                       padding: const EdgeInsets.only(right: 8),
                       child: Text(
                         hasSearch
-                            ? '${filteredClients.length}/$totalClients ${context.l10n.navClients.toLowerCase()}'
+                            ? '$totalClients/$totalSearchResults ${context.l10n.navClients.toLowerCase()}'
                             : '$totalClients ${context.l10n.navClients.toLowerCase()}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: Theme.of(context).colorScheme.outline,
