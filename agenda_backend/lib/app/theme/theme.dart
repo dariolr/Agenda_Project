@@ -174,6 +174,11 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
             : null,
       ),
     ),
+    tabBarTheme: base.tabBarTheme.copyWith(
+      splashBorderRadius: const BorderRadius.vertical(
+        top: Radius.circular(10),
+      ),
+    ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: primary,
