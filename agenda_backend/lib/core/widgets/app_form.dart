@@ -43,19 +43,33 @@ class AppForm {
 
     final effectivePadding =
         padding ?? const EdgeInsets.symmetric(horizontal: 20, vertical: 16);
+    final effectiveMaxHeightFactor = heightFactor == null
+        ? (maxHeightFactor ?? defaultBottomSheetHeightFactor)
+        : maxHeightFactor;
+    final mediaQuery = MediaQuery.of(context);
+    final routeMaxHeightFactor = (heightFactor ??
+            effectiveMaxHeightFactor ??
+            defaultBottomSheetHeightFactor)
+        .clamp(0.0, 1.0);
+
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: isScrollControlled,
+      isDismissible: barrierDismissible,
+      enableDrag: barrierDismissible,
       backgroundColor: Colors.white,
       useSafeArea: useSafeArea,
       useRootNavigator: useRootNavigator,
+      constraints: BoxConstraints(
+        maxHeight: mediaQuery.size.height * routeMaxHeightFactor,
+      ),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => AppBottomSheetFormContainer(
         padding: effectivePadding,
         heightFactor: heightFactor,
-        maxHeightFactor: maxHeightFactor,
+        maxHeightFactor: effectiveMaxHeightFactor,
         child: builder(ctx),
       ),
     );
@@ -130,11 +144,14 @@ class AppBottomSheetFormContainer extends StatelessWidget {
           )
         : content;
 
-    return AnimatedPadding(
-      padding: EdgeInsets.only(bottom: keyboardInset),
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOut,
-      child: body,
+    return Material(
+      type: MaterialType.transparency,
+      child: AnimatedPadding(
+        padding: EdgeInsets.only(bottom: keyboardInset),
+        duration: const Duration(milliseconds: 180),
+        curve: Curves.easeOut,
+        child: body,
+      ),
     );
   }
 }
