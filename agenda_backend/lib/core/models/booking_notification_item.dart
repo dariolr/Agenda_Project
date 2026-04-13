@@ -54,11 +54,13 @@ class BookingNotificationItem {
   });
 
   Color get statusColor {
-    switch (status) {
+    switch (effectiveStatus) {
       case 'sent':
         return Colors.green;
       case 'failed':
         return Colors.red;
+      case 'skipped':
+        return Colors.grey;
       case 'processing':
         return Colors.blue;
       case 'pending':
@@ -70,7 +72,7 @@ class BookingNotificationItem {
 
   String statusLabel(BuildContext context) {
     final l10n = context.l10n;
-    switch (status) {
+    switch (effectiveStatus) {
       case 'pending':
         return l10n.bookingNotificationsStatusPending;
       case 'processing':
@@ -79,10 +81,15 @@ class BookingNotificationItem {
         return l10n.bookingNotificationsStatusSent;
       case 'failed':
         return l10n.bookingNotificationsStatusFailed;
+      case 'skipped':
+        return l10n.bookingNotificationsStatusSkipped;
       default:
         return status;
     }
   }
+
+  String get effectiveStatus =>
+      isLateWindowReplacedReminderFailure ? 'skipped' : status;
 
   String channelLabel(BuildContext context) {
     final l10n = context.l10n;
@@ -98,6 +105,29 @@ class BookingNotificationItem {
       default:
         return channel;
     }
+  }
+
+  /// Alcuni reminder vengono marcati "failed" dal backend quando il booking è
+  /// stato rimpiazzato e il job esce dalla finestra -24h.
+  /// Non sono errori operativi da mostrare nei "falliti".
+  bool get isLateWindowReplacedReminderFailure {
+    if (status != 'failed' || channel != 'booking_reminder') {
+      return false;
+    }
+
+    final error = (errorMessage ?? '').toLowerCase();
+    if (error.isEmpty) return false;
+
+    final hasLateWindowSignal =
+        (error.contains('fuori finestra') && error.contains('-24')) ||
+        (error.contains('outside') && error.contains('-24'));
+    final hasReplacedSignal =
+        error.contains('booking status is replaced') ||
+        error.contains('status è replaced') ||
+        error.contains('status is replaced') ||
+        error.contains('replaced');
+
+    return hasLateWindowSignal && hasReplacedSignal;
   }
 
   factory BookingNotificationItem.fromJson(Map<String, dynamic> json) {

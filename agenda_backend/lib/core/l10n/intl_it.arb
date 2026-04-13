@@ -1360,6 +1360,7 @@
   "bookingNotificationsStatusProcessing": "In elaborazione",
   "bookingNotificationsStatusSent": "Inviata",
   "bookingNotificationsStatusFailed": "Fallita",
+  "bookingNotificationsStatusSkipped": "Scartata",
   "bookingNotificationsTypeAll": "Tutti i tipi",
   "bookingNotificationsChannelConfirmed": "Prenotazione creata",
   "bookingNotificationsChannelRescheduled": "Prenotazione riprogrammata",

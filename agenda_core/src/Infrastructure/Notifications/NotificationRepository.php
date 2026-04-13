@@ -237,7 +237,7 @@ final class NotificationRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'DELETE FROM notification_queue 
-             WHERE status IN ("sent", "failed")
+             WHERE status IN ("sent", "failed", "skipped")
                AND created_at < DATE_SUB(NOW(), INTERVAL :days DAY)'
         );
         $stmt->execute(['days' => $daysToKeep]);

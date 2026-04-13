@@ -600,6 +600,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotificationsStatusSent": MessageLookupByLibrary.simpleMessage(
       "Inviata",
     ),
+    "bookingNotificationsStatusSkipped": MessageLookupByLibrary.simpleMessage(
+      "Scartata",
+    ),
     "bookingNotificationsTitle": MessageLookupByLibrary.simpleMessage(
       "Notifiche Prenotazioni",
     ),

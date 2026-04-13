@@ -248,7 +248,7 @@ final class QueueBookingReminder
                    SELECT 1 FROM notification_queue nq 
                    WHERE nq.booking_id = b.id 
                      AND nq.channel = "booking_reminder"
-                     AND nq.status IN ("pending", "processing", "sent")
+                     AND nq.status IN ("pending", "processing", "sent", "skipped")
                )
              GROUP BY b.id
              LIMIT 1000'

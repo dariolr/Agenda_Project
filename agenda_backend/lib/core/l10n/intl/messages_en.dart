@@ -575,6 +575,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotificationsStatusSent": MessageLookupByLibrary.simpleMessage(
       "Sent",
     ),
+    "bookingNotificationsStatusSkipped": MessageLookupByLibrary.simpleMessage(
+      "Skipped",
+    ),
     "bookingNotificationsTitle": MessageLookupByLibrary.simpleMessage(
       "Booking Notifications",
     ),

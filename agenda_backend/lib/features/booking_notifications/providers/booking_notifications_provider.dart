@@ -226,7 +226,15 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
         limit: pageSize,
         offset: offset,
       );
-      return BookingNotificationsResult.fromJson(response);
+      final result = BookingNotificationsResult.fromJson(response);
+      final visible = _applyClientVisibilityRules(result.notifications, filters);
+      final hiddenCount = result.notifications.length - visible.length;
+      return BookingNotificationsResult(
+        notifications: visible,
+        total: (result.total - hiddenCount).clamp(0, result.total),
+        limit: result.limit,
+        offset: result.offset,
+      );
     }
 
     final perBusinessLimit = offset + pageSize;
@@ -250,7 +258,7 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
     for (final response in responses) {
       final result = BookingNotificationsResult.fromJson(response);
       total += result.total;
-      merged.addAll(result.notifications);
+      merged.addAll(_applyClientVisibilityRules(result.notifications, filters));
     }
 
     merged.sort((a, b) => _compareBySort(a, b, filters.sortBy, filters.sortOrder));
@@ -302,5 +310,20 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
       return a.id.compareTo(b.id);
     }
     return sortOrder == 'asc' ? cmp : -cmp;
+  }
+
+  List<BookingNotificationItem> _applyClientVisibilityRules(
+    List<BookingNotificationItem> notifications,
+    BookingNotificationsFilters filters,
+  ) {
+    final statuses = filters.status;
+    final failedOnly = statuses != null &&
+        statuses.length == 1 &&
+        statuses.first == 'failed';
+    if (!failedOnly) return notifications;
+
+    return notifications
+        .where((item) => !item.isLateWindowReplacedReminderFailure)
+        .toList(growable: false);
   }
 }

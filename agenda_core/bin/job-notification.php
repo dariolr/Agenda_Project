@@ -96,6 +96,7 @@ if ($verbose) {
 
 $sent = 0;
 $failed = 0;
+$skipped = 0;
 
 foreach ($notifications as $notification) {
     $id = (int) $notification['id'];
@@ -128,11 +129,11 @@ foreach ($notifications as $notification) {
             $discardReason = 'Promemoria non inviato: notifica generata in ritardo e fuori finestra -24h (' . $sendDecision['reason'] . ').';
             $failedAt = resolveCurrentTimeForBooking($db->getPdo(), (int) $bookingId);
             if ($verbose) {
-                echo "SKIPPED ({$sendDecision['reason']}) - marking failed\n";
+                echo "SKIPPED ({$sendDecision['reason']}) - marking skipped\n";
             }
             $discardStmt = $db->getPdo()->prepare(
                 'UPDATE notification_queue
-                 SET status = "failed",
+                 SET status = "skipped",
                      failed_at = :failed_at,
                      error_message = :error_message
                  WHERE id = :id'
@@ -142,7 +143,7 @@ foreach ($notifications as $notification) {
                 'failed_at' => $failedAt,
                 'error_message' => $discardReason,
             ]);
-            $failed++;
+            $skipped++;
             continue;
         }
     }
@@ -346,7 +347,7 @@ foreach ($notifications as $notification) {
 
 if ($verbose) {
     echo "---\n";
-    echo "Completed: {$sent} sent, {$failed} failed\n";
+    echo "Completed: {$sent} sent, {$failed} failed, {$skipped} skipped\n";
 }
 
 // Exit with error code if all failed

@@ -1360,6 +1360,7 @@
   "bookingNotificationsStatusProcessing": "Processing",
   "bookingNotificationsStatusSent": "Sent",
   "bookingNotificationsStatusFailed": "Failed",
+  "bookingNotificationsStatusSkipped": "Skipped",
   "bookingNotificationsTypeAll": "All types",
   "bookingNotificationsChannelConfirmed": "Booking created",
   "bookingNotificationsChannelRescheduled": "Booking rescheduled",

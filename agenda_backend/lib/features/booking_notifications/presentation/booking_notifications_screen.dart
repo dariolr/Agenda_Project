@@ -823,6 +823,13 @@ class _FiltersBar extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
+                    DropdownMenuItem<String?>(
+                      value: 'skipped',
+                      child: Text(
+                        l10n.bookingNotificationsStatusSkipped,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
                   ],
                   onChanged: onStatusChanged,
                 ),

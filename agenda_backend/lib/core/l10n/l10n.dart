@@ -8225,6 +8225,16 @@ class L10n {
     );
   }
 
+  /// `Skipped`
+  String get bookingNotificationsStatusSkipped {
+    return Intl.message(
+      'Skipped',
+      name: 'bookingNotificationsStatusSkipped',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `All types`
   String get bookingNotificationsTypeAll {
     return Intl.message(

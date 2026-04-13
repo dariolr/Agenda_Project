@@ -506,7 +506,7 @@ CREATE TABLE `notification_queue` (
   `payload` json NOT NULL COMMENT 'Template variables and metadata',
   `priority` tinyint UNSIGNED NOT NULL DEFAULT '5' COMMENT '1=highest, 10=lowest',
   `scheduled_at` timestamp NULL DEFAULT NULL COMMENT 'For scheduled notifications like reminders',
-  `status` enum('pending','processing','sent','failed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `status` enum('pending','processing','sent','failed','skipped') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
   `attempts` int UNSIGNED NOT NULL DEFAULT '0',
   `max_attempts` int UNSIGNED NOT NULL DEFAULT '3',
   `last_attempt_at` timestamp NULL DEFAULT NULL,
