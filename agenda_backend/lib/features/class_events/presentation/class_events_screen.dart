@@ -932,7 +932,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       for (final member in allStaff) member.id: member.displayName,
     };
     final dateFormat = DateFormat('dd/MM/yyyy');
-    final timeFormat = DateFormat('HH:mm');
     final selectedDayAppointmentsAsync =
         _locationId != null && businessId > 0
         ? ref.watch(
@@ -1320,7 +1319,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                                           ),
                                           title: Text(
                                             '${dateFormat.format(startsAtLocal)} • '
-                                            '${timeFormat.format(startsAtLocal)} - ${timeFormat.format(endsAtLocal)}',
+                                            '${DtFmt.hm(context, startsAtLocal.hour, startsAtLocal.minute)} - ${DtFmt.hm(context, endsAtLocal.hour, endsAtLocal.minute)}',
                                           ),
                                           subtitle: Text(
                                             '$locationName • $staffName',

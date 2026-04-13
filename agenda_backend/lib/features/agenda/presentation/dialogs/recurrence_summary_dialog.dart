@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/l10n/date_time_formats.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/widgets/app_buttons.dart';
 
@@ -200,7 +201,6 @@ class _RecurrenceSummaryDialogState extends State<RecurrenceSummaryDialog> {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final dateFormat = DateFormat('EEE dd MMM yyyy', 'it');
-    final timeFormat = DateFormat('HH:mm', 'it');
 
     // Combina tutte le date (create, eliminate, saltate) ordinate per data
     final allDates = <_CombinedDateItem>[];
@@ -365,7 +365,11 @@ class _RecurrenceSummaryDialogState extends State<RecurrenceSummaryDialog> {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
-                            timeFormat.format(item.startTime),
+                            DtFmt.hm(
+                              context,
+                              item.startTime.hour,
+                              item.startTime.minute,
+                            ),
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: isDisabled
                                   ? theme.colorScheme.onSurfaceVariant
@@ -569,7 +573,6 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final dateFormat = DateFormat('EEE dd MMM yyyy', 'it');
-    final timeFormat = DateFormat('HH:mm', 'it');
 
     final selectedCount = widget.preview.dates.length - _excludedIndices.length;
     final blockedCount = widget.preview.dates
@@ -690,7 +693,11 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
                             ),
                           )
                         : Text(
-                            timeFormat.format(date.startTime),
+                            DtFmt.hm(
+                              context,
+                              date.startTime.hour,
+                              date.startTime.minute,
+                            ),
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: isExcluded
                                   ? theme.colorScheme.onSurfaceVariant

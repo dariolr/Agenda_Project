@@ -3,7 +3,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 
+import '/core/l10n/date_time_formats.dart';
 import '/core/l10n/l10_extension.dart';
 import '/core/models/business.dart';
 import '/core/models/location.dart';
@@ -1320,7 +1322,7 @@ class _WhatsappManagementPanelState
                           overflow: TextOverflow.ellipsis,
                         ),
                         subtitle: Text(
-                          '${_outboxStatusLabel(context, item.status)} • ${l10n.whatsappLastUpdate}: ${item.updatedAt?.toLocal().toString().split(".").first ?? "-"}',
+                          '${_outboxStatusLabel(context, item.status)} • ${l10n.whatsappLastUpdate}: ${_formatOutboxUpdatedAt(context, item.updatedAt)}',
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -1348,6 +1350,15 @@ class _WhatsappManagementPanelState
         ],
       ),
     );
+  }
+
+  String _formatOutboxUpdatedAt(BuildContext context, DateTime? dateTime) {
+    if (dateTime == null) return '-';
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final local = dateTime.toLocal();
+    final date = DateFormat.yMd(locale).format(local);
+    final time = DtFmt.hm(context, local.hour, local.minute);
+    return '$date $time';
   }
 }
 

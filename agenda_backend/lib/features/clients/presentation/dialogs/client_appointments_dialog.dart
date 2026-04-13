@@ -1,4 +1,5 @@
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
+import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -170,7 +171,6 @@ class _AppointmentTile extends ConsumerWidget {
         .firstOrNull;
 
     final dateFormat = DateFormat('EEE d MMM', locale);
-    final timeFormat = DateFormat('HH:mm', locale);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
@@ -190,7 +190,11 @@ class _AppointmentTile extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  timeFormat.format(appointment.startTime),
+                  DtFmt.hm(
+                    context,
+                    appointment.startTime.hour,
+                    appointment.startTime.minute,
+                  ),
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),

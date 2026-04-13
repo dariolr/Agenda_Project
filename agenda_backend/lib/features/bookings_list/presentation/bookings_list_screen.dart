@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '/app/providers/form_factor_provider.dart';
+import '/core/l10n/date_time_formats.dart';
 import '/core/l10n/l10_extension.dart';
 import '/core/models/booking_list_item.dart';
 import '/core/models/service.dart';
@@ -803,7 +804,6 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
     required bool canManageBookings,
   }) {
     final l10n = context.l10n;
-    final dateFormat = DateFormat('dd/MM/yy HH:mm');
     final dateOnlyFormat = DateFormat('dd/MM/yy');
 
     return DataRow(
@@ -828,7 +828,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
                 ),
               Text(
                 booking.firstStartTime != null
-                    ? dateFormat.format(booking.firstStartTime!)
+                    ? _formatShortDateTime(booking.firstStartTime!)
                     : '-',
               ),
             ],
@@ -953,6 +953,13 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
         );
       },
     );
+  }
+
+  String _formatShortDateTime(DateTime dateTime) {
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final date = DateFormat('dd/MM/yy', locale).format(dateTime);
+    final time = DtFmt.hm(context, dateTime.hour, dateTime.minute);
+    return '$date $time';
   }
 }
 
@@ -1665,7 +1672,6 @@ class _BookingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final dateFormat = DateFormat('EEE dd/MM HH:mm', 'it_IT');
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -1700,7 +1706,10 @@ class _BookingCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           booking.firstStartTime != null
-                              ? dateFormat.format(booking.firstStartTime!)
+                              ? _formatCardDateTime(
+                                  context,
+                                  booking.firstStartTime!,
+                                )
                               : '-',
                           style: Theme.of(context).textTheme.titleMedium
                               ?.copyWith(fontWeight: FontWeight.w600),
@@ -1812,5 +1821,12 @@ class _BookingCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _formatCardDateTime(BuildContext context, DateTime dateTime) {
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final date = DateFormat('EEE dd/MM', locale).format(dateTime);
+    final time = DtFmt.hm(context, dateTime.hour, dateTime.minute);
+    return '$date $time';
   }
 }

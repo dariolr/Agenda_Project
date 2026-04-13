@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '/app/providers/form_factor_provider.dart';
+import '/core/l10n/date_time_formats.dart';
 import '/core/l10n/l10_extension.dart';
 import '/core/models/business.dart';
 import '/core/models/booking_notification_item.dart';
@@ -109,7 +110,9 @@ class _BookingNotificationsScreenState
     final tenantDateTime = dateTime.isUtc
         ? TenantTimeService.fromUtcToTenant(dateTime, timezone)
         : TenantTimeService.assumeTenantLocal(dateTime, timezone);
-    return DateFormat('dd/MM/yyyy HH:mm', locale).format(tenantDateTime);
+    final date = DateFormat('dd/MM/yyyy', locale).format(tenantDateTime);
+    final time = DtFmt.hm(context, tenantDateTime.hour, tenantDateTime.minute);
+    return '$date $time';
   }
 
   void _onScroll() {
@@ -912,7 +915,9 @@ class _NotificationCard extends ConsumerWidget {
     final tenantDateTime = dateTime.isUtc
         ? TenantTimeService.fromUtcToTenant(dateTime, timezone)
         : TenantTimeService.assumeTenantLocal(dateTime, timezone);
-    return DateFormat('dd/MM/yyyy HH:mm', locale).format(tenantDateTime);
+    final date = DateFormat('dd/MM/yyyy', locale).format(tenantDateTime);
+    final time = DtFmt.hm(context, tenantDateTime.hour, tenantDateTime.minute);
+    return '$date $time';
   }
 
   @override

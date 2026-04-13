@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/l10n/date_time_formats.dart';
 import '../../../../../core/services/tenant_time_service.dart';
 import '../../../providers/date_range_provider.dart';
 import '../../../providers/initial_scroll_provider.dart';
@@ -119,8 +120,7 @@ class _CurrentTimeLineState extends ConsumerState<CurrentTimeLine> {
     final layout = ref.watch(layoutConfigProvider);
     final now = _tenantNow(timezone);
     final minutesSinceMidnight = now.hour * 60 + now.minute;
-    final liveLabel =
-        "${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}";
+    final liveLabel = DtFmt.hm(context, now.hour, now.minute);
     final liveOffset = layout.offsetForMinuteOfDay(minutesSinceMidnight);
 
     final persistedVerticalOffset = ref.watch(agendaVerticalOffsetProvider);

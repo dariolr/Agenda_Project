@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 
 import '/core/models/appointment.dart';
+import '/core/l10n/date_time_formats.dart';
 import '/core/utils/price_utils.dart';
 import '/core/utils/string_utils.dart';
 import '../../../../../../app/providers/form_factor_provider.dart';
@@ -960,11 +961,10 @@ class _AppointmentCardInteractiveState
     );
 
     final dayBoundary = dayStart.add(const Duration(days: 1));
-    if (time.isAtSameMomentAs(dayBoundary)) return '24:00';
-
-    final hours = time.hour.toString().padLeft(2, '0');
-    final minutes = time.minute.toString().padLeft(2, '0');
-    return '$hours:$minutes';
+    if (time.isAtSameMomentAs(dayBoundary)) {
+      return DtFmt.use24h(context) ? '24:00' : DtFmt.hm(context, 0, 0);
+    }
+    return DtFmt.hm(context, time.hour, time.minute);
   }
 
   BorderRadius _scaleBorderRadius(BorderRadius radius, double factor) {

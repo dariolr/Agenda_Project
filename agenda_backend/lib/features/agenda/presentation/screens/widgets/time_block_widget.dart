@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/l10n/date_time_formats.dart';
 import '../../../../../core/l10n/l10_extension.dart';
 import '../../../../../core/models/time_block.dart';
 import '../../../domain/config/layout_config.dart';
@@ -316,10 +317,12 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
     if (block.isAllDay) {
       return context.l10n.blockAllDay;
     }
-    final start =
-        '${block.startTime.hour.toString().padLeft(2, '0')}:${block.startTime.minute.toString().padLeft(2, '0')}';
-    final end =
-        '${block.endTime.hour.toString().padLeft(2, '0')}:${block.endTime.minute.toString().padLeft(2, '0')}';
+    final start = DtFmt.hm(
+      context,
+      block.startTime.hour,
+      block.startTime.minute,
+    );
+    final end = DtFmt.hm(context, block.endTime.hour, block.endTime.minute);
     return '$start - $end';
   }
 }

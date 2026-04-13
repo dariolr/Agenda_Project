@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '/core/l10n/date_time_formats.dart';
 import '../../../../domain/config/agenda_theme.dart';
 import '../../../../providers/layout_config_provider.dart';
 import '../../widgets/agenda_dividers.dart';
@@ -30,7 +31,7 @@ class HourColumn extends ConsumerWidget {
                 Align(
                   alignment: Alignment.center,
                   child: Text(
-                    "${hour.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}",
+                    DtFmt.hm(context, hour, minutes),
                     textAlign: TextAlign.center,
                     style: AgendaTheme.hourTextStyle,
                   ),
