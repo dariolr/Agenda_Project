@@ -1495,20 +1495,28 @@ class _AppointmentCardInteractiveState
                       ? Row(
                           mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            Text(
-                              bookingTotal,
-                              maxLines: 1,
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
-                              style: priceSecondaryTextStyle,
+                            Flexible(
+                              flex: 1,
+                              child: Text(
+                                bookingTotal,
+                                maxLines: 1,
+                                softWrap: false,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.right,
+                                style: priceSecondaryTextStyle,
+                              ),
                             ),
                             const SizedBox(width: 6),
-                            Text(
-                              appointmentPrice,
-                              maxLines: 1,
-                              softWrap: false,
-                              overflow: TextOverflow.ellipsis,
-                              style: appointmentPriceTextStyle,
+                            Flexible(
+                              flex: 2,
+                              child: Text(
+                                appointmentPrice,
+                                maxLines: 1,
+                                softWrap: false,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.right,
+                                style: appointmentPriceTextStyle,
+                              ),
                             ),
                           ],
                         )

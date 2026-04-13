@@ -1,3 +1,4 @@
+import 'package:agenda_backend/app/widgets/client_circle_avatar.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -5,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
-import '../../../../core/utils/color_utils.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../auth/providers/current_business_user_provider.dart';
 import '../../domain/clients.dart';
@@ -36,7 +36,6 @@ class ClientCard extends ConsumerWidget {
     final isPhoneValid = phone != null && _isValidPhone(phone);
     final emailTap = isEmailValid ? () => _openEmail(email) : null;
     final phoneTap = isPhoneValid ? () => _openPhone(phone) : null;
-    final avatarColor = _resolveClientAvatarColor(client, scheme.primary);
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -57,10 +56,9 @@ class ClientCard extends ConsumerWidget {
                 children: [
                   Row(
                     children: [
-                      StaffCircleAvatar(
+                      ClientCircleAvatar(
                         height: 36,
-                        color: avatarColor,
-                        isHighlighted: false,
+                        clientColorHex: client.colorHex,
                         initials: client.name.isNotEmpty
                             ? initialsFromName(client.name, maxChars: 2)
                             : '?',
@@ -126,16 +124,6 @@ class ClientCard extends ConsumerWidget {
     // Esempio coerente con altre parti dell'app (e.g. staff widgets): d MMM y
     final formatted = DateFormat('d MMM y', locale).format(date);
     return context.l10n.lastVisitLabel(formatted);
-  }
-}
-
-Color _resolveClientAvatarColor(Client client, Color fallback) {
-  final hex = client.colorHex;
-  if (hex == null || hex.isEmpty) return fallback;
-  try {
-    return ColorUtils.fromHex(hex);
-  } catch (_) {
-    return fallback;
   }
 }
 

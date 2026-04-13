@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
+import 'package:agenda_backend/app/widgets/client_circle_avatar.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/models/popular_service.dart';
@@ -2504,6 +2505,15 @@ class _ClientSelectionField extends ConsumerWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final hasClient = clientId != null || clientName.isNotEmpty;
+    String? selectedClientColorHex;
+    if (clientId != null) {
+      for (final client in clients) {
+        if (client.id == clientId) {
+          selectedClientColorHex = client.colorHex;
+          break;
+        }
+      }
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2516,6 +2526,7 @@ class _ClientSelectionField extends ConsumerWidget {
         if (hasClient)
           _SelectedClientTile(
             clientName: clientName,
+            clientColorHex: selectedClientColorHex,
             onTap: isLocked
                 ? (canOpenClientProfile && clientId != null
                       ? () => _openClientProfile(context, ref)
@@ -2683,11 +2694,13 @@ class _ClientSelectionField extends ConsumerWidget {
 class _SelectedClientTile extends StatelessWidget {
   const _SelectedClientTile({
     required this.clientName,
+    this.clientColorHex,
     this.onTap,
     this.onRemove,
   });
 
   final String clientName;
+  final String? clientColorHex;
   final VoidCallback? onTap;
   final VoidCallback? onRemove;
 
@@ -2712,10 +2725,9 @@ class _SelectedClientTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            StaffCircleAvatar(
+            ClientCircleAvatar(
               height: 32,
-              color: theme.colorScheme.primary,
-              isHighlighted: false,
+              clientColorHex: clientColorHex,
               initials: clientName.isNotEmpty
                   ? initialsFromName(clientName, maxChars: 2)
                   : '?',
@@ -2917,9 +2929,9 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
                       final client = clients[index];
                       final isSelected = client.id == widget.selectedClientId;
                       return ListTile(
-                        leading: StaffCircleAvatar(
+                        leading: ClientCircleAvatar(
                           height: 32,
-                          color: theme.colorScheme.primary,
+                          clientColorHex: client.colorHex,
                           isHighlighted: isSelected,
                           initials: client.name.isNotEmpty
                               ? initialsFromName(client.name, maxChars: 2)
