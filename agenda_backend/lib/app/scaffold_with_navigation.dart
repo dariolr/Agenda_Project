@@ -199,7 +199,11 @@ class _ScaffoldWithNavigationState
       orElse: () => false,
     );
     final showSwitchBusiness = isSuperadmin || hasMultipleBusinesses;
-    _rememberLastMoreBranchIndex(currentIndex, includeClients: showClientsNav);
+    _rememberLastMoreBranchIndex(
+      currentIndex,
+      includeClients: showClientsNav,
+      currentPath: currentPath,
+    );
 
     // Per mobile e desktop usiamo destinazioni compatte con "Altro"
     final mobileDestinations =
@@ -656,7 +660,12 @@ class _ScaffoldWithNavigationState
   void _rememberLastMoreBranchIndex(
     int currentIndex, {
     required bool includeClients,
+    required String currentPath,
   }) {
+    final isInsideAltroPath =
+        currentPath == '/altro' || currentPath.startsWith('/altro/');
+    if (!isInsideAltroPath) return;
+
     // "Altro" compatto include tutti i branch non mappati su Agenda/Clienti.
     if (_isMoreCompactBranch(currentIndex, includeClients: includeClients)) {
       _lastMoreBranchIndex = currentIndex;
@@ -735,7 +744,13 @@ class _ScaffoldWithNavigationState
     }
     final moreIndex = includeClients ? 2 : 1;
     if (desktopIndex == moreIndex) {
-      _goBranch(_resolveMoreBranchTarget(includeClients: includeClients), ref);
+      final currentPath = GoRouterState.of(context).uri.path;
+      final isAltroSubFeatureOpen = currentPath.startsWith('/altro/');
+      if (isAltroSubFeatureOpen) {
+        _goBranch(6, ref, forceInitialLocation: true);
+      } else {
+        _goBranch(_resolveMoreBranchTarget(includeClients: includeClients), ref);
+      }
     }
   }
 
@@ -779,7 +794,13 @@ class _ScaffoldWithNavigationState
     }
     final moreIndex = includeClients ? 2 : 1;
     if (mobileIndex == moreIndex) {
-      _goBranch(_resolveMoreBranchTarget(includeClients: includeClients), ref);
+      final currentPath = GoRouterState.of(context).uri.path;
+      final isAltroSubFeatureOpen = currentPath.startsWith('/altro/');
+      if (isAltroSubFeatureOpen) {
+        _goBranch(6, ref, forceInitialLocation: true);
+      } else {
+        _goBranch(_resolveMoreBranchTarget(includeClients: includeClients), ref);
+      }
     }
   }
 
