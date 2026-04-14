@@ -1,6 +1,7 @@
 import 'package:agenda_backend/features/agenda/presentation/screens/day_view/multi_staff_day_view.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/initial_scroll_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -187,6 +188,7 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
   @override
   Widget build(BuildContext context) {
     final date = ref.watch(agendaDateProvider);
+    final locationId = ref.watch(currentLocationIdProvider);
     final currentScrollOffset = _getCurrentScrollOffset();
 
     // calcola direzione
@@ -230,7 +232,7 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
       },
       // 👇 chiave unica e realmente diversa a ogni data
       child: _AnimatedDayContainer(
-        key: ValueKey('day-${date.toIso8601String()}'),
+        key: ValueKey('day-$locationId-${date.toIso8601String()}'),
         date: date,
         staffList: widget.staffList,
         currentScrollOffset: currentScrollOffset,
