@@ -14,6 +14,7 @@ import '/core/models/location.dart';
 import '/core/models/staff.dart';
 import '/core/network/api_client.dart';
 import '/core/services/tenant_time_service.dart';
+import '/core/utils/color_utils.dart';
 import '/core/widgets/app_bottom_sheet.dart';
 import '/core/widgets/app_buttons.dart';
 import '/core/widgets/app_form.dart';
@@ -48,6 +49,18 @@ String _resolveClassTypeErrorMessage(Object error, BuildContext context) {
     return error.message;
   }
   return l10n.classTypesMutationErrorMessage;
+}
+
+Color? _tryParseHexColor(String? hex) {
+  final value = hex?.trim() ?? '';
+  if (!RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(value)) {
+    return null;
+  }
+  try {
+    return ColorUtils.fromHex(value);
+  } catch (_) {
+    return null;
+  }
 }
 
 class ClassEventsScreen extends ConsumerWidget {
@@ -213,6 +226,7 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
     final borderColor = _isHovering
         ? colorScheme.primary.withOpacity(0.45)
         : colorScheme.outline.withOpacity(0.2);
+    final classColor = _tryParseHexColor(widget.classType.colorHex);
 
     return MouseRegion(
       cursor: canOpenEdit ? SystemMouseCursors.click : MouseCursor.defer,
@@ -240,6 +254,20 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
               children: [
             Row(
               children: [
+                if (classColor != null) ...[
+                  Container(
+                    width: 12,
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: classColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: colorScheme.outline.withOpacity(0.5),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 Expanded(
                   child: Text(
                     widget.classType.name,
@@ -659,6 +687,7 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
           .create(
             name: candidateName,
             description: source.description,
+            colorHex: source.colorHex,
             isActive: source.isActive,
             locationIds: source.locationIds,
           );
@@ -762,11 +791,30 @@ class _ClassTypeFormDialog extends ConsumerStatefulWidget {
 }
 
 class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
+  static const List<Color> _classTypePalette = [
+    Color(0xFFE53935),
+    Color(0xFFD81B60),
+    Color(0xFF8E24AA),
+    Color(0xFF5E35B1),
+    Color(0xFF3949AB),
+    Color(0xFF1E88E5),
+    Color(0xFF039BE5),
+    Color(0xFF00ACC1),
+    Color(0xFF00897B),
+    Color(0xFF43A047),
+    Color(0xFF7CB342),
+    Color(0xFFC0CA33),
+    Color(0xFFFDD835),
+    Color(0xFFFFB300),
+    Color(0xFFFB8C00),
+    Color(0xFFF4511E),
+  ];
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
   late bool _isActive;
   late Set<int> _selectedLocationIds;
+  String? _selectedColorHex;
   bool _hasChangedLocationSelection = false;
 
   bool get _isEdit => widget.initial != null;
@@ -780,6 +828,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     );
     _isActive = widget.initial?.isActive ?? true;
     _selectedLocationIds = {...?widget.initial?.locationIds};
+    _selectedColorHex = widget.initial?.colorHex;
   }
 
   @override
@@ -855,6 +904,13 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
               labelText: l10n.classTypesFieldDescriptionOptional,
               border: const OutlineInputBorder(),
             ),
+          ),
+          const SizedBox(height: 10),
+          _ClassTypeColorPicker(
+            selectedColorHex: _selectedColorHex,
+            palette: _classTypePalette,
+            enabled: !isLoading,
+            onChanged: (hex) => setState(() => _selectedColorHex = hex),
           ),
           const SizedBox(height: 8),
           SwitchListTile(
@@ -966,6 +1022,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
               classTypeId: widget.initial!.id,
               name: _nameController.text,
               description: _descriptionController.text,
+              colorHex: _selectedColorHex,
               isActive: _isActive,
               locationIds: locationIdsForSubmit,
             );
@@ -975,6 +1032,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
             .create(
               name: _nameController.text,
               description: _descriptionController.text,
+              colorHex: _selectedColorHex,
               isActive: _isActive,
               locationIds: locationIdsForSubmit,
             );
@@ -1087,6 +1145,119 @@ class _ClassTypeLocationsMultiSelect extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _ClassTypeColorPicker extends StatelessWidget {
+  const _ClassTypeColorPicker({
+    required this.selectedColorHex,
+    required this.palette,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final String? selectedColorHex;
+  final List<Color> palette;
+  final bool enabled;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedHex = selectedColorHex?.trim().toUpperCase();
+    final selectedColor = _tryParseHexColor(selectedHex);
+    final paletteHexes = {
+      for (final color in palette) ColorUtils.toHex(color).toUpperCase(),
+    };
+    final showCustomSelected =
+        selectedHex != null &&
+        selectedHex.isNotEmpty &&
+        selectedColor != null &&
+        !paletteHexes.contains(selectedHex);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          context.l10n.teamStaffColorLabel,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            _ClassTypeColorDot(
+              color: null,
+              selected: selectedHex == null || selectedHex.isEmpty,
+              enabled: enabled,
+              onTap: () => onChanged(null),
+            ),
+            for (final color in palette)
+              _ClassTypeColorDot(
+                color: color,
+                selected: selectedHex == ColorUtils.toHex(color).toUpperCase(),
+                enabled: enabled,
+                onTap: () => onChanged(ColorUtils.toHex(color)),
+              ),
+            if (showCustomSelected)
+              _ClassTypeColorDot(
+                color: selectedColor,
+                selected: true,
+                enabled: enabled,
+                onTap: () => onChanged(selectedHex),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _ClassTypeColorDot extends StatelessWidget {
+  const _ClassTypeColorDot({
+    required this.color,
+    required this.selected,
+    required this.enabled,
+    required this.onTap,
+  });
+
+  final Color? color;
+  final bool selected;
+  final bool enabled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final borderColor = selected ? scheme.primary : scheme.outline;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(999),
+      onTap: enabled ? onTap : null,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 160),
+        opacity: enabled ? 1 : 0.45,
+        child: Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: color ?? Colors.transparent,
+            border: Border.all(
+              color: borderColor,
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: color == null
+              ? Icon(
+                  Icons.block,
+                  size: 14,
+                  color: scheme.onSurfaceVariant,
+                )
+              : null,
+        ),
+      ),
     );
   }
 }

@@ -20,6 +20,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/models/appointment.dart';
 import '/core/models/class_event.dart';
+import '/core/models/class_type.dart';
 import '/core/models/staff.dart';
 import '/core/models/time_block.dart';
 import '/core/utils/color_utils.dart';
@@ -60,6 +61,18 @@ import '../helper/layout_geometry_helper.dart';
 import '../widgets/agenda_dividers.dart';
 import '../widgets/appointment_card_base.dart';
 import '../widgets/time_block_widget.dart';
+
+Color? _parseClassTypeColor(String? hex) {
+  final value = hex?.trim() ?? '';
+  if (!RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(value)) {
+    return null;
+  }
+  try {
+    return ColorUtils.fromHex(value);
+  } catch (_) {
+    return null;
+  }
+}
 
 class StaffColumn extends ConsumerStatefulWidget {
   final Staff staff;
@@ -349,8 +362,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final allClassEvents =
         ref.watch(classEventsForCurrentLocationDayProvider).value ?? const [];
     final classTypes = ref.watch(classTypesProvider).value ?? const [];
-    final classTypeNameById = <int, String>{
-      for (final classType in classTypes) classType.id: classType.name,
+    final classTypeById = <int, ClassType>{
+      for (final classType in classTypes) classType.id: classType,
     };
     final staffClassEvents = allClassEvents
         .where(
@@ -555,7 +568,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         staffAppointments,
         staffClassEvents,
         effectiveColumnWidth,
-        classTypeNameById,
+        classTypeById,
       ),
     );
 
@@ -719,7 +732,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     List<Appointment> appointments,
     List<ClassEvent> classEvents,
     double columnWidth,
-    Map<int, String> classTypeNameById,
+    Map<int, ClassType> classTypeById,
   ) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
@@ -937,11 +950,17 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
               event: classEvent,
               width: cardWidth,
               title:
-                  (classTypeNameById[classEvent.classTypeId]?.trim().isNotEmpty ??
+                  (classTypeById[classEvent.classTypeId]?.name
+                          .trim()
+                          .isNotEmpty ??
                       false)
-                  ? classTypeNameById[classEvent.classTypeId]!.trim()
+                  ? classTypeById[classEvent.classTypeId]!.name.trim()
                   : context.l10n.classEventsUntitled,
-              color: Theme.of(context).colorScheme.tertiaryContainer,
+              color:
+                  _parseClassTypeColor(
+                    classTypeById[classEvent.classTypeId]?.colorHex,
+                  ) ??
+                  Theme.of(context).colorScheme.tertiaryContainer,
             ),
           ),
         ),

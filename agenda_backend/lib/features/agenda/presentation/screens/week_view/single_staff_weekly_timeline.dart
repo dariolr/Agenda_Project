@@ -3,6 +3,7 @@ import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/appointment.dart';
 import 'package:agenda_backend/core/models/class_event.dart';
+import 'package:agenda_backend/core/models/class_type.dart';
 import 'package:agenda_backend/core/models/staff.dart';
 import 'package:agenda_backend/core/utils/color_utils.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
@@ -55,6 +56,18 @@ typedef WeekDayColumn = ({
   List<Appointment> appointments,
   List<ClassEvent> classEvents,
 });
+
+Color? _parseClassTypeColor(String? hex) {
+  final value = hex?.trim() ?? '';
+  if (!RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(value)) {
+    return null;
+  }
+  try {
+    return ColorUtils.fromHex(value);
+  } catch (_) {
+    return null;
+  }
+}
 
 class SingleStaffWeeklyTimeline extends ConsumerStatefulWidget {
   const SingleStaffWeeklyTimeline({
@@ -557,8 +570,8 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     final geometry = _buildGeometry(layoutConfig);
     final appointmentColors = _resolveAppointmentColors(context, ref);
     final classTypes = ref.watch(classTypesProvider).value ?? const [];
-    final classTypeNameById = <int, String>{
-      for (final classType in classTypes) classType.id: classType.name,
+    final classTypeById = <int, ClassType>{
+      for (final classType in classTypes) classType.id: classType,
     };
 
     final content = Container(
@@ -664,7 +677,7 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
               event,
               layoutConfig,
               geometry,
-              classTypeNameById,
+              classTypeById,
             ),
         ],
       ),
@@ -814,7 +827,7 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     ClassEvent event,
     LayoutConfig layoutConfig,
     Map<int, EventGeometry> geometry,
-    Map<int, String> classTypeNameById,
+    Map<int, ClassType> classTypeById,
   ) {
     final theme = Theme.of(context);
     final start = event.startsAtLocal ?? event.startsAtUtc.toLocal();
@@ -833,14 +846,16 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     final cardWidth = (contentWidth * eventGeometry.widthFraction - padding * 2)
         .clamp(0.0, double.infinity)
         .toDouble();
-    final color = theme.colorScheme.tertiaryContainer;
+    final classType = classTypeById[event.classTypeId];
+    final parsedColor = _parseClassTypeColor(classType?.colorHex);
+    final color = parsedColor ?? theme.colorScheme.tertiaryContainer;
     final foreground =
         ThemeData.estimateBrightnessForColor(color) == Brightness.dark
         ? Colors.white
         : theme.colorScheme.onTertiaryContainer;
     final classTitle =
-        (classTypeNameById[event.classTypeId]?.trim().isNotEmpty ?? false)
-        ? classTypeNameById[event.classTypeId]!.trim()
+        (classType?.name.trim().isNotEmpty ?? false)
+        ? classType!.name.trim()
         : context.l10n.classEventsUntitled;
 
     return Positioned(

@@ -3,6 +3,7 @@ class ClassType {
   final int businessId;
   final String name;
   final String? description;
+  final String? colorHex;
   final bool isActive;
   final List<int> locationIds;
 
@@ -11,6 +12,7 @@ class ClassType {
     required this.businessId,
     required this.name,
     this.description,
+    this.colorHex,
     required this.isActive,
     this.locationIds = const [],
   });
@@ -21,6 +23,7 @@ class ClassType {
       businessId: (json['business_id'] as num?)?.toInt() ?? 0,
       name: (json['name'] as String?)?.trim() ?? '',
       description: json['description'] as String?,
+      colorHex: (json['color_hex'] as String?)?.trim(),
       isActive:
           (json['is_active'] as bool?) ??
           ((json['is_active'] as num?)?.toInt() == 1),
@@ -36,6 +39,7 @@ class ClassType {
       'business_id': businessId,
       'name': name,
       'description': description,
+      'color_hex': colorHex,
       'is_active': isActive,
       'location_ids': locationIds,
     };

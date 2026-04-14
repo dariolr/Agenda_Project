@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/core/widgets/app_dividers.dart';
+import 'package:agenda_backend/core/widgets/local_loading_overlay.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -55,6 +56,7 @@ class AppForm {
 
     // Policy UX: su mobile/tablet i form in bottom sheet sono sempre dismissable
     // con tap esterno o drag gesture, indipendentemente dal flag del chiamante.
+    final loadingNotifier = ValueNotifier<bool>(false);
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: isScrollControlled,
@@ -63,17 +65,38 @@ class AppForm {
       backgroundColor: Colors.white,
       useSafeArea: useSafeArea,
       useRootNavigator: useRootNavigator,
+      clipBehavior: Clip.antiAlias,
       constraints: BoxConstraints(
         maxHeight: mediaQuery.size.height * routeMaxHeightFactor,
       ),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => AppBottomSheetFormContainer(
-        padding: effectivePadding,
-        heightFactor: heightFactor,
-        maxHeightFactor: effectiveMaxHeightFactor,
-        child: builder(ctx),
+      builder: (ctx) => BottomSheetLoadingContext(
+        notifier: loadingNotifier,
+        child: ValueListenableBuilder<bool>(
+          valueListenable: loadingNotifier,
+          builder: (context, isLoading, child) => Stack(
+            children: [
+              child!,
+              if (isLoading)
+                const Positioned.fill(
+                  child: AbsorbPointer(
+                    child: ColoredBox(
+                      color: Color(0x66000000),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          child: AppBottomSheetFormContainer(
+            padding: effectivePadding,
+            heightFactor: heightFactor,
+            maxHeightFactor: effectiveMaxHeightFactor,
+            child: builder(ctx),
+          ),
+        ),
       ),
     );
   }
@@ -353,21 +376,53 @@ class AppFormScaffold extends StatelessWidget {
   }
 }
 
-class _AppFormBody extends StatelessWidget {
+class _AppFormBody extends StatefulWidget {
   const _AppFormBody({required this.child, required this.isLoading});
 
   final Widget child;
   final bool isLoading;
 
   @override
+  State<_AppFormBody> createState() => _AppFormBodyState();
+}
+
+class _AppFormBodyState extends State<_AppFormBody> {
+  void _syncToScope() {
+    context
+        .getInheritedWidgetOfExactType<BottomSheetLoadingContext>()
+        ?.notifier
+        .value = widget.isLoading;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncToScope();
+    });
+  }
+
+  @override
+  void didUpdateWidget(_AppFormBody old) {
+    super.didUpdateWidget(old);
+    if (widget.isLoading != old.isLoading) _syncToScope();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (!isLoading) {
-      return child;
+    // In contesto bottom sheet: l'overlay visivo è gestito a livello sheet.
+    if (context.getInheritedWidgetOfExactType<BottomSheetLoadingContext>() !=
+        null) {
+      return widget.isLoading
+          ? AbsorbPointer(child: widget.child)
+          : widget.child;
     }
+
+    if (!widget.isLoading) return widget.child;
 
     return Stack(
       children: [
-        AbsorbPointer(child: child),
+        AbsorbPointer(child: widget.child),
         const Positioned.fill(
           child: ColoredBox(
             color: Color(0x66000000),

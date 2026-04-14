@@ -103,11 +103,17 @@ final class ClassEventsController
             return Response::error((string) $locationIdsResult['error'], 'validation_error', 400, $request->traceId);
         }
         $locationIds = $locationIdsResult['location_ids'] ?? null;
+        $colorHexResult = $this->normalizeColorHex($body['color_hex'] ?? null);
+        if (isset($colorHexResult['error'])) {
+            return Response::error((string) $colorHexResult['error'], 'validation_error', 400, $request->traceId);
+        }
+        $colorHex = $colorHexResult['value'] ?? null;
 
         try {
             $id = $this->classEventRepo->createClassType($businessId, [
                 'name' => $name,
                 'description' => array_key_exists('description', $body) ? $body['description'] : null,
+                'color_hex' => $colorHex,
                 'is_active' => array_key_exists('is_active', $body) ? (bool) $body['is_active'] : true,
             ]);
             if ($locationIds !== null) {
@@ -152,6 +158,13 @@ final class ClassEventsController
                 return Response::error('name too long', 'validation_error', 400, $request->traceId);
             }
             $body['name'] = $name;
+        }
+        if (array_key_exists('color_hex', $body)) {
+            $colorHexResult = $this->normalizeColorHex($body['color_hex']);
+            if (isset($colorHexResult['error'])) {
+                return Response::error((string) $colorHexResult['error'], 'validation_error', 400, $request->traceId);
+            }
+            $body['color_hex'] = $colorHexResult['value'] ?? null;
         }
 
         $locationIdsResult = $this->resolveClassTypeLocationIdsForMutation($request, $userId, $businessId, $body, false);
@@ -981,9 +994,28 @@ final class ClassEventsController
             'business_id' => (int) $row['business_id'],
             'name' => (string) ($row['name'] ?? ''),
             'description' => $row['description'] ?? null,
+            'color_hex' => $row['color_hex'] ?? null,
             'is_active' => (int) ($row['is_active'] ?? 1) === 1,
             'location_ids' => array_values(array_map('intval', $locationIds)),
         ];
+    }
+
+    private function normalizeColorHex(mixed $raw): array
+    {
+        if ($raw === null) {
+            return ['value' => null];
+        }
+        if (!is_string($raw)) {
+            return ['error' => 'color_hex must be a string'];
+        }
+        $value = trim($raw);
+        if ($value === '') {
+            return ['value' => null];
+        }
+        if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $value)) {
+            return ['error' => 'color_hex must be in format #RRGGBB'];
+        }
+        return ['value' => strtoupper($value)];
     }
 
     private function isDuplicateKeyError(\Throwable $e): bool

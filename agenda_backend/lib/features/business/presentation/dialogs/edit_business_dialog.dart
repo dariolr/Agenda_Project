@@ -127,13 +127,15 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return AlertDialog(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: LocalLoadingOverlay(
+        isLoading: _isLoading,
+        child: AlertDialog(
       title: const Text('Modifica Business'),
       content: SizedBox(
         width: 400,
-        child: LocalLoadingOverlay(
-          isLoading: _isLoading,
-          child: Form(
+        child: Form(
       autovalidateMode: AutovalidateMode.onUserInteraction,
             key: _formKey,
             child: SingleChildScrollView(
@@ -342,7 +344,6 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
             ),
           ),
         ),
-      ),
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(false),
@@ -353,6 +354,8 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
           child: const Text('Salva'),
         ),
       ],
+        ),
+      ),
     );
   }
 }

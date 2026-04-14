@@ -1,6 +1,23 @@
 import 'package:flutter/material.dart';
 
-class LocalLoadingOverlay extends StatelessWidget {
+/// InheritedWidget che porta un [ValueNotifier<bool>] ai discendenti,
+/// permettendo di segnalare lo stato di loading al livello del bottom sheet
+/// (fuori dal padding del container) invece di mostrare un overlay locale.
+class BottomSheetLoadingContext extends InheritedWidget {
+  const BottomSheetLoadingContext({
+    super.key,
+    required this.notifier,
+    required super.child,
+  });
+
+  final ValueNotifier<bool> notifier;
+
+  // Non notifica i discendenti: è solo un carrier per il notifier.
+  @override
+  bool updateShouldNotify(BottomSheetLoadingContext old) => false;
+}
+
+class LocalLoadingOverlay extends StatefulWidget {
   const LocalLoadingOverlay({
     super.key,
     required this.isLoading,
@@ -13,16 +30,49 @@ class LocalLoadingOverlay extends StatelessWidget {
   final Color? barrierColor;
 
   @override
+  State<LocalLoadingOverlay> createState() => _LocalLoadingOverlayState();
+}
+
+class _LocalLoadingOverlayState extends State<LocalLoadingOverlay> {
+  void _syncToScope() {
+    context
+        .getInheritedWidgetOfExactType<BottomSheetLoadingContext>()
+        ?.notifier
+        .value = widget.isLoading;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Usa postFrameCallback per evitare setState durante la fase di build.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _syncToScope();
+    });
+  }
+
+  @override
+  void didUpdateWidget(LocalLoadingOverlay old) {
+    super.didUpdateWidget(old);
+    if (widget.isLoading != old.isLoading) _syncToScope();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (!isLoading) return child;
+    // In contesto bottom sheet: l'overlay visivo è gestito a livello sheet.
+    if (context.getInheritedWidgetOfExactType<BottomSheetLoadingContext>() !=
+        null) {
+      return widget.child;
+    }
+
+    if (!widget.isLoading) return widget.child;
 
     return Stack(
       children: [
-        child,
+        widget.child,
         Positioned.fill(
           child: AbsorbPointer(
             child: Container(
-              color: barrierColor ?? const Color(0x33000000),
+              color: widget.barrierColor ?? const Color(0x33000000),
               child: const Center(child: CircularProgressIndicator()),
             ),
           ),

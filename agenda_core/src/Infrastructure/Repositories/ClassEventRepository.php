@@ -208,15 +208,16 @@ final class ClassEventRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO class_types (
-                business_id, name, description, is_active
+                business_id, name, description, color_hex, is_active
              ) VALUES (
-                :business_id, :name, :description, :is_active
+                :business_id, :name, :description, :color_hex, :is_active
              )'
         );
         $stmt->execute([
             'business_id' => $businessId,
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
+            'color_hex' => $data['color_hex'] ?? null,
             'is_active' => !empty($data['is_active']) ? 1 : 0,
         ]);
         return (int) $this->db->getPdo()->lastInsertId();
@@ -224,7 +225,7 @@ final class ClassEventRepository
 
     public function updateClassType(int $businessId, int $classTypeId, array $data): bool
     {
-        $allowed = ['name', 'description', 'is_active'];
+        $allowed = ['name', 'description', 'color_hex', 'is_active'];
         $fields = [];
         $params = [
             'business_id' => $businessId,

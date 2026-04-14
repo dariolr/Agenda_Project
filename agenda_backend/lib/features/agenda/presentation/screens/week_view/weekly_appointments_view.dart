@@ -4,6 +4,7 @@ import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/appointment.dart';
 import 'package:agenda_backend/core/models/availability_exception.dart';
 import 'package:agenda_backend/core/models/class_event.dart';
+import 'package:agenda_backend/core/models/class_type.dart';
 import 'package:agenda_backend/core/models/staff.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart'
     show StaffPlanning;
@@ -40,6 +41,18 @@ import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+
+Color? _parseClassTypeColor(String? hex) {
+  final value = hex?.trim() ?? '';
+  if (!RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(value)) {
+    return null;
+  }
+  try {
+    return ColorUtils.fromHex(value);
+  } catch (_) {
+    return null;
+  }
+}
 
 class WeeklyAppointmentsView extends ConsumerWidget {
   const WeeklyAppointmentsView({
@@ -1056,7 +1069,18 @@ class _WeeklyClassEventTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final color = theme.colorScheme.tertiaryContainer;
+    final classTypes = ref.watch(classTypesProvider).value ?? const [];
+    final classType = classTypes.cast<ClassType?>().firstWhere(
+      (item) => item?.id == classEvent.classTypeId,
+      orElse: () => null,
+    );
+    final color =
+        _parseClassTypeColor(classType?.colorHex) ??
+        theme.colorScheme.tertiaryContainer;
+    final title =
+        (classType?.name.trim().isNotEmpty ?? false)
+        ? classType!.name.trim()
+        : context.l10n.classEventsUntitled;
     final cardTextScale = ref.watch(agendaCardTextScaleProvider);
     final effectiveHeightScale = cardTextScale > 1.0 ? cardTextScale : 1.0;
     final tileHeight =
@@ -1098,7 +1122,7 @@ class _WeeklyClassEventTile extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  context.l10n.classEventsTitle,
+                  title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelSmall?.copyWith(

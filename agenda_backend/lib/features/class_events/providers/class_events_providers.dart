@@ -394,6 +394,7 @@ class ClassTypeMutationController extends AsyncNotifier<void> {
   Future<ClassType> create({
     required String name,
     String? description,
+    String? colorHex,
     bool isActive = true,
     List<int>? locationIds,
   }) async {
@@ -408,6 +409,9 @@ class ClassTypeMutationController extends AsyncNotifier<void> {
           'description': description?.trim().isEmpty == true
               ? null
               : description?.trim(),
+          'color_hex': colorHex?.trim().isEmpty == true
+              ? null
+              : colorHex?.trim(),
           'is_active': isActive,
           if (locationIds != null) 'location_ids': locationIds,
         },
@@ -429,6 +433,7 @@ class ClassTypeMutationController extends AsyncNotifier<void> {
     required int classTypeId,
     required String name,
     String? description,
+    String? colorHex,
     required bool isActive,
     List<int>? locationIds,
   }) async {
@@ -444,6 +449,9 @@ class ClassTypeMutationController extends AsyncNotifier<void> {
           'description': description?.trim().isEmpty == true
               ? null
               : description?.trim(),
+          'color_hex': colorHex?.trim().isEmpty == true
+              ? null
+              : colorHex?.trim(),
           'is_active': isActive,
           if (locationIds != null) 'location_ids': locationIds,
         },

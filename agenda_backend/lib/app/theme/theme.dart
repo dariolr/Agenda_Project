@@ -239,6 +239,9 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
     listTileTheme: base.listTileTheme.copyWith(
       shape: const RoundedRectangleBorder(borderRadius: hoverRadius),
     ),
+    dialogTheme: const DialogThemeData(
+      clipBehavior: Clip.antiAlias,
+    ),
   );
 
   return themeWithPalette.copyWith(

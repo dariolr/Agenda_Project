@@ -209,13 +209,15 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
 
-    return AlertDialog(
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: LocalLoadingOverlay(
+        isLoading: _isLoading,
+        child: AlertDialog(
       title: const Text('Nuovo Business'),
       content: SizedBox(
         width: 400,
-        child: LocalLoadingOverlay(
-          isLoading: _isLoading,
-          child: Form(
+        child: Form(
       autovalidateMode: AutovalidateMode.onUserInteraction,
             key: _formKey,
             child: SingleChildScrollView(
@@ -435,7 +437,6 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
             ),
           ),
         ),
-      ),
       actions: [
         TextButton(
           onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
@@ -446,6 +447,8 @@ class _CreateBusinessDialogState extends ConsumerState<CreateBusinessDialog> {
           child: const Text('Crea Business'),
         ),
       ],
+        ),
+      ),
     );
   }
 }
