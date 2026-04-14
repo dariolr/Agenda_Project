@@ -93,6 +93,10 @@ class PrefsKeys {
   static const superadminLastBusinessId = 'superadmin_last_business_id';
   static const superadminShowBusinessPickerOnLogin =
       'superadmin_show_business_picker_on_login';
+  static String lastVisitedRouteForUser(int userId) =>
+      'last_visited_route_user_$userId';
+  static String lastVisitedRouteUpdatedAtForUser(int userId) =>
+      'last_visited_route_updated_at_user_$userId';
 
   /// Chiave legacy (senza business_id) per migrazione
   static const legacyStaffFilterMode = 'staff_filter_mode';
@@ -564,6 +568,58 @@ class PreferencesService {
   }
 
   // ============================================
+  // Last Visited Route (per user)
+  // ============================================
+
+  /// Restituisce l'ultima route visitata dall'utente se ancora valida.
+  /// Se scaduta o corrotta, la rimuove e ritorna null.
+  String? getLastVisitedRouteForUser(int userId, {required Duration maxAge}) {
+    final route = _prefs.getString(PrefsKeys.lastVisitedRouteForUser(userId));
+    final updatedAtMs = _prefs.getInt(
+      PrefsKeys.lastVisitedRouteUpdatedAtForUser(userId),
+    );
+    if (route == null || updatedAtMs == null) {
+      return null;
+    }
+
+    final normalizedRoute = route.trim();
+    if (normalizedRoute.isEmpty || !normalizedRoute.startsWith('/')) {
+      return null;
+    }
+
+    final updatedAt = DateTime.fromMillisecondsSinceEpoch(updatedAtMs);
+    final isExpired = DateTime.now().difference(updatedAt) > maxAge;
+    if (isExpired) {
+      return null;
+    }
+
+    return normalizedRoute;
+  }
+
+  /// Salva l'ultima route visitata dall'utente con timestamp.
+  Future<void> setLastVisitedRouteForUser(int userId, String route) async {
+    final normalizedRoute = route.trim();
+    if (normalizedRoute.isEmpty || !normalizedRoute.startsWith('/')) {
+      return;
+    }
+
+    await _prefs.setString(
+      PrefsKeys.lastVisitedRouteForUser(userId),
+      normalizedRoute,
+    );
+    await _prefs.setInt(
+      PrefsKeys.lastVisitedRouteUpdatedAtForUser(userId),
+      DateTime.now().millisecondsSinceEpoch,
+    );
+  }
+
+  /// Rimuove l'ultima route salvata per l'utente.
+  Future<void> clearLastVisitedRouteForUser(int userId) async {
+    await _prefs.remove(PrefsKeys.lastVisitedRouteForUser(userId));
+    await _prefs.remove(PrefsKeys.lastVisitedRouteUpdatedAtForUser(userId));
+  }
+
+  // ============================================
   // Clear / Cleanup
   // ============================================
 
@@ -619,6 +675,8 @@ class PreferencesService {
           key.startsWith('agenda_show_prices_override_') ||
           key.startsWith('agenda_use_service_colors_override_') ||
           key.startsWith('agenda_show_cancelled_appointments_') ||
+          key.startsWith('last_visited_route_user_') ||
+          key.startsWith('last_visited_route_updated_at_user_') ||
           key.startsWith('current_location_id') ||
           key == PrefsKeys.desktopRailStartsAtTop ||
           key == PrefsKeys.adminLocaleCode) {

@@ -73,11 +73,19 @@ class AuthNotifier extends Notifier<AuthState> {
       state = AuthState.authenticated(user);
       return true;
     } on ApiException catch (e) {
-      final detailsStr = e.details is Map ? (e.details as Map).entries.map((entry) => '${entry.key}: ${entry.value}').join(', ') : null;
+      final detailsStr = e.details is Map
+          ? (e.details as Map).entries
+                .map((entry) => '${entry.key}: ${entry.value}')
+                .join(', ')
+          : null;
       state = AuthState.error(e.message, code: e.code, details: detailsStr);
       return false;
     } catch (e) {
-      state = AuthState.error(e.toString(), code: 'network_error', details: e.runtimeType.toString());
+      state = AuthState.error(
+        e.toString(),
+        code: 'network_error',
+        details: e.runtimeType.toString(),
+      );
       return false;
     }
   }
@@ -89,6 +97,8 @@ class AuthNotifier extends Notifier<AuthState> {
     bool silent = false,
     bool clearPreferences = false,
   }) async {
+    final currentUserId = state.user?.id;
+
     if (!silent) {
       try {
         await _repository.logout();
@@ -103,6 +113,14 @@ class AuthNotifier extends Notifier<AuthState> {
         await ref.read(preferencesServiceProvider).clearAll();
       } catch (_) {
         // Ignora errori durante pulizia preferenze
+      }
+    } else if (currentUserId != null) {
+      try {
+        await ref
+            .read(preferencesServiceProvider)
+            .clearLastVisitedRouteForUser(currentUserId);
+      } catch (_) {
+        // Ignora errori durante pulizia route ripristino
       }
     }
 

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,12 +34,39 @@ import '../features/reports/presentation/reports_screen.dart';
 import '../features/services/presentation/services_screen.dart';
 import '../features/staff/presentation/staff_week_overview_screen.dart';
 import '../features/staff/presentation/team_screen.dart';
+import '../core/services/preferences_service.dart';
 import 'scaffold_with_navigation.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final rootNavigatorKeyProvider = Provider<GlobalKey<NavigatorState>>(
   (ref) => _rootNavigatorKey,
 );
+const Duration _lastVisitedRouteTtl = Duration(hours: 8);
+
+String _toLocationString(Uri uri) {
+  final path = uri.path;
+  if (!uri.hasQuery || uri.query.isEmpty) {
+    return path;
+  }
+  return '$path?${uri.query}';
+}
+
+bool _isRestorableLocation(String location) {
+  final uri = Uri.tryParse(location);
+  if (uri == null) return false;
+  final path = uri.path;
+  if (!path.startsWith('/')) return false;
+
+  if (path == '/login') return false;
+  if (path == '/change-password') return false;
+  if (path == '/auth/meta-whatsapp-callback') return false;
+  if (path.startsWith('/invitation')) return false;
+  if (path.startsWith('/reset-password')) return false;
+  if (path.startsWith('/businesses')) return false;
+  if (path.startsWith('/my-businesses')) return false;
+
+  return true;
+}
 
 /// Provider derivato che cambia SOLO quando cambia l'autenticazione effettiva
 /// NON quando cambia solo l'errorMessage (evita rebuild inutili del router)
@@ -122,6 +151,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       final superadminSelectedBusiness = ref.read(
         superadminSelectedBusinessProvider,
       );
+      final authenticatedUser = ref.read(authProvider).user;
+      final authenticatedUserId = authenticatedUser?.id;
+      final currentLocation = _toLocationString(state.uri);
+      final prefs = ref.read(preferencesServiceProvider);
 
       // Durante il caricamento iniziale, non fare redirect
       if (isInitialOrLoading) {
@@ -135,6 +168,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           isMetaWhatsappCallbackPage ||
           isInvitationPage;
 
+      // Persisti l'ultima route privata visitata per ripristino post-riavvio.
+      if (isAuthenticated &&
+          !isPublicPage &&
+          authenticatedUserId != null &&
+          _isRestorableLocation(currentLocation)) {
+        unawaited(
+          prefs.setLastVisitedRouteForUser(
+            authenticatedUserId,
+            currentLocation,
+          ),
+        );
+      }
+
       // Se non loggato e non su pagina pubblica, vai al login
       if (!isAuthenticated && !isPublicPage) {
         return '/login';
@@ -145,6 +191,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         final redirect = state.uri.queryParameters['redirect'];
         if (redirect != null && redirect.startsWith('/')) {
           return redirect;
+        }
+        if (authenticatedUserId != null) {
+          final savedLocation = prefs.getLastVisitedRouteForUser(
+            authenticatedUserId,
+            maxAge: _lastVisitedRouteTtl,
+          );
+          if (savedLocation != null && _isRestorableLocation(savedLocation)) {
+            if (isSuperadmin && superadminSelectedBusiness == null) {
+              return '/businesses';
+            }
+            if (!isSuperadmin && currentBusinessId <= 0) {
+              return '/my-businesses';
+            }
+            return savedLocation;
+          }
         }
         // Dopo login:
         // - superadmin: se ha un ultimo business selezionato, entra direttamente in agenda
@@ -406,9 +467,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'whatsapp-business',
                     name: 'more-whatsapp-business',
                     pageBuilder: (BuildContext context, GoRouterState state) =>
-                        const NoTransitionPage(
-                          child: WhatsappBusinessScreen(),
-                        ),
+                        const NoTransitionPage(child: WhatsappBusinessScreen()),
                   ),
                 ],
               ),
