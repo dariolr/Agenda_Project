@@ -65,6 +65,17 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
     onSurface: onBackground,
   );
 
+  final hoverFill = isDark
+      ? colorPrimary2.withOpacity(0.12)
+      : colorPrimary1.withOpacity(0.01);
+  const hoverRadius = BorderRadius.all(Radius.circular(10));
+  final pressedFill = isDark
+      ? colorPrimary2.withOpacity(0.18)
+      : colorPrimary1.withOpacity(0.1);
+  final alternatingRowFill = isDark
+      ? colorPrimary2.withOpacity(0.05)
+      : colorPrimary1.withOpacity(0.03);
+
   final base = ThemeData(
     useMaterial3: true,
     colorScheme: colorScheme,
@@ -72,21 +83,12 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
     scaffoldBackgroundColor: background,
     canvasColor: surface,
     fontFamily: _appFontFamily,
+    hoverColor: hoverFill,
   );
 
   final titleStyle =
       base.textTheme.titleLarge ??
       const TextStyle(fontSize: 18, fontWeight: FontWeight.w600);
-
-  final hoverFill = isDark
-      ? colorPrimary2.withOpacity(0.12)
-      : colorPrimary1.withOpacity(0.01);
-  final pressedFill = isDark
-      ? colorPrimary2.withOpacity(0.18)
-      : colorPrimary1.withOpacity(0.1);
-  final alternatingRowFill = isDark
-      ? colorPrimary2.withOpacity(0.05)
-      : colorPrimary1.withOpacity(0.03);
 
   final themeWithPalette = base.copyWith(
     appBarTheme: AppBarTheme(
@@ -186,6 +188,9 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
+    ),
+    listTileTheme: base.listTileTheme.copyWith(
+      shape: const RoundedRectangleBorder(borderRadius: hoverRadius),
     ),
   );
 

@@ -60,18 +60,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     try {
       final storage = ref.read(credentialsStorageProvider);
       final credentials = await storage.getSavedCredentials();
+      final savedEmail = credentials.email;
+      final savedPassword = credentials.password;
 
-      if (credentials.email != null && credentials.password != null) {
+      if (savedEmail != null || savedPassword != null) {
         if (mounted) {
           setState(() {
-            _emailController.text = credentials.email!;
-            _passwordController.text = credentials.password!;
-            _rememberMe = true;
+            if (savedEmail != null) {
+              _emailController.text = savedEmail;
+            }
+            if (savedPassword != null) {
+              _passwordController.text = savedPassword;
+              _rememberMe = true;
+            } else {
+              _passwordController.clear();
+              _rememberMe = false;
+            }
           });
         }
-      } else {
-        _applyDebugCredentialsPrefill();
+        return;
       }
+
+      _applyDebugCredentialsPrefill();
     } catch (e) {
       debugPrint('Error loading saved credentials: $e');
       _applyDebugCredentialsPrefill();

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/user.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/network_providers.dart';
+import '../../../core/services/credentials_provider.dart';
 import '../../../core/services/preferences_service.dart';
 import '../data/auth_repository.dart';
 import '../domain/auth_state.dart';
@@ -122,6 +123,13 @@ class AuthNotifier extends Notifier<AuthState> {
       } catch (_) {
         // Ignora errori durante pulizia route ripristino
       }
+    }
+
+    // Per sicurezza, al logout non mantenere mai la password salvata.
+    try {
+      await ref.read(credentialsStorageProvider).clearSavedPassword();
+    } catch (_) {
+      // Ignora errori durante pulizia password salvata
     }
 
     state = AuthState.unauthenticated();

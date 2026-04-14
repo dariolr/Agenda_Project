@@ -11,6 +11,9 @@ abstract class CredentialsStorage {
   /// Cancella le credenziali salvate
   Future<void> clearCredentials();
 
+  /// Cancella solo la password salvata, mantenendo eventuale email.
+  Future<void> clearSavedPassword();
+
   /// Verifica se ci sono credenziali salvate
   Future<bool> hasCredentials();
 }
