@@ -4,6 +4,7 @@ import 'package:agenda_backend/app/widgets/agenda_control_components.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/staff.dart';
+import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/core/widgets/desktop_popup_container.dart';
 import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
@@ -102,6 +103,9 @@ class _AgendaStaffFilterSelectorState
     await showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      isDismissible: true,
+      enableDrag: true,
+      showDragHandle: true,
       useRootNavigator: true,
       builder: (_) => const _StaffFilterSheet(),
     );
@@ -464,27 +468,16 @@ class _StaffFilterSheet extends ConsumerWidget {
     final allStaff = ref.watch(staffForCurrentLocationProvider);
     final selectedIds = ref.watch(selectedStaffIdsProvider);
     final onDutyIds = ref.watch(onDutyStaffIdsProvider);
+    final maxSheetHeight =
+        MediaQuery.sizeOf(context).height * AppBottomSheet.defaultHeightFactor;
 
     return SafeArea(
-      child: SingleChildScrollView(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxSheetHeight),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Handle
-            const SizedBox(height: 8),
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-
             // Header
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -497,71 +490,80 @@ class _StaffFilterSheet extends ConsumerWidget {
             ),
             const AppDivider(),
 
-            // Opzione: Tutto il team
-            _MobileFilterOptionTile(
-              title: l10n.staffFilterAllTeam,
-              isSelected: mode == StaffFilterMode.allTeam,
-              onTap: () {
-                ref
-                    .read(staffFilterModeProvider.notifier)
-                    .set(StaffFilterMode.allTeam);
-                Navigator.of(context).pop();
-              },
-            ),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  // Opzione: Tutto il team
+                  _MobileFilterOptionTile(
+                    title: l10n.staffFilterAllTeam,
+                    isSelected: mode == StaffFilterMode.allTeam,
+                    onTap: () {
+                      ref
+                          .read(staffFilterModeProvider.notifier)
+                          .set(StaffFilterMode.allTeam);
+                      Navigator.of(context).pop();
+                    },
+                  ),
 
-            // Opzione: Team di turno
-            _MobileFilterOptionTile(
-              title: l10n.staffFilterOnDuty,
-              isSelected: mode == StaffFilterMode.onDutyTeam,
-              onTap: () {
-                ref
-                    .read(staffFilterModeProvider.notifier)
-                    .set(StaffFilterMode.onDutyTeam);
-                Navigator.of(context).pop();
-              },
-            ),
+                  // Opzione: Team di turno
+                  _MobileFilterOptionTile(
+                    title: l10n.staffFilterOnDuty,
+                    isSelected: mode == StaffFilterMode.onDutyTeam,
+                    onTap: () {
+                      ref
+                          .read(staffFilterModeProvider.notifier)
+                          .set(StaffFilterMode.onDutyTeam);
+                      Navigator.of(context).pop();
+                    },
+                  ),
 
-            // Divider
-            const AppDivider(),
+                  // Divider
+                  const AppDivider(),
 
-            // Header staff
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-              child: Text(
-                l10n.staffFilterSelectMembers,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
+                  // Header staff
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    child: Text(
+                      l10n.staffFilterSelectMembers,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+
+                  // Lista staff con checkbox
+                  for (final staff in allStaff)
+                    _MobileStaffMemberTile(
+                      staff: staff,
+                      isSelected: _isStaffSelected(
+                        mode,
+                        selectedIds,
+                        onDutyIds,
+                        staff.id,
+                      ),
+                      onChanged: (selected) {
+                        if (mode != StaffFilterMode.custom) {
+                          final ids = mode == StaffFilterMode.onDutyTeam
+                              ? onDutyIds.toList()
+                              : allStaff.map((s) => s.id).toList();
+                          ref
+                              .read(selectedStaffIdsProvider.notifier)
+                              .setFromList(ids);
+                          ref
+                              .read(staffFilterModeProvider.notifier)
+                              .set(StaffFilterMode.custom);
+                        }
+                        ref
+                            .read(selectedStaffIdsProvider.notifier)
+                            .toggle(staff.id);
+                      },
+                    ),
+
+                  const SizedBox(height: 16),
+                ],
               ),
             ),
-
-            // Lista staff con checkbox
-            for (final staff in allStaff)
-              _MobileStaffMemberTile(
-                staff: staff,
-                isSelected: _isStaffSelected(
-                  mode,
-                  selectedIds,
-                  onDutyIds,
-                  staff.id,
-                ),
-                onChanged: (selected) {
-                  if (mode != StaffFilterMode.custom) {
-                    final ids = mode == StaffFilterMode.onDutyTeam
-                        ? onDutyIds.toList()
-                        : allStaff.map((s) => s.id).toList();
-                    ref
-                        .read(selectedStaffIdsProvider.notifier)
-                        .setFromList(ids);
-                    ref
-                        .read(staffFilterModeProvider.notifier)
-                        .set(StaffFilterMode.custom);
-                  }
-                  ref.read(selectedStaffIdsProvider.notifier).toggle(staff.id);
-                },
-              ),
-
-            const SizedBox(height: 16),
           ],
         ),
       ),
