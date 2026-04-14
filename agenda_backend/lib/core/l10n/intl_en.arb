@@ -1515,6 +1515,25 @@
   "classEventsSchedulesDeleteSuccessMessage": "The schedule and related bookings have been deleted",
   "classEventsSchedulesUpdateSuccessTitle": "Schedule updated",
   "classEventsSchedulesUpdateSuccessMessage": "Schedule updated successfully",
+  "classEventsRecurrenceCreateSummary": "Schedules created: {createdCount}.",
+  "@classEventsRecurrenceCreateSummary": {
+    "placeholders": {
+      "createdCount": {
+        "type": "int"
+      }
+    }
+  },
+  "classEventsRecurrenceCreateSummaryWithSkipped": "Schedules created: {createdCount}. Skipped: {skippedCount}.",
+  "@classEventsRecurrenceCreateSummaryWithSkipped": {
+    "placeholders": {
+      "createdCount": {
+        "type": "int"
+      },
+      "skippedCount": {
+        "type": "int"
+      }
+    }
+  },
   "classEventsCreateSuccessTitle": "Class created",
   "classEventsCreateSuccessMessage": "The class was created successfully",
   "classEventsCreateErrorMessage": "Unable to create class",

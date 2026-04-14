@@ -9354,6 +9354,29 @@ class L10n {
     );
   }
 
+  /// `Schedules created: {createdCount}.`
+  String classEventsRecurrenceCreateSummary(int createdCount) {
+    return Intl.message(
+      'Schedules created: $createdCount.',
+      name: 'classEventsRecurrenceCreateSummary',
+      desc: '',
+      args: [createdCount],
+    );
+  }
+
+  /// `Schedules created: {createdCount}. Skipped: {skippedCount}.`
+  String classEventsRecurrenceCreateSummaryWithSkipped(
+    int createdCount,
+    int skippedCount,
+  ) {
+    return Intl.message(
+      'Schedules created: $createdCount. Skipped: $skippedCount.',
+      name: 'classEventsRecurrenceCreateSummaryWithSkipped',
+      desc: '',
+      args: [createdCount, skippedCount],
+    );
+  }
+
   /// `Class created`
   String get classEventsCreateSuccessTitle {
     return Intl.message(

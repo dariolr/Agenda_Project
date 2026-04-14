@@ -1162,19 +1162,57 @@ class _AppointmentCardInteractiveState
     }
 
     if (isRecurring) {
-      final tooltipText = recurrenceIndex != null && recurrenceTotal != null
-          ? context.l10n.recurrenceSeriesOf(recurrenceIndex, recurrenceTotal)
+      final normalizedRecurrenceIndex =
+          recurrenceIndex != null &&
+              recurrenceTotal != null &&
+              recurrenceIndex >= 0 &&
+              recurrenceIndex < recurrenceTotal
+          ? recurrenceIndex + 1
+          : recurrenceIndex;
+      final tooltipText =
+          normalizedRecurrenceIndex != null && recurrenceTotal != null
+          ? context.l10n.recurrenceSeriesOf(
+              normalizedRecurrenceIndex,
+              recurrenceTotal,
+            )
           : context.l10n.recurrenceSeriesIcon;
+      final recurrenceLabel =
+          normalizedRecurrenceIndex != null && recurrenceTotal != null
+          ? '$normalizedRecurrenceIndex/$recurrenceTotal'
+          : null;
       trailingIcons.add(
         Padding(
           padding: EdgeInsets.only(left: trailingIconLeftPadding),
           child: Tooltip(
             message: tooltipText,
-            child: Icon(
-              Icons.repeat,
-              size: scaledTrailingIconSize,
-              color: Colors.black54,
-            ),
+            child: recurrenceLabel != null
+                ? SizedBox(
+                    width: scaledTrailingIconSize,
+                    height: scaledTrailingIconSize,
+                    child: Center(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          recurrenceLabel,
+                          maxLines: 1,
+                          style: TextStyle(
+                            color: Colors.black54,
+                            fontWeight: FontWeight.w700,
+                            fontSize: (scaledTrailingIconSize * 0.76).clamp(
+                              8.0,
+                              12.0,
+                            ),
+                            height: 1.0,
+                          ),
+                        ),
+                      ),
+                    ),
+                  )
+                : Icon(
+                    Icons.repeat,
+                    size: scaledTrailingIconSize,
+                    color: Colors.black54,
+                  ),
           ),
         ),
       );

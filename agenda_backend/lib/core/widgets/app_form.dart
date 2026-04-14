@@ -11,7 +11,7 @@ enum AppFormPresentation { dialog, bottomSheet }
 class AppForm {
   AppForm._();
 
-  static const double defaultBottomSheetHeightFactor = 0.95;
+  static const double defaultBottomSheetHeightFactor = 0.90;
 
   static Future<T?> show<T>({
     required BuildContext context,
@@ -47,10 +47,11 @@ class AppForm {
         ? (maxHeightFactor ?? defaultBottomSheetHeightFactor)
         : maxHeightFactor;
     final mediaQuery = MediaQuery.of(context);
-    final routeMaxHeightFactor = (heightFactor ??
-            effectiveMaxHeightFactor ??
-            defaultBottomSheetHeightFactor)
-        .clamp(0.0, 1.0);
+    final routeMaxHeightFactor =
+        (heightFactor ??
+                effectiveMaxHeightFactor ??
+                defaultBottomSheetHeightFactor)
+            .clamp(0.0, 1.0);
 
     return showModalBottomSheet<T>(
       context: context,
@@ -210,10 +211,15 @@ class AppFormScaffold extends StatelessWidget {
     final theme = Theme.of(context);
 
     if (isDesktop) {
+      final dialogShape = RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+      );
       return DismissibleDialog(
         barrierDismissible: barrierDismissible,
         child: Dialog(
           insetPadding: dialogInsetPadding,
+          shape: dialogShape,
+          clipBehavior: Clip.antiAlias,
           child: ConstrainedBox(
             constraints: BoxConstraints(
               minWidth: dialogMinWidth,

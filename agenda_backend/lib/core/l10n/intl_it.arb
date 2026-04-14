@@ -1515,6 +1515,25 @@
   "classEventsSchedulesDeleteSuccessMessage": "La programmazione e le prenotazioni collegate sono state eliminate",
   "classEventsSchedulesUpdateSuccessTitle": "Programmazione aggiornata",
   "classEventsSchedulesUpdateSuccessMessage": "La programmazione è stata aggiornata correttamente",
+  "classEventsRecurrenceCreateSummary": "Programmazioni create: {createdCount}.",
+  "@classEventsRecurrenceCreateSummary": {
+    "placeholders": {
+      "createdCount": {
+        "type": "int"
+      }
+    }
+  },
+  "classEventsRecurrenceCreateSummaryWithSkipped": "Programmazioni create: {createdCount}. Saltate: {skippedCount}.",
+  "@classEventsRecurrenceCreateSummaryWithSkipped": {
+    "placeholders": {
+      "createdCount": {
+        "type": "int"
+      },
+      "skippedCount": {
+        "type": "int"
+      }
+    }
+  },
   "classEventsCreateSuccessTitle": "Classe creata",
   "classEventsCreateSuccessMessage": "La classe è stata creata correttamente",
   "classEventsCreateErrorMessage": "Impossibile creare la classe",

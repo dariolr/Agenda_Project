@@ -334,6 +334,9 @@ class BookingsRepository {
           : null,
       extraBlockedMinutes: json['extra_blocked_minutes'] as int? ?? 0,
       extraProcessingMinutes: json['extra_processing_minutes'] as int? ?? 0,
+      recurrenceRuleId: json['recurrence_rule_id'] as int?,
+      recurrenceIndex: json['recurrence_index'] as int?,
+      recurrenceTotal: json['recurrence_total'] as int?,
     );
   }
 
@@ -372,6 +375,9 @@ class BookingsRepository {
       extraMinutesType: item.extraBlockedMinutes > 0
           ? ExtraMinutesType.blocked
           : null,
+      recurrenceRuleId: item.recurrenceRuleId ?? booking.recurrenceRuleId,
+      recurrenceIndex: item.recurrenceIndex ?? booking.recurrenceIndex,
+      recurrenceTotal: item.recurrenceTotal ?? booking.recurrenceTotal,
     );
   }
 }

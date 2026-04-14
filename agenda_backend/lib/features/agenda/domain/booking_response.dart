@@ -16,6 +16,9 @@ class BookingResponse {
   final List<BookingItemResponse> items;
   final int? replacesBookingId;
   final int? replacedByBookingId;
+  final int? recurrenceRuleId;
+  final int? recurrenceIndex;
+  final int? recurrenceTotal;
 
   const BookingResponse({
     required this.id,
@@ -34,6 +37,9 @@ class BookingResponse {
     required this.items,
     this.replacesBookingId,
     this.replacedByBookingId,
+    this.recurrenceRuleId,
+    this.recurrenceIndex,
+    this.recurrenceTotal,
   });
 
   /// Indica se questa prenotazione è stata sostituita da un'altra
@@ -63,6 +69,9 @@ class BookingResponse {
           .toList(),
       replacesBookingId: json['replaces_booking_id'] as int?,
       replacedByBookingId: json['replaced_by_booking_id'] as int?,
+      recurrenceRuleId: json['recurrence_rule_id'] as int?,
+      recurrenceIndex: json['recurrence_index'] as int?,
+      recurrenceTotal: json['recurrence_total'] as int?,
     );
   }
 }
@@ -86,6 +95,9 @@ class BookingItemResponse {
   final String? staffDisplayName;
   final int extraBlockedMinutes;
   final int extraProcessingMinutes;
+  final int? recurrenceRuleId;
+  final int? recurrenceIndex;
+  final int? recurrenceTotal;
 
   const BookingItemResponse({
     required this.id,
@@ -105,6 +117,9 @@ class BookingItemResponse {
     this.staffDisplayName,
     this.extraBlockedMinutes = 0,
     this.extraProcessingMinutes = 0,
+    this.recurrenceRuleId,
+    this.recurrenceIndex,
+    this.recurrenceTotal,
   });
 
   factory BookingItemResponse.fromJson(Map<String, dynamic> json) {
@@ -127,6 +142,9 @@ class BookingItemResponse {
           (json['staff_display_name'] ?? json['staff_name']) as String?,
       extraBlockedMinutes: json['extra_blocked_minutes'] as int? ?? 0,
       extraProcessingMinutes: json['extra_processing_minutes'] as int? ?? 0,
+      recurrenceRuleId: json['recurrence_rule_id'] as int?,
+      recurrenceIndex: json['recurrence_index'] as int?,
+      recurrenceTotal: json['recurrence_total'] as int?,
     );
   }
 

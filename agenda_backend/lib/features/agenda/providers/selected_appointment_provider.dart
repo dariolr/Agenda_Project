@@ -7,10 +7,12 @@ import 'appointment_providers.dart';
 class SelectedAppointmentsState {
   const SelectedAppointmentsState({
     this.bookingId,
+    this.focusAppointmentId,
     this.appointmentIds = const <int>{},
   });
 
   final int? bookingId;
+  final int? focusAppointmentId;
   final Set<int> appointmentIds;
 
   bool contains(int appointmentId) => appointmentIds.contains(appointmentId);
@@ -55,6 +57,7 @@ class SelectedAppointmentNotifier extends Notifier<SelectedAppointmentsState> {
 
     return SelectedAppointmentsState(
       bookingId: appointment.bookingId,
+      focusAppointmentId: appointment.id,
       appointmentIds: selectedIds,
     );
   }

@@ -42,6 +42,8 @@ import '../../../services/providers/service_packages_provider.dart';
 import '../../../services/providers/service_packages_repository_provider.dart';
 import '../../../services/providers/services_provider.dart';
 import '../../../business/providers/location_closures_provider.dart';
+import '../../../staff/providers/availability_exceptions_provider.dart';
+import '../../../staff/providers/staff_planning_provider.dart';
 import '../../data/bookings_api.dart';
 import '../../domain/booking_payment_preview.dart';
 import '../../domain/service_item_data.dart';
@@ -2596,6 +2598,14 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
     if (!mounted) return;
 
+    await _ensureRecurringAvailabilityContext(
+      preview: preview,
+      recurringItems: recurringItems,
+      singleStaffId: singleStaffId,
+      staffByService: staffByService,
+    );
+    if (!mounted) return;
+
     final unavailableIndices = _computeRecurringUnavailableIndices(
       preview: preview,
       recurringItems: recurringItems,
@@ -2760,6 +2770,49 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     }
 
     return unavailableIndices;
+  }
+
+  Future<void> _ensureRecurringAvailabilityContext({
+    required RecurringPreviewResult preview,
+    required List<RecurringBookingItemRequest> recurringItems,
+    required int? singleStaffId,
+    required Map<String, int>? staffByService,
+  }) async {
+    if (preview.dates.isEmpty) return;
+
+    final staffIds = <int>{};
+    for (final item in recurringItems) {
+      final staffId =
+          item.staffId ??
+          singleStaffId ??
+          staffByService?[item.serviceId.toString()];
+      if (staffId != null && staffId > 0) {
+        staffIds.add(staffId);
+      }
+    }
+    if (staffIds.isEmpty) return;
+
+    final fromDate = DateUtils.dateOnly(preview.dates.first.startTime);
+    final toDate = DateUtils.dateOnly(preview.dates.last.startTime);
+
+    try {
+      await ref.read(locationClosuresProvider.future);
+    } catch (_) {
+      // Se fallisce il preload, usiamo i dati già presenti in cache.
+    }
+
+    final planningNotifier = ref.read(staffPlanningsProvider.notifier);
+    final exceptionsNotifier = ref.read(availabilityExceptionsProvider.notifier);
+
+    await Future.wait([
+      for (final staffId in staffIds) planningNotifier.loadPlanningsForStaff(staffId),
+      for (final staffId in staffIds)
+        exceptionsNotifier.loadExceptionsForStaff(
+          staffId,
+          fromDate: fromDate,
+          toDate: toDate,
+        ),
+    ]);
   }
 }
 

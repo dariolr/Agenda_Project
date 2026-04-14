@@ -19,13 +19,18 @@ import '/core/widgets/app_form.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/appointment_providers.dart';
 import '/features/agenda/providers/date_range_provider.dart';
+import '/features/agenda/providers/layout_config_provider.dart';
 import '/features/agenda/providers/location_providers.dart';
+import '/features/agenda/providers/staff_slot_availability_provider.dart';
 import '/features/agenda/providers/tenant_time_provider.dart';
 import '/features/agenda/presentation/widgets/recurrence_picker.dart';
 import '/features/agenda/presentation/widgets/recurrence_preview.dart';
 import '/features/agenda/presentation/dialogs/recurrence_summary_dialog.dart';
 import '/features/agenda/domain/config/layout_config.dart';
+import '/features/business/providers/location_closures_provider.dart';
 import '/features/staff/providers/staff_providers.dart';
+import '/features/staff/providers/availability_exceptions_provider.dart';
+import '/features/staff/providers/staff_planning_provider.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../auth/providers/current_business_user_provider.dart';
 import '../../../core/models/recurrence_rule.dart';
@@ -49,6 +54,7 @@ class ClassEventsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
+    final businessId = ref.watch(currentBusinessIdProvider);
     final classTypesAsync = ref.watch(classTypesWithInactiveProvider);
     final canManageClassTypes = ref.watch(currentUserCanManageServicesProvider);
     final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
@@ -56,32 +62,34 @@ class ClassEventsScreen extends ConsumerWidget {
     return Column(
       children: [
         Expanded(
-          child: classTypesAsync.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
-            error: (_, __) => Center(child: Text(l10n.errorTitle)),
-            data: (classTypes) {
-              if (classTypes.isEmpty) {
-                return Center(
-                  child: Text(
-                    l10n.classTypesEmpty,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: onSurfaceVariant),
-                  ),
-                );
-              }
-              return ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                itemCount: classTypes.length,
-                separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (_, index) => _ClassTypeCard(
-                  key: ValueKey<int>(classTypes[index].id),
-                  classType: classTypes[index],
-                  canManageClassTypes: canManageClassTypes,
+          child: businessId <= 0
+              ? const Center(child: CircularProgressIndicator())
+              : classTypesAsync.when(
+                  loading: () =>
+                      const Center(child: CircularProgressIndicator()),
+                  error: (_, __) => Center(child: Text(l10n.errorTitle)),
+                  data: (classTypes) {
+                    if (classTypes.isEmpty) {
+                      return Center(
+                        child: Text(
+                          l10n.classTypesEmpty,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: onSurfaceVariant),
+                        ),
+                      );
+                    }
+                    return ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      itemCount: classTypes.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                      itemBuilder: (_, index) => _ClassTypeCard(
+                        key: ValueKey<int>(classTypes[index].id),
+                        classType: classTypes[index],
+                        canManageClassTypes: canManageClassTypes,
+                      ),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
         ),
       ],
     );
@@ -384,12 +392,6 @@ class _ClassTypeCard extends ConsumerWidget {
       await ref
           .read(classTypeMutationControllerProvider.notifier)
           .deleteType(classTypeId: classType.id);
-      if (!context.mounted) return;
-      await FeedbackDialog.showSuccess(
-        context,
-        title: l10n.classTypesDeleteSuccessTitle,
-        message: l10n.classTypesDeleteSuccessMessage,
-      );
     } catch (error) {
       if (!context.mounted) return;
       final message = _resolveClassTypeErrorMessage(error, context);
@@ -528,7 +530,8 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
         .map((location) => location.id)
         .toSet();
     final hasSingleVisibleLocation = visibleLocations.length == 1;
-    final initialSelection = !_hasChangedLocationSelection &&
+    final initialSelection =
+        !_hasChangedLocationSelection &&
             _selectedLocationIds.isEmpty &&
             visibleLocations.length > 1
         ? visibleLocationIds
@@ -656,7 +659,8 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
           (id) => allowedLocationIds == null || allowedLocationIds.contains(id),
         )
         .toSet();
-    final locationIdsForSubmit = hasSingleVisibleLocation && singleVisibleLocationId != null
+    final locationIdsForSubmit =
+        hasSingleVisibleLocation && singleVisibleLocationId != null
         ? <int>[singleVisibleLocationId]
         : effectiveSelectedLocationIds.toList();
 
@@ -692,15 +696,6 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
       }
       if (!mounted) return;
       Navigator.of(context).pop();
-      await FeedbackDialog.showSuccess(
-        context,
-        title: _isEdit
-            ? l10n.classTypesUpdateSuccessTitle
-            : l10n.classTypesCreateSuccessTitle,
-        message: _isEdit
-            ? l10n.classTypesUpdateSuccessMessage
-            : l10n.classTypesCreateSuccessMessage,
-      );
     } catch (error) {
       if (!mounted) return;
       final message = _resolveClassTypeErrorMessage(error, context);
@@ -751,9 +746,7 @@ class _ClassTypeLocationsMultiSelect extends StatelessWidget {
                   ? null
                   : () => onChanged(allSelected ? <int>{} : allLocationIds),
               child: Text(
-                allSelected
-                    ? l10n.actionDeselectAll
-                    : l10n.actionSelectAll,
+                allSelected ? l10n.actionDeselectAll : l10n.actionSelectAll,
               ),
             ),
           ],
@@ -932,16 +925,13 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       for (final member in allStaff) member.id: member.displayName,
     };
     final dateFormat = DateFormat('dd/MM/yyyy');
-    final selectedDayAppointmentsAsync =
-        _locationId != null && businessId > 0
+    final selectedDayAppointmentsAsync = _locationId != null && businessId > 0
         ? ref.watch(
-            appointmentsForLocationDayProvider(
-              (
-                day: _date,
-                locationId: _locationId!,
-                businessId: businessId,
-              ),
-            ),
+            appointmentsForLocationDayProvider((
+              day: _date,
+              locationId: _locationId!,
+              businessId: businessId,
+            )),
           )
         : const AsyncData<List<Appointment>>(<Appointment>[]);
     final hasAppointmentConflict = selectedDayAppointmentsAsync.maybeWhen(
@@ -950,543 +940,477 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       orElse: () => false,
     );
 
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                isEditMode
-                    ? l10n.classEventsEditTitle
-                    : l10n.classEventsCreateTitle,
-                style: Theme.of(context).textTheme.titleLarge,
+    return AppFormScaffold(
+      title: Text(
+        isEditMode ? l10n.classEventsEditTitle : l10n.classEventsCreateTitle,
+      ),
+      isLoading: isLoading,
+      mobileExpandToAvailableHeight: true,
+      content: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (!isFormMode && !isEditMode) ...[
+              OutlinedButton.icon(
+                onPressed: () {
+                  setState(() => _showSchedulingForm = true);
+                },
+                icon: const Icon(Icons.add),
+                label: Text(l10n.classEventsNewScheduleButton),
               ),
-              if (!isFormMode && !isEditMode) ...[
-                const SizedBox(height: 8),
-                OutlinedButton.icon(
-                  onPressed: () {
-                    setState(() => _showSchedulingForm = true);
-                  },
-                  icon: const Icon(Icons.add),
-                  label: Text(l10n.classEventsNewScheduleButton),
+              const SizedBox(height: 8),
+            ],
+            if (isEditMode) ...[
+              Text(
+                l10n.classEventsEditModeLabel,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              const SizedBox(height: 8),
+            ],
+            if (classTypesAsync.isLoading || staffAsync.isLoading)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 12),
+                child: LinearProgressIndicator(),
+              ),
+            if (classTypesAsync.hasError || staffAsync.hasError)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  l10n.errorTitle,
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
-              ],
-              if (isEditMode) ...[
-                const SizedBox(height: 8),
-                Text(
-                  l10n.classEventsEditModeLabel,
+              ),
+            if (isFormMode && classTypes.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  l10n.classEventsNoClassTypes,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
-              ],
-              const SizedBox(height: 16),
-              if (classTypesAsync.isLoading || staffAsync.isLoading)
-                const Padding(
-                  padding: EdgeInsets.only(bottom: 12),
-                  child: LinearProgressIndicator(),
-                ),
-              if (classTypesAsync.hasError || staffAsync.hasError)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Text(
-                    l10n.errorTitle,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
-                ),
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (isFormMode && classTypes.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(
-                            l10n.classEventsNoClassTypes,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                      if (isFormMode &&
-                          !isEditMode &&
-                          filteredLocations.length > 1) ...[
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<int>(
-                          value: _locationId,
-                          decoration: InputDecoration(
-                            labelText: l10n.classEventsFieldLocation,
-                            border: const OutlineInputBorder(),
-                          ),
-                          items: filteredLocations
-                              .map(
-                                (location) => DropdownMenuItem<int>(
-                                  value: location.id,
-                                  child: Text(location.name),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: isLoading
-                              ? null
-                              : (value) => setState(() {
-                                  _locationId = value;
-                                  _staffId = null;
-                                }),
-                          validator: (value) => value == null
-                              ? l10n.classEventsValidationRequired
-                              : null,
-                        ),
-                      ],
-                      if (isFormMode && !isEditMode && staff.length > 1) ...[
-                        const SizedBox(height: 12),
-                        DropdownButtonFormField<int>(
-                          value: _staffId,
-                          decoration: InputDecoration(
-                            labelText: l10n.classEventsFieldStaff,
-                            border: const OutlineInputBorder(),
-                          ),
-                          items: staff
-                              .map(
-                                (member) => DropdownMenuItem<int>(
-                                  value: member.id,
-                                  child: Text(member.displayName),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: isLoading
-                              ? null
-                              : (value) => setState(() => _staffId = value),
-                          validator: (value) => value == null
-                              ? l10n.classEventsValidationRequired
-                              : null,
-                        ),
-                      ],
-                      if (isFormMode && !isEditMode && staff.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(
-                            l10n.classEventsNoStaffForLocation,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                      if (isFormMode) const SizedBox(height: 12),
-                      if (isFormMode && filteredLocations.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: Text(
-                            l10n.classEventsNoLocationsForClassType,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                      if (isFormMode)
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _PickerField(
-                                label: l10n.classEventsFieldDate,
-                                value: _formatDate(_date),
-                                icon: Icons.calendar_today_outlined,
-                                onTap: isLoading ? null : _pickDate,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _capacityController,
-                                keyboardType: TextInputType.number,
-                                enabled: !isLoading,
-                                decoration: InputDecoration(
-                                  labelText: l10n.classEventsFieldCapacity,
-                                  border: const OutlineInputBorder(),
-                                ),
-                                validator: (value) {
-                                  final parsed = int.tryParse(value ?? '');
-                                  if (parsed == null || parsed <= 0) {
-                                    return l10n.classEventsValidationRequired;
-                                  }
-                                  return null;
-                                },
-                              ),
-                            ),
-                          ],
-                        ),
-                      if (isFormMode) const SizedBox(height: 12),
-                      if (isFormMode)
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _ScheduleTimeField(
-                                label: l10n.classEventsFieldStartTime,
-                                time: _startTime,
-                                onTap: isLoading
-                                    ? null
-                                    : () => _pickTime(isStart: true),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _ScheduleTimeField(
-                                label: l10n.classEventsFieldEndTime,
-                                time: _endTime,
-                                onTap: isLoading
-                                    ? null
-                                    : () => _pickTime(isStart: false),
-                              ),
-                            ),
-                          ],
-                        ),
-                      if (isFormMode && hasAppointmentConflict) ...[
-                        const SizedBox(height: 12),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.errorContainer.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Theme.of(context).colorScheme.error,
-                            ),
-                          ),
-                          child: Text(
-                            l10n.bookingUnavailableTimeWarningService,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                        ),
-                      ],
-                      if (isFormMode && !isEditMode) ...[
-                        const SizedBox(height: 12),
-                        RecurrencePicker(
-                          startDate: DateTime(
-                            _date.year,
-                            _date.month,
-                            _date.day,
-                            _startTime.hour,
-                            _startTime.minute,
-                          ),
-                          title: l10n.classEventsRepeatSchedule,
-                          conflictSkipDescription:
-                              l10n.classEventsRecurrenceConflictSkipDescription,
-                          conflictForceDescription: l10n
-                              .classEventsRecurrenceConflictForceDescription,
-                          initialConfig: _recurrenceConfig,
-                          onChanged: (config) {
-                            setState(() => _recurrenceConfig = config);
-                          },
-                        ),
-                        if (_recurrenceConfig != null) ...[
-                          const SizedBox(height: 8),
-                          RecurrencePreview(
-                            startDate: DateTime(
-                              _date.year,
-                              _date.month,
-                              _date.day,
-                              _startTime.hour,
-                              _startTime.minute,
-                            ),
-                            config: _recurrenceConfig!,
-                          ),
-                        ],
-                      ],
-                      if (!isFormMode) ...[
-                        const SizedBox(height: 16),
-                        Text(
-                          l10n.classEventsSchedulesListTitle,
-                          style: Theme.of(context).textTheme.titleSmall,
-                        ),
-                        const SizedBox(height: 8),
-                        schedulesAsync.when(
-                          loading: () =>
-                              const LinearProgressIndicator(minHeight: 2),
-                          error: (_, __) => Text(
-                            l10n.errorTitle,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: Theme.of(context).colorScheme.error,
-                                ),
-                          ),
-                          data: (schedules) {
-                            final timezone = ref.watch(
-                              effectiveTenantTimezoneProvider,
-                            );
-                            final nowUtc = TenantTimeService.nowInTimezone(
-                              timezone,
-                            ).toUtc();
-                            final hasFuture = schedules.any(
-                              (event) => event.endsAtUtc.isAfter(nowUtc),
-                            );
-                            final hasExpired = schedules.any(
-                              (event) => !event.endsAtUtc.isAfter(nowUtc),
-                            );
-                            final shouldShowToggle = hasFuture && hasExpired;
-                            final displayedSchedules =
-                                shouldShowToggle && !_showExpiredSchedules
-                                ? schedules
-                                      .where(
-                                        (event) =>
-                                            event.endsAtUtc.isAfter(nowUtc),
-                                      )
-                                      .toList()
-                                : schedules;
-
-                            if (displayedSchedules.isEmpty) {
-                              return Text(
-                                l10n.classEventsSchedulesListEmpty,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              );
-                            }
-
-                            final listHeight = (displayedSchedules.length * 64)
-                                .clamp(64, 240)
-                                .toDouble();
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (shouldShowToggle)
-                                  SwitchListTile(
-                                    dense: true,
-                                    contentPadding: EdgeInsets.zero,
-                                    title: Text(
-                                      l10n.classEventsShowExpiredSchedules,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall,
-                                    ),
-                                    value: _showExpiredSchedules,
-                                    onChanged: (value) {
-                                      setState(
-                                        () => _showExpiredSchedules = value,
-                                      );
-                                    },
-                                  ),
-                                Container(
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      color: Theme.of(
-                                        context,
-                                      ).colorScheme.outline,
-                                    ),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: SizedBox(
-                                    height: listHeight,
-                                    child: ListView.separated(
-                                      primary: false,
-                                      itemCount: displayedSchedules.length,
-                                      separatorBuilder: (_, __) =>
-                                          const AppDivider(height: 1),
-                                      itemBuilder: (context, index) {
-                                        final schedule =
-                                            displayedSchedules[index];
-                                        final startsAtLocal =
-                                            schedule.startsAtLocal ??
-                                            TenantTimeService.fromUtcToTenant(
-                                              schedule.startsAtUtc,
-                                              timezone,
-                                            );
-                                        final endsAtLocal =
-                                            schedule.endsAtLocal ??
-                                            TenantTimeService.fromUtcToTenant(
-                                              schedule.endsAtUtc,
-                                              timezone,
-                                            );
-                                        final locationName =
-                                            locationNameById[schedule
-                                                .locationId] ??
-                                            '#${schedule.locationId}';
-                                        final staffName =
-                                            staffNameById[schedule.staffId] ??
-                                            '#${schedule.staffId}';
-                                        return ListTile(
-                                          dense: true,
-                                          visualDensity: VisualDensity.compact,
-                                          onTap: () {
-                                            _preEditDraft ??=
-                                                _captureCurrentDraft();
-                                            setState(() {
-                                              _showSchedulingForm = true;
-                                              _editingEvent = schedule;
-                                              _applyEventToForm(schedule);
-                                            });
-                                          },
-                                          leading: const Icon(
-                                            Icons.event_note_outlined,
-                                            size: 20,
-                                          ),
-                                          title: Text(
-                                            '${dateFormat.format(startsAtLocal)} • '
-                                            '${DtFmt.hm(context, startsAtLocal.hour, startsAtLocal.minute)} - ${DtFmt.hm(context, endsAtLocal.hour, endsAtLocal.minute)}',
-                                          ),
-                                          subtitle: Text(
-                                            '$locationName • $staffName',
-                                          ),
-                                          trailing: IconButton(
-                                            tooltip: l10n.actionDelete,
-                                            icon: const Icon(
-                                              Icons.delete_outline,
-                                            ),
-                                            onPressed: () async {
-                                              final confirmed = await showDialog<bool>(
-                                                context: context,
-                                                builder: (ctx) => AlertDialog(
-                                                  title: Text(
-                                                    l10n.classEventsSchedulesDeleteConfirmTitle,
-                                                  ),
-                                                  content: Text(
-                                                    l10n.classEventsSchedulesDeleteConfirmMessage,
-                                                  ),
-                                                  actions: [
-                                                    TextButton(
-                                                      onPressed: () =>
-                                                          Navigator.of(
-                                                            ctx,
-                                                          ).pop(false),
-                                                      child: Text(
-                                                        l10n.actionCancel,
-                                                      ),
-                                                    ),
-                                                    FilledButton(
-                                                      onPressed: () =>
-                                                          Navigator.of(
-                                                            ctx,
-                                                          ).pop(true),
-                                                      child: Text(
-                                                        l10n.actionDelete,
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              );
-                                              if (confirmed != true ||
-                                                  !context.mounted) {
-                                                return;
-                                              }
-
-                                              try {
-                                                final businessId = ref.read(
-                                                  currentBusinessIdProvider,
-                                                );
-                                                final repo = ref.read(
-                                                  classEventsRepositoryProvider,
-                                                );
-                                                await repo.deleteEvent(
-                                                  businessId: businessId,
-                                                  classEventId: schedule.id,
-                                                );
-                                                ref.invalidate(
-                                                  classEventsProvider,
-                                                );
-                                                ref.invalidate(
-                                                  classEventsForRangeProvider,
-                                                );
-                                                ref.invalidate(
-                                                  classEventsForCurrentLocationDayProvider,
-                                                );
-                                                if (_classTypeId != null) {
-                                                  ref.invalidate(
-                                                    allClassEventsByTypeProvider(
-                                                      _classTypeId!,
-                                                    ),
-                                                  );
-                                                  ref.invalidate(
-                                                    upcomingClassEventsByTypeProvider(
-                                                      _classTypeId!,
-                                                    ),
-                                                  );
-                                                  ref.invalidate(
-                                                    upcomingClassEventsCountByTypeProvider(
-                                                      _classTypeId!,
-                                                    ),
-                                                  );
-                                                }
-                                                if (!context.mounted) return;
-                                                await FeedbackDialog.showSuccess(
-                                                  context,
-                                                  title: l10n
-                                                      .classEventsSchedulesDeleteSuccessTitle,
-                                                  message: l10n
-                                                      .classEventsSchedulesDeleteSuccessMessage,
-                                                );
-                                              } catch (error) {
-                                                if (!context.mounted) return;
-                                                final message =
-                                                    error is ApiException
-                                                    ? error.message
-                                                    : l10n.classEventsCreateErrorMessage;
-                                                await FeedbackDialog.showError(
-                                                  context,
-                                                  title: l10n.errorTitle,
-                                                  message: message,
-                                                );
-                                              }
-                                            },
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
               ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  AppOutlinedActionButton(
-                    onPressed: isLoading
-                        ? null
-                        : () {
-                            if (isEditMode) {
-                              final upcomingCount = _readUpcomingCountSync();
-                              setState(() {
-                                if (upcomingCount != 1 &&
-                                    _preEditDraft != null) {
-                                  _restoreDraft(_preEditDraft!);
-                                }
-                                _editingEvent = null;
-                                _preEditDraft = null;
-                                _showSchedulingForm = false;
-                              });
-                              return;
-                            }
-                            if (isFormMode) {
-                              setState(() => _showSchedulingForm = false);
-                              return;
-                            }
-                            Navigator.of(context).pop();
-                          },
-                    child: Text(
-                      isFormMode ? l10n.actionCancel : l10n.actionClose,
-                    ),
-                  ),
-                  if (isFormMode) ...[
-                    const SizedBox(width: 8),
-                    AppAsyncFilledButton(
-                      isLoading: isLoading,
-                      onPressed:
-                          _canSubmit(classTypes: classTypes, staff: staff)
-                          ? _submit
-                          : null,
-                      child: Text(l10n.actionSave),
-                    ),
-                  ],
-                ],
+            if (isFormMode && !isEditMode && filteredLocations.length > 1) ...[
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                value: _locationId,
+                decoration: InputDecoration(
+                  labelText: l10n.classEventsFieldLocation,
+                  border: const OutlineInputBorder(),
+                ),
+                items: filteredLocations
+                    .map(
+                      (location) => DropdownMenuItem<int>(
+                        value: location.id,
+                        child: Text(location.name),
+                      ),
+                    )
+                    .toList(),
+                onChanged: isLoading
+                    ? null
+                    : (value) => setState(() {
+                        _locationId = value;
+                        _staffId = null;
+                      }),
+                validator: (value) =>
+                    value == null ? l10n.classEventsValidationRequired : null,
               ),
             ],
-          ),
+            if (isFormMode && !isEditMode && staff.length > 1) ...[
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                value: _staffId,
+                decoration: InputDecoration(
+                  labelText: l10n.classEventsFieldStaff,
+                  border: const OutlineInputBorder(),
+                ),
+                items: staff
+                    .map(
+                      (member) => DropdownMenuItem<int>(
+                        value: member.id,
+                        child: Text(member.displayName),
+                      ),
+                    )
+                    .toList(),
+                onChanged: isLoading
+                    ? null
+                    : (value) => setState(() => _staffId = value),
+                validator: (value) =>
+                    value == null ? l10n.classEventsValidationRequired : null,
+              ),
+            ],
+            if (isFormMode && !isEditMode && staff.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  l10n.classEventsNoStaffForLocation,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            if (isFormMode) const SizedBox(height: 12),
+            if (isFormMode && filteredLocations.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  l10n.classEventsNoLocationsForClassType,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            if (isFormMode)
+              Row(
+                children: [
+                  Expanded(
+                    child: _PickerField(
+                      label: l10n.classEventsFieldDate,
+                      value: _formatDate(_date),
+                      icon: Icons.calendar_today_outlined,
+                      onTap: isLoading ? null : _pickDate,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _capacityController,
+                      keyboardType: TextInputType.number,
+                      enabled: !isLoading,
+                      decoration: InputDecoration(
+                        labelText: l10n.classEventsFieldCapacity,
+                        border: const OutlineInputBorder(),
+                      ),
+                      validator: (value) {
+                        final parsed = int.tryParse(value ?? '');
+                        if (parsed == null || parsed <= 0) {
+                          return l10n.classEventsValidationRequired;
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            if (isFormMode) const SizedBox(height: 12),
+            if (isFormMode)
+              Row(
+                children: [
+                  Expanded(
+                    child: _ScheduleTimeField(
+                      label: l10n.classEventsFieldStartTime,
+                      time: _startTime,
+                      onTap: isLoading ? null : () => _pickTime(isStart: true),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _ScheduleTimeField(
+                      label: l10n.classEventsFieldEndTime,
+                      time: _endTime,
+                      onTap: isLoading ? null : () => _pickTime(isStart: false),
+                    ),
+                  ),
+                ],
+              ),
+            if (isFormMode && hasAppointmentConflict) ...[
+              const SizedBox(height: 12),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.errorContainer.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+                child: Text(
+                  l10n.bookingUnavailableTimeWarningService,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
+            if (isFormMode && !isEditMode) ...[
+              const SizedBox(height: 12),
+              RecurrencePicker(
+                startDate: DateTime(
+                  _date.year,
+                  _date.month,
+                  _date.day,
+                  _startTime.hour,
+                  _startTime.minute,
+                ),
+                title: l10n.classEventsRepeatSchedule,
+                conflictSkipDescription:
+                    l10n.classEventsRecurrenceConflictSkipDescription,
+                conflictForceDescription:
+                    l10n.classEventsRecurrenceConflictForceDescription,
+                initialConfig: _recurrenceConfig,
+                onChanged: (config) {
+                  setState(() => _recurrenceConfig = config);
+                },
+              ),
+              if (_recurrenceConfig != null) ...[
+                const SizedBox(height: 8),
+                RecurrencePreview(
+                  startDate: DateTime(
+                    _date.year,
+                    _date.month,
+                    _date.day,
+                    _startTime.hour,
+                    _startTime.minute,
+                  ),
+                  config: _recurrenceConfig!,
+                ),
+              ],
+            ],
+            if (!isFormMode) ...[
+              const SizedBox(height: 16),
+              Text(
+                l10n.classEventsSchedulesListTitle,
+                style: Theme.of(context).textTheme.titleSmall,
+              ),
+              const SizedBox(height: 8),
+              schedulesAsync.when(
+                loading: () => const LinearProgressIndicator(minHeight: 2),
+                error: (_, __) => Text(
+                  l10n.errorTitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+                data: (schedules) {
+                  final timezone = ref.watch(effectiveTenantTimezoneProvider);
+                  final nowUtc = TenantTimeService.nowInTimezone(
+                    timezone,
+                  ).toUtc();
+                  final hasFuture = schedules.any(
+                    (event) => event.endsAtUtc.isAfter(nowUtc),
+                  );
+                  final hasExpired = schedules.any(
+                    (event) => !event.endsAtUtc.isAfter(nowUtc),
+                  );
+                  final shouldShowToggle = hasFuture && hasExpired;
+                  final displayedSchedules =
+                      shouldShowToggle && !_showExpiredSchedules
+                      ? schedules
+                            .where((event) => event.endsAtUtc.isAfter(nowUtc))
+                            .toList()
+                      : schedules;
+
+                  if (displayedSchedules.isEmpty) {
+                    return Text(
+                      l10n.classEventsSchedulesListEmpty,
+                      style: Theme.of(context).textTheme.bodySmall,
+                    );
+                  }
+
+                  final listHeight = (displayedSchedules.length * 64)
+                      .clamp(64, 240)
+                      .toDouble();
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (shouldShowToggle)
+                        SwitchListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            l10n.classEventsShowExpiredSchedules,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          value: _showExpiredSchedules,
+                          onChanged: (value) {
+                            setState(() => _showExpiredSchedules = value);
+                          },
+                        ),
+                      Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.outline,
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: SizedBox(
+                          height: listHeight,
+                          child: ListView.separated(
+                            primary: false,
+                            itemCount: displayedSchedules.length,
+                            separatorBuilder: (_, __) =>
+                                const AppDivider(height: 1),
+                            itemBuilder: (context, index) {
+                              final schedule = displayedSchedules[index];
+                              final startsAtLocal =
+                                  schedule.startsAtLocal ??
+                                  TenantTimeService.fromUtcToTenant(
+                                    schedule.startsAtUtc,
+                                    timezone,
+                                  );
+                              final endsAtLocal =
+                                  schedule.endsAtLocal ??
+                                  TenantTimeService.fromUtcToTenant(
+                                    schedule.endsAtUtc,
+                                    timezone,
+                                  );
+                              final locationName =
+                                  locationNameById[schedule.locationId] ??
+                                  '#${schedule.locationId}';
+                              final staffName =
+                                  staffNameById[schedule.staffId] ??
+                                  '#${schedule.staffId}';
+                              return ListTile(
+                                dense: true,
+                                visualDensity: VisualDensity.compact,
+                                onTap: () {
+                                  _preEditDraft ??= _captureCurrentDraft();
+                                  setState(() {
+                                    _showSchedulingForm = true;
+                                    _editingEvent = schedule;
+                                    _applyEventToForm(schedule);
+                                  });
+                                },
+                                leading: const Icon(
+                                  Icons.event_note_outlined,
+                                  size: 20,
+                                ),
+                                title: Text(
+                                  '${dateFormat.format(startsAtLocal)} • '
+                                  '${DtFmt.hm(context, startsAtLocal.hour, startsAtLocal.minute)} - ${DtFmt.hm(context, endsAtLocal.hour, endsAtLocal.minute)}',
+                                ),
+                                subtitle: Text('$locationName • $staffName'),
+                                trailing: IconButton(
+                                  tooltip: l10n.actionDelete,
+                                  icon: const Icon(Icons.delete_outline),
+                                  onPressed: () async {
+                                    final confirmed = await showDialog<bool>(
+                                      context: context,
+                                      builder: (ctx) => AlertDialog(
+                                        title: Text(
+                                          l10n.classEventsSchedulesDeleteConfirmTitle,
+                                        ),
+                                        content: Text(
+                                          l10n.classEventsSchedulesDeleteConfirmMessage,
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.of(ctx).pop(false),
+                                            child: Text(l10n.actionCancel),
+                                          ),
+                                          FilledButton(
+                                            onPressed: () =>
+                                                Navigator.of(ctx).pop(true),
+                                            child: Text(l10n.actionDelete),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirmed != true || !context.mounted) {
+                                      return;
+                                    }
+
+                                    try {
+                                      final businessId = ref.read(
+                                        currentBusinessIdProvider,
+                                      );
+                                      final repo = ref.read(
+                                        classEventsRepositoryProvider,
+                                      );
+                                      await repo.deleteEvent(
+                                        businessId: businessId,
+                                        classEventId: schedule.id,
+                                      );
+                                      ref.invalidate(classEventsProvider);
+                                      ref.invalidate(
+                                        classEventsForRangeProvider,
+                                      );
+                                      ref.invalidate(
+                                        classEventsForCurrentLocationDayProvider,
+                                      );
+                                      if (_classTypeId != null) {
+                                        ref.invalidate(
+                                          allClassEventsByTypeProvider(
+                                            _classTypeId!,
+                                          ),
+                                        );
+                                        ref.invalidate(
+                                          upcomingClassEventsByTypeProvider(
+                                            _classTypeId!,
+                                          ),
+                                        );
+                                        ref.invalidate(
+                                          upcomingClassEventsCountByTypeProvider(
+                                            _classTypeId!,
+                                          ),
+                                        );
+                                      }
+                                      if (!context.mounted) return;
+                                      await FeedbackDialog.showSuccess(
+                                        context,
+                                        title: l10n
+                                            .classEventsSchedulesDeleteSuccessTitle,
+                                        message: l10n
+                                            .classEventsSchedulesDeleteSuccessMessage,
+                                      );
+                                    } catch (error) {
+                                      if (!context.mounted) return;
+                                      final message = error is ApiException
+                                          ? error.message
+                                          : l10n.classEventsCreateErrorMessage;
+                                      await FeedbackDialog.showError(
+                                        context,
+                                        title: l10n.errorTitle,
+                                        message: message,
+                                      );
+                                    }
+                                  },
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ],
         ),
       ),
+      actions: [
+        AppOutlinedActionButton(
+          onPressed: isLoading
+              ? null
+              : () {
+                  if (isEditMode) {
+                    final upcomingCount = _readUpcomingCountSync();
+                    setState(() {
+                      if (upcomingCount != 1 && _preEditDraft != null) {
+                        _restoreDraft(_preEditDraft!);
+                      }
+                      _editingEvent = null;
+                      _preEditDraft = null;
+                      _showSchedulingForm = false;
+                    });
+                    return;
+                  }
+                  if (isFormMode) {
+                    setState(() => _showSchedulingForm = false);
+                    return;
+                  }
+                  Navigator.of(context).pop();
+                },
+          child: Text(isFormMode ? l10n.actionCancel : l10n.actionClose),
+        ),
+        if (isFormMode)
+          AppAsyncFilledButton(
+            isLoading: isLoading,
+            onPressed: _canSubmit(classTypes: classTypes, staff: staff)
+                ? _submit
+                : null,
+            child: Text(l10n.actionSave),
+          ),
+      ],
     );
   }
 
@@ -1764,16 +1688,39 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           totalDates: previewDates.length,
           dates: previewDates,
         );
+        await _ensureRecurringAvailabilityContext(
+          recurrenceDates: recurrenceDates,
+        );
+        final unavailableIndices = _computeRecurringUnavailableIndices(
+          preview: preview,
+          durationMinutes: duration.inMinutes,
+        );
+        final adjustedPreview = RecurringPreviewResult(
+          totalDates: preview.totalDates,
+          dates: preview.dates
+              .map(
+                (date) => PreviewDateItem(
+                  recurrenceIndex: date.recurrenceIndex,
+                  startTime: date.startTime,
+                  endTime: date.endTime,
+                  hasConflict: date.hasConflict,
+                  isUnavailable: unavailableIndices.contains(
+                    date.recurrenceIndex,
+                  ),
+                ),
+              )
+              .toList(),
+        );
 
         if (!mounted) return;
         final excludedIndices = await RecurrencePreviewDialog.show(
           context,
-          preview,
+          adjustedPreview,
           titleText: l10n.classEventsRecurrencePreviewTitle,
           hintText: l10n.classEventsRecurrencePreviewHint,
           confirmLabelBuilder: (count) =>
               l10n.classEventsRecurrencePreviewConfirm(count),
-          excludeConflictsByDefault: conflictStrategy == ConflictStrategy.skip,
+          excludeConflictsByDefault: true,
         );
         if (excludedIndices == null) return;
         final excludedSet = excludedIndices.toSet();
@@ -1829,14 +1776,12 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         }
 
         if (mounted) {
-          final isIt = Localizations.localeOf(context).languageCode == 'it';
           final recurrenceMessage = skippedCount > 0
-              ? (isIt
-                    ? 'Programmazioni create: $createdCount. Saltate: $skippedCount.'
-                    : 'Schedules created: $createdCount. Skipped: $skippedCount.')
-              : (isIt
-                    ? 'Programmazioni create: $createdCount.'
-                    : 'Schedules created: $createdCount.');
+              ? l10n.classEventsRecurrenceCreateSummaryWithSkipped(
+                  createdCount,
+                  skippedCount,
+                )
+              : l10n.classEventsRecurrenceCreateSummary(createdCount);
           await FeedbackDialog.showSuccess(
             context,
             title: l10n.classEventsCreateSuccessTitle,
@@ -1940,7 +1885,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     return '$y-$m-${d}T$h:$min:$s';
   }
 
-  int _countOverlappingAppointmentsForSelection(List<Appointment> appointments) {
+  int _countOverlappingAppointmentsForSelection(
+    List<Appointment> appointments,
+  ) {
     if (_staffId == null || _locationId == null) {
       return 0;
     }
@@ -1964,7 +1911,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     }
 
     return appointments.where((appointment) {
-      if (appointment.staffId != _staffId || appointment.locationId != _locationId) {
+      if (appointment.staffId != _staffId ||
+          appointment.locationId != _locationId) {
         return false;
       }
       return startLocal.isBefore(appointment.endTime) &&
@@ -2035,6 +1983,85 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       return occurrenceStartUtc.isBefore(intervalEndUtc) &&
           intervalStartUtc.isBefore(occurrenceEndUtc);
     });
+  }
+
+  Set<int> _computeRecurringUnavailableIndices({
+    required RecurringPreviewResult preview,
+    required int durationMinutes,
+  }) {
+    final unavailableIndices = <int>{};
+    final staffId = _staffId;
+    final locationId = _locationId;
+    if (preview.dates.isEmpty ||
+        staffId == null ||
+        locationId == null ||
+        durationMinutes <= 0) {
+      return unavailableIndices;
+    }
+
+    final layout = ref.read(layoutConfigProvider);
+    for (final date in preview.dates) {
+      final day = DateUtils.dateOnly(date.startTime);
+      final isClosed = ref.read(
+        isDateClosedForLocationProvider((date: day, locationId: locationId)),
+      );
+      if (isClosed) {
+        unavailableIndices.add(date.recurrenceIndex);
+        continue;
+      }
+
+      final available = ref.read(
+        staffSlotAvailabilityForDateProvider((staffId: staffId, date: day)),
+      );
+      if (available.isEmpty) {
+        unavailableIndices.add(date.recurrenceIndex);
+        continue;
+      }
+
+      final startMinutes = date.startTime.hour * 60 + date.startTime.minute;
+      final endMinutes = startMinutes + durationMinutes;
+      final startSlot = startMinutes ~/ layout.minutesPerSlot;
+      final endSlot = (endMinutes / layout.minutesPerSlot).ceil();
+      var occurrenceUnavailable = false;
+      for (int slot = startSlot; slot < endSlot; slot++) {
+        if (!available.contains(slot)) {
+          occurrenceUnavailable = true;
+          break;
+        }
+      }
+      if (occurrenceUnavailable) {
+        unavailableIndices.add(date.recurrenceIndex);
+      }
+    }
+
+    return unavailableIndices;
+  }
+
+  Future<void> _ensureRecurringAvailabilityContext({
+    required List<DateTime> recurrenceDates,
+  }) async {
+    final staffId = _staffId;
+    if (staffId == null || recurrenceDates.isEmpty) return;
+
+    final fromDate = DateUtils.dateOnly(recurrenceDates.first);
+    final toDate = DateUtils.dateOnly(recurrenceDates.last);
+
+    try {
+      await ref.read(locationClosuresProvider.future);
+    } catch (_) {
+      // Se fallisce il preload, usiamo i dati già presenti in cache.
+    }
+
+    final planningNotifier = ref.read(staffPlanningsProvider.notifier);
+    final exceptionsNotifier = ref.read(availabilityExceptionsProvider.notifier);
+    await Future.wait([
+      planningNotifier.loadPlanningsForStaff(staffId),
+      exceptionsNotifier.loadExceptionsForStaff(
+        staffId,
+        fromDate: fromDate,
+        toDate: toDate,
+      ),
+    ]);
   }
 }
 

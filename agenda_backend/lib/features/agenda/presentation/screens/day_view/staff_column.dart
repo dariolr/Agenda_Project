@@ -753,6 +753,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     final positionedEntries = <Widget>[];
     final expandedEntries = <Widget>[];
+    final focusedExpandedEntries = <Widget>[];
 
     final originalAppointmentsMap = {for (var a in appointments) a.id: a};
     final layoutEntries =
@@ -891,7 +892,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       );
 
       if (isExpanded) {
-        expandedEntries.add(cardWidget);
+        if (selectedAppts.focusAppointmentId == originalAppt.id) {
+          focusedExpandedEntries.add(cardWidget);
+        } else {
+          expandedEntries.add(cardWidget);
+        }
       } else {
         positionedEntries.add(cardWidget);
       }
@@ -1036,6 +1041,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     positionedEntries.sort((a, b) => topOf(a).compareTo(topOf(b)));
     positionedEntries.addAll(expandedEntries);
+    positionedEntries.addAll(focusedExpandedEntries);
     return positionedEntries;
   }
 
