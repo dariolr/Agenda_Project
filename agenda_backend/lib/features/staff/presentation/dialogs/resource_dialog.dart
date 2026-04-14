@@ -209,6 +209,7 @@ class _ResourceDialogState extends ConsumerState<_ResourceDialog> {
     final title = widget.isEditing ? l10n.resourceEdit : l10n.resourceNew;
 
     final body = Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       key: _formKey,
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(AppSpacing.large),

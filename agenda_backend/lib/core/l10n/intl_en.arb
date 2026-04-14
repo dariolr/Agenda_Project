@@ -40,6 +40,7 @@
   "actionCancel": "Cancel",
   "actionConfirm": "Confirm",
   "actionClose": "Close",
+  "actionPreview": "Preview",
   "actionRetry": "Retry",
   "actionReschedule": "Reschedule",
   "deleteConfirmationTitle": "Confirm deletion?",
@@ -1077,6 +1078,10 @@
     }
   },
   "recurrencePreviewHint": "Uncheck the dates you don't want to create",
+  "recurrencePreviewIncludeConflicts": "Include overlaps",
+  "recurrencePreviewIncludeUnavailable": "Include unavailable slots",
+  "recurrencePreviewExcludeConflicts": "Exclude overlaps",
+  "recurrencePreviewExcludeUnavailable": "Exclude unavailable slots",
   "recurrencePreviewConflictSkip": "Skip due to conflict",
   "recurrencePreviewConflictForce": "Create anyway",
   "recurrencePreviewConfirm": "Create {count} appointments",
@@ -1499,11 +1504,22 @@
     }
   },
   "classEventsFieldCapacity": "Capacity",
+  "classEventsValidationCapacityMin": "Enter a minimum capacity",
   "classEventsNoLocationsForClassType": "No enabled location for this class type",
   "classEventsValidationRequired": "Fill all required fields",
   "classEventsValidationEndAfterStart": "End time must be after start time",
   "classEventsNoClassTypes": "No class types available",
   "classEventsNoStaffForLocation": "No staff available for selected location",
+  "classEventsNoScheduledDates": "No scheduled dates",
+  "classEventsStaffInactiveOption": "Inactive staff (ID: {staffId})",
+  "@classEventsStaffInactiveOption": {
+    "placeholders": {
+      "staffId": {
+        "type": "int"
+      }
+    }
+  },
+  "classEventsStaffInactiveChangeRequired": "The assigned staff member is no longer active: select an active staff member to save.",
   "classEventsSchedulesListTitle": "Existing schedules",
   "classEventsSchedulesListEmpty": "No schedules",
   "classEventsFutureBadge": "Future",
@@ -1548,6 +1564,8 @@
   "classTypesFieldName": "Name",
   "classTypesFieldDescriptionOptional": "Description (optional)",
   "classTypesFieldIsActive": "Type active",
+  "classTypesLocationsSelectionTitle": "Enabled locations",
+  "classTypesLocationsSelectionHelper": "Select the locations where this class type can be scheduled. You can change this at any time.",
   "classTypesCreateSuccessTitle": "Class type created",
   "classTypesCreateSuccessMessage": "Class type created successfully",
   "classTypesUpdateSuccessTitle": "Class type updated",

@@ -136,6 +136,7 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
         ),
         contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
         content: Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
           key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,

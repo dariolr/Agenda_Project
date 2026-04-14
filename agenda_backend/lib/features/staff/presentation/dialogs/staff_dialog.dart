@@ -395,6 +395,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     );
 
     final content = Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

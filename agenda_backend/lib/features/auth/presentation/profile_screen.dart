@@ -314,6 +314,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                       // Form
                       Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
                         key: _formKey,
                         child: Column(
                           children: [

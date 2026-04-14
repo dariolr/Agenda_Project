@@ -182,6 +182,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
               child: LocalLoadingOverlay(
                 isLoading: _isLoading,
                 child: Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,

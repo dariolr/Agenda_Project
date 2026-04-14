@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -26,6 +27,7 @@ import '/features/agenda/providers/tenant_time_provider.dart';
 import '/features/agenda/presentation/widgets/recurrence_picker.dart';
 import '/features/agenda/presentation/widgets/recurrence_preview.dart';
 import '/features/agenda/presentation/dialogs/recurrence_summary_dialog.dart';
+import '/features/agenda/presentation/utils/recurrence_flow_utils.dart';
 import '/features/agenda/domain/config/layout_config.dart';
 import '/features/business/providers/location_closures_provider.dart';
 import '/features/staff/providers/staff_providers.dart';
@@ -82,10 +84,16 @@ class ClassEventsScreen extends ConsumerWidget {
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                       itemCount: classTypes.length,
                       separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (_, index) => _ClassTypeCard(
-                        key: ValueKey<int>(classTypes[index].id),
-                        classType: classTypes[index],
-                        canManageClassTypes: canManageClassTypes,
+                      itemBuilder: (_, index) => Align(
+                        alignment: Alignment.topCenter,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 980),
+                          child: _ClassTypeCard(
+                            key: ValueKey<int>(classTypes[index].id),
+                            classType: classTypes[index],
+                            canManageClassTypes: canManageClassTypes,
+                          ),
+                        ),
                       ),
                     );
                   },
@@ -127,7 +135,7 @@ Future<void> showCreateClassEventDialog(
   );
 }
 
-class _ClassTypeCard extends ConsumerWidget {
+class _ClassTypeCard extends ConsumerStatefulWidget {
   const _ClassTypeCard({
     super.key,
     required this.classType,
@@ -138,16 +146,27 @@ class _ClassTypeCard extends ConsumerWidget {
   final bool canManageClassTypes;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_ClassTypeCard> createState() => _ClassTypeCardState();
+}
+
+enum _ClassTypeQuickAction { duplicate, delete }
+
+class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
+  bool _showExpiredSchedules = false;
+  bool _isHovering = false;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
     final mutationState = ref.watch(classTypeMutationControllerProvider);
     final isLoading = mutationState.isLoading;
     final upcomingCountAsync = ref.watch(
-      upcomingClassEventsCountByTypeProvider(classType.id),
+      upcomingClassEventsCountByTypeProvider(widget.classType.id),
     );
     final allSchedulesAsync = ref.watch(
-      allClassEventsByTypeProvider(classType.id),
+      allClassEventsByTypeProvider(widget.classType.id),
     );
+    final allStaff = ref.watch(allStaffProvider).value ?? const <Staff>[];
     final colorScheme = Theme.of(context).colorScheme;
     final locations = ref.watch(locationsProvider);
     final businessContext = ref
@@ -155,6 +174,9 @@ class _ClassTypeCard extends ConsumerWidget {
         .maybeWhen(data: (ctx) => ctx, orElse: () => null);
     final locationNameById = {
       for (final location in locations) location.id: location.name,
+    };
+    final staffNameById = {
+      for (final staff in allStaff) staff.id: staff.displayName,
     };
     final hasSingleBusinessLocation = locations.length <= 1;
     final hasSingleOperatorLocation =
@@ -164,57 +186,72 @@ class _ClassTypeCard extends ConsumerWidget {
         businessContext.locationIds.length == 1;
     final shouldShowLocationsRow =
         !hasSingleBusinessLocation && !hasSingleOperatorLocation;
-    final visibleLocationNames = classType.locationIds
+    final visibleLocationNames = widget.classType.locationIds
         .map((id) => locationNameById[id])
         .whereType<String>()
         .toList();
+    final futureCount = upcomingCountAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => null,
+    );
+    final allSchedulesCount = allSchedulesAsync.maybeWhen(
+      data: (items) => items.length,
+      orElse: () => null,
+    );
+    final expiredCount =
+        futureCount != null && allSchedulesCount != null
+        ? (allSchedulesCount - futureCount).clamp(0, 1 << 30)
+        : null;
+    final locationSummary = widget.classType.locationIds.isEmpty
+        ? l10n.allLocations
+        : visibleLocationNames.join(', ');
+    final canOpenEdit = widget.canManageClassTypes && !isLoading;
+    final borderColor = _isHovering
+        ? colorScheme.primary.withOpacity(0.45)
+        : colorScheme.outline.withOpacity(0.2);
 
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outline.withOpacity(0.2)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return MouseRegion(
+      cursor: canOpenEdit ? SystemMouseCursors.click : MouseCursor.defer,
+      onEnter: (_) => setState(() => _isHovering = true),
+      onExit: (_) => setState(() => _isHovering = false),
+      child: Card(
+        elevation: _isHovering ? 1 : 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: borderColor),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: canOpenEdit
+              ? () => showCreateClassTypeDialog(
+                  context,
+                  ref,
+                  initial: widget.classType,
+                )
+              : null,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
             Row(
               children: [
                 Expanded(
                   child: Text(
-                    classType.name,
+                    widget.classType.name,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                 ),
-                _ClassTypeStatusChip(isActive: classType.isActive),
+                _ClassTypeStatusChip(isActive: widget.classType.isActive),
               ],
             ),
-            if ((classType.description ?? '').trim().isNotEmpty) ...[
+            if ((widget.classType.description ?? '').trim().isNotEmpty) ...[
               const SizedBox(height: 6),
               Text(
-                classType.description!,
+                widget.classType.description!,
                 style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-            if (shouldShowLocationsRow) ...[
-              const SizedBox(height: 6),
-              Row(
-                children: [
-                  const Icon(Icons.place_outlined, size: 16),
-                  const SizedBox(width: 6),
-                  Expanded(
-                    child: Text(
-                      classType.locationIds.isEmpty
-                          ? l10n.allLocations
-                          : visibleLocationNames.join(', '),
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ),
-                ],
               ),
             ],
             const SizedBox(height: 10),
@@ -222,99 +259,327 @@ class _ClassTypeCard extends ConsumerWidget {
               spacing: 8,
               runSpacing: 8,
               children: [
-                if (canManageClassTypes)
+                if (futureCount != null && futureCount > 0)
+                  _buildMetadataChip(
+                    context: context,
+                    icon: Icons.schedule_outlined,
+                    label: '${l10n.classEventsFutureBadge}: $futureCount',
+                  ),
+                if (expiredCount != null && expiredCount > 0)
+                  _buildMetadataChip(
+                    context: context,
+                    icon: Icons.history_outlined,
+                    label: '${l10n.classEventsExpiredBadge}: $expiredCount',
+                  ),
+              ],
+            ),
+            if (shouldShowLocationsRow) ...[
+              const SizedBox(height: 10),
+              _buildLocationsBlock(
+                context: context,
+                locationNames: visibleLocationNames,
+                allLocationsLabel: locationSummary,
+                isAllLocations: widget.classType.locationIds.isEmpty,
+              ),
+            ],
+            const SizedBox(height: 10),
+            if (widget.canManageClassTypes)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
                   FilledButton.icon(
                     onPressed: isLoading
                         ? null
                         : () => showCreateClassEventDialog(
                             context,
                             ref,
-                            initialClassTypeId: classType.id,
+                            initialClassTypeId: widget.classType.id,
                           ),
+                    style: FilledButton.styleFrom(
+                      minimumSize: const Size(0, 44),
+                    ),
                     icon: const Icon(Icons.event_available_outlined),
-                    label: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(l10n.classTypesActionScheduleClass),
-                        switch ((upcomingCountAsync, allSchedulesAsync)) {
-                          (
-                            AsyncData<int> futureData,
-                            AsyncData<List<ClassEvent>> allData,
-                          ) =>
-                            Builder(
-                              builder: (_) {
-                                final futureCount = futureData.value;
-                                final expiredCount =
-                                    (allData.value.length - futureCount).clamp(
-                                      0,
-                                      1 << 30,
-                                    );
-                                if (futureCount == 0 && expiredCount == 0) {
-                                  return const SizedBox.shrink();
-                                }
-                                return Padding(
-                                  padding: const EdgeInsets.only(left: 8),
-                                  child: Wrap(
-                                    spacing: 6,
-                                    children: [
-                                      if (futureCount > 0)
-                                        _ScheduleCountPill(
-                                          label: l10n.classEventsFutureBadge,
-                                          count: futureCount,
-                                          textColor: colorScheme.onPrimary,
-                                          backgroundColor: colorScheme.onPrimary
-                                              .withOpacity(0.14),
-                                        ),
-                                      if (expiredCount > 0)
-                                        _ScheduleCountPill(
-                                          label: l10n.classEventsExpiredBadge,
-                                          count: expiredCount,
-                                          textColor: colorScheme.onPrimary,
-                                          backgroundColor: colorScheme.onPrimary
-                                              .withOpacity(0.22),
-                                        ),
-                                    ],
-                                  ),
-                                );
-                              },
-                            ),
-                          _ => const SizedBox.shrink(),
+                    label: Text(l10n.classTypesActionScheduleClass),
+                  ),
+                  const SizedBox(width: 8),
+                  SizedBox(
+                    height: 44,
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: colorScheme.outline.withOpacity(0.5),
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: PopupMenuButton<_ClassTypeQuickAction>(
+                        enabled: !isLoading,
+                        icon: const Icon(Icons.more_horiz),
+                        onSelected: (action) async {
+                          switch (action) {
+                            case _ClassTypeQuickAction.duplicate:
+                              await _cloneClassType(
+                                context,
+                                ref,
+                                widget.classType,
+                              );
+                              break;
+                            case _ClassTypeQuickAction.delete:
+                              await _deleteClassType(
+                                context,
+                                ref,
+                                widget.classType,
+                              );
+                              break;
+                          }
                         },
-                      ],
+                        itemBuilder: (menuContext) => [
+                          PopupMenuItem<_ClassTypeQuickAction>(
+                            value: _ClassTypeQuickAction.duplicate,
+                            child: Row(
+                              children: [
+                                const Icon(Icons.copy_outlined, size: 18),
+                                const SizedBox(width: 8),
+                                Text(l10n.duplicateAction),
+                              ],
+                            ),
+                          ),
+                          PopupMenuItem<_ClassTypeQuickAction>(
+                            value: _ClassTypeQuickAction.delete,
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.delete_outline,
+                                  size: 18,
+                                  color: colorScheme.error,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  l10n.actionDelete,
+                                  style: TextStyle(color: colorScheme.error),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                if (canManageClassTypes)
-                  OutlinedButton.icon(
-                    onPressed: isLoading
-                        ? null
-                        : () => showCreateClassTypeDialog(
-                            context,
-                            ref,
-                            initial: classType,
-                          ),
-                    icon: const Icon(Icons.edit_outlined),
-                    label: Text(l10n.actionEdit),
+                ],
+              ),
+            const SizedBox(height: 12),
+            Container(
+              decoration: BoxDecoration(
+                border: Border.all(color: colorScheme.outline.withOpacity(0.35)),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: ExpansionTile(
+                initiallyExpanded: false,
+                maintainState: true,
+                tilePadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 2,
+                ),
+                childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                collapsedShape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                leading: const Icon(Icons.event_note_outlined, size: 18),
+                title: Text(
+                  l10n.classEventsSchedulesListTitle,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                ),
+                children: [
+                  allSchedulesAsync.when(
+                    loading: () => const LinearProgressIndicator(minHeight: 2),
+                    error: (_, __) => Text(
+                      l10n.errorTitle,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: colorScheme.error),
+                    ),
+                    data: (schedules) {
+                      final timezone = ref.watch(effectiveTenantTimezoneProvider);
+                      final nowUtc =
+                          TenantTimeService.nowInTimezone(timezone).toUtc();
+                      final futureSchedules = schedules
+                          .where((event) => event.endsAtUtc.isAfter(nowUtc))
+                          .toList();
+                      final hasExpiredSchedules =
+                          futureSchedules.length != schedules.length;
+                      final displayedSchedules = _showExpiredSchedules
+                          ? schedules
+                          : futureSchedules;
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (hasExpiredSchedules)
+                            SwitchListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                l10n.classEventsShowExpiredSchedules,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              value: _showExpiredSchedules,
+                              onChanged: (value) {
+                                setState(() => _showExpiredSchedules = value);
+                              },
+                            ),
+                          if (displayedSchedules.isEmpty)
+                            Text(
+                              l10n.classEventsNoScheduledDates,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            )
+                          else
+                            _buildSchedulesList(
+                              context: context,
+                              schedules: displayedSchedules,
+                              timezone: timezone,
+                              locationNameById: locationNameById,
+                              staffNameById: staffNameById,
+                              colorScheme: colorScheme,
+                            ),
+                        ],
+                      );
+                    },
                   ),
-                if (canManageClassTypes)
-                  OutlinedButton.icon(
-                    onPressed: isLoading
-                        ? null
-                        : () => _cloneClassType(context, ref, classType),
-                    icon: const Icon(Icons.copy_outlined),
-                    label: Text(l10n.duplicateAction),
-                  ),
-                if (canManageClassTypes)
-                  OutlinedButton.icon(
-                    onPressed: isLoading
-                        ? null
-                        : () => _deleteClassType(context, ref, classType),
-                    icon: const Icon(Icons.delete_outline),
-                    label: Text(l10n.actionDelete),
-                  ),
+                ],
+              ),
+            ),
               ],
             ),
-          ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSchedulesList({
+    required BuildContext context,
+    required List<ClassEvent> schedules,
+    required String timezone,
+    required Map<int, String> locationNameById,
+    required Map<int, String> staffNameById,
+    required ColorScheme colorScheme,
+  }) {
+    final listHeight = (schedules.length * 60)
+        .clamp(96, 280)
+        .toDouble();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(10),
+      child: SizedBox(
+        height: listHeight,
+        child: ListView.separated(
+          primary: false,
+          itemCount: schedules.length,
+          separatorBuilder: (_, __) => const AppDivider(height: 1),
+          itemBuilder: (context, index) {
+            final schedule = schedules[index];
+            final startsAtLocal =
+                schedule.startsAtLocal ??
+                TenantTimeService.fromUtcToTenant(schedule.startsAtUtc, timezone);
+            final endsAtLocal =
+                schedule.endsAtLocal ??
+                TenantTimeService.fromUtcToTenant(schedule.endsAtUtc, timezone);
+            final locationName =
+                locationNameById[schedule.locationId] ??
+                '#${schedule.locationId}';
+            final staffName =
+                staffNameById[schedule.staffId] ?? '#${schedule.staffId}';
+            return ListTile(
+              dense: true,
+              visualDensity: VisualDensity.compact,
+              leading: Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: colorScheme.primaryContainer.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.calendar_today_outlined, size: 16),
+              ),
+              title: Text(
+                '${DateFormat('dd/MM/yyyy').format(startsAtLocal)} • ${DtFmt.hm(context, startsAtLocal.hour, startsAtLocal.minute)} - ${DtFmt.hm(context, endsAtLocal.hour, endsAtLocal.minute)}',
+              ),
+              subtitle: Text('$locationName • $staffName'),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMetadataChip({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.55),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
+          const SizedBox(width: 6),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLocationsBlock({
+    required BuildContext context,
+    required List<String> locationNames,
+    required String allLocationsLabel,
+    required bool isAllLocations,
+  }) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final items = isAllLocations ? <String>[allLocationsLabel] : locationNames;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.35),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.place_outlined, size: 14, color: colorScheme.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Text(
+                context.l10n.classTypesLocationsSelectionTitle,
+                style: textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          ...items.map(
+            (name) => Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: Text(name, style: textTheme.bodySmall),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -435,38 +700,6 @@ class _ClassTypeStatusChip extends StatelessWidget {
   }
 }
 
-class _ScheduleCountPill extends StatelessWidget {
-  const _ScheduleCountPill({
-    required this.label,
-    required this.count,
-    required this.textColor,
-    required this.backgroundColor,
-  });
-
-  final String label;
-  final int count;
-  final Color textColor;
-  final Color backgroundColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        '$label $count',
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-          color: textColor,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
-  }
-}
-
 class _ClassTypeFormDialog extends ConsumerStatefulWidget {
   const _ClassTypeFormDialog({this.initial});
 
@@ -542,6 +775,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     final shouldShowLocationsSelector = !hasSingleVisibleLocation;
 
     final content = Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       key: _formKey,
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -737,19 +971,34 @@ class _ClassTypeLocationsMultiSelect extends StatelessWidget {
           children: [
             Expanded(
               child: Text(
-                l10n.operatorsScopeSelectLocations,
+                l10n.classTypesLocationsSelectionTitle,
                 style: Theme.of(context).textTheme.titleSmall,
               ),
             ),
-            TextButton(
+            OutlinedButton.icon(
               onPressed: !enabled
                   ? null
                   : () => onChanged(allSelected ? <int>{} : allLocationIds),
-              child: Text(
+              icon: Icon(
+                allSelected ? Icons.deselect_outlined : Icons.select_all,
+                size: 16,
+              ),
+              label: Text(
                 allSelected ? l10n.actionDeselectAll : l10n.actionSelectAll,
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size(0, 36),
+                visualDensity: VisualDensity.compact,
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          l10n.classTypesLocationsSelectionHelper,
+          style: Theme.of(
+            context,
+          ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
         const SizedBox(height: 8),
         Container(
@@ -841,27 +1090,24 @@ class _CreateClassForm extends ConsumerStatefulWidget {
 }
 
 class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
+  static const int _timeStepMinutes = 15;
   final _formKey = GlobalKey<FormState>();
-  final _capacityController = TextEditingController(text: '1');
+  final _capacityController = TextEditingController();
 
   ClassEvent? _editingEvent;
-  _CreateClassDraft? _preEditDraft;
   RecurrenceConfig? _recurrenceConfig;
   int? _classTypeId;
   int? _locationId;
   int? _staffId;
-  bool _showSchedulingForm = false;
   late DateTime _date;
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
-  bool _showExpiredSchedules = false;
 
   @override
   void initState() {
     super.initState();
     _editingEvent = widget.initialEvent;
     if (_editingEvent != null) {
-      _showSchedulingForm = true;
       _applyEventToForm(_editingEvent!);
     } else {
       _classTypeId = widget.initialClassTypeId;
@@ -871,7 +1117,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         widget.initialDate.month,
         widget.initialDate.day,
       );
-      _showSchedulingForm = false;
     }
   }
 
@@ -890,7 +1135,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final isLoading = createState.isLoading;
     final l10n = context.l10n;
     final isEditMode = _editingEvent != null;
-    final isFormMode = _showSchedulingForm || isEditMode;
     final businessId = ref.watch(currentBusinessIdProvider);
 
     final classTypes = classTypesAsync.value ?? const <ClassType>[];
@@ -903,6 +1147,21 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final staff = _staffForSelectedLocation(
       staffAsync.value ?? const <Staff>[],
     );
+    final staffNameById = {
+      for (final member in allStaff) member.id: member.displayName,
+    };
+    final activeStaffIdSet = staff.map((member) => member.id).toSet();
+    final editingStaffId = _editingEvent?.staffId;
+    final hasInactiveAssignedOption =
+        isEditMode &&
+        editingStaffId != null &&
+        !activeStaffIdSet.contains(editingStaffId);
+    final inactiveAssignedStaffId =
+        hasInactiveAssignedOption ? editingStaffId : null;
+    final selectableStaffIds = <int>{...activeStaffIdSet};
+    if (inactiveAssignedStaffId != null) {
+      selectableStaffIds.add(inactiveAssignedStaffId);
+    }
 
     if (classTypes.isNotEmpty && _classTypeId == null) {
       _classTypeId = classTypes.first.id;
@@ -913,18 +1172,41 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         !filteredLocations.any((loc) => loc.id == _locationId)) {
       _locationId = filteredLocations.first.id;
     }
-    _staffId = _resolveSelectedStaffId(staff);
+    _staffId = _resolveSelectedStaffId(
+      staff: staff,
+      selectableStaffIds: selectableStaffIds,
+      isEditMode: isEditMode,
+      editingStaffId: editingStaffId,
+    );
+    final inactiveAssignedName = inactiveAssignedStaffId == null
+        ? null
+        : staffNameById[inactiveAssignedStaffId];
+    final inactiveAssignedLabel =
+        inactiveAssignedStaffId != null
+        ? ((inactiveAssignedName?.trim().isNotEmpty ?? false)
+              ? '${inactiveAssignedName!.trim()} (${l10n.classTypesStatusInactive})'
+              : l10n.classEventsStaffInactiveOption(inactiveAssignedStaffId))
+        : null;
+    final staffDropdownItems = <({int id, String label, bool isInactive})>[
+      if (inactiveAssignedStaffId != null && inactiveAssignedLabel != null)
+        (
+          id: inactiveAssignedStaffId,
+          label: inactiveAssignedLabel,
+          isInactive: true,
+        ),
+      ...staff.map(
+        (member) => (
+          id: member.id,
+          label: member.displayName,
+          isInactive: false,
+        ),
+      ),
+    ];
+    final requiresStaffReplacement =
+        isEditMode &&
+        inactiveAssignedStaffId != null &&
+        _staffId == inactiveAssignedStaffId;
 
-    final schedulesAsync = _classTypeId == null
-        ? const AsyncValue<List<ClassEvent>>.data(<ClassEvent>[])
-        : ref.watch(allClassEventsByTypeProvider(_classTypeId!));
-    final locationNameById = {
-      for (final location in locations) location.id: location.name,
-    };
-    final staffNameById = {
-      for (final member in allStaff) member.id: member.displayName,
-    };
-    final dateFormat = DateFormat('dd/MM/yyyy');
     final selectedDayAppointmentsAsync = _locationId != null && businessId > 0
         ? ref.watch(
             appointmentsForLocationDayProvider((
@@ -947,21 +1229,12 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       isLoading: isLoading,
       mobileExpandToAvailableHeight: true,
       content: Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!isFormMode && !isEditMode) ...[
-              OutlinedButton.icon(
-                onPressed: () {
-                  setState(() => _showSchedulingForm = true);
-                },
-                icon: const Icon(Icons.add),
-                label: Text(l10n.classEventsNewScheduleButton),
-              ),
-              const SizedBox(height: 8),
-            ],
             if (isEditMode) ...[
               Text(
                 l10n.classEventsEditModeLabel,
@@ -982,7 +1255,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                   style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ),
-            if (isFormMode && classTypes.isEmpty)
+            if (classTypes.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
@@ -990,7 +1263,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
-            if (isFormMode && !isEditMode && filteredLocations.length > 1) ...[
+            if (!isEditMode && filteredLocations.length > 1) ...[
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
                 value: _locationId,
@@ -1016,7 +1289,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                     value == null ? l10n.classEventsValidationRequired : null,
               ),
             ],
-            if (isFormMode && !isEditMode && staff.length > 1) ...[
+            if ((!isEditMode ? staff.length > 1 : staffDropdownItems.length > 1)) ...[
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
                 value: _staffId,
@@ -1024,22 +1297,42 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                   labelText: l10n.classEventsFieldStaff,
                   border: const OutlineInputBorder(),
                 ),
-                items: staff
+                items: staffDropdownItems
                     .map(
-                      (member) => DropdownMenuItem<int>(
-                        value: member.id,
-                        child: Text(member.displayName),
+                      (item) => DropdownMenuItem<int>(
+                        value: item.id,
+                        child: Text(item.label),
                       ),
                     )
                     .toList(),
                 onChanged: isLoading
                     ? null
                     : (value) => setState(() => _staffId = value),
-                validator: (value) =>
-                    value == null ? l10n.classEventsValidationRequired : null,
+                validator: (value) {
+                  if (value == null) {
+                    return l10n.classEventsValidationRequired;
+                  }
+                  if (isEditMode &&
+                      editingStaffId != null &&
+                      hasInactiveAssignedOption &&
+                      value == editingStaffId) {
+                    return l10n.classEventsStaffInactiveChangeRequired;
+                  }
+                  return null;
+                },
               ),
             ],
-            if (isFormMode && !isEditMode && staff.isEmpty)
+            if (requiresStaffReplacement)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  l10n.classEventsStaffInactiveChangeRequired,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+              ),
+            if (!isEditMode && staff.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
@@ -1047,8 +1340,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
-            if (isFormMode) const SizedBox(height: 12),
-            if (isFormMode && filteredLocations.isEmpty)
+            const SizedBox(height: 12),
+            if (filteredLocations.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(bottom: 12),
                 child: Text(
@@ -1056,60 +1349,61 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
-            if (isFormMode)
-              Row(
-                children: [
-                  Expanded(
-                    child: _PickerField(
-                      label: l10n.classEventsFieldDate,
-                      value: _formatDate(_date),
-                      icon: Icons.calendar_today_outlined,
-                      onTap: isLoading ? null : _pickDate,
-                    ),
+            Row(
+              children: [
+                Expanded(
+                  child: _PickerField(
+                    label: l10n.classEventsFieldDate,
+                    value: _formatDate(_date),
+                    icon: Icons.calendar_today_outlined,
+                    onTap: isLoading ? null : _pickDate,
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _capacityController,
-                      keyboardType: TextInputType.number,
-                      enabled: !isLoading,
-                      decoration: InputDecoration(
-                        labelText: l10n.classEventsFieldCapacity,
-                        border: const OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        final parsed = int.tryParse(value ?? '');
-                        if (parsed == null || parsed <= 0) {
-                          return l10n.classEventsValidationRequired;
-                        }
-                        return null;
-                      },
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _capacityController,
+                    keyboardType: TextInputType.number,
+                    inputFormatters: [
+                      FilteringTextInputFormatter.digitsOnly,
+                    ],
+                    enabled: !isLoading,
+                    decoration: InputDecoration(
+                      labelText: l10n.classEventsFieldCapacity,
+                      border: const OutlineInputBorder(),
                     ),
+                    validator: (value) {
+                      final parsed = int.tryParse(value ?? '');
+                      if (parsed == null || parsed <= 0) {
+                        return l10n.classEventsValidationCapacityMin;
+                      }
+                      return null;
+                    },
                   ),
-                ],
-              ),
-            if (isFormMode) const SizedBox(height: 12),
-            if (isFormMode)
-              Row(
-                children: [
-                  Expanded(
-                    child: _ScheduleTimeField(
-                      label: l10n.classEventsFieldStartTime,
-                      time: _startTime,
-                      onTap: isLoading ? null : () => _pickTime(isStart: true),
-                    ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _ScheduleTimeField(
+                    label: l10n.classEventsFieldStartTime,
+                    time: _startTime,
+                    onTap: isLoading ? null : () => _pickTime(isStart: true),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _ScheduleTimeField(
-                      label: l10n.classEventsFieldEndTime,
-                      time: _endTime,
-                      onTap: isLoading ? null : () => _pickTime(isStart: false),
-                    ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _ScheduleTimeField(
+                    label: l10n.classEventsFieldEndTime,
+                    time: _endTime,
+                    onTap: isLoading ? null : () => _pickTime(isStart: false),
                   ),
-                ],
-              ),
-            if (isFormMode && hasAppointmentConflict) ...[
+                ),
+              ],
+            ),
+            if (hasAppointmentConflict) ...[
               const SizedBox(height: 12),
               Container(
                 width: double.infinity,
@@ -1129,7 +1423,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                 ),
               ),
             ],
-            if (isFormMode && !isEditMode) ...[
+            if (!isEditMode) ...[
               const SizedBox(height: 12),
               RecurrencePicker(
                 startDate: DateTime(
@@ -1140,10 +1434,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                   _startTime.minute,
                 ),
                 title: l10n.classEventsRepeatSchedule,
-                conflictSkipDescription:
-                    l10n.classEventsRecurrenceConflictSkipDescription,
-                conflictForceDescription:
-                    l10n.classEventsRecurrenceConflictForceDescription,
                 initialConfig: _recurrenceConfig,
                 onChanged: (config) {
                   setState(() => _recurrenceConfig = config);
@@ -1163,217 +1453,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                 ),
               ],
             ],
-            if (!isFormMode) ...[
-              const SizedBox(height: 16),
-              Text(
-                l10n.classEventsSchedulesListTitle,
-                style: Theme.of(context).textTheme.titleSmall,
-              ),
-              const SizedBox(height: 8),
-              schedulesAsync.when(
-                loading: () => const LinearProgressIndicator(minHeight: 2),
-                error: (_, __) => Text(
-                  l10n.errorTitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                ),
-                data: (schedules) {
-                  final timezone = ref.watch(effectiveTenantTimezoneProvider);
-                  final nowUtc = TenantTimeService.nowInTimezone(
-                    timezone,
-                  ).toUtc();
-                  final hasFuture = schedules.any(
-                    (event) => event.endsAtUtc.isAfter(nowUtc),
-                  );
-                  final hasExpired = schedules.any(
-                    (event) => !event.endsAtUtc.isAfter(nowUtc),
-                  );
-                  final shouldShowToggle = hasFuture && hasExpired;
-                  final displayedSchedules =
-                      shouldShowToggle && !_showExpiredSchedules
-                      ? schedules
-                            .where((event) => event.endsAtUtc.isAfter(nowUtc))
-                            .toList()
-                      : schedules;
-
-                  if (displayedSchedules.isEmpty) {
-                    return Text(
-                      l10n.classEventsSchedulesListEmpty,
-                      style: Theme.of(context).textTheme.bodySmall,
-                    );
-                  }
-
-                  final listHeight = (displayedSchedules.length * 64)
-                      .clamp(64, 240)
-                      .toDouble();
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (shouldShowToggle)
-                        SwitchListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            l10n.classEventsShowExpiredSchedules,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          value: _showExpiredSchedules,
-                          onChanged: (value) {
-                            setState(() => _showExpiredSchedules = value);
-                          },
-                        ),
-                      Container(
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: Theme.of(context).colorScheme.outline,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: SizedBox(
-                          height: listHeight,
-                          child: ListView.separated(
-                            primary: false,
-                            itemCount: displayedSchedules.length,
-                            separatorBuilder: (_, __) =>
-                                const AppDivider(height: 1),
-                            itemBuilder: (context, index) {
-                              final schedule = displayedSchedules[index];
-                              final startsAtLocal =
-                                  schedule.startsAtLocal ??
-                                  TenantTimeService.fromUtcToTenant(
-                                    schedule.startsAtUtc,
-                                    timezone,
-                                  );
-                              final endsAtLocal =
-                                  schedule.endsAtLocal ??
-                                  TenantTimeService.fromUtcToTenant(
-                                    schedule.endsAtUtc,
-                                    timezone,
-                                  );
-                              final locationName =
-                                  locationNameById[schedule.locationId] ??
-                                  '#${schedule.locationId}';
-                              final staffName =
-                                  staffNameById[schedule.staffId] ??
-                                  '#${schedule.staffId}';
-                              return ListTile(
-                                dense: true,
-                                visualDensity: VisualDensity.compact,
-                                onTap: () {
-                                  _preEditDraft ??= _captureCurrentDraft();
-                                  setState(() {
-                                    _showSchedulingForm = true;
-                                    _editingEvent = schedule;
-                                    _applyEventToForm(schedule);
-                                  });
-                                },
-                                leading: const Icon(
-                                  Icons.event_note_outlined,
-                                  size: 20,
-                                ),
-                                title: Text(
-                                  '${dateFormat.format(startsAtLocal)} • '
-                                  '${DtFmt.hm(context, startsAtLocal.hour, startsAtLocal.minute)} - ${DtFmt.hm(context, endsAtLocal.hour, endsAtLocal.minute)}',
-                                ),
-                                subtitle: Text('$locationName • $staffName'),
-                                trailing: IconButton(
-                                  tooltip: l10n.actionDelete,
-                                  icon: const Icon(Icons.delete_outline),
-                                  onPressed: () async {
-                                    final confirmed = await showDialog<bool>(
-                                      context: context,
-                                      builder: (ctx) => AlertDialog(
-                                        title: Text(
-                                          l10n.classEventsSchedulesDeleteConfirmTitle,
-                                        ),
-                                        content: Text(
-                                          l10n.classEventsSchedulesDeleteConfirmMessage,
-                                        ),
-                                        actions: [
-                                          TextButton(
-                                            onPressed: () =>
-                                                Navigator.of(ctx).pop(false),
-                                            child: Text(l10n.actionCancel),
-                                          ),
-                                          FilledButton(
-                                            onPressed: () =>
-                                                Navigator.of(ctx).pop(true),
-                                            child: Text(l10n.actionDelete),
-                                          ),
-                                        ],
-                                      ),
-                                    );
-                                    if (confirmed != true || !context.mounted) {
-                                      return;
-                                    }
-
-                                    try {
-                                      final businessId = ref.read(
-                                        currentBusinessIdProvider,
-                                      );
-                                      final repo = ref.read(
-                                        classEventsRepositoryProvider,
-                                      );
-                                      await repo.deleteEvent(
-                                        businessId: businessId,
-                                        classEventId: schedule.id,
-                                      );
-                                      ref.invalidate(classEventsProvider);
-                                      ref.invalidate(
-                                        classEventsForRangeProvider,
-                                      );
-                                      ref.invalidate(
-                                        classEventsForCurrentLocationDayProvider,
-                                      );
-                                      if (_classTypeId != null) {
-                                        ref.invalidate(
-                                          allClassEventsByTypeProvider(
-                                            _classTypeId!,
-                                          ),
-                                        );
-                                        ref.invalidate(
-                                          upcomingClassEventsByTypeProvider(
-                                            _classTypeId!,
-                                          ),
-                                        );
-                                        ref.invalidate(
-                                          upcomingClassEventsCountByTypeProvider(
-                                            _classTypeId!,
-                                          ),
-                                        );
-                                      }
-                                      if (!context.mounted) return;
-                                      await FeedbackDialog.showSuccess(
-                                        context,
-                                        title: l10n
-                                            .classEventsSchedulesDeleteSuccessTitle,
-                                        message: l10n
-                                            .classEventsSchedulesDeleteSuccessMessage,
-                                      );
-                                    } catch (error) {
-                                      if (!context.mounted) return;
-                                      final message = error is ApiException
-                                          ? error.message
-                                          : l10n.classEventsCreateErrorMessage;
-                                      await FeedbackDialog.showError(
-                                        context,
-                                        title: l10n.errorTitle,
-                                        message: message,
-                                      );
-                                    }
-                                  },
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ],
           ],
         ),
       ),
@@ -1381,35 +1460,24 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         AppOutlinedActionButton(
           onPressed: isLoading
               ? null
-              : () {
-                  if (isEditMode) {
-                    final upcomingCount = _readUpcomingCountSync();
-                    setState(() {
-                      if (upcomingCount != 1 && _preEditDraft != null) {
-                        _restoreDraft(_preEditDraft!);
-                      }
-                      _editingEvent = null;
-                      _preEditDraft = null;
-                      _showSchedulingForm = false;
-                    });
-                    return;
-                  }
-                  if (isFormMode) {
-                    setState(() => _showSchedulingForm = false);
-                    return;
-                  }
-                  Navigator.of(context).pop();
-                },
-          child: Text(isFormMode ? l10n.actionCancel : l10n.actionClose),
+              : () => Navigator.of(context).pop(),
+          child: Text(l10n.actionCancel),
         ),
-        if (isFormMode)
-          AppAsyncFilledButton(
-            isLoading: isLoading,
-            onPressed: _canSubmit(classTypes: classTypes, staff: staff)
-                ? _submit
-                : null,
-            child: Text(l10n.actionSave),
+        AppAsyncFilledButton(
+          isLoading: isLoading,
+          onPressed: _canSubmit(
+            classTypes: classTypes,
+            staff: staff,
+            requiresStaffReplacement: requiresStaffReplacement,
+          )
+              ? _submit
+              : null,
+          child: Text(
+            !isEditMode && _recurrenceConfig != null
+                ? l10n.actionPreview
+                : l10n.actionSave,
           ),
+        ),
       ],
     );
   }
@@ -1417,8 +1485,12 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   bool _canSubmit({
     required List<ClassType> classTypes,
     required List<Staff> staff,
+    required bool requiresStaffReplacement,
   }) {
-    return classTypes.isNotEmpty && staff.isNotEmpty;
+    return classTypes.isNotEmpty &&
+        staff.isNotEmpty &&
+        _staffId != null &&
+        !requiresStaffReplacement;
   }
 
   List<Staff> _staffForSelectedLocation(List<Staff> staff) {
@@ -1436,13 +1508,26 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       ..sort((a, b) => a.displayName.compareTo(b.displayName));
   }
 
-  int? _resolveSelectedStaffId(List<Staff> staff) {
-    if (staff.isEmpty) return null;
+  int? _resolveSelectedStaffId({
+    required List<Staff> staff,
+    required Set<int> selectableStaffIds,
+    required bool isEditMode,
+    required int? editingStaffId,
+  }) {
+    if (selectableStaffIds.isEmpty) return null;
     final selected = _staffId;
-    if (selected != null && staff.any((member) => member.id == selected)) {
+    if (selected != null && selectableStaffIds.contains(selected)) {
       return selected;
     }
-    return staff.first.id;
+    if (!isEditMode && staff.length == 1) {
+      return staff.first.id;
+    }
+    if (isEditMode &&
+        editingStaffId != null &&
+        selectableStaffIds.contains(editingStaffId)) {
+      return editingStaffId;
+    }
+    return null;
   }
 
   List<Location> _locationsForSelectedClassType({
@@ -1494,10 +1579,35 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     setState(() {
       if (isStart) {
         _startTime = picked;
+        if (_toDayMinutes(_endTime) <= _toDayMinutes(_startTime)) {
+          _endTime = _nextTimeSlot(_startTime);
+        }
       } else {
         _endTime = picked;
+        if (_toDayMinutes(_endTime) <= _toDayMinutes(_startTime)) {
+          final endMinutes = _toDayMinutes(_endTime);
+          final previousSlot = endMinutes - _timeStepMinutes;
+          if (previousSlot >= 0) {
+            _startTime = _fromDayMinutes(previousSlot);
+          } else {
+            _startTime = const TimeOfDay(hour: 0, minute: 0);
+            _endTime = _fromDayMinutes(_timeStepMinutes);
+          }
+        }
       }
     });
+  }
+
+  int _toDayMinutes(TimeOfDay time) => time.hour * 60 + time.minute;
+
+  TimeOfDay _fromDayMinutes(int totalMinutes) {
+    final clamped = totalMinutes.clamp(0, (24 * 60) - 1);
+    return TimeOfDay(hour: clamped ~/ 60, minute: clamped % 60);
+  }
+
+  TimeOfDay _nextTimeSlot(TimeOfDay time) {
+    final nextMinutes = _toDayMinutes(time) + _timeStepMinutes;
+    return _fromDayMinutes(nextMinutes);
   }
 
   Future<TimeOfDay?> _showTimeSelection({
@@ -1512,7 +1622,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         heightFactor: AppBottomSheet.defaultHeightFactor,
         builder: (ctx) => _ScheduleTimeGridPicker(
           initial: initial,
-          stepMinutes: 15,
+          stepMinutes: _timeStepMinutes,
           title: title,
         ),
       );
@@ -1528,7 +1638,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
             padding: const EdgeInsets.all(20),
             child: _ScheduleTimeGridPicker(
               initial: initial,
-              stepMinutes: 15,
+              stepMinutes: _timeStepMinutes,
               title: title,
               useSafeArea: false,
             ),
@@ -1571,7 +1681,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       await FeedbackDialog.showError(
         context,
         title: l10n.errorTitle,
-        message: l10n.classEventsValidationRequired,
+        message: l10n.classEventsValidationCapacityMin,
       );
       return;
     }
@@ -1587,6 +1697,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           payload: {
             'starts_at': _toApiLocalDateTime(startLocal),
             'ends_at': _toApiLocalDateTime(endLocal),
+            'staff_id': _staffId,
             'capacity_total': capacity,
           },
         );
@@ -1614,19 +1725,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           );
         }
         if (!mounted) return;
-        setState(() {
-          if (refreshedUpcoming.length != 1 && _preEditDraft != null) {
-            _restoreDraft(_preEditDraft!);
-          }
-          _editingEvent = null;
-          _preEditDraft = null;
-          _showSchedulingForm = false;
-        });
-        await FeedbackDialog.showSuccess(
-          context,
-          title: l10n.classEventsSchedulesUpdateSuccessTitle,
-          message: l10n.classEventsSchedulesUpdateSuccessMessage,
-        );
+        Navigator.of(context).pop();
         return;
       } else if (_recurrenceConfig == null) {
         await ref
@@ -1713,9 +1812,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         );
 
         if (!mounted) return;
-        final excludedIndices = await RecurrencePreviewDialog.show(
-          context,
-          adjustedPreview,
+        final excludedIndices = await showRecurrenceExclusionDialog(
+          context: context,
+          preview: adjustedPreview,
           titleText: l10n.classEventsRecurrencePreviewTitle,
           hintText: l10n.classEventsRecurrencePreviewHint,
           confirmLabelBuilder: (count) =>
@@ -1726,18 +1825,15 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         final excludedSet = excludedIndices.toSet();
 
         var createdCount = 0;
-        var skippedCount = 0;
         Object? firstError;
 
         for (var i = 0; i < recurrenceDates.length; i++) {
           final recurrenceIndex = i + 1;
           if (excludedSet.contains(recurrenceIndex)) {
-            skippedCount++;
             continue;
           }
           if (conflictStrategy == ConflictStrategy.skip &&
               (conflictByRecurrenceIndex[recurrenceIndex] ?? false)) {
-            skippedCount++;
             continue;
           }
           final occurrenceStart = recurrenceDates[i];
@@ -1756,7 +1852,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
             );
             createdCount++;
           } catch (error) {
-            skippedCount++;
             firstError ??= error;
             if (conflictStrategy == ConflictStrategy.force) {
               rethrow;
@@ -1775,31 +1870,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           throw firstError;
         }
 
-        if (mounted) {
-          final recurrenceMessage = skippedCount > 0
-              ? l10n.classEventsRecurrenceCreateSummaryWithSkipped(
-                  createdCount,
-                  skippedCount,
-                )
-              : l10n.classEventsRecurrenceCreateSummary(createdCount);
-          await FeedbackDialog.showSuccess(
-            context,
-            title: l10n.classEventsCreateSuccessTitle,
-            message: recurrenceMessage,
-          );
-        }
       }
       if (!mounted) return;
-      setState(() {
-        _showSchedulingForm = false;
-      });
-      if (_recurrenceConfig == null) {
-        await FeedbackDialog.showSuccess(
-          context,
-          title: l10n.classEventsCreateSuccessTitle,
-          message: l10n.classEventsCreateSuccessMessage,
-        );
-      }
+      Navigator.of(context).pop();
     } catch (error) {
       if (!mounted) return;
       final message = error is ApiException
@@ -1836,37 +1909,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     );
     _endTime = TimeOfDay(hour: endsAtLocal.hour, minute: endsAtLocal.minute);
     _recurrenceConfig = null;
-  }
-
-  _CreateClassDraft _captureCurrentDraft() {
-    return _CreateClassDraft(
-      classTypeId: _classTypeId,
-      locationId: _locationId,
-      staffId: _staffId,
-      date: _date,
-      startTime: _startTime,
-      endTime: _endTime,
-      capacityText: _capacityController.text,
-      recurrenceConfig: _recurrenceConfig,
-    );
-  }
-
-  void _restoreDraft(_CreateClassDraft draft) {
-    _classTypeId = draft.classTypeId;
-    _locationId = draft.locationId;
-    _staffId = draft.staffId;
-    _date = draft.date;
-    _startTime = draft.startTime;
-    _endTime = draft.endTime;
-    _capacityController.text = draft.capacityText;
-    _recurrenceConfig = draft.recurrenceConfig;
-  }
-
-  int _readUpcomingCountSync() {
-    final classTypeId = _classTypeId;
-    if (classTypeId == null) return 0;
-    final async = ref.read(upcomingClassEventsByTypeProvider(classTypeId));
-    return async.asData?.value.length ?? 0;
   }
 
   String _formatDate(DateTime value) {
@@ -2063,28 +2105,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       ),
     ]);
   }
-}
-
-class _CreateClassDraft {
-  const _CreateClassDraft({
-    required this.classTypeId,
-    required this.locationId,
-    required this.staffId,
-    required this.date,
-    required this.startTime,
-    required this.endTime,
-    required this.capacityText,
-    required this.recurrenceConfig,
-  });
-
-  final int? classTypeId;
-  final int? locationId;
-  final int? staffId;
-  final DateTime date;
-  final TimeOfDay startTime;
-  final TimeOfDay endTime;
-  final String capacityText;
-  final RecurrenceConfig? recurrenceConfig;
 }
 
 class _ScheduleTimeField extends StatelessWidget {

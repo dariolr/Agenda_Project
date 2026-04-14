@@ -633,6 +633,7 @@ class _InvitationAcceptScreenState
               content: SizedBox(
                 width: 420,
                 child: Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
                   key: formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,

@@ -418,9 +418,17 @@ final class ComputeAvailability
                 $dayEnd->format('Y-m-d H:i:s')
             );
             foreach ($classEvents as $event) {
+                $eventStartLocal = (new DateTimeImmutable(
+                    (string) $event['starts_at'],
+                    new DateTimeZone('UTC')
+                ))->setTimezone($timezone);
+                $eventEndLocal = (new DateTimeImmutable(
+                    (string) $event['ends_at'],
+                    new DateTimeZone('UTC')
+                ))->setTimezone($timezone);
                 $occupied[] = [
-                    'start' => new DateTimeImmutable($event['starts_at'], $timezone),
-                    'end' => new DateTimeImmutable($event['ends_at'], $timezone),
+                    'start' => $eventStartLocal,
+                    'end' => $eventEndLocal,
                 ];
             }
         }

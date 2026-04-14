@@ -94,6 +94,7 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
       content: LocalLoadingOverlay(
         isLoading: _isLoading,
         child: Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
           key: _formKey,
           child: SingleChildScrollView(
             child: Column(
@@ -436,6 +437,7 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
           // Form
           Expanded(
             child: Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
               key: _formKey,
               child: ListView(
                 children: [

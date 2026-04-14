@@ -372,7 +372,6 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
             startDate: _date,
             initialConfig: _recurrenceConfig,
             title: l10n.recurrenceRepeatBlock,
-            showConflictHandling: false,
             onChanged: (config) {
               setState(() => _recurrenceConfig = config);
             },

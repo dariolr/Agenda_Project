@@ -60,6 +60,7 @@ import '../../providers/staff_slot_availability_provider.dart';
 import '../../providers/tenant_time_provider.dart';
 import '../../providers/weekly_appointments_provider.dart';
 import '../../utils/week_range.dart';
+import '../utils/recurrence_flow_utils.dart';
 import '../dialogs/payment_dialog.dart';
 import '../dialogs/recurrence_summary_dialog.dart';
 import 'recurrence_picker.dart';
@@ -485,6 +486,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         eligibleIndices.length > 1 && allEligibleConflict;
     final showServiceWarnings = !showAppointmentWarning;
     final content = Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       key: _formKey,
       child: ConstrainedBox(
         // Su desktop, limita la larghezza del form. Su mobile, usa tutta la larghezza.
@@ -688,7 +690,11 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         padding: AppButtonStyles.dialogButtonPadding,
         isLoading: _isSaving && canManageBookings,
         showSpinner: false,
-        child: Text(l10n.actionSave),
+        child: Text(
+          !isEdit && _recurrenceConfig != null
+              ? l10n.actionPreview
+              : l10n.actionSave,
+        ),
       ),
     ];
 
@@ -2629,9 +2635,9 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     );
 
     // Mostra dialog anteprima con possibilità di escludere date
-    final excludedIndices = await RecurrencePreviewDialog.show(
-      context,
-      adjustedPreview,
+    final excludedIndices = await showRecurrenceExclusionDialog(
+      context: context,
+      preview: adjustedPreview,
     );
 
     // Se utente ha annullato, esci

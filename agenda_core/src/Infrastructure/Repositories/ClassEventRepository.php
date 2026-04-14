@@ -382,6 +382,14 @@ final class ClassEventRepository
         string $startTime,
         string $endTime
     ): array {
+        $locationTimezone = $this->getLocationTimezone($locationId);
+        $startTimeUtc = (new \DateTimeImmutable($startTime, $locationTimezone))
+            ->setTimezone(new \DateTimeZone('UTC'))
+            ->format('Y-m-d H:i:s');
+        $endTimeUtc = (new \DateTimeImmutable($endTime, $locationTimezone))
+            ->setTimezone(new \DateTimeZone('UTC'))
+            ->format('Y-m-d H:i:s');
+
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, class_type_id, starts_at, ends_at, status
              FROM class_events
@@ -397,11 +405,33 @@ final class ClassEventRepository
             'business_id' => $businessId,
             'location_id' => $locationId,
             'staff_id' => $staffId,
-            'start_time' => $startTime,
-            'end_time' => $endTime,
+            'start_time' => $startTimeUtc,
+            'end_time' => $endTimeUtc,
         ]);
 
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    private function getLocationTimezone(int $locationId): \DateTimeZone
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT timezone
+             FROM locations
+             WHERE id = :location_id
+             LIMIT 1'
+        );
+        $stmt->execute(['location_id' => $locationId]);
+        $timezoneName = (string) $stmt->fetchColumn();
+
+        if ($timezoneName === '') {
+            return new \DateTimeZone('Europe/Rome');
+        }
+
+        try {
+            return new \DateTimeZone($timezoneName);
+        } catch (\Throwable) {
+            return new \DateTimeZone('Europe/Rome');
+        }
     }
 
     public function findById(int $businessId, int $classEventId, ?int $customerId = null): ?array

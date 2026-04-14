@@ -11,18 +11,12 @@ class RecurrencePicker extends StatefulWidget {
     required this.startDate,
     this.initialConfig,
     this.title,
-    this.showConflictHandling = true,
-    this.conflictSkipDescription,
-    this.conflictForceDescription,
     required this.onChanged,
   });
 
   final DateTime startDate;
   final RecurrenceConfig? initialConfig;
   final String? title;
-  final bool showConflictHandling;
-  final String? conflictSkipDescription;
-  final String? conflictForceDescription;
   final ValueChanged<RecurrenceConfig?> onChanged;
 
   @override
@@ -36,7 +30,6 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
   _EndType _endType = _EndType.count;
   int _occurrenceCount = 6;
   DateTime? _endDate;
-  ConflictStrategy _conflictStrategy = ConflictStrategy.skip;
 
   /// Restituisce le opzioni di occorrenze in base alla frequenza e intervallo
   List<int> _getOccurrenceOptions() {
@@ -90,7 +83,6 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
       } else {
         _endType = _EndType.never;
       }
-      _conflictStrategy = widget.initialConfig!.conflictStrategy;
     }
   }
 
@@ -107,7 +99,7 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
         intervalValue: _intervalValue,
         maxOccurrences: _endType == _EndType.count ? safeOccurrenceCount : null,
         endDate: _endType == _EndType.date ? _endDate : null,
-        conflictStrategy: _conflictStrategy,
+        conflictStrategy: ConflictStrategy.skip,
       ),
     );
   }
@@ -190,13 +182,6 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
 
                 // Termine
                 _buildEndSelector(context),
-
-                if (widget.showConflictHandling) ...[
-                  const SizedBox(height: 16),
-
-                  // Gestione conflitti
-                  _buildConflictSelector(context),
-                ],
               ],
             ),
           ),
@@ -457,59 +442,6 @@ class _RecurrencePickerState extends State<RecurrencePicker> {
     }
   }
 
-  Widget _buildConflictSelector(BuildContext context) {
-    final l10n = context.l10n;
-    final theme = Theme.of(context);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          l10n.recurrenceConflictHandling,
-          style: theme.textTheme.labelMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(height: 8),
-        RadioListTile<ConflictStrategy>(
-          value: ConflictStrategy.skip,
-          groupValue: _conflictStrategy,
-          onChanged: (value) {
-            setState(() => _conflictStrategy = value!);
-            _notifyChange();
-          },
-          title: Text(l10n.recurrenceConflictSkip),
-          subtitle: Text(
-            widget.conflictSkipDescription ?? l10n.recurrenceConflictSkipDescription,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          dense: true,
-          contentPadding: EdgeInsets.zero,
-          visualDensity: VisualDensity.compact,
-        ),
-        RadioListTile<ConflictStrategy>(
-          value: ConflictStrategy.force,
-          groupValue: _conflictStrategy,
-          onChanged: (value) {
-            setState(() => _conflictStrategy = value!);
-            _notifyChange();
-          },
-          title: Text(l10n.recurrenceConflictForce),
-          subtitle: Text(
-            widget.conflictForceDescription ?? l10n.recurrenceConflictForceDescription,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-          dense: true,
-          contentPadding: EdgeInsets.zero,
-          visualDensity: VisualDensity.compact,
-        ),
-      ],
-    );
-  }
 }
 
 enum _EndType { never, count, date }

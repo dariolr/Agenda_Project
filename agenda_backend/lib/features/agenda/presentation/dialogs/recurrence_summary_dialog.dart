@@ -560,6 +560,26 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
     Navigator.of(context).pop(_excludedIndices.toList());
   }
 
+  void _toggleBlockedByType({
+    required bool forUnavailable,
+    required bool include,
+  }) {
+    setState(() {
+      for (final date in widget.preview.dates) {
+        final matchesType = forUnavailable
+            ? date.isUnavailable
+            : (date.hasConflict && !date.isUnavailable);
+        if (matchesType) {
+          if (include) {
+            _excludedIndices.remove(date.recurrenceIndex);
+          } else {
+            _excludedIndices.add(date.recurrenceIndex);
+          }
+        }
+      }
+    });
+  }
+
   String _blockedCountLabel(BuildContext context, int count) {
     final locale = Localizations.localeOf(context).languageCode.toLowerCase();
     if (locale == 'it') {
@@ -575,9 +595,26 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
     final dateFormat = DateFormat('EEE dd MMM yyyy', 'it');
 
     final selectedCount = widget.preview.dates.length - _excludedIndices.length;
-    final blockedCount = widget.preview.dates
-        .where((d) => d.hasConflict || d.isUnavailable)
+    final excludedCount = _excludedIndices.length;
+    final conflictOnlyCount = widget.preview.dates
+        .where((d) => d.hasConflict && !d.isUnavailable)
         .length;
+    final unavailableCount = widget.preview.dates
+        .where((d) => d.isUnavailable)
+        .length;
+    final excludedConflictOnlyCount = widget.preview.dates
+        .where(
+          (d) =>
+              d.hasConflict &&
+              !d.isUnavailable &&
+              _excludedIndices.contains(d.recurrenceIndex),
+        )
+        .length;
+    final excludedUnavailableCount = widget.preview.dates
+        .where((d) => d.isUnavailable && _excludedIndices.contains(d.recurrenceIndex))
+        .length;
+    final hasExcludedConflictOnly = excludedConflictOnlyCount > 0;
+    final hasExcludedUnavailable = excludedUnavailableCount > 0;
 
     return AlertDialog(
       title: Row(
@@ -612,13 +649,13 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
                       color: theme.colorScheme.primary,
                     ),
                   ),
-                  if (blockedCount > 0) ...[
+                  if (excludedCount > 0) ...[
                     const SizedBox(width: 16),
                     Expanded(
                       child: _StatItem(
                         icon: Icons.block_outlined,
-                        value: '$blockedCount',
-                        label: _blockedCountLabel(context, blockedCount),
+                        value: '$excludedCount',
+                        label: _blockedCountLabel(context, excludedCount),
                         color: theme.colorScheme.error,
                       ),
                     ),
@@ -635,6 +672,41 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
                 color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
+            if (conflictOnlyCount > 0 || unavailableCount > 0) ...[
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (conflictOnlyCount > 0)
+                    OutlinedButton.icon(
+                      onPressed: () => _toggleBlockedByType(
+                        forUnavailable: false,
+                        include: hasExcludedConflictOnly,
+                      ),
+                      icon: const Icon(Icons.warning_amber),
+                      label: Text(
+                        hasExcludedConflictOnly
+                            ? l10n.recurrencePreviewIncludeConflicts
+                            : l10n.recurrencePreviewExcludeConflicts,
+                      ),
+                    ),
+                  if (unavailableCount > 0)
+                    OutlinedButton.icon(
+                      onPressed: () => _toggleBlockedByType(
+                        forUnavailable: true,
+                        include: hasExcludedUnavailable,
+                      ),
+                      icon: const Icon(Icons.event_busy_outlined),
+                      label: Text(
+                        hasExcludedUnavailable
+                            ? l10n.recurrencePreviewIncludeUnavailable
+                            : l10n.recurrencePreviewExcludeUnavailable,
+                      ),
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: 8),
 
             // Lista date con checkbox

@@ -53,11 +53,13 @@ class AppForm {
                 defaultBottomSheetHeightFactor)
             .clamp(0.0, 1.0);
 
+    // Policy UX: su mobile/tablet i form in bottom sheet sono sempre dismissable
+    // con tap esterno o drag gesture, indipendentemente dal flag del chiamante.
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: isScrollControlled,
-      isDismissible: barrierDismissible,
-      enableDrag: barrierDismissible,
+      isDismissible: true,
+      enableDrag: true,
       backgroundColor: Colors.white,
       useSafeArea: useSafeArea,
       useRootNavigator: useRootNavigator,

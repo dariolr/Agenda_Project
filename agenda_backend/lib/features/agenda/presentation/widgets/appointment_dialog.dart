@@ -652,6 +652,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         child: IgnorePointer(
           ignoring: !canManageBookings,
           child: Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,

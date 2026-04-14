@@ -75,6 +75,21 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
   final alternatingRowFill = isDark
       ? colorPrimary2.withOpacity(0.05)
       : colorPrimary1.withOpacity(0.03);
+  final inputBaseBorderColor = onBackground.withOpacity(isDark ? 0.36 : 0.18);
+  final inputFocusedBorderColor = onBackground.withOpacity(
+    isDark ? 0.78 : 0.72,
+  );
+  final inputFillColor = isDark
+      ? colorPrimary2.withOpacity(0.05)
+      : colorPrimary1.withOpacity(0.02);
+  final inputHoverFillColor = isDark
+      ? colorPrimary2.withOpacity(0.08)
+      : colorPrimary1.withOpacity(0.04);
+
+  OutlineInputBorder inputBorder(Color color) => OutlineInputBorder(
+    borderRadius: BorderRadius.circular(10),
+    borderSide: BorderSide(color: color, width: 1),
+  );
 
   final base = ThemeData(
     useMaterial3: true,
@@ -188,6 +203,24 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
         textStyle: const TextStyle(fontWeight: FontWeight.w600),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      isDense: false,
+      filled: true,
+      fillColor: inputFillColor,
+      hoverColor: inputHoverFillColor,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      alignLabelWithHint: true,
+      hintStyle: TextStyle(color: onBackground.withOpacity(0.62)),
+      labelStyle: TextStyle(color: onBackground.withOpacity(0.76)),
+      floatingLabelStyle: TextStyle(color: onBackground.withOpacity(0.92)),
+      errorStyle: const TextStyle(fontSize: 12),
+      border: inputBorder(inputBaseBorderColor),
+      enabledBorder: inputBorder(inputBaseBorderColor),
+      focusedBorder: inputBorder(inputFocusedBorderColor),
+      errorBorder: inputBorder(colorScheme.error.withOpacity(0.9)),
+      focusedErrorBorder: inputBorder(colorScheme.error),
+      disabledBorder: inputBorder(onBackground.withOpacity(0.14)),
     ),
     listTileTheme: base.listTileTheme.copyWith(
       shape: const RoundedRectangleBorder(borderRadius: hoverRadius),

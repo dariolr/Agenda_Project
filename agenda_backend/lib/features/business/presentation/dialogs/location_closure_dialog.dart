@@ -324,6 +324,7 @@ class _LocationClosureDialogState extends ConsumerState<LocationClosureDialog> {
       content: SizedBox(
         width: 450,
         child: Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
           key: _formKey,
           child: SingleChildScrollView(
             child: Column(

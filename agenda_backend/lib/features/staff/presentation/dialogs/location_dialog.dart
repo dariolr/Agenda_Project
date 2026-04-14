@@ -627,6 +627,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     );
 
     final content = Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

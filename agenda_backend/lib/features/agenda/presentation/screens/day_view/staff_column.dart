@@ -348,6 +348,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         .toList();
     final allClassEvents =
         ref.watch(classEventsForCurrentLocationDayProvider).value ?? const [];
+    final classTypes = ref.watch(classTypesProvider).value ?? const [];
+    final classTypeNameById = <int, String>{
+      for (final classType in classTypes) classType.id: classType.name,
+    };
     final staffClassEvents = allClassEvents
         .where(
           (event) =>
@@ -551,6 +555,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         staffAppointments,
         staffClassEvents,
         effectiveColumnWidth,
+        classTypeNameById,
       ),
     );
 
@@ -714,6 +719,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     List<Appointment> appointments,
     List<ClassEvent> classEvents,
     double columnWidth,
+    Map<int, String> classTypeNameById,
   ) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
@@ -930,6 +936,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             child: _ClassEventCard(
               event: classEvent,
               width: cardWidth,
+              title:
+                  (classTypeNameById[classEvent.classTypeId]?.trim().isNotEmpty ??
+                      false)
+                  ? classTypeNameById[classEvent.classTypeId]!.trim()
+                  : context.l10n.classEventsUntitled,
               color: Theme.of(context).colorScheme.tertiaryContainer,
             ),
           ),
@@ -1497,11 +1508,13 @@ class _ClassEventCard extends StatelessWidget {
   const _ClassEventCard({
     required this.event,
     required this.width,
+    required this.title,
     required this.color,
   });
 
   final ClassEvent event;
   final double width;
+  final String title;
   final Color color;
 
   @override
@@ -1524,7 +1537,7 @@ class _ClassEventCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            l10n.classEventsTitle,
+            title,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.labelSmall?.copyWith(

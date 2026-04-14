@@ -189,6 +189,11 @@ class L10n {
     return Intl.message('Close', name: 'actionClose', desc: '', args: []);
   }
 
+  /// `Preview`
+  String get actionPreview {
+    return Intl.message('Preview', name: 'actionPreview', desc: '', args: []);
+  }
+
   /// `Retry`
   String get actionRetry {
     return Intl.message('Retry', name: 'actionRetry', desc: '', args: []);
@@ -6355,6 +6360,46 @@ class L10n {
     );
   }
 
+  /// `Include overlaps`
+  String get recurrencePreviewIncludeConflicts {
+    return Intl.message(
+      'Include overlaps',
+      name: 'recurrencePreviewIncludeConflicts',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Include unavailable slots`
+  String get recurrencePreviewIncludeUnavailable {
+    return Intl.message(
+      'Include unavailable slots',
+      name: 'recurrencePreviewIncludeUnavailable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Exclude overlaps`
+  String get recurrencePreviewExcludeConflicts {
+    return Intl.message(
+      'Exclude overlaps',
+      name: 'recurrencePreviewExcludeConflicts',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Exclude unavailable slots`
+  String get recurrencePreviewExcludeUnavailable {
+    return Intl.message(
+      'Exclude unavailable slots',
+      name: 'recurrencePreviewExcludeUnavailable',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Skip due to conflict`
   String get recurrencePreviewConflictSkip {
     return Intl.message(
@@ -9194,6 +9239,16 @@ class L10n {
     );
   }
 
+  /// `Enter a minimum capacity`
+  String get classEventsValidationCapacityMin {
+    return Intl.message(
+      'Enter a minimum capacity',
+      name: 'classEventsValidationCapacityMin',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `No enabled location for this class type`
   String get classEventsNoLocationsForClassType {
     return Intl.message(
@@ -9239,6 +9294,36 @@ class L10n {
     return Intl.message(
       'No staff available for selected location',
       name: 'classEventsNoStaffForLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No scheduled dates`
+  String get classEventsNoScheduledDates {
+    return Intl.message(
+      'No scheduled dates',
+      name: 'classEventsNoScheduledDates',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Inactive staff (ID: {staffId})`
+  String classEventsStaffInactiveOption(int staffId) {
+    return Intl.message(
+      'Inactive staff (ID: $staffId)',
+      name: 'classEventsStaffInactiveOption',
+      desc: '',
+      args: [staffId],
+    );
+  }
+
+  /// `The assigned staff member is no longer active: select an active staff member to save.`
+  String get classEventsStaffInactiveChangeRequired {
+    return Intl.message(
+      'The assigned staff member is no longer active: select an active staff member to save.',
+      name: 'classEventsStaffInactiveChangeRequired',
       desc: '',
       args: [],
     );
@@ -9512,6 +9597,26 @@ class L10n {
     return Intl.message(
       'Type active',
       name: 'classTypesFieldIsActive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enabled locations`
+  String get classTypesLocationsSelectionTitle {
+    return Intl.message(
+      'Enabled locations',
+      name: 'classTypesLocationsSelectionTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select the locations where this class type can be scheduled. You can change this at any time.`
+  String get classTypesLocationsSelectionHelper {
+    return Intl.message(
+      'Select the locations where this class type can be scheduled. You can change this at any time.',
+      name: 'classTypesLocationsSelectionHelper',
       desc: '',
       args: [],
     );

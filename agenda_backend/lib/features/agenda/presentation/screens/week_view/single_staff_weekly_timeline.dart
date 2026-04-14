@@ -41,6 +41,7 @@ import 'package:agenda_backend/features/agenda/presentation/widgets/booking_dial
 import 'package:agenda_backend/features/agenda/utils/week_range.dart';
 import 'package:agenda_backend/features/agenda/utils/client_color_utils.dart';
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
+import 'package:agenda_backend/features/class_events/providers/class_events_providers.dart';
 import 'package:agenda_backend/features/clients/providers/clients_providers.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
@@ -555,6 +556,10 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
 
     final geometry = _buildGeometry(layoutConfig);
     final appointmentColors = _resolveAppointmentColors(context, ref);
+    final classTypes = ref.watch(classTypesProvider).value ?? const [];
+    final classTypeNameById = <int, String>{
+      for (final classType in classTypes) classType.id: classType.name,
+    };
 
     final content = Container(
       width: width,
@@ -654,7 +659,13 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
               appointmentColors,
             ),
           for (final event in classEvents)
-            _buildClassEvent(context, event, layoutConfig, geometry),
+            _buildClassEvent(
+              context,
+              event,
+              layoutConfig,
+              geometry,
+              classTypeNameById,
+            ),
         ],
       ),
     );
@@ -803,6 +814,7 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     ClassEvent event,
     LayoutConfig layoutConfig,
     Map<int, EventGeometry> geometry,
+    Map<int, String> classTypeNameById,
   ) {
     final theme = Theme.of(context);
     final start = event.startsAtLocal ?? event.startsAtUtc.toLocal();
@@ -826,6 +838,10 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
         ThemeData.estimateBrightnessForColor(color) == Brightness.dark
         ? Colors.white
         : theme.colorScheme.onTertiaryContainer;
+    final classTitle =
+        (classTypeNameById[event.classTypeId]?.trim().isNotEmpty ?? false)
+        ? classTypeNameById[event.classTypeId]!.trim()
+        : context.l10n.classEventsUntitled;
 
     return Positioned(
       top: top,
@@ -847,7 +863,7 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                context.l10n.classEventsTitle,
+                classTitle,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.labelSmall?.copyWith(

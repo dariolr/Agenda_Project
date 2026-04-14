@@ -127,6 +127,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
               child: LocalLoadingOverlay(
                 isLoading: _isLoading,
                 child: Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,

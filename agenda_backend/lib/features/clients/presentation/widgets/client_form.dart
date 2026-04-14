@@ -255,6 +255,7 @@ class ClientFormState extends ConsumerState<ClientForm> {
     );
 
     return Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,

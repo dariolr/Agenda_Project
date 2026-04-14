@@ -35,7 +35,7 @@ Future<Client?> showClientEditDialog(
   return await AppForm.show<Client>(
     context: context,
     formFactor: formFactor,
-    barrierDismissible: false,
+    barrierDismissible: formFactor != AppFormFactor.desktop,
     useRootNavigator: true,
     padding: EdgeInsets.zero,
     heightFactor: AppForm.defaultBottomSheetHeightFactor,

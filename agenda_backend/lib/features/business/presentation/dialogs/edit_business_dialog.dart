@@ -134,6 +134,7 @@ class _EditBusinessDialogState extends ConsumerState<EditBusinessDialog> {
         child: LocalLoadingOverlay(
           isLoading: _isLoading,
           child: Form(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
             key: _formKey,
             child: SingleChildScrollView(
               child: Column(
