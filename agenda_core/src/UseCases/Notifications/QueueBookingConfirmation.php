@@ -162,7 +162,12 @@ final class QueueBookingConfirmation
             : $startTime->modify('-24 hours');
         $isEnglish = EmailTemplateRenderer::normalizeLocale($locale) === 'en';
         $locationName = $booking['location_name'] ?? '';
-        $locationAddress = $booking['location_address'] ?? '';
+        $locationAddress = trim((string) ($booking['location_address'] ?? ''));
+        $locationCity = trim((string) ($booking['location_city'] ?? ''));
+        $locationAddressLine = implode(', ', array_values(array_filter(
+            [$locationAddress, $locationCity],
+            static fn (string $value): bool => $value !== ''
+        )));
         $strings = EmailTemplateRenderer::strings($locale);
         $hasMultipleLocations = $this->hasMultipleLocations((int) ($booking['business_id'] ?? 0));
         $businessName = $this->sanitizeBusinessName($booking['business_name'] ?? '');
@@ -220,7 +225,8 @@ final class QueueBookingConfirmation
             'sender_email' => $booking['sender_email'] ?? '',
             'sender_name' => $booking['sender_name'] ?? '',
             'location_address' => $locationAddress,
-            'location_city' => $booking['location_city'] ?? '',
+            'location_city' => $locationCity,
+            'location_address_line' => $locationAddressLine,
             'location_phone' => $booking['location_phone'] ?? '',
             'date' => EmailTemplateRenderer::formatLongDate($startTime, $locale),
             'time' => $startTime->format('H:i'),

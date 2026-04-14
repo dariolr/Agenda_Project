@@ -206,7 +206,7 @@ final class EmailTemplateRenderer
             <td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
                 <p style="margin:0;font-size:12px;color:#999;">
                     Il team di {{business_name}}<br>
-                    {{location_address}}, {{location_city}}<br>
+                    {{location_address_line}}<br>
                     {{location_phone}}
                 </p>
             </td>
@@ -235,7 +235,7 @@ Gestisci prenotazione: {{manage_url}}
 
 ---
 Il team di {{business_name}}
-{{location_address}}, {{location_city}}
+{{location_address_line}}
 {{location_phone}}
 TEXT,
             ],
@@ -312,7 +312,7 @@ TEXT,
             <td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
                 <p style="margin:0;font-size:12px;color:#999;">
                     The {{business_name}} Team<br>
-                    {{location_address}}, {{location_city}}<br>
+                    {{location_address_line}}<br>
                     {{location_phone}}
                 </p>
             </td>
@@ -341,7 +341,7 @@ Manage booking: {{manage_url}}
 
 ---
 The {{business_name}} Team
-{{location_address}}, {{location_city}}
+{{location_address_line}}
 {{location_phone}}
 TEXT,
             ],
@@ -419,7 +419,7 @@ TEXT,
             <td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
                 <p style="margin:0;font-size:12px;color:#999;">
                     Il team di {{business_name}}<br>
-                    {{location_address}}, {{location_city}}<br>
+                    {{location_address_line}}<br>
                     {{location_phone}}
                 </p>
             </td>
@@ -443,7 +443,7 @@ Gestisci prenotazioni: {{manage_url}}
 
 ---
 Il team di {{business_name}}
-{{location_address}}, {{location_city}}
+{{location_address_line}}
 {{location_phone}}
 TEXT,
             ],
@@ -507,7 +507,7 @@ TEXT,
             <td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
                 <p style="margin:0;font-size:12px;color:#999;">
                     The {{business_name}} Team<br>
-                    {{location_address}}, {{location_city}}<br>
+                    {{location_address_line}}<br>
                     {{location_phone}}
                 </p>
             </td>
@@ -531,7 +531,7 @@ Manage bookings: {{manage_url}}
 
 ---
 The {{business_name}} Team
-{{location_address}}, {{location_city}}
+{{location_address_line}}
 {{location_phone}}
 TEXT,
             ],
@@ -617,7 +617,7 @@ TEXT,
             <td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
                 <p style="margin:0;font-size:12px;color:#999;">
                     Il team di {{business_name}}<br>
-                    {{location_address}}, {{location_city}}
+                    {{location_address_line}}
                 </p>
             </td>
         </tr>
@@ -639,7 +639,7 @@ Se desideri prenotare nuovamente: {{booking_url}}
 
 ---
 Il team di {{business_name}}
-{{location_address}}, {{location_city}}
+{{location_address_line}}
 TEXT,
             ],
             'en' => [
@@ -711,7 +711,7 @@ TEXT,
             <td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
                 <p style="margin:0;font-size:12px;color:#999;">
                     The {{business_name}} Team<br>
-                    {{location_address}}, {{location_city}}
+                    {{location_address_line}}
                 </p>
             </td>
         </tr>
@@ -733,7 +733,7 @@ If you would like to book again: {{booking_url}}
 
 ---
 The {{business_name}} Team
-{{location_address}}, {{location_city}}
+{{location_address_line}}
 TEXT,
             ],
         ];
