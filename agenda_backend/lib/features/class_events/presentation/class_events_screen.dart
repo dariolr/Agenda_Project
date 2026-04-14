@@ -149,7 +149,7 @@ class _ClassTypeCard extends ConsumerStatefulWidget {
   ConsumerState<_ClassTypeCard> createState() => _ClassTypeCardState();
 }
 
-enum _ClassTypeQuickAction { duplicate, delete }
+enum _ClassTypeQuickAction { edit, duplicate, delete }
 
 class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
   bool _showExpiredSchedules = false;
@@ -186,10 +186,13 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
         businessContext.locationIds.length == 1;
     final shouldShowLocationsRow =
         !hasSingleBusinessLocation && !hasSingleOperatorLocation;
-    final visibleLocationNames = widget.classType.locationIds
+    final scopedLocationNames = widget.classType.locationIds
         .map((id) => locationNameById[id])
         .whereType<String>()
         .toList();
+    final visibleLocationNames = widget.classType.locationIds.isEmpty
+        ? locations.map((location) => location.name).toList()
+        : scopedLocationNames;
     final futureCount = upcomingCountAsync.maybeWhen(
       data: (value) => value,
       orElse: () => null,
@@ -198,13 +201,14 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
       data: (items) => items.length,
       orElse: () => null,
     );
+    final hasSchedules = allSchedulesAsync.maybeWhen(
+      data: (items) => items.isNotEmpty,
+      orElse: () => false,
+    );
     final expiredCount =
         futureCount != null && allSchedulesCount != null
         ? (allSchedulesCount - futureCount).clamp(0, 1 << 30)
         : null;
-    final locationSummary = widget.classType.locationIds.isEmpty
-        ? l10n.allLocations
-        : visibleLocationNames.join(', ');
     final canOpenEdit = widget.canManageClassTypes && !isLoading;
     final borderColor = _isHovering
         ? colorScheme.primary.withOpacity(0.45)
@@ -254,31 +258,11 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
                 style: Theme.of(context).textTheme.bodySmall,
               ),
             ],
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                if (futureCount != null && futureCount > 0)
-                  _buildMetadataChip(
-                    context: context,
-                    icon: Icons.schedule_outlined,
-                    label: '${l10n.classEventsFutureBadge}: $futureCount',
-                  ),
-                if (expiredCount != null && expiredCount > 0)
-                  _buildMetadataChip(
-                    context: context,
-                    icon: Icons.history_outlined,
-                    label: '${l10n.classEventsExpiredBadge}: $expiredCount',
-                  ),
-              ],
-            ),
             if (shouldShowLocationsRow) ...[
               const SizedBox(height: 10),
               _buildLocationsBlock(
                 context: context,
                 locationNames: visibleLocationNames,
-                allLocationsLabel: locationSummary,
                 isAllLocations: widget.classType.locationIds.isEmpty,
               ),
             ],
@@ -313,9 +297,18 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
                       ),
                       child: PopupMenuButton<_ClassTypeQuickAction>(
                         enabled: !isLoading,
+                        splashRadius: 20,
+                        borderRadius: BorderRadius.circular(10),
                         icon: const Icon(Icons.more_horiz),
                         onSelected: (action) async {
                           switch (action) {
+                            case _ClassTypeQuickAction.edit:
+                              await showCreateClassTypeDialog(
+                                context,
+                                ref,
+                                initial: widget.classType,
+                              );
+                              break;
                             case _ClassTypeQuickAction.duplicate:
                               await _cloneClassType(
                                 context,
@@ -333,6 +326,17 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
                           }
                         },
                         itemBuilder: (menuContext) => [
+                          PopupMenuItem<_ClassTypeQuickAction>(
+                            value: _ClassTypeQuickAction.edit,
+                            child: Row(
+                              children: [
+                                const Icon(Icons.edit_outlined, size: 18),
+                                const SizedBox(width: 8),
+                                Text(l10n.actionEdit),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuDivider(),
                           PopupMenuItem<_ClassTypeQuickAction>(
                             value: _ClassTypeQuickAction.duplicate,
                             child: Row(
@@ -366,92 +370,120 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
                   ),
                 ],
               ),
-            const SizedBox(height: 12),
-            Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: colorScheme.outline.withOpacity(0.35)),
-                borderRadius: BorderRadius.circular(12),
+            if ((futureCount != null && futureCount > 0) ||
+                (expiredCount != null && expiredCount > 0)) ...[
+              const SizedBox(height: 12),
+              Center(
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.center,
+                  runAlignment: WrapAlignment.center,
+                  children: [
+                    if (futureCount != null && futureCount > 0)
+                      _buildMetadataChip(
+                        context: context,
+                        icon: Icons.schedule_outlined,
+                        label: '${l10n.classEventsFutureBadge}: $futureCount',
+                      ),
+                    if (expiredCount != null && expiredCount > 0)
+                      _buildMetadataChip(
+                        context: context,
+                        icon: Icons.history_outlined,
+                        label: '${l10n.classEventsExpiredBadge}: $expiredCount',
+                      ),
+                  ],
+                ),
               ),
-              child: ExpansionTile(
-                initiallyExpanded: false,
-                maintainState: true,
-                tilePadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 2,
-                ),
-                childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                shape: RoundedRectangleBorder(
+            ],
+            if (hasSchedules) ...[
+              const SizedBox(height: 12),
+              Container(
+                decoration: BoxDecoration(
+                  border: Border.all(color: colorScheme.outline.withOpacity(0.35)),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                collapsedShape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                leading: const Icon(Icons.event_note_outlined, size: 18),
-                title: Text(
-                  l10n.classEventsSchedulesListTitle,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                ),
-                children: [
-                  allSchedulesAsync.when(
-                    loading: () => const LinearProgressIndicator(minHeight: 2),
-                    error: (_, __) => Text(
-                      l10n.errorTitle,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: colorScheme.error),
-                    ),
-                    data: (schedules) {
-                      final timezone = ref.watch(effectiveTenantTimezoneProvider);
-                      final nowUtc =
-                          TenantTimeService.nowInTimezone(timezone).toUtc();
-                      final futureSchedules = schedules
-                          .where((event) => event.endsAtUtc.isAfter(nowUtc))
-                          .toList();
-                      final hasExpiredSchedules =
-                          futureSchedules.length != schedules.length;
-                      final displayedSchedules = _showExpiredSchedules
-                          ? schedules
-                          : futureSchedules;
-
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          if (hasExpiredSchedules)
-                            SwitchListTile(
-                              dense: true,
-                              contentPadding: EdgeInsets.zero,
-                              title: Text(
-                                l10n.classEventsShowExpiredSchedules,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              ),
-                              value: _showExpiredSchedules,
-                              onChanged: (value) {
-                                setState(() => _showExpiredSchedules = value);
-                              },
-                            ),
-                          if (displayedSchedules.isEmpty)
-                            Text(
-                              l10n.classEventsNoScheduledDates,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            )
-                          else
-                            _buildSchedulesList(
-                              context: context,
-                              schedules: displayedSchedules,
-                              timezone: timezone,
-                              locationNameById: locationNameById,
-                              staffNameById: staffNameById,
-                              colorScheme: colorScheme,
-                            ),
-                        ],
-                      );
-                    },
+                child: ExpansionTile(
+                  initiallyExpanded: false,
+                  maintainState: true,
+                  tilePadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 2,
                   ),
-                ],
+                  childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  collapsedShape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  leading: const Icon(Icons.event_note_outlined, size: 18),
+                  title: Text(
+                    l10n.classEventsSchedulesListTitle,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+                  ),
+                  children: [
+                    allSchedulesAsync.when(
+                      loading: () => const LinearProgressIndicator(minHeight: 2),
+                      error: (_, __) => Text(
+                        l10n.errorTitle,
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: colorScheme.error),
+                      ),
+                      data: (schedules) {
+                        final timezone = ref.watch(effectiveTenantTimezoneProvider);
+                        final nowUtc =
+                            TenantTimeService.nowInTimezone(timezone).toUtc();
+                        final futureSchedules = schedules
+                            .where((event) => event.endsAtUtc.isAfter(nowUtc))
+                            .toList();
+                        final hasExpiredSchedules =
+                            futureSchedules.length != schedules.length;
+                        final displayedSchedules = _showExpiredSchedules
+                            ? schedules
+                            : futureSchedules;
+
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            if (hasExpiredSchedules)
+                              SwitchListTile(
+                                dense: true,
+                                contentPadding: EdgeInsets.zero,
+                                title: Text(
+                                  l10n.classEventsShowExpiredSchedules,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                                value: _showExpiredSchedules,
+                                onChanged: (value) {
+                                  setState(() => _showExpiredSchedules = value);
+                                },
+                              ),
+                            if (displayedSchedules.isEmpty)
+                              Text(
+                                l10n.classEventsNoScheduledDates,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              )
+                            else
+                              _buildSchedulesList(
+                                context: context,
+                                schedules: displayedSchedules,
+                                timezone: timezone,
+                                locationNameById: locationNameById,
+                                staffNameById: staffNameById,
+                                colorScheme: colorScheme,
+                              ),
+                          ],
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
               ],
             ),
           ),
@@ -542,12 +574,11 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
   Widget _buildLocationsBlock({
     required BuildContext context,
     required List<String> locationNames,
-    required String allLocationsLabel,
     required bool isAllLocations,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final items = isAllLocations ? <String>[allLocationsLabel] : locationNames;
+    final items = locationNames;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -561,10 +592,16 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.place_outlined, size: 14, color: colorScheme.onSurfaceVariant),
+              Icon(
+                Icons.place_outlined,
+                size: 14,
+                color: colorScheme.onSurfaceVariant,
+              ),
               const SizedBox(width: 6),
               Text(
-                context.l10n.classTypesLocationsSelectionTitle,
+                isAllLocations
+                    ? '${context.l10n.classTypesLocationsSelectionTitle} • ${context.l10n.allLocations}'
+                    : context.l10n.classTypesLocationsSelectionTitle,
                 style: textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w600,
@@ -573,12 +610,26 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
             ],
           ),
           const SizedBox(height: 6),
-          ...items.map(
-            (name) => Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: Text(name, style: textTheme.bodySmall),
+          if (items.isEmpty)
+            Text(context.l10n.allLocations, style: textTheme.bodySmall)
+          else
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final name in items)
+                  Chip(
+                    label: Text(name, style: textTheme.bodySmall),
+                    visualDensity: VisualDensity.compact,
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    side: BorderSide(
+                      color: colorScheme.outlineVariant.withOpacity(0.5),
+                    ),
+                    backgroundColor: colorScheme.surface.withOpacity(0.8),
+                    padding: EdgeInsets.zero,
+                  ),
+              ],
             ),
-          ),
         ],
       ),
     );

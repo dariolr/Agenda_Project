@@ -204,6 +204,20 @@ ThemeData buildTheme(AppThemeConfig _, Brightness brightness) {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     ),
+    iconButtonTheme: IconButtonThemeData(
+      style: ButtonStyle(
+        shape: MaterialStateProperty.all(
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+        minimumSize: MaterialStateProperty.all(const Size(40, 40)),
+        padding: MaterialStateProperty.all(const EdgeInsets.all(8)),
+        overlayColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.pressed)) return pressedFill;
+          if (states.contains(MaterialState.hovered)) return hoverFill;
+          return Colors.transparent;
+        }),
+      ),
+    ),
     inputDecorationTheme: InputDecorationTheme(
       isDense: false,
       filled: true,
