@@ -41,6 +41,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   ];
 
   final _scrollController = ScrollController();
+  final _horizontalScrollController = ScrollController();
   final _clientSearchController = TextEditingController();
   Timer? _clientSearchDebounce;
 
@@ -125,6 +126,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   @override
   void dispose() {
     _scrollController.dispose();
+    _horizontalScrollController.dispose();
     _clientSearchController.dispose();
     _clientSearchDebounce?.cancel();
     super.dispose();
@@ -743,7 +745,13 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
       controller: _scrollController,
       child: Column(
         children: [
-          SingleChildScrollView(
+          Scrollbar(
+            controller: _horizontalScrollController,
+            thumbVisibility: true,
+            trackVisibility: true,
+            scrollbarOrientation: ScrollbarOrientation.bottom,
+            child: SingleChildScrollView(
+            controller: _horizontalScrollController,
             scrollDirection: Axis.horizontal,
             child: Theme(
               data: Theme.of(
@@ -778,6 +786,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
                     .toList(),
               ),
             ),
+          ),
           ),
           if (state.isLoadingMore)
             const Padding(

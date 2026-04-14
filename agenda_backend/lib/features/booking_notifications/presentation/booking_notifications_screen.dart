@@ -43,6 +43,7 @@ class BookingNotificationsScreen extends ConsumerStatefulWidget {
 class _BookingNotificationsScreenState
     extends ConsumerState<BookingNotificationsScreen> {
   final _scrollController = ScrollController();
+  final _horizontalScrollController = ScrollController();
   final _searchController = TextEditingController();
   Timer? _searchDebounce;
   String? _selectedStatus;
@@ -72,6 +73,7 @@ class _BookingNotificationsScreenState
   @override
   void dispose() {
     _scrollController.dispose();
+    _horizontalScrollController.dispose();
     _searchController.dispose();
     _searchDebounce?.cancel();
     super.dispose();
@@ -388,9 +390,15 @@ class _BookingNotificationsScreenState
         controller: _scrollController,
         child: Column(
           children: [
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Theme(
+            Scrollbar(
+              controller: _horizontalScrollController,
+              thumbVisibility: true,
+              trackVisibility: true,
+              scrollbarOrientation: ScrollbarOrientation.bottom,
+              child: SingleChildScrollView(
+                controller: _horizontalScrollController,
+                scrollDirection: Axis.horizontal,
+                child: Theme(
                 data: Theme.of(
                   context,
                 ).copyWith(dividerColor: colorScheme.outline.withOpacity(0.2)),
@@ -447,6 +455,7 @@ class _BookingNotificationsScreenState
                   rows: state.notifications.map(_buildDataRow).toList(),
                 ),
               ),
+            ),
             ),
             if (state.isLoadingMore)
               const Padding(

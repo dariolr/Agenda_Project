@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/preferences_service.dart';
@@ -86,87 +88,100 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
 /// Invalida tutti i provider che contengono dati specifici del business.
 /// Da chiamare da UI/router, non dal notifier di selezione business, per evitare
 /// dipendenze circolari durante la fase di invalidazione.
+bool _isBusinessScopedInvalidationInProgress = false;
+
 void invalidateBusinessScopedProviders(Object refObj) {
+  // Evita invalidazioni duplicate nello stesso ciclo di frame/microtask,
+  // che con Riverpod 3 possono generare "Tried to rebuild ... multiple times".
+  if (_isBusinessScopedInvalidationInProgress) return;
+  _isBusinessScopedInvalidationInProgress = true;
+
   final ref = refObj as dynamic;
-  // Staff
-  ref.invalidate(allStaffProvider);
+  try {
+    // Staff
+    ref.invalidate(allStaffProvider);
 
-  // Locations
-  ref.invalidate(locationsAsyncProvider);
-  ref.invalidate(currentLocationProvider);
+    // Locations
+    ref.invalidate(locationsAsyncProvider);
+    ref.invalidate(currentLocationProvider);
 
-  // Services
-  ref.invalidate(servicesProvider);
-  ref.invalidate(serviceVariantsProvider);
-  ref.invalidate(serviceCategoriesProvider);
-  ref.invalidate(serviceStaffEligibilityProvider);
-  ref.invalidate(paymentMethodsProvider);
-  ref.invalidate(paymentMethodsWithInactiveProvider);
+    // Services
+    ref.invalidate(servicesProvider);
+    ref.invalidate(serviceVariantsProvider);
+    ref.invalidate(serviceCategoriesProvider);
+    ref.invalidate(serviceStaffEligibilityProvider);
+    ref.invalidate(paymentMethodsProvider);
+    ref.invalidate(paymentMethodsWithInactiveProvider);
 
-  // Clients
-  ref.invalidate(clientsProvider);
+    // Clients
+    ref.invalidate(clientsProvider);
 
-  // Appointments
-  ref.invalidate(appointmentsProvider);
-  ref.invalidate(weeklyAppointmentsProvider);
+    // Appointments
+    ref.invalidate(appointmentsProvider);
+    ref.invalidate(weeklyAppointmentsProvider);
 
-  // Bookings (prenotazioni con note/clientName)
-  ref.invalidate(bookingsProvider);
+    // Bookings (prenotazioni con note/clientName)
+    ref.invalidate(bookingsProvider);
 
-  // Resources
-  ref.invalidate(resourcesProvider);
+    // Resources
+    ref.invalidate(resourcesProvider);
 
-  // Time Blocks
-  ref.invalidate(timeBlocksProvider);
+    // Time Blocks
+    ref.invalidate(timeBlocksProvider);
 
-  // Availability Exceptions
-  ref.invalidate(availabilityExceptionsProvider);
-  ref.invalidate(availabilityExceptionsRepositoryProvider);
+    // Availability Exceptions
+    ref.invalidate(availabilityExceptionsProvider);
+    ref.invalidate(availabilityExceptionsRepositoryProvider);
 
-  // Location Closures
-  ref.invalidate(locationClosuresProvider);
+    // Location Closures
+    ref.invalidate(locationClosuresProvider);
 
-  // UI State legato al business (contiene ID di entità business-specific)
-  ref.invalidate(selectedStaffIdsProvider);
-  ref.invalidate(staffFilterModeProvider);
-  ref.invalidate(selectedAppointmentProvider);
-  ref.invalidate(dragSessionProvider);
-  ref.invalidate(draggedAppointmentIdProvider);
-  ref.invalidate(draggedBaseRangeProvider);
-  ref.invalidate(tempDragTimeProvider);
-  ref.invalidate(resizingProvider);
-  ref.invalidate(pendingDropProvider);
-  ref.invalidate(bookingRescheduleSessionProvider);
+    // UI State legato al business (contiene ID di entità business-specific)
+    ref.invalidate(selectedStaffIdsProvider);
+    ref.invalidate(staffFilterModeProvider);
+    ref.invalidate(selectedAppointmentProvider);
+    ref.invalidate(dragSessionProvider);
+    ref.invalidate(draggedAppointmentIdProvider);
+    ref.invalidate(draggedBaseRangeProvider);
+    ref.invalidate(tempDragTimeProvider);
+    ref.invalidate(resizingProvider);
+    ref.invalidate(pendingDropProvider);
+    ref.invalidate(bookingRescheduleSessionProvider);
 
-  // NOTE: currentBusinessIdProvider NON va invalidato qui perché usa ref.listen
-  // su superadminSelectedBusinessProvider, quindi si aggiorna automaticamente.
-  // Invalidarlo qui creerebbe una dipendenza circolare.
+    // NOTE: currentBusinessIdProvider NON va invalidato qui perché usa ref.listen
+    // su superadminSelectedBusinessProvider, quindi si aggiorna automaticamente.
+    // Invalidarlo qui creerebbe una dipendenza circolare.
 
-  // Layout e UI state (per sicurezza, anche se sembrano UI-only)
-  ref.invalidate(layoutConfigProvider);
-  ref.invalidate(agendaDisplaySettingsProvider);
-  ref.invalidate(effectiveShowAppointmentPriceInCardProvider);
-  ref.invalidate(effectiveUseServiceColorsForAppointmentsProvider);
-  ref.invalidate(effectiveShowCancelledAppointmentsProvider);
-  ref.invalidate(agendaCardTextScaleProvider);
-  ref.invalidate(agendaCardColorOpacityProvider);
-  ref.invalidate(agendaExtraMinutesBandIntensityProvider);
-  ref.invalidate(agendaBootstrapLoadingProvider);
-  ref.invalidate(agendaBootstrapUnlockedProvider);
-  ref.invalidate(agendaDateProvider);
-  ref.invalidate(agendaScrollProvider);
-  ref.invalidate(initialScrollDoneProvider);
-  ref.invalidate(agendaVerticalOffsetProvider);
+    // Layout e UI state (per sicurezza, anche se sembrano UI-only)
+    ref.invalidate(layoutConfigProvider);
+    ref.invalidate(agendaDisplaySettingsProvider);
+    ref.invalidate(effectiveShowAppointmentPriceInCardProvider);
+    ref.invalidate(effectiveUseServiceColorsForAppointmentsProvider);
+    ref.invalidate(effectiveShowCancelledAppointmentsProvider);
+    ref.invalidate(agendaCardTextScaleProvider);
+    ref.invalidate(agendaCardColorOpacityProvider);
+    ref.invalidate(agendaExtraMinutesBandIntensityProvider);
+    ref.invalidate(agendaBootstrapLoadingProvider);
+    ref.invalidate(agendaBootstrapUnlockedProvider);
+    ref.invalidate(agendaDateProvider);
+    ref.invalidate(agendaScrollProvider);
+    ref.invalidate(initialScrollDoneProvider);
+    ref.invalidate(agendaVerticalOffsetProvider);
 
-  // Class events
-  ref.invalidate(classEventsProvider);
-  ref.invalidate(classEventsForRangeProvider);
-  ref.invalidate(classEventsForCurrentLocationDayProvider);
-  ref.invalidate(classTypesProvider);
-  ref.invalidate(selectedClassTypeIdProvider);
+    // Class events
+    ref.invalidate(classEventsProvider);
+    ref.invalidate(classEventsForRangeProvider);
+    ref.invalidate(classEventsForCurrentLocationDayProvider);
+    ref.invalidate(classTypesProvider);
+    ref.invalidate(selectedClassTypeIdProvider);
 
-  // Business User Context (permessi location)
-  ref.invalidate(currentBusinessUserContextProvider);
+    // Business User Context (permessi location)
+    ref.invalidate(currentBusinessUserContextProvider);
+  } finally {
+    scheduleMicrotask(() {
+      _isBusinessScopedInvalidationInProgress = false;
+    });
+  }
 }
 
 final superadminSelectedBusinessProvider =
