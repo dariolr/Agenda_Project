@@ -257,19 +257,20 @@ final class AppointmentsController
         $afterState = $this->captureAppointmentState($updated);
         $actuallyChangedFields = $this->getActuallyChangedFields($beforeState, $afterState);
         
-        if (!empty($actuallyChangedFields)) {
+        $auditableChangedFields = $this->extractAuditableAppointmentChanges($actuallyChangedFields);
+        if (!empty($auditableChangedFields)) {
             $this->createAppointmentUpdatedEvent(
                 $bookingId,
                 $appointmentId,
                 $beforeState,
                 $afterState,
                 $userId,
-                $actuallyChangedFields
+                $auditableChangedFields
             );
             
             // Refresh reminder if time or service fields changed
             $reminderRelevantFields = ['start_time', 'end_time', 'service_id', 'service_variant_id'];
-            $shouldRefreshReminder = !empty(array_intersect(array_keys($actuallyChangedFields), $reminderRelevantFields));
+            $shouldRefreshReminder = !empty(array_intersect(array_keys($auditableChangedFields), $reminderRelevantFields));
                 if ($shouldRefreshReminder) {
                     $updatedBooking = $this->bookingRepo->findById($bookingId);
                     $newBookingFirstStart = $this->extractFirstStartTime($updatedBooking);
@@ -592,6 +593,35 @@ final class AppointmentsController
         }
         
         return $changed;
+    }
+
+    /**
+     * Keep only appointment changes that are meaningful in operator audit timeline.
+     * This avoids generic "appointment_updated" entries caused by technical-only fields.
+     */
+    private function extractAuditableAppointmentChanges(array $changedFields): array
+    {
+        if (empty($changedFields)) {
+            return [];
+        }
+
+        $auditableFieldNames = [
+            'start_time',
+            'end_time',
+            'staff_id',
+            'service_id',
+            'service_variant_id',
+            'price',
+        ];
+
+        $filtered = [];
+        foreach ($changedFields as $field => $value) {
+            if (in_array($field, $auditableFieldNames, true)) {
+                $filtered[$field] = $value;
+            }
+        }
+
+        return $filtered;
     }
 
     /**

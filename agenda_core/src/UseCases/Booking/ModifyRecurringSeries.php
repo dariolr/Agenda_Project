@@ -19,8 +19,13 @@ use DateTimeImmutable;
  * 
  * Supports modifying:
  * - staff_id: Change the assigned staff for all/future bookings
+ * - service_id: Change service for all/future bookings
+ * - service_variant_id: Change service variant for all/future bookings
+ * - package_id: Change package (or clear it with null) for all/future bookings
+ * - price: Change applied price (or clear it with null) for all/future bookings
  * - notes: Update notes for all/future bookings
  * - time: Change the time (hour:minute) for all/future bookings (date stays the same)
+ * - duration_minutes: Change appointment duration (in minutes) for all/future bookings
  * 
  * Scope options:
  * - 'all': Modify all bookings in the series
@@ -44,8 +49,13 @@ final class ModifyRecurringSeries
      * @param int $ruleId The recurrence rule ID
      * @param array $changes {
      *   staff_id?: int,
+     *   service_id?: int,
+     *   service_variant_id?: int,
+     *   package_id?: int|null,
+     *   price?: float|null,
      *   notes?: string|null,
-     *   time?: string (HH:MM format)
+     *   time?: string (HH:MM format),
+     *   duration_minutes?: int
      * }
      * @param string $scope 'all' or 'future'
      * @param int $fromIndex For scope='future', start from this index (default 0)
@@ -92,6 +102,13 @@ final class ModifyRecurringSeries
             $newTime = $changes['time'];
         }
 
+        if (isset($changes['duration_minutes'])) {
+            $durationMinutes = (int) $changes['duration_minutes'];
+            if ($durationMinutes <= 0) {
+                throw BookingException::validationError('duration_minutes must be greater than 0');
+            }
+        }
+
         // Get bookings to modify
         $allBookings = $this->bookingRepository->findByRecurrenceRuleId($ruleId);
         
@@ -126,6 +143,7 @@ final class ModifyRecurringSeries
         try {
             $modifiedCount = 0;
             $changesApplied = [];
+            $actorName = $this->auditRepository?->resolveActorName('staff', $userId);
 
             foreach ($bookingsToModify as $booking) {
                 $bookingId = (int) $booking['id'];
@@ -136,6 +154,37 @@ final class ModifyRecurringSeries
                 if (isset($changes['staff_id'])) {
                     $itemChanges['staff_id'] = (int) $changes['staff_id'];
                     $changesApplied['staff_id'] = (int) $changes['staff_id'];
+                }
+                if (isset($changes['service_id'])) {
+                    $itemChanges['service_id'] = (int) $changes['service_id'];
+                    $changesApplied['service_id'] = (int) $changes['service_id'];
+                }
+                if (isset($changes['service_variant_id'])) {
+                    $itemChanges['service_variant_id'] = (int) $changes['service_variant_id'];
+                    $changesApplied['service_variant_id'] = (int) $changes['service_variant_id'];
+                }
+                if (array_key_exists('package_id', $changes)) {
+                    $itemChanges['package_id'] = $changes['package_id'] !== null
+                        ? (int) $changes['package_id']
+                        : null;
+                    $changesApplied['package_id'] = $changes['package_id'];
+                }
+                if (array_key_exists('price', $changes)) {
+                    $itemChanges['price'] = $changes['price'] !== null
+                        ? (float) $changes['price']
+                        : null;
+                    $changesApplied['price'] = $changes['price'];
+                }
+                if (isset($changes['duration_minutes'])) {
+                    $changesApplied['duration_minutes'] = (int) $changes['duration_minutes'];
+                }
+
+                $hasItemMutation = !empty($itemChanges) ||
+                    $newTime !== null ||
+                    isset($changes['duration_minutes']);
+                $beforeItemsById = [];
+                if ($hasItemMutation) {
+                    $beforeItemsById = $this->fetchBookingItemsForAudit($bookingId);
                 }
 
                 // Apply notes change
@@ -163,8 +212,13 @@ final class ModifyRecurringSeries
                     $this->updateBookingItems($bookingId, $itemChanges);
                 }
 
-                // Log audit event
-                if ($this->auditRepository !== null && (!empty($bookingChanges) || !empty($itemChanges) || $newTime !== null)) {
+                // Apply duration change to booking items
+                if (isset($changes['duration_minutes'])) {
+                    $this->updateBookingItemsDuration($bookingId, (int) $changes['duration_minutes']);
+                }
+
+                // Log booking-level audit event (notes only)
+                if ($this->auditRepository !== null && !empty($bookingChanges)) {
                     try {
                         $this->auditRepository->createEvent(
                             bookingId: $bookingId,
@@ -174,17 +228,61 @@ final class ModifyRecurringSeries
                             payload: [
                                 'action' => 'recurring_series_modification',
                                 'scope' => $scope,
-                                'changes' => array_merge($bookingChanges, $itemChanges, $newTime ? ['time' => $newTime] : []),
+                                'changes' => $bookingChanges,
                             ],
-                            correlationId: "recurring_modify_{$ruleId}"
+                            correlationId: "recurring_modify_{$ruleId}",
+                            actorName: $actorName
                         );
                     } catch (\Exception $e) {
                         error_log("Failed to log recurring modification audit: " . $e->getMessage());
                     }
                 }
 
-                // If time changed for recurring instances, refresh reminder payload/schedule.
-                if ($newTime !== null) {
+                // Log appointment-level audit events for propagated appointment changes
+                if ($this->auditRepository !== null && $hasItemMutation) {
+                    try {
+                        $afterItemsById = $this->fetchBookingItemsForAudit($bookingId);
+                        foreach ($afterItemsById as $appointmentId => $afterItem) {
+                            if (!isset($beforeItemsById[$appointmentId])) {
+                                continue;
+                            }
+                            $beforeItem = $beforeItemsById[$appointmentId];
+                            $changedFields = $this->getActuallyChangedAppointmentFields(
+                                $beforeItem,
+                                $afterItem
+                            );
+                            if (empty($changedFields)) {
+                                continue;
+                            }
+
+                            $this->auditRepository->createEvent(
+                                bookingId: $bookingId,
+                                eventType: 'appointment_updated',
+                                actorType: 'staff',
+                                actorId: $userId,
+                                payload: [
+                                    'appointment_id' => $appointmentId,
+                                    'before' => $beforeItem,
+                                    'after' => $afterItem,
+                                    'changed_fields' => array_keys($changedFields),
+                                    'action' => 'recurring_series_modification',
+                                    'scope' => $scope,
+                                ],
+                                correlationId: "recurring_modify_{$ruleId}",
+                                actorName: $actorName
+                            );
+                        }
+                    } catch (\Throwable $e) {
+                        error_log("Failed to log recurring appointment audit: " . $e->getMessage());
+                    }
+                }
+
+                // If schedule/service changed, refresh reminder payload/schedule.
+                $shouldRefreshReminder = $newTime !== null ||
+                    isset($changes['duration_minutes']) ||
+                    isset($changes['service_id']) ||
+                    isset($changes['service_variant_id']);
+                if ($shouldRefreshReminder) {
                     $this->refreshBookingReminder($bookingId);
                 }
 
@@ -217,6 +315,33 @@ final class ModifyRecurringSeries
         if (isset($changes['staff_id'])) {
             $setClauses[] = 'staff_id = ?';
             $params[] = $changes['staff_id'];
+        }
+        if (isset($changes['service_id'])) {
+            $setClauses[] = 'service_id = ?';
+            $params[] = $changes['service_id'];
+        }
+        if (isset($changes['service_variant_id'])) {
+            $setClauses[] = 'service_variant_id = ?';
+            $params[] = $changes['service_variant_id'];
+        }
+        if (array_key_exists('package_id', $changes)) {
+            $setClauses[] = 'package_id = ?';
+            $params[] = $changes['package_id'];
+            $setClauses[] = 'pricing_source = ?';
+            $params[] = $changes['package_id'] !== null ? 'package' : 'custom';
+        }
+        if (array_key_exists('price', $changes)) {
+            $price = $changes['price'];
+            $setClauses[] = 'price = ?';
+            $params[] = $price;
+            $setClauses[] = 'list_price_cents = ?';
+            $params[] = $price !== null ? (int) round(((float) $price) * 100) : null;
+            $setClauses[] = 'applied_price_cents = ?';
+            $params[] = $price !== null ? (int) round(((float) $price) * 100) : null;
+            if (!array_key_exists('package_id', $changes)) {
+                $setClauses[] = 'pricing_source = ?';
+                $params[] = $price !== null ? 'custom' : null;
+            }
         }
 
         if (empty($setClauses)) {
@@ -274,6 +399,35 @@ final class ModifyRecurringSeries
         }
     }
 
+    /**
+     * Update duration for all items of a booking.
+     * Keeps each item's start_time unchanged and recomputes end_time = start_time + duration.
+     */
+    private function updateBookingItemsDuration(int $bookingId, int $durationMinutes): void
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, start_time FROM booking_items WHERE booking_id = ?'
+        );
+        $stmt->execute([$bookingId]);
+        $items = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        if (empty($items)) {
+            return;
+        }
+
+        $updateStmt = $this->db->getPdo()->prepare(
+            'UPDATE booking_items SET end_time = ? WHERE id = ?'
+        );
+
+        foreach ($items as $item) {
+            $start = new DateTimeImmutable((string) $item['start_time']);
+            $end = $start->modify("+{$durationMinutes} minutes");
+            $updateStmt->execute([
+                $end->format('Y-m-d H:i:s'),
+                (int) $item['id'],
+            ]);
+        }
+    }
+
     private function refreshBookingReminder(int $bookingId): void
     {
         if ($this->notificationRepository === null) {
@@ -287,5 +441,90 @@ final class ModifyRecurringSeries
             // Keep series modification non-blocking on reminder errors.
             error_log("Failed to refresh reminder for recurring booking {$bookingId}: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Load appointment states for audit, indexed by appointment (booking_item) id.
+     *
+     * @return array<int, array{
+     *   id:int,
+     *   staff_id:int,
+     *   service_id:int,
+     *   service_variant_id:int,
+     *   package_id:int|null,
+     *   start_time:string,
+     *   end_time:string,
+     *   price:float|null,
+     *   extra_blocked_minutes:int,
+     *   extra_processing_minutes:int
+     * }>
+     */
+    private function fetchBookingItemsForAudit(int $bookingId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT
+                id,
+                staff_id,
+                service_id,
+                service_variant_id,
+                package_id,
+                start_time,
+                end_time,
+                price,
+                extra_blocked_minutes,
+                extra_processing_minutes
+             FROM booking_items
+             WHERE booking_id = ?'
+        );
+        $stmt->execute([$bookingId]);
+        $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+        $itemsById = [];
+        foreach ($rows as $row) {
+            $id = (int) $row['id'];
+            $itemsById[$id] = [
+                'id' => $id,
+                'staff_id' => (int) $row['staff_id'],
+                'service_id' => (int) $row['service_id'],
+                'service_variant_id' => (int) $row['service_variant_id'],
+                'package_id' => $row['package_id'] !== null ? (int) $row['package_id'] : null,
+                'start_time' => (string) $row['start_time'],
+                'end_time' => (string) $row['end_time'],
+                'price' => $row['price'] !== null ? (float) $row['price'] : null,
+                'extra_blocked_minutes' => (int) ($row['extra_blocked_minutes'] ?? 0),
+                'extra_processing_minutes' => (int) ($row['extra_processing_minutes'] ?? 0),
+            ];
+        }
+
+        return $itemsById;
+    }
+
+    /**
+     * Compare appointment states and return changed fields.
+     */
+    private function getActuallyChangedAppointmentFields(array $before, array $after): array
+    {
+        $changed = [];
+        $fieldsToCompare = [
+            'staff_id',
+            'service_id',
+            'service_variant_id',
+            'package_id',
+            'start_time',
+            'end_time',
+            'price',
+            'extra_blocked_minutes',
+            'extra_processing_minutes',
+        ];
+
+        foreach ($fieldsToCompare as $field) {
+            $beforeVal = $before[$field] ?? null;
+            $afterVal = $after[$field] ?? null;
+            if ($beforeVal !== $afterVal) {
+                $changed[$field] = $afterVal;
+            }
+        }
+
+        return $changed;
     }
 }

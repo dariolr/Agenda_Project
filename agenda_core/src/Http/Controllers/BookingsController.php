@@ -2024,8 +2024,13 @@ final class BookingsController
      * 
      * Body:
      * - staff_id: Change staff for all/future bookings
+     * - service_id: Change service for all/future bookings
+     * - service_variant_id: Change service variant for all/future bookings
+     * - package_id: Change package (or null to clear) for all/future bookings
+     * - price: Change applied price (or null to clear) for all/future bookings
      * - notes: Update notes for all/future bookings
      * - time: Change time (HH:MM) for all/future bookings
+     * - duration_minutes: Change duration (minutes) for all/future bookings
      */
     public function patchRecurringSeries(Request $request): Response
     {
@@ -2061,11 +2066,30 @@ final class BookingsController
         if (isset($body['staff_id'])) {
             $changes['staff_id'] = (int) $body['staff_id'];
         }
+        if (isset($body['service_id'])) {
+            $changes['service_id'] = (int) $body['service_id'];
+        }
+        if (isset($body['service_variant_id'])) {
+            $changes['service_variant_id'] = (int) $body['service_variant_id'];
+        }
+        if (array_key_exists('package_id', $body)) {
+            $changes['package_id'] = $body['package_id'] !== null
+                ? (int) $body['package_id']
+                : null;
+        }
+        if (array_key_exists('price', $body)) {
+            $changes['price'] = $body['price'] !== null
+                ? (float) $body['price']
+                : null;
+        }
         if (array_key_exists('notes', $body)) {
             $changes['notes'] = $body['notes'];
         }
         if (isset($body['time'])) {
             $changes['time'] = $body['time'];
+        }
+        if (isset($body['duration_minutes'])) {
+            $changes['duration_minutes'] = (int) $body['duration_minutes'];
         }
 
         if (empty($changes)) {
