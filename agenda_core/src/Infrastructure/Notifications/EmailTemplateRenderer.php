@@ -175,8 +175,8 @@ final class EmailTemplateRenderer
                                 {{recurring_schedule_html}}
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                                        <span style="color:#666;font-size:13px;">Cosa</span><br>
-                                        <strong style="color:#333;">{{services}}</strong>
+                                        <strong style="color:#333;font-size:13px;">Cosa</strong><br>
+                                        <span style="color:#333;">{{services}}</span>
                                     </td>
                                 </tr>
                                 {{total_row_html}}
@@ -225,7 +225,8 @@ La tua prenotazione presso {{business_name}} è stata confermata.
 {{location_block_text}}
 • Quando: {{date}} alle {{time}}
 {{recurring_schedule_text}}
-• Cosa: {{services}}
+Cosa:
+{{services}}
 {{total_row_text}}
 
 Puoi modificare o cancellare fino a:
@@ -281,8 +282,8 @@ TEXT,
                                 {{recurring_schedule_html}}
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                                        <span style="color:#666;font-size:13px;">What</span><br>
-                                        <strong style="color:#333;">{{services}}</strong>
+                                        <strong style="color:#333;font-size:13px;">What</strong><br>
+                                        <span style="color:#333;">{{services}}</span>
                                     </td>
                                 </tr>
                                 {{total_row_html}}
@@ -331,7 +332,8 @@ Your booking at {{business_name}} has been confirmed.
 {{location_block_text}}
 • When: {{date}} at {{time}}
 {{recurring_schedule_text}}
-• What: {{services}}
+What:
+{{services}}
 {{total_row_text}}
 
 You can change or cancel your booking until:
@@ -395,8 +397,8 @@ TEXT,
                                 {{recurring_schedule_html}}
                                 <tr>
                                     <td style="padding:8px 0;">
-                                        <span style="color:#666;font-size:13px;">Cosa</span><br>
-                                        <strong style="color:#333;">{{services}}</strong>
+                                        <strong style="color:#333;font-size:13px;">Cosa</strong><br>
+                                        <span style="color:#333;">{{services}}</span>
                                     </td>
                                 </tr>
                             </table>
@@ -437,7 +439,8 @@ La tua prenotazione ricorrente presso {{business_name}} è stata confermata.
 
 {{location_block_text}}
 {{recurring_schedule_text}}
-• Cosa: {{services}}
+Cosa:
+{{services}}
 {{recurring_cancellation_policy_text}}
 Gestisci prenotazioni: {{manage_url}}
 
@@ -483,8 +486,8 @@ TEXT,
                                 {{recurring_schedule_html}}
                                 <tr>
                                     <td style="padding:8px 0;">
-                                        <span style="color:#666;font-size:13px;">What</span><br>
-                                        <strong style="color:#333;">{{services}}</strong>
+                                        <strong style="color:#333;font-size:13px;">What</strong><br>
+                                        <span style="color:#333;">{{services}}</span>
                                     </td>
                                 </tr>
                             </table>
@@ -525,7 +528,8 @@ Your recurring booking at {{business_name}} has been confirmed.
 
 {{location_block_text}}
 {{recurring_schedule_text}}
-• What: {{services}}
+What:
+{{services}}
 {{recurring_cancellation_policy_text}}
 Manage bookings: {{manage_url}}
 
@@ -599,7 +603,7 @@ TEXT,
                 </table>
                 
                 <p style="margin:0 0 20px;font-size:16px;color:#333;">
-                    Se desideri prenotare nuovamente, visita il nostro sito.
+                    Se desideri prenotare nuovamente, usa il pulsante qui sotto.
                 </p>
                 
                 <table width="100%" cellpadding="0" cellspacing="0">
@@ -693,7 +697,7 @@ TEXT,
                 </table>
                 
                 <p style="margin:0 0 20px;font-size:16px;color:#333;">
-                    If you would like to book again, visit our website.
+                    If you would like to book again, use the button below.
                 </p>
                 
                 <table width="100%" cellpadding="0" cellspacing="0">

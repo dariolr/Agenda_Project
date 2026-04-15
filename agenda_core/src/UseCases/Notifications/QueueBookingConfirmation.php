@@ -279,26 +279,26 @@ final class QueueBookingConfirmation
         if ($occurrencesCount >= 2) {
             if ($isEnglish) {
                 $recurrenceSummaryHtml = sprintf(
-                    '<div style="margin:0;color:#333;"><strong>Recurrence:</strong> %s<br><strong>Appointments:</strong> %d<br><br><br><strong>%s:</strong></div>',
+                    '<div style="margin:0;color:#333;"><strong>Recurrence:</strong><br>%s<br><strong>Appointments:</strong><br>%d<br><strong>%s:</strong></div>',
                     htmlspecialchars($recurrenceTypeLabel, ENT_QUOTES, 'UTF-8'),
                     $occurrencesCount,
                     $title
                 );
                 $recurrenceSummaryText = sprintf(
-                    "Recurrence: %s\nAppointments: %d\n\n\n%s:\n",
+                    "Recurrence:\n%s\nAppointments:\n%d\n%s:\n\n",
                     $recurrenceTypeLabel,
                     $occurrencesCount,
                     $title
                 );
             } else {
                 $recurrenceSummaryHtml = sprintf(
-                    '<div style="margin:0;color:#333;"><strong>Tipo di ricorrenza:</strong> %s<br><strong>Numero appuntamenti:</strong> %d<br><br><br><strong>%s:</strong></div>',
+                    '<div style="margin:0;color:#333;"><strong>Tipo di ricorrenza:</strong><br>%s<br><strong>Numero appuntamenti:</strong><br>%d<br><strong>%s:</strong></div>',
                     htmlspecialchars($recurrenceTypeLabel, ENT_QUOTES, 'UTF-8'),
                     $occurrencesCount,
                     $title
                 );
                 $recurrenceSummaryText = sprintf(
-                    "Tipo di ricorrenza: %s\nNumero appuntamenti: %d\n\n\n%s:\n",
+                    "Tipo di ricorrenza:\n%s\nNumero appuntamenti:\n%d\n%s:\n\n",
                     $recurrenceTypeLabel,
                     $occurrencesCount,
                     $title
@@ -328,8 +328,8 @@ final class QueueBookingConfirmation
                 : sprintf('alle %s', $start->format('H:i'));
             $lineLabel = sprintf('%s - %s', $dateLabel, $timeLabel);
             $itemsHtml[] = sprintf(
-                '<div style="margin:0;">
-                    <div><strong>%s</strong></div>
+                '<div style="margin:8px 0 0 0;">
+                    <div>%s</div>
                 </div>',
                 $lineLabel
             );
@@ -354,7 +354,7 @@ final class QueueBookingConfirmation
             implode('', $itemsHtml)
         );
 
-        $text = ($sectionLabelText !== '' ? $sectionLabelText . ":\n" : '') . $recurrenceSummaryText . implode("\n", $itemsText) . "\n";
+        $text = ($sectionLabelText !== '' ? $sectionLabelText . ":\n\n" : '') . $recurrenceSummaryText . implode("\n\n", $itemsText) . "\n";
 
         return [$html, $text];
     }
