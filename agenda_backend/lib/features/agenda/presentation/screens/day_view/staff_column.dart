@@ -874,10 +874,17 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           break;
       }
 
+      const narrowOverlapRatioThreshold = 0.65;
+      const narrowOverlapMaxWidthPx = 320.0;
+      final isNarrowOverlappedCard =
+          fullColumnWidth > 0 &&
+          (cardWidth / fullColumnWidth) <= narrowOverlapRatioThreshold &&
+          cardWidth <= narrowOverlapMaxWidthPx &&
+          cardWidth < fullColumnWidth - 1.0;
       final isExpanded =
           selectedAppts.contains(originalAppt.id) &&
           !isDragged &&
-          cardWidth < fullColumnWidth - 1.0;
+          isNarrowOverlappedCard;
 
       final effectiveLeft = isExpanded ? padding : cardLeft;
       final effectiveWidth = isExpanded ? fullColumnWidth : cardWidth;

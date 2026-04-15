@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/l10n/l10_extension.dart';
 
 /// Enum che rappresenta lo scope dell'azione su una serie ricorrente
@@ -73,6 +74,39 @@ class _RecurringDeleteDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final displayIndex = currentIndex + 1;
+    final canApplyToThisAndFuture =
+        displayIndex > 1 && displayIndex < totalCount;
+    final isMobile = MediaQuery.sizeOf(context).width < 600;
+    final cancelButton = AppOutlinedActionButton(
+      onPressed: () => Navigator.pop(context),
+      borderColor: theme.colorScheme.outline,
+      foregroundColor: theme.colorScheme.onSurfaceVariant,
+      child: Text(l10n.actionCancel),
+    );
+    final onlyThisButton = AppOutlinedActionButton(
+      onPressed: () => Navigator.pop(
+        context,
+        const RecurringDeleteResult(scope: RecurringActionScope.single),
+      ),
+      child: Text(l10n.recurringScopeOnlyThis),
+    );
+    final thisAndFutureButton = AppFilledButton(
+      onPressed: () => Navigator.pop(
+        context,
+        const RecurringDeleteResult(
+          scope: RecurringActionScope.thisAndFuture,
+        ),
+      ),
+      child: Text(l10n.recurringScopeThisAndFuture),
+    );
+    final allButton = AppDangerButton(
+      onPressed: () => Navigator.pop(
+        context,
+        const RecurringDeleteResult(scope: RecurringActionScope.all),
+      ),
+      child: Text(l10n.recurringScopeAll),
+    );
 
     return AlertDialog(
       title: Row(
@@ -87,7 +121,7 @@ class _RecurringDeleteDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            l10n.recurringDeleteMessage(currentIndex, totalCount),
+            l10n.recurringDeleteMessage(displayIndex, totalCount),
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
@@ -99,39 +133,42 @@ class _RecurringDeleteDialog extends StatelessWidget {
           ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(l10n.actionCancel),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(
-            context,
-            const RecurringDeleteResult(scope: RecurringActionScope.single),
-          ),
-          child: Text(l10n.recurringScopeOnlyThis),
-        ),
-        if (currentIndex < totalCount)
-          TextButton(
-            onPressed: () => Navigator.pop(
-              context,
-              const RecurringDeleteResult(
-                scope: RecurringActionScope.thisAndFuture,
+      actions: isMobile
+          ? [
+              SizedBox(
+                width: double.infinity,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: onlyThisButton),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: canApplyToThisAndFuture
+                              ? thisAndFutureButton
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: cancelButton),
+                        const SizedBox(width: 8),
+                        Expanded(child: allButton),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            child: Text(l10n.recurringScopeThisAndFuture),
-          ),
-        FilledButton(
-          style: FilledButton.styleFrom(
-            backgroundColor: theme.colorScheme.error,
-          ),
-          onPressed: () => Navigator.pop(
-            context,
-            const RecurringDeleteResult(scope: RecurringActionScope.all),
-          ),
-          child: Text(l10n.recurringScopeAll),
-        ),
-      ],
+            ]
+          : [
+              cancelButton,
+              onlyThisButton,
+              if (canApplyToThisAndFuture) thisAndFutureButton,
+              allButton,
+            ],
     );
   }
 }
@@ -149,6 +186,39 @@ class _RecurringEditDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final displayIndex = currentIndex + 1;
+    final canApplyToThisAndFuture =
+        displayIndex > 1 && displayIndex < totalCount;
+    final isMobile = MediaQuery.sizeOf(context).width < 600;
+    final cancelButton = AppOutlinedActionButton(
+      onPressed: () => Navigator.pop(context),
+      borderColor: theme.colorScheme.outline,
+      foregroundColor: theme.colorScheme.onSurfaceVariant,
+      child: Text(l10n.actionCancel),
+    );
+    final onlyThisButton = AppOutlinedActionButton(
+      onPressed: () => Navigator.pop(
+        context,
+        const RecurringEditResult(scope: RecurringActionScope.single),
+      ),
+      child: Text(l10n.recurringScopeOnlyThis),
+    );
+    final thisAndFutureButton = AppFilledButton(
+      onPressed: () => Navigator.pop(
+        context,
+        const RecurringEditResult(
+          scope: RecurringActionScope.thisAndFuture,
+        ),
+      ),
+      child: Text(l10n.recurringScopeThisAndFuture),
+    );
+    final allButton = AppOutlinedActionButton(
+      onPressed: () => Navigator.pop(
+        context,
+        const RecurringEditResult(scope: RecurringActionScope.all),
+      ),
+      child: Text(l10n.recurringScopeAll),
+    );
 
     return AlertDialog(
       title: Row(
@@ -163,7 +233,7 @@ class _RecurringEditDialog extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            l10n.recurringEditMessage(currentIndex, totalCount),
+            l10n.recurringEditMessage(displayIndex, totalCount),
             style: theme.textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
@@ -175,29 +245,42 @@ class _RecurringEditDialog extends StatelessWidget {
           ),
         ],
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(l10n.actionCancel),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(
-            context,
-            const RecurringEditResult(scope: RecurringActionScope.single),
-          ),
-          child: Text(l10n.recurringScopeOnlyThis),
-        ),
-        if (currentIndex < totalCount)
-          FilledButton(
-            onPressed: () => Navigator.pop(
-              context,
-              const RecurringEditResult(
-                scope: RecurringActionScope.thisAndFuture,
+      actions: isMobile
+          ? [
+              SizedBox(
+                width: double.infinity,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(child: onlyThisButton),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: canApplyToThisAndFuture
+                              ? thisAndFutureButton
+                              : const SizedBox.shrink(),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: cancelButton),
+                        const SizedBox(width: 8),
+                        Expanded(child: allButton),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-            child: Text(l10n.recurringScopeThisAndFuture),
-          ),
-      ],
+            ]
+          : [
+              cancelButton,
+              onlyThisButton,
+              if (canApplyToThisAndFuture) thisAndFutureButton,
+              allButton,
+            ],
     );
   }
 }

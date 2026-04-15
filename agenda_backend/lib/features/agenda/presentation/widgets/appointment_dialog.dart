@@ -487,52 +487,58 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final appt = widget.initial;
 
     // Verifica se è una prenotazione ricorrente
-    if (appt.isRecurring &&
+    final hasRecurringMetadata =
+        appt.isRecurring &&
         appt.recurrenceRuleId != null &&
         appt.recurrenceIndex != null &&
-        appt.recurrenceTotal != null) {
-      // Mostra il dialog per le prenotazioni ricorrenti
-      final result = await showRecurringDeleteDialog(
-        context,
-        currentIndex: appt.recurrenceIndex!,
-        totalCount: appt.recurrenceTotal!,
-      );
-
-      if (result == null) return; // Utente ha annullato
-
+        appt.recurrenceTotal != null;
+    final recurringCurrentIndex = appt.recurrenceIndex ?? 0;
+    final recurringTotalCount = appt.recurrenceTotal ?? 1;
+    final shouldShowRecurringDeleteDialog =
+        hasRecurringMetadata && recurringTotalCount > 1;
+    if (hasRecurringMetadata) {
       setState(() => _isSaving = true);
       try {
         final bookingsApi = ref.read(bookingsApiProvider);
-        final String scope;
+        String scope = 'all';
         int? fromIndex;
 
-        switch (result.scope) {
-          case RecurringActionScope.single:
-            // Cancella solo questo appuntamento con l'API standard
-            await ref
-                .read(bookingsProvider.notifier)
-                .deleteBooking(appt.bookingId);
-            if (mounted) Navigator.of(context).pop();
-            return;
+        if (shouldShowRecurringDeleteDialog) {
+          // Mostra il dialog solo se la serie ha più di 1 appuntamento.
+          final result = await showRecurringDeleteDialog(
+            context,
+            currentIndex: recurringCurrentIndex,
+            totalCount: recurringTotalCount,
+          );
+          if (result == null) return; // Utente ha annullato
 
-          case RecurringActionScope.thisAndFuture:
-            scope = 'this_and_future';
-            fromIndex = appt.recurrenceIndex;
-
-          case RecurringActionScope.all:
-            scope = 'all';
+          switch (result.scope) {
+            case RecurringActionScope.single:
+              // Cancella solo questo appuntamento con l'API standard
+              await ref
+                  .read(bookingsProvider.notifier)
+                  .deleteBooking(appt.bookingId);
+              if (mounted) Navigator.of(context).pop();
+              return;
+            case RecurringActionScope.thisAndFuture:
+              scope = 'future';
+              fromIndex = appt.recurrenceIndex;
+            case RecurringActionScope.all:
+              scope = 'all';
+          }
+        } else {
+          // Serie con un solo appuntamento: UX come non ricorrente,
+          // ma cancellazione via endpoint ricorrenza per pulire la serie.
+          scope = 'all';
         }
 
-        // Chiama l'API per cancellare la serie
         await bookingsApi.cancelRecurringSeries(
           ruleId: appt.recurrenceRuleId!,
           scope: scope,
           fromIndex: fromIndex,
         );
 
-        // Ricarica gli appuntamenti
         ref.invalidate(appointmentsProvider);
-
         if (mounted) Navigator.of(context).pop();
       } catch (e) {
         if (mounted) {
@@ -2075,6 +2081,11 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
   int _toCents(double value) => (value * 100).round();
 
+  int _minutesOfDay(TimeOfDay value) => (value.hour * 60) + value.minute;
+
+  String _formatApiTime(TimeOfDay value) =>
+      '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
+
   BookingPayment _rebuildPaymentForServicesTotal({
     required BookingPayment payment,
     required int referenceServicesTotalCents,
@@ -2150,9 +2161,28 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final canManageBookings = ref.read(currentUserCanManageBookingsProvider);
     if (!canManageBookings) return;
     final forcedStaffId = _forcedStaffIdForCurrentUser();
+    final appt = widget.initial;
 
     final l10n = context.l10n;
     if (!_formKey.currentState!.validate()) return;
+
+    RecurringEditResult? recurringEditResult;
+    final hasRecurringMetadata =
+        appt.isRecurring &&
+        appt.recurrenceRuleId != null &&
+        appt.recurrenceIndex != null &&
+        appt.recurrenceTotal != null;
+    final recurringCurrentIndex = appt.recurrenceIndex ?? 0;
+    final recurringTotalCount = appt.recurrenceTotal ?? 1;
+    if (hasRecurringMetadata && recurringTotalCount > 1) {
+      recurringEditResult = await showRecurringEditDialog(
+        context,
+        currentIndex: recurringCurrentIndex,
+        totalCount: recurringTotalCount,
+      );
+      if (recurringEditResult == null) return;
+    }
+    if (!mounted) return;
 
     // Verifica che ci sia almeno un servizio selezionato
     // Filtra anche serviceId == 0 (dati corrotti nel DB)
@@ -2183,7 +2213,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     try {
       final variants = ref.read(serviceVariantsProvider).value ?? [];
       final services = ref.read(servicesProvider).value ?? [];
-      final bookingId = widget.initial.bookingId;
+      final bookingId = appt.bookingId;
 
       // Client info (può essere null se nessun cliente è associato)
       final int? clientId = _clientId;
@@ -2378,6 +2408,60 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
       // Rimuovi la booking se vuota
       ref.read(bookingsProvider.notifier).removeIfEmpty(bookingId);
+
+      if (recurringEditResult != null &&
+          recurringEditResult.scope != RecurringActionScope.single &&
+          appt.recurrenceRuleId != null &&
+          appt.recurrenceIndex != null &&
+          appt.recurrenceTotal != null) {
+        final isAllScope = recurringEditResult.scope == RecurringActionScope.all;
+        final fromIndex = isAllScope ? 0 : appt.recurrenceIndex! + 1;
+        final canPropagateToSeries = isAllScope || fromIndex < appt.recurrenceTotal!;
+        if (canPropagateToSeries) {
+          final normalizedInitialNotes = _initialNotes.trim().isEmpty
+              ? null
+              : _initialNotes.trim();
+          final notesChangedForSeries = normalizedInitialNotes != notes;
+
+          final editedStaffIds = validItems
+              .map((item) => item.staffId)
+              .whereType<int>()
+              .toSet();
+          int? seriesStaffId;
+          if (editedStaffIds.length == 1) {
+            final candidateStaffId = editedStaffIds.first;
+            if (candidateStaffId != appt.staffId) {
+              seriesStaffId = candidateStaffId;
+            }
+          }
+
+          final sortedItems = [...validItems]
+            ..sort(
+              (a, b) =>
+                  _minutesOfDay(a.startTime).compareTo(_minutesOfDay(b.startTime)),
+            );
+          final firstStart = sortedItems.first.startTime;
+          final initialStart = TimeOfDay.fromDateTime(appt.startTime);
+          final seriesTime =
+              _minutesOfDay(firstStart) != _minutesOfDay(initialStart)
+              ? _formatApiTime(firstStart)
+              : null;
+
+          if (seriesStaffId != null || notesChangedForSeries || seriesTime != null) {
+            await ref
+                .read(bookingsApiProvider)
+                .modifyRecurringSeries(
+                  ruleId: appt.recurrenceRuleId!,
+                  scope: isAllScope ? 'all' : 'future',
+                  fromIndex: isAllScope ? null : fromIndex,
+                  staffId: seriesStaffId,
+                  notes: notes,
+                  includeNotes: notesChangedForSeries,
+                  time: seriesTime,
+                );
+          }
+        }
+      }
 
       if (scrollTarget != null) {
         ref.read(agendaScrollRequestProvider.notifier).request(scrollTarget);

@@ -18,6 +18,68 @@ import 'location_providers.dart';
 import 'tenant_time_provider.dart';
 import 'weekly_appointments_provider.dart';
 
+class RecurringSeriesCardMetrics {
+  const RecurringSeriesCardMetrics({
+    required this.activeTotal,
+    required this.seriesTotal,
+    required this.activeIndexByBookingId,
+  });
+
+  final int activeTotal;
+  final int seriesTotal;
+  final Map<int, int> activeIndexByBookingId;
+}
+
+final recurringSeriesCardMetricsProvider =
+    FutureProvider.family<RecurringSeriesCardMetrics?, int>((
+      ref,
+      recurrenceRuleId,
+    ) async {
+      if (recurrenceRuleId <= 0) return null;
+      final api = ref.read(bookingsApiProvider);
+      final response = await api.getRecurringSeries(ruleId: recurrenceRuleId);
+
+      final rawBookings = response['bookings'];
+      if (rawBookings is! List) return null;
+
+      final allBookings = rawBookings.whereType<Map<String, dynamic>>().toList();
+      allBookings.sort((a, b) {
+        final aIndex = (a['recurrence_index'] as num?)?.toInt() ?? -1;
+        final bIndex = (b['recurrence_index'] as num?)?.toInt() ?? -1;
+        if (aIndex != bIndex) return aIndex.compareTo(bIndex);
+        final aId = (a['id'] as num?)?.toInt() ?? -1;
+        final bId = (b['id'] as num?)?.toInt() ?? -1;
+        return aId.compareTo(bId);
+      });
+
+      final activeBookings = allBookings
+          .where((booking) => booking['status'] != 'cancelled')
+          .toList();
+
+      final activeIndexByBookingId = <int, int>{};
+      for (var i = 0; i < activeBookings.length; i++) {
+        final bookingId = (activeBookings[i]['id'] as num?)?.toInt();
+        if (bookingId != null && bookingId > 0) {
+          activeIndexByBookingId[bookingId] = i + 1;
+        }
+      }
+
+      final recurrenceRule =
+          response['recurrence_rule'] as Map<String, dynamic>?;
+      final plannedSeriesTotal =
+          (recurrenceRule?['max_occurrences'] as num?)?.toInt();
+      final seriesTotalFromApi = (response['total_bookings'] as num?)?.toInt();
+      final effectiveSeriesTotal = plannedSeriesTotal != null &&
+              plannedSeriesTotal > 0
+          ? plannedSeriesTotal
+          : (seriesTotalFromApi ?? allBookings.length);
+      return RecurringSeriesCardMetrics(
+        activeTotal: activeBookings.length,
+        seriesTotal: effectiveSeriesTotal,
+        activeIndexByBookingId: activeIndexByBookingId,
+      );
+    });
+
 /// Arrotonda un DateTime ai 5 minuti più vicini.
 /// Es: 10:12 → 10:10, 10:13 → 10:15
 DateTime _roundToNearestFiveMinutes(DateTime dt) {

@@ -411,6 +411,7 @@ class BookingsApi {
     int? fromIndex,
     int? staffId,
     String? notes,
+    bool includeNotes = false,
     String? time,
   }) async {
     final queryParams = <String, String>{'scope': scope};
@@ -418,7 +419,7 @@ class BookingsApi {
 
     final requestData = <String, dynamic>{};
     if (staffId != null) requestData['staff_id'] = staffId;
-    if (notes != null) requestData['notes'] = notes;
+    if (includeNotes) requestData['notes'] = notes;
     if (time != null) requestData['time'] = time;
 
     final queryString = queryParams.entries

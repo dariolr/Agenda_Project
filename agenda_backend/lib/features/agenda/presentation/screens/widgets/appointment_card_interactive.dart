@@ -138,7 +138,6 @@ class _AppointmentCardInteractiveState
     final isSelected = selection.contains(widget.appointment.id);
     final isDragging = draggedId == widget.appointment.id;
     final showThickBorder = isSelected || isDragging;
-
     return MouseRegion(
       cursor: _isResizeZoneHovered
           ? SystemMouseCursors.resizeUpDown
@@ -797,6 +796,14 @@ class _AppointmentCardInteractiveState
         (boostAnchoredVerticalPadding ? anchoredVerticalPaddingBoost : 0.0);
     final verticalBottomPadding = baseBottomPadding;
     final horizontalRightPadding = presentation.horizontalRightPadding;
+    final recurrenceRuleId = widget.appointment.recurrenceRuleId;
+    final recurrenceMetrics = recurrenceRuleId != null
+        ? ref
+              .watch(recurringSeriesCardMetricsProvider(recurrenceRuleId))
+              .asData
+              ?.value
+        : null;
+    final originalRecurrenceTotal = recurrenceMetrics?.seriesTotal;
 
     final animationDuration = _isDraggingResize || forFeedback
         ? Duration.zero
@@ -917,9 +924,13 @@ class _AppointmentCardInteractiveState
                     strikeAppointmentPrice: showStruckVariantPrice,
                     statusVisual: statusVisual,
                     showStatusIcon: showStatusIcon && !showCompactStatusBar,
-                    isRecurring: widget.appointment.isRecurring,
+                    isRecurring:
+                        widget.appointment.isRecurring &&
+                        (widget.appointment.recurrenceTotal ?? 0) > 1,
                     recurrenceIndex: widget.appointment.recurrenceIndex,
                     recurrenceTotal: widget.appointment.recurrenceTotal,
+                    originalRecurrenceIndex: widget.appointment.recurrenceIndex,
+                    originalRecurrenceTotal: originalRecurrenceTotal,
                     onNotesTap: hasNotes && !forFeedback
                         ? () => _showNotesDialog(
                             bookingNotes: hasBookingNotes ? bookingNotes : null,
@@ -1008,6 +1019,8 @@ class _AppointmentCardInteractiveState
     bool isRecurring = false,
     int? recurrenceIndex,
     int? recurrenceTotal,
+    int? originalRecurrenceIndex,
+    int? originalRecurrenceTotal,
     VoidCallback? onNotesTap,
   }) {
     final effectiveColumnWidth = widget.columnWidth ?? _lastSize?.width;
@@ -1169,12 +1182,29 @@ class _AppointmentCardInteractiveState
               recurrenceIndex < recurrenceTotal
           ? recurrenceIndex + 1
           : recurrenceIndex;
+      final normalizedOriginalRecurrenceIndex =
+          originalRecurrenceIndex != null ? originalRecurrenceIndex + 1 : null;
       final tooltipText =
           normalizedRecurrenceIndex != null && recurrenceTotal != null
-          ? context.l10n.recurrenceSeriesOf(
-              normalizedRecurrenceIndex,
-              recurrenceTotal,
-            )
+          ? (() {
+              final activeText = context.l10n.recurrenceSeriesOf(
+                normalizedRecurrenceIndex,
+                recurrenceTotal,
+              );
+              final seriesLabel = context.l10n.recurrenceSeriesIcon;
+              final showOriginalLine =
+                  normalizedOriginalRecurrenceIndex != null &&
+                  originalRecurrenceTotal != null &&
+                  (normalizedOriginalRecurrenceIndex !=
+                          normalizedRecurrenceIndex ||
+                      originalRecurrenceTotal != recurrenceTotal);
+              if (!showOriginalLine) return '$seriesLabel: $activeText';
+              final originalText = context.l10n.recurrenceSeriesOf(
+                normalizedOriginalRecurrenceIndex,
+                originalRecurrenceTotal,
+              );
+              return '$seriesLabel: $activeText\n$originalText';
+            })()
           : context.l10n.recurrenceSeriesIcon;
       final recurrenceLabel =
           normalizedRecurrenceIndex != null && recurrenceTotal != null
