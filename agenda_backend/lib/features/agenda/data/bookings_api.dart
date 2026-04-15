@@ -70,6 +70,9 @@ class RecurringBookingItemRequest {
   final int? durationMinutes;
   final int? blockedExtraMinutes;
   final int? processingExtraMinutes;
+  final double? price;
+  final int? packageId;
+  final String? pricingSource;
 
   const RecurringBookingItemRequest({
     required this.serviceId,
@@ -79,6 +82,9 @@ class RecurringBookingItemRequest {
     this.durationMinutes,
     this.blockedExtraMinutes,
     this.processingExtraMinutes,
+    this.price,
+    this.packageId,
+    this.pricingSource,
   });
 
   Map<String, dynamic> toJson() {
@@ -95,6 +101,9 @@ class RecurringBookingItemRequest {
     if (processingExtraMinutes != null) {
       map['processing_extra_minutes'] = processingExtraMinutes;
     }
+    if (price != null) map['price'] = price;
+    if (packageId != null) map['package_id'] = packageId;
+    if (pricingSource != null) map['pricing_source'] = pricingSource;
     return map;
   }
 }
@@ -410,17 +419,37 @@ class BookingsApi {
     required String scope,
     int? fromIndex,
     int? staffId,
+    int? serviceId,
+    int? serviceVariantId,
+    int? packageId,
+    bool includePackageId = false,
+    double? price,
+    bool includePrice = false,
     String? notes,
     bool includeNotes = false,
     String? time,
+    int? durationMinutes,
+    List<RecurringBookingItemRequest>? items,
   }) async {
     final queryParams = <String, String>{'scope': scope};
     if (fromIndex != null) queryParams['from_index'] = fromIndex.toString();
 
     final requestData = <String, dynamic>{};
     if (staffId != null) requestData['staff_id'] = staffId;
+    if (serviceId != null) requestData['service_id'] = serviceId;
+    if (serviceVariantId != null) {
+      requestData['service_variant_id'] = serviceVariantId;
+    }
+    if (includePackageId) requestData['package_id'] = packageId;
+    if (includePrice) requestData['price'] = price;
     if (includeNotes) requestData['notes'] = notes;
     if (time != null) requestData['time'] = time;
+    if (durationMinutes != null) {
+      requestData['duration_minutes'] = durationMinutes;
+    }
+    if (items != null && items.isNotEmpty) {
+      requestData['items'] = items.map((item) => item.toJson()).toList();
+    }
 
     final queryString = queryParams.entries
         .map((e) => '${e.key}=${e.value}')

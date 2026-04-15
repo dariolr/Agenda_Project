@@ -7,6 +7,9 @@ import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
 import '../../providers/appointment_providers.dart';
 import '../../providers/booking_reschedule_provider.dart';
+import '../../providers/bookings_provider.dart';
+import '../../providers/bookings_repository_provider.dart';
+import '../dialogs/recurring_action_dialog.dart';
 
 enum MultiServiceMoveDecision {
   moveWholeBooking,
@@ -329,4 +332,85 @@ Future<MoveBookingByAnchorResult> moveWholeBookingFromAnchor({
     );
   }
   return result;
+}
+
+bool shouldAskRecurringScopeForReschedule({
+  required Appointment appointment,
+  required DateTime targetStart,
+  required int targetStaffId,
+}) {
+  final hasRecurringMetadata =
+      appointment.isRecurring &&
+      appointment.recurrenceRuleId != null &&
+      appointment.recurrenceIndex != null &&
+      appointment.recurrenceTotal != null &&
+      appointment.recurrenceTotal! > 1;
+  if (!hasRecurringMetadata) return false;
+
+  final hasStaffChanged = targetStaffId != appointment.staffId;
+  final hasStartChanged = !targetStart.isAtSameMomentAs(appointment.startTime);
+  return hasStaffChanged || hasStartChanged;
+}
+
+Future<RecurringActionScope?> resolveRecurringRescheduleScope({
+  required BuildContext context,
+  required Appointment appointment,
+  required DateTime targetStart,
+  required int targetStaffId,
+}) async {
+  if (!shouldAskRecurringScopeForReschedule(
+    appointment: appointment,
+    targetStart: targetStart,
+    targetStaffId: targetStaffId,
+  )) {
+    return RecurringActionScope.single;
+  }
+
+  final result = await showRecurringEditDialog(
+    context,
+    currentIndex: appointment.recurrenceIndex!,
+    totalCount: appointment.recurrenceTotal!,
+  );
+  return result?.scope;
+}
+
+String _toApiTime(DateTime dt) =>
+    '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}';
+
+Future<void> propagateRecurringReschedule({
+  required WidgetRef ref,
+  required Appointment appointment,
+  required DateTime targetStart,
+  required int targetStaffId,
+  required RecurringActionScope scope,
+}) async {
+  if (scope == RecurringActionScope.single) return;
+  if (appointment.recurrenceRuleId == null || appointment.recurrenceIndex == null) {
+    return;
+  }
+
+  final hasStaffChanged = targetStaffId != appointment.staffId;
+  final hasTimeChanged =
+      targetStart.hour != appointment.startTime.hour ||
+      targetStart.minute != appointment.startTime.minute;
+  if (!hasStaffChanged && !hasTimeChanged) return;
+
+  final isAllScope = scope == RecurringActionScope.all;
+  final fromIndex = isAllScope ? 0 : appointment.recurrenceIndex! + 1;
+  if (!isAllScope &&
+      appointment.recurrenceTotal != null &&
+      fromIndex >= appointment.recurrenceTotal!) {
+    return;
+  }
+
+  await ref.read(bookingsApiProvider).modifyRecurringSeries(
+    ruleId: appointment.recurrenceRuleId!,
+    scope: isAllScope ? 'all' : 'future',
+    fromIndex: isAllScope ? null : fromIndex,
+    staffId: hasStaffChanged ? targetStaffId : null,
+    time: hasTimeChanged ? _toApiTime(targetStart) : null,
+  );
+
+  ref.invalidate(bookingsProvider);
+  ref.invalidate(appointmentsProvider);
 }

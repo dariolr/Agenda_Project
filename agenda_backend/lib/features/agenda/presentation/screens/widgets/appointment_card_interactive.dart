@@ -11,6 +11,7 @@ import '/core/utils/string_utils.dart';
 import '../../../../../../app/providers/form_factor_provider.dart';
 import '../../../../../../core/l10n/l10_extension.dart';
 import '../../../../../../core/widgets/app_dialogs.dart';
+import '../../../../../../core/widgets/feedback_dialog.dart';
 import '../../../../auth/providers/current_business_user_provider.dart';
 import '../../../../clients/providers/clients_providers.dart';
 import '../../../../services/providers/services_provider.dart';
@@ -512,19 +513,48 @@ class _AppointmentCardInteractiveState
     final bookingAppointments = appointmentsNotifier.getByBookingId(
       widget.appointment.bookingId,
     );
+    final recurringScope = await resolveRecurringRescheduleScope(
+      context: context,
+      appointment: widget.appointment,
+      targetStart: newStart,
+      targetStaffId: dropStaffId,
+    );
+    if (recurringScope == null) {
+      _handleEnd(ref, keepSelection: true);
+      return;
+    }
+
     if (currentViewMode == CalendarViewMode.day ||
         !isMultiServiceBooking(bookingAppointments)) {
-      appointmentsNotifier.moveAppointment(
+      await appointmentsNotifier.moveAppointment(
         appointmentId: widget.appointment.id,
         newStaffId: dropStaffId,
         newStart: newStart,
         newEnd: newEnd,
       );
+      try {
+        await propagateRecurringReschedule(
+          ref: ref,
+          appointment: widget.appointment,
+          targetStart: newStart,
+          targetStaffId: dropStaffId,
+          scope: recurringScope,
+        );
+      } catch (_) {
+        if (mounted) {
+          await FeedbackDialog.showError(
+            context,
+            title: context.l10n.errorTitle,
+            message: context.l10n.bookingRescheduleMoveFailed,
+          );
+        }
+      }
       _handleEnd(ref, keepSelection: true);
       return;
     }
 
-    await moveWholeBookingFromAnchor(
+    if (!mounted) return;
+    final wholeMoveResult = await moveWholeBookingFromAnchor(
       ref: ref,
       context: context,
       anchorAppointment: widget.appointment,
@@ -533,6 +563,25 @@ class _AppointmentCardInteractiveState
       bookingAppointments: bookingAppointments,
     );
     if (!mounted) return;
+    if (wholeMoveResult == MoveBookingByAnchorResult.success) {
+      try {
+        await propagateRecurringReschedule(
+          ref: ref,
+          appointment: widget.appointment,
+          targetStart: newStart,
+          targetStaffId: dropStaffId,
+          scope: recurringScope,
+        );
+      } catch (_) {
+        if (mounted) {
+          await FeedbackDialog.showError(
+            context,
+            title: context.l10n.errorTitle,
+            message: context.l10n.bookingRescheduleMoveFailed,
+          );
+        }
+      }
+    }
 
     _handleEnd(ref, keepSelection: true);
   }

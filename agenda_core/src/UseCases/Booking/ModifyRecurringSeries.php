@@ -248,7 +248,8 @@ final class ModifyRecurringSeries
                     }
                 }
 
-                $hasItemMutation = !empty($itemChanges) ||
+                $hasItemMutation = $itemsTemplate !== null ||
+                    !empty($itemChanges) ||
                     $newTime !== null ||
                     isset($changes['duration_minutes']);
                 $beforeItemsById = [];
@@ -315,10 +316,52 @@ final class ModifyRecurringSeries
                 if ($this->auditRepository !== null && $hasItemMutation) {
                     try {
                         $afterItemsById = $this->fetchBookingItemsForAudit($bookingId);
-                        foreach ($afterItemsById as $appointmentId => $afterItem) {
-                            if (!isset($beforeItemsById[$appointmentId])) {
+                        foreach ($beforeItemsById as $appointmentId => $beforeItem) {
+                            if (isset($afterItemsById[$appointmentId])) {
                                 continue;
                             }
+
+                            $this->auditRepository->createEvent(
+                                bookingId: $bookingId,
+                                eventType: 'booking_item_deleted',
+                                actorType: 'staff',
+                                actorId: $userId,
+                                payload: [
+                                    'item_id' => $appointmentId,
+                                    'deleted_item' => $beforeItem,
+                                    'action' => 'recurring_series_modification',
+                                    'scope' => $scope,
+                                ],
+                                correlationId: "recurring_modify_{$ruleId}",
+                                actorName: $actorName
+                            );
+                        }
+
+                        foreach ($afterItemsById as $appointmentId => $afterItem) {
+                            if (!isset($beforeItemsById[$appointmentId])) {
+                                $this->auditRepository->createEvent(
+                                    bookingId: $bookingId,
+                                    eventType: 'booking_item_added',
+                                    actorType: 'staff',
+                                    actorId: $userId,
+                                    payload: [
+                                        'item_id' => $appointmentId,
+                                        'item_data' => [
+                                            'service_id' => $afterItem['service_id'] ?? null,
+                                            'staff_id' => $afterItem['staff_id'] ?? null,
+                                            'start_time' => $afterItem['start_time'] ?? null,
+                                            'end_time' => $afterItem['end_time'] ?? null,
+                                            'price' => $afterItem['price'] ?? null,
+                                        ],
+                                        'action' => 'recurring_series_modification',
+                                        'scope' => $scope,
+                                    ],
+                                    correlationId: "recurring_modify_{$ruleId}",
+                                    actorName: $actorName
+                                );
+                                continue;
+                            }
+
                             $beforeItem = $beforeItemsById[$appointmentId];
                             $changedFields = $this->getActuallyChangedAppointmentFields(
                                 $beforeItem,

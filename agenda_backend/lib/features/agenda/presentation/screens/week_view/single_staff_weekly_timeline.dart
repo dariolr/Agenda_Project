@@ -1013,6 +1013,33 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
       if (confirmed != true) return;
 
       final anchorId = rescheduleSession.anchorAppointmentId;
+      final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
+      final bookingAppointments = appointmentsNotifier.getByBookingId(
+        rescheduleSession.bookingId,
+      );
+      if (bookingAppointments.isEmpty) {
+        ref.read(bookingRescheduleSessionProvider.notifier).clear();
+        if (!context.mounted) return;
+        await FeedbackDialog.showError(
+          context,
+          title: l10n.errorTitle,
+          message: l10n.bookingRescheduleMissingBooking,
+        );
+        return;
+      }
+      final anchorAppointment = bookingAppointments.firstWhere(
+        (appointment) => appointment.id == anchorId,
+        orElse: () => bookingAppointments.first,
+      );
+      if (!context.mounted) return;
+      final recurringScope = await resolveRecurringRescheduleScope(
+        context: context,
+        appointment: anchorAppointment,
+        targetStart: targetStart,
+        targetStaffId: staffId,
+      );
+      if (recurringScope == null || !context.mounted) return;
+
       final result = await ref
           .read(appointmentsProvider.notifier)
           .moveBookingByAnchor(
@@ -1045,6 +1072,23 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
       }
       if (movedAnchor != null) {
         ref.read(agendaScrollRequestProvider.notifier).request(movedAnchor);
+      }
+
+      try {
+        await propagateRecurringReschedule(
+          ref: ref,
+          appointment: anchorAppointment,
+          targetStart: targetStart,
+          targetStaffId: staffId,
+          scope: recurringScope,
+        );
+      } catch (_) {
+        if (!context.mounted) return;
+        await FeedbackDialog.showError(
+          context,
+          title: l10n.errorTitle,
+          message: l10n.bookingRescheduleMoveFailed,
+        );
       }
       return;
     }
@@ -1211,16 +1255,40 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     if (confirmed != true) return;
     if (!context.mounted) return;
 
+    final recurringScope = await resolveRecurringRescheduleScope(
+      context: context,
+      appointment: details.data,
+      targetStart: newStart,
+      targetStaffId: staffId,
+    );
+    if (recurringScope == null || !context.mounted) return;
+
     if (!moveWholeBooking) {
-      appointmentsNotifier.moveAppointment(
+      await appointmentsNotifier.moveAppointment(
         appointmentId: details.data.id,
         newStaffId: staffId,
         newStart: newStart,
         newEnd: boundedEnd,
       );
+      try {
+        await propagateRecurringReschedule(
+          ref: ref,
+          appointment: details.data,
+          targetStart: newStart,
+          targetStaffId: staffId,
+          scope: recurringScope,
+        );
+      } catch (_) {
+        if (!context.mounted) return;
+        await FeedbackDialog.showError(
+          context,
+          title: l10n.errorTitle,
+          message: l10n.bookingRescheduleMoveFailed,
+        );
+      }
       return;
     }
-    await moveWholeBookingFromAnchor(
+    final wholeMoveResult = await moveWholeBookingFromAnchor(
       ref: ref,
       context: context,
       anchorAppointment: details.data,
@@ -1228,6 +1296,25 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
       targetStaffId: staffId,
       bookingAppointments: bookingAppointments,
     );
+    if (wholeMoveResult != MoveBookingByAnchorResult.success || !context.mounted) {
+      return;
+    }
+    try {
+      await propagateRecurringReschedule(
+        ref: ref,
+        appointment: details.data,
+        targetStart: newStart,
+        targetStaffId: staffId,
+        scope: recurringScope,
+      );
+    } catch (_) {
+      if (!context.mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: l10n.bookingRescheduleMoveFailed,
+      );
+    }
   }
 
   void _updateDragPreviewTime(

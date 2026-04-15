@@ -179,7 +179,7 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     return merged;
   }
 
-  void moveAppointment({
+  Future<void> moveAppointment({
     required int appointmentId,
     required int newStaffId,
     required DateTime newStart,

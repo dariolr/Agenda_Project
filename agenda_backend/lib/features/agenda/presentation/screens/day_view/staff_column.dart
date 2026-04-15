@@ -690,13 +690,40 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         ref.read(pendingDropProvider.notifier).clear();
 
         if (!confirmResult.confirmed || !context.mounted) return;
-        appointmentsNotifier.moveAppointment(
+
+        final recurringScope = await resolveRecurringRescheduleScope(
+          context: context,
+          appointment: details.data,
+          targetStart: dropResult.newStart,
+          targetStaffId: widget.staff.id,
+        );
+        if (recurringScope == null || !context.mounted) return;
+
+        await appointmentsNotifier.moveAppointment(
           appointmentId: details.data.id,
           newStaffId: widget.staff.id,
           newStart: dropResult.newStart,
           newEnd: dropResult.newEnd,
           notifyClient: confirmResult.notifyClient,
         );
+
+        try {
+          await propagateRecurringReschedule(
+            ref: ref,
+            appointment: details.data,
+            targetStart: dropResult.newStart,
+            targetStaffId: widget.staff.id,
+            scope: recurringScope,
+          );
+        } catch (_) {
+          if (context.mounted) {
+            await FeedbackDialog.showError(
+              context,
+              title: l10n.errorTitle,
+              message: l10n.bookingRescheduleMoveFailed,
+            );
+          }
+        }
       },
       builder: (context, candidateData, rejectedData) {
         return GestureDetector(
@@ -1360,6 +1387,17 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final bookingAppointments = ref
         .read(appointmentsProvider.notifier)
         .getByBookingId(rescheduleSession.bookingId);
+    if (bookingAppointments.isEmpty) {
+      ref.read(bookingRescheduleSessionProvider.notifier).clear();
+      if (mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: l10n.errorTitle,
+          message: l10n.bookingRescheduleMissingBooking,
+        );
+      }
+      return;
+    }
     final notificationRequired =
         willBookingFirstStartChangeForRescheduleSession(
           session: rescheduleSession,
@@ -1388,6 +1426,19 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             showNotifyOption: notificationRequired,
           );
     if (!confirmResult.confirmed || !mounted) return;
+
+    final anchorAppointment = bookingAppointments.firstWhere(
+      (appointment) => appointment.id == anchorId,
+      orElse: () => bookingAppointments.first,
+    );
+    final recurringScope = await resolveRecurringRescheduleScope(
+      context: context,
+      appointment: anchorAppointment,
+      targetStart: targetStart,
+      targetStaffId: widget.staff.id,
+    );
+    if (recurringScope == null || !mounted) return;
+
     setState(() => _isApplyingBookingReschedule = true);
     try {
       final result = await ref
@@ -1424,6 +1475,23 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       }
       if (movedAnchor != null) {
         ref.read(agendaScrollRequestProvider.notifier).request(movedAnchor);
+      }
+
+      try {
+        await propagateRecurringReschedule(
+          ref: ref,
+          appointment: anchorAppointment,
+          targetStart: targetStart,
+          targetStaffId: widget.staff.id,
+          scope: recurringScope,
+        );
+      } catch (_) {
+        if (!mounted) return;
+        await FeedbackDialog.showError(
+          context,
+          title: l10n.errorTitle,
+          message: l10n.bookingRescheduleMoveFailed,
+        );
       }
     } finally {
       if (mounted) {

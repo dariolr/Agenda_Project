@@ -52,6 +52,7 @@ import '../../providers/staff_slot_availability_provider.dart';
 import '../../providers/tenant_time_provider.dart';
 import '../../providers/weekly_appointments_provider.dart';
 import '../../utils/week_range.dart';
+import '../../data/bookings_api.dart';
 import '../dialogs/booking_history_dialog.dart';
 import '../dialogs/payment_dialog.dart';
 import '../dialogs/recurring_action_dialog.dart';
@@ -229,6 +230,10 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             durationMinutes: s.durationMinutes,
             blockedExtraMinutes: s.blockedExtraMinutes,
             processingExtraMinutes: s.processingExtraMinutes,
+            listPrice: s.listPrice,
+            price: s.price,
+            packageId: s.packageId,
+            pricingSource: s.pricingSource,
           ),
         )
         .toList();
@@ -402,6 +407,10 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       if (current.processingExtraMinutes != initial.processingExtraMinutes) {
         return true;
       }
+      if (_toCents(current.price ?? 0) != _toCents(initial.price ?? 0)) {
+        return true;
+      }
+      if (current.packageId != initial.packageId) return true;
     }
 
     return false;
@@ -2086,6 +2095,42 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
   String _formatApiTime(TimeOfDay value) =>
       '${value.hour.toString().padLeft(2, '0')}:${value.minute.toString().padLeft(2, '0')}';
 
+  bool _hasRecurringRuleLikeChanges(List<ServiceItemData> validItems) {
+    // Cambio data agenda = potenziale modifica della regola ricorrente
+    if (_date != _initialDate) return true;
+
+    final initialValidItems = _initialServiceItems
+        .where(
+          (item) =>
+              item.serviceId != null &&
+              item.serviceId! > 0 &&
+              item.staffId != null,
+        )
+        .toList();
+
+    // Aggiunta/rimozione servizi = modifica di serie
+    if (validItems.length != initialValidItems.length) return true;
+
+    for (int i = 0; i < validItems.length; i++) {
+      final current = validItems[i];
+      final initial = initialValidItems[i];
+
+      if (current.serviceId != initial.serviceId) return true;
+      if (current.serviceVariantId != initial.serviceVariantId) return true;
+      if (current.staffId != initial.staffId) return true;
+      if (current.startTime != initial.startTime) return true;
+      if (current.durationMinutes != initial.durationMinutes) return true;
+      if (current.blockedExtraMinutes != initial.blockedExtraMinutes) {
+        return true;
+      }
+      if (current.processingExtraMinutes != initial.processingExtraMinutes) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   BookingPayment _rebuildPaymentForServicesTotal({
     required BookingPayment payment,
     required int referenceServicesTotalCents,
@@ -2166,24 +2211,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
     final l10n = context.l10n;
     if (!_formKey.currentState!.validate()) return;
 
-    RecurringEditResult? recurringEditResult;
-    final hasRecurringMetadata =
-        appt.isRecurring &&
-        appt.recurrenceRuleId != null &&
-        appt.recurrenceIndex != null &&
-        appt.recurrenceTotal != null;
-    final recurringCurrentIndex = appt.recurrenceIndex ?? 0;
-    final recurringTotalCount = appt.recurrenceTotal ?? 1;
-    if (hasRecurringMetadata && recurringTotalCount > 1) {
-      recurringEditResult = await showRecurringEditDialog(
-        context,
-        currentIndex: recurringCurrentIndex,
-        totalCount: recurringTotalCount,
-      );
-      if (recurringEditResult == null) return;
-    }
-    if (!mounted) return;
-
     // Verifica che ci sia almeno un servizio selezionato
     // Filtra anche serviceId == 0 (dati corrotti nel DB)
     final validItems = _serviceItems
@@ -2208,6 +2235,28 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       );
       return;
     }
+
+    RecurringEditResult? recurringEditResult;
+    final hasRecurringMetadata =
+        appt.isRecurring &&
+        appt.recurrenceRuleId != null &&
+        appt.recurrenceIndex != null &&
+        appt.recurrenceTotal != null;
+    final recurringCurrentIndex = appt.recurrenceIndex ?? 0;
+    final recurringTotalCount = appt.recurrenceTotal ?? 1;
+    final shouldAskRecurringScope =
+        hasRecurringMetadata &&
+        recurringTotalCount > 1 &&
+        _hasRecurringRuleLikeChanges(validItems);
+    if (shouldAskRecurringScope) {
+      recurringEditResult = await showRecurringEditDialog(
+        context,
+        currentIndex: recurringCurrentIndex,
+        totalCount: recurringTotalCount,
+      );
+      if (recurringEditResult == null) return;
+    }
+    if (!mounted) return;
 
     setState(() => _isSaving = true);
     try {
@@ -2440,14 +2489,126 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               (a, b) =>
                   _minutesOfDay(a.startTime).compareTo(_minutesOfDay(b.startTime)),
             );
+          final sortedInitialItems = [
+            ..._initialServiceItems.where(
+              (item) =>
+                  item.serviceId != null &&
+                  item.serviceId! > 0 &&
+                  item.staffId != null,
+            ),
+          ]..sort(
+              (a, b) =>
+                  _minutesOfDay(a.startTime).compareTo(_minutesOfDay(b.startTime)),
+            );
           final firstStart = sortedItems.first.startTime;
           final initialStart = TimeOfDay.fromDateTime(appt.startTime);
           final seriesTime =
               _minutesOfDay(firstStart) != _minutesOfDay(initialStart)
               ? _formatApiTime(firstStart)
               : null;
+          final baseStartMinutes = _minutesOfDay(firstStart);
+          final recurringItemsForSeries = sortedItems.map((item) {
+            final totalDuration =
+                item.durationMinutes +
+                (item.blockedExtraMinutes > 0 ? item.blockedExtraMinutes : 0);
+            final offsetMinutes = _minutesOfDay(item.startTime) - baseStartMinutes;
+            return RecurringBookingItemRequest(
+              serviceId: item.serviceId!,
+              staffId: item.staffId,
+              serviceVariantId: item.serviceVariantId,
+              startOffsetMinutes: offsetMinutes,
+              durationMinutes: totalDuration,
+              blockedExtraMinutes: item.blockedExtraMinutes,
+              processingExtraMinutes: item.processingExtraMinutes,
+              price: item.price,
+              packageId: item.packageId,
+              pricingSource: item.pricingSource,
+            );
+          }).toList(growable: false);
+          final shouldPropagateItems = recurringItemsForSeries.isNotEmpty;
+          int? seriesDurationMinutes;
+          int? seriesServiceId;
+          int? seriesServiceVariantId;
+          int? seriesPackageId;
+          bool includeSeriesPackageId = false;
+          double? seriesPrice;
+          bool includeSeriesPrice = false;
+          if (sortedInitialItems.isNotEmpty) {
+            ServiceItemData editedAnchor = sortedItems.first;
+            ServiceItemData initialAnchor = sortedInitialItems.first;
+            for (final item in sortedItems) {
+              if (item.appointmentId == appt.id) {
+                editedAnchor = item;
+                break;
+              }
+            }
+            for (final item in sortedInitialItems) {
+              if (item.appointmentId == appt.id) {
+                initialAnchor = item;
+                break;
+              }
+            }
 
-          if (seriesStaffId != null || notesChangedForSeries || seriesTime != null) {
+            final editedTotalDuration =
+                editedAnchor.durationMinutes +
+                (editedAnchor.blockedExtraMinutes > 0
+                    ? editedAnchor.blockedExtraMinutes
+                    : 0);
+            final initialTotalDuration =
+                initialAnchor.durationMinutes +
+                (initialAnchor.blockedExtraMinutes > 0
+                    ? initialAnchor.blockedExtraMinutes
+                    : 0);
+            if (editedTotalDuration > 0 &&
+                editedTotalDuration != initialTotalDuration) {
+              seriesDurationMinutes = editedTotalDuration;
+            }
+
+            if (editedAnchor.serviceId != null &&
+                editedAnchor.serviceId != initialAnchor.serviceId) {
+              seriesServiceId = editedAnchor.serviceId;
+              seriesServiceVariantId ??= editedAnchor.serviceVariantId;
+              if (seriesServiceVariantId == null) {
+                ServiceVariant? fallbackVariant;
+                for (final variant in variants) {
+                  if (variant.serviceId == editedAnchor.serviceId) {
+                    fallbackVariant = variant;
+                    break;
+                  }
+                }
+                seriesServiceVariantId = fallbackVariant?.id;
+              }
+            }
+            if (editedAnchor.serviceVariantId != null &&
+                editedAnchor.serviceVariantId != initialAnchor.serviceVariantId) {
+              seriesServiceVariantId = editedAnchor.serviceVariantId;
+            }
+
+            if (editedAnchor.packageId != initialAnchor.packageId) {
+              includeSeriesPackageId = true;
+              seriesPackageId = editedAnchor.packageId;
+            }
+
+            final editedHasPrice = editedAnchor.price != null;
+            final initialHasPrice = initialAnchor.price != null;
+            final editedPriceCents = _toCents(editedAnchor.price ?? 0);
+            final initialPriceCents = _toCents(initialAnchor.price ?? 0);
+            if (editedHasPrice != initialHasPrice ||
+                editedPriceCents != initialPriceCents) {
+              includeSeriesPrice = true;
+              seriesPrice = editedAnchor.price;
+            }
+          }
+
+          if (seriesStaffId != null ||
+              notesChangedForSeries ||
+              seriesTime != null ||
+              seriesDurationMinutes != null ||
+              seriesServiceId != null ||
+              seriesServiceVariantId != null ||
+              includeSeriesPackageId ||
+              includeSeriesPrice ||
+              shouldPropagateItems) {
             await ref
                 .read(bookingsApiProvider)
                 .modifyRecurringSeries(
@@ -2455,9 +2616,17 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                   scope: isAllScope ? 'all' : 'future',
                   fromIndex: isAllScope ? null : fromIndex,
                   staffId: seriesStaffId,
+                  serviceId: seriesServiceId,
+                  serviceVariantId: seriesServiceVariantId,
+                  packageId: seriesPackageId,
+                  includePackageId: includeSeriesPackageId,
+                  price: seriesPrice,
+                  includePrice: includeSeriesPrice,
                   notes: notes,
                   includeNotes: notesChangedForSeries,
                   time: seriesTime,
+                  durationMinutes: seriesDurationMinutes,
+                  items: shouldPropagateItems ? recurringItemsForSeries : null,
                 );
           }
         }
