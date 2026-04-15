@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/models/class_event.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
 import '../../../../core/models/service_package.dart';
@@ -9,6 +11,7 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/widgets/centered_error_view.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/booking_nomenclature_provider.dart';
+import '../../providers/class_events_provider.dart';
 
 class ServicesStep extends ConsumerStatefulWidget {
   const ServicesStep({super.key});
@@ -17,7 +20,26 @@ class ServicesStep extends ConsumerStatefulWidget {
   ConsumerState<ServicesStep> createState() => _ServicesStepState();
 }
 
-class _ServicesStepState extends ConsumerState<ServicesStep> {
+class _ServicesStepState extends ConsumerState<ServicesStep>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 2, vsync: this);
+    // Quando l'utente cambia tab manualmente, aggiorna lo stato per il footer
+    _tabController.addListener(() {
+      if (!_tabController.indexIsChanging) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -27,6 +49,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
     );
     final servicesDataAsync = ref.watch(servicesDataProvider);
     final packagesAsync = ref.watch(servicePackagesProvider);
+    final classEventsAsync = ref.watch(classEventsProvider);
     final bookingState = ref.watch(bookingFlowProvider);
     final selectedServices = bookingState.request.services;
     final isLoading = servicesDataAsync.isLoading;
@@ -41,13 +64,15 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
       );
     }
 
+    final isClassTab = _tabController.index == 1;
+
     return Stack(
       children: [
         Column(
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -72,55 +97,78 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
                       color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
                   ),
+                  const SizedBox(height: 12),
                 ],
               ),
             ),
 
-            // Lista servizi per categoria (singola chiamata API)
-            Expanded(
-              child: servicesDataAsync.when(
-                loading: () => const SizedBox.shrink(),
-                error: (e, _) => const SizedBox.shrink(),
-                data: (data) {
-                  final packages =
-                      packagesAsync.value ?? const <ServicePackage>[];
-                  if (data.bookableServices.isEmpty && packages.isEmpty) {
-                    return _EmptyView(
-                      title: bookingServicesEmptyTitle(
-                        context,
-                        customServiceLabel,
-                        phraseOverrides: phraseOverrides,
-                      ),
-                      subtitle: bookingServicesEmptySubtitle(
-                        context,
-                        customServiceLabel,
-                        phraseOverrides: phraseOverrides,
-                      ),
-                    );
-                  }
+            // TabBar Servizi / Classi
+            TabBar(
+              controller: _tabController,
+              tabs: const [
+                Tab(text: 'Servizi'),
+                Tab(text: 'Classi'),
+              ],
+            ),
 
-                  return _buildServicesList(
+            // Contenuto tab
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // Tab 0: Servizi normali
+                  servicesDataAsync.when(
+                    loading: () => const SizedBox.shrink(),
+                    error: (e, _) => const SizedBox.shrink(),
+                    data: (data) {
+                      final packages =
+                          packagesAsync.value ?? const <ServicePackage>[];
+                      if (data.bookableServices.isEmpty && packages.isEmpty) {
+                        return _EmptyView(
+                          title: bookingServicesEmptyTitle(
+                            context,
+                            customServiceLabel,
+                            phraseOverrides: phraseOverrides,
+                          ),
+                          subtitle: bookingServicesEmptySubtitle(
+                            context,
+                            customServiceLabel,
+                            phraseOverrides: phraseOverrides,
+                          ),
+                        );
+                      }
+                      return _buildServicesList(
+                        context,
+                        ref,
+                        data.categories,
+                        data.bookableServices,
+                        data.serviceIdsWithEligibleStaff,
+                        data.services,
+                        bookingState.request.selectedServiceIds,
+                        bookingState.request.selectedPackageIds,
+                        selectedServices,
+                        packagesAsync,
+                        phraseOverrides,
+                      );
+                    },
+                  ),
+
+                  // Tab 1: Classi
+                  _buildClassEventsTab(
                     context,
                     ref,
-                    data.categories,
-                    data.bookableServices,
-                    data.serviceIdsWithEligibleStaff,
-                    data.services,
-                    bookingState.request.selectedServiceIds,
-                    bookingState.request.selectedPackageIds,
-                    selectedServices,
-                    packagesAsync,
-                    phraseOverrides,
-                  );
-                },
+                    classEventsAsync,
+                    bookingState.request.selectedClassEvent,
+                  ),
+                ],
               ),
             ),
 
             // Footer con selezione e bottone
-            _buildFooter(context, ref, selectedServices),
+            _buildFooter(context, ref, selectedServices, isClassTab: isClassTab),
           ],
         ),
-        if (isLoading)
+        if (isLoading && !isClassTab)
           Positioned.fill(
             child: ColoredBox(
               color: theme.colorScheme.surface.withOpacity(0.6),
@@ -347,11 +395,80 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
     );
   }
 
+  Widget _buildClassEventsTab(
+    BuildContext context,
+    WidgetRef ref,
+    AsyncValue<List<ClassEvent>> eventsAsync,
+    ClassEvent? selectedEvent,
+  ) {
+    return eventsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => _ErrorView(
+        title: 'Errore nel caricamento delle classi',
+        onRetry: () => ref.read(classEventsProvider.notifier).refresh(),
+      ),
+      data: (events) {
+        if (events.isEmpty) {
+          return const _EmptyView(
+            title: 'Nessuna classe disponibile',
+            subtitle: 'Non ci sono lezioni di gruppo programmate al momento.',
+          );
+        }
+
+        // Raggruppa per data
+        final byDate = <String, List<ClassEvent>>{};
+        for (final e in events) {
+          final dateKey = e.displayStartsAt.substring(0, 10);
+          byDate.putIfAbsent(dateKey, () => []).add(e);
+        }
+
+        final items = <Widget>[];
+        for (final entry in byDate.entries) {
+          final date = DateTime.parse(entry.key);
+          items.add(
+            Padding(
+              padding: const EdgeInsets.fromLTRB(0, 12, 0, 6),
+              child: Text(
+                DateFormat('EEEE d MMMM', 'it').format(date),
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ),
+            ),
+          );
+          for (final event in entry.value) {
+            items.add(
+              _ClassEventTile(
+                event: event,
+                isSelected: selectedEvent?.id == event.id,
+                onTap: () {
+                  final notifier = ref.read(bookingFlowProvider.notifier);
+                  if (selectedEvent?.id == event.id) {
+                    notifier.selectClassEvent(null);
+                  } else {
+                    notifier.selectClassEvent(event);
+                  }
+                },
+              ),
+            );
+          }
+        }
+
+        return ListView(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          children: items,
+        );
+      },
+    );
+  }
+
   Widget _buildFooter(
     BuildContext context,
     WidgetRef ref,
-    List<Service> selectedServices,
-  ) {
+    List<Service> selectedServices, {
+    bool isClassTab = false,
+  }) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final customServiceLabel = ref.watch(bookingServiceDisplayLabelProvider);
@@ -360,6 +477,64 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
     );
     final bookingState = ref.watch(bookingFlowProvider);
     final totals = ref.watch(bookingTotalsProvider);
+    final selectedClassEvent = bookingState.request.selectedClassEvent;
+
+    // Testo info selezione
+    Widget selectionInfo;
+    if (isClassTab) {
+      if (selectedClassEvent != null) {
+        selectionInfo = Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Text(
+                selectedClassEvent.classTypeName,
+                style: theme.textTheme.bodyMedium,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              selectedClassEvent.formattedPrice,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+          ],
+        );
+      } else {
+        selectionInfo = Text(
+          'Seleziona una lezione',
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurface.withOpacity(0.5),
+          ),
+        );
+      }
+    } else {
+      selectionInfo = Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            bookingServicesSelectedLabel(
+              context,
+              customServiceLabel,
+              totals.selectedItemCount,
+              phraseOverrides: phraseOverrides,
+            ),
+            style: theme.textTheme.bodyMedium,
+          ),
+          if (selectedServices.isNotEmpty)
+            Text(
+              _formatTotalPrice(context, totals.totalPrice),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: theme.colorScheme.primary,
+              ),
+            ),
+        ],
+      );
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -378,31 +553,8 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Info selezione
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  bookingServicesSelectedLabel(
-                    context,
-                    customServiceLabel,
-                    totals.selectedItemCount,
-                    phraseOverrides: phraseOverrides,
-                  ),
-                  style: theme.textTheme.bodyMedium,
-                ),
-                if (selectedServices.isNotEmpty)
-                  Text(
-                    _formatTotalPrice(context, totals.totalPrice),
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-              ],
-            ),
+            selectionInfo,
             const SizedBox(height: 12),
-            // Bottone avanti
             ElevatedButton(
               onPressed: bookingState.canGoNext
                   ? () => ref
@@ -421,6 +573,142 @@ class _ServicesStepState extends ConsumerState<ServicesStep> {
     final l10n = context.l10n;
     if (totalPrice == 0) return l10n.servicesFree;
     return '€${totalPrice.toStringAsFixed(2).replaceAll('.', ',')}';
+  }
+}
+
+class _ClassEventTile extends StatelessWidget {
+  final ClassEvent event;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  const _ClassEventTile({
+    required this.event,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final startTime = DateTime.tryParse(event.displayStartsAt);
+    final endTime = DateTime.tryParse(event.displayEndsAt);
+    final timeLabel = (startTime != null && endTime != null)
+        ? '${DateFormat('HH:mm').format(startTime)} – ${DateFormat('HH:mm').format(endTime)}'
+        : event.displayStartsAt;
+
+    Color? dotColor;
+    if (event.classTypeColorHex != null) {
+      final hex = event.classTypeColorHex!.replaceFirst('#', '');
+      if (hex.length == 6) {
+        dotColor = Color(int.parse('FF$hex', radix: 16));
+      }
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(
+          color: isSelected ? theme.colorScheme.primary : theme.dividerColor,
+          width: isSelected ? 2 : 1,
+        ),
+      ),
+      child: InkWell(
+        onTap: event.isFull ? null : onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            children: [
+              // Indicatore selezione
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected
+                      ? theme.colorScheme.primary
+                      : Colors.transparent,
+                  border: Border.all(
+                    color: isSelected
+                        ? theme.colorScheme.primary
+                        : theme.colorScheme.onSurface.withOpacity(0.3),
+                    width: 2,
+                  ),
+                ),
+                child: isSelected
+                    ? const Icon(Icons.check, size: 16, color: Colors.white)
+                    : null,
+              ),
+              const SizedBox(width: 14),
+              // Pallino colore tipo classe
+              if (dotColor != null) ...[
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: dotColor,
+                  ),
+                ),
+                const SizedBox(width: 10),
+              ],
+              // Info evento
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      event.classTypeName,
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      timeLabel,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              // Posti / prezzo
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    event.formattedPrice,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  if (event.isFull)
+                    Text(
+                      'Completo',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.error,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )
+                  else
+                    Text(
+                      '${event.spotsLeft} posti',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 

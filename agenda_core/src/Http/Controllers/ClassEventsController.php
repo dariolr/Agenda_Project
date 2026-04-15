@@ -8,6 +8,7 @@ use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\ClassEventRepository;
+use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 
@@ -18,6 +19,7 @@ final class ClassEventsController
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly LocationRepository $locationRepo,
         private readonly UserRepository $userRepo,
+        private readonly ?ClientRepository $clientRepo = null,
     ) {}
 
     public function indexTypes(Request $request): Response
@@ -254,7 +256,61 @@ final class ClassEventsController
         return Response::success(['deleted' => true]);
     }
 
+    /**
+     * Public listing of scheduled class events for the customer booking portal.
+     * No authentication required. Only SCHEDULED + PUBLIC events are returned.
+     * business_id and location_id are injected by the location_query middleware.
+     *
+     * GET /v1/class-events?location_id=X
+     * Query params:
+     *   location_id   int (required, via middleware)
+     *   from          ISO8601 UTC (optional, default: now)
+     *   to            ISO8601 UTC (optional, default: from + 90 days)
+     *   class_type_id int (optional)
+     */
     public function index(Request $request): Response
+    {
+        $businessId = (int) $request->getAttribute('business_id');
+        $locationId = (int) $request->getAttribute('location_id');
+
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+
+        $fromRaw = (string) ($request->queryParam('from') ?? '');
+        $toRaw   = (string) ($request->queryParam('to')   ?? '');
+
+        $fromUtc = $fromRaw !== ''
+            ? $fromRaw
+            : $now->format('Y-m-d H:i:s');
+
+        $toUtc = $toRaw !== ''
+            ? $toRaw
+            : $now->modify('+90 days')->format('Y-m-d H:i:s');
+
+        $classTypeId = $request->queryParam('class_type_id');
+
+        $items = $this->classEventRepo->findPublicByBusinessAndRange(
+            $businessId,
+            $fromUtc,
+            $toUtc,
+            $locationId,
+            $classTypeId !== null && $classTypeId !== '' ? (int) $classTypeId : null
+        );
+
+        $eventIds = array_map(static fn (array $row): int => (int) $row['id'], $items);
+        $resourceRequirements = $this->classEventRepo->findResourceRequirementsForEvents($businessId, $eventIds);
+
+        return Response::success([
+            'items' => array_map(
+                fn (array $row): array => $this->formatClassEventPublic(
+                    $row,
+                    $resourceRequirements[(int) $row['id']] ?? []
+                ),
+                $items
+            ),
+        ]);
+    }
+
+    public function indexByBusiness(Request $request): Response
     {
         $businessId = (int) $request->getRouteParam('business_id');
         $userId = $request->userId();
@@ -684,6 +740,130 @@ final class ClassEventsController
         return Response::success(['cancelled' => true]);
     }
 
+    /**
+     * POST /v1/customer/{business_id}/class-events/{id}/book
+     * Prenota un posto in un evento di classe come cliente autenticato.
+     * Middleware: customer_auth  →  attributes: client_id, business_id
+     */
+    public function bookCustomer(Request $request): Response
+    {
+        $routeBusinessId = (int) $request->getRouteParam('business_id');
+        $classEventId    = (int) $request->getRouteParam('id');
+        $clientId        = $request->getAttribute('client_id');
+        $tokenBusinessId = $request->getAttribute('business_id');
+
+        if ($clientId === null) {
+            return Response::error('Customer authentication required', 'unauthorized', 401, $request->traceId);
+        }
+
+        // Il JWT deve appartenere allo stesso business
+        if ((int) $tokenBusinessId !== $routeBusinessId) {
+            return Response::error('Invalid token for this business', 'unauthorized', 401, $request->traceId);
+        }
+
+        // Verifica che il cliente non sia bloccato/archiviato
+        if ($this->clientRepo !== null) {
+            $client = $this->clientRepo->findByIdUnfiltered((int) $clientId);
+            if ($client === null || !empty($client['is_archived']) || !empty($client['blocked'])) {
+                return Response::error('Customer account is disabled', 'unauthorized', 401, $request->traceId);
+            }
+        }
+
+        // Carica l'evento
+        $event = $this->classEventRepo->findById($routeBusinessId, $classEventId, null);
+        if ($event === null) {
+            return Response::notFound('Class event not found', $request->traceId);
+        }
+
+        // Solo eventi schedulati e pubblici sono prenotabili online
+        if (($event['status'] ?? '') !== 'SCHEDULED' || ($event['visibility'] ?? '') !== 'PUBLIC') {
+            return Response::conflict('class_event_not_bookable', 'Class event is not bookable', $request->traceId);
+        }
+
+        // Controlla finestra di prenotazione
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        if (!empty($event['booking_open_at'])) {
+            $openAt = new \DateTimeImmutable($event['booking_open_at'], new \DateTimeZone('UTC'));
+            if ($now < $openAt) {
+                return Response::conflict('booking_not_open', 'Booking is not open yet', $request->traceId);
+            }
+        }
+        if (!empty($event['booking_close_at'])) {
+            $closeAt = new \DateTimeImmutable($event['booking_close_at'], new \DateTimeZone('UTC'));
+            if ($now > $closeAt) {
+                return Response::conflict('booking_closed', 'Booking window has closed', $request->traceId);
+            }
+        }
+
+        try {
+            $booking = $this->classEventRepo->book($routeBusinessId, $classEventId, (int) $clientId);
+        } catch (\RuntimeException $e) {
+            return match ($e->getMessage()) {
+                'class_event_not_found'    => Response::notFound('Class event not found', $request->traceId),
+                'class_event_not_bookable' => Response::conflict('class_event_not_bookable', 'Class event is not bookable', $request->traceId),
+                'class_event_full'         => Response::conflict('class_event_full', 'Class is full and waitlist is disabled', $request->traceId),
+                default                    => Response::serverError('Unable to create class booking', $request->traceId),
+            };
+        } catch (\Throwable) {
+            return Response::serverError('Unable to create class booking', $request->traceId);
+        }
+
+        return Response::created($this->formatClassBooking($booking));
+    }
+
+    /**
+     * POST /v1/customer/{business_id}/class-events/{id}/cancel-booking
+     * Cancella la prenotazione di un cliente autenticato.
+     * Middleware: customer_auth  →  attributes: client_id, business_id
+     */
+    public function cancelBookingCustomer(Request $request): Response
+    {
+        $routeBusinessId = (int) $request->getRouteParam('business_id');
+        $classEventId    = (int) $request->getRouteParam('id');
+        $clientId        = $request->getAttribute('client_id');
+        $tokenBusinessId = $request->getAttribute('business_id');
+
+        if ($clientId === null) {
+            return Response::error('Customer authentication required', 'unauthorized', 401, $request->traceId);
+        }
+
+        if ((int) $tokenBusinessId !== $routeBusinessId) {
+            return Response::error('Invalid token for this business', 'unauthorized', 401, $request->traceId);
+        }
+
+        // Carica l'evento per il check del cancel_cutoff_minutes
+        $event = $this->classEventRepo->findById($routeBusinessId, $classEventId, null);
+        if ($event === null) {
+            return Response::notFound('Class event not found', $request->traceId);
+        }
+
+        // Controlla cutoff cancellazione
+        $cutoffMinutes = (int) ($event['cancel_cutoff_minutes'] ?? 0);
+        if ($cutoffMinutes > 0 && !empty($event['starts_at'])) {
+            $now      = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+            $startsAt = new \DateTimeImmutable($event['starts_at'], new \DateTimeZone('UTC'));
+            $minutesToEvent = ($startsAt->getTimestamp() - $now->getTimestamp()) / 60;
+            if ($minutesToEvent < $cutoffMinutes) {
+                return Response::conflict(
+                    'cancel_cutoff_passed',
+                    'Cancellation is no longer allowed',
+                    $request->traceId
+                );
+            }
+        }
+
+        try {
+            $ok = $this->classEventRepo->cancelBooking($routeBusinessId, $classEventId, (int) $clientId);
+        } catch (\Throwable) {
+            return Response::serverError('Unable to cancel class booking', $request->traceId);
+        }
+
+        if (!$ok) {
+            return Response::notFound('Class booking not found', $request->traceId);
+        }
+        return Response::success(['cancelled' => true]);
+    }
+
     private function canRead(int $userId, int $businessId): bool
     {
         if ($this->userRepo->isSuperadmin($userId)) {
@@ -908,6 +1088,22 @@ final class ClassEventsController
             'is_full' => $spotsLeft <= 0,
             'my_booking_status' => $row['my_booking_status'] ?? null,
         ];
+    }
+
+    /**
+     * Like formatClassEvent but adds class_type metadata (color, category)
+     * needed by the public booking portal.
+     */
+    private function formatClassEventPublic(array $row, array $resourceRequirements = []): array
+    {
+        $base = $this->formatClassEvent($row, $resourceRequirements);
+
+        $base['class_type_color_hex']           = $row['class_type_color_hex'] ?? null;
+        $base['class_type_service_category_id'] = isset($row['class_type_service_category_id'])
+            ? (int) $row['class_type_service_category_id']
+            : null;
+
+        return $base;
     }
 
     private function normalizeResourceRequirements(array $body): array

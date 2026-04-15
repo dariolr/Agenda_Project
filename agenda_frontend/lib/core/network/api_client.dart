@@ -543,6 +543,33 @@ class ApiClient {
     );
   }
 
+  /// POST /v1/customer/{business_id}/class-events/{id}/book
+  Future<Map<String, dynamic>> bookClassEvent({
+    required int businessId,
+    required int classEventId,
+    String? notes,
+  }) async {
+    final data = <String, dynamic>{};
+    if (notes != null && notes.isNotEmpty) {
+      data['notes'] = notes;
+    }
+    return post(
+      ApiConfig.customerBookClassEvent(businessId, classEventId),
+      data: data,
+    );
+  }
+
+  /// POST /v1/customer/{business_id}/class-events/{id}/cancel-booking
+  Future<Map<String, dynamic>> cancelClassEventBooking({
+    required int businessId,
+    required int classEventId,
+  }) async {
+    return post(
+      ApiConfig.customerCancelClassEventBooking(businessId, classEventId),
+      data: {},
+    );
+  }
+
   // ========== LEGACY AUTH ENDPOINTS (per operatori, non usare nel frontend) ==========
 
   /// POST /v1/auth/login (DEPRECATO - usare customerLogin)
@@ -685,6 +712,20 @@ class ApiClient {
   /// GET /v1/staff?location_id=X
   Future<Map<String, dynamic>> getStaff(int locationId) async {
     return get(ApiConfig.staff, queryParameters: {'location_id': locationId});
+  }
+
+  /// GET /v1/class-events?location_id=X[&from=...&to=...&class_type_id=...]
+  Future<Map<String, dynamic>> getClassEvents(
+    int locationId, {
+    String? from,
+    String? to,
+    int? classTypeId,
+  }) async {
+    final params = <String, dynamic>{'location_id': locationId};
+    if (from != null) params['from'] = from;
+    if (to != null) params['to'] = to;
+    if (classTypeId != null) params['class_type_id'] = classTypeId;
+    return get(ApiConfig.classEvents, queryParameters: params);
   }
 
   /// GET /v1/availability?location_id=X&date=YYYY-MM-DD&service_ids=1,2&staff_id=N&exclude_booking_id=N

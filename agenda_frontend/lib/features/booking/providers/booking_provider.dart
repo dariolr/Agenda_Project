@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../core/models/booking_request.dart';
+import '../../../core/models/class_event.dart';
 import '../../../core/models/location.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
@@ -125,7 +126,7 @@ class BookingFlowState {
       case BookingStep.location:
         return true; // Gestito dal provider
       case BookingStep.services:
-        return request.services.isNotEmpty;
+        return request.services.isNotEmpty || request.isClassEventBooking;
       case BookingStep.staff:
         return true; // Staff opzionale
       case BookingStep.dateTime:
@@ -424,6 +425,16 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       nextStep();
       return;
     }
+
+    // Prenotazione classe: salta staff e dateTime, vai direttamente al summary
+    if (state.request.isClassEventBooking) {
+      state = state.copyWith(
+        currentStep: BookingStep.summary,
+        clearError: true,
+      );
+      return;
+    }
+
     if (!_config.allowStaffSelection) {
       state = state.copyWith(
         request: state.request.copyWith(
@@ -602,6 +613,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
           clearAnyOperatorSelections: true,
           clearSlot: true,
           clearNotes: true,
+          clearClassEvent: true,
         );
       case BookingStep.services:
         return request.copyWith(
@@ -610,6 +622,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
           clearAnyOperatorSelections: true,
           clearSlot: true,
           clearNotes: true,
+          clearClassEvent: true,
         );
       case BookingStep.staff:
         return request.copyWith(clearSlot: true, clearNotes: true);
@@ -686,7 +699,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
             (serviceId, _) => !currentServices.any((s) => s.id == serviceId),
           );
 
-    // Quando cambiano i servizi, resetta slot selezionato
+    // Quando cambiano i servizi, resetta slot selezionato e classe selezionata
     state = state.copyWith(
       request: state.request.copyWith(
         services: currentServices,
@@ -695,6 +708,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         clearStaff: shouldClearStaff,
         clearAnyOperatorSelections: shouldClearStaff,
         clearSlot: true,
+        clearClassEvent: true,
       ),
       clearError: true,
       isStaffAutoSelected: shouldClearStaff ? false : state.isStaffAutoSelected,
@@ -928,6 +942,29 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     );
   }
 
+  /// Seleziona (o deseleziona) un evento di classe.
+  /// Quando si seleziona una classe, i servizi/slot normali vengono azzerati
+  /// e viceversa: selezionare un servizio azzera la classe selezionata.
+  void selectClassEvent(ClassEvent? event) {
+    state = state.copyWith(
+      request: state.request.copyWith(
+        selectedClassEvent: event,
+        clearClassEvent: event == null,
+        // se selezioniamo una classe, azzeriamo la selezione servizi
+        services: event != null ? const [] : null,
+        selectedServiceIds: event != null ? const {} : null,
+        selectedPackageIds: event != null ? const {} : null,
+        selectedPackageServiceIdsByPackage: event != null ? const {} : null,
+        clearStaff: event != null,
+        clearStaffSelections: event != null,
+        clearAnyOperatorSelections: event != null,
+        clearSlot: event != null,
+      ),
+      clearError: true,
+      isStaffAutoSelected: event != null ? false : state.isStaffAutoSelected,
+    );
+  }
+
   /// Aggiorna note
   void updateNotes(String notes) {
     state = state.copyWith(request: state.request.copyWith(notes: notes));
@@ -960,6 +997,11 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     if (!state.request.isComplete) {
       debugPrint('[confirmBooking] ABORT: request not complete');
       return false;
+    }
+
+    // Prenotazione classe
+    if (state.request.isClassEventBooking) {
+      return await _confirmClassEventBooking();
     }
 
     state = state.copyWith(isLoading: true, clearError: true);
@@ -1072,6 +1114,56 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     } catch (e) {
       // Errore generico - elimina lo stato salvato
       await PendingBookingStorage.clear();
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.toString(),
+        errorCode: null,
+      );
+      return false;
+    }
+  }
+
+  Future<bool> _confirmClassEventBooking() async {
+    final classEvent = state.request.selectedClassEvent!;
+    final businessId = _config.businessId;
+
+    state = state.copyWith(isLoading: true, clearError: true);
+
+    try {
+      final result = await _repository.confirmClassEventBooking(
+        businessId: businessId,
+        classEventId: classEvent.id,
+        notes: state.request.notes,
+      );
+
+      final bookingId =
+          result['id']?.toString() ??
+          result['booking_id']?.toString() ??
+          'confirmed';
+
+      state = state.copyWith(
+        isLoading: false,
+        currentStep: BookingStep.confirmation,
+        confirmedBookingId: bookingId,
+      );
+      return true;
+    } on ApiException catch (e) {
+      if (e.isUnauthorized) {
+        state = state.copyWith(isLoading: false);
+        throw const TokenExpiredException(
+          'Sessione scaduta. Effettua nuovamente il login.',
+        );
+      }
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: e.message,
+        errorCode: e.code,
+      );
+      return false;
+    } on TokenExpiredException {
+      state = state.copyWith(isLoading: false);
+      rethrow;
+    } catch (e) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: e.toString(),

@@ -70,6 +70,14 @@ class ApiConfig {
   static String customerCreateBooking(int businessId) =>
       '/v1/customer/$businessId/bookings';
 
+  /// POST /v1/customer/{business_id}/class-events/{id}/book
+  static String customerBookClassEvent(int businessId, int classEventId) =>
+      '/v1/customer/$businessId/class-events/$classEventId/book';
+
+  /// POST /v1/customer/{business_id}/class-events/{id}/cancel-booking
+  static String customerCancelClassEventBooking(int businessId, int classEventId) =>
+      '/v1/customer/$businessId/class-events/$classEventId/cancel-booking';
+
   // ========== LEGACY AUTH ENDPOINTS (DEPRECATI per frontend) ==========
   // Questi sono per OPERATORI (gestionale), non per clienti
   static const String authLogin = '/v1/auth/login';
@@ -86,6 +94,7 @@ class ApiConfig {
   static const String services = '/v1/services';
   static const String staff = '/v1/staff';
   static const String availability = '/v1/availability';
+  static const String classEvents = '/v1/class-events';
 
   // ========== SERVICE PACKAGES ENDPOINTS ==========
   static String servicePackages(int locationId) =>

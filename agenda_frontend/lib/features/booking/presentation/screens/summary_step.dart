@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/models/class_event.dart';
+
 import '../../../../app/providers/route_slug_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/network/api_client.dart';
@@ -101,8 +103,19 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                 // Banner se autenticato per business diverso
                 const WrongBusinessAuthBanner(),
 
+                // === BRANCH CLASSE ===
+                if (request.isClassEventBooking) ...[
+                  _buildClassEventSummary(
+                    context,
+                    theme,
+                    request.selectedClassEvent!,
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
+                // === BRANCH SERVIZIO NORMALE ===
                 // Data e ora
-                if (request.selectedSlot != null)
+                if (!request.isClassEventBooking && request.selectedSlot != null)
                   _SummarySection(
                     title: l10n.summaryDateTime,
                     icon: Icons.calendar_today,
@@ -114,9 +127,12 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                       style: theme.textTheme.bodyMedium,
                     ),
                   ),
-                if (request.selectedSlot != null) const SizedBox(height: 16),
+                if (!request.isClassEventBooking && request.selectedSlot != null)
+                  const SizedBox(height: 16),
 
                 // Servizi selezionati (con operatore)
+                if (request.isClassEventBooking) const SizedBox.shrink()
+                else
                 _SummarySection(
                   title: bookingSummaryServicesLabel(
                     context,
@@ -466,6 +482,124 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
         // Footer
         _buildFooter(context, ref, bookingState),
       ],
+    );
+  }
+
+  Widget _buildClassEventSummary(
+    BuildContext context,
+    ThemeData theme,
+    ClassEvent event,
+  ) {
+    final startTime = DateTime.tryParse(event.displayStartsAt);
+    final endTime = DateTime.tryParse(event.displayEndsAt);
+    final dateLabel = startTime != null
+        ? DateFormat('EEEE d MMMM yyyy', 'it').format(startTime)
+        : event.displayStartsAt;
+    final timeLabel = (startTime != null && endTime != null)
+        ? '${DateFormat('HH:mm').format(startTime)} – ${DateFormat('HH:mm').format(endTime)}'
+        : '';
+
+    Color? dotColor;
+    if (event.classTypeColorHex != null) {
+      final hex = event.classTypeColorHex!.replaceFirst('#', '');
+      if (hex.length == 6) {
+        dotColor = Color(int.parse('FF$hex', radix: 16));
+      }
+    }
+
+    return _SummarySection(
+      title: 'Lezione di gruppo',
+      icon: Icons.fitness_center_outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              if (dotColor != null) ...[
+                Container(
+                  width: 10,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: dotColor,
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Expanded(
+                child: Text(
+                  event.classTypeName,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Text(
+                event.formattedPrice,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Icon(
+                Icons.calendar_today,
+                size: 14,
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                dateLabel,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+          if (timeLabel.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                Icon(
+                  Icons.schedule,
+                  size: 14,
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  timeLabel,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  ),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(
+                Icons.people_outline,
+                size: 14,
+                color: theme.colorScheme.onSurface.withOpacity(0.5),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                event.isFull ? 'Completo' : '${event.spotsLeft} posti disponibili',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: event.isFull
+                      ? theme.colorScheme.error
+                      : theme.colorScheme.onSurface.withOpacity(0.7),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 

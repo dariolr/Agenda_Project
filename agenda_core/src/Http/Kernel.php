@@ -238,6 +238,7 @@ final class Kernel
 
         // Public (business-scoped via query param)
         $this->router->get('/v1/services', ServicesController::class, 'index', ['location_query']);
+        $this->router->get('/v1/class-events', ClassEventsController::class, 'index', ['location_query']);
         $this->router->get('/v1/staff/{staff_id}/services/popular', ServicesController::class, 'popular', ['auth']);
         $this->router->get('/v1/staff', StaffController::class, 'index', ['location_query']);
         $this->router->get('/v1/availability', AvailabilityController::class, 'index', ['location_query']);
@@ -256,7 +257,7 @@ final class Kernel
         $this->router->post('/v1/businesses/{business_id}/class-types', ClassEventsController::class, 'storeType', ['auth']);
         $this->router->put('/v1/businesses/{business_id}/class-types/{id}', ClassEventsController::class, 'updateType', ['auth']);
         $this->router->delete('/v1/businesses/{business_id}/class-types/{id}', ClassEventsController::class, 'destroyType', ['auth']);
-        $this->router->get('/v1/businesses/{business_id}/class-events', ClassEventsController::class, 'index', ['auth']);
+        $this->router->get('/v1/businesses/{business_id}/class-events', ClassEventsController::class, 'indexByBusiness', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/class-events', ClassEventsController::class, 'store', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/class-events/{id}', ClassEventsController::class, 'show', ['auth']);
         $this->router->put('/v1/businesses/{business_id}/class-events/{id}', ClassEventsController::class, 'update', ['auth']);
@@ -391,6 +392,10 @@ final class Kernel
         
         // Customer booking history (audit trail)
         $this->router->get('/v1/customer/bookings/{booking_id}/history', BookingsController::class, 'historyCustomer', ['customer_auth']);
+
+        // Customer class-event bookings
+        $this->router->post('/v1/customer/{business_id}/class-events/{id}/book', ClassEventsController::class, 'bookCustomer', ['customer_auth']);
+        $this->router->post('/v1/customer/{business_id}/class-events/{id}/cancel-booking', ClassEventsController::class, 'cancelBookingCustomer', ['customer_auth']);
     }
 
     private function registerMiddleware(): void
@@ -515,7 +520,7 @@ final class Kernel
             TimeBlocksController::class => new TimeBlocksController($timeBlockRepo, $locationRepo, $businessUserRepo, $userRepo),
             ReportsController::class => new ReportsController($this->db, $paymentMethodRepo, $businessUserRepo, $userRepo, $locationClosureRepo),
             LocationClosuresController::class => new LocationClosuresController($locationClosureRepo, $locationRepo, $businessUserRepo, $userRepo),
-            ClassEventsController::class => new ClassEventsController($classEventRepo, $businessUserRepo, $locationRepo, $userRepo),
+            ClassEventsController::class => new ClassEventsController($classEventRepo, $businessUserRepo, $locationRepo, $userRepo, $clientRepo),
             WhatsappController::class => new WhatsappController(
                 $whatsappRepo,
                 $businessUserRepo,

@@ -1,5 +1,6 @@
 import 'package:uuid/uuid.dart';
 
+import '../../../core/models/class_event.dart';
 import '../../../core/models/location.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
@@ -92,6 +93,26 @@ class BookingRepository {
       packageId: packageId,
     );
     return ServicePackageExpansion.fromJson(data);
+  }
+
+  /// GET /v1/class-events?location_id=X
+  /// Recupera eventi di classe pubblici e schedulati
+  Future<List<ClassEvent>> getClassEvents(
+    int locationId, {
+    String? from,
+    String? to,
+    int? classTypeId,
+  }) async {
+    final data = await _apiClient.getClassEvents(
+      locationId,
+      from: from,
+      to: to,
+      classTypeId: classTypeId,
+    );
+    final itemsJson = data['items'] as List<dynamic>? ?? [];
+    return itemsJson
+        .map((json) => ClassEvent.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   /// GET /v1/staff?location_id=X
@@ -231,6 +252,19 @@ class BookingRepository {
       effectiveNow.year,
       effectiveNow.month,
       effectiveNow.day + 1,
+    );
+  }
+
+  /// POST /v1/customer/{business_id}/class-events/{id}/book
+  Future<Map<String, dynamic>> confirmClassEventBooking({
+    required int businessId,
+    required int classEventId,
+    String? notes,
+  }) async {
+    return _apiClient.bookClassEvent(
+      businessId: businessId,
+      classEventId: classEventId,
+      notes: notes,
     );
   }
 

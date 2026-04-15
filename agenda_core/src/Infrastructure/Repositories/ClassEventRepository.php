@@ -393,6 +393,58 @@ final class ClassEventRepository
         return $stmt->fetchAll(\PDO::FETCH_ASSOC);
     }
 
+    /**
+     * Returns publicly visible, scheduled class events for the booking portal.
+     * Only SCHEDULED + PUBLIC events are returned, with extended class_type info.
+     */
+    public function findPublicByBusinessAndRange(
+        int $businessId,
+        string $fromUtc,
+        string $toUtc,
+        ?int $locationId = null,
+        ?int $classTypeId = null
+    ): array {
+        $sql = '
+            SELECT
+                ce.*,
+                ct.name               AS class_type_name,
+                ct.color_hex          AS class_type_color_hex,
+                ct.service_category_id AS class_type_service_category_id,
+                l.timezone             AS location_timezone
+            FROM class_events ce
+            LEFT JOIN class_types ct
+              ON ct.id = ce.class_type_id
+             AND ct.business_id = ce.business_id
+            INNER JOIN locations l
+              ON l.id = ce.location_id
+            WHERE ce.business_id  = :business_id
+              AND ce.starts_at   >= :from_utc
+              AND ce.starts_at    < :to_utc
+              AND ce.status       = \'SCHEDULED\'
+              AND ce.visibility   = \'PUBLIC\'';
+
+        $params = [
+            'business_id' => $businessId,
+            'from_utc'    => $fromUtc,
+            'to_utc'      => $toUtc,
+        ];
+
+        if ($locationId !== null) {
+            $sql .= ' AND ce.location_id = :location_id';
+            $params['location_id'] = $locationId;
+        }
+        if ($classTypeId !== null) {
+            $sql .= ' AND ce.class_type_id = :class_type_id';
+            $params['class_type_id'] = $classTypeId;
+        }
+
+        $sql .= ' ORDER BY ce.starts_at ASC, ce.id ASC';
+
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
     public function findConflictingEvents(
         int $businessId,
         int $locationId,

@@ -1,3 +1,4 @@
+import 'class_event.dart';
 import 'service.dart';
 import 'staff.dart';
 import 'time_slot.dart';
@@ -13,6 +14,7 @@ class BookingRequest {
   final bool anyOperatorSelected;
   final TimeSlot? selectedSlot;
   final String? notes;
+  final ClassEvent? selectedClassEvent;
 
   const BookingRequest({
     this.services = const [],
@@ -24,7 +26,10 @@ class BookingRequest {
     this.anyOperatorSelected = false,
     this.selectedSlot,
     this.notes,
+    this.selectedClassEvent,
   });
+
+  bool get isClassEventBooking => selectedClassEvent != null;
 
   /// Durata totale in minuti
   int get totalDurationMinutes =>
@@ -41,7 +46,8 @@ class BookingRequest {
   }
 
   /// Verifica se la prenotazione è completa
-  bool get isComplete => services.isNotEmpty && selectedSlot != null;
+  bool get isComplete =>
+      (services.isNotEmpty && selectedSlot != null) || isClassEventBooking;
 
   bool get hasStaffSelectionForAllServices {
     if (services.isEmpty) return false;
@@ -128,11 +134,13 @@ class BookingRequest {
     bool? anyOperatorSelected,
     TimeSlot? selectedSlot,
     String? notes,
+    ClassEvent? selectedClassEvent,
     bool clearStaff = false,
     bool clearStaffSelections = false,
     bool clearAnyOperatorSelections = false,
     bool clearSlot = false,
     bool clearNotes = false,
+    bool clearClassEvent = false,
   }) => BookingRequest(
     services: services ?? this.services,
     selectedServiceIds: selectedServiceIds ?? this.selectedServiceIds,
@@ -149,6 +157,9 @@ class BookingRequest {
         : (anyOperatorSelected ?? this.anyOperatorSelected),
     selectedSlot: clearSlot ? null : (selectedSlot ?? this.selectedSlot),
     notes: clearNotes ? null : (notes ?? this.notes),
+    selectedClassEvent: clearClassEvent
+        ? null
+        : (selectedClassEvent ?? this.selectedClassEvent),
   );
 
   Map<String, dynamic> toJson() => {
