@@ -342,6 +342,7 @@ CREATE TABLE `class_types` (
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `color_hex` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Colore tipo classe in formato #RRGGBB',
+  `service_category_id` int UNSIGNED DEFAULT NULL COMMENT 'Categoria servizi associata al tipo classe',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -1191,7 +1192,8 @@ ALTER TABLE `class_types`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uk_class_types_id_business` (`id`,`business_id`),
   ADD UNIQUE KEY `uk_class_types_business_name` (`business_id`,`name`),
-  ADD KEY `idx_class_types_business_active` (`business_id`,`is_active`);
+  ADD KEY `idx_class_types_business_active` (`business_id`,`is_active`),
+  ADD KEY `idx_class_types_service_category` (`service_category_id`);
 
 --
 -- Indici per le tabelle `class_type_locations`
@@ -1911,7 +1913,8 @@ ALTER TABLE `class_event_resource_requirements`
 -- Limiti per la tabella `class_types`
 --
 ALTER TABLE `class_types`
-  ADD CONSTRAINT `fk_class_types_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+  ADD CONSTRAINT `fk_class_types_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  ADD CONSTRAINT `fk_class_types_service_category` FOREIGN KEY (`service_category_id`) REFERENCES `service_categories` (`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Limiti per la tabella `class_type_locations`

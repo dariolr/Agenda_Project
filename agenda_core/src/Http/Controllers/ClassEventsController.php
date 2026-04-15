@@ -108,12 +108,21 @@ final class ClassEventsController
             return Response::error((string) $colorHexResult['error'], 'validation_error', 400, $request->traceId);
         }
         $colorHex = $colorHexResult['value'] ?? null;
+        $serviceCategoryResult = $this->normalizeServiceCategoryId(
+            $businessId,
+            $body['service_category_id'] ?? null
+        );
+        if (isset($serviceCategoryResult['error'])) {
+            return Response::error((string) $serviceCategoryResult['error'], 'validation_error', 400, $request->traceId);
+        }
+        $serviceCategoryId = $serviceCategoryResult['value'] ?? null;
 
         try {
             $id = $this->classEventRepo->createClassType($businessId, [
                 'name' => $name,
                 'description' => array_key_exists('description', $body) ? $body['description'] : null,
                 'color_hex' => $colorHex,
+                'service_category_id' => $serviceCategoryId,
                 'is_active' => array_key_exists('is_active', $body) ? (bool) $body['is_active'] : true,
             ]);
             if ($locationIds !== null) {
@@ -165,6 +174,16 @@ final class ClassEventsController
                 return Response::error((string) $colorHexResult['error'], 'validation_error', 400, $request->traceId);
             }
             $body['color_hex'] = $colorHexResult['value'] ?? null;
+        }
+        if (array_key_exists('service_category_id', $body)) {
+            $serviceCategoryResult = $this->normalizeServiceCategoryId(
+                $businessId,
+                $body['service_category_id']
+            );
+            if (isset($serviceCategoryResult['error'])) {
+                return Response::error((string) $serviceCategoryResult['error'], 'validation_error', 400, $request->traceId);
+            }
+            $body['service_category_id'] = $serviceCategoryResult['value'] ?? null;
         }
 
         $locationIdsResult = $this->resolveClassTypeLocationIdsForMutation($request, $userId, $businessId, $body, false);
@@ -995,6 +1014,7 @@ final class ClassEventsController
             'name' => (string) ($row['name'] ?? ''),
             'description' => $row['description'] ?? null,
             'color_hex' => $row['color_hex'] ?? null,
+            'service_category_id' => isset($row['service_category_id']) ? (int) $row['service_category_id'] : null,
             'is_active' => (int) ($row['is_active'] ?? 1) === 1,
             'location_ids' => array_values(array_map('intval', $locationIds)),
         ];
@@ -1016,6 +1036,31 @@ final class ClassEventsController
             return ['error' => 'color_hex must be in format #RRGGBB'];
         }
         return ['value' => strtoupper($value)];
+    }
+
+    private function normalizeServiceCategoryId(int $businessId, mixed $raw): array
+    {
+        if ($raw === null) {
+            return ['value' => null];
+        }
+        if (is_string($raw) && trim($raw) === '') {
+            return ['value' => null];
+        }
+
+        if (!is_int($raw) && !is_float($raw) && !(is_string($raw) && ctype_digit(trim($raw)))) {
+            return ['error' => 'service_category_id must be an integer'];
+        }
+
+        $value = (int) $raw;
+        if ($value <= 0) {
+            return ['error' => 'service_category_id must be greater than 0'];
+        }
+
+        if (!$this->classEventRepo->serviceCategoryExistsInBusiness($businessId, $value)) {
+            return ['error' => 'service_category_id does not belong to business'];
+        }
+
+        return ['value' => $value];
     }
 
     private function isDuplicateKeyError(\Throwable $e): bool

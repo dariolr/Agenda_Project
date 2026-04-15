@@ -964,6 +964,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "classTypesEmpty": MessageLookupByLibrary.simpleMessage(
       "No class types configured",
     ),
+    "classTypesFieldCategoryCode": MessageLookupByLibrary.simpleMessage(
+      "Category",
+    ),
+    "classTypesFieldCategoryCodeNone": MessageLookupByLibrary.simpleMessage(
+      "No category",
+    ),
     "classTypesFieldDescriptionOptional": MessageLookupByLibrary.simpleMessage(
       "Description (optional)",
     ),

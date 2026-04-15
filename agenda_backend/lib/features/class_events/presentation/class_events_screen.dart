@@ -1,6 +1,6 @@
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -11,6 +11,7 @@ import '/core/models/appointment.dart';
 import '/core/models/class_event.dart';
 import '/core/models/class_type.dart';
 import '/core/models/location.dart';
+import '/core/models/service_category.dart';
 import '/core/models/staff.dart';
 import '/core/network/api_client.dart';
 import '/core/services/tenant_time_service.dart';
@@ -19,24 +20,24 @@ import '/core/widgets/app_bottom_sheet.dart';
 import '/core/widgets/app_buttons.dart';
 import '/core/widgets/app_form.dart';
 import '/core/widgets/feedback_dialog.dart';
+import '/features/agenda/domain/config/layout_config.dart';
+import '/features/agenda/presentation/dialogs/recurrence_summary_dialog.dart';
+import '/features/agenda/presentation/utils/recurrence_flow_utils.dart';
+import '/features/agenda/presentation/widgets/recurrence_picker.dart';
+import '/features/agenda/presentation/widgets/recurrence_preview.dart';
 import '/features/agenda/providers/appointment_providers.dart';
 import '/features/agenda/providers/date_range_provider.dart';
 import '/features/agenda/providers/layout_config_provider.dart';
 import '/features/agenda/providers/location_providers.dart';
 import '/features/agenda/providers/staff_slot_availability_provider.dart';
 import '/features/agenda/providers/tenant_time_provider.dart';
-import '/features/agenda/presentation/widgets/recurrence_picker.dart';
-import '/features/agenda/presentation/widgets/recurrence_preview.dart';
-import '/features/agenda/presentation/dialogs/recurrence_summary_dialog.dart';
-import '/features/agenda/presentation/utils/recurrence_flow_utils.dart';
-import '/features/agenda/domain/config/layout_config.dart';
 import '/features/business/providers/location_closures_provider.dart';
-import '/features/staff/providers/staff_providers.dart';
 import '/features/staff/providers/availability_exceptions_provider.dart';
 import '/features/staff/providers/staff_planning_provider.dart';
+import '/features/staff/providers/staff_providers.dart';
+import '../../../core/models/recurrence_rule.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../auth/providers/current_business_user_provider.dart';
-import '../../../core/models/recurrence_rule.dart';
 import '../data/class_events_repository.dart';
 import '../providers/class_events_providers.dart';
 
@@ -182,6 +183,12 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
     final allStaff = ref.watch(allStaffProvider).value ?? const <Staff>[];
     final colorScheme = Theme.of(context).colorScheme;
     final locations = ref.watch(locationsProvider);
+    final serviceCategories = ref
+        .watch(classTypeServiceCategoriesProvider)
+        .maybeWhen(
+          data: (value) => value,
+          orElse: () => const <ServiceCategory>[],
+        );
     final businessContext = ref
         .watch(currentBusinessUserContextProvider)
         .maybeWhen(data: (ctx) => ctx, orElse: () => null);
@@ -191,6 +198,12 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
     final staffNameById = {
       for (final staff in allStaff) staff.id: staff.displayName,
     };
+    final serviceCategoryById = {
+      for (final category in serviceCategories) category.id: category,
+    };
+    final serviceCategory = widget.classType.serviceCategoryId != null
+        ? serviceCategoryById[widget.classType.serviceCategoryId!]
+        : null;
     final hasSingleBusinessLocation = locations.length <= 1;
     final hasSingleOperatorLocation =
         businessContext != null &&
@@ -218,8 +231,7 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
       data: (items) => items.isNotEmpty,
       orElse: () => false,
     );
-    final expiredCount =
-        futureCount != null && allSchedulesCount != null
+    final expiredCount = futureCount != null && allSchedulesCount != null
         ? (allSchedulesCount - futureCount).clamp(0, 1 << 30)
         : null;
     final canOpenEdit = widget.canManageClassTypes && !isLoading;
@@ -252,266 +264,290 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-            Row(
-              children: [
-                if (classColor != null) ...[
-                  Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: classColor,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: colorScheme.outline.withOpacity(0.5),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                ],
-                Expanded(
-                  child: Text(
-                    widget.classType.name,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
-                _ClassTypeStatusChip(isActive: widget.classType.isActive),
-              ],
-            ),
-            if ((widget.classType.description ?? '').trim().isNotEmpty) ...[
-              const SizedBox(height: 6),
-              Text(
-                widget.classType.description!,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            ],
-            if (shouldShowLocationsRow) ...[
-              const SizedBox(height: 10),
-              _buildLocationsBlock(
-                context: context,
-                locationNames: visibleLocationNames,
-                isAllLocations: widget.classType.locationIds.isEmpty,
-              ),
-            ],
-            const SizedBox(height: 10),
-            if (widget.canManageClassTypes)
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  FilledButton.icon(
-                    onPressed: isLoading
-                        ? null
-                        : () => showCreateClassEventDialog(
-                            context,
-                            ref,
-                            initialClassTypeId: widget.classType.id,
+                Row(
+                  children: [
+                    if (classColor != null) ...[
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: classColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: colorScheme.outline.withOpacity(0.5),
                           ),
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size(0, 44),
-                    ),
-                    icon: const Icon(Icons.event_available_outlined),
-                    label: Text(l10n.classTypesActionScheduleClass),
-                  ),
-                  const SizedBox(width: 8),
-                  SizedBox(
-                    height: 44,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: colorScheme.outline.withOpacity(0.5),
                         ),
-                        borderRadius: BorderRadius.circular(10),
                       ),
-                      child: PopupMenuButton<_ClassTypeQuickAction>(
-                        enabled: !isLoading,
-                        splashRadius: 20,
-                        borderRadius: BorderRadius.circular(10),
-                        icon: const Icon(Icons.more_horiz),
-                        onSelected: (action) async {
-                          switch (action) {
-                            case _ClassTypeQuickAction.edit:
-                              await showCreateClassTypeDialog(
-                                context,
-                                ref,
-                                initial: widget.classType,
-                              );
-                              break;
-                            case _ClassTypeQuickAction.duplicate:
-                              await _cloneClassType(
-                                context,
-                                ref,
-                                widget.classType,
-                              );
-                              break;
-                            case _ClassTypeQuickAction.delete:
-                              await _deleteClassType(
-                                context,
-                                ref,
-                                widget.classType,
-                              );
-                              break;
-                          }
-                        },
-                        itemBuilder: (menuContext) => [
-                          PopupMenuItem<_ClassTypeQuickAction>(
-                            value: _ClassTypeQuickAction.edit,
-                            child: Row(
-                              children: [
-                                const Icon(Icons.edit_outlined, size: 18),
-                                const SizedBox(width: 8),
-                                Text(l10n.actionEdit),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuDivider(),
-                          PopupMenuItem<_ClassTypeQuickAction>(
-                            value: _ClassTypeQuickAction.duplicate,
-                            child: Row(
-                              children: [
-                                const Icon(Icons.copy_outlined, size: 18),
-                                const SizedBox(width: 8),
-                                Text(l10n.duplicateAction),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem<_ClassTypeQuickAction>(
-                            value: _ClassTypeQuickAction.delete,
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.delete_outline,
-                                  size: 18,
-                                  color: colorScheme.error,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  l10n.actionDelete,
-                                  style: TextStyle(color: colorScheme.error),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                      const SizedBox(width: 8),
+                    ],
+                    Expanded(
+                      child: Text(
+                        widget.classType.name,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
+                    ),
+                    _ClassTypeStatusChip(isActive: widget.classType.isActive),
+                  ],
+                ),
+                if ((widget.classType.description ?? '').trim().isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    widget.classType.description!,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ],
+                if (serviceCategory != null) ...[
+                  const SizedBox(height: 8),
+                  _buildMetadataChip(
+                    context: context,
+                    icon: Icons.sell_outlined,
+                    label: serviceCategory.name,
+                  ),
+                ],
+                if (shouldShowLocationsRow) ...[
+                  const SizedBox(height: 10),
+                  _buildLocationsBlock(
+                    context: context,
+                    locationNames: visibleLocationNames,
+                    isAllLocations: widget.classType.locationIds.isEmpty,
+                  ),
+                ],
+                const SizedBox(height: 10),
+                if (widget.canManageClassTypes)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FilledButton.icon(
+                        onPressed: isLoading
+                            ? null
+                            : () => showCreateClassEventDialog(
+                                context,
+                                ref,
+                                initialClassTypeId: widget.classType.id,
+                              ),
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size(0, 44),
+                        ),
+                        icon: const Icon(Icons.event_available_outlined),
+                        label: Text(l10n.classTypesActionScheduleClass),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        height: 44,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: colorScheme.outline.withOpacity(0.5),
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: PopupMenuButton<_ClassTypeQuickAction>(
+                            enabled: !isLoading,
+                            splashRadius: 20,
+                            borderRadius: BorderRadius.circular(10),
+                            icon: const Icon(Icons.more_horiz),
+                            onSelected: (action) async {
+                              switch (action) {
+                                case _ClassTypeQuickAction.edit:
+                                  await showCreateClassTypeDialog(
+                                    context,
+                                    ref,
+                                    initial: widget.classType,
+                                  );
+                                  break;
+                                case _ClassTypeQuickAction.duplicate:
+                                  await _cloneClassType(
+                                    context,
+                                    ref,
+                                    widget.classType,
+                                  );
+                                  break;
+                                case _ClassTypeQuickAction.delete:
+                                  await _deleteClassType(
+                                    context,
+                                    ref,
+                                    widget.classType,
+                                  );
+                                  break;
+                              }
+                            },
+                            itemBuilder: (menuContext) => [
+                              PopupMenuItem<_ClassTypeQuickAction>(
+                                value: _ClassTypeQuickAction.edit,
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.edit_outlined, size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(l10n.actionEdit),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuDivider(),
+                              PopupMenuItem<_ClassTypeQuickAction>(
+                                value: _ClassTypeQuickAction.duplicate,
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.copy_outlined, size: 18),
+                                    const SizedBox(width: 8),
+                                    Text(l10n.duplicateAction),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem<_ClassTypeQuickAction>(
+                                value: _ClassTypeQuickAction.delete,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.delete_outline,
+                                      size: 18,
+                                      color: colorScheme.error,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      l10n.actionDelete,
+                                      style: TextStyle(
+                                        color: colorScheme.error,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                if ((futureCount != null && futureCount > 0) ||
+                    (expiredCount != null && expiredCount > 0)) ...[
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      alignment: WrapAlignment.center,
+                      runAlignment: WrapAlignment.center,
+                      children: [
+                        if (futureCount != null && futureCount > 0)
+                          _buildMetadataChip(
+                            context: context,
+                            icon: Icons.schedule_outlined,
+                            label:
+                                '${l10n.classEventsFutureBadge}: $futureCount',
+                          ),
+                        if (expiredCount != null && expiredCount > 0)
+                          _buildMetadataChip(
+                            context: context,
+                            icon: Icons.history_outlined,
+                            label:
+                                '${l10n.classEventsExpiredBadge}: $expiredCount',
+                          ),
+                      ],
                     ),
                   ),
                 ],
-              ),
-            if ((futureCount != null && futureCount > 0) ||
-                (expiredCount != null && expiredCount > 0)) ...[
-              const SizedBox(height: 12),
-              Center(
-                child: Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  alignment: WrapAlignment.center,
-                  runAlignment: WrapAlignment.center,
-                  children: [
-                    if (futureCount != null && futureCount > 0)
-                      _buildMetadataChip(
-                        context: context,
-                        icon: Icons.schedule_outlined,
-                        label: '${l10n.classEventsFutureBadge}: $futureCount',
+                if (hasSchedules) ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: colorScheme.outline.withOpacity(0.35),
                       ),
-                    if (expiredCount != null && expiredCount > 0)
-                      _buildMetadataChip(
-                        context: context,
-                        icon: Icons.history_outlined,
-                        label: '${l10n.classEventsExpiredBadge}: $expiredCount',
-                      ),
-                  ],
-                ),
-              ),
-            ],
-            if (hasSchedules) ...[
-              const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: colorScheme.outline.withOpacity(0.35)),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: ExpansionTile(
-                  initiallyExpanded: false,
-                  maintainState: true,
-                  tilePadding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 2,
-                  ),
-                  childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  collapsedShape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  leading: const Icon(Icons.event_note_outlined, size: 18),
-                  title: Text(
-                    l10n.classEventsSchedulesListTitle,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-                  ),
-                  children: [
-                    allSchedulesAsync.when(
-                      loading: () => const LinearProgressIndicator(minHeight: 2),
-                      error: (_, __) => Text(
-                        l10n.errorTitle,
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodySmall?.copyWith(color: colorScheme.error),
-                      ),
-                      data: (schedules) {
-                        final timezone = ref.watch(effectiveTenantTimezoneProvider);
-                        final nowUtc =
-                            TenantTimeService.nowInTimezone(timezone).toUtc();
-                        final futureSchedules = schedules
-                            .where((event) => event.endsAtUtc.isAfter(nowUtc))
-                            .toList();
-                        final hasExpiredSchedules =
-                            futureSchedules.length != schedules.length;
-                        final displayedSchedules = _showExpiredSchedules
-                            ? schedules
-                            : futureSchedules;
-
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            if (hasExpiredSchedules)
-                              SwitchListTile(
-                                dense: true,
-                                contentPadding: EdgeInsets.zero,
-                                title: Text(
-                                  l10n.classEventsShowExpiredSchedules,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                                value: _showExpiredSchedules,
-                                onChanged: (value) {
-                                  setState(() => _showExpiredSchedules = value);
-                                },
-                              ),
-                            if (displayedSchedules.isEmpty)
-                              Text(
-                                l10n.classEventsNoScheduledDates,
-                                style: Theme.of(context).textTheme.bodySmall,
-                              )
-                            else
-                              _buildSchedulesList(
-                                context: context,
-                                schedules: displayedSchedules,
-                                timezone: timezone,
-                                locationNameById: locationNameById,
-                                staffNameById: staffNameById,
-                                colorScheme: colorScheme,
-                              ),
-                          ],
-                        );
-                      },
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  ],
-                ),
-              ),
-            ],
+                    child: ExpansionTile(
+                      initiallyExpanded: false,
+                      maintainState: true,
+                      tilePadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 2,
+                      ),
+                      childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      collapsedShape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      leading: const Icon(Icons.event_note_outlined, size: 18),
+                      title: Text(
+                        l10n.classEventsSchedulesListTitle,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      children: [
+                        allSchedulesAsync.when(
+                          loading: () =>
+                              const LinearProgressIndicator(minHeight: 2),
+                          error: (_, __) => Text(
+                            l10n.errorTitle,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: colorScheme.error),
+                          ),
+                          data: (schedules) {
+                            final timezone = ref.watch(
+                              effectiveTenantTimezoneProvider,
+                            );
+                            final nowUtc = TenantTimeService.nowInTimezone(
+                              timezone,
+                            ).toUtc();
+                            final futureSchedules = schedules
+                                .where(
+                                  (event) => event.endsAtUtc.isAfter(nowUtc),
+                                )
+                                .toList();
+                            final hasExpiredSchedules =
+                                futureSchedules.length != schedules.length;
+                            final displayedSchedules = _showExpiredSchedules
+                                ? schedules
+                                : futureSchedules;
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (hasExpiredSchedules)
+                                  SwitchListTile(
+                                    dense: true,
+                                    contentPadding: EdgeInsets.zero,
+                                    title: Text(
+                                      l10n.classEventsShowExpiredSchedules,
+                                      style: Theme.of(
+                                        context,
+                                      ).textTheme.bodySmall,
+                                    ),
+                                    value: _showExpiredSchedules,
+                                    onChanged: (value) {
+                                      setState(
+                                        () => _showExpiredSchedules = value,
+                                      );
+                                    },
+                                  ),
+                                if (displayedSchedules.isEmpty)
+                                  Text(
+                                    l10n.classEventsNoScheduledDates,
+                                    style: Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall,
+                                  )
+                                else
+                                  _buildSchedulesList(
+                                    context: context,
+                                    schedules: displayedSchedules,
+                                    timezone: timezone,
+                                    locationNameById: locationNameById,
+                                    staffNameById: staffNameById,
+                                    colorScheme: colorScheme,
+                                  ),
+                              ],
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -528,9 +564,7 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
     required Map<int, String> staffNameById,
     required ColorScheme colorScheme,
   }) {
-    final listHeight = (schedules.length * 60)
-        .clamp(96, 280)
-        .toDouble();
+    final listHeight = (schedules.length * 60).clamp(96, 280).toDouble();
     return ClipRRect(
       borderRadius: BorderRadius.circular(10),
       child: SizedBox(
@@ -543,7 +577,10 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
             final schedule = schedules[index];
             final startsAtLocal =
                 schedule.startsAtLocal ??
-                TenantTimeService.fromUtcToTenant(schedule.startsAtUtc, timezone);
+                TenantTimeService.fromUtcToTenant(
+                  schedule.startsAtUtc,
+                  timezone,
+                );
             final endsAtLocal =
                 schedule.endsAtLocal ??
                 TenantTimeService.fromUtcToTenant(schedule.endsAtUtc, timezone);
@@ -688,6 +725,7 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
             name: candidateName,
             description: source.description,
             colorHex: source.colorHex,
+            serviceCategoryId: source.serviceCategoryId,
             isActive: source.isActive,
             locationIds: source.locationIds,
           );
@@ -815,6 +853,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
   late bool _isActive;
   late Set<int> _selectedLocationIds;
   String? _selectedColorHex;
+  int? _selectedServiceCategoryId;
   bool _hasChangedLocationSelection = false;
 
   bool get _isEdit => widget.initial != null;
@@ -829,6 +868,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     _isActive = widget.initial?.isActive ?? true;
     _selectedLocationIds = {...?widget.initial?.locationIds};
     _selectedColorHex = widget.initial?.colorHex;
+    _selectedServiceCategoryId = widget.initial?.serviceCategoryId;
   }
 
   @override
@@ -844,6 +884,15 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     final mutationState = ref.watch(classTypeMutationControllerProvider);
     final isLoading = mutationState.isLoading;
     final locations = ref.watch(locationsProvider);
+    final serviceCategories = ref
+        .watch(classTypeServiceCategoriesProvider)
+        .maybeWhen(
+          data: (value) => value,
+          orElse: () => const <ServiceCategory>[],
+        );
+    final hasSelectedCategoryInList =
+        _selectedServiceCategoryId == null ||
+        serviceCategories.any((c) => c.id == _selectedServiceCategoryId);
     final businessContext = ref
         .watch(currentBusinessUserContextProvider)
         .maybeWhen(data: (ctx) => ctx, orElse: () => null);
@@ -904,6 +953,40 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
               labelText: l10n.classTypesFieldDescriptionOptional,
               border: const OutlineInputBorder(),
             ),
+          ),
+          const SizedBox(height: 10),
+          DropdownButtonFormField<int?>(
+            value: _selectedServiceCategoryId,
+            decoration: InputDecoration(
+              labelText: l10n.fieldCategoryRequiredLabel,
+              border: const OutlineInputBorder(),
+            ),
+            validator: (value) {
+              if (value == null) {
+                return l10n.classEventsValidationRequired;
+              }
+              return null;
+            },
+            items: [
+              DropdownMenuItem<int?>(
+                value: null,
+                child: Text(l10n.classTypesFieldCategoryCodeNone),
+              ),
+              if (!hasSelectedCategoryInList &&
+                  _selectedServiceCategoryId != null)
+                DropdownMenuItem<int?>(
+                  value: _selectedServiceCategoryId,
+                  child: Text('#${_selectedServiceCategoryId!}'),
+                ),
+              for (final category in serviceCategories)
+                DropdownMenuItem<int?>(
+                  value: category.id,
+                  child: Text(category.name),
+                ),
+            ],
+            onChanged: isLoading
+                ? null
+                : (value) => setState(() => _selectedServiceCategoryId = value),
           ),
           const SizedBox(height: 10),
           _ClassTypeColorPicker(
@@ -1023,6 +1106,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
               name: _nameController.text,
               description: _descriptionController.text,
               colorHex: _selectedColorHex,
+              serviceCategoryId: _selectedServiceCategoryId,
               isActive: _isActive,
               locationIds: locationIdsForSubmit,
             );
@@ -1033,6 +1117,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
               name: _nameController.text,
               description: _descriptionController.text,
               colorHex: _selectedColorHex,
+              serviceCategoryId: _selectedServiceCategoryId,
               isActive: _isActive,
               locationIds: locationIdsForSubmit,
             );
@@ -1244,17 +1329,10 @@ class _ClassTypeColorDot extends StatelessWidget {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: color ?? Colors.transparent,
-            border: Border.all(
-              color: borderColor,
-              width: selected ? 2 : 1,
-            ),
+            border: Border.all(color: borderColor, width: selected ? 2 : 1),
           ),
           child: color == null
-              ? Icon(
-                  Icons.block,
-                  size: 14,
-                  color: scheme.onSurfaceVariant,
-                )
+              ? Icon(Icons.block, size: 14, color: scheme.onSurfaceVariant)
               : null,
         ),
       ),
@@ -1378,8 +1456,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         isEditMode &&
         editingStaffId != null &&
         !activeStaffIdSet.contains(editingStaffId);
-    final inactiveAssignedStaffId =
-        hasInactiveAssignedOption ? editingStaffId : null;
+    final inactiveAssignedStaffId = hasInactiveAssignedOption
+        ? editingStaffId
+        : null;
     final selectableStaffIds = <int>{...activeStaffIdSet};
     if (inactiveAssignedStaffId != null) {
       selectableStaffIds.add(inactiveAssignedStaffId);
@@ -1403,8 +1482,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final inactiveAssignedName = inactiveAssignedStaffId == null
         ? null
         : staffNameById[inactiveAssignedStaffId];
-    final inactiveAssignedLabel =
-        inactiveAssignedStaffId != null
+    final inactiveAssignedLabel = inactiveAssignedStaffId != null
         ? ((inactiveAssignedName?.trim().isNotEmpty ?? false)
               ? '${inactiveAssignedName!.trim()} (${l10n.classTypesStatusInactive})'
               : l10n.classEventsStaffInactiveOption(inactiveAssignedStaffId))
@@ -1417,11 +1495,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           isInactive: true,
         ),
       ...staff.map(
-        (member) => (
-          id: member.id,
-          label: member.displayName,
-          isInactive: false,
-        ),
+        (member) =>
+            (id: member.id, label: member.displayName, isInactive: false),
       ),
     ];
     final requiresStaffReplacement =
@@ -1451,7 +1526,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       isLoading: isLoading,
       mobileExpandToAvailableHeight: true,
       content: Form(
-      autovalidateMode: AutovalidateMode.onUserInteraction,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1511,7 +1586,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                     value == null ? l10n.classEventsValidationRequired : null,
               ),
             ],
-            if ((!isEditMode ? staff.length > 1 : staffDropdownItems.length > 1)) ...[
+            if ((!isEditMode
+                ? staff.length > 1
+                : staffDropdownItems.length > 1)) ...[
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
                 value: _staffId,
@@ -1586,9 +1663,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                   child: TextFormField(
                     controller: _capacityController,
                     keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                    ],
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     enabled: !isLoading,
                     decoration: InputDecoration(
                       labelText: l10n.classEventsFieldCapacity,
@@ -1680,18 +1755,17 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       ),
       actions: [
         AppOutlinedActionButton(
-          onPressed: isLoading
-              ? null
-              : () => Navigator.of(context).pop(),
+          onPressed: isLoading ? null : () => Navigator.of(context).pop(),
           child: Text(l10n.actionCancel),
         ),
         AppAsyncFilledButton(
           isLoading: isLoading,
-          onPressed: _canSubmit(
-            classTypes: classTypes,
-            staff: staff,
-            requiresStaffReplacement: requiresStaffReplacement,
-          )
+          onPressed:
+              _canSubmit(
+                classTypes: classTypes,
+                staff: staff,
+                requiresStaffReplacement: requiresStaffReplacement,
+              )
               ? _submit
               : null,
           child: Text(
@@ -1963,6 +2037,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         ref.invalidate(upcomingClassEventsByTypeProvider(_classTypeId!));
         ref.invalidate(allClassEventsByTypeProvider(_classTypeId!));
         ref.invalidate(upcomingClassEventsCountByTypeProvider(_classTypeId!));
+        if (!mounted) return;
+        Navigator.of(context).pop();
       } else {
         final businessId = ref.read(currentBusinessIdProvider);
         final repo = ref.read(classEventsRepositoryProvider);
@@ -2091,7 +2167,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         if (createdCount == 0 && firstError != null) {
           throw firstError;
         }
-
       }
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -2317,7 +2392,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     }
 
     final planningNotifier = ref.read(staffPlanningsProvider.notifier);
-    final exceptionsNotifier = ref.read(availabilityExceptionsProvider.notifier);
+    final exceptionsNotifier = ref.read(
+      availabilityExceptionsProvider.notifier,
+    );
     await Future.wait([
       planningNotifier.loadPlanningsForStaff(staffId),
       exceptionsNotifier.loadExceptionsForStaff(

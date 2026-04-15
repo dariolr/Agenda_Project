@@ -9592,6 +9592,26 @@ class L10n {
     );
   }
 
+  /// `Category`
+  String get classTypesFieldCategoryCode {
+    return Intl.message(
+      'Category',
+      name: 'classTypesFieldCategoryCode',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No category`
+  String get classTypesFieldCategoryCodeNone {
+    return Intl.message(
+      'No category',
+      name: 'classTypesFieldCategoryCodeNone',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Type active`
   String get classTypesFieldIsActive {
     return Intl.message(

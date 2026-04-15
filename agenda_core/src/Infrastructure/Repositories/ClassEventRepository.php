@@ -208,9 +208,9 @@ final class ClassEventRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO class_types (
-                business_id, name, description, color_hex, is_active
+                business_id, name, description, color_hex, service_category_id, is_active
              ) VALUES (
-                :business_id, :name, :description, :color_hex, :is_active
+                :business_id, :name, :description, :color_hex, :service_category_id, :is_active
              )'
         );
         $stmt->execute([
@@ -218,6 +218,7 @@ final class ClassEventRepository
             'name' => $data['name'],
             'description' => $data['description'] ?? null,
             'color_hex' => $data['color_hex'] ?? null,
+            'service_category_id' => $data['service_category_id'] ?? null,
             'is_active' => !empty($data['is_active']) ? 1 : 0,
         ]);
         return (int) $this->db->getPdo()->lastInsertId();
@@ -225,7 +226,7 @@ final class ClassEventRepository
 
     public function updateClassType(int $businessId, int $classTypeId, array $data): bool
     {
-        $allowed = ['name', 'description', 'color_hex', 'is_active'];
+        $allowed = ['name', 'description', 'color_hex', 'service_category_id', 'is_active'];
         $fields = [];
         $params = [
             'business_id' => $businessId,
@@ -265,6 +266,22 @@ final class ClassEventRepository
             'id' => $classTypeId,
         ]);
         return $stmt->rowCount() > 0;
+    }
+
+    public function serviceCategoryExistsInBusiness(int $businessId, int $serviceCategoryId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT 1
+             FROM service_categories
+             WHERE business_id = :business_id
+               AND id = :id
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'business_id' => $businessId,
+            'id' => $serviceCategoryId,
+        ]);
+        return $stmt->fetchColumn() !== false;
     }
 
     public function setClassTypeLocations(int $businessId, int $classTypeId, array $locationIds): void

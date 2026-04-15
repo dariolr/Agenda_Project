@@ -1563,6 +1563,8 @@
   "classTypesEditTitle": "Modifica tipo classe",
   "classTypesFieldName": "Nome",
   "classTypesFieldDescriptionOptional": "Descrizione (opzionale)",
+  "classTypesFieldCategoryCode": "Categoria",
+  "classTypesFieldCategoryCodeNone": "Nessuna categoria",
   "classTypesFieldIsActive": "Tipo attivo",
   "classTypesLocationsSelectionTitle": "Sedi abilitate",
   "classTypesLocationsSelectionHelper": "Seleziona le sedi in cui questo tipo classe può essere programmato. Questa scelta è modificabile in qualsiasi momento.",

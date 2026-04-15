@@ -4,6 +4,7 @@ class ClassType {
   final String name;
   final String? description;
   final String? colorHex;
+  final int? serviceCategoryId;
   final bool isActive;
   final List<int> locationIds;
 
@@ -13,6 +14,7 @@ class ClassType {
     required this.name,
     this.description,
     this.colorHex,
+    this.serviceCategoryId,
     required this.isActive,
     this.locationIds = const [],
   });
@@ -24,6 +26,7 @@ class ClassType {
       name: (json['name'] as String?)?.trim() ?? '',
       description: json['description'] as String?,
       colorHex: (json['color_hex'] as String?)?.trim(),
+      serviceCategoryId: (json['service_category_id'] as num?)?.toInt(),
       isActive:
           (json['is_active'] as bool?) ??
           ((json['is_active'] as num?)?.toInt() == 1),
@@ -40,6 +43,7 @@ class ClassType {
       'name': name,
       'description': description,
       'color_hex': colorHex,
+      'service_category_id': serviceCategoryId,
       'is_active': isActive,
       'location_ids': locationIds,
     };

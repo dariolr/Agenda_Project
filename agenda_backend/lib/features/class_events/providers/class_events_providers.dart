@@ -3,12 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '/core/models/class_booking.dart';
 import '/core/models/class_event.dart';
 import '/core/models/class_type.dart';
+import '/core/models/service_category.dart';
 import '/core/network/network_providers.dart';
 import '/core/services/tenant_time_service.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/date_range_provider.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../../agenda/providers/tenant_time_provider.dart';
+import '../../services/providers/services_repository_provider.dart';
 import '../data/class_events_repository.dart';
 
 class ClassEventsRangeRequest {
@@ -113,6 +115,20 @@ final classTypesWithInactiveProvider = FutureProvider<List<ClassType>>((
   final repo = ref.watch(classEventsRepositoryProvider);
   return repo.listClassTypes(businessId: businessId, includeInactive: true);
 });
+
+final classTypeServiceCategoriesProvider =
+    FutureProvider<List<ServiceCategory>>((ref) async {
+      final businessId = ref.watch(currentBusinessIdProvider);
+      if (businessId <= 0) return const <ServiceCategory>[];
+      final repository = ref.watch(servicesRepositoryProvider);
+      final categories = await repository.getCategories(businessId);
+      categories.sort((a, b) {
+        final byOrder = a.sortOrder.compareTo(b.sortOrder);
+        if (byOrder != 0) return byOrder;
+        return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      });
+      return categories;
+    });
 
 final classEventsProvider = FutureProvider<List<ClassEvent>>((ref) async {
   final businessId = ref.watch(currentBusinessIdProvider);
@@ -395,6 +411,7 @@ class ClassTypeMutationController extends AsyncNotifier<void> {
     required String name,
     String? description,
     String? colorHex,
+    int? serviceCategoryId,
     bool isActive = true,
     List<int>? locationIds,
   }) async {
@@ -412,6 +429,7 @@ class ClassTypeMutationController extends AsyncNotifier<void> {
           'color_hex': colorHex?.trim().isEmpty == true
               ? null
               : colorHex?.trim(),
+          'service_category_id': serviceCategoryId,
           'is_active': isActive,
           if (locationIds != null) 'location_ids': locationIds,
         },
@@ -434,6 +452,7 @@ class ClassTypeMutationController extends AsyncNotifier<void> {
     required String name,
     String? description,
     String? colorHex,
+    int? serviceCategoryId,
     required bool isActive,
     List<int>? locationIds,
   }) async {
@@ -452,6 +471,7 @@ class ClassTypeMutationController extends AsyncNotifier<void> {
           'color_hex': colorHex?.trim().isEmpty == true
               ? null
               : colorHex?.trim(),
+          'service_category_id': serviceCategoryId,
           'is_active': isActive,
           if (locationIds != null) 'location_ids': locationIds,
         },

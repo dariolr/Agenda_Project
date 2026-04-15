@@ -1563,6 +1563,8 @@
   "classTypesEditTitle": "Edit class type",
   "classTypesFieldName": "Name",
   "classTypesFieldDescriptionOptional": "Description (optional)",
+  "classTypesFieldCategoryCode": "Category",
+  "classTypesFieldCategoryCodeNone": "No category",
   "classTypesFieldIsActive": "Type active",
   "classTypesLocationsSelectionTitle": "Enabled locations",
   "classTypesLocationsSelectionHelper": "Select the locations where this class type can be scheduled. You can change this at any time.",

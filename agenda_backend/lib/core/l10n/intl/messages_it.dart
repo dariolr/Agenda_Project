@@ -1003,6 +1003,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "classTypesEmpty": MessageLookupByLibrary.simpleMessage(
       "Nessun tipo classe configurato",
     ),
+    "classTypesFieldCategoryCode": MessageLookupByLibrary.simpleMessage(
+      "Categoria",
+    ),
+    "classTypesFieldCategoryCodeNone": MessageLookupByLibrary.simpleMessage(
+      "Nessuna categoria",
+    ),
     "classTypesFieldDescriptionOptional": MessageLookupByLibrary.simpleMessage(
       "Descrizione (opzionale)",
     ),
