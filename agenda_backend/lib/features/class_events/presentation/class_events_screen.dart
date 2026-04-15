@@ -1406,6 +1406,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   @override
   void initState() {
     super.initState();
+    // Reset the create controller in case a previous operation left it in a
+    // stuck AsyncLoading state (e.g. network hang while the form was closed).
+    ref.invalidate(classEventCreateControllerProvider);
     _editingEvent = widget.initialEvent;
     if (_editingEvent != null) {
       _applyEventToForm(_editingEvent!);
