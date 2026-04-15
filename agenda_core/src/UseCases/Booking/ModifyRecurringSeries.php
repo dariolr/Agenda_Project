@@ -53,6 +53,18 @@ final class ModifyRecurringSeries
      *   service_variant_id?: int,
      *   package_id?: int|null,
      *   price?: float|null,
+     *   items?: array<array{
+     *     service_id:int,
+     *     staff_id?:int|null,
+     *     service_variant_id?:int|null,
+     *     start_offset_minutes?:int|null,
+     *     duration_minutes?:int|null,
+     *     blocked_extra_minutes?:int|null,
+     *     processing_extra_minutes?:int|null,
+     *     price?:float|null,
+     *     package_id?:int|null,
+     *     pricing_source?:string|null
+     *   }>,
      *   notes?: string|null,
      *   time?: string (HH:MM format),
      *   duration_minutes?: int
@@ -109,6 +121,54 @@ final class ModifyRecurringSeries
             }
         }
 
+        $itemsTemplate = null;
+        if (isset($changes['items'])) {
+            if (!is_array($changes['items']) || empty($changes['items'])) {
+                throw BookingException::validationError('items must be a non-empty array');
+            }
+            $itemsTemplate = [];
+            foreach ($changes['items'] as $index => $item) {
+                if (!is_array($item) || !isset($item['service_id'])) {
+                    throw BookingException::validationError(
+                        "items[$index].service_id is required"
+                    );
+                }
+
+                $serviceId = (int) $item['service_id'];
+                $templateItem = [
+                    'service_id' => $serviceId,
+                    'service_variant_id' => isset($item['service_variant_id']) && $item['service_variant_id'] !== null
+                        ? (int) $item['service_variant_id']
+                        : $this->resolveDefaultVariantIdForService($serviceId),
+                    'staff_id' => isset($item['staff_id']) && $item['staff_id'] !== null
+                        ? (int) $item['staff_id']
+                        : null,
+                    'start_offset_minutes' => isset($item['start_offset_minutes'])
+                        ? (int) $item['start_offset_minutes']
+                        : null,
+                    'duration_minutes' => isset($item['duration_minutes']) && (int) $item['duration_minutes'] > 0
+                        ? (int) $item['duration_minutes']
+                        : 30,
+                    'blocked_extra_minutes' => isset($item['blocked_extra_minutes'])
+                        ? (int) $item['blocked_extra_minutes']
+                        : 0,
+                    'processing_extra_minutes' => isset($item['processing_extra_minutes'])
+                        ? (int) $item['processing_extra_minutes']
+                        : 0,
+                    'price' => array_key_exists('price', $item) && $item['price'] !== null
+                        ? (float) $item['price']
+                        : null,
+                    'package_id' => array_key_exists('package_id', $item) && $item['package_id'] !== null
+                        ? (int) $item['package_id']
+                        : null,
+                    'pricing_source' => array_key_exists('pricing_source', $item) && $item['pricing_source'] !== null
+                        ? (string) $item['pricing_source']
+                        : null,
+                ];
+                $itemsTemplate[] = $templateItem;
+            }
+        }
+
         // Get bookings to modify
         $allBookings = $this->bookingRepository->findByRecurrenceRuleId($ruleId);
         
@@ -150,33 +210,42 @@ final class ModifyRecurringSeries
                 $bookingChanges = [];
                 $itemChanges = [];
 
-                // Apply staff change
-                if (isset($changes['staff_id'])) {
-                    $itemChanges['staff_id'] = (int) $changes['staff_id'];
-                    $changesApplied['staff_id'] = (int) $changes['staff_id'];
-                }
-                if (isset($changes['service_id'])) {
-                    $itemChanges['service_id'] = (int) $changes['service_id'];
-                    $changesApplied['service_id'] = (int) $changes['service_id'];
-                }
-                if (isset($changes['service_variant_id'])) {
-                    $itemChanges['service_variant_id'] = (int) $changes['service_variant_id'];
-                    $changesApplied['service_variant_id'] = (int) $changes['service_variant_id'];
-                }
-                if (array_key_exists('package_id', $changes)) {
-                    $itemChanges['package_id'] = $changes['package_id'] !== null
-                        ? (int) $changes['package_id']
-                        : null;
-                    $changesApplied['package_id'] = $changes['package_id'];
-                }
-                if (array_key_exists('price', $changes)) {
-                    $itemChanges['price'] = $changes['price'] !== null
-                        ? (float) $changes['price']
-                        : null;
-                    $changesApplied['price'] = $changes['price'];
-                }
-                if (isset($changes['duration_minutes'])) {
-                    $changesApplied['duration_minutes'] = (int) $changes['duration_minutes'];
+                if ($itemsTemplate !== null) {
+                    $changesApplied['items'] = true;
+                } else {
+                    // Apply staff change
+                    if (isset($changes['staff_id'])) {
+                        $itemChanges['staff_id'] = (int) $changes['staff_id'];
+                        $changesApplied['staff_id'] = (int) $changes['staff_id'];
+                    }
+                    if (isset($changes['service_id'])) {
+                        $itemChanges['service_id'] = (int) $changes['service_id'];
+                        $changesApplied['service_id'] = (int) $changes['service_id'];
+                        if (!isset($changes['service_variant_id'])) {
+                            $itemChanges['service_variant_id'] = $this->resolveDefaultVariantIdForService(
+                                (int) $changes['service_id']
+                            );
+                        }
+                    }
+                    if (isset($changes['service_variant_id'])) {
+                        $itemChanges['service_variant_id'] = (int) $changes['service_variant_id'];
+                        $changesApplied['service_variant_id'] = (int) $changes['service_variant_id'];
+                    }
+                    if (array_key_exists('package_id', $changes)) {
+                        $itemChanges['package_id'] = $changes['package_id'] !== null
+                            ? (int) $changes['package_id']
+                            : null;
+                        $changesApplied['package_id'] = $changes['package_id'];
+                    }
+                    if (array_key_exists('price', $changes)) {
+                        $itemChanges['price'] = $changes['price'] !== null
+                            ? (float) $changes['price']
+                            : null;
+                        $changesApplied['price'] = $changes['price'];
+                    }
+                    if (isset($changes['duration_minutes'])) {
+                        $changesApplied['duration_minutes'] = (int) $changes['duration_minutes'];
+                    }
                 }
 
                 $hasItemMutation = !empty($itemChanges) ||
@@ -212,9 +281,13 @@ final class ModifyRecurringSeries
                     $this->updateBookingItems($bookingId, $itemChanges);
                 }
 
-                // Apply duration change to booking items
-                if (isset($changes['duration_minutes'])) {
-                    $this->updateBookingItemsDuration($bookingId, (int) $changes['duration_minutes']);
+                if ($itemsTemplate !== null) {
+                    $this->syncBookingItemsFromTemplate($bookingId, $itemsTemplate);
+                } else {
+                    // Apply duration change to booking items
+                    if (isset($changes['duration_minutes'])) {
+                        $this->updateBookingItemsDuration($bookingId, (int) $changes['duration_minutes']);
+                    }
                 }
 
                 // Log booking-level audit event (notes only)
@@ -281,7 +354,8 @@ final class ModifyRecurringSeries
                 $shouldRefreshReminder = $newTime !== null ||
                     isset($changes['duration_minutes']) ||
                     isset($changes['service_id']) ||
-                    isset($changes['service_variant_id']);
+                    isset($changes['service_variant_id']) ||
+                    $itemsTemplate !== null;
                 if ($shouldRefreshReminder) {
                     $this->refreshBookingReminder($bookingId);
                 }
@@ -428,6 +502,105 @@ final class ModifyRecurringSeries
         }
     }
 
+    /**
+     * Sync booking items structure and values from a template.
+     * Existing items are updated by order; extra template items are added;
+     * extra existing items are deleted.
+     *
+     * @param array<int,array<string,mixed>> $itemsTemplate
+     */
+    private function syncBookingItemsFromTemplate(int $bookingId, array $itemsTemplate): void
+    {
+        $existing = $this->bookingRepository->getBookingItems($bookingId);
+        if (empty($existing)) {
+            return;
+        }
+
+        usort($existing, static function (array $a, array $b): int {
+            $byStart = strcmp((string) ($a['start_time'] ?? ''), (string) ($b['start_time'] ?? ''));
+            if ($byStart !== 0) {
+                return $byStart;
+            }
+            return ((int) ($a['id'] ?? 0)) <=> ((int) ($b['id'] ?? 0));
+        });
+
+        $baseStart = new DateTimeImmutable((string) $existing[0]['start_time']);
+        $locationId = (int) ($existing[0]['location_id'] ?? 0);
+        $clientNameSnapshot = $existing[0]['client_name_snapshot'] ?? null;
+
+        $countExisting = count($existing);
+        $countTemplate = count($itemsTemplate);
+        $max = max($countExisting, $countTemplate);
+
+        for ($i = 0; $i < $max; $i++) {
+            $template = $i < $countTemplate ? $itemsTemplate[$i] : null;
+            $current = $i < $countExisting ? $existing[$i] : null;
+
+            if ($template === null && $current !== null) {
+                $this->bookingRepository->deleteBookingItem((int) $current['id']);
+                continue;
+            }
+
+            if ($template === null) {
+                continue;
+            }
+
+            $offsetMinutes = (int) ($template['start_offset_minutes'] ?? 0);
+            $durationMinutes = max(1, (int) ($template['duration_minutes'] ?? 30));
+            $start = $baseStart->modify("+{$offsetMinutes} minutes");
+            $end = $start->modify("+{$durationMinutes} minutes");
+
+            $packageId = array_key_exists('package_id', $template)
+                ? $template['package_id']
+                : null;
+            $price = array_key_exists('price', $template)
+                ? $template['price']
+                : null;
+            $pricingSource = $template['pricing_source'] ?? null;
+            if ($pricingSource === null) {
+                $pricingSource = $packageId !== null
+                    ? 'package'
+                    : ($price !== null ? 'custom' : 'service');
+            }
+
+            $row = [
+                'service_id' => (int) $template['service_id'],
+                'service_variant_id' => (int) $template['service_variant_id'],
+                'staff_id' => $template['staff_id'] !== null
+                    ? (int) $template['staff_id']
+                    : (int) ($current['staff_id'] ?? $existing[0]['staff_id']),
+                'start_time' => $start->format('Y-m-d H:i:s'),
+                'end_time' => $end->format('Y-m-d H:i:s'),
+                'extra_blocked_minutes' => (int) ($template['blocked_extra_minutes'] ?? 0),
+                'extra_processing_minutes' => (int) ($template['processing_extra_minutes'] ?? 0),
+                'price' => $price !== null ? (float) $price : null,
+                'package_id' => $packageId !== null ? (int) $packageId : null,
+                'pricing_source' => $pricingSource,
+            ];
+
+            if ($current !== null) {
+                $this->bookingRepository->updateAppointment((int) $current['id'], $row);
+                continue;
+            }
+
+            $this->bookingRepository->addBookingItem($bookingId, [
+                'location_id' => $locationId,
+                'service_id' => $row['service_id'],
+                'service_variant_id' => $row['service_variant_id'],
+                'staff_id' => $row['staff_id'],
+                'start_time' => $row['start_time'],
+                'end_time' => $row['end_time'],
+                'extra_blocked_minutes' => $row['extra_blocked_minutes'],
+                'extra_processing_minutes' => $row['extra_processing_minutes'],
+                'price' => $row['price'],
+                'package_id' => $row['package_id'],
+                'pricing_source' => $row['pricing_source'],
+                'service_name_snapshot' => null,
+                'client_name_snapshot' => $clientNameSnapshot,
+            ]);
+        }
+    }
+
     private function refreshBookingReminder(int $bookingId): void
     {
         if ($this->notificationRepository === null) {
@@ -441,6 +614,32 @@ final class ModifyRecurringSeries
             // Keep series modification non-blocking on reminder errors.
             error_log("Failed to refresh reminder for recurring booking {$bookingId}: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Resolve a default service variant for the given service.
+     * Returns the first variant by id.
+     *
+     * @throws BookingException when no variant exists for the service.
+     */
+    private function resolveDefaultVariantIdForService(int $serviceId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id
+             FROM service_variants
+             WHERE service_id = ?
+             ORDER BY id ASC
+             LIMIT 1'
+        );
+        $stmt->execute([$serviceId]);
+        $variantId = $stmt->fetchColumn();
+        if ($variantId === false) {
+            throw BookingException::validationError(
+                "No service variant found for service_id {$serviceId}"
+            );
+        }
+
+        return (int) $variantId;
     }
 
     /**

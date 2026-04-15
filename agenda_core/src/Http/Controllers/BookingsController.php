@@ -2023,14 +2023,15 @@ final class BookingsController
      * - from_index: For scope='future', start from this index (default 0)
      * 
      * Body:
-     * - staff_id: Change staff for all/future bookings
-     * - service_id: Change service for all/future bookings
-     * - service_variant_id: Change service variant for all/future bookings
-     * - package_id: Change package (or null to clear) for all/future bookings
-     * - price: Change applied price (or null to clear) for all/future bookings
-     * - notes: Update notes for all/future bookings
-     * - time: Change time (HH:MM) for all/future bookings
-     * - duration_minutes: Change duration (minutes) for all/future bookings
+      * - staff_id: Change staff for all/future bookings
+      * - service_id: Change service for all/future bookings
+      * - service_variant_id: Change service variant for all/future bookings
+      * - package_id: Change package (or null to clear) for all/future bookings
+      * - price: Change applied price (or null to clear) for all/future bookings
+      * - items: Replace/sync booking items template for all/future bookings
+      * - notes: Update notes for all/future bookings
+      * - time: Change time (HH:MM) for all/future bookings
+      * - duration_minutes: Change duration (minutes) for all/future bookings
      */
     public function patchRecurringSeries(Request $request): Response
     {
@@ -2081,6 +2082,9 @@ final class BookingsController
             $changes['price'] = $body['price'] !== null
                 ? (float) $body['price']
                 : null;
+        }
+        if (isset($body['items']) && is_array($body['items'])) {
+            $changes['items'] = $body['items'];
         }
         if (array_key_exists('notes', $body)) {
             $changes['notes'] = $body['notes'];
