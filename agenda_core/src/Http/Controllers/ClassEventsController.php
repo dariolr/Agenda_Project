@@ -87,6 +87,9 @@ final class ClassEventsController
         if ($userId === null) {
             return Response::unauthorized('Authentication required', $request->traceId);
         }
+        if (!$this->userRepo->isSuperadmin($userId)) {
+            return Response::forbidden('Only superadmin can create class types', $request->traceId);
+        }
         if (!$this->canManage($userId, $businessId)) {
             return Response::forbidden('Access denied', $request->traceId);
         }
@@ -863,6 +866,106 @@ final class ClassEventsController
         return Response::success(['cancelled' => true]);
     }
 
+    /**
+     * GET /v1/customer/class-bookings
+     * Restituisce le prenotazioni di classe del cliente autenticato suddivise in
+     * upcoming / past / cancelled.
+     * Middleware: customer_auth  →  attributes: client_id, business_id
+     */
+    public function myClassBookings(Request $request): Response
+    {
+        $clientId   = $request->getAttribute('client_id');
+        $businessId = (int) $request->getAttribute('business_id');
+
+        if ($clientId === null) {
+            return Response::error('Customer authentication required', 'unauthorized', 401, $request->traceId);
+        }
+
+        $rows              = $this->classEventRepo->getCustomerClassBookings($businessId, (int) $clientId);
+        $now               = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        $cancelledStatuses = ['CANCELLED_BY_CUSTOMER', 'CANCELLED_BY_STAFF'];
+
+        $upcoming  = [];
+        $past      = [];
+        $cancelled = [];
+
+        foreach ($rows as $row) {
+            $formatted = $this->formatCustomerClassBooking($row, $now);
+            $status    = $row['status'] ?? '';
+
+            if (in_array($status, $cancelledStatuses, true)) {
+                $cancelled[] = $formatted;
+            } elseif (!empty($row['starts_at']) &&
+                new \DateTimeImmutable($row['starts_at'], new \DateTimeZone('UTC')) > $now) {
+                $upcoming[] = $formatted;
+            } else {
+                $past[] = $formatted;
+            }
+        }
+
+        return Response::success([
+            'upcoming'  => $upcoming,
+            'past'      => $past,
+            'cancelled' => $cancelled,
+        ]);
+    }
+
+    private function formatCustomerClassBooking(array $row, \DateTimeImmutable $now): array
+    {
+        $locationTimezone = $row['location_timezone'] ?? 'UTC';
+        $startsAt         = $row['starts_at'] ?? null;
+        $endsAt           = $row['ends_at']   ?? null;
+        $status           = $row['status']    ?? '';
+
+        $isActiveBooking = in_array($status, ['CONFIRMED', 'WAITLISTED'], true);
+        $isFuture        = $startsAt !== null
+            && new \DateTimeImmutable($startsAt, new \DateTimeZone('UTC')) > $now;
+
+        $canCancel      = false;
+        $canCancelUntil = null;
+
+        if ($isActiveBooking && $isFuture) {
+            $cutoffMinutes = (int) ($row['cancel_cutoff_minutes'] ?? 0);
+            if ($cutoffMinutes > 0) {
+                $startsAtDt       = new \DateTimeImmutable((string) $startsAt, new \DateTimeZone('UTC'));
+                $canCancelUntilDt = $startsAtDt->modify("-{$cutoffMinutes} minutes");
+                $canCancelUntil   = $canCancelUntilDt->format('Y-m-d\TH:i:s\Z');
+                $canCancel        = $now < $canCancelUntilDt;
+            } else {
+                $canCancel = true;
+            }
+        }
+
+        return [
+            'id'                   => (int) $row['id'],
+            'business_id'          => (int) $row['business_id'],
+            'class_event_id'       => (int) $row['class_event_id'],
+            'class_type_id'        => (int) $row['class_type_id'],
+            'class_type_name'      => (string) ($row['class_type_name'] ?? ''),
+            'class_type_color_hex' => $row['class_type_color_hex'] ?? null,
+            'location_id'          => (int) $row['location_id'],
+            'location_name'        => (string) ($row['location_name'] ?? ''),
+            'location_address'     => $row['location_address'] ?? null,
+            'location_city'        => $row['location_city']    ?? null,
+            'starts_at'            => $startsAt,
+            'starts_at_local'      => $startsAt !== null
+                ? $this->formatUtcSqlToLocationLocal((string) $startsAt, $locationTimezone)
+                : null,
+            'ends_at'              => $endsAt,
+            'ends_at_local'        => $endsAt !== null
+                ? $this->formatUtcSqlToLocationLocal((string) $endsAt, $locationTimezone)
+                : null,
+            'status'               => strtolower($status),
+            'waitlist_position'    => isset($row['waitlist_position']) ? (int) $row['waitlist_position'] : null,
+            'price_cents'          => isset($row['price_cents']) ? (int) $row['price_cents'] : null,
+            'currency'             => $row['currency'] ?? null,
+            'can_cancel'           => $canCancel,
+            'can_cancel_until'     => $canCancelUntil,
+            'booked_at'            => $row['booked_at']    ?? null,
+            'cancelled_at'         => $row['cancelled_at'] ?? null,
+        ];
+    }
+
     private function canRead(int $userId, int $businessId): bool
     {
         if ($this->userRepo->isSuperadmin($userId)) {
@@ -1167,7 +1270,7 @@ final class ClassEventsController
             'business_id' => (int) $row['business_id'],
             'class_event_id' => (int) $row['class_event_id'],
             'customer_id' => (int) $row['customer_id'],
-            'status' => (string) $row['status'],
+            'status' => strtolower((string) $row['status']),
             'waitlist_position' => isset($row['waitlist_position']) ? (int) $row['waitlist_position'] : null,
             'booked_at' => $bookedAt,
             'booked_at_local' => $bookedAt !== null

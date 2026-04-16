@@ -1071,6 +1071,57 @@ final class ClassEventRepository
         return $row ?: null;
     }
 
+    /**
+     * Restituisce tutte le prenotazioni di classe di un cliente per un business.
+     * Ordinate per starts_at ASC.
+     */
+    public function getCustomerClassBookings(int $businessId, int $customerId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT
+                 cb.id,
+                 cb.business_id,
+                 cb.class_event_id,
+                 cb.customer_id,
+                 cb.status,
+                 cb.waitlist_position,
+                 cb.booked_at,
+                 cb.cancelled_at,
+                 cb.checked_in_at,
+                 cb.payment_status,
+                 cb.notes,
+                 ce.starts_at,
+                 ce.ends_at,
+                 ce.cancel_cutoff_minutes,
+                 ce.price_cents,
+                 ce.currency,
+                 ce.location_id,
+                 ct.id        AS class_type_id,
+                 ct.name      AS class_type_name,
+                 ct.color_hex AS class_type_color_hex,
+                 l.name       AS location_name,
+                 l.address    AS location_address,
+                 l.city       AS location_city,
+                 l.timezone   AS location_timezone
+             FROM class_bookings cb
+             INNER JOIN class_events ce
+                 ON ce.id = cb.class_event_id
+                AND ce.business_id = cb.business_id
+             INNER JOIN class_types ct
+                 ON ct.id = ce.class_type_id
+             INNER JOIN locations l
+                 ON l.id = ce.location_id
+             WHERE cb.business_id = :business_id
+               AND cb.customer_id = :customer_id
+             ORDER BY ce.starts_at ASC'
+        );
+        $stmt->execute([
+            'business_id' => $businessId,
+            'customer_id' => $customerId,
+        ]);
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
     private function upsertBooking(
         \PDO $pdo,
         ?array $existing,

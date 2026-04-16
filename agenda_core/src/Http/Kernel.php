@@ -394,6 +394,7 @@ final class Kernel
         $this->router->get('/v1/customer/bookings/{booking_id}/history', BookingsController::class, 'historyCustomer', ['customer_auth']);
 
         // Customer class-event bookings
+        $this->router->get('/v1/customer/class-bookings', ClassEventsController::class, 'myClassBookings', ['customer_auth']);
         $this->router->post('/v1/customer/{business_id}/class-events/{id}/book', ClassEventsController::class, 'bookCustomer', ['customer_auth']);
         $this->router->post('/v1/customer/{business_id}/class-events/{id}/cancel-booking', ClassEventsController::class, 'cancelBookingCustomer', ['customer_auth']);
     }
