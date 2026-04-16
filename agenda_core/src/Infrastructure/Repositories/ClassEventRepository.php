@@ -21,7 +21,7 @@ final class ClassEventRepository
         if (!$includeInactive) {
             $sql .= ' AND is_active = 1';
         }
-        $sql .= ' ORDER BY name ASC, id ASC';
+        $sql .= ' ORDER BY sort_order ASC, name ASC, id ASC';
 
         $stmt = $this->db->getPdo()->prepare($sql);
         $stmt->execute(['business_id' => $businessId]);
@@ -226,7 +226,7 @@ final class ClassEventRepository
 
     public function updateClassType(int $businessId, int $classTypeId, array $data): bool
     {
-        $allowed = ['name', 'description', 'color_hex', 'service_category_id', 'is_active'];
+        $allowed = ['name', 'description', 'color_hex', 'service_category_id', 'sort_order', 'is_active'];
         $fields = [];
         $params = [
             'business_id' => $businessId,

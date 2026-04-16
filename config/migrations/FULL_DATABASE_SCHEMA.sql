@@ -343,6 +343,7 @@ CREATE TABLE `class_types` (
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `color_hex` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Colore tipo classe in formato #RRGGBB',
   `service_category_id` int UNSIGNED DEFAULT NULL COMMENT 'Categoria servizi associata al tipo classe',
+  `sort_order` int NOT NULL DEFAULT '0',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -1193,6 +1194,7 @@ ALTER TABLE `class_types`
   ADD UNIQUE KEY `uk_class_types_id_business` (`id`,`business_id`),
   ADD UNIQUE KEY `uk_class_types_business_name` (`business_id`,`name`),
   ADD KEY `idx_class_types_business_active` (`business_id`,`is_active`),
+  ADD KEY `idx_class_types_business_sort` (`business_id`,`sort_order`),
   ADD KEY `idx_class_types_service_category` (`service_category_id`);
 
 --

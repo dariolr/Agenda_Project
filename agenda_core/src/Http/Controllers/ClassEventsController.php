@@ -181,6 +181,16 @@ final class ClassEventsController
             }
             $body['color_hex'] = $colorHexResult['value'] ?? null;
         }
+        if (array_key_exists('sort_order', $body)) {
+            if (!is_int($body['sort_order']) && !(is_string($body['sort_order']) && ctype_digit(trim($body['sort_order'])))) {
+                return Response::error('sort_order must be an integer', 'validation_error', 400, $request->traceId);
+            }
+            $sortOrder = (int) $body['sort_order'];
+            if ($sortOrder < 0) {
+                return Response::error('sort_order must be >= 0', 'validation_error', 400, $request->traceId);
+            }
+            $body['sort_order'] = $sortOrder;
+        }
         if (array_key_exists('service_category_id', $body)) {
             $serviceCategoryResult = $this->normalizeServiceCategoryId(
                 $businessId,
@@ -1216,6 +1226,7 @@ final class ClassEventsController
             'description' => $row['description'] ?? null,
             'color_hex' => $row['color_hex'] ?? null,
             'service_category_id' => isset($row['service_category_id']) ? (int) $row['service_category_id'] : null,
+            'sort_order' => (int) ($row['sort_order'] ?? 0),
             'is_active' => (int) ($row['is_active'] ?? 1) === 1,
             'location_ids' => array_values(array_map('intval', $locationIds)),
         ];
