@@ -968,10 +968,6 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
               return null;
             },
             items: [
-              DropdownMenuItem<int?>(
-                value: null,
-                child: Text(l10n.classTypesFieldCategoryCodeNone),
-              ),
               if (!hasSelectedCategoryInList &&
                   _selectedServiceCategoryId != null)
                 DropdownMenuItem<int?>(

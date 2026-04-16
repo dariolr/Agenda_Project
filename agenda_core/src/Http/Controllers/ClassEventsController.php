@@ -112,7 +112,8 @@ final class ClassEventsController
         $colorHex = $colorHexResult['value'] ?? null;
         $serviceCategoryResult = $this->normalizeServiceCategoryId(
             $businessId,
-            $body['service_category_id'] ?? null
+            $body['service_category_id'] ?? null,
+            true
         );
         if (isset($serviceCategoryResult['error'])) {
             return Response::error((string) $serviceCategoryResult['error'], 'validation_error', 400, $request->traceId);
@@ -160,6 +161,9 @@ final class ClassEventsController
         }
 
         $body = $request->getBody() ?? [];
+        if (!array_key_exists('service_category_id', $body)) {
+            return Response::error('service_category_id is required', 'validation_error', 400, $request->traceId);
+        }
         if (array_key_exists('name', $body)) {
             $name = trim((string) $body['name']);
             if ($name == '') {
@@ -180,7 +184,8 @@ final class ClassEventsController
         if (array_key_exists('service_category_id', $body)) {
             $serviceCategoryResult = $this->normalizeServiceCategoryId(
                 $businessId,
-                $body['service_category_id']
+                $body['service_category_id'],
+                true
             );
             if (isset($serviceCategoryResult['error'])) {
                 return Response::error((string) $serviceCategoryResult['error'], 'validation_error', 400, $request->traceId);
@@ -1234,12 +1239,18 @@ final class ClassEventsController
         return ['value' => strtoupper($value)];
     }
 
-    private function normalizeServiceCategoryId(int $businessId, mixed $raw): array
+    private function normalizeServiceCategoryId(int $businessId, mixed $raw, bool $required): array
     {
         if ($raw === null) {
+            if ($required) {
+                return ['error' => 'service_category_id is required'];
+            }
             return ['value' => null];
         }
         if (is_string($raw) && trim($raw) === '') {
+            if ($required) {
+                return ['error' => 'service_category_id is required'];
+            }
             return ['value' => null];
         }
 
