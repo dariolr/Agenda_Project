@@ -126,7 +126,6 @@ final class ClassEventsController
                 'description' => array_key_exists('description', $body) ? $body['description'] : null,
                 'color_hex' => $colorHex,
                 'service_category_id' => $serviceCategoryId,
-                'is_active' => array_key_exists('is_active', $body) ? (bool) $body['is_active'] : true,
             ]);
             if ($locationIds !== null) {
                 $this->classEventRepo->setClassTypeLocations($businessId, $id, $locationIds);
@@ -244,24 +243,9 @@ final class ClassEventsController
         if ($existing === null) {
             return Response::notFound('Class type not found', $request->traceId);
         }
-        if ($this->classEventRepo->hasClassEventsForType($businessId, $classTypeId)) {
-            return Response::conflict(
-                'class_type_in_use',
-                'Cannot delete class type with existing scheduled classes',
-                $request->traceId
-            );
-        }
-
         try {
             $deleted = $this->classEventRepo->deleteClassType($businessId, $classTypeId);
         } catch (\Throwable $e) {
-            if ($this->isForeignKeyConstraintError($e)) {
-                return Response::conflict(
-                    'class_type_in_use',
-                    'Cannot delete class type with existing scheduled classes',
-                    $request->traceId
-                );
-            }
             return Response::serverError('Unable to delete class type', $request->traceId);
         }
 

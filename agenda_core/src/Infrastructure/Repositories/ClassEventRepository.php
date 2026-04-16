@@ -32,7 +32,9 @@ final class ClassEventRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT * FROM class_types
-             WHERE business_id = :business_id AND id = :id
+             WHERE business_id = :business_id
+               AND id = :id
+               AND is_active = 1
              LIMIT 1'
         );
         $stmt->execute([
@@ -80,6 +82,7 @@ final class ClassEventRepository
              FROM class_types
              WHERE business_id = :business_id
                AND id = :id
+               AND is_active = 1
              LIMIT 1'
         );
         $stmt->execute([
@@ -219,14 +222,14 @@ final class ClassEventRepository
             'description' => $data['description'] ?? null,
             'color_hex' => $data['color_hex'] ?? null,
             'service_category_id' => $data['service_category_id'] ?? null,
-            'is_active' => !empty($data['is_active']) ? 1 : 0,
+            'is_active' => 1,
         ]);
         return (int) $this->db->getPdo()->lastInsertId();
     }
 
     public function updateClassType(int $businessId, int $classTypeId, array $data): bool
     {
-        $allowed = ['name', 'description', 'color_hex', 'service_category_id', 'sort_order', 'is_active'];
+        $allowed = ['name', 'description', 'color_hex', 'service_category_id', 'sort_order'];
         $fields = [];
         $params = [
             'business_id' => $businessId,
@@ -238,9 +241,7 @@ final class ClassEventRepository
                 continue;
             }
             $fields[] = "{$field} = :{$field}";
-            $params[$field] = $field === 'is_active'
-                ? (!empty($data[$field]) ? 1 : 0)
-                : $data[$field];
+            $params[$field] = $data[$field];
         }
 
         if (empty($fields)) {
@@ -256,9 +257,11 @@ final class ClassEventRepository
     public function deleteClassType(int $businessId, int $classTypeId): bool
     {
         $stmt = $this->db->getPdo()->prepare(
-            'DELETE FROM class_types
+            'UPDATE class_types
+             SET is_active = 0
              WHERE business_id = :business_id
                AND id = :id
+               AND is_active = 1
              LIMIT 1'
         );
         $stmt->execute([
