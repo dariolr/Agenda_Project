@@ -1,9 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/extensions.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/class_type.dart';
+import '../../../../core/services/tenant_time_service.dart';
 import '../../../../core/utils/color_utils.dart';
+import '../../../../core/utils/price_utils.dart';
+import '../../../agenda/providers/tenant_time_provider.dart';
+import '../../../class_events/providers/class_events_providers.dart';
 
 enum _ClassTypeAction { schedule, edit, duplicate, delete }
 
@@ -106,13 +111,151 @@ class _ClassTypeListItemState extends State<ClassTypeListItem> {
                       title: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            widget.classType.name,
-                            style: Theme.of(
-                              context,
-                            ).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w500,
-                            ),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  widget.classType.name,
+                                  style: Theme.of(
+                                    context,
+                                  ).textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Consumer(
+                            builder: (context, ref, _) {
+                              final timezone = ref.watch(
+                                effectiveTenantTimezoneProvider,
+                              );
+                              final schedulesAsync = ref.watch(
+                                allClassEventsByTypeProvider(
+                                  widget.classType.id,
+                                ),
+                              );
+                              final nowUtc =
+                                  TenantTimeService.nowInTimezone(
+                                    timezone,
+                                  ).toUtc();
+
+                              var futureCount = 0;
+                              var expiredCount = 0;
+                              int? capacity;
+                              int? durationMinutes;
+                              String? priceText;
+
+                              schedulesAsync.whenData((events) {
+                                futureCount = events
+                                    .where((event) => event.endsAtUtc.isAfter(nowUtc))
+                                    .length;
+                                expiredCount = events.length - futureCount;
+
+                                final futureEvents = events
+                                    .where((event) => event.endsAtUtc.isAfter(nowUtc))
+                                    .toList()
+                                  ..sort(
+                                    (a, b) => a.startsAtUtc.compareTo(b.startsAtUtc),
+                                  );
+                                final representativeEvent = futureEvents.isNotEmpty
+                                    ? futureEvents.first
+                                    : (events.isNotEmpty
+                                          ? ([...events]
+                                                ..sort(
+                                                  (a, b) =>
+                                                      b.startsAtUtc.compareTo(
+                                                        a.startsAtUtc,
+                                                      ),
+                                                ))
+                                              .first
+                                          : null);
+                                if (representativeEvent != null) {
+                                  capacity = representativeEvent.capacityTotal;
+                                  durationMinutes = representativeEvent.endsAtUtc
+                                      .difference(representativeEvent.startsAtUtc)
+                                      .inMinutes;
+                                  final cents = representativeEvent.priceCents;
+                                  if (cents != null && cents > 0) {
+                                    final currency =
+                                        representativeEvent.currency ??
+                                        PriceFormatter.effectiveCurrency(ref);
+                                    priceText = PriceFormatter.format(
+                                      context: context,
+                                      amount: cents / 100.0,
+                                      currencyCode: currency,
+                                    );
+                                  }
+                                }
+                              });
+
+                              final hasData = schedulesAsync.hasValue;
+                              final futureLabel = hasData
+                                  ? '${context.l10n.classEventsFutureBadge}: $futureCount'
+                                  : '${context.l10n.classEventsFutureBadge}: -';
+                              final expiredLabel = hasData
+                                  ? '${context.l10n.classEventsExpiredBadge}: $expiredCount'
+                                  : '${context.l10n.classEventsExpiredBadge}: -';
+                              final capacityLabel = hasData
+                                  ? '${context.l10n.classEventsFieldCapacity}: ${capacity ?? '-'}'
+                                  : '${context.l10n.classEventsFieldCapacity}: -';
+                              final durationLabel = hasData && durationMinutes != null
+                                  ? context.localizedDurationLabel(durationMinutes!)
+                                  : null;
+                              final effectivePriceText = hasData
+                                  ? (priceText ?? context.l10n.priceNotAvailable)
+                                  : null;
+
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  if (durationLabel != null ||
+                                      effectivePriceText != null)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (durationLabel != null)
+                                            Text(
+                                              durationLabel,
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.black54,
+                                                height: 1.1,
+                                              ),
+                                            ),
+                                          if (durationLabel != null &&
+                                              effectivePriceText != null)
+                                            const SizedBox(width: 8),
+                                          if (effectivePriceText != null)
+                                            Text(
+                                              effectivePriceText,
+                                              style: const TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.black54,
+                                                height: 1.1,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  const SizedBox(height: 4),
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 6,
+                                    children: [
+                                      _ClassTypeBadge(label: futureLabel),
+                                      _ClassTypeBadge(label: expiredLabel),
+                                      _ClassTypeBadge(label: capacityLabel),
+                                    ],
+                                  ),
+                                ],
+                              );
+                            },
                           ),
                         ],
                       ),
@@ -145,11 +288,6 @@ class _ClassTypeListItemState extends State<ClassTypeListItem> {
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
-          tooltip: context.l10n.classTypesActionScheduleClass,
-          icon: const Icon(Icons.event_available_outlined),
-          onPressed: widget.onSchedule,
-        ),
-        IconButton(
           tooltip: context.l10n.actionEdit,
           icon: const Icon(Icons.edit_outlined),
           onPressed: widget.onEdit,
@@ -165,6 +303,32 @@ class _ClassTypeListItemState extends State<ClassTypeListItem> {
           onPressed: widget.onDelete,
         ),
       ],
+    );
+  }
+}
+
+class _ClassTypeBadge extends StatelessWidget {
+  const _ClassTypeBadge({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 1),
+      decoration: BoxDecoration(
+        color: colorScheme.onSurface.withOpacity(0.05),
+        border: Border.all(color: colorScheme.outlineVariant.withOpacity(0.35)),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(
+        label,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+          color: colorScheme.onSurfaceVariant.withOpacity(0.9),
+          fontWeight: FontWeight.w500,
+        ),
+      ),
     );
   }
 }

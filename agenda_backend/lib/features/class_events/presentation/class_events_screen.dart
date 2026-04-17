@@ -79,60 +79,6 @@ Color? _tryParseHexColor(String? hex) {
   }
 }
 
-class ClassEventsScreen extends ConsumerWidget {
-  const ClassEventsScreen({super.key});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final businessId = ref.watch(currentBusinessIdProvider);
-    final classTypesAsync = ref.watch(classTypesProvider);
-    final canManageClassTypes = ref.watch(currentUserCanManageServicesProvider);
-    final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
-
-    return Column(
-      children: [
-        Expanded(
-          child: businessId <= 0
-              ? const Center(child: CircularProgressIndicator())
-              : classTypesAsync.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator()),
-                  error: (_, __) => Center(child: Text(l10n.errorTitle)),
-                  data: (classTypes) {
-                    if (classTypes.isEmpty) {
-                      return Center(
-                        child: Text(
-                          l10n.classTypesEmpty,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: onSurfaceVariant),
-                        ),
-                      );
-                    }
-                    return ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      itemCount: classTypes.length,
-                      separatorBuilder: (_, __) => const SizedBox(height: 10),
-                      itemBuilder: (_, index) => Align(
-                        alignment: Alignment.topCenter,
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 980),
-                          child: _ClassTypeCard(
-                            key: ValueKey<int>(classTypes[index].id),
-                            classType: classTypes[index],
-                            canManageClassTypes: canManageClassTypes,
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                ),
-        ),
-      ],
-    );
-  }
-}
-
 Future<void> showCreateClassTypeDialog(
   BuildContext context,
   WidgetRef ref, {
@@ -158,12 +104,14 @@ Future<void> showCreateClassEventDialog(
   WidgetRef ref, {
   int? initialClassTypeId,
   ClassEvent? initialEvent,
+  bool useRootNavigator = true,
 }) async {
   final currentLocation = ref.read(currentLocationProvider);
   final initialDate = ref.read(agendaDateProvider);
 
   await AppForm.show<void>(
     context: context,
+    useRootNavigator: useRootNavigator,
     builder: (_) => _CreateClassForm(
       initialClassTypeId: initialClassTypeId,
       initialLocationId: currentLocation.id,
@@ -171,647 +119,6 @@ Future<void> showCreateClassEventDialog(
       initialEvent: initialEvent,
     ),
   );
-}
-
-class _ClassTypeCard extends ConsumerStatefulWidget {
-  const _ClassTypeCard({
-    super.key,
-    required this.classType,
-    required this.canManageClassTypes,
-  });
-
-  final ClassType classType;
-  final bool canManageClassTypes;
-
-  @override
-  ConsumerState<_ClassTypeCard> createState() => _ClassTypeCardState();
-}
-
-enum _ClassTypeQuickAction { edit, duplicate, delete }
-
-class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
-  bool _showExpiredSchedules = false;
-  bool _isHovering = false;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final mutationState = ref.watch(classTypeMutationControllerProvider);
-    final isLoading = mutationState.isLoading;
-    final upcomingCountAsync = ref.watch(
-      upcomingClassEventsCountByTypeProvider(widget.classType.id),
-    );
-    final allSchedulesAsync = ref.watch(
-      allClassEventsByTypeProvider(widget.classType.id),
-    );
-    final allStaff = ref.watch(allStaffProvider).value ?? const <Staff>[];
-    final colorScheme = Theme.of(context).colorScheme;
-    final locations = ref.watch(locationsProvider);
-    final serviceCategories = ref
-        .watch(classTypeServiceCategoriesProvider)
-        .maybeWhen(
-          data: (value) => value,
-          orElse: () => const <ServiceCategory>[],
-        );
-    final businessContext = ref
-        .watch(currentBusinessUserContextProvider)
-        .maybeWhen(data: (ctx) => ctx, orElse: () => null);
-    final locationNameById = {
-      for (final location in locations) location.id: location.name,
-    };
-    final staffNameById = {
-      for (final staff in allStaff) staff.id: staff.displayName,
-    };
-    final serviceCategoryById = {
-      for (final category in serviceCategories) category.id: category,
-    };
-    final serviceCategory = widget.classType.serviceCategoryId != null
-        ? serviceCategoryById[widget.classType.serviceCategoryId!]
-        : null;
-    final hasSingleBusinessLocation = locations.length <= 1;
-    final hasSingleOperatorLocation =
-        businessContext != null &&
-        !businessContext.isSuperadmin &&
-        businessContext.hasLocationScope &&
-        businessContext.locationIds.length == 1;
-    final shouldShowLocationsRow =
-        !hasSingleBusinessLocation && !hasSingleOperatorLocation;
-    final scopedLocationNames = widget.classType.locationIds
-        .map((id) => locationNameById[id])
-        .whereType<String>()
-        .toList();
-    final visibleLocationNames = widget.classType.locationIds.isEmpty
-        ? locations.map((location) => location.name).toList()
-        : scopedLocationNames;
-    final futureCount = upcomingCountAsync.maybeWhen(
-      data: (value) => value,
-      orElse: () => null,
-    );
-    final allSchedulesCount = allSchedulesAsync.maybeWhen(
-      data: (items) => items.length,
-      orElse: () => null,
-    );
-    final hasSchedules = allSchedulesAsync.maybeWhen(
-      data: (items) => items.isNotEmpty,
-      orElse: () => false,
-    );
-    final expiredCount = futureCount != null && allSchedulesCount != null
-        ? (allSchedulesCount - futureCount).clamp(0, 1 << 30)
-        : null;
-    final canOpenEdit = widget.canManageClassTypes && !isLoading;
-    final borderColor = _isHovering
-        ? colorScheme.primary.withOpacity(0.45)
-        : colorScheme.outline.withOpacity(0.2);
-    final classColor = _tryParseHexColor(widget.classType.colorHex);
-
-    return MouseRegion(
-      cursor: canOpenEdit ? SystemMouseCursors.click : MouseCursor.defer,
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      child: Card(
-        elevation: _isHovering ? 1 : 0,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: BorderSide(color: borderColor),
-        ),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: canOpenEdit
-              ? () => showCreateClassTypeDialog(
-                  context,
-                  ref,
-                  initial: widget.classType,
-                )
-              : null,
-          child: Padding(
-            padding: const EdgeInsets.all(14),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    if (classColor != null) ...[
-                      Container(
-                        width: 12,
-                        height: 12,
-                        decoration: BoxDecoration(
-                          color: classColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: colorScheme.outline.withOpacity(0.5),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                    ],
-                    Expanded(
-                      child: Text(
-                        widget.classType.name,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                  ],
-                ),
-                if ((widget.classType.description ?? '').trim().isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    widget.classType.description!,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-                if (serviceCategory != null) ...[
-                  const SizedBox(height: 8),
-                  _buildMetadataChip(
-                    context: context,
-                    icon: Icons.sell_outlined,
-                    label: serviceCategory.name,
-                  ),
-                ],
-                if (shouldShowLocationsRow) ...[
-                  const SizedBox(height: 10),
-                  _buildLocationsBlock(
-                    context: context,
-                    locationNames: visibleLocationNames,
-                    isAllLocations: widget.classType.locationIds.isEmpty,
-                  ),
-                ],
-                const SizedBox(height: 10),
-                if (widget.canManageClassTypes)
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FilledButton.icon(
-                        onPressed: isLoading
-                            ? null
-                            : () => showCreateClassEventDialog(
-                                context,
-                                ref,
-                                initialClassTypeId: widget.classType.id,
-                              ),
-                        style: FilledButton.styleFrom(
-                          minimumSize: const Size(0, 44),
-                        ),
-                        icon: const Icon(Icons.event_available_outlined),
-                        label: Text(l10n.classTypesActionScheduleClass),
-                      ),
-                      const SizedBox(width: 8),
-                      SizedBox(
-                        height: 44,
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            border: Border.all(
-                              color: colorScheme.outline.withOpacity(0.5),
-                            ),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: PopupMenuButton<_ClassTypeQuickAction>(
-                            enabled: !isLoading,
-                            splashRadius: 20,
-                            borderRadius: BorderRadius.circular(10),
-                            icon: const Icon(Icons.more_horiz),
-                            onSelected: (action) async {
-                              switch (action) {
-                                case _ClassTypeQuickAction.edit:
-                                  await showCreateClassTypeDialog(
-                                    context,
-                                    ref,
-                                    initial: widget.classType,
-                                  );
-                                  break;
-                                case _ClassTypeQuickAction.duplicate:
-                                  await _cloneClassType(
-                                    context,
-                                    ref,
-                                    widget.classType,
-                                  );
-                                  break;
-                            case _ClassTypeQuickAction.delete:
-                              await _deleteClassType(
-                                ref,
-                                widget.classType,
-                              );
-                              break;
-                              }
-                            },
-                            itemBuilder: (menuContext) => [
-                              PopupMenuItem<_ClassTypeQuickAction>(
-                                value: _ClassTypeQuickAction.edit,
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.edit_outlined, size: 18),
-                                    const SizedBox(width: 8),
-                                    Text(l10n.actionEdit),
-                                  ],
-                                ),
-                              ),
-                              const PopupMenuDivider(),
-                              PopupMenuItem<_ClassTypeQuickAction>(
-                                value: _ClassTypeQuickAction.duplicate,
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.copy_outlined, size: 18),
-                                    const SizedBox(width: 8),
-                                    Text(l10n.duplicateAction),
-                                  ],
-                                ),
-                              ),
-                              PopupMenuItem<_ClassTypeQuickAction>(
-                                value: _ClassTypeQuickAction.delete,
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.delete_outline,
-                                      size: 18,
-                                      color: colorScheme.error,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      l10n.actionDelete,
-                                      style: TextStyle(
-                                        color: colorScheme.error,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                if ((futureCount != null && futureCount > 0) ||
-                    (expiredCount != null && expiredCount > 0)) ...[
-                  const SizedBox(height: 12),
-                  Center(
-                    child: Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      alignment: WrapAlignment.center,
-                      runAlignment: WrapAlignment.center,
-                      children: [
-                        if (futureCount != null && futureCount > 0)
-                          _buildMetadataChip(
-                            context: context,
-                            icon: Icons.schedule_outlined,
-                            label:
-                                '${l10n.classEventsFutureBadge}: $futureCount',
-                          ),
-                        if (expiredCount != null && expiredCount > 0)
-                          _buildMetadataChip(
-                            context: context,
-                            icon: Icons.history_outlined,
-                            label:
-                                '${l10n.classEventsExpiredBadge}: $expiredCount',
-                          ),
-                      ],
-                    ),
-                  ),
-                ],
-                if (hasSchedules) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: colorScheme.outline.withOpacity(0.35),
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: ExpansionTile(
-                      initiallyExpanded: false,
-                      maintainState: true,
-                      tilePadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 2,
-                      ),
-                      childrenPadding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      collapsedShape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      leading: const Icon(Icons.event_note_outlined, size: 18),
-                      title: Text(
-                        l10n.classEventsSchedulesListTitle,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      children: [
-                        allSchedulesAsync.when(
-                          loading: () =>
-                              const LinearProgressIndicator(minHeight: 2),
-                          error: (_, __) => Text(
-                            l10n.errorTitle,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: colorScheme.error),
-                          ),
-                          data: (schedules) {
-                            final timezone = ref.watch(
-                              effectiveTenantTimezoneProvider,
-                            );
-                            final nowUtc = TenantTimeService.nowInTimezone(
-                              timezone,
-                            ).toUtc();
-                            final futureSchedules = schedules
-                                .where(
-                                  (event) => event.endsAtUtc.isAfter(nowUtc),
-                                )
-                                .toList();
-                            final hasExpiredSchedules =
-                                futureSchedules.length != schedules.length;
-                            final displayedSchedules = _showExpiredSchedules
-                                ? schedules
-                                : futureSchedules;
-
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                if (hasExpiredSchedules)
-                                  SwitchListTile(
-                                    dense: true,
-                                    contentPadding: EdgeInsets.zero,
-                                    title: Text(
-                                      l10n.classEventsShowExpiredSchedules,
-                                      style: Theme.of(
-                                        context,
-                                      ).textTheme.bodySmall,
-                                    ),
-                                    value: _showExpiredSchedules,
-                                    onChanged: (value) {
-                                      setState(
-                                        () => _showExpiredSchedules = value,
-                                      );
-                                    },
-                                  ),
-                                if (displayedSchedules.isEmpty)
-                                  Text(
-                                    l10n.classEventsNoScheduledDates,
-                                    style: Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall,
-                                  )
-                                else
-                                  _buildSchedulesList(
-                                    context: context,
-                                    schedules: displayedSchedules,
-                                    timezone: timezone,
-                                    locationNameById: locationNameById,
-                                    staffNameById: staffNameById,
-                                    colorScheme: colorScheme,
-                                  ),
-                              ],
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSchedulesList({
-    required BuildContext context,
-    required List<ClassEvent> schedules,
-    required String timezone,
-    required Map<int, String> locationNameById,
-    required Map<int, String> staffNameById,
-    required ColorScheme colorScheme,
-  }) {
-    final listHeight = (schedules.length * 60).clamp(96, 280).toDouble();
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(10),
-      child: SizedBox(
-        height: listHeight,
-        child: ListView.separated(
-          primary: false,
-          itemCount: schedules.length,
-          separatorBuilder: (_, __) => const AppDivider(height: 1),
-          itemBuilder: (context, index) {
-            final schedule = schedules[index];
-            final startsAtLocal =
-                schedule.startsAtLocal ??
-                TenantTimeService.fromUtcToTenant(
-                  schedule.startsAtUtc,
-                  timezone,
-                );
-            final endsAtLocal =
-                schedule.endsAtLocal ??
-                TenantTimeService.fromUtcToTenant(schedule.endsAtUtc, timezone);
-            final locationName =
-                locationNameById[schedule.locationId] ??
-                '#${schedule.locationId}';
-            final staffName =
-                staffNameById[schedule.staffId] ?? '#${schedule.staffId}';
-            return ListTile(
-              dense: true,
-              visualDensity: VisualDensity.compact,
-              leading: Container(
-                width: 34,
-                height: 34,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: colorScheme.primaryContainer.withOpacity(0.6),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(Icons.calendar_today_outlined, size: 16),
-              ),
-              title: Text(
-                '${DateFormat('dd/MM/yyyy').format(startsAtLocal)} • ${DtFmt.hm(context, startsAtLocal.hour, startsAtLocal.minute)} - ${DtFmt.hm(context, endsAtLocal.hour, endsAtLocal.minute)}',
-              ),
-              subtitle: Text('$locationName • $staffName'),
-            );
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMetadataChip({
-    required BuildContext context,
-    required IconData icon,
-    required String label,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.55),
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
-          const SizedBox(width: 6),
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLocationsBlock({
-    required BuildContext context,
-    required List<String> locationNames,
-    required bool isAllLocations,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final items = locationNames;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.35),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.place_outlined,
-                size: 14,
-                color: colorScheme.onSurfaceVariant,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                isAllLocations
-                    ? '${context.l10n.classTypesLocationsSelectionTitle} • ${context.l10n.allLocations}'
-                    : context.l10n.classTypesLocationsSelectionTitle,
-                style: textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          if (items.isEmpty)
-            Text(context.l10n.allLocations, style: textTheme.bodySmall)
-          else
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final name in items)
-                  Chip(
-                    label: Text(name, style: textTheme.bodySmall),
-                    visualDensity: VisualDensity.compact,
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    side: BorderSide(
-                      color: colorScheme.outlineVariant.withOpacity(0.5),
-                    ),
-                    backgroundColor: colorScheme.surface.withOpacity(0.8),
-                    padding: EdgeInsets.zero,
-                  ),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-
-  Future<void> _cloneClassType(
-    BuildContext context,
-    WidgetRef ref,
-    ClassType source,
-  ) async {
-    final l10n = context.l10n;
-    final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
-    if (!isSuperadmin) {
-      await _showClassTypesCreateSuperadminOnlyFeedback(context);
-      return;
-    }
-    try {
-      final allTypes = await ref.read(classTypesProvider.future);
-      final existingNames = allTypes
-          .map((type) => type.name.trim().toLowerCase())
-          .toSet();
-      final baseName = '${source.name.trim()} ${l10n.classTypesCloneSuffix}';
-      var candidateName = baseName;
-      var counter = 2;
-      while (existingNames.contains(candidateName.toLowerCase())) {
-        candidateName = '$baseName $counter';
-        counter++;
-      }
-
-      await ref
-          .read(classTypeMutationControllerProvider.notifier)
-          .create(
-            name: candidateName,
-            description: source.description,
-            colorHex: source.colorHex,
-            serviceCategoryId: source.serviceCategoryId,
-            locationIds: source.locationIds,
-          );
-      if (!context.mounted) return;
-      await FeedbackDialog.showSuccess(
-        context,
-        title: l10n.classTypesCloneSuccessTitle,
-        message: l10n.classTypesCloneSuccessMessage,
-      );
-    } catch (error) {
-      if (!context.mounted) return;
-      final message = _resolveClassTypeErrorMessage(error, context);
-      await FeedbackDialog.showError(
-        context,
-        title: l10n.errorTitle,
-        message: message,
-      );
-    }
-  }
-
-  Future<void> _deleteClassType(
-    WidgetRef ref,
-    ClassType classType,
-  ) async {
-    if (!mounted) return;
-    final l10n = context.l10n;
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(l10n.classTypesDeleteConfirmTitle),
-        content: Text(l10n.classTypesDeleteConfirmMessage),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(l10n.actionCancel),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(l10n.actionConfirm),
-          ),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-
-    try {
-      await ref
-          .read(classTypeMutationControllerProvider.notifier)
-          .deleteType(classTypeId: classType.id);
-    } catch (error) {
-      if (!mounted) return;
-      final message = _resolveClassTypeErrorMessage(error, context);
-      await FeedbackDialog.showError(
-        context,
-        title: l10n.errorTitle,
-        message: message,
-      );
-    }
-  }
 }
 
 class _ClassTypeFormDialog extends ConsumerStatefulWidget {
@@ -852,6 +159,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
   int? _selectedServiceCategoryId;
   bool _hasChangedLocationSelection = false;
   bool _showExpiredSchedules = false;
+  bool _isScheduleActionLoading = false;
 
   bool get _isEdit => widget.initial != null;
 
@@ -880,6 +188,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     final l10n = context.l10n;
     final mutationState = ref.watch(classTypeMutationControllerProvider);
     final isLoading = mutationState.isLoading;
+    final isBusy = isLoading || _isScheduleActionLoading;
     final locations = ref.watch(locationsProvider);
     final allStaff = ref.watch(allStaffProvider).value ?? const <Staff>[];
     final serviceCategories = ref
@@ -940,7 +249,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
         children: [
           TextFormField(
             controller: _nameController,
-            enabled: !isLoading,
+            enabled: !isBusy,
             decoration: InputDecoration(
               labelText: l10n.classTypesFieldName,
               border: const OutlineInputBorder(),
@@ -955,7 +264,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
           const SizedBox(height: 12),
           TextFormField(
             controller: _descriptionController,
-            enabled: !isLoading,
+            enabled: !isBusy,
             maxLines: 3,
             decoration: InputDecoration(
               labelText: l10n.classTypesFieldDescriptionOptional,
@@ -988,7 +297,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                   child: Text(category.name),
                 ),
             ],
-            onChanged: isLoading
+            onChanged: isBusy
                 ? null
                 : (value) => setState(() => _selectedServiceCategoryId = value),
           ),
@@ -996,7 +305,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
           _ClassTypeColorPicker(
             selectedColorHex: _selectedColorHex,
             palette: _classTypePalette,
-            enabled: !isLoading,
+            enabled: !isBusy,
             onChanged: (hex) => setState(() => _selectedColorHex = hex),
           ),
           if (shouldShowLocationsSelector) ...[
@@ -1004,7 +313,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
             _ClassTypeLocationsMultiSelect(
               locations: visibleLocations,
               selectedIds: effectiveSelectedLocationIds,
-              enabled: !isLoading,
+              enabled: !isBusy,
               onChanged: (ids) => setState(() {
                 _hasChangedLocationSelection = true;
                 _selectedLocationIds
@@ -1055,6 +364,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                   final displayedSchedules = _showExpiredSchedules
                       ? schedules
                       : futureSchedules;
+                  final colorScheme = Theme.of(context).colorScheme;
 
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1105,14 +415,66 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                               final staffName =
                                   staffNameById[schedule.staffId] ??
                                   '#${schedule.staffId}';
+                              final isPast = schedule.endsAtUtc.isBefore(nowUtc);
 
                               return ListTile(
                                 dense: true,
                                 visualDensity: VisualDensity.compact,
                                 title: Text(
                                   '${DateFormat('dd/MM/yyyy').format(startsAtLocal)} • ${DtFmt.hm(context, startsAtLocal.hour, startsAtLocal.minute)} - ${DtFmt.hm(context, endsAtLocal.hour, endsAtLocal.minute)}',
+                                  style: isPast
+                                      ? TextStyle(color: colorScheme.onSurface.withOpacity(0.45))
+                                      : null,
                                 ),
-                                subtitle: Text('$locationName • $staffName'),
+                                subtitle: Text(
+                                  '$locationName • $staffName',
+                                  style: isPast
+                                      ? TextStyle(color: colorScheme.onSurface.withOpacity(0.35))
+                                      : null,
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      tooltip: l10n.actionEdit,
+                                      icon: const Icon(Icons.edit_outlined, size: 18),
+                                      onPressed: (!isPast && !isBusy)
+                                          ? () => showCreateClassEventDialog(
+                                              context,
+                                              ref,
+                                              initialEvent: schedule,
+                                              useRootNavigator: false,
+                                            )
+                                          : null,
+                                    ),
+                                    IconButton(
+                                      tooltip: l10n.duplicateAction,
+                                      icon: const Icon(Icons.copy_outlined, size: 18),
+                                      onPressed: isBusy
+                                          ? null
+                                          : () => _duplicateSchedule(schedule),
+                                    ),
+                                    IconButton(
+                                      tooltip: l10n.actionDelete,
+                                      icon: Icon(
+                                        Icons.delete_outline,
+                                        size: 18,
+                                        color: colorScheme.error,
+                                      ),
+                                      onPressed: isBusy
+                                          ? null
+                                          : () => _deleteSchedule(schedule),
+                                    ),
+                                  ],
+                                ),
+                                onTap: (!isPast && !isBusy)
+                                    ? () => showCreateClassEventDialog(
+                                        context,
+                                        ref,
+                                        initialEvent: schedule,
+                                        useRootNavigator: false,
+                                      )
+                                    : null,
                               );
                             },
                           ),
@@ -1134,28 +496,157 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
       content: content,
       actions: [
         AppOutlinedActionButton(
-          onPressed: isLoading ? null : () => Navigator.of(context).pop(),
+          onPressed: isBusy ? null : () => Navigator.of(context).pop(),
           child: Text(l10n.actionCancel),
         ),
         if (_isEdit)
-          AppOutlinedActionButton(
-            onPressed: isLoading
-                ? null
-                : () => showCreateClassEventDialog(
-                    context,
-                    ref,
-                    initialClassTypeId: widget.initial!.id,
-                  ),
-            child: Text(l10n.classTypesActionScheduleClass),
+          AppAsyncOutlinedButton(
+            isLoading: isBusy,
+            onPressed: _submit,
+            child: Text(l10n.actionSave),
           ),
-        AppAsyncFilledButton(
-          isLoading: isLoading,
-          onPressed: _submit,
-          child: Text(l10n.actionSave),
-        ),
+        if (_isEdit)
+          AppFilledButton(
+            onPressed: isBusy
+                ? null
+                : () async {
+                    final classTypeId = widget.initial!.id;
+                    await showCreateClassEventDialog(
+                      context,
+                      ref,
+                      initialClassTypeId: classTypeId,
+                      useRootNavigator: false,
+                    );
+                    if (!mounted) return;
+                    setState(() => _showExpiredSchedules = true);
+                    ref.invalidate(allClassEventsByTypeProvider(classTypeId));
+                    ref.invalidate(
+                      upcomingClassEventsByTypeProvider(classTypeId),
+                    );
+                    ref.invalidate(
+                      upcomingClassEventsCountByTypeProvider(classTypeId),
+                    );
+                  },
+            child: Text(l10n.classTypesActionNewSchedule),
+          ),
+        if (!_isEdit)
+          AppAsyncFilledButton(
+            isLoading: isBusy,
+            onPressed: _submit,
+            child: Text(l10n.actionSave),
+          ),
       ],
-      isLoading: isLoading,
+      isLoading: isBusy,
     );
+  }
+
+  Future<void> _duplicateSchedule(ClassEvent schedule) async {
+    if (!mounted || widget.initial == null) return;
+    final l10n = context.l10n;
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    final startsAtLocal =
+        schedule.startsAtLocal ??
+        TenantTimeService.fromUtcToTenant(schedule.startsAtUtc, timezone);
+    final endsAtLocal =
+        schedule.endsAtLocal ??
+        TenantTimeService.fromUtcToTenant(schedule.endsAtUtc, timezone);
+
+    try {
+      if (mounted) setState(() => _isScheduleActionLoading = true);
+      final businessId = ref.read(currentBusinessIdProvider);
+      final repo = ref.read(classEventsRepositoryProvider);
+      await repo.create(
+        businessId: businessId,
+        payload: {
+          'class_type_id': widget.initial!.id,
+          'starts_at': _toApiLocalDateTime(startsAtLocal),
+          'ends_at': _toApiLocalDateTime(endsAtLocal),
+          'location_id': schedule.locationId,
+          'staff_id': schedule.staffId,
+          'capacity_total': schedule.capacityTotal,
+          'waitlist_enabled': schedule.waitlistEnabled,
+        },
+      );
+      _invalidateScheduleProviders(widget.initial!.id);
+    } catch (error) {
+      if (!mounted) return;
+      final message = error is ApiException
+          ? error.message
+          : l10n.classEventsCreateErrorMessage;
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: message,
+      );
+    } finally {
+      if (mounted) setState(() => _isScheduleActionLoading = false);
+    }
+  }
+
+  Future<void> _deleteSchedule(ClassEvent schedule) async {
+    if (!mounted || widget.initial == null) return;
+    final l10n = context.l10n;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.classEventsSchedulesDeleteConfirmTitle),
+        content: Text(l10n.classEventsSchedulesDeleteConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.actionDelete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      if (mounted) setState(() => _isScheduleActionLoading = true);
+      final businessId = ref.read(currentBusinessIdProvider);
+      final repo = ref.read(classEventsRepositoryProvider);
+      await repo.deleteEvent(
+        businessId: businessId,
+        classEventId: schedule.id,
+      );
+      _invalidateScheduleProviders(widget.initial!.id);
+    } catch (error) {
+      if (!mounted) return;
+      final message = error is ApiException
+          ? error.message
+          : l10n.classEventsCreateErrorMessage;
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: message,
+      );
+    } finally {
+      if (mounted) setState(() => _isScheduleActionLoading = false);
+    }
+  }
+
+  void _invalidateScheduleProviders(int classTypeId) {
+    ref.invalidate(classEventsProvider);
+    ref.invalidate(classEventsForRangeProvider);
+    ref.invalidate(classEventsForCurrentLocationDayProvider);
+    ref.invalidate(allClassEventsByTypeProvider(classTypeId));
+    ref.invalidate(upcomingClassEventsByTypeProvider(classTypeId));
+    ref.invalidate(upcomingClassEventsCountByTypeProvider(classTypeId));
+  }
+
+  String _toApiLocalDateTime(DateTime value) {
+    final y = value.year.toString().padLeft(4, '0');
+    final m = value.month.toString().padLeft(2, '0');
+    final d = value.day.toString().padLeft(2, '0');
+    final h = value.hour.toString().padLeft(2, '0');
+    final min = value.minute.toString().padLeft(2, '0');
+    final s = value.second.toString().padLeft(2, '0');
+    return '$y-$m-${d}T$h:$min:$s';
   }
 
   Future<void> _submit() async {
@@ -1259,7 +750,6 @@ class _ClassTypeLocationsMultiSelect extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
-    final listHeight = (locations.length * 72).clamp(144, 360).toDouble();
     final allLocationIds = locations.map((location) => location.id).toSet();
     final allSelected =
         locations.isNotEmpty && selectedIds.containsAll(allLocationIds);
@@ -1306,12 +796,13 @@ class _ClassTypeLocationsMultiSelect extends StatelessWidget {
             border: Border.all(color: colorScheme.outline),
             borderRadius: BorderRadius.circular(12),
           ),
-          child: SizedBox(
-            height: listHeight,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxHeight: 288),
             child: Scrollbar(
               thumbVisibility: locations.length > 4,
               child: ListView.separated(
                 primary: false,
+                shrinkWrap: true,
                 itemCount: locations.length,
                 separatorBuilder: (_, __) => const AppDivider(height: 1),
                 itemBuilder: (context, index) {
@@ -1499,6 +990,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   static const int _timeStepMinutes = 15;
   final _formKey = GlobalKey<FormState>();
   final _capacityController = TextEditingController();
+  final _priceController = TextEditingController();
   bool _didInitializeDependencies = false;
 
   ClassEvent? _editingEvent;
@@ -1509,6 +1001,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   late DateTime _date;
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
+  bool _waitlistEnabled = true;
 
   @override
   void initState() {
@@ -1535,12 +1028,15 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     ref.invalidate(classEventCreateControllerProvider);
     if (_editingEvent != null) {
       _applyEventToForm(_editingEvent!);
+    } else {
+      _initializeDefaultTimesForCreate();
     }
   }
 
   @override
   void dispose() {
     _capacityController.dispose();
+    _priceController.dispose();
     super.dispose();
   }
 
@@ -1637,6 +1133,13 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       orElse: () => false,
     );
 
+    const double gap = 16;
+    const double sectionGap = 24;
+    final colorScheme = Theme.of(context).colorScheme;
+    final currencySymbol = NumberFormat.currency(
+      name: ref.watch(effectiveCurrencyProvider),
+    ).currencySymbol;
+
     return AppFormScaffold(
       title: Text(
         isEditMode ? l10n.classEventsEditTitle : l10n.classEventsCreateTitle,
@@ -1650,41 +1153,40 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (isEditMode) ...[
-              Text(
-                l10n.classEventsEditModeLabel,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-              const SizedBox(height: 8),
-            ],
+            // ── stato caricamento / errori ──
             if (classTypesAsync.isLoading || staffAsync.isLoading)
               const Padding(
-                padding: EdgeInsets.only(bottom: 12),
+                padding: EdgeInsets.only(bottom: gap),
                 child: LinearProgressIndicator(),
               ),
             if (classTypesAsync.hasError || staffAsync.hasError)
               Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: gap),
                 child: Text(
                   l10n.errorTitle,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
+                  style: TextStyle(color: colorScheme.error),
                 ),
               ),
-            if (classTypes.isEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  l10n.classEventsNoClassTypes,
-                  style: Theme.of(context).textTheme.bodySmall,
+
+            // ── etichetta modifica ──
+            if (isEditMode) ...[
+              Text(
+                l10n.classEventsEditModeLabel,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
+              const SizedBox(height: gap),
+            ],
+
+            // ── sede (solo creazione, se multipla) ──
             if (!isEditMode && filteredLocations.length > 1) ...[
-              const SizedBox(height: 12),
               DropdownButtonFormField<int>(
                 value: _locationId,
                 decoration: InputDecoration(
                   labelText: l10n.classEventsFieldLocation,
                   border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.place_outlined),
                 ),
                 items: filteredLocations
                     .map(
@@ -1703,16 +1205,25 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                 validator: (value) =>
                     value == null ? l10n.classEventsValidationRequired : null,
               ),
+              const SizedBox(height: gap),
             ],
-            if ((!isEditMode
-                ? staff.length > 1
-                : staffDropdownItems.length > 1)) ...[
-              const SizedBox(height: 12),
+            if (filteredLocations.isEmpty)
+              Padding(
+                padding: const EdgeInsets.only(bottom: gap),
+                child: Text(
+                  l10n.classEventsNoLocationsForClassType,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+
+            // ── staff (se multiplo) ──
+            if (!isEditMode ? staff.length > 1 : staffDropdownItems.length > 1) ...[
               DropdownButtonFormField<int>(
                 value: _staffId,
                 decoration: InputDecoration(
                   labelText: l10n.classEventsFieldStaff,
                   border: const OutlineInputBorder(),
+                  prefixIcon: const Icon(Icons.person_outline),
                 ),
                 items: staffDropdownItems
                     .map(
@@ -1726,9 +1237,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                     ? null
                     : (value) => setState(() => _staffId = value),
                 validator: (value) {
-                  if (value == null) {
-                    return l10n.classEventsValidationRequired;
-                  }
+                  if (value == null) return l10n.classEventsValidationRequired;
                   if (isEditMode &&
                       editingStaffId != null &&
                       hasInactiveAssignedOption &&
@@ -1738,45 +1247,85 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                   return null;
                 },
               ),
+              const SizedBox(height: gap),
             ],
             if (requiresStaffReplacement)
               Padding(
-                padding: const EdgeInsets.only(top: 6),
+                padding: const EdgeInsets.only(bottom: gap),
                 child: Text(
                   l10n.classEventsStaffInactiveChangeRequired,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
+                    color: colorScheme.error,
                   ),
                 ),
               ),
             if (!isEditMode && staff.isEmpty)
               Padding(
-                padding: const EdgeInsets.only(top: 6),
+                padding: const EdgeInsets.only(bottom: gap),
                 child: Text(
                   l10n.classEventsNoStaffForLocation,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
-            const SizedBox(height: 12),
-            if (filteredLocations.isEmpty)
+            if (classTypes.isEmpty)
               Padding(
-                padding: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.only(bottom: gap),
                 child: Text(
-                  l10n.classEventsNoLocationsForClassType,
+                  l10n.classEventsNoClassTypes,
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ),
+
+            // ══ Sezione: Quando ══
+            _PickerField(
+              label: l10n.classEventsFieldDate,
+              value: _formatDate(_date),
+              icon: Icons.calendar_today_outlined,
+              onTap: isLoading ? null : _pickDate,
+            ),
+            const SizedBox(height: gap),
             Row(
               children: [
                 Expanded(
-                  child: _PickerField(
-                    label: l10n.classEventsFieldDate,
-                    value: _formatDate(_date),
-                    icon: Icons.calendar_today_outlined,
-                    onTap: isLoading ? null : _pickDate,
+                  child: _ScheduleTimeField(
+                    label: l10n.classEventsFieldStartTime,
+                    time: _startTime,
+                    onTap: isLoading ? null : () => _pickTime(isStart: true),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: gap),
+                Expanded(
+                  child: _ScheduleTimeField(
+                    label: l10n.classEventsFieldEndTime,
+                    time: _endTime,
+                    onTap: isLoading ? null : () => _pickTime(isStart: false),
+                  ),
+                ),
+              ],
+            ),
+
+            if (hasAppointmentConflict) ...[
+              const SizedBox(height: gap),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: colorScheme.errorContainer.withOpacity(0.5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: colorScheme.error),
+                ),
+                child: Text(
+                  l10n.bookingUnavailableTimeWarningService,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
+
+            // ══ Sezione: Dettagli ══
+            const SizedBox(height: sectionGap),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Expanded(
                   child: TextFormField(
                     controller: _capacityController,
@@ -1786,6 +1335,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                     decoration: InputDecoration(
                       labelText: l10n.classEventsFieldCapacity,
                       border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.people_outline),
                     ),
                     validator: (value) {
                       final parsed = int.tryParse(value ?? '');
@@ -1796,50 +1346,36 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                     },
                   ),
                 ),
+                const SizedBox(width: gap),
+                Expanded(
+                  child: TextFormField(
+                    controller: _priceController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    inputFormatters: [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                    ],
+                    enabled: !isLoading,
+                    decoration: InputDecoration(
+                      labelText: l10n.classEventsFieldPrice,
+                      border: const OutlineInputBorder(),
+                      prefixText: '$currencySymbol ',
+                      hintText: l10n.classEventsFieldPriceFreeHint,
+                    ),
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _ScheduleTimeField(
-                    label: l10n.classEventsFieldStartTime,
-                    time: _startTime,
-                    onTap: isLoading ? null : () => _pickTime(isStart: true),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _ScheduleTimeField(
-                    label: l10n.classEventsFieldEndTime,
-                    time: _endTime,
-                    onTap: isLoading ? null : () => _pickTime(isStart: false),
-                  ),
-                ),
-              ],
+            SwitchListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+              title: Text(l10n.classEventsFieldWaitlistEnabled),
+              value: _waitlistEnabled,
+              onChanged: isLoading ? null : (v) => setState(() => _waitlistEnabled = v),
             ),
-            if (hasAppointmentConflict) ...[
-              const SizedBox(height: 12),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.errorContainer.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                ),
-                child: Text(
-                  l10n.bookingUnavailableTimeWarningService,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-            ],
+
             if (!isEditMode) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: gap),
               RecurrencePicker(
                 startDate: DateTime(
                   _date.year,
@@ -1872,6 +1408,11 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         ),
       ),
       actions: [
+        if (isEditMode)
+          AppAsyncDangerButton(
+            onPressed: _deleteCurrentEvent,
+            child: Text(l10n.actionDelete),
+          ),
         AppOutlinedActionButton(
           onPressed: isLoading ? null : () => Navigator.of(context).pop(),
           child: Text(l10n.actionCancel),
@@ -2014,6 +1555,28 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
 
   int _toDayMinutes(TimeOfDay time) => time.hour * 60 + time.minute;
 
+  void _initializeDefaultTimesForCreate() {
+    final now = ref.read(tenantNowProvider);
+    final sameDayAsToday =
+        _date.year == now.year &&
+        _date.month == now.month &&
+        _date.day == now.day;
+    if (!sameDayAsToday) return;
+
+    final nowMinutes = now.hour * 60 + now.minute;
+    final roundedStartMinutes = _roundUpToStepMinutes(nowMinutes);
+    final maxStartMinutes = (24 * 60) - (_timeStepMinutes * 2);
+    final safeStartMinutes = roundedStartMinutes.clamp(0, maxStartMinutes);
+    _startTime = _fromDayMinutes(safeStartMinutes);
+    _endTime = _fromDayMinutes(safeStartMinutes + _timeStepMinutes);
+  }
+
+  int _roundUpToStepMinutes(int totalMinutes) {
+    final remainder = totalMinutes % _timeStepMinutes;
+    if (remainder == 0) return totalMinutes;
+    return totalMinutes + (_timeStepMinutes - remainder);
+  }
+
   TimeOfDay _fromDayMinutes(int totalMinutes) {
     final clamped = totalMinutes.clamp(0, (24 * 60) - 1);
     return TimeOfDay(hour: clamped ~/ 60, minute: clamped % 60);
@@ -2062,6 +1625,58 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     );
   }
 
+  Future<void> _deleteCurrentEvent() async {
+    final event = _editingEvent;
+    if (event == null || !mounted) return;
+    final l10n = context.l10n;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.classEventsSchedulesDeleteConfirmTitle),
+        content: Text(l10n.classEventsSchedulesDeleteConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.actionDelete),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    try {
+      final businessId = ref.read(currentBusinessIdProvider);
+      final repo = ref.read(classEventsRepositoryProvider);
+      await repo.deleteEvent(
+        businessId: businessId,
+        classEventId: event.id,
+      );
+      ref.invalidate(classEventsProvider);
+      ref.invalidate(classEventsForRangeProvider);
+      ref.invalidate(classEventsForCurrentLocationDayProvider);
+      ref.invalidate(allClassEventsByTypeProvider(event.classTypeId));
+      ref.invalidate(upcomingClassEventsByTypeProvider(event.classTypeId));
+      ref.invalidate(upcomingClassEventsCountByTypeProvider(event.classTypeId));
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } catch (error) {
+      if (!mounted) return;
+      final message = error is ApiException
+          ? error.message
+          : l10n.classEventsCreateErrorMessage;
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: message,
+      );
+    }
+  }
+
   Future<void> _submit() async {
     final l10n = context.l10n;
     if (!_formKey.currentState!.validate()) return;
@@ -2100,6 +1715,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       return;
     }
 
+    final priceCents = _parsePriceCents();
+    final currency = ref.read(effectiveCurrencyProvider);
+
     try {
       if (_editingEvent != null) {
         final businessId = ref.read(currentBusinessIdProvider);
@@ -2113,6 +1731,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
             'ends_at': _toApiLocalDateTime(endLocal),
             'staff_id': _staffId,
             'capacity_total': capacity,
+            'waitlist_enabled': _waitlistEnabled,
+            'price_cents': priceCents,
+            if (priceCents != null) 'currency': currency,
           },
         );
         final refreshedDayEvents = await ref.refresh(
@@ -2151,12 +1772,16 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
               locationId: _locationId!,
               staffId: _staffId!,
               capacityTotal: capacity,
+              waitlistEnabled: _waitlistEnabled,
+              priceCents: priceCents,
+              currency: priceCents != null ? currency : null,
             );
         ref.invalidate(upcomingClassEventsByTypeProvider(_classTypeId!));
         ref.invalidate(allClassEventsByTypeProvider(_classTypeId!));
         ref.invalidate(upcomingClassEventsCountByTypeProvider(_classTypeId!));
         if (!mounted) return;
         Navigator.of(context).pop();
+        return;
       } else {
         final businessId = ref.read(currentBusinessIdProvider);
         final repo = ref.read(classEventsRepositoryProvider);
@@ -2264,6 +1889,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                 'location_id': _locationId!,
                 'staff_id': _staffId!,
                 'capacity_total': capacity,
+                'waitlist_enabled': _waitlistEnabled,
+                'price_cents': priceCents,
+                if (priceCents != null) 'currency': currency,
               },
             );
             createdCount++;
@@ -2313,6 +1941,10 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     _locationId = event.locationId;
     _staffId = event.staffId;
     _capacityController.text = event.capacityTotal.toString();
+    _priceController.text = event.priceCents != null
+        ? (event.priceCents! / 100).toStringAsFixed(2)
+        : '';
+    _waitlistEnabled = event.waitlistEnabled;
     _date = DateTime(
       startsAtLocal.year,
       startsAtLocal.month,
@@ -2324,6 +1956,14 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     );
     _endTime = TimeOfDay(hour: endsAtLocal.hour, minute: endsAtLocal.minute);
     _recurrenceConfig = null;
+  }
+
+  int? _parsePriceCents() {
+    final raw = _priceController.text.trim().replaceAll(',', '.');
+    if (raw.isEmpty) return null;
+    final parsed = double.tryParse(raw);
+    if (parsed == null || parsed < 0) return null;
+    return (parsed * 100).round();
   }
 
   String _formatDate(DateTime value) {

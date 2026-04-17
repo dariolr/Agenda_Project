@@ -1508,6 +1508,9 @@
     }
   },
   "classEventsFieldCapacity": "Capienza",
+  "classEventsFieldPrice": "Prezzo",
+  "classEventsFieldPriceFreeHint": "Lascia vuoto per gratuito",
+  "classEventsFieldWaitlistEnabled": "Abilita lista d'attesa",
   "classEventsValidationCapacityMin": "Inserisci una capienza minima",
   "classEventsNoLocationsForClassType": "Nessuna sede abilitata per questo tipo classe",
   "classEventsValidationRequired": "Compila tutti i campi obbligatori",
@@ -1526,8 +1529,8 @@
   "classEventsStaffInactiveChangeRequired": "Lo staff assegnato non è più attivo: seleziona uno staff attivo per salvare.",
   "classEventsSchedulesListTitle": "Programmazioni esistenti",
   "classEventsSchedulesListEmpty": "Nessuna programmazione",
-  "classEventsFutureBadge": "Future",
-  "classEventsExpiredBadge": "Scadute",
+  "classEventsFutureBadge": "In programma",
+  "classEventsExpiredBadge": "Passate",
   "classEventsShowExpiredSchedules": "Mostra anche scadute",
   "classEventsSchedulesDeleteConfirmTitle": "Eliminare la programmazione?",
   "classEventsSchedulesDeleteConfirmMessage": "Eliminando la programmazione verranno eliminate anche le eventuali prenotazioni esistenti.",
@@ -1564,7 +1567,7 @@
   "classTypesStatusActive": "Attivo",
   "classTypesStatusInactive": "Non attivo",
   "classTypesCreateTitle": "Nuovo tipo classe",
-  "classTypesCreateSuperadminOnlyMessage": "La creazione di un tipo classe è riservata al superadmin.",
+  "classTypesCreateSuperadminOnlyMessage": "La creazione di un tipo classe è in via di sviluppo.",
   "classTypesEditTitle": "Modifica tipo classe",
   "classTypesFieldName": "Nome",
   "classTypesFieldDescriptionOptional": "Descrizione (opzionale)",
@@ -1578,6 +1581,7 @@
   "classTypesUpdateSuccessTitle": "Tipo classe aggiornato",
   "classTypesUpdateSuccessMessage": "Il tipo classe è stato aggiornato correttamente",
   "classTypesActionScheduleClass": "Programmazione",
+  "classTypesActionNewSchedule": "Nuova Programmazione",
   "classTypesActionClone": "Duplica",
   "classTypesActionDeactivate": "Cancella",
   "classTypesActionReactivate": "Riattiva",
@@ -1609,6 +1613,17 @@
         "type": "int"
       },
       "waitlist": {
+        "type": "int"
+      }
+    }
+  },
+  "classEventsCapacitySummaryNoWaitlist": "Confermati: {confirmed}/{capacity}",
+  "@classEventsCapacitySummaryNoWaitlist": {
+    "placeholders": {
+      "confirmed": {
+        "type": "int"
+      },
+      "capacity": {
         "type": "int"
       }
     }

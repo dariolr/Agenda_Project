@@ -607,6 +607,28 @@ class _ClassEventTile extends StatelessWidget {
     required this.onTap,
   });
 
+  Future<void> _confirmWaitlist(BuildContext context) async {
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.classEventWaitlistDialogTitle),
+        content: Text(l10n.classEventWaitlistDialogMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.classEventWaitlistDialogConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) onTap();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -634,7 +656,11 @@ class _ClassEventTile extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        onTap: (event.isFull && !event.waitlistEnabled) ? null : onTap,
+        onTap: (event.isFull && !event.waitlistEnabled)
+            ? null
+            : (event.isFull && event.waitlistEnabled)
+                ? () => _confirmWaitlist(context)
+                : onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -709,7 +735,7 @@ class _ClassEventTile extends StatelessWidget {
                   const SizedBox(height: 2),
                   if (event.isFull && event.waitlistEnabled)
                     Text(
-                      context.l10n.classEventWaitlistLabel,
+                      context.l10n.classEventJoinWaitlistLabel,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: Colors.orange.shade700,
                         fontWeight: FontWeight.w600,

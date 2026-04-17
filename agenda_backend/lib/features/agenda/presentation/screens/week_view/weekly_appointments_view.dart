@@ -32,6 +32,8 @@ import 'package:agenda_backend/features/agenda/providers/weekly_appointments_pro
 import 'package:agenda_backend/features/agenda/utils/week_range.dart';
 import 'package:agenda_backend/features/agenda/utils/client_color_utils.dart';
 import 'package:agenda_backend/features/business/providers/location_closures_provider.dart';
+import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
+import 'package:agenda_backend/features/class_events/presentation/class_events_screen.dart';
 import 'package:agenda_backend/features/class_events/providers/class_events_providers.dart';
 import 'package:agenda_backend/features/clients/providers/clients_providers.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
@@ -1069,6 +1071,7 @@ class _WeeklyClassEventTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
     final classTypes = ref.watch(classTypesProvider).value ?? const [];
     final classType = classTypes.cast<ClassType?>().firstWhere(
       (item) => item?.id == classEvent.classTypeId,
@@ -1105,83 +1108,88 @@ class _WeeklyClassEventTile extends ConsumerWidget {
         '${DtFmt.hm(context, startsAt.hour, startsAt.minute)} - ${DtFmt.hm(context, endsAt.hour, endsAt.minute)}';
     final staffName = _resolveStaffDisplayName(ref, classEvent.staffId);
 
-    return SizedBox(
-      height: tileHeight,
-      child: Column(
-        children: [
-          Container(
-            height: tileHeight - footerHeight,
-            width: double.infinity,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: cardBorderRadius,
-              border: Border.all(color: theme.colorScheme.tertiary),
+    return GestureDetector(
+      onTap: canManageBookings && endsAt.isAfter(DateTime.now())
+          ? () => showCreateClassEventDialog(context, ref, initialEvent: classEvent)
+          : null,
+      child: SizedBox(
+        height: tileHeight,
+        child: Column(
+          children: [
+            Container(
+              height: tileHeight - footerHeight,
+              width: double.infinity,
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: cardBorderRadius,
+                border: Border.all(color: theme.colorScheme.tertiary),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: foreground,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    timeLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(color: foreground),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    context.l10n.classEventsCapacitySummary(
+                      classEvent.confirmedCount,
+                      classEvent.capacityTotal,
+                      classEvent.waitlistCount,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: foreground,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: foreground,
+            if (showStaffNameFooter)
+              Container(
+                height: _WeeklyAppointmentTile._staffFooterHeight,
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: const BorderRadius.vertical(
+                    bottom: Radius.circular(6),
+                  ),
+                  border: Border(
+                    left: BorderSide(color: color),
+                    right: BorderSide(color: color),
+                    bottom: BorderSide(color: color),
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  timeLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(color: foreground),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  context.l10n.classEventsCapacitySummary(
-                    classEvent.confirmedCount,
-                    classEvent.capacityTotal,
-                    classEvent.waitlistCount,
-                  ),
+                child: Text(
+                  staffName,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    color: foreground,
                     fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    color: foreground,
                   ),
                 ),
-              ],
-            ),
-          ),
-          if (showStaffNameFooter)
-            Container(
-              height: _WeeklyAppointmentTile._staffFooterHeight,
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: const BorderRadius.vertical(
-                  bottom: Radius.circular(6),
-                ),
-                border: Border(
-                  left: BorderSide(color: color),
-                  right: BorderSide(color: color),
-                  bottom: BorderSide(color: color),
-                ),
               ),
-              child: Text(
-                staffName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: foreground,
-                ),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

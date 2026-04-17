@@ -1508,6 +1508,9 @@
     }
   },
   "classEventsFieldCapacity": "Capacity",
+  "classEventsFieldPrice": "Price",
+  "classEventsFieldPriceFreeHint": "Leave empty for free",
+  "classEventsFieldWaitlistEnabled": "Enable waitlist",
   "classEventsValidationCapacityMin": "Enter a minimum capacity",
   "classEventsNoLocationsForClassType": "No enabled location for this class type",
   "classEventsValidationRequired": "Fill all required fields",
@@ -1526,8 +1529,8 @@
   "classEventsStaffInactiveChangeRequired": "The assigned staff member is no longer active: select an active staff member to save.",
   "classEventsSchedulesListTitle": "Existing schedules",
   "classEventsSchedulesListEmpty": "No schedules",
-  "classEventsFutureBadge": "Future",
-  "classEventsExpiredBadge": "Expired",
+  "classEventsFutureBadge": "Scheduled",
+  "classEventsExpiredBadge": "Past",
   "classEventsShowExpiredSchedules": "Show expired too",
   "classEventsSchedulesDeleteConfirmTitle": "Delete schedule?",
   "classEventsSchedulesDeleteConfirmMessage": "Deleting the schedule will also delete any existing bookings.",
@@ -1578,6 +1581,7 @@
   "classTypesUpdateSuccessTitle": "Class type updated",
   "classTypesUpdateSuccessMessage": "Class type updated successfully",
   "classTypesActionScheduleClass": "Scheduling",
+  "classTypesActionNewSchedule": "New Schedule",
   "classTypesActionClone": "Duplicate",
   "classTypesActionDeactivate": "Delete",
   "classTypesActionReactivate": "Reactivate",
@@ -1609,6 +1613,17 @@
         "type": "int"
       },
       "waitlist": {
+        "type": "int"
+      }
+    }
+  },
+  "classEventsCapacitySummaryNoWaitlist": "Confirmed: {confirmed}/{capacity}",
+  "@classEventsCapacitySummaryNoWaitlist": {
+    "placeholders": {
+      "confirmed": {
+        "type": "int"
+      },
+      "capacity": {
         "type": "int"
       }
     }

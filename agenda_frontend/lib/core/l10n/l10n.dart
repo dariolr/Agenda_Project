@@ -2633,6 +2633,46 @@ class L10n {
     );
   }
 
+  /// `Join waitlist`
+  String get classEventJoinWaitlistLabel {
+    return Intl.message(
+      'Join waitlist',
+      name: 'classEventJoinWaitlistLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Class is full`
+  String get classEventWaitlistDialogTitle {
+    return Intl.message(
+      'Class is full',
+      name: 'classEventWaitlistDialogTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This class is full. Would you like to join the waitlist?`
+  String get classEventWaitlistDialogMessage {
+    return Intl.message(
+      'This class is full. Would you like to join the waitlist?',
+      name: 'classEventWaitlistDialogMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Join waitlist`
+  String get classEventWaitlistDialogConfirm {
+    return Intl.message(
+      'Join waitlist',
+      name: 'classEventWaitlistDialogConfirm',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `You'll be added to the waitlist`
   String get classEventWaitlistNotice {
     return Intl.message(

@@ -441,6 +441,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "classEventSpotsAvailable": m11,
     "classEventSpotsLeft": m12,
+    "classEventJoinWaitlistLabel": MessageLookupByLibrary.simpleMessage("Join waitlist"),
+    "classEventWaitlistDialogConfirm": MessageLookupByLibrary.simpleMessage("Join waitlist"),
+    "classEventWaitlistDialogMessage": MessageLookupByLibrary.simpleMessage(
+      "This class is full. Would you like to join the waitlist?",
+    ),
+    "classEventWaitlistDialogTitle": MessageLookupByLibrary.simpleMessage("Class is full"),
     "classEventWaitlistLabel": MessageLookupByLibrary.simpleMessage("Waitlist"),
     "classEventWaitlistNotice": MessageLookupByLibrary.simpleMessage(
       "You\'ll be added to the waitlist",

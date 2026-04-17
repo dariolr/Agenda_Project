@@ -9279,6 +9279,36 @@ class L10n {
     );
   }
 
+  /// `Price`
+  String get classEventsFieldPrice {
+    return Intl.message(
+      'Price',
+      name: 'classEventsFieldPrice',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Leave empty for free`
+  String get classEventsFieldPriceFreeHint {
+    return Intl.message(
+      'Leave empty for free',
+      name: 'classEventsFieldPriceFreeHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enable waitlist`
+  String get classEventsFieldWaitlistEnabled {
+    return Intl.message(
+      'Enable waitlist',
+      name: 'classEventsFieldWaitlistEnabled',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Enter a minimum capacity`
   String get classEventsValidationCapacityMin {
     return Intl.message(
@@ -9389,20 +9419,20 @@ class L10n {
     );
   }
 
-  /// `Future`
+  /// `Scheduled`
   String get classEventsFutureBadge {
     return Intl.message(
-      'Future',
+      'Scheduled',
       name: 'classEventsFutureBadge',
       desc: '',
       args: [],
     );
   }
 
-  /// `Expired`
+  /// `Past`
   String get classEventsExpiredBadge {
     return Intl.message(
-      'Expired',
+      'Past',
       name: 'classEventsExpiredBadge',
       desc: '',
       args: [],
@@ -9742,6 +9772,16 @@ class L10n {
     );
   }
 
+  /// `New Schedule`
+  String get classTypesActionNewSchedule {
+    return Intl.message(
+      'New Schedule',
+      name: 'classTypesActionNewSchedule',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Duplicate`
   String get classTypesActionClone {
     return Intl.message(
@@ -9959,6 +9999,16 @@ class L10n {
       name: 'classEventsCapacitySummary',
       desc: '',
       args: [confirmed, capacity, waitlist],
+    );
+  }
+
+  /// `Confirmed: {confirmed}/{capacity}`
+  String classEventsCapacitySummaryNoWaitlist(int confirmed, int capacity) {
+    return Intl.message(
+      'Confirmed: $confirmed/$capacity',
+      name: 'classEventsCapacitySummaryNoWaitlist',
+      desc: '',
+      args: [confirmed, capacity],
     );
   }
 

@@ -370,6 +370,9 @@ class ClassEventCreateController extends AsyncNotifier<void> {
     required int locationId,
     required int staffId,
     required int capacityTotal,
+    required bool waitlistEnabled,
+    int? priceCents,
+    String? currency,
   }) async {
     state = const AsyncLoading();
     final businessId = ref.read(currentBusinessIdProvider);
@@ -385,6 +388,9 @@ class ClassEventCreateController extends AsyncNotifier<void> {
           'location_id': locationId,
           'staff_id': staffId,
           'capacity_total': capacityTotal,
+          'waitlist_enabled': waitlistEnabled,
+          'price_cents': priceCents,
+          if (currency != null) 'currency': currency,
         },
       );
       state = const AsyncData(null);

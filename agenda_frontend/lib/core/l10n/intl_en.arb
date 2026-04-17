@@ -538,6 +538,10 @@
     }
   },
   "classEventWaitlistLabel": "Waitlist",
+  "classEventJoinWaitlistLabel": "Join waitlist",
+  "classEventWaitlistDialogTitle": "Class is full",
+  "classEventWaitlistDialogMessage": "This class is full. Would you like to join the waitlist?",
+  "classEventWaitlistDialogConfirm": "Join waitlist",
   "classEventWaitlistNotice": "You'll be added to the waitlist",
   "classEventGroupLesson": "Group class",
 

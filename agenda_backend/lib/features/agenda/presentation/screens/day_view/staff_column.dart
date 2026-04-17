@@ -14,6 +14,7 @@ import 'package:agenda_backend/features/agenda/providers/pending_drop_provider.d
 import 'package:agenda_backend/features/agenda/providers/staff_slot_availability_provider.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
 import 'package:agenda_backend/features/class_events/providers/class_events_providers.dart';
+import 'package:agenda_backend/features/class_events/presentation/class_events_screen.dart';
 import 'package:agenda_backend/features/clients/providers/clients_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -765,6 +766,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final cardColorSource = ref.watch(effectiveAgendaCardColorSourceProvider);
     final useServiceColors = cardColorSource == AgendaCardColorSource.services;
+    final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
     final clientsById = ref.watch(clientsByIdProvider);
     // 🔹 Watch fuori dal loop per evitare rebuild multipli
     final pendingDrop = ref.watch(pendingDropProvider);
@@ -979,22 +981,39 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           left: cardLeft,
           width: cardWidth,
           height: layoutConfig.heightForMinutes(endMinutes - startMinutes),
-          child: IgnorePointer(
-            child: _ClassEventCard(
-              event: classEvent,
-              width: cardWidth,
-              title:
-                  (classTypeById[classEvent.classTypeId]?.name
-                          .trim()
-                          .isNotEmpty ??
-                      false)
-                  ? classTypeById[classEvent.classTypeId]!.name.trim()
-                  : context.l10n.classEventsUntitled,
-              color:
-                  _parseClassTypeColor(
-                    classTypeById[classEvent.classTypeId]?.colorHex,
-                  ) ??
-                  Theme.of(context).colorScheme.tertiaryContainer,
+          child: MouseRegion(
+            opaque: true,
+            cursor: canManageBookings && endsAt.isAfter(DateTime.now())
+                ? SystemMouseCursors.click
+                : SystemMouseCursors.basic,
+            onEnter: (_) {
+              ref.read(selectedAppointmentProvider.notifier).clear();
+            },
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: canManageBookings && endsAt.isAfter(DateTime.now())
+                  ? () => showCreateClassEventDialog(
+                      context,
+                      ref,
+                      initialEvent: classEvent,
+                    )
+                  : null,
+              child: _ClassEventCard(
+                event: classEvent,
+                width: cardWidth,
+                title:
+                    (classTypeById[classEvent.classTypeId]?.name
+                            .trim()
+                            .isNotEmpty ??
+                        false)
+                    ? classTypeById[classEvent.classTypeId]!.name.trim()
+                    : context.l10n.classEventsUntitled,
+                color:
+                    _parseClassTypeColor(
+                      classTypeById[classEvent.classTypeId]?.colorHex,
+                    ) ??
+                    Theme.of(context).colorScheme.tertiaryContainer,
+              ),
             ),
           ),
         ),
@@ -1615,46 +1634,114 @@ class _ClassEventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
+    final startsAt = event.startsAtLocal ?? event.startsAtUtc.toLocal();
+    final endsAt = event.endsAtLocal ?? event.endsAtUtc.toLocal();
+    final timeLabel =
+        '${DtFmt.hm(context, startsAt.hour, startsAt.minute)} - ${DtFmt.hm(context, endsAt.hour, endsAt.minute)}';
+    String? priceLabel;
+    if (event.priceCents != null && event.priceCents! > 0) {
+      final currency = event.currency;
+      if (currency != null && currency.trim().isNotEmpty) {
+        priceLabel = PriceFormatter.format(
+          context: context,
+          amount: event.priceCents! / 100.0,
+          currencyCode: currency,
+        );
+      }
+    }
+    final metaLabel = priceLabel == null ? timeLabel : '$timeLabel • $priceLabel';
     final foreground =
         ThemeData.estimateBrightnessForColor(color) == Brightness.dark
         ? Colors.white
         : theme.colorScheme.onTertiaryContainer;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: color,
-        borderRadius: BorderRadius.circular(LayoutConfig.borderRadius),
-        border: Border.all(color: theme.colorScheme.tertiary.withOpacity(0.8)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.labelSmall?.copyWith(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final maxHeight = constraints.maxHeight;
+        final ultraCompact = maxHeight <= 20;
+        final compact = maxHeight <= 30;
+        final showMeta = maxHeight > 24;
+        final showCapacity = maxHeight > 46;
+        final horizontalPadding = ultraCompact ? 6.0 : 8.0;
+        final verticalPadding = ultraCompact
+            ? 1.0
+            : compact
+            ? 2.0
+            : 6.0;
+
+        final titleStyle = (ultraCompact
+                ? theme.textTheme.labelSmall?.copyWith(fontSize: 10)
+                : theme.textTheme.labelSmall)
+            ?.copyWith(
               color: foreground,
               fontWeight: FontWeight.w800,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            l10n.classEventsCapacitySummary(
-              event.confirmedCount,
-              event.capacityTotal,
-              event.waitlistCount,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
+              height: 1.0,
+            );
+
+        final capacityStyle = (ultraCompact
+                ? theme.textTheme.bodySmall?.copyWith(fontSize: 10)
+                : theme.textTheme.bodySmall)
+            ?.copyWith(
               color: foreground,
               fontWeight: FontWeight.w600,
+              height: 1.0,
+            );
+
+        return Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: horizontalPadding,
+            vertical: verticalPadding,
+          ),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(LayoutConfig.borderRadius),
+            border: Border.all(
+              color: theme.colorScheme.tertiary.withOpacity(0.8),
             ),
           ),
-        ],
-      ),
+          child: ClipRect(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: titleStyle,
+                ),
+                if (showMeta) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    metaLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: capacityStyle,
+                  ),
+                ],
+                if (showCapacity) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    (event.waitlistCount > 0)
+                        ? l10n.classEventsCapacitySummary(
+                            event.confirmedCount,
+                            event.capacityTotal,
+                            event.waitlistCount,
+                          )
+                        : l10n.classEventsCapacitySummaryNoWaitlist(
+                            event.confirmedCount,
+                            event.capacityTotal,
+                          ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: capacityStyle,
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
