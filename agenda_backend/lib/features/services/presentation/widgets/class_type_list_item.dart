@@ -1,0 +1,254 @@
+import 'package:flutter/material.dart';
+
+import '../../../../app/theme/extensions.dart';
+import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/models/class_type.dart';
+import '../../../../core/utils/color_utils.dart';
+
+enum _ClassTypeAction { schedule, edit, duplicate, delete }
+
+class ClassTypeListItem extends StatefulWidget {
+  const ClassTypeListItem({
+    super.key,
+    required this.classType,
+    required this.isLast,
+    required this.isEvenRow,
+    required this.isWide,
+    required this.colorScheme,
+    required this.onTap,
+    required this.onEdit,
+    required this.onDuplicate,
+    required this.onDelete,
+    required this.onSchedule,
+    this.readOnly = false,
+  });
+
+  final ClassType classType;
+  final bool isLast;
+  final bool isEvenRow;
+  final bool isWide;
+  final ColorScheme colorScheme;
+  final VoidCallback onTap;
+  final VoidCallback onEdit;
+  final VoidCallback onDuplicate;
+  final VoidCallback onDelete;
+  final VoidCallback onSchedule;
+  final bool readOnly;
+
+  @override
+  State<ClassTypeListItem> createState() => _ClassTypeListItemState();
+}
+
+class _ClassTypeListItemState extends State<ClassTypeListItem> {
+  bool _isHovered = false;
+
+  Color? get _classColor {
+    final hex = widget.classType.colorHex?.trim() ?? '';
+    if (!RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(hex)) return null;
+    try {
+      return ColorUtils.fromHex(hex);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final interactionColors = Theme.of(context).extension<AppInteractionColors>();
+    final colorScheme = widget.colorScheme;
+    final classColor = _classColor ?? colorScheme.tertiary;
+
+    final baseColor = widget.isEvenRow
+        ? (interactionColors?.alternatingRowFill ??
+              colorScheme.onSurface.withOpacity(0.04))
+        : Colors.transparent;
+    final hoverFill =
+        interactionColors?.hoverFill ??
+        colorScheme.primaryContainer.withOpacity(0.1);
+    final bgColor = _isHovered ? hoverFill : baseColor;
+
+    final borderRadius = BorderRadius.only(
+      bottomLeft: widget.isLast ? const Radius.circular(16) : Radius.zero,
+      bottomRight: widget.isLast ? const Radius.circular(16) : Radius.zero,
+    );
+
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onTap,
+          borderRadius: borderRadius,
+          child: Container(
+            decoration: BoxDecoration(color: bgColor, borderRadius: borderRadius),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Barra colorata sinistra
+                  Container(
+                    width: 4,
+                    decoration: BoxDecoration(
+                      color: classColor,
+                      borderRadius: BorderRadius.only(
+                        bottomLeft: widget.isLast
+                            ? const Radius.circular(16)
+                            : Radius.zero,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.fromLTRB(16, 2, 16, 16),
+                      mouseCursor: SystemMouseCursors.click,
+                      title: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.classType.name,
+                            style: Theme.of(
+                              context,
+                            ).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                      trailing: UnconstrainedBox(
+                        alignment: Alignment.centerRight,
+                        child: widget.readOnly
+                            ? null
+                            : widget.isWide
+                            ? _buildActionIcons(context)
+                            : _PopupMenu(
+                                onSchedule: widget.onSchedule,
+                                onEdit: widget.onEdit,
+                                onDuplicate: widget.onDuplicate,
+                                onDelete: widget.onDelete,
+                              ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildActionIcons(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          tooltip: context.l10n.classTypesActionScheduleClass,
+          icon: const Icon(Icons.event_available_outlined),
+          onPressed: widget.onSchedule,
+        ),
+        IconButton(
+          tooltip: context.l10n.actionEdit,
+          icon: const Icon(Icons.edit_outlined),
+          onPressed: widget.onEdit,
+        ),
+        IconButton(
+          tooltip: context.l10n.duplicateAction,
+          icon: const Icon(Icons.copy_outlined),
+          onPressed: widget.onDuplicate,
+        ),
+        IconButton(
+          tooltip: context.l10n.actionDelete,
+          icon: const Icon(Icons.delete_outline, color: Colors.red),
+          onPressed: widget.onDelete,
+        ),
+      ],
+    );
+  }
+}
+
+class _PopupMenu extends StatelessWidget {
+  const _PopupMenu({
+    required this.onSchedule,
+    required this.onEdit,
+    required this.onDuplicate,
+    required this.onDelete,
+  });
+
+  final VoidCallback onSchedule;
+  final VoidCallback onEdit;
+  final VoidCallback onDuplicate;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return PopupMenuButton<_ClassTypeAction>(
+      icon: const Icon(Icons.more_vert, size: 20),
+      borderRadius: BorderRadius.circular(10),
+      onSelected: (action) {
+        switch (action) {
+          case _ClassTypeAction.schedule:
+            onSchedule();
+          case _ClassTypeAction.edit:
+            onEdit();
+          case _ClassTypeAction.duplicate:
+            onDuplicate();
+          case _ClassTypeAction.delete:
+            onDelete();
+        }
+      },
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          value: _ClassTypeAction.schedule,
+          child: Row(
+            children: [
+              const Icon(Icons.event_available_outlined, size: 18),
+              const SizedBox(width: 8),
+              Text(l10n.classTypesActionScheduleClass),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: _ClassTypeAction.edit,
+          child: Row(
+            children: [
+              const Icon(Icons.edit_outlined, size: 18),
+              const SizedBox(width: 8),
+              Text(l10n.actionEdit),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem(
+          value: _ClassTypeAction.duplicate,
+          child: Row(
+            children: [
+              const Icon(Icons.copy_outlined, size: 18),
+              const SizedBox(width: 8),
+              Text(l10n.duplicateAction),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: _ClassTypeAction.delete,
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline, size: 18, color: colorScheme.error),
+              const SizedBox(width: 8),
+              Text(
+                l10n.actionDelete,
+                style: TextStyle(color: colorScheme.error),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}

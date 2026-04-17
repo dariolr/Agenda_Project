@@ -54,6 +54,8 @@ class _ConfirmationStepState extends ConsumerState<ConfirmationStep> {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final bookingState = ref.watch(bookingFlowProvider);
+    final isWaitlisted =
+        bookingState.confirmedClassBookingStatus == 'waitlisted';
 
     return SafeArea(
       child: Padding(
@@ -63,25 +65,27 @@ class _ConfirmationStepState extends ConsumerState<ConfirmationStep> {
           children: [
             const Spacer(),
 
-            // Icona successo
+            // Icona successo / lista d'attesa
             Container(
               width: 100,
               height: 100,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Colors.green.withOpacity(0.1),
+                color: isWaitlisted
+                    ? Colors.orange.withOpacity(0.1)
+                    : Colors.green.withOpacity(0.1),
               ),
-              child: const Icon(
-                Icons.check_circle,
+              child: Icon(
+                isWaitlisted ? Icons.hourglass_top_rounded : Icons.check_circle,
                 size: 64,
-                color: Colors.green,
+                color: isWaitlisted ? Colors.orange.shade700 : Colors.green,
               ),
             ),
             const SizedBox(height: 32),
 
             // Titolo
             Text(
-              l10n.confirmationTitle,
+              isWaitlisted ? l10n.confirmationWaitlistTitle : l10n.confirmationTitle,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -91,7 +95,9 @@ class _ConfirmationStepState extends ConsumerState<ConfirmationStep> {
 
             // Sottotitolo
             Text(
-              l10n.confirmationSubtitle,
+              isWaitlisted
+                  ? l10n.confirmationWaitlistSubtitle
+                  : l10n.confirmationSubtitle,
               style: theme.textTheme.bodyMedium?.copyWith(
                 color: theme.colorScheme.onSurface.withOpacity(0.7),
               ),

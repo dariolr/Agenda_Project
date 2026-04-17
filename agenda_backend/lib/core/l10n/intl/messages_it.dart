@@ -241,6 +241,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "actionRetry": MessageLookupByLibrary.simpleMessage("Riprova"),
     "actionSave": MessageLookupByLibrary.simpleMessage("Salva"),
     "actionSelectAll": MessageLookupByLibrary.simpleMessage("Seleziona tutti"),
+    "addAppointmentTypeTooltip": MessageLookupByLibrary.simpleMessage(
+      "Aggiungi tipo appuntamento.",
+    ),
     "addClientToAppointment": MessageLookupByLibrary.simpleMessage(
       "Aggiungi un cliente all\'appuntamento",
     ),
@@ -967,6 +970,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "classTypesCreateSuccessTitle": MessageLookupByLibrary.simpleMessage(
       "Tipo classe creato",
     ),
+    "classTypesCreateSuperadminOnlyMessage":
+        MessageLookupByLibrary.simpleMessage(
+          "La creazione di un tipo classe è riservata al superadmin.",
+        ),
     "classTypesCreateTitle": MessageLookupByLibrary.simpleMessage(
       "Nuovo tipo classe",
     ),
@@ -2015,8 +2022,15 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "removeClient": MessageLookupByLibrary.simpleMessage("Rimuovi cliente"),
     "reorderCategoriesLabel": MessageLookupByLibrary.simpleMessage("Categorie"),
+    "reorderClassesLabel": MessageLookupByLibrary.simpleMessage("Classi"),
+    "reorderDoneButtonLabel": MessageLookupByLibrary.simpleMessage(
+      "Fine ordinamento",
+    ),
     "reorderHelpDescription": MessageLookupByLibrary.simpleMessage(
       "Riordina categorie e servizi trascinandoli: l’ordine sarà lo stesso anche nella prenotazione online. Seleziona se ordinare categorie o servizi.",
+    ),
+    "reorderServicesAndPackagesLabel": MessageLookupByLibrary.simpleMessage(
+      "Servizi e/o Pacchetti",
     ),
     "reorderServicesLabel": MessageLookupByLibrary.simpleMessage("Servizi"),
     "reorderTitle": MessageLookupByLibrary.simpleMessage(

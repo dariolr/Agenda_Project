@@ -106,6 +106,7 @@ class BookingFlowState {
   final String? errorMessage;
   final String? errorCode;
   final String? confirmedBookingId;
+  final String? confirmedClassBookingStatus;
   final bool isStaffAutoSelected;
 
   const BookingFlowState({
@@ -115,6 +116,7 @@ class BookingFlowState {
     this.errorMessage,
     this.errorCode,
     this.confirmedBookingId,
+    this.confirmedClassBookingStatus,
     this.isStaffAutoSelected = false,
   });
 
@@ -145,6 +147,7 @@ class BookingFlowState {
     String? errorMessage,
     String? errorCode,
     String? confirmedBookingId,
+    String? confirmedClassBookingStatus,
     bool clearError = false,
     bool? isStaffAutoSelected,
   }) => BookingFlowState(
@@ -154,6 +157,8 @@ class BookingFlowState {
     errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
     errorCode: clearError ? null : (errorCode ?? this.errorCode),
     confirmedBookingId: confirmedBookingId ?? this.confirmedBookingId,
+    confirmedClassBookingStatus:
+        confirmedClassBookingStatus ?? this.confirmedClassBookingStatus,
     isStaffAutoSelected: isStaffAutoSelected ?? this.isStaffAutoSelected,
   );
 }
@@ -1140,11 +1145,13 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
           result['id']?.toString() ??
           result['booking_id']?.toString() ??
           'confirmed';
+      final bookingStatus = result['status']?.toString();
 
       state = state.copyWith(
         isLoading: false,
         currentStep: BookingStep.confirmation,
         confirmedBookingId: bookingId,
+        confirmedClassBookingStatus: bookingStatus,
       );
       return true;
     } on ApiException catch (e) {

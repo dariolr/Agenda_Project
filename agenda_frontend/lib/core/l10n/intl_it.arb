@@ -522,6 +522,27 @@
   },
 
   "cancelledBadge": "ANNULLATA",
+  "classBookingWaitlistedBadge": "Lista d'attesa",
+
+  "classEventFull": "Completo",
+  "classEventSpotsLeft": "{count} posti",
+  "@classEventSpotsLeft": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "classEventSpotsAvailable": "{count} posti disponibili",
+  "@classEventSpotsAvailable": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "classEventWaitlistLabel": "Lista d'attesa",
+  "classEventWaitlistNotice": "Sarai aggiunto alla lista d'attesa",
+  "classEventGroupLesson": "Lezione di gruppo",
+
+  "confirmationWaitlistTitle": "Sei in lista d'attesa!",
+  "confirmationWaitlistSubtitle": "Verrai confermato non appena si libera un posto",
 
   "businessNotFound": "Attività non trovata",
   "businessNotFoundHint": "Verifica l'indirizzo o contatta direttamente l'attività.",

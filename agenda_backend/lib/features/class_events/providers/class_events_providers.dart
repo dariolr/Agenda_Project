@@ -113,7 +113,8 @@ final classTypesWithInactiveProvider = FutureProvider<List<ClassType>>((
   final businessId = ref.watch(currentBusinessIdProvider);
   if (businessId <= 0) return const [];
   final repo = ref.watch(classEventsRepositoryProvider);
-  return repo.listClassTypes(businessId: businessId, includeInactive: true);
+  // is_active is used as soft-delete flag: deleted types are hidden.
+  return repo.listClassTypes(businessId: businessId);
 });
 
 final classTypeServiceCategoriesProvider =
@@ -412,7 +413,6 @@ class ClassTypeMutationController extends AsyncNotifier<void> {
     String? description,
     String? colorHex,
     int? serviceCategoryId,
-    bool isActive = true,
     List<int>? locationIds,
   }) async {
     state = const AsyncLoading();
@@ -430,7 +430,6 @@ class ClassTypeMutationController extends AsyncNotifier<void> {
               ? null
               : colorHex?.trim(),
           'service_category_id': serviceCategoryId,
-          'is_active': isActive,
           if (locationIds != null) 'location_ids': locationIds,
         },
       );
@@ -453,7 +452,6 @@ class ClassTypeMutationController extends AsyncNotifier<void> {
     String? description,
     String? colorHex,
     int? serviceCategoryId,
-    required bool isActive,
     List<int>? locationIds,
   }) async {
     state = const AsyncLoading();
@@ -472,7 +470,6 @@ class ClassTypeMutationController extends AsyncNotifier<void> {
               ? null
               : colorHex?.trim(),
           'service_category_id': serviceCategoryId,
-          'is_active': isActive,
           if (locationIds != null) 'location_ids': locationIds,
         },
       );

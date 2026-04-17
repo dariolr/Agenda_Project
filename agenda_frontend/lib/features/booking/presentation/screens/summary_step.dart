@@ -508,7 +508,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
     }
 
     return _SummarySection(
-      title: 'Lezione di gruppo',
+      title: context.l10n.classEventGroupLesson,
       icon: Icons.fitness_center_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -589,7 +589,9 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
               ),
               const SizedBox(width: 6),
               Text(
-                event.isFull ? 'Completo' : '${event.spotsLeft} posti disponibili',
+                event.isFull
+                    ? context.l10n.classEventFull
+                    : context.l10n.classEventSpotsAvailable(event.spotsLeft),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: event.isFull
                       ? theme.colorScheme.error
@@ -598,6 +600,34 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
               ),
             ],
           ),
+          if (event.isFull && event.waitlistEnabled) ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade300),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 14,
+                    color: Colors.orange.shade700,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    context.l10n.classEventWaitlistNotice,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: Colors.orange.shade700,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ],
       ),
     );

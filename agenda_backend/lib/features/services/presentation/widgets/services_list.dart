@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/models/class_type.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_package.dart';
 import '../../providers/services_sorted_providers.dart';
+import 'class_type_list_item.dart';
 import 'service_item.dart';
 import 'service_package_item.dart';
 
@@ -20,6 +22,11 @@ class ServicesList extends ConsumerWidget {
   final void Function(ServicePackage) onPackageOpen;
   final void Function(ServicePackage) onPackageEdit;
   final void Function(int id) onPackageDelete;
+  final void Function(ClassType) onClassTypeOpen;
+  final void Function(ClassType) onClassTypeEdit;
+  final void Function(ClassType) onClassTypeDuplicate;
+  final void Function(int id) onClassTypeDelete;
+  final void Function(ClassType) onClassTypeSchedule;
   final bool readOnly;
 
   const ServicesList({
@@ -36,6 +43,11 @@ class ServicesList extends ConsumerWidget {
     required this.onPackageOpen,
     required this.onPackageEdit,
     required this.onPackageDelete,
+    required this.onClassTypeOpen,
+    required this.onClassTypeEdit,
+    required this.onClassTypeDuplicate,
+    required this.onClassTypeDelete,
+    required this.onClassTypeSchedule,
     this.readOnly = false,
   });
 
@@ -69,6 +81,23 @@ class ServicesList extends ConsumerWidget {
                       onEdit: () => onEdit(entries[i].service!),
                       onDuplicate: () => onDuplicate(entries[i].service!),
                       onDelete: () => onDelete(entries[i].service!.id),
+                      readOnly: readOnly,
+                    )
+                  else if (entries[i].isClassType)
+                    ClassTypeListItem(
+                      classType: entries[i].classType!,
+                      isLast: i == entries.length - 1,
+                      isEvenRow: i.isEven,
+                      isWide: isWide,
+                      colorScheme: colorScheme,
+                      onTap: () => onClassTypeOpen(entries[i].classType!),
+                      onEdit: () => onClassTypeEdit(entries[i].classType!),
+                      onDuplicate: () =>
+                          onClassTypeDuplicate(entries[i].classType!),
+                      onDelete: () =>
+                          onClassTypeDelete(entries[i].classType!.id),
+                      onSchedule: () =>
+                          onClassTypeSchedule(entries[i].classType!),
                       readOnly: readOnly,
                     )
                   else

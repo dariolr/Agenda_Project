@@ -50,6 +50,9 @@ class ApiConfig {
   /// GET /v1/customer/bookings
   static const String customerBookings = '/v1/customer/bookings';
 
+  /// GET /v1/customer/class-bookings
+  static const String customerClassBookings = '/v1/customer/class-bookings';
+
   /// PUT /v1/customer/bookings/{booking_id}
   static String customerUpdateBooking(int bookingId) =>
       '/v1/customer/bookings/$bookingId';

@@ -236,6 +236,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "actionRetry": MessageLookupByLibrary.simpleMessage("Retry"),
     "actionSave": MessageLookupByLibrary.simpleMessage("Save"),
     "actionSelectAll": MessageLookupByLibrary.simpleMessage("Select all"),
+    "addAppointmentTypeTooltip": MessageLookupByLibrary.simpleMessage(
+      "Add appointment type.",
+    ),
     "addClientToAppointment": MessageLookupByLibrary.simpleMessage(
       "Add a client to the appointment",
     ),
@@ -928,6 +931,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "classTypesCreateSuccessTitle": MessageLookupByLibrary.simpleMessage(
       "Class type created",
     ),
+    "classTypesCreateSuperadminOnlyMessage":
+        MessageLookupByLibrary.simpleMessage(
+          "Creating a class type is allowed only for superadmin users.",
+        ),
     "classTypesCreateTitle": MessageLookupByLibrary.simpleMessage(
       "New class type",
     ),
@@ -1925,8 +1932,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "reorderCategoriesLabel": MessageLookupByLibrary.simpleMessage(
       "Categories",
     ),
+    "reorderClassesLabel": MessageLookupByLibrary.simpleMessage("Classes"),
+    "reorderDoneButtonLabel": MessageLookupByLibrary.simpleMessage(
+      "Done reordering",
+    ),
     "reorderHelpDescription": MessageLookupByLibrary.simpleMessage(
       "Reorder categories and services by dragging them: the same order will be applied to online booking. Select whether to sort categories or services.",
+    ),
+    "reorderServicesAndPackagesLabel": MessageLookupByLibrary.simpleMessage(
+      "Services and/or Packages",
     ),
     "reorderServicesLabel": MessageLookupByLibrary.simpleMessage("Services"),
     "reorderTitle": MessageLookupByLibrary.simpleMessage("Reorder"),

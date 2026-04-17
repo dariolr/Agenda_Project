@@ -24,7 +24,6 @@ import '../features/business/presentation/location_closures_screen.dart';
 import '../features/business/presentation/operators_screen.dart';
 import '../features/business/presentation/user_business_switch_screen.dart';
 import '../features/business/providers/superadmin_selected_business_provider.dart';
-import '../features/class_events/presentation/class_events_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
 import '../features/more/presentation/locations_screen.dart';
 import '../features/more/presentation/more_screen.dart';
@@ -451,12 +450,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     pageBuilder: (BuildContext context, GoRouterState state) =>
                         const NoTransitionPage(child: MoreLocationsScreen()),
                   ),
-                  GoRoute(
-                    path: 'classi',
-                    name: 'class-events',
-                    builder: (BuildContext context, GoRouterState state) =>
-                        const ClassEventsScreen(),
-                  ),
+
                   GoRoute(
                     path: 'metodi-pagamento',
                     name: 'payment-methods',

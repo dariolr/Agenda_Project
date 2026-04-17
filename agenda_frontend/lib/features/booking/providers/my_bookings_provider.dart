@@ -1,6 +1,7 @@
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '/core/models/booking_item.dart';
+import '/core/models/class_booking_item.dart';
 import '/core/models/location.dart';
 import '/core/models/service_package.dart';
 import '/core/network/api_client.dart';
@@ -9,10 +10,13 @@ import '/features/booking/providers/locations_provider.dart';
 
 part 'my_bookings_provider.g.dart';
 
-/// Stato delle prenotazioni utente (upcoming + past)
+/// Stato delle prenotazioni utente (servizi + classi)
 class MyBookingsState {
   final List<BookingItem> upcoming;
   final List<BookingItem> past;
+  final List<ClassBookingItem> upcomingClass;
+  final List<ClassBookingItem> pastClass;
+  final List<ClassBookingItem> cancelledClass;
   final bool isLoading;
   final String? error;
   final String? errorCode;
@@ -20,6 +24,9 @@ class MyBookingsState {
   const MyBookingsState({
     this.upcoming = const [],
     this.past = const [],
+    this.upcomingClass = const [],
+    this.pastClass = const [],
+    this.cancelledClass = const [],
     this.isLoading = false,
     this.error,
     this.errorCode,
@@ -28,6 +35,9 @@ class MyBookingsState {
   MyBookingsState copyWith({
     List<BookingItem>? upcoming,
     List<BookingItem>? past,
+    List<ClassBookingItem>? upcomingClass,
+    List<ClassBookingItem>? pastClass,
+    List<ClassBookingItem>? cancelledClass,
     bool? isLoading,
     String? error,
     String? errorCode,
@@ -35,6 +45,9 @@ class MyBookingsState {
     return MyBookingsState(
       upcoming: upcoming ?? this.upcoming,
       past: past ?? this.past,
+      upcomingClass: upcomingClass ?? this.upcomingClass,
+      pastClass: pastClass ?? this.pastClass,
+      cancelledClass: cancelledClass ?? this.cancelledClass,
       isLoading: isLoading ?? this.isLoading,
       error: error ?? this.error,
       errorCode: errorCode ?? this.errorCode,
@@ -52,13 +65,20 @@ class MyBookings extends _$MyBookings {
   List<BookingItem> _withoutReplaced(List<BookingItem> items) =>
       items.where((b) => b.status != 'replaced').toList();
 
-  /// Carica le prenotazioni utente da API
+  /// Carica le prenotazioni utente (servizi + classi) in parallelo
   Future<void> loadBookings() async {
     state = state.copyWith(isLoading: true, error: null, errorCode: null);
 
     try {
       final apiClient = ref.read(apiClientProvider);
-      final response = await apiClient.getCustomerBookings();
+
+      // Fetch servizi e classi in parallelo
+      final results = await Future.wait([
+        apiClient.getCustomerBookings(),
+        apiClient.getCustomerClassBookings(),
+      ]);
+      final response = results[0];
+      final classResponse = results[1];
 
       final locationsAsync = ref.read(locationsProvider);
       final locationNames = <int, String>{};
@@ -97,9 +117,22 @@ class MyBookings extends _$MyBookings {
           .where((b) => b.status != 'replaced')
           .toList();
 
+      final upcomingClass = (classResponse['upcoming'] as List<dynamic>? ?? [])
+          .map((j) => ClassBookingItem.fromJson(j as Map<String, dynamic>))
+          .toList();
+      final pastClass = (classResponse['past'] as List<dynamic>? ?? [])
+          .map((j) => ClassBookingItem.fromJson(j as Map<String, dynamic>))
+          .toList();
+      final cancelledClass = (classResponse['cancelled'] as List<dynamic>? ?? [])
+          .map((j) => ClassBookingItem.fromJson(j as Map<String, dynamic>))
+          .toList();
+
       state = MyBookingsState(
         upcoming: _withoutReplaced(upcoming),
         past: _withoutReplaced(past),
+        upcomingClass: upcomingClass,
+        pastClass: pastClass,
+        cancelledClass: cancelledClass,
         isLoading: false,
       );
     } on ApiException catch (e) {
@@ -136,7 +169,51 @@ class MyBookings extends _$MyBookings {
     }
   }
 
-  /// Ricarica le prenotazioni senza mostrare loading globale
+  /// Cancella una prenotazione a un evento di classe
+  Future<bool> cancelClassBooking({
+    required int businessId,
+    required int classEventId,
+  }) async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      await apiClient.cancelClassEventBooking(
+        businessId: businessId,
+        classEventId: classEventId,
+      );
+      await _refreshClassBookingsAfterChange();
+      return true;
+    } on ApiException catch (e) {
+      state = state.copyWith(error: e.message, errorCode: e.code);
+      return false;
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return false;
+    }
+  }
+
+  /// Ricarica solo le prenotazioni di classe senza loading globale
+  Future<void> _refreshClassBookingsAfterChange() async {
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final classResponse = await apiClient.getCustomerClassBookings();
+
+      state = state.copyWith(
+        upcomingClass: (classResponse['upcoming'] as List<dynamic>? ?? [])
+            .map((j) => ClassBookingItem.fromJson(j as Map<String, dynamic>))
+            .toList(),
+        pastClass: (classResponse['past'] as List<dynamic>? ?? [])
+            .map((j) => ClassBookingItem.fromJson(j as Map<String, dynamic>))
+            .toList(),
+        cancelledClass: (classResponse['cancelled'] as List<dynamic>? ?? [])
+            .map((j) => ClassBookingItem.fromJson(j as Map<String, dynamic>))
+            .toList(),
+      );
+    } catch (_) {
+      // Ignora errori di refresh silenzioso
+    }
+  }
+
+  /// Ricarica le prenotazioni (servizi) senza mostrare loading globale
   Future<void> _refreshBookingsAfterChange() async {
     try {
       final apiClient = ref.read(apiClientProvider);
@@ -179,7 +256,7 @@ class MyBookings extends _$MyBookings {
           .where((b) => b.status != 'replaced')
           .toList();
 
-      state = MyBookingsState(
+      state = state.copyWith(
         upcoming: _withoutReplaced(upcoming),
         past: _withoutReplaced(past),
         isLoading: false,

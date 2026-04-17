@@ -52,7 +52,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     final classEventsAsync = ref.watch(classEventsProvider);
     final bookingState = ref.watch(bookingFlowProvider);
     final selectedServices = bookingState.request.services;
-    final isLoading = servicesDataAsync.isLoading;
+    final isLoading = servicesDataAsync.isLoading || classEventsAsync.isLoading;
 
     if (servicesDataAsync.hasError) {
       return _buildErrorWidget(
@@ -64,7 +64,77 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
       );
     }
 
-    final isClassTab = _tabController.index == 1;
+    final packages = packagesAsync.value ?? const <ServicePackage>[];
+    final servicesData = servicesDataAsync.value;
+    final hasServices =
+        (servicesData?.bookableServices.isNotEmpty ?? false) ||
+        packages.isNotEmpty;
+    final hasClassEvents = classEventsAsync.value?.isNotEmpty ?? false;
+    final showBothTabs = hasServices && hasClassEvents;
+    final isClassTab = showBothTabs && _tabController.index == 1;
+
+    // Se non ci sono entrambi i tipi, torna al tab 0
+    if (!showBothTabs && _tabController.index != 0) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _tabController.animateTo(0);
+      });
+    }
+
+    Widget buildServicesContent() {
+      if (servicesData == null) return const SizedBox.shrink();
+      if (servicesData.bookableServices.isEmpty && packages.isEmpty) {
+        return _EmptyView(
+          title: bookingServicesEmptyTitle(
+            context,
+            customServiceLabel,
+            phraseOverrides: phraseOverrides,
+          ),
+          subtitle: bookingServicesEmptySubtitle(
+            context,
+            customServiceLabel,
+            phraseOverrides: phraseOverrides,
+          ),
+        );
+      }
+      return _buildServicesList(
+        context,
+        ref,
+        servicesData.categories,
+        servicesData.bookableServices,
+        servicesData.serviceIdsWithEligibleStaff,
+        servicesData.services,
+        bookingState.request.selectedServiceIds,
+        bookingState.request.selectedPackageIds,
+        selectedServices,
+        packagesAsync,
+        phraseOverrides,
+      );
+    }
+
+    late final Widget content;
+    if (showBothTabs) {
+      content = TabBarView(
+        controller: _tabController,
+        children: [
+          buildServicesContent(),
+          _buildClassEventsTab(
+            context,
+            ref,
+            classEventsAsync,
+            bookingState.request.selectedClassEvent,
+          ),
+        ],
+      );
+    } else if (hasClassEvents) {
+      content = _buildClassEventsTab(
+        context,
+        ref,
+        classEventsAsync,
+        bookingState.request.selectedClassEvent,
+      );
+    } else {
+      content = buildServicesContent();
+    }
 
     return Stack(
       children: [
@@ -102,73 +172,23 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
               ),
             ),
 
-            // TabBar Servizi / Classi
-            TabBar(
-              controller: _tabController,
-              tabs: const [
-                Tab(text: 'Servizi'),
-                Tab(text: 'Classi'),
-              ],
-            ),
-
-            // Contenuto tab
-            Expanded(
-              child: TabBarView(
+            // TabBar solo quando ci sono sia servizi che classi
+            if (showBothTabs)
+              TabBar(
                 controller: _tabController,
-                children: [
-                  // Tab 0: Servizi normali
-                  servicesDataAsync.when(
-                    loading: () => const SizedBox.shrink(),
-                    error: (e, _) => const SizedBox.shrink(),
-                    data: (data) {
-                      final packages =
-                          packagesAsync.value ?? const <ServicePackage>[];
-                      if (data.bookableServices.isEmpty && packages.isEmpty) {
-                        return _EmptyView(
-                          title: bookingServicesEmptyTitle(
-                            context,
-                            customServiceLabel,
-                            phraseOverrides: phraseOverrides,
-                          ),
-                          subtitle: bookingServicesEmptySubtitle(
-                            context,
-                            customServiceLabel,
-                            phraseOverrides: phraseOverrides,
-                          ),
-                        );
-                      }
-                      return _buildServicesList(
-                        context,
-                        ref,
-                        data.categories,
-                        data.bookableServices,
-                        data.serviceIdsWithEligibleStaff,
-                        data.services,
-                        bookingState.request.selectedServiceIds,
-                        bookingState.request.selectedPackageIds,
-                        selectedServices,
-                        packagesAsync,
-                        phraseOverrides,
-                      );
-                    },
-                  ),
-
-                  // Tab 1: Classi
-                  _buildClassEventsTab(
-                    context,
-                    ref,
-                    classEventsAsync,
-                    bookingState.request.selectedClassEvent,
-                  ),
+                tabs: const [
+                  Tab(text: 'Servizi'),
+                  Tab(text: 'Classi'),
                 ],
               ),
-            ),
+
+            Expanded(child: content),
 
             // Footer con selezione e bottone
             _buildFooter(context, ref, selectedServices, isClassTab: isClassTab),
           ],
         ),
-        if (isLoading && !isClassTab)
+        if (isLoading)
           Positioned.fill(
             child: ColoredBox(
               color: theme.colorScheme.surface.withOpacity(0.6),
@@ -614,7 +634,7 @@ class _ClassEventTile extends StatelessWidget {
         ),
       ),
       child: InkWell(
-        onTap: event.isFull ? null : onTap,
+        onTap: (event.isFull && !event.waitlistEnabled) ? null : onTap,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(14),
@@ -687,9 +707,17 @@ class _ClassEventTile extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 2),
-                  if (event.isFull)
+                  if (event.isFull && event.waitlistEnabled)
                     Text(
-                      'Completo',
+                      context.l10n.classEventWaitlistLabel,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: Colors.orange.shade700,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    )
+                  else if (event.isFull)
+                    Text(
+                      context.l10n.classEventFull,
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.error,
                         fontWeight: FontWeight.w600,
@@ -697,7 +725,7 @@ class _ClassEventTile extends StatelessWidget {
                     )
                   else
                     Text(
-                      '${event.spotsLeft} posti',
+                      context.l10n.classEventSpotsLeft(event.spotsLeft),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.6),
                       ),

@@ -522,6 +522,27 @@
   },
 
   "cancelledBadge": "CANCELLED",
+  "classBookingWaitlistedBadge": "Waitlist",
+
+  "classEventFull": "Full",
+  "classEventSpotsLeft": "{count} spots",
+  "@classEventSpotsLeft": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "classEventSpotsAvailable": "{count} spots available",
+  "@classEventSpotsAvailable": {
+    "placeholders": {
+      "count": { "type": "int" }
+    }
+  },
+  "classEventWaitlistLabel": "Waitlist",
+  "classEventWaitlistNotice": "You'll be added to the waitlist",
+  "classEventGroupLesson": "Group class",
+
+  "confirmationWaitlistTitle": "You're on the waitlist!",
+  "confirmationWaitlistSubtitle": "You'll be confirmed as soon as a spot opens up",
 
   "businessNotFound": "Business not found",
   "businessNotFoundHint": "Please check the URL or contact the business directly.",

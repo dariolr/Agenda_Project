@@ -10,6 +10,13 @@ import 'service_packages_provider.dart';
 import 'services_provider.dart';
 import 'services_sorted_providers.dart';
 
+enum ServicesReorderMode {
+  none,
+  categories,
+  servicesAndPackages,
+  classTypes,
+}
+
 /// Gestisce la modalità riordino e applica gli ordinamenti aggiornando sortOrder
 class ServicesReorderNotifier extends Notifier<bool> {
   @override
@@ -150,13 +157,14 @@ class ServicesReorderNotifier extends Notifier<bool> {
             categoryId: categoryId,
             sortOrder: i,
           );
-        } else {
+        } else if (entry.isPackage) {
           final package = entry.package!;
           updatedPackagesById[package.id] = package.copyWith(
             categoryId: categoryId,
             sortOrder: i,
           );
         }
+        // ClassType entries are not reorderable via this mechanism (no sortOrder API).
       }
     });
 
@@ -310,4 +318,18 @@ class ServicesReorderPanelNotifier extends Notifier<bool> {
 final servicesReorderPanelProvider =
     NotifierProvider<ServicesReorderPanelNotifier, bool>(
       ServicesReorderPanelNotifier.new,
+    );
+
+class ServicesReorderModeNotifier extends Notifier<ServicesReorderMode> {
+  @override
+  ServicesReorderMode build() => ServicesReorderMode.none;
+
+  void setMode(ServicesReorderMode mode) => state = mode;
+
+  void clear() => state = ServicesReorderMode.none;
+}
+
+final servicesReorderModeProvider =
+    NotifierProvider<ServicesReorderModeNotifier, ServicesReorderMode>(
+      ServicesReorderModeNotifier.new,
     );

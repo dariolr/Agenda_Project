@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/models/class_type.dart';
 import '../../../../core/models/service_category.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_package.dart';
@@ -8,7 +9,9 @@ import '../../providers/services_sorted_providers.dart';
 import 'empty_state.dart';
 import 'services_list.dart';
 
-/// Item che rappresenta la card di una singola categoria (header + servizi).
+enum _AddMenuAction { service, package, classType }
+
+/// Item che rappresenta la card di una singola categoria (header + servizi + tipi classe).
 class CategoryItem extends StatefulWidget {
   final ServiceCategory category;
   final List<ServiceCategoryEntry> entries;
@@ -18,6 +21,7 @@ class CategoryItem extends StatefulWidget {
   final ValueNotifier<int?> selectedService;
   final VoidCallback onAddService;
   final VoidCallback onAddPackage;
+  final VoidCallback onAddClassType;
   final VoidCallback onEditCategory;
   final VoidCallback onDeleteCategory;
   final VoidCallback onDeleteBlocked;
@@ -28,6 +32,11 @@ class CategoryItem extends StatefulWidget {
   final ValueChanged<ServicePackage> onPackageOpen;
   final ValueChanged<ServicePackage> onPackageEdit;
   final ValueChanged<int> onPackageDelete;
+  final ValueChanged<ClassType> onClassTypeOpen;
+  final ValueChanged<ClassType> onClassTypeEdit;
+  final ValueChanged<ClassType> onClassTypeDuplicate;
+  final ValueChanged<int> onClassTypeDelete;
+  final ValueChanged<ClassType> onClassTypeSchedule;
   final bool addTopSpacing;
   final bool readOnly;
   final bool isCollapsible;
@@ -42,6 +51,7 @@ class CategoryItem extends StatefulWidget {
     required this.selectedService,
     required this.onAddService,
     required this.onAddPackage,
+    required this.onAddClassType,
     required this.onEditCategory,
     required this.onDeleteCategory,
     required this.onDeleteBlocked,
@@ -52,6 +62,11 @@ class CategoryItem extends StatefulWidget {
     required this.onPackageOpen,
     required this.onPackageEdit,
     required this.onPackageDelete,
+    required this.onClassTypeOpen,
+    required this.onClassTypeEdit,
+    required this.onClassTypeDuplicate,
+    required this.onClassTypeDelete,
+    required this.onClassTypeSchedule,
     required this.addTopSpacing,
     this.readOnly = false,
     this.isCollapsible = false,
@@ -171,15 +186,35 @@ class _CategoryItemState extends State<CategoryItem> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       if (!widget.readOnly) ...[
-                        IconButton(
-                          tooltip: context.l10n.addServiceTooltip,
+                        // Menu aggiungi: servizio / pacchetto / tipo classe
+                        PopupMenuButton<_AddMenuAction>(
+                          tooltip: context.l10n.addAppointmentTypeTooltip,
                           icon: const Icon(Icons.add),
-                          onPressed: widget.onAddService,
-                        ),
-                        IconButton(
-                          tooltip: context.l10n.servicePackageNewMenu,
-                          icon: const Icon(Icons.widgets_outlined),
-                          onPressed: widget.onAddPackage,
+                          borderRadius: BorderRadius.circular(10),
+                          onSelected: (action) {
+                            switch (action) {
+                              case _AddMenuAction.service:
+                                widget.onAddService();
+                              case _AddMenuAction.package:
+                                widget.onAddPackage();
+                              case _AddMenuAction.classType:
+                                widget.onAddClassType();
+                            }
+                          },
+                          itemBuilder: (_) => [
+                            PopupMenuItem(
+                              value: _AddMenuAction.service,
+                              child: Text(context.l10n.servicesNewServiceMenu),
+                            ),
+                            PopupMenuItem(
+                              value: _AddMenuAction.package,
+                              child: Text(context.l10n.servicePackageNewMenu),
+                            ),
+                            PopupMenuItem(
+                              value: _AddMenuAction.classType,
+                              child: Text(context.l10n.classTypesCreateTitle),
+                            ),
+                          ],
                         ),
                         IconButton(
                           tooltip: context.l10n.actionEdit,
@@ -236,6 +271,11 @@ class _CategoryItemState extends State<CategoryItem> {
                             onPackageOpen: widget.onPackageOpen,
                             onPackageEdit: widget.onPackageEdit,
                             onPackageDelete: widget.onPackageDelete,
+                            onClassTypeOpen: widget.onClassTypeOpen,
+                            onClassTypeEdit: widget.onClassTypeEdit,
+                            onClassTypeDuplicate: widget.onClassTypeDuplicate,
+                            onClassTypeDelete: widget.onClassTypeDelete,
+                            onClassTypeSchedule: widget.onClassTypeSchedule,
                             readOnly: widget.readOnly,
                           ),
                   )

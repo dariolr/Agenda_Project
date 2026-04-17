@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/models/class_type.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
 import '../../../../core/models/service_package.dart';
@@ -16,6 +17,7 @@ class CategoriesList extends ConsumerWidget {
   final ValueNotifier<int?> selectedService;
   final ValueChanged<ServiceCategory> onAddService;
   final ValueChanged<ServiceCategory> onAddPackage;
+  final ValueChanged<ServiceCategory> onAddClassType;
   final ValueChanged<ServiceCategory> onEditCategory;
   final ValueChanged<int> onDeleteCategory;
   final VoidCallback onDeleteCategoryBlocked;
@@ -26,6 +28,11 @@ class CategoriesList extends ConsumerWidget {
   final ValueChanged<ServicePackage> onPackageOpen;
   final ValueChanged<ServicePackage> onPackageEdit;
   final ValueChanged<int> onPackageDelete;
+  final ValueChanged<ClassType> onClassTypeOpen;
+  final ValueChanged<ClassType> onClassTypeEdit;
+  final ValueChanged<ClassType> onClassTypeDuplicate;
+  final ValueChanged<int> onClassTypeDelete;
+  final ValueChanged<ClassType> onClassTypeSchedule;
   final ScrollController scrollController;
   final bool readOnly;
 
@@ -38,6 +45,7 @@ class CategoriesList extends ConsumerWidget {
     required this.selectedService,
     required this.onAddService,
     required this.onAddPackage,
+    required this.onAddClassType,
     required this.onEditCategory,
     required this.onDeleteCategory,
     required this.onDeleteCategoryBlocked,
@@ -48,6 +56,11 @@ class CategoriesList extends ConsumerWidget {
     required this.onPackageOpen,
     required this.onPackageEdit,
     required this.onPackageDelete,
+    required this.onClassTypeOpen,
+    required this.onClassTypeEdit,
+    required this.onClassTypeDuplicate,
+    required this.onClassTypeDelete,
+    required this.onClassTypeSchedule,
     required this.scrollController,
     this.readOnly = false,
   });
@@ -112,6 +125,7 @@ class CategoriesList extends ConsumerWidget {
               selectedService: selectedService,
               onAddService: () => onAddService(category),
               onAddPackage: () => onAddPackage(category),
+              onAddClassType: () => onAddClassType(category),
               onEditCategory: () => onEditCategory(category),
               onDeleteCategory: () => onDeleteCategory(category.id),
               onDeleteBlocked: onDeleteCategoryBlocked,
@@ -122,6 +136,11 @@ class CategoriesList extends ConsumerWidget {
               onPackageOpen: onPackageOpen,
               onPackageEdit: onPackageEdit,
               onPackageDelete: onPackageDelete,
+              onClassTypeOpen: onClassTypeOpen,
+              onClassTypeEdit: onClassTypeEdit,
+              onClassTypeDuplicate: onClassTypeDuplicate,
+              onClassTypeDelete: onClassTypeDelete,
+              onClassTypeSchedule: onClassTypeSchedule,
               addTopSpacing: isFirstEmptyAfterNonEmpty,
               readOnly: readOnly,
               isCollapsible: isCollapsible,

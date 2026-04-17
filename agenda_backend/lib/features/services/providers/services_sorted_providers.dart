@@ -1,8 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/models/class_type.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/models/service_package.dart';
+import '../../class_events/providers/class_events_providers.dart';
 import 'service_categories_provider.dart';
 import 'service_packages_provider.dart';
 import 'services_provider.dart';
@@ -10,8 +12,9 @@ import 'services_provider.dart';
 class ServiceCategoryEntry {
   final Service? service;
   final ServicePackage? package;
+  final ClassType? classType;
 
-  const ServiceCategoryEntry._({this.service, this.package});
+  const ServiceCategoryEntry._({this.service, this.package, this.classType});
 
   const ServiceCategoryEntry.service(Service service)
     : this._(service: service);
@@ -19,31 +22,55 @@ class ServiceCategoryEntry {
   const ServiceCategoryEntry.package(ServicePackage package)
     : this._(package: package);
 
+  const ServiceCategoryEntry.classType(ClassType classType)
+    : this._(classType: classType);
+
   bool get isService => service != null;
+  bool get isPackage => package != null;
+  bool get isClassType => classType != null;
 
-  int get id => service?.id ?? package!.id;
+  int get id => service?.id ?? package?.id ?? classType!.id;
 
-  int get categoryId => service?.categoryId ?? package!.categoryId;
+  int get categoryId =>
+      service?.categoryId ?? package?.categoryId ?? classType?.serviceCategoryId ?? 0;
 
-  int get sortOrder => service?.sortOrder ?? package!.sortOrder;
+  /// ClassType entries sort last (no backend sortOrder), then alphabetically.
+  int get sortOrder => service?.sortOrder ?? package?.sortOrder ?? 99999;
 
-  String get name => service?.name ?? package!.name;
+  String get name => service?.name ?? package?.name ?? classType!.name;
 
-  String get key => isService ? 'service-$id' : 'package-$id';
+  String get key =>
+      isService ? 'service-$id' : isPackage ? 'package-$id' : 'classtype-$id';
 }
 
+/// ClassType filtrati per categoria (esclude quelli soft-deleted).
+final classTypesByCategoryProvider = Provider.family<List<ClassType>, int>((
+  ref,
+  categoryId,
+) {
+  final allAsync = ref.watch(classTypesProvider);
+  final all = allAsync.value ?? const <ClassType>[];
+  return all.where((ct) => ct.serviceCategoryId == categoryId).toList()
+    ..sort((a, b) {
+      final byOrder = a.sortOrder.compareTo(b.sortOrder);
+      if (byOrder != 0) return byOrder;
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+});
+
 /// Liste ordinate con queste priorità:
-/// 1) Categorie con servizi prima, categorie vuote in coda
+/// 1) Categorie con servizi/classi prima, categorie vuote in coda
 /// 2) sortOrder crescente
 /// 3) nome come tie-breaker
 final sortedCategoriesProvider = Provider<List<ServiceCategory>>((ref) {
   final cats = ref.watch(serviceCategoriesProvider);
 
-  // Pre-calcolo: per ogni categoria verifichiamo se ha servizi.
+  // Pre-calcolo: per ogni categoria verifichiamo se ha contenuto.
   final hasServicesMap = <int, bool>{
     for (final c in cats)
       c.id: ref.watch(servicesByCategoryProvider(c.id)).isNotEmpty ||
-          ref.watch(servicePackagesByCategoryProvider(c.id)).isNotEmpty,
+          ref.watch(servicePackagesByCategoryProvider(c.id)).isNotEmpty ||
+          ref.watch(classTypesByCategoryProvider(c.id)).isNotEmpty,
   };
 
   final copy = [...cats];
@@ -112,17 +139,23 @@ final sortedCategoryEntriesProvider =
       final packages = ref.watch(
         sortedServicePackagesByCategoryProvider(categoryId),
       );
-      final entries = <ServiceCategoryEntry>[
-        for (final service in services)
-          ServiceCategoryEntry.service(service),
-        for (final package in packages)
-          ServiceCategoryEntry.package(package),
+      final classTypes = ref.watch(classTypesByCategoryProvider(categoryId));
+
+      // Servizi e pacchetti ordinati per sortOrder, poi ClassType in coda (alfabetici).
+      final servicePackageEntries = <ServiceCategoryEntry>[
+        for (final service in services) ServiceCategoryEntry.service(service),
+        for (final package in packages) ServiceCategoryEntry.package(package),
       ];
-      entries.sort((a, b) {
+      servicePackageEntries.sort((a, b) {
         final so = a.sortOrder.compareTo(b.sortOrder);
         return so != 0
             ? so
             : a.name.toLowerCase().compareTo(b.name.toLowerCase());
       });
-      return entries;
+
+      final classTypeEntries = [
+        for (final ct in classTypes) ServiceCategoryEntry.classType(ct),
+      ];
+
+      return [...servicePackageEntries, ...classTypeEntries];
     });

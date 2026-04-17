@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/l10_extension.dart';
+import '../../../core/models/class_type.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/models/service_package.dart';
@@ -13,11 +14,13 @@ import '../../../core/utils/color_utils.dart';
 import '../../../core/utils/price_utils.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/feedback_dialog.dart';
-import '../../../core/widgets/reorder_toggle_button.dart';
-import '../../../core/widgets/reorder_toggle_panel.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
+import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../../agenda/providers/resource_providers.dart';
+import '../../class_events/presentation/class_events_screen.dart';
+import '../../class_events/providers/class_events_providers.dart';
 import '../providers/service_categories_provider.dart';
 import '../providers/service_packages_provider.dart';
 import '../providers/services_provider.dart';
@@ -42,10 +45,6 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
   final ScrollController _scrollController = ScrollController();
   Timer? _autoScrollTimer;
-
-  /// Modalità di riordino (mutuamente esclusive)
-  bool isReorderCategories = false;
-  bool isReorderServices = false;
 
   // NOTE: Non serve initState con refresh() perché:
   // 1. I provider AsyncNotifier caricano i dati automaticamente nel build()
@@ -80,26 +79,6 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
   void _stopAutoScroll() => _autoScrollTimer?.cancel();
 
-  void _toggleCategoryReorder() {
-    setState(() {
-      isReorderCategories = !isReorderCategories;
-      if (isReorderCategories) isReorderServices = false;
-    });
-    if (!isReorderCategories) {
-      ref.read(servicesReorderPanelProvider.notifier).setVisible(false);
-    }
-  }
-
-  void _toggleServiceReorder() {
-    setState(() {
-      isReorderServices = !isReorderServices;
-      if (isReorderServices) isReorderCategories = false;
-    });
-    if (!isReorderServices) {
-      ref.read(servicesReorderPanelProvider.notifier).setVisible(false);
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -119,6 +98,17 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final allCategories = ref.watch(sortedCategoriesProvider);
     final packages = ref.watch(servicePackagesProvider).value ?? const <ServicePackage>[];
     final services = servicesAsync.value ?? const <Service>[];
+    final classTypes = ref.watch(classTypesProvider).value ?? const <ClassType>[];
+    final serviceById = {for (final s in services) s.id: s};
+    final hasServiceOrPackageEntries =
+        services.any((s) => s.categoryId > 0) ||
+        packages.any((package) {
+          var categoryId = package.categoryId;
+          if (categoryId == 0 && package.items.isNotEmpty) {
+            categoryId = serviceById[package.items.first.serviceId]?.categoryId ?? 0;
+          }
+          return categoryId > 0;
+        });
     // Pre-carica le risorse solo per ruoli che possono modificare servizi.
     if (canManageServices) {
       ref.watch(resourcesProvider);
@@ -127,8 +117,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final localNonEmptyCategoryIds = <int>{
       for (final s in services)
         if (s.categoryId > 0) s.categoryId,
+      for (final ct in classTypes)
+        if ((ct.serviceCategoryId ?? 0) > 0) ct.serviceCategoryId!,
     };
-    final serviceById = {for (final s in services) s.id: s};
     for (final package in packages) {
       var categoryId = package.categoryId;
       if (categoryId == 0 && package.items.isNotEmpty) {
@@ -185,26 +176,29 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       }
       return !categoriesWithServicesElsewhere.contains(category.id);
     }).toList();
+    final canReorderClassTypes =
+        classTypes.isNotEmpty &&
+        (classTypes.length > 1 || categories.length > 1);
+    final hasOnlyClassTypesForReorder =
+        canReorderClassTypes && !hasServiceOrPackageEntries;
 
     final colorScheme = Theme.of(context).colorScheme;
     final isWide = ref.watch(formFactorProvider) != AppFormFactor.mobile;
-    final showReorderPanel = ref.watch(servicesReorderPanelProvider);
-
-    ref.listen<bool>(servicesReorderPanelProvider, (previous, next) {
-      if (!next && (isReorderCategories || isReorderServices)) {
-        setState(() {
-          isReorderCategories = false;
-          isReorderServices = false;
-        });
-      }
-      // Se apro il pannello e c'è solo 1 categoria, attiva subito riordino servizi
-      if (next && previous == false && categories.length < 2) {
-        setState(() {
-          isReorderServices = true;
-          isReorderCategories = false;
-        });
-      }
-    });
+    var reorderMode = ref.watch(servicesReorderModeProvider);
+    final canReorderCategories = categories.length >= 2;
+    final canReorderServicesAndPackages = hasServiceOrPackageEntries;
+    final canReorderClasses = canReorderClassTypes;
+    if (reorderMode == ServicesReorderMode.categories && !canReorderCategories) {
+      reorderMode = ServicesReorderMode.none;
+    } else if (reorderMode == ServicesReorderMode.servicesAndPackages &&
+        !canReorderServicesAndPackages) {
+      reorderMode = hasOnlyClassTypesForReorder
+          ? ServicesReorderMode.classTypes
+          : ServicesReorderMode.none;
+    } else if (reorderMode == ServicesReorderMode.classTypes &&
+        !canReorderClasses) {
+      reorderMode = ServicesReorderMode.none;
+    }
 
     return Column(
       children: [
@@ -214,7 +208,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
             ref,
             servicesAsync: servicesAsync,
             categories: categories,
-            showReorderPanel: showReorderPanel,
+            reorderMode: reorderMode,
             isWide: isWide,
             colorScheme: colorScheme,
           ),
@@ -228,7 +222,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     WidgetRef ref, {
     required AsyncValue<List<Service>> servicesAsync,
     required List<ServiceCategory> categories,
-    required bool showReorderPanel,
+    required ServicesReorderMode reorderMode,
     required bool isWide,
     required ColorScheme colorScheme,
   }) {
@@ -263,59 +257,13 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (showReorderPanel) ...[
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Center(
-                child: Column(
-                  children: [
-                    Text(
-                      context.l10n.reorderTitle,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(0, 4, 0, 8),
-                      child: Text(
-                        context.l10n.reorderHelpDescription,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                    ReorderTogglePanel(
-                      isWide: isWide,
-                      children: [
-                        if (categories.length >= 2)
-                          ReorderToggleButton(
-                            isActive: isReorderCategories,
-                            onPressed: _toggleCategoryReorder,
-                            activeLabel: context.l10n.reorderCategoriesLabel,
-                            inactiveLabel: context.l10n.reorderCategoriesLabel,
-                            activeIcon: Icons.check,
-                            inactiveIcon: Icons.drag_indicator,
-                          ),
-                        ReorderToggleButton(
-                          isActive: isReorderServices,
-                          onPressed: _toggleServiceReorder,
-                          activeLabel: context.l10n.reorderServicesLabel,
-                          inactiveLabel: context.l10n.reorderServicesLabel,
-                          activeIcon: Icons.check,
-                          inactiveIcon: Icons.drag_indicator,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
           Expanded(
-            child: isReorderCategories
+            child: reorderMode == ServicesReorderMode.categories
                 ? _buildReorderCategories(context, ref, categories)
-                : isReorderServices
+                : reorderMode == ServicesReorderMode.servicesAndPackages
                 ? _buildReorderServices(context, ref, categories)
+                : reorderMode == ServicesReorderMode.classTypes
+                ? _buildReorderClassTypes(context, ref, categories)
                 : _buildNormalList(
                     context,
                     ref,
@@ -327,6 +275,253 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         ],
       ),
     );
+  }
+
+  // ============================
+  //  RIORDINO CLASSI (solo classi, cross-categoria)
+  // ============================
+  Widget _buildReorderClassTypes(
+    BuildContext context,
+    WidgetRef ref,
+    List<ServiceCategory> cats,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+
+    final entriesByCategory = <int, List<ClassType>>{};
+    final allClassTypes = <ClassType>[];
+    for (final c in cats) {
+      final list = ref.watch(classTypesByCategoryProvider(c.id));
+      entriesByCategory[c.id] = list;
+      allClassTypes.addAll(list);
+    }
+
+    if (allClassTypes.isEmpty) {
+      return Center(
+        child: Text(
+          context.l10n.classTypesEmpty,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
+
+    final rows = <({bool isHeader, ClassType? classType, ServiceCategory? c})>[];
+    for (final c in cats) {
+      final list = entriesByCategory[c.id] ?? const <ClassType>[];
+      if (list.isEmpty) continue;
+      rows.add((isHeader: true, classType: null, c: c));
+      for (final entry in list) {
+        rows.add((isHeader: false, classType: entry, c: null));
+      }
+    }
+
+    int entryFlatIndexFromRowsIndex(int rowsIndex, int oldIndex) {
+      var count = 0;
+      for (var i = 0; i < rowsIndex; i++) {
+        if (i == oldIndex) continue;
+        if (!rows[i].isHeader) count++;
+      }
+      return count;
+    }
+
+    (int catId, int indexInCat) targetForFlatIndex(
+      int flatIndex, {
+      required List<ClassType> entries,
+      required int fallbackCategoryId,
+    }) {
+      if (entries.isEmpty) return (fallbackCategoryId, 0);
+      final idx = flatIndex.clamp(0, entries.length);
+      if (idx == entries.length) {
+        final last = entries.last;
+        final lastCatId = last.serviceCategoryId ?? fallbackCategoryId;
+        final inCat = entriesByCategory[lastCatId] ?? const <ClassType>[];
+        return (lastCatId, inCat.length);
+      }
+
+      final pivot = entries[idx];
+      final pivotCatId = pivot.serviceCategoryId ?? fallbackCategoryId;
+      var countBeforeInPivotCat = 0;
+      for (var i = 0; i < idx; i++) {
+        final entry = entries[i];
+        if ((entry.serviceCategoryId ?? 0) == pivotCatId) {
+          countBeforeInPivotCat++;
+        }
+      }
+
+      return (pivotCatId, countBeforeInPivotCat);
+    }
+
+    return Listener(
+      onPointerMove: (e) => _startAutoScroll(e.position),
+      onPointerUp: (_) => _stopAutoScroll(),
+      child: ReorderableListView.builder(
+        scrollController: _scrollController,
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+        buildDefaultDragHandles: false,
+        proxyDecorator: (child, index, animation) => child,
+        itemCount: rows.length,
+        onReorder: (oldIndex, newIndex) {
+          final entryOld = rows[oldIndex].classType;
+          if (entryOld == null) return;
+          final oldCatId = entryOld.serviceCategoryId ?? 0;
+          if (oldCatId <= 0) return;
+
+          final entriesWithoutMoving = [
+            for (final entry in allClassTypes)
+              if (entry.id != entryOld.id) entry,
+          ];
+
+          final dropOnHeader = newIndex < rows.length && rows[newIndex].isHeader;
+          var fallbackCategoryId = oldCatId;
+          final fallbackStartIndex = dropOnHeader
+              ? newIndex - 1
+              : (newIndex >= rows.length ? rows.length - 1 : newIndex);
+          for (var i = fallbackStartIndex; i >= 0; i--) {
+            final row = rows[i];
+            if (row.isHeader && row.c != null) {
+              fallbackCategoryId = row.c!.id;
+              break;
+            }
+          }
+
+          final targetFlatIndex = entryFlatIndexFromRowsIndex(newIndex, oldIndex);
+          final (targetCatId, indexInTargetCat) = dropOnHeader
+              ? (
+                  fallbackCategoryId,
+                  (entriesByCategory[fallbackCategoryId] ?? const <ClassType>[])
+                      .where((e) => e.id != entryOld.id)
+                      .length,
+                )
+              : targetForFlatIndex(
+                  targetFlatIndex,
+                  entries: entriesWithoutMoving,
+                  fallbackCategoryId: fallbackCategoryId,
+                );
+
+          final oldItems = [
+            ...(entriesByCategory[oldCatId] ?? const <ClassType>[]),
+          ];
+          final newItems = targetCatId == oldCatId
+              ? oldItems
+              : [...(entriesByCategory[targetCatId] ?? const <ClassType>[])];
+
+          final oldIndexInCat = oldItems.indexWhere((e) => e.id == entryOld.id);
+          if (oldIndexInCat < 0) return;
+          final movingItem = oldItems.removeAt(oldIndexInCat);
+          final targetIndex = indexInTargetCat.clamp(0, newItems.length);
+          if (targetCatId == oldCatId) {
+            oldItems.insert(targetIndex, movingItem);
+            unawaited(
+              _persistClassTypesOrder(
+                context,
+                ref,
+                {oldCatId: oldItems},
+              ),
+            );
+          } else {
+            newItems.insert(targetIndex, movingItem);
+            unawaited(
+              _persistClassTypesOrder(
+                context,
+                ref,
+                {
+                  oldCatId: oldItems,
+                  targetCatId: newItems,
+                },
+              ),
+            );
+          }
+        },
+        itemBuilder: (context, index) {
+          final row = rows[index];
+          if (row.isHeader) {
+            final category = row.c!;
+            return Container(
+              key: ValueKey('class-header-${category.id}'),
+              width: double.infinity,
+              margin: const EdgeInsets.only(top: 16, bottom: 6),
+              decoration: BoxDecoration(
+                color: colorScheme.tertiaryContainer,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              child: Text(
+                category.name,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onTertiaryContainer,
+                ),
+              ),
+            );
+          }
+
+          final ct = row.classType!;
+          return Container(
+            key: ValueKey('class-reorder-${ct.id}'),
+            margin: const EdgeInsets.only(bottom: 6),
+            decoration: BoxDecoration(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: colorScheme.outlineVariant.withOpacity(0.7),
+              ),
+            ),
+            child: ListTile(
+              leading: ReorderableDragStartListener(
+                index: index,
+                child: const Icon(Icons.drag_indicator),
+              ),
+              title: Text(ct.name),
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 4,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _persistClassTypesOrder(
+    BuildContext context,
+    WidgetRef ref,
+    Map<int, List<ClassType>> updatedByCategory,
+  ) async {
+    final businessId = ref.read(currentBusinessIdProvider);
+    if (businessId <= 0) return;
+
+    final repo = ref.read(classEventsRepositoryProvider);
+    try {
+      for (final entry in updatedByCategory.entries) {
+        final categoryId = entry.key;
+        final items = entry.value;
+        for (var i = 0; i < items.length; i++) {
+          final classType = items[i];
+          await repo.updateClassType(
+            businessId: businessId,
+            classTypeId: classType.id,
+            payload: {
+              'service_category_id': categoryId,
+              'sort_order': i,
+            },
+          );
+        }
+      }
+      ref.invalidate(classTypesProvider);
+      ref.invalidate(classTypesWithInactiveProvider);
+    } catch (_) {
+      if (!context.mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.errorTitle,
+        message: context.l10n.classTypesMutationErrorMessage,
+      );
+    }
   }
 
   // ============================
@@ -649,7 +844,33 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
           }
 
           final entry = row.entry!;
-          if (!entry.isService) {
+
+          // ClassType: non riordinabile (nessun sortOrder API), mostrato senza drag handle.
+          if (entry.isClassType) {
+            final ct = entry.classType!;
+            return Container(
+              key: ValueKey('classtype-${ct.id}'),
+              margin: const EdgeInsets.only(bottom: 6),
+              decoration: BoxDecoration(
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: colorScheme.outlineVariant.withOpacity(0.7),
+                ),
+              ),
+              child: ListTile(
+                leading: const SizedBox(width: 24),
+                title: Text(ct.name),
+                dense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
+              ),
+            );
+          }
+
+          if (entry.isPackage) {
             final package = entry.package!;
             return Container(
               key: ValueKey('pkg-${package.id}'),
@@ -799,8 +1020,141 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       onPackageEdit: (package) =>
           _openPackageDialog(context, ref, package: package),
       onPackageDelete: (id) => _confirmDeletePackage(context, ref, id),
+      onAddClassType: (category) => _openClassTypeDialog(
+        context,
+        ref,
+        preselectedCategoryId: category.id,
+      ),
+      onClassTypeOpen: (classType) =>
+          _openClassTypeDialog(context, ref, classType: classType),
+      onClassTypeEdit: (classType) =>
+          _openClassTypeDialog(context, ref, classType: classType),
+      onClassTypeDuplicate: (classType) =>
+          _duplicateClassType(context, ref, classType),
+      onClassTypeDelete: (id) => _confirmDeleteClassType(ref, id),
+      onClassTypeSchedule: (classType) =>
+          _openClassEventDialog(context, ref, classType: classType),
       readOnly: !canManageServices,
     );
+  }
+
+  Future<void> _openClassTypeDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    ClassType? classType,
+    int? preselectedCategoryId,
+  }) {
+    final canManageServices = ref.read(currentUserCanManageServicesProvider);
+    if (!canManageServices) return Future.value();
+    return showCreateClassTypeDialog(
+      context,
+      ref,
+      initial: classType,
+      preselectedCategoryId: preselectedCategoryId,
+    );
+  }
+
+  Future<void> _openClassEventDialog(
+    BuildContext context,
+    WidgetRef ref, {
+    required ClassType classType,
+  }) {
+    return showCreateClassEventDialog(
+      context,
+      ref,
+      initialClassTypeId: classType.id,
+    );
+  }
+
+  Future<void> _duplicateClassType(
+    BuildContext context,
+    WidgetRef ref,
+    ClassType source,
+  ) async {
+    final l10n = context.l10n;
+    final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
+    if (!isSuperadmin) {
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: l10n.classTypesCreateSuperadminOnlyMessage,
+      );
+      return;
+    }
+    try {
+      final allTypes = await ref.read(classTypesProvider.future);
+      final existingNames = allTypes
+          .map((t) => t.name.trim().toLowerCase())
+          .toSet();
+      final baseName = '${source.name.trim()} ${l10n.classTypesCloneSuffix}';
+      var candidateName = baseName;
+      var counter = 2;
+      while (existingNames.contains(candidateName.toLowerCase())) {
+        candidateName = '$baseName $counter';
+        counter++;
+      }
+      await ref
+          .read(classTypeMutationControllerProvider.notifier)
+          .create(
+            name: candidateName,
+            description: source.description,
+            colorHex: source.colorHex,
+            serviceCategoryId: source.serviceCategoryId,
+            locationIds: source.locationIds,
+          );
+      if (!context.mounted) return;
+      FeedbackDialog.showSuccess(
+        context,
+        title: l10n.classTypesCloneSuccessTitle,
+        message: l10n.classTypesCloneSuccessMessage,
+      );
+    } catch (error) {
+      if (!context.mounted) return;
+      FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: l10n.classTypesMutationErrorMessage,
+      );
+    }
+  }
+
+  Future<void> _confirmDeleteClassType(
+    WidgetRef ref,
+    int classTypeId,
+  ) async {
+    if (!mounted) return;
+    final l10n = context.l10n;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l10n.classTypesDeleteConfirmTitle),
+        content: Text(l10n.classTypesDeleteConfirmMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l10n.actionConfirm),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await ref
+          .read(classTypeMutationControllerProvider.notifier)
+          .deleteType(classTypeId: classTypeId);
+    } catch (error) {
+      if (!mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: l10n.classTypesDeleteInUseErrorMessage,
+      );
+    }
   }
 
   void _confirmDeleteCategory(

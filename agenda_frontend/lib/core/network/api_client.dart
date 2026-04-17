@@ -442,6 +442,11 @@ class ApiClient {
     return get(ApiConfig.customerBookings);
   }
 
+  /// GET /v1/customer/class-bookings
+  Future<Map<String, dynamic>> getCustomerClassBookings() async {
+    return get(ApiConfig.customerClassBookings);
+  }
+
   /// GET /v1/customer/bookings/{booking_id}/history
   /// Recupera lo storico eventi (audit trail) di una prenotazione del cliente
   Future<List<dynamic>> getCustomerBookingHistory(int bookingId) async {

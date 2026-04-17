@@ -35,6 +35,7 @@ import '/features/business/providers/location_closures_provider.dart';
 import '/features/staff/providers/availability_exceptions_provider.dart';
 import '/features/staff/providers/staff_planning_provider.dart';
 import '/features/staff/providers/staff_providers.dart';
+import '/features/auth/providers/auth_provider.dart';
 import '../../../core/models/recurrence_rule.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../auth/providers/current_business_user_provider.dart';
@@ -44,12 +45,26 @@ import '../providers/class_events_providers.dart';
 String _resolveClassTypeErrorMessage(Object error, BuildContext context) {
   final l10n = context.l10n;
   if (error is ApiException) {
+    if (error.statusCode == 403) {
+      return l10n.classTypesCreateSuperadminOnlyMessage;
+    }
     if (error.code == 'class_type_in_use') {
       return l10n.classTypesDeleteInUseErrorMessage;
     }
     return error.message;
   }
   return l10n.classTypesMutationErrorMessage;
+}
+
+Future<void> _showClassTypesCreateSuperadminOnlyFeedback(
+  BuildContext context,
+) async {
+  final l10n = context.l10n;
+  await FeedbackDialog.showError(
+    context,
+    title: l10n.errorTitle,
+    message: l10n.classTypesCreateSuperadminOnlyMessage,
+  );
 }
 
 Color? _tryParseHexColor(String? hex) {
@@ -71,7 +86,7 @@ class ClassEventsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final businessId = ref.watch(currentBusinessIdProvider);
-    final classTypesAsync = ref.watch(classTypesWithInactiveProvider);
+    final classTypesAsync = ref.watch(classTypesProvider);
     final canManageClassTypes = ref.watch(currentUserCanManageServicesProvider);
     final onSurfaceVariant = Theme.of(context).colorScheme.onSurfaceVariant;
 
@@ -122,10 +137,19 @@ Future<void> showCreateClassTypeDialog(
   BuildContext context,
   WidgetRef ref, {
   ClassType? initial,
+  int? preselectedCategoryId,
 }) async {
+  final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
+  if (initial == null && !isSuperadmin) {
+    await _showClassTypesCreateSuperadminOnlyFeedback(context);
+    return;
+  }
   await AppForm.show<void>(
     context: context,
-    builder: (_) => _ClassTypeFormDialog(initial: initial),
+    builder: (_) => _ClassTypeFormDialog(
+      initial: initial,
+      preselectedCategoryId: preselectedCategoryId,
+    ),
   );
 }
 
@@ -287,7 +311,6 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
                             ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                     ),
-                    _ClassTypeStatusChip(isActive: widget.classType.isActive),
                   ],
                 ),
                 if ((widget.classType.description ?? '').trim().isNotEmpty) ...[
@@ -363,13 +386,12 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
                                     widget.classType,
                                   );
                                   break;
-                                case _ClassTypeQuickAction.delete:
-                                  await _deleteClassType(
-                                    context,
-                                    ref,
-                                    widget.classType,
-                                  );
-                                  break;
+                            case _ClassTypeQuickAction.delete:
+                              await _deleteClassType(
+                                ref,
+                                widget.classType,
+                              );
+                              break;
                               }
                             },
                             itemBuilder: (menuContext) => [
@@ -706,8 +728,13 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
     ClassType source,
   ) async {
     final l10n = context.l10n;
+    final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
+    if (!isSuperadmin) {
+      await _showClassTypesCreateSuperadminOnlyFeedback(context);
+      return;
+    }
     try {
-      final allTypes = await ref.read(classTypesWithInactiveProvider.future);
+      final allTypes = await ref.read(classTypesProvider.future);
       final existingNames = allTypes
           .map((type) => type.name.trim().toLowerCase())
           .toSet();
@@ -726,7 +753,6 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
             description: source.description,
             colorHex: source.colorHex,
             serviceCategoryId: source.serviceCategoryId,
-            isActive: source.isActive,
             locationIds: source.locationIds,
           );
       if (!context.mounted) return;
@@ -747,11 +773,12 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
   }
 
   Future<void> _deleteClassType(
-    BuildContext context,
     WidgetRef ref,
     ClassType classType,
   ) async {
+    if (!mounted) return;
     final l10n = context.l10n;
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -769,14 +796,14 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
         ],
       ),
     );
-    if (confirmed != true || !context.mounted) return;
+    if (confirmed != true || !mounted) return;
 
     try {
       await ref
           .read(classTypeMutationControllerProvider.notifier)
           .deleteType(classTypeId: classType.id);
     } catch (error) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       final message = _resolveClassTypeErrorMessage(error, context);
       await FeedbackDialog.showError(
         context,
@@ -787,41 +814,11 @@ class _ClassTypeCardState extends ConsumerState<_ClassTypeCard> {
   }
 }
 
-class _ClassTypeStatusChip extends StatelessWidget {
-  const _ClassTypeStatusChip({required this.isActive});
-
-  final bool isActive;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final bg = isActive
-        ? colorScheme.primaryContainer
-        : colorScheme.surfaceContainerHighest;
-    final fg = isActive
-        ? colorScheme.onPrimaryContainer
-        : colorScheme.onSurface;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Text(
-        isActive ? l10n.classTypesStatusActive : l10n.classTypesStatusInactive,
-        style: Theme.of(context).textTheme.labelSmall?.copyWith(color: fg),
-      ),
-    );
-  }
-}
-
 class _ClassTypeFormDialog extends ConsumerStatefulWidget {
-  const _ClassTypeFormDialog({this.initial});
+  const _ClassTypeFormDialog({this.initial, this.preselectedCategoryId});
 
   final ClassType? initial;
+  final int? preselectedCategoryId;
 
   @override
   ConsumerState<_ClassTypeFormDialog> createState() =>
@@ -850,11 +847,11 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
-  late bool _isActive;
   late Set<int> _selectedLocationIds;
   String? _selectedColorHex;
   int? _selectedServiceCategoryId;
   bool _hasChangedLocationSelection = false;
+  bool _showExpiredSchedules = false;
 
   bool get _isEdit => widget.initial != null;
 
@@ -865,10 +862,10 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     _descriptionController = TextEditingController(
       text: widget.initial?.description ?? '',
     );
-    _isActive = widget.initial?.isActive ?? true;
     _selectedLocationIds = {...?widget.initial?.locationIds};
     _selectedColorHex = widget.initial?.colorHex;
-    _selectedServiceCategoryId = widget.initial?.serviceCategoryId;
+    _selectedServiceCategoryId =
+        widget.initial?.serviceCategoryId ?? widget.preselectedCategoryId;
   }
 
   @override
@@ -884,12 +881,23 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     final mutationState = ref.watch(classTypeMutationControllerProvider);
     final isLoading = mutationState.isLoading;
     final locations = ref.watch(locationsProvider);
+    final allStaff = ref.watch(allStaffProvider).value ?? const <Staff>[];
     final serviceCategories = ref
         .watch(classTypeServiceCategoriesProvider)
         .maybeWhen(
           data: (value) => value,
           orElse: () => const <ServiceCategory>[],
         );
+    final allSchedulesAsync = _isEdit
+        ? ref.watch(allClassEventsByTypeProvider(widget.initial!.id))
+        : const AsyncData<List<ClassEvent>>(<ClassEvent>[]);
+    final timezone = ref.watch(effectiveTenantTimezoneProvider);
+    final locationNameById = {
+      for (final location in locations) location.id: location.name,
+    };
+    final staffNameById = {
+      for (final member in allStaff) member.id: member.displayName,
+    };
     final hasSelectedCategoryInList =
         _selectedServiceCategoryId == null ||
         serviceCategories.any((c) => c.id == _selectedServiceCategoryId);
@@ -991,15 +999,6 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
             enabled: !isLoading,
             onChanged: (hex) => setState(() => _selectedColorHex = hex),
           ),
-          const SizedBox(height: 8),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            value: _isActive,
-            onChanged: isLoading
-                ? null
-                : (value) => setState(() => _isActive = value),
-            title: Text(l10n.classTypesFieldIsActive),
-          ),
           if (shouldShowLocationsSelector) ...[
             const SizedBox(height: 8),
             _ClassTypeLocationsMultiSelect(
@@ -1022,6 +1021,108 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                 ),
               ),
           ],
+          if (_isEdit) ...[
+            const SizedBox(height: 12),
+            Text(
+              l10n.classEventsSchedulesListTitle,
+              style: Theme.of(context).textTheme.titleSmall,
+            ),
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline.withOpacity(0.35),
+                ),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              padding: const EdgeInsets.all(10),
+              child: allSchedulesAsync.when(
+                loading: () => const LinearProgressIndicator(minHeight: 2),
+                error: (_, __) => Text(
+                  l10n.errorTitle,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.error,
+                  ),
+                ),
+                data: (schedules) {
+                  final nowUtc = TenantTimeService.nowInTimezone(timezone).toUtc();
+                  final futureSchedules = schedules
+                      .where((event) => event.endsAtUtc.isAfter(nowUtc))
+                      .toList();
+                  final hasExpiredSchedules =
+                      futureSchedules.length != schedules.length;
+                  final displayedSchedules = _showExpiredSchedules
+                      ? schedules
+                      : futureSchedules;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (hasExpiredSchedules)
+                        SwitchListTile(
+                          dense: true,
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            l10n.classEventsShowExpiredSchedules,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          value: _showExpiredSchedules,
+                          onChanged: (value) {
+                            setState(() => _showExpiredSchedules = value);
+                          },
+                        ),
+                      if (displayedSchedules.isEmpty)
+                        Text(
+                          l10n.classEventsNoScheduledDates,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        )
+                      else
+                        SizedBox(
+                          height:
+                              (displayedSchedules.length * 60).clamp(96, 280).toDouble(),
+                          child: ListView.separated(
+                            primary: false,
+                            itemCount: displayedSchedules.length,
+                            separatorBuilder: (_, __) => const AppDivider(height: 1),
+                            itemBuilder: (context, index) {
+                              final schedule = displayedSchedules[index];
+                              final startsAtLocal =
+                                  schedule.startsAtLocal ??
+                                  TenantTimeService.fromUtcToTenant(
+                                    schedule.startsAtUtc,
+                                    timezone,
+                                  );
+                              final endsAtLocal =
+                                  schedule.endsAtLocal ??
+                                  TenantTimeService.fromUtcToTenant(
+                                    schedule.endsAtUtc,
+                                    timezone,
+                                  );
+                              final locationName =
+                                  locationNameById[schedule.locationId] ??
+                                  '#${schedule.locationId}';
+                              final staffName =
+                                  staffNameById[schedule.staffId] ??
+                                  '#${schedule.staffId}';
+
+                              return ListTile(
+                                dense: true,
+                                visualDensity: VisualDensity.compact,
+                                title: Text(
+                                  '${DateFormat('dd/MM/yyyy').format(startsAtLocal)} • ${DtFmt.hm(context, startsAtLocal.hour, startsAtLocal.minute)} - ${DtFmt.hm(context, endsAtLocal.hour, endsAtLocal.minute)}',
+                                ),
+                                subtitle: Text('$locationName • $staffName'),
+                              );
+                            },
+                          ),
+                        ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -1036,6 +1137,17 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
           onPressed: isLoading ? null : () => Navigator.of(context).pop(),
           child: Text(l10n.actionCancel),
         ),
+        if (_isEdit)
+          AppOutlinedActionButton(
+            onPressed: isLoading
+                ? null
+                : () => showCreateClassEventDialog(
+                    context,
+                    ref,
+                    initialClassTypeId: widget.initial!.id,
+                  ),
+            child: Text(l10n.classTypesActionScheduleClass),
+          ),
         AppAsyncFilledButton(
           isLoading: isLoading,
           onPressed: _submit,
@@ -1103,7 +1215,6 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
               description: _descriptionController.text,
               colorHex: _selectedColorHex,
               serviceCategoryId: _selectedServiceCategoryId,
-              isActive: _isActive,
               locationIds: locationIdsForSubmit,
             );
       } else {
@@ -1114,7 +1225,6 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
               description: _descriptionController.text,
               colorHex: _selectedColorHex,
               serviceCategoryId: _selectedServiceCategoryId,
-              isActive: _isActive,
               locationIds: locationIdsForSubmit,
             );
       }
@@ -1389,6 +1499,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   static const int _timeStepMinutes = 15;
   final _formKey = GlobalKey<FormState>();
   final _capacityController = TextEditingController();
+  bool _didInitializeDependencies = false;
 
   ClassEvent? _editingEvent;
   RecurrenceConfig? _recurrenceConfig;
@@ -1402,20 +1513,28 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   @override
   void initState() {
     super.initState();
+    _editingEvent = widget.initialEvent;
+    _classTypeId = widget.initialClassTypeId;
+    _locationId = widget.initialLocationId;
+    _date = DateTime(
+      widget.initialDate.year,
+      widget.initialDate.month,
+      widget.initialDate.day,
+    );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_didInitializeDependencies) {
+      return;
+    }
+    _didInitializeDependencies = true;
     // Reset the create controller in case a previous operation left it in a
     // stuck AsyncLoading state (e.g. network hang while the form was closed).
     ref.invalidate(classEventCreateControllerProvider);
-    _editingEvent = widget.initialEvent;
     if (_editingEvent != null) {
       _applyEventToForm(_editingEvent!);
-    } else {
-      _classTypeId = widget.initialClassTypeId;
-      _locationId = widget.initialLocationId;
-      _date = DateTime(
-        widget.initialDate.year,
-        widget.initialDate.month,
-        widget.initialDate.day,
-      );
     }
   }
 

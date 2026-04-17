@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -28,7 +27,7 @@ class MoreScreen extends ConsumerWidget {
     final canViewServices = ref.watch(currentUserCanViewServicesProvider);
     final canViewStaff = ref.watch(currentUserCanViewStaffProvider);
     final canViewReports = ref.watch(currentUserCanViewReportsProvider);
-    final canAccessClassEvents = canViewServices && kDebugMode;
+    // ClassEvents ora gestiti dalla schermata Servizi — voce rimossa.
     final isSuperadmin = ref.watch(
       authProvider.select((s) => s.user?.isSuperadmin ?? false),
     );
@@ -64,14 +63,7 @@ class MoreScreen extends ConsumerWidget {
           color: const Color(0xFF4CAF50), // Green
           onTap: () => context.go(_withFromAltro('/servizi')),
         ),
-      if (canAccessClassEvents)
-        _MoreItem(
-          icon: Icons.groups_outlined,
-          title: l10n.classEventsTitle,
-          description: l10n.moreClassEventsDescription,
-          color: const Color(0xFF795548),
-          onTap: () => context.go(_withFromAltro('/altro/classi')),
-        ),
+      // ClassEvents ora integrati nella schermata Servizi.
       if (canManageSettings)
         _MoreItem(
           icon: Icons.inventory_2_outlined,

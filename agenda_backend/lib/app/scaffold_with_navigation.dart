@@ -16,6 +16,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../core/l10n/l10_extension.dart';
+import '../core/models/class_type.dart';
 import '../core/models/location.dart';
 import '../core/widgets/adaptive_dropdown.dart';
 import '../core/widgets/app_bottom_sheet.dart';
@@ -43,8 +44,10 @@ import '../features/services/presentation/dialogs/category_dialog.dart';
 import '../features/services/presentation/dialogs/service_dialog.dart';
 import '../features/services/presentation/dialogs/service_package_dialog.dart';
 import '../features/services/providers/service_categories_provider.dart';
+import '../features/services/providers/service_packages_provider.dart';
 import '../features/services/providers/services_provider.dart';
 import '../features/services/providers/services_reorder_provider.dart';
+import '../features/class_events/providers/class_events_providers.dart';
 import '../features/staff/presentation/dialogs/location_dialog.dart';
 import '../features/staff/presentation/dialogs/resource_dialog.dart';
 import '../features/staff/presentation/dialogs/staff_dialog.dart';
@@ -62,7 +65,10 @@ int resolveMoreCompactBranchTarget({
   required int lastMoreBranchIndex,
   required bool includeClients,
 }) {
-  if (isMoreCompactBranchIndex(lastMoreBranchIndex, includeClients: includeClients)) {
+  if (isMoreCompactBranchIndex(
+    lastMoreBranchIndex,
+    includeClients: includeClients,
+  )) {
     return lastMoreBranchIndex;
   }
   return 6; // Fallback: root "Altro"
@@ -155,7 +161,6 @@ class _ScaffoldWithNavigationState
         isBookingNotifications ||
         isClosures ||
         isPermessi;
-    final isClassEvents = currentPath == '/altro/classi';
     final isMoreResources = currentPath == '/altro/risorse';
     final isMoreLocations = currentPath == '/altro/sedi';
     final isMorePaymentMethods = currentPath == '/altro/metodi-pagamento';
@@ -171,7 +176,6 @@ class _ScaffoldWithNavigationState
             isClosures ||
             isProfile ||
             isPermessi ||
-            isClassEvents ||
             isMoreResources ||
             isMoreLocations ||
             isMorePaymentMethods ||
@@ -193,6 +197,9 @@ class _ScaffoldWithNavigationState
     final canViewReports = ref.watch(currentUserCanViewReportsProvider);
     final canManageOperators = ref.watch(canManageOperatorsProvider);
     final canManageClosures = ref.watch(canManageBusinessSettingsProvider);
+    final servicesReorderMode = ref.watch(servicesReorderModeProvider);
+    final isServicesReordering =
+        isServices && servicesReorderMode != ServicesReorderMode.none;
     final businessesAsync = ref.watch(businessesProvider);
     final hasMultipleBusinesses = businessesAsync.maybeWhen(
       data: (businesses) => businesses.length > 1,
@@ -257,6 +264,10 @@ class _ScaffoldWithNavigationState
       // Azioni specifiche per tab (menu utente è nella rail)
       List<Widget> buildActions() {
         final List<Widget> actions = [];
+        if (isServicesReordering) {
+          actions.add(const _ServicesEndReorderAction());
+          return actions;
+        }
         if (isAgenda) {
           if (canCreateAgendaItems) {
             actions.add(const _AgendaAddAction());
@@ -272,10 +283,6 @@ class _ScaffoldWithNavigationState
           actions.add(_ReportRefreshAction(ref: ref));
         } else if (isBookingsList) {
           actions.add(_BookingsListRefreshAction(ref: ref));
-        } else if (isClassEvents) {
-          if (canManageServices) {
-            actions.add(const _ClassEventsAddAction());
-          }
         } else if (isMoreResources && canManageClosures) {
           actions.add(const _ResourcesAddAction());
         } else if (isMoreLocations && canManageClosures) {
@@ -333,8 +340,6 @@ class _ScaffoldWithNavigationState
                       ? Text(context.l10n.reportsTitle)
                       : isBookingsList
                       ? Text(context.l10n.bookingsListTitle)
-                      : isClassEvents
-                      ? Text(context.l10n.classEventsTitle)
                       : isMoreResources
                       ? Text(context.l10n.resourcesTitle)
                       : isMoreLocations
@@ -428,8 +433,6 @@ class _ScaffoldWithNavigationState
                                 ? Text(context.l10n.reportsTitle)
                                 : isBookingsList
                                 ? Text(context.l10n.bookingsListTitle)
-                                : isClassEvents
-                                ? Text(context.l10n.classEventsTitle)
                                 : isMoreResources
                                 ? Text(context.l10n.resourcesTitle)
                                 : isMoreLocations
@@ -469,6 +472,10 @@ class _ScaffoldWithNavigationState
     // Azioni specifiche per tab (menu utente è nella BNB)
     List<Widget> buildMobileActions() {
       final List<Widget> actions = [];
+      if (isServicesReordering) {
+        actions.add(const _ServicesEndReorderAction(compact: true));
+        return actions;
+      }
       if (isAgenda) {
         if (formFactor == AppFormFactor.mobile) {
           actions.add(
@@ -489,10 +496,6 @@ class _ScaffoldWithNavigationState
         actions.add(_ReportRefreshAction(ref: ref));
       } else if (isBookingsList) {
         actions.add(_BookingsListRefreshAction(ref: ref));
-      } else if (isClassEvents) {
-        if (canManageServices) {
-          actions.add(const _ClassEventsAddAction(compact: true));
-        }
       } else if (isMoreResources && canManageClosures) {
         actions.add(const _ResourcesAddAction(compact: true));
       } else if (isMoreLocations && canManageClosures) {
@@ -546,8 +549,6 @@ class _ScaffoldWithNavigationState
                     ? Text(context.l10n.reportsTitle)
                     : isBookingsList
                     ? Text(context.l10n.bookingsListTitle)
-                    : isClassEvents
-                    ? Text(context.l10n.classEventsTitle)
                     : isMoreResources
                     ? Text(context.l10n.resourcesTitle)
                     : isMoreLocations
@@ -749,7 +750,10 @@ class _ScaffoldWithNavigationState
       if (isAltroSubFeatureOpen) {
         _goBranch(6, ref, forceInitialLocation: true);
       } else {
-        _goBranch(_resolveMoreBranchTarget(includeClients: includeClients), ref);
+        _goBranch(
+          _resolveMoreBranchTarget(includeClients: includeClients),
+          ref,
+        );
       }
     }
   }
@@ -799,7 +803,10 @@ class _ScaffoldWithNavigationState
       if (isAltroSubFeatureOpen) {
         _goBranch(6, ref, forceInitialLocation: true);
       } else {
-        _goBranch(_resolveMoreBranchTarget(includeClients: includeClients), ref);
+        _goBranch(
+          _resolveMoreBranchTarget(includeClients: includeClients),
+          ref,
+        );
       }
     }
   }
@@ -1299,7 +1306,37 @@ class _ServicesAddAction extends ConsumerWidget {
         formFactor == AppFormFactor.tablet ||
         formFactor == AppFormFactor.desktop;
     final services = ref.watch(servicesProvider).value ?? [];
+    final packages = ref.watch(servicePackagesProvider).value ?? [];
+    final classTypes = ref.watch(classTypesProvider).value ?? const <ClassType>[];
     final categories = ref.watch(serviceCategoriesProvider);
+    final hasCategories = categories.length >= 2;
+    final hasServices = services.isNotEmpty;
+    final hasPackages = packages.isNotEmpty;
+    final canReorderClassTypes =
+        classTypes.isNotEmpty &&
+        (classTypes.length > 1 || categories.length > 1);
+    final hasServicesOrPackages = hasServices || hasPackages;
+    final reorderItems = <AdaptiveDropdownItem<String>>[
+      if (hasCategories)
+        AdaptiveDropdownItem(
+          value: 'reorder_categories',
+          child: Text(l10n.reorderCategoriesLabel),
+        ),
+      if (hasServicesOrPackages)
+        AdaptiveDropdownItem(
+          value: 'reorder_services_packages',
+          child: Text(
+            hasPackages
+                ? l10n.reorderServicesAndPackagesLabel
+                : l10n.reorderServicesLabel,
+          ),
+        ),
+      if (canReorderClassTypes)
+        AdaptiveDropdownItem(
+          value: 'reorder_classes',
+          child: Text(l10n.reorderClassesLabel),
+        ),
+    ];
     const iconOnlyWidth = 46.0;
     final bool isIconOnly = !showLabelEffective;
     Widget buildActionLabel(IconData icon, String label) {
@@ -1315,74 +1352,39 @@ class _ServicesAddAction extends ConsumerWidget {
           : Icon(icon, size: 22);
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ...[
-            Tooltip(
-              message: l10n.reorderTitle,
-              child: SizedBox(
-                height: _actionButtonHeight,
-                width: isIconOnly ? iconOnlyWidth : null,
-                child: AppOutlinedActionButton(
-                  onPressed: () {
-                    ref.read(servicesReorderPanelProvider.notifier).toggle();
-                  },
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  borderRadius: BorderRadius.circular(8),
-                  borderColor: scheme.primary,
-                  foregroundColor: scheme.primary,
-                  child: buildActionLabel(Icons.sort, l10n.reorderTitle),
-                ),
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (reorderItems.isNotEmpty) ...[
           AdaptiveDropdown<String>(
-            modalTitle: l10n.agendaAdd,
+            modalTitle: l10n.reorderTitle,
             alignment: AdaptiveDropdownAlignment.right,
             verticalPosition: AdaptiveDropdownVerticalPosition.above,
             forcePopup: true,
             hideTriggerWhenOpen: true,
-            popupWidth: 200,
-            items: [
-              AdaptiveDropdownItem(
-                value: 'category',
-                child: Text(l10n.createCategoryButtonLabel),
-              ),
-              AdaptiveDropdownItem(
-                value: 'service',
-                child: Text(l10n.servicesNewServiceMenu),
-              ),
-              AdaptiveDropdownItem(
-                value: 'package',
-                child: Text(l10n.servicePackageNewMenu),
-              ),
-            ],
+            popupWidth: 260,
+            items: reorderItems,
             onSelected: (value) {
-              if (value == 'category') {
-                showCategoryDialog(context, ref);
-              } else if (value == 'service') {
-                showServiceDialog(context, ref, requireCategorySelection: true);
-              } else if (value == 'package') {
-                showServicePackageDialog(
-                  context,
-                  ref,
-                  services: services,
-                  categories: categories,
-                );
+              if (value == 'reorder_categories') {
+                ref
+                    .read(servicesReorderModeProvider.notifier)
+                    .setMode(ServicesReorderMode.categories);
+              } else if (value == 'reorder_services_packages') {
+                ref
+                    .read(servicesReorderModeProvider.notifier)
+                    .setMode(ServicesReorderMode.servicesAndPackages);
+              } else if (value == 'reorder_classes') {
+                ref
+                    .read(servicesReorderModeProvider.notifier)
+                    .setMode(ServicesReorderMode.classTypes);
               }
             },
             child: Material(
               elevation: 0,
-              color: scheme.secondaryContainer,
+              color: Colors.transparent,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
+                side: BorderSide(color: scheme.primary),
               ),
               clipBehavior: Clip.antiAlias,
               child: SizedBox(
@@ -1393,17 +1395,144 @@ class _ServicesAddAction extends ConsumerWidget {
                     horizontal: 12,
                     vertical: 8,
                   ),
-                  child: _buildAddButtonContent(
-                    showLabelEffective: showLabelEffective,
-                    compact: compact,
-                    label: l10n.agendaAdd,
-                    onContainer: onContainer,
-                  ),
+                  child: buildActionLabel(Icons.sort, l10n.reorderTitle),
                 ),
               ),
             ),
           ),
+          const SizedBox(width: 8),
         ],
+        AdaptiveDropdown<String>(
+          modalTitle: l10n.agendaAdd,
+          alignment: AdaptiveDropdownAlignment.right,
+          verticalPosition: AdaptiveDropdownVerticalPosition.above,
+          forcePopup: true,
+          hideTriggerWhenOpen: true,
+          popupWidth: 200,
+          items: [
+            AdaptiveDropdownItem(
+              value: 'category',
+              child: Text(l10n.createCategoryButtonLabel),
+            ),
+            AdaptiveDropdownItem(
+              value: 'service',
+              child: Text(l10n.servicesNewServiceMenu),
+            ),
+            AdaptiveDropdownItem(
+              value: 'class_type',
+              child: Text(l10n.classTypesCreateTitle),
+            ),
+            AdaptiveDropdownItem(
+              value: 'package',
+              child: Text(l10n.servicePackageNewMenu),
+            ),
+          ],
+          onSelected: (value) {
+            if (value == 'category') {
+              showCategoryDialog(context, ref);
+            } else if (value == 'service') {
+              showServiceDialog(context, ref, requireCategorySelection: true);
+            } else if (value == 'class_type') {
+              showCreateClassTypeDialog(context, ref);
+            } else if (value == 'package') {
+              showServicePackageDialog(
+                context,
+                ref,
+                services: services,
+                categories: categories,
+              );
+            }
+          },
+          child: Material(
+            elevation: 0,
+            color: scheme.secondaryContainer,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            clipBehavior: Clip.antiAlias,
+            child: SizedBox(
+              height: _actionButtonHeight,
+              width: isIconOnly ? iconOnlyWidth : null,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                child: _buildAddButtonContent(
+                  showLabelEffective: showLabelEffective,
+                  compact: compact,
+                  label: l10n.agendaAdd,
+                  onContainer: onContainer,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ServicesEndReorderAction extends ConsumerWidget {
+  const _ServicesEndReorderAction({this.compact = false});
+
+  final bool compact;
+  static const double _actionButtonHeight = 40;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
+    final showLabel = layoutConfig.showTopbarAddLabel;
+    final showLabelEffective =
+        showLabel ||
+        formFactor == AppFormFactor.tablet ||
+        formFactor == AppFormFactor.desktop;
+    const iconOnlyWidth = 46.0;
+    final bool isIconOnly = !showLabelEffective;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Material(
+        elevation: 0,
+        color: scheme.errorContainer,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => ref.read(servicesReorderModeProvider.notifier).clear(),
+          child: SizedBox(
+            height: _actionButtonHeight,
+            width: isIconOnly ? iconOnlyWidth : null,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              child: compact
+                  ? Icon(
+                      Icons.check,
+                      color: scheme.onErrorContainer,
+                      size: 22,
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.check,
+                          color: scheme.onErrorContainer,
+                          size: 22,
+                        ),
+                        if (showLabelEffective) ...[
+                          const SizedBox(width: 8),
+                          Text(
+                            l10n.reorderDoneButtonLabel,
+                            style: TextStyle(color: scheme.onErrorContainer),
+                          ),
+                        ],
+                      ],
+                    ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -1966,60 +2095,6 @@ class _BookingNotificationsRefreshAction extends StatelessWidget {
 }
 
 /// Add button for ClassEvents screen
-class _ClassEventsAddAction extends ConsumerWidget {
-  const _ClassEventsAddAction({this.compact = false});
-
-  final bool compact;
-  static const double _actionButtonHeight = 40;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = context.l10n;
-    final layoutConfig = ref.watch(layoutConfigProvider);
-    final formFactor = ref.watch(formFactorProvider);
-    final showLabel = layoutConfig.showTopbarAddLabel;
-    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
-    const iconOnlyWidth = 46.0;
-    final bool isIconOnly = !showLabelEffective;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: GestureDetector(
-        onTap: () => showCreateClassTypeDialog(context, ref),
-        child: Builder(
-          builder: (buttonContext) {
-            final scheme = Theme.of(buttonContext).colorScheme;
-            final onContainer = scheme.onSecondaryContainer;
-            return Material(
-              elevation: 0,
-              color: scheme.secondaryContainer,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: SizedBox(
-                height: _actionButtonHeight,
-                width: isIconOnly ? iconOnlyWidth : null,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  child: _buildAddButtonContent(
-                    showLabelEffective: showLabelEffective,
-                    compact: compact,
-                    label: l10n.classEventsAddButton,
-                    onContainer: onContainer,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
-    );
-  }
-}
 
 /// Add button for Closures screen
 class _ClosuresAddAction extends ConsumerWidget {

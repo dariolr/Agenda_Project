@@ -2524,11 +2524,31 @@ class L10n {
     return Intl.message('Reorder', name: 'reorderTitle', desc: '', args: []);
   }
 
+  /// `Done reordering`
+  String get reorderDoneButtonLabel {
+    return Intl.message(
+      'Done reordering',
+      name: 'reorderDoneButtonLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Add service`
   String get addServiceTooltip {
     return Intl.message(
       'Add service',
       name: 'addServiceTooltip',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add appointment type.`
+  String get addAppointmentTypeTooltip {
+    return Intl.message(
+      'Add appointment type.',
+      name: 'addAppointmentTypeTooltip',
       desc: '',
       args: [],
     );
@@ -2854,6 +2874,26 @@ class L10n {
     return Intl.message(
       'Services',
       name: 'reorderServicesLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Services and/or Packages`
+  String get reorderServicesAndPackagesLabel {
+    return Intl.message(
+      'Services and/or Packages',
+      name: 'reorderServicesAndPackagesLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Classes`
+  String get reorderClassesLabel {
+    return Intl.message(
+      'Classes',
+      name: 'reorderClassesLabel',
       desc: '',
       args: [],
     );
@@ -9557,6 +9597,16 @@ class L10n {
     return Intl.message(
       'New class type',
       name: 'classTypesCreateTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Creating a class type is allowed only for superadmin users.`
+  String get classTypesCreateSuperadminOnlyMessage {
+    return Intl.message(
+      'Creating a class type is allowed only for superadmin users.',
+      name: 'classTypesCreateSuperadminOnlyMessage',
       desc: '',
       args: [],
     );

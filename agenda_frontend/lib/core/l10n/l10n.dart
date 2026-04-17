@@ -2588,6 +2588,91 @@ class L10n {
     );
   }
 
+  /// `Waitlist`
+  String get classBookingWaitlistedBadge {
+    return Intl.message(
+      'Waitlist',
+      name: 'classBookingWaitlistedBadge',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Full`
+  String get classEventFull {
+    return Intl.message('Full', name: 'classEventFull', desc: '', args: []);
+  }
+
+  /// `{count} spots`
+  String classEventSpotsLeft(int count) {
+    return Intl.message(
+      '$count spots',
+      name: 'classEventSpotsLeft',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `{count} spots available`
+  String classEventSpotsAvailable(int count) {
+    return Intl.message(
+      '$count spots available',
+      name: 'classEventSpotsAvailable',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `Waitlist`
+  String get classEventWaitlistLabel {
+    return Intl.message(
+      'Waitlist',
+      name: 'classEventWaitlistLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You'll be added to the waitlist`
+  String get classEventWaitlistNotice {
+    return Intl.message(
+      'You\'ll be added to the waitlist',
+      name: 'classEventWaitlistNotice',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Group class`
+  String get classEventGroupLesson {
+    return Intl.message(
+      'Group class',
+      name: 'classEventGroupLesson',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You're on the waitlist!`
+  String get confirmationWaitlistTitle {
+    return Intl.message(
+      'You\'re on the waitlist!',
+      name: 'confirmationWaitlistTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You'll be confirmed as soon as a spot opens up`
+  String get confirmationWaitlistSubtitle {
+    return Intl.message(
+      'You\'ll be confirmed as soon as a spot opens up',
+      name: 'confirmationWaitlistSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Business not found`
   String get businessNotFound {
     return Intl.message(
