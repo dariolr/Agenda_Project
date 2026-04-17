@@ -210,6 +210,7 @@ class _ScaffoldWithNavigationState
       currentIndex,
       includeClients: showClientsNav,
       currentPath: currentPath,
+      fromAltroEntry: fromAltroEntry,
     );
 
     // Per mobile e desktop usiamo destinazioni compatte con "Altro"
@@ -662,10 +663,12 @@ class _ScaffoldWithNavigationState
     int currentIndex, {
     required bool includeClients,
     required String currentPath,
+    required bool fromAltroEntry,
   }) {
     final isInsideAltroPath =
         currentPath == '/altro' || currentPath.startsWith('/altro/');
-    if (!isInsideAltroPath) return;
+    final shouldRememberAsMoreSubFeature = isInsideAltroPath || fromAltroEntry;
+    if (!shouldRememberAsMoreSubFeature) return;
 
     // "Altro" compatto include tutti i branch non mappati su Agenda/Clienti.
     if (_isMoreCompactBranch(currentIndex, includeClients: includeClients)) {
@@ -746,7 +749,10 @@ class _ScaffoldWithNavigationState
     final moreIndex = includeClients ? 2 : 1;
     if (desktopIndex == moreIndex) {
       final currentPath = GoRouterState.of(context).uri.path;
-      final isAltroSubFeatureOpen = currentPath.startsWith('/altro/');
+      final fromAltroEntry =
+          GoRouterState.of(context).uri.queryParameters['from_altro'] == '1';
+      final isAltroSubFeatureOpen =
+          currentPath.startsWith('/altro/') || fromAltroEntry;
       if (isAltroSubFeatureOpen) {
         _goBranch(6, ref, forceInitialLocation: true);
       } else {
@@ -799,7 +805,10 @@ class _ScaffoldWithNavigationState
     final moreIndex = includeClients ? 2 : 1;
     if (mobileIndex == moreIndex) {
       final currentPath = GoRouterState.of(context).uri.path;
-      final isAltroSubFeatureOpen = currentPath.startsWith('/altro/');
+      final fromAltroEntry =
+          GoRouterState.of(context).uri.queryParameters['from_altro'] == '1';
+      final isAltroSubFeatureOpen =
+          currentPath.startsWith('/altro/') || fromAltroEntry;
       if (isAltroSubFeatureOpen) {
         _goBranch(6, ref, forceInitialLocation: true);
       } else {

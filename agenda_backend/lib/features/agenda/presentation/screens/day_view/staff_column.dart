@@ -33,6 +33,7 @@ import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_display_settings_provider.dart';
 import '../../../providers/agenda_scroll_request_provider.dart';
 import '../../../providers/appointment_providers.dart';
+import '../../../providers/business_providers.dart';
 import '../../../providers/block_resizing_provider.dart';
 import '../../../providers/booking_reschedule_provider.dart';
 import '../../../providers/date_range_provider.dart';
@@ -100,6 +101,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   int? _hoveredSlotIndex;
   double? _hoverY;
   bool _isApplyingBookingReschedule = false;
+  int? _hoveredClassEventId;
+  int? _draggingClassEventId;
+  final Map<int, DateTime> _classResizePreviewEndByEventId = {};
+  _ClassEventResizeSession? _classResizeSession;
   late final ProviderSubscription<Offset?> _dragListener;
   late final HighlightedStaffIdNotifier _highlightedNotifier;
   late final StaffColumnsGeometryNotifier _geometryNotifier;
@@ -351,7 +356,144 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       }
       _geometryNotifier.clearFor(staffId);
     });
+    _classResizeSession = null;
+    _classResizePreviewEndByEventId.clear();
     super.dispose();
+  }
+
+  String _toApiLocalDateTime(DateTime value) {
+    final y = value.year.toString().padLeft(4, '0');
+    final m = value.month.toString().padLeft(2, '0');
+    final d = value.day.toString().padLeft(2, '0');
+    final h = value.hour.toString().padLeft(2, '0');
+    final min = value.minute.toString().padLeft(2, '0');
+    final s = value.second.toString().padLeft(2, '0');
+    return '$y-$m-${d}T$h:$min:$s';
+  }
+
+  Future<void> _updateClassEventTiming({
+    required int classEventId,
+    required DateTime newStart,
+    required DateTime newEnd,
+    required int staffId,
+  }) async {
+    final businessId = ref.read(currentBusinessIdProvider);
+    if (businessId <= 0) return;
+    final repo = ref.read(classEventsRepositoryProvider);
+    await repo.update(
+      businessId: businessId,
+      classEventId: classEventId,
+      payload: {
+        'starts_at': _toApiLocalDateTime(newStart),
+        'ends_at': _toApiLocalDateTime(newEnd),
+        'staff_id': staffId,
+      },
+    );
+    ref.invalidate(classEventsProvider);
+    ref.invalidate(classEventsForRangeProvider);
+    ref.invalidate(classEventsForCurrentLocationDayProvider);
+  }
+
+  bool _isClassResizeHotzone({
+    required double localDy,
+    required double cardHeight,
+  }) {
+    const resizeHandleHeight = 18.0;
+    return localDy >= (cardHeight - resizeHandleHeight).clamp(0.0, cardHeight);
+  }
+
+  void _startClassResize({
+    required ClassEvent event,
+    required DateTime startsAt,
+    required DateTime initialEndsAt,
+    required DragStartDetails details,
+    required double cardHeight,
+  }) {
+    final local = details.localPosition;
+    if (!_isClassResizeHotzone(localDy: local.dy, cardHeight: cardHeight)) {
+      return;
+    }
+    _classResizeSession = _ClassEventResizeSession(
+      eventId: event.id,
+      staffId: event.staffId,
+      startsAt: startsAt,
+      initialEndsAt: initialEndsAt,
+      initialGlobalDy: details.globalPosition.dy,
+    );
+    setState(() {
+      _classResizePreviewEndByEventId[event.id] = initialEndsAt;
+    });
+  }
+
+  void _updateClassResize(DragUpdateDetails details) {
+    final session = _classResizeSession;
+    if (session == null) return;
+    final layoutConfig = ref.read(layoutConfigProvider);
+    final step = layoutConfig.minutesPerSlot;
+    final deltaY = details.globalPosition.dy - session.initialGlobalDy;
+    final rawDeltaMinutes = layoutConfig.minutesFromHeight(deltaY.abs());
+    final signedDeltaMinutes = deltaY.isNegative
+        ? -rawDeltaMinutes
+        : rawDeltaMinutes;
+    final snappedDeltaMinutes =
+        ((signedDeltaMinutes / step).round() * step).toInt();
+    var nextEnd = session.initialEndsAt.add(
+      Duration(minutes: snappedDeltaMinutes),
+    );
+    final minEnd = session.startsAt.add(Duration(minutes: step));
+    final dayBoundary = DateTime(
+      session.startsAt.year,
+      session.startsAt.month,
+      session.startsAt.day,
+    ).add(const Duration(days: 1));
+    if (nextEnd.isBefore(minEnd)) nextEnd = minEnd;
+    if (nextEnd.isAfter(dayBoundary)) nextEnd = dayBoundary;
+    setState(() {
+      _classResizePreviewEndByEventId[session.eventId] = nextEnd;
+    });
+  }
+
+  Future<void> _commitClassResize() async {
+    final session = _classResizeSession;
+    if (session == null) return;
+    final previewEnd = _classResizePreviewEndByEventId[session.eventId];
+    _classResizeSession = null;
+    if (previewEnd == null || previewEnd == session.initialEndsAt) {
+      setState(() {
+        _classResizePreviewEndByEventId.remove(session.eventId);
+      });
+      return;
+    }
+    try {
+      await _updateClassEventTiming(
+        classEventId: session.eventId,
+        newStart: session.startsAt,
+        newEnd: previewEnd,
+        staffId: session.staffId,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.errorTitle,
+        message: context.l10n.classEventsCreateErrorMessage,
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _classResizePreviewEndByEventId.remove(session.eventId);
+        });
+      }
+    }
+  }
+
+  void _cancelClassResize() {
+    final session = _classResizeSession;
+    _classResizeSession = null;
+    if (session == null) return;
+    setState(() {
+      _classResizePreviewEndByEventId.remove(session.eventId);
+    });
   }
 
   @override
@@ -576,9 +718,13 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     // La fascia laterale è già riservata riducendo effectiveColumnWidth,
     // quindi le card si restringono automaticamente lasciando spazio a destra.
 
-    return DragTarget<Appointment>(
-      onWillAcceptWithDetails: (_) {
+    return DragTarget<Object>(
+      onWillAcceptWithDetails: (details) {
         if (!canManageBookings) return false;
+        final data = details.data;
+        if (data is! Appointment && data is! _ClassEventDragData) {
+          return false;
+        }
         setState(() => _isHighlighted = true);
         ref.read(highlightedStaffIdProvider.notifier).set(widget.staff.id);
         return true;
@@ -591,6 +737,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         if (!canManageBookings) {
           return;
         }
+        final dragged = details.data;
         final previewTimes = ref.read(tempDragTimeProvider);
         setState(() {
           _isHighlighted = false;
@@ -606,12 +753,55 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         final dragOffsetX = ref.read(dragOffsetXProvider) ?? 0.0;
         final pointerGlobal = details.offset + Offset(dragOffsetX, dragOffsetY);
         final localPointer = box.globalToLocal(pointerGlobal);
+
+        if (dragged is _ClassEventDragData) {
+          final duration = dragged.originalEnd.difference(dragged.originalStart);
+          final durationMinutes = math.max(duration.inMinutes, layoutConfig.minutesPerSlot);
+          final slotStepMinutes = layoutConfig.minutesPerSlot;
+          final totalMinutes = LayoutConfig.hoursInDay * 60;
+          final rawMinutes = layoutConfig.minutesFromHeight(localPointer.dy);
+          final roundedMinutes = (((rawMinutes / slotStepMinutes).round() * slotStepMinutes)
+                  .clamp(0, math.max(totalMinutes - durationMinutes, 0)))
+              .toInt();
+          final dayStart = DateTime(
+            agendaDate.year,
+            agendaDate.month,
+            agendaDate.day,
+          );
+          final newStart = dayStart.add(Duration(minutes: roundedMinutes));
+          final newEnd = newStart.add(Duration(minutes: durationMinutes));
+          final hasStaffChanged = dragged.originalStaffId != widget.staff.id;
+          final hasTimeChanged =
+              dragged.originalStart != newStart || dragged.originalEnd != newEnd;
+          if (!hasStaffChanged && !hasTimeChanged) return;
+          final classMutationErrorTitle = context.l10n.errorTitle;
+          final classMutationErrorMessage = context.l10n.classEventsCreateErrorMessage;
+          try {
+            await _updateClassEventTiming(
+              classEventId: dragged.eventId,
+              newStart: newStart,
+              newEnd: newEnd,
+              staffId: widget.staff.id,
+            );
+          } catch (_) {
+            if (!context.mounted) return;
+            await FeedbackDialog.showError(
+              context,
+              title: classMutationErrorTitle,
+              message: classMutationErrorMessage,
+            );
+          }
+          return;
+        }
+
+        if (dragged is! Appointment) return;
+        final appointment = dragged;
         final draggedCardHeightPx =
             ref.read(draggedCardSizeProvider)?.height ?? 50.0;
 
         final dropResult = computeDropResult(
           DropComputationParams(
-            appointment: details.data,
+            appointment: appointment,
             layoutConfig: layoutConfig,
             columnHeight: box.size.height,
             localPointer: localPointer,
@@ -624,10 +814,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         ref.read(dragSessionProvider.notifier).markHandled();
 
         // Verifica se l'appuntamento è stato effettivamente spostato
-        final hasStaffChanged = details.data.staffId != widget.staff.id;
+        final hasStaffChanged = appointment.staffId != widget.staff.id;
         final hasTimeChanged =
-            details.data.startTime != dropResult.newStart ||
-            details.data.endTime != dropResult.newEnd;
+            appointment.startTime != dropResult.newStart ||
+            appointment.endTime != dropResult.newEnd;
 
         // Se non c'è stato alcun cambiamento, non mostrare il dialog
         if (!hasStaffChanged && !hasTimeChanged) {
@@ -636,10 +826,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         // Salva i dati del drop pendente per mostrare la preview
         final pendingData = PendingDropData(
-          appointmentId: details.data.id,
-          originalStaffId: details.data.staffId,
-          originalStart: details.data.startTime,
-          originalEnd: details.data.endTime,
+          appointmentId: appointment.id,
+          originalStaffId: appointment.staffId,
+          originalStart: appointment.startTime,
+          originalEnd: appointment.endTime,
           newStaffId: widget.staff.id,
           newStart: dropResult.newStart,
           newEnd: dropResult.newEnd,
@@ -660,17 +850,17 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         final staffName = widget.staff.displayName;
 
         final bookingAppointments = appointmentsNotifier.getByBookingId(
-          details.data.bookingId,
+          appointment.bookingId,
         );
         final notificationRequired =
             willBookingFirstStartChangeOnSingleMove(
-              movingAppointment: details.data,
+              movingAppointment: appointment,
               newStart: dropResult.newStart,
               bookingAppointments: bookingAppointments,
             ) &&
             _hasReachableClientContact(bookingAppointments);
         final isSameDayMove = DateUtils.isSameDay(
-          details.data.startTime,
+          appointment.startTime,
           dropResult.newStart,
         );
         final shouldSkipConfirmation = isSameDayMove && !notificationRequired;
@@ -694,14 +884,14 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
         final recurringScope = await resolveRecurringRescheduleScope(
           context: context,
-          appointment: details.data,
+          appointment: appointment,
           targetStart: dropResult.newStart,
           targetStaffId: widget.staff.id,
         );
         if (recurringScope == null || !context.mounted) return;
 
         await appointmentsNotifier.moveAppointment(
-          appointmentId: details.data.id,
+          appointmentId: appointment.id,
           newStaffId: widget.staff.id,
           newStart: dropResult.newStart,
           newEnd: dropResult.newEnd,
@@ -711,7 +901,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         try {
           await propagateRecurringReschedule(
             ref: ref,
-            appointment: details.data,
+            appointment: appointment,
             targetStart: dropResult.newStart,
             targetStaffId: widget.staff.id,
             scope: recurringScope,
@@ -801,6 +991,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     final positionedEntries = <Widget>[];
     final expandedEntries = <Widget>[];
+    final expandedClassEntries = <Widget>[];
     final focusedExpandedEntries = <Widget>[];
 
     final originalAppointmentsMap = {for (var a in appointments) a.id: a};
@@ -960,7 +1151,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     for (final classEvent in classEvents) {
       final startsAt =
           classEvent.startsAtLocal ?? classEvent.startsAtUtc.toLocal();
-      final endsAt = classEvent.endsAtLocal ?? classEvent.endsAtUtc.toLocal();
+      final endsAt =
+          _classResizePreviewEndByEventId[classEvent.id] ??
+          classEvent.endsAtLocal ??
+          classEvent.endsAtUtc.toLocal();
       final dayStart = DateTime(startsAt.year, startsAt.month, startsAt.day);
       final startMinutes = startsAt.difference(dayStart).inMinutes;
       final endMinutes = endsAt.difference(dayStart).inMinutes;
@@ -968,19 +1162,34 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           layoutGeometry[_classEventLayoutId(classEvent.id)] ??
           const EventGeometry(leftFraction: 0, widthFraction: 1);
       final padding = LayoutConfig.columnInnerPadding;
+      final fullColumnWidth = math.max(columnWidth - padding * 2, 0.0);
       final cardLeft = columnWidth * geometry.leftFraction + padding;
       final cardWidth = math.max(
         columnWidth * geometry.widthFraction - padding * 2,
         0.0,
       );
+      final isNarrowOverlappedCard =
+          fullColumnWidth > 0 &&
+          (cardWidth / fullColumnWidth) <= 0.65 &&
+          cardWidth <= 320.0 &&
+          cardWidth < fullColumnWidth - 1.0;
+      final isExpanded =
+          _hoveredClassEventId == classEvent.id &&
+          _draggingClassEventId != classEvent.id &&
+          _classResizeSession?.eventId != classEvent.id &&
+          isNarrowOverlappedCard;
+      final effectiveLeft = isExpanded ? padding : cardLeft;
+      final effectiveWidth = isExpanded ? fullColumnWidth : cardWidth;
+      final effectiveHeight = layoutConfig.heightForMinutes(endMinutes - startMinutes);
 
-      positionedEntries.add(
-        Positioned(
+      final classCardWidget = AnimatedPositioned(
           key: ValueKey('class_event_${classEvent.id}'),
           top: layoutConfig.offsetForMinuteOfDay(startMinutes),
-          left: cardLeft,
-          width: cardWidth,
-          height: layoutConfig.heightForMinutes(endMinutes - startMinutes),
+          left: effectiveLeft,
+          width: effectiveWidth,
+          height: effectiveHeight,
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeOutCubic,
           child: MouseRegion(
             opaque: true,
             cursor: canManageBookings && endsAt.isAfter(DateTime.now())
@@ -988,9 +1197,39 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                 : SystemMouseCursors.basic,
             onEnter: (_) {
               ref.read(selectedAppointmentProvider.notifier).clear();
+              if (_hoveredClassEventId != classEvent.id) {
+                setState(() => _hoveredClassEventId = classEvent.id);
+              }
+            },
+            onExit: (_) {
+              if (_hoveredClassEventId == classEvent.id) {
+                setState(() => _hoveredClassEventId = null);
+              }
             },
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
+              onVerticalDragStart: canManageBookings &&
+                      endsAt.isAfter(DateTime.now())
+                  ? (details) => _startClassResize(
+                        event: classEvent,
+                        startsAt: startsAt,
+                        initialEndsAt: endsAt,
+                        details: details,
+                        cardHeight: effectiveHeight,
+                      )
+                  : null,
+              onVerticalDragUpdate: canManageBookings &&
+                      _classResizeSession?.eventId == classEvent.id
+                  ? _updateClassResize
+                  : null,
+              onVerticalDragEnd: canManageBookings &&
+                      _classResizeSession?.eventId == classEvent.id
+                  ? (_) => _commitClassResize()
+                  : null,
+              onVerticalDragCancel: canManageBookings &&
+                      _classResizeSession?.eventId == classEvent.id
+                  ? _cancelClassResize
+                  : null,
               onTap: canManageBookings && endsAt.isAfter(DateTime.now())
                   ? () => showCreateClassEventDialog(
                       context,
@@ -998,26 +1237,141 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                       initialEvent: classEvent,
                     )
                   : null,
-              child: _ClassEventCard(
-                event: classEvent,
-                width: cardWidth,
-                title:
-                    (classTypeById[classEvent.classTypeId]?.name
-                            .trim()
-                            .isNotEmpty ??
-                        false)
-                    ? classTypeById[classEvent.classTypeId]!.name.trim()
-                    : context.l10n.classEventsUntitled,
-                color:
-                    _parseClassTypeColor(
-                      classTypeById[classEvent.classTypeId]?.colorHex,
-                    ) ??
-                    Theme.of(context).colorScheme.tertiaryContainer,
+              child: Builder(
+                builder: (cardContext) {
+                  void clearClassDragState() {
+                    ref.read(dragOffsetProvider.notifier).clear();
+                    ref.read(dragOffsetXProvider.notifier).clear();
+                    ref.read(draggedCardSizeProvider.notifier).clear();
+                    ref.read(dragPositionProvider.notifier).clear();
+                    ref.read(tempDragTimeProvider.notifier).clear();
+                  }
+
+                  return Listener(
+                    onPointerDown: (event) {
+                      final cardBox = cardContext.findRenderObject() as RenderBox?;
+                      final bodyBox = ref.read(dragBodyBoxProvider);
+                      if (cardBox == null || bodyBox == null) return;
+                      final cardTopLeftGlobal = cardBox.localToGlobal(Offset.zero);
+                      ref
+                          .read(dragOffsetProvider.notifier)
+                          .set(event.position.dy - cardTopLeftGlobal.dy);
+                      ref
+                          .read(dragOffsetXProvider.notifier)
+                          .set(event.position.dx - cardTopLeftGlobal.dx);
+                      ref.read(draggedCardSizeProvider.notifier).set(cardBox.size);
+                      final local = bodyBox.globalToLocal(event.position);
+                      ref.read(dragPositionProvider.notifier).set(local);
+                    },
+                    child: LongPressDraggable<_ClassEventDragData>(
+                      data: _ClassEventDragData(
+                        eventId: classEvent.id,
+                        originalStaffId: classEvent.staffId,
+                        originalStart: startsAt,
+                        originalEnd: endsAt,
+                      ),
+                      maxSimultaneousDrags: canManageBookings ? 1 : 0,
+                      onDragStarted: () => setState(() {
+                        _draggingClassEventId = classEvent.id;
+                        _hoveredClassEventId = null;
+                      }),
+                      onDragEnd: (_) => setState(() {
+                        _draggingClassEventId = null;
+                        clearClassDragState();
+                      }),
+                      onDraggableCanceled: (_, __) => setState(() {
+                        _draggingClassEventId = null;
+                        clearClassDragState();
+                      }),
+                      onDragCompleted: () => setState(() {
+                        _draggingClassEventId = null;
+                        clearClassDragState();
+                      }),
+                      feedback: Material(
+                        type: MaterialType.transparency,
+                        child: SizedBox(
+                          width: effectiveWidth,
+                          height: effectiveHeight,
+                          child: Opacity(
+                            opacity: AgendaTheme.ghostOpacity,
+                            child: _ClassEventCard(
+                              event: classEvent,
+                              width: effectiveWidth,
+                              displayStart: startsAt,
+                              displayEnd: endsAt,
+                              title:
+                                  (classTypeById[classEvent.classTypeId]?.name
+                                          .trim()
+                                          .isNotEmpty ??
+                                      false)
+                                  ? classTypeById[classEvent.classTypeId]!
+                                      .name
+                                      .trim()
+                                  : context.l10n.classEventsUntitled,
+                              color:
+                                  _parseClassTypeColor(
+                                    classTypeById[classEvent.classTypeId]
+                                        ?.colorHex,
+                                  ) ??
+                                  Theme.of(context).colorScheme.tertiaryContainer,
+                            ),
+                          ),
+                        ),
+                      ),
+                      childWhenDragging: Opacity(
+                        opacity: AgendaTheme.ghostOpacity,
+                        child: _ClassEventCard(
+                          event: classEvent,
+                          width: effectiveWidth,
+                          displayStart: startsAt,
+                          displayEnd: endsAt,
+                          title:
+                              (classTypeById[classEvent.classTypeId]?.name
+                                      .trim()
+                                      .isNotEmpty ??
+                                  false)
+                              ? classTypeById[classEvent.classTypeId]!
+                                  .name
+                                  .trim()
+                              : context.l10n.classEventsUntitled,
+                          color:
+                              _parseClassTypeColor(
+                                classTypeById[classEvent.classTypeId]?.colorHex,
+                              ) ??
+                              Theme.of(context).colorScheme.tertiaryContainer,
+                        ),
+                      ),
+                      child: _ClassEventCard(
+                        event: classEvent,
+                        width: effectiveWidth,
+                        displayStart: startsAt,
+                        displayEnd: endsAt,
+                        title:
+                            (classTypeById[classEvent.classTypeId]?.name
+                                    .trim()
+                                    .isNotEmpty ??
+                                false)
+                            ? classTypeById[classEvent.classTypeId]!.name.trim()
+                            : context.l10n.classEventsUntitled,
+                        color:
+                            _parseClassTypeColor(
+                              classTypeById[classEvent.classTypeId]?.colorHex,
+                            ) ??
+                            Theme.of(context).colorScheme.tertiaryContainer,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
-        ),
-      );
+        );
+
+      if (isExpanded) {
+        expandedClassEntries.add(classCardWidget);
+      } else {
+        positionedEntries.add(classCardWidget);
+      }
     }
 
     // 🔹 Aggiungi preview per drop pendente se questa è la colonna di destinazione
@@ -1124,6 +1478,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     positionedEntries.sort((a, b) => topOf(a).compareTo(topOf(b)));
     positionedEntries.addAll(expandedEntries);
+    positionedEntries.addAll(expandedClassEntries);
     positionedEntries.addAll(focusedExpandedEntries);
     return positionedEntries;
   }
@@ -1617,16 +1972,50 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
 int _classEventLayoutId(int classEventId) => -1000000 - classEventId;
 
+class _ClassEventDragData {
+  const _ClassEventDragData({
+    required this.eventId,
+    required this.originalStaffId,
+    required this.originalStart,
+    required this.originalEnd,
+  });
+
+  final int eventId;
+  final int originalStaffId;
+  final DateTime originalStart;
+  final DateTime originalEnd;
+}
+
+class _ClassEventResizeSession {
+  const _ClassEventResizeSession({
+    required this.eventId,
+    required this.staffId,
+    required this.startsAt,
+    required this.initialEndsAt,
+    required this.initialGlobalDy,
+  });
+
+  final int eventId;
+  final int staffId;
+  final DateTime startsAt;
+  final DateTime initialEndsAt;
+  final double initialGlobalDy;
+}
+
 class _ClassEventCard extends StatelessWidget {
   const _ClassEventCard({
     required this.event,
     required this.width,
+    required this.displayStart,
+    required this.displayEnd,
     required this.title,
     required this.color,
   });
 
   final ClassEvent event;
   final double width;
+  final DateTime displayStart;
+  final DateTime displayEnd;
   final String title;
   final Color color;
 
@@ -1634,10 +2023,8 @@ class _ClassEventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
-    final startsAt = event.startsAtLocal ?? event.startsAtUtc.toLocal();
-    final endsAt = event.endsAtLocal ?? event.endsAtUtc.toLocal();
     final timeLabel =
-        '${DtFmt.hm(context, startsAt.hour, startsAt.minute)} - ${DtFmt.hm(context, endsAt.hour, endsAt.minute)}';
+        '${DtFmt.hm(context, displayStart.hour, displayStart.minute)} - ${DtFmt.hm(context, displayEnd.hour, displayEnd.minute)}';
     String? priceLabel;
     if (event.priceCents != null && event.priceCents! > 0) {
       final currency = event.currency;
@@ -1704,21 +2091,21 @@ class _ClassEventCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: titleStyle,
-                ),
                 if (showMeta) ...[
-                  const SizedBox(height: 2),
                   Text(
                     metaLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: capacityStyle,
                   ),
+                  const SizedBox(height: 2),
                 ],
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: titleStyle,
+                ),
                 if (showCapacity) ...[
                   const SizedBox(height: 2),
                   Text(
