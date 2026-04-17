@@ -192,8 +192,7 @@ foreach ($notifications as $notification) {
         // Business/location email is used as reply-to when valid.
         $variables = $payload['variables'] ?? $payload;
         if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
-            $fallbackName = $notification['recipient_name'] ?? 'Cliente';
-            $variables['client_name'] = $fallbackName;
+            $variables['client_name'] = $notification['recipient_name'] ?? 'Cliente';
         }
         
         // From: use channel-specific verified sender (fallback to default)
@@ -464,7 +463,27 @@ function renderTemplate(string $channel, array $payload): array
         case 'booking_rescheduled':
             $template = EmailTemplateRenderer::bookingRescheduled($locale);
             break;
-            
+
+        case 'class_booking_confirmed':
+            $template = EmailTemplateRenderer::classBookingConfirmed($locale);
+            break;
+
+        case 'class_booking_waitlisted':
+            $template = EmailTemplateRenderer::classBookingWaitlisted($locale);
+            break;
+
+        case 'class_booking_promoted':
+            $template = EmailTemplateRenderer::classBookingPromoted($locale);
+            break;
+
+        case 'class_booking_cancelled':
+            $template = EmailTemplateRenderer::classBookingCancelled($locale);
+            break;
+
+        case 'class_booking_reminder':
+            $template = EmailTemplateRenderer::classBookingReminder($locale);
+            break;
+
         default:
             throw new \RuntimeException("Unsupported notification channel: {$channel}");
     }

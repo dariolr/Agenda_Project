@@ -88,6 +88,7 @@ use Agenda\UseCases\Booking\UpdateBooking;
 use Agenda\UseCases\Booking\DeleteBooking;
 use Agenda\UseCases\Booking\GetMyBookings;
 use Agenda\UseCases\Booking\ReplaceBooking;
+use Agenda\UseCases\Notifications\QueueClassBookingNotification;
 use Agenda\UseCases\CustomerAuth\LoginCustomer;
 use Agenda\UseCases\CustomerAuth\RegisterCustomer;
 use Agenda\UseCases\CustomerAuth\RefreshCustomerToken;
@@ -521,7 +522,14 @@ final class Kernel
             TimeBlocksController::class => new TimeBlocksController($timeBlockRepo, $locationRepo, $businessUserRepo, $userRepo),
             ReportsController::class => new ReportsController($this->db, $paymentMethodRepo, $businessUserRepo, $userRepo, $locationClosureRepo),
             LocationClosuresController::class => new LocationClosuresController($locationClosureRepo, $locationRepo, $businessUserRepo, $userRepo),
-            ClassEventsController::class => new ClassEventsController($classEventRepo, $businessUserRepo, $locationRepo, $userRepo, $clientRepo),
+            ClassEventsController::class => new ClassEventsController(
+                $classEventRepo,
+                $businessUserRepo,
+                $locationRepo,
+                $userRepo,
+                $clientRepo,
+                new QueueClassBookingNotification($this->db, $notificationRepo),
+            ),
             WhatsappController::class => new WhatsappController(
                 $whatsappRepo,
                 $businessUserRepo,

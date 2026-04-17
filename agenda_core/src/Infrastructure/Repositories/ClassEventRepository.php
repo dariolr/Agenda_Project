@@ -897,7 +897,10 @@ final class ClassEventRepository
         }
     }
 
-    public function cancelBooking(int $businessId, int $classEventId, int $customerId): bool
+    /**
+     * @return array{ok: bool, promotedClassBookingId: ?int}
+     */
+    public function cancelBooking(int $businessId, int $classEventId, int $customerId): array
     {
         $pdo = $this->db->getPdo();
         $pdo->beginTransaction();
@@ -914,7 +917,7 @@ final class ClassEventRepository
             $event = $eventStmt->fetch(\PDO::FETCH_ASSOC);
             if (!$event) {
                 $pdo->rollBack();
-                return false;
+                return ['ok' => false, 'promotedClassBookingId' => null];
             }
 
             $bookingStmt = $pdo->prepare(
@@ -932,7 +935,7 @@ final class ClassEventRepository
             $booking = $bookingStmt->fetch(\PDO::FETCH_ASSOC);
             if (!$booking) {
                 $pdo->rollBack();
-                return false;
+                return ['ok' => false, 'promotedClassBookingId' => null];
             }
 
             if ($booking['status'] === 'CONFIRMED') {
@@ -974,12 +977,14 @@ final class ClassEventRepository
                     'class_event_id' => $classEventId,
                 ]);
                 $next = $nextStmt->fetch(\PDO::FETCH_ASSOC);
+                $promotedId = null;
                 if ($next) {
+                    $promotedId = (int) $next['id'];
                     $pdo->prepare(
                         'UPDATE class_bookings
                          SET status = "CONFIRMED", waitlist_position = NULL
                          WHERE id = :id'
-                    )->execute(['id' => $next['id']]);
+                    )->execute(['id' => $promotedId]);
 
                     $pdo->prepare(
                         'UPDATE class_events
@@ -1018,10 +1023,13 @@ final class ClassEventRepository
                     'updated_at' => $cancelledAtUtc,
                 ]);
                 $this->repackWaitlist($pdo, $businessId, $classEventId);
+                $promotedId = null;
+            } else {
+                $promotedId = null;
             }
 
             $pdo->commit();
-            return true;
+            return ['ok' => true, 'promotedClassBookingId' => $promotedId ?? null];
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();

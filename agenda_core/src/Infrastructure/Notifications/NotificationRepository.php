@@ -20,6 +20,11 @@ final class NotificationRepository
         'booking_reminder',
         'booking_cancelled',
         'booking_rescheduled',
+        'class_booking_confirmed',
+        'class_booking_waitlisted',
+        'class_booking_promoted',
+        'class_booking_cancelled',
+        'class_booking_reminder',
     ];
 
     public function __construct(
@@ -43,12 +48,12 @@ final class NotificationRepository
         }
 
         $stmt = $this->db->getPdo()->prepare(
-            'INSERT INTO notification_queue 
-             (type, channel, recipient_type, recipient_id, recipient_email, recipient_name, 
-              subject, payload, priority, scheduled_at, max_attempts, business_id, booking_id, status)
-             VALUES 
+            'INSERT INTO notification_queue
+             (type, channel, recipient_type, recipient_id, recipient_email, recipient_name,
+              subject, payload, priority, scheduled_at, max_attempts, business_id, booking_id, class_booking_id, status)
+             VALUES
              (:type, :channel, :recipient_type, :recipient_id, :recipient_email, :recipient_name,
-              :subject, :payload, :priority, :scheduled_at, :max_attempts, :business_id, :booking_id, "pending")'
+              :subject, :payload, :priority, :scheduled_at, :max_attempts, :business_id, :booking_id, :class_booking_id, "pending")'
         );
 
         $stmt->execute([
@@ -65,6 +70,7 @@ final class NotificationRepository
             'max_attempts' => $data['max_attempts'] ?? 3,
             'business_id' => $data['business_id'] ?? null,
             'booking_id' => $data['booking_id'] ?? null,
+            'class_booking_id' => $data['class_booking_id'] ?? null,
         ]);
 
         return (int) $this->db->getPdo()->lastInsertId();
@@ -437,6 +443,44 @@ final class NotificationRepository
         }
 
         return new DateTimeImmutable('now', $timezone);
+    }
+
+    /**
+     * Check if a class booking notification was already sent recently (deduplication).
+     */
+    public function wasRecentlySentForClassBooking(string $channel, int $classBookingId, int $withinMinutes = 60): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT 1 FROM notification_queue
+             WHERE channel = :channel
+               AND class_booking_id = :class_booking_id
+               AND status = "sent"
+               AND sent_at > DATE_SUB(NOW(), INTERVAL :minutes MINUTE)
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'channel' => $channel,
+            'class_booking_id' => $classBookingId,
+            'minutes' => $withinMinutes,
+        ]);
+
+        return $stmt->fetch() !== false;
+    }
+
+    /**
+     * Delete pending reminders for a class booking.
+     */
+    public function deletePendingClassBookingReminders(int $classBookingId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'DELETE FROM notification_queue
+             WHERE class_booking_id = :class_booking_id
+               AND channel = "class_booking_reminder"
+               AND status = "pending"'
+        );
+        $stmt->execute(['class_booking_id' => $classBookingId]);
+
+        return $stmt->rowCount();
     }
 
     /**

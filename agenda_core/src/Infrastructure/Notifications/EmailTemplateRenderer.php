@@ -1694,4 +1694,596 @@ TEXT,
 
         return $templates[$locale];
     }
+
+    // -------------------------------------------------------------------------
+    // Class booking templates
+    // -------------------------------------------------------------------------
+
+    public static function classBookingConfirmed(string $locale = 'it'): array
+    {
+        $locale = self::normalizeLocale($locale);
+        $templates = [
+            'it' => [
+                'subject' => 'Posto confermato – {{class_type_name}}',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="it">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+    <tr><td style="padding:40px 30px;text-align:center;background-color:#4CAF50;">
+        <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">✓ Posto Confermato</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+        <p style="margin:0 0 20px;font-size:16px;color:#333;">Ciao <strong>{{client_name}}</strong>,</p>
+        <p style="margin:0 0 25px;font-size:16px;color:#333;">Il tuo posto per <strong>{{class_type_name}}</strong> presso <strong>{{business_name}}</strong> è confermato.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
+            <tr><td style="padding:20px;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    {{location_block_html}}
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">Quando</span><br>
+                        <strong style="color:#333;">{{date}} alle {{time}} – {{end_time}}</strong>
+                    </td></tr>
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">Lezione</span><br>
+                        <strong style="color:#333;">{{class_type_name}}</strong>
+                    </td></tr>
+                    {{price_row_html}}
+                </table>
+            </td></tr>
+        </table>
+        {{cancel_policy_html}}
+    </td></tr>
+    <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#999;">Il team di {{business_name}}<br>{{location_address_line}}<br>{{location_phone}}</p>
+    </td></tr>
+</table>
+</body></html>
+HTML,
+                'text' => <<<TEXT
+POSTO CONFERMATO
+
+Ciao {{client_name}},
+
+Il tuo posto per {{class_type_name}} presso {{business_name}} è confermato.
+
+{{location_block_text}}• Quando: {{date}} alle {{time}} – {{end_time}}
+• Lezione: {{class_type_name}}
+{{price_row_text}}
+{{cancel_policy_text}}
+---
+Il team di {{business_name}}
+{{location_address_line}} {{location_phone}}
+TEXT,
+            ],
+            'en' => [
+                'subject' => 'Spot confirmed – {{class_type_name}}',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+    <tr><td style="padding:40px 30px;text-align:center;background-color:#4CAF50;">
+        <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">✓ Spot Confirmed</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+        <p style="margin:0 0 20px;font-size:16px;color:#333;">Hi <strong>{{client_name}}</strong>,</p>
+        <p style="margin:0 0 25px;font-size:16px;color:#333;">Your spot for <strong>{{class_type_name}}</strong> at <strong>{{business_name}}</strong> is confirmed.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
+            <tr><td style="padding:20px;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    {{location_block_html}}
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">When</span><br>
+                        <strong style="color:#333;">{{date}} at {{time}} – {{end_time}}</strong>
+                    </td></tr>
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">Class</span><br>
+                        <strong style="color:#333;">{{class_type_name}}</strong>
+                    </td></tr>
+                    {{price_row_html}}
+                </table>
+            </td></tr>
+        </table>
+        {{cancel_policy_html}}
+    </td></tr>
+    <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#999;">The {{business_name}} team<br>{{location_address_line}}<br>{{location_phone}}</p>
+    </td></tr>
+</table>
+</body></html>
+HTML,
+                'text' => <<<TEXT
+SPOT CONFIRMED
+
+Hi {{client_name}},
+
+Your spot for {{class_type_name}} at {{business_name}} is confirmed.
+
+{{location_block_text}}• When: {{date}} at {{time}} – {{end_time}}
+• Class: {{class_type_name}}
+{{price_row_text}}
+{{cancel_policy_text}}
+---
+The {{business_name}} team
+{{location_address_line}} {{location_phone}}
+TEXT,
+            ],
+        ];
+        return $templates[$locale];
+    }
+
+    public static function classBookingWaitlisted(string $locale = 'it'): array
+    {
+        $locale = self::normalizeLocale($locale);
+        $templates = [
+            'it' => [
+                'subject' => 'Sei in lista d\'attesa – {{class_type_name}}',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="it">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+    <tr><td style="padding:40px 30px;text-align:center;background-color:#FF9800;">
+        <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">⏳ In Lista d'Attesa</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+        <p style="margin:0 0 20px;font-size:16px;color:#333;">Ciao <strong>{{client_name}}</strong>,</p>
+        <p style="margin:0 0 25px;font-size:16px;color:#333;">Sei stato aggiunto alla lista d'attesa per <strong>{{class_type_name}}</strong> presso <strong>{{business_name}}</strong>. Ti avviseremo subito se si libera un posto.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
+            <tr><td style="padding:20px;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    {{location_block_html}}
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">Quando</span><br>
+                        <strong style="color:#333;">{{date}} alle {{time}} – {{end_time}}</strong>
+                    </td></tr>
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">Lezione</span><br>
+                        <strong style="color:#333;">{{class_type_name}}</strong>
+                    </td></tr>
+                    <tr><td style="padding:8px 0;">
+                        <span style="color:#666;font-size:13px;">Posizione in lista</span><br>
+                        <strong style="color:#333;">{{waitlist_position}}</strong>
+                    </td></tr>
+                </table>
+            </td></tr>
+        </table>
+        <p style="margin:0;font-size:14px;color:#666;">Puoi annullare la tua iscrizione in lista d'attesa in qualsiasi momento.</p>
+    </td></tr>
+    <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#999;">Il team di {{business_name}}<br>{{location_address_line}}<br>{{location_phone}}</p>
+    </td></tr>
+</table>
+</body></html>
+HTML,
+                'text' => <<<TEXT
+IN LISTA D'ATTESA
+
+Ciao {{client_name}},
+
+Sei stato aggiunto alla lista d'attesa per {{class_type_name}} presso {{business_name}}.
+Ti avviseremo subito se si libera un posto.
+
+{{location_block_text}}• Quando: {{date}} alle {{time}} – {{end_time}}
+• Lezione: {{class_type_name}}
+• Posizione in lista: {{waitlist_position}}
+
+Puoi annullare la tua iscrizione in lista d'attesa in qualsiasi momento.
+
+---
+Il team di {{business_name}}
+{{location_address_line}} {{location_phone}}
+TEXT,
+            ],
+            'en' => [
+                'subject' => 'You\'re on the waitlist – {{class_type_name}}',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+    <tr><td style="padding:40px 30px;text-align:center;background-color:#FF9800;">
+        <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">⏳ On the Waitlist</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+        <p style="margin:0 0 20px;font-size:16px;color:#333;">Hi <strong>{{client_name}}</strong>,</p>
+        <p style="margin:0 0 25px;font-size:16px;color:#333;">You have been added to the waitlist for <strong>{{class_type_name}}</strong> at <strong>{{business_name}}</strong>. We'll notify you as soon as a spot opens up.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
+            <tr><td style="padding:20px;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    {{location_block_html}}
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">When</span><br>
+                        <strong style="color:#333;">{{date}} at {{time}} – {{end_time}}</strong>
+                    </td></tr>
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">Class</span><br>
+                        <strong style="color:#333;">{{class_type_name}}</strong>
+                    </td></tr>
+                    <tr><td style="padding:8px 0;">
+                        <span style="color:#666;font-size:13px;">Waitlist position</span><br>
+                        <strong style="color:#333;">{{waitlist_position}}</strong>
+                    </td></tr>
+                </table>
+            </td></tr>
+        </table>
+        <p style="margin:0;font-size:14px;color:#666;">You can cancel your waitlist registration at any time.</p>
+    </td></tr>
+    <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#999;">The {{business_name}} team<br>{{location_address_line}}<br>{{location_phone}}</p>
+    </td></tr>
+</table>
+</body></html>
+HTML,
+                'text' => <<<TEXT
+ON THE WAITLIST
+
+Hi {{client_name}},
+
+You have been added to the waitlist for {{class_type_name}} at {{business_name}}.
+We'll notify you as soon as a spot opens up.
+
+{{location_block_text}}• When: {{date}} at {{time}} – {{end_time}}
+• Class: {{class_type_name}}
+• Waitlist position: {{waitlist_position}}
+
+You can cancel your waitlist registration at any time.
+
+---
+The {{business_name}} team
+{{location_address_line}} {{location_phone}}
+TEXT,
+            ],
+        ];
+        return $templates[$locale];
+    }
+
+    public static function classBookingPromoted(string $locale = 'it'): array
+    {
+        $locale = self::normalizeLocale($locale);
+        $templates = [
+            'it' => [
+                'subject' => 'Ottima notizia! Posto confermato – {{class_type_name}}',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="it">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+    <tr><td style="padding:40px 30px;text-align:center;background-color:#4CAF50;">
+        <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">🎉 Posto Disponibile!</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+        <p style="margin:0 0 20px;font-size:16px;color:#333;">Ciao <strong>{{client_name}}</strong>,</p>
+        <p style="margin:0 0 25px;font-size:16px;color:#333;">Si è liberato un posto e il tuo posto per <strong>{{class_type_name}}</strong> presso <strong>{{business_name}}</strong> è ora <strong>confermato</strong>!</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
+            <tr><td style="padding:20px;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    {{location_block_html}}
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">Quando</span><br>
+                        <strong style="color:#333;">{{date}} alle {{time}} – {{end_time}}</strong>
+                    </td></tr>
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">Lezione</span><br>
+                        <strong style="color:#333;">{{class_type_name}}</strong>
+                    </td></tr>
+                    {{price_row_html}}
+                </table>
+            </td></tr>
+        </table>
+        {{cancel_policy_html}}
+    </td></tr>
+    <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#999;">Il team di {{business_name}}<br>{{location_address_line}}<br>{{location_phone}}</p>
+    </td></tr>
+</table>
+</body></html>
+HTML,
+                'text' => <<<TEXT
+POSTO DISPONIBILE!
+
+Ciao {{client_name}},
+
+Si è liberato un posto! Il tuo posto per {{class_type_name}} presso {{business_name}} è ora confermato.
+
+{{location_block_text}}• Quando: {{date}} alle {{time}} – {{end_time}}
+• Lezione: {{class_type_name}}
+{{price_row_text}}
+{{cancel_policy_text}}
+---
+Il team di {{business_name}}
+{{location_address_line}} {{location_phone}}
+TEXT,
+            ],
+            'en' => [
+                'subject' => 'Great news! Spot confirmed – {{class_type_name}}',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+    <tr><td style="padding:40px 30px;text-align:center;background-color:#4CAF50;">
+        <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">🎉 Spot Available!</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+        <p style="margin:0 0 20px;font-size:16px;color:#333;">Hi <strong>{{client_name}}</strong>,</p>
+        <p style="margin:0 0 25px;font-size:16px;color:#333;">A spot opened up and your place in <strong>{{class_type_name}}</strong> at <strong>{{business_name}}</strong> is now <strong>confirmed</strong>!</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
+            <tr><td style="padding:20px;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    {{location_block_html}}
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">When</span><br>
+                        <strong style="color:#333;">{{date}} at {{time}} – {{end_time}}</strong>
+                    </td></tr>
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">Class</span><br>
+                        <strong style="color:#333;">{{class_type_name}}</strong>
+                    </td></tr>
+                    {{price_row_html}}
+                </table>
+            </td></tr>
+        </table>
+        {{cancel_policy_html}}
+    </td></tr>
+    <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#999;">The {{business_name}} team<br>{{location_address_line}}<br>{{location_phone}}</p>
+    </td></tr>
+</table>
+</body></html>
+HTML,
+                'text' => <<<TEXT
+SPOT AVAILABLE!
+
+Hi {{client_name}},
+
+A spot opened up! Your place in {{class_type_name}} at {{business_name}} is now confirmed.
+
+{{location_block_text}}• When: {{date}} at {{time}} – {{end_time}}
+• Class: {{class_type_name}}
+{{price_row_text}}
+{{cancel_policy_text}}
+---
+The {{business_name}} team
+{{location_address_line}} {{location_phone}}
+TEXT,
+            ],
+        ];
+        return $templates[$locale];
+    }
+
+    public static function classBookingCancelled(string $locale = 'it'): array
+    {
+        $locale = self::normalizeLocale($locale);
+        $templates = [
+            'it' => [
+                'subject' => 'Prenotazione annullata – {{class_type_name}}',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="it">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+    <tr><td style="padding:40px 30px;text-align:center;background-color:#757575;">
+        <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">Prenotazione Annullata</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+        <p style="margin:0 0 20px;font-size:16px;color:#333;">Ciao <strong>{{client_name}}</strong>,</p>
+        <p style="margin:0 0 25px;font-size:16px;color:#333;">La tua prenotazione per <strong>{{class_type_name}}</strong> presso <strong>{{business_name}}</strong> è stata annullata.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
+            <tr><td style="padding:20px;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">Quando</span><br>
+                        <strong style="color:#333;">{{date}} alle {{time}} – {{end_time}}</strong>
+                    </td></tr>
+                    <tr><td style="padding:8px 0;">
+                        <span style="color:#666;font-size:13px;">Lezione</span><br>
+                        <strong style="color:#333;">{{class_type_name}}</strong>
+                    </td></tr>
+                </table>
+            </td></tr>
+        </table>
+        <p style="margin:0;font-size:14px;color:#666;">Per informazioni contatta <strong>{{business_name}}</strong>.</p>
+    </td></tr>
+    <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#999;">Il team di {{business_name}}<br>{{location_address_line}}<br>{{location_phone}}</p>
+    </td></tr>
+</table>
+</body></html>
+HTML,
+                'text' => <<<TEXT
+PRENOTAZIONE ANNULLATA
+
+Ciao {{client_name}},
+
+La tua prenotazione per {{class_type_name}} presso {{business_name}} è stata annullata.
+
+• Quando: {{date}} alle {{time}} – {{end_time}}
+• Lezione: {{class_type_name}}
+
+Per informazioni contatta {{business_name}}.
+
+---
+Il team di {{business_name}}
+{{location_address_line}} {{location_phone}}
+TEXT,
+            ],
+            'en' => [
+                'subject' => 'Booking cancelled – {{class_type_name}}',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+    <tr><td style="padding:40px 30px;text-align:center;background-color:#757575;">
+        <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">Booking Cancelled</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+        <p style="margin:0 0 20px;font-size:16px;color:#333;">Hi <strong>{{client_name}}</strong>,</p>
+        <p style="margin:0 0 25px;font-size:16px;color:#333;">Your booking for <strong>{{class_type_name}}</strong> at <strong>{{business_name}}</strong> has been cancelled.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
+            <tr><td style="padding:20px;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">When</span><br>
+                        <strong style="color:#333;">{{date}} at {{time}} – {{end_time}}</strong>
+                    </td></tr>
+                    <tr><td style="padding:8px 0;">
+                        <span style="color:#666;font-size:13px;">Class</span><br>
+                        <strong style="color:#333;">{{class_type_name}}</strong>
+                    </td></tr>
+                </table>
+            </td></tr>
+        </table>
+        <p style="margin:0;font-size:14px;color:#666;">For any questions please contact <strong>{{business_name}}</strong>.</p>
+    </td></tr>
+    <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#999;">The {{business_name}} team<br>{{location_address_line}}<br>{{location_phone}}</p>
+    </td></tr>
+</table>
+</body></html>
+HTML,
+                'text' => <<<TEXT
+BOOKING CANCELLED
+
+Hi {{client_name}},
+
+Your booking for {{class_type_name}} at {{business_name}} has been cancelled.
+
+• When: {{date}} at {{time}} – {{end_time}}
+• Class: {{class_type_name}}
+
+For any questions please contact {{business_name}}.
+
+---
+The {{business_name}} team
+{{location_address_line}} {{location_phone}}
+TEXT,
+            ],
+        ];
+        return $templates[$locale];
+    }
+
+    public static function classBookingReminder(string $locale = 'it'): array
+    {
+        $locale = self::normalizeLocale($locale);
+        $templates = [
+            'it' => [
+                'subject' => 'Promemoria – {{class_type_name}} domani',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="it">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+    <tr><td style="padding:40px 30px;text-align:center;background-color:#2196F3;">
+        <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">⏰ Promemoria Lezione</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+        <p style="margin:0 0 20px;font-size:16px;color:#333;">Ciao <strong>{{client_name}}</strong>,</p>
+        <p style="margin:0 0 25px;font-size:16px;color:#333;">Ti ricordiamo che hai prenotato <strong>{{class_type_name}}</strong> presso <strong>{{business_name}}</strong>.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
+            <tr><td style="padding:20px;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    {{location_block_html}}
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">Quando</span><br>
+                        <strong style="color:#333;">{{date}} alle {{time}} – {{end_time}}</strong>
+                    </td></tr>
+                    <tr><td style="padding:8px 0;">
+                        <span style="color:#666;font-size:13px;">Lezione</span><br>
+                        <strong style="color:#333;">{{class_type_name}}</strong>
+                    </td></tr>
+                </table>
+            </td></tr>
+        </table>
+        {{cancel_policy_html}}
+    </td></tr>
+    <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#999;">Il team di {{business_name}}<br>{{location_address_line}}<br>{{location_phone}}</p>
+    </td></tr>
+</table>
+</body></html>
+HTML,
+                'text' => <<<TEXT
+PROMEMORIA LEZIONE
+
+Ciao {{client_name}},
+
+Ti ricordiamo che hai prenotato {{class_type_name}} presso {{business_name}}.
+
+{{location_block_text}}• Quando: {{date}} alle {{time}} – {{end_time}}
+• Lezione: {{class_type_name}}
+
+{{cancel_policy_text}}
+---
+Il team di {{business_name}}
+{{location_address_line}} {{location_phone}}
+TEXT,
+            ],
+            'en' => [
+                'subject' => 'Reminder – {{class_type_name}} tomorrow',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+    <tr><td style="padding:40px 30px;text-align:center;background-color:#2196F3;">
+        <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">⏰ Class Reminder</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+        <p style="margin:0 0 20px;font-size:16px;color:#333;">Hi <strong>{{client_name}}</strong>,</p>
+        <p style="margin:0 0 25px;font-size:16px;color:#333;">This is a reminder that you have <strong>{{class_type_name}}</strong> at <strong>{{business_name}}</strong>.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
+            <tr><td style="padding:20px;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    {{location_block_html}}
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <span style="color:#666;font-size:13px;">When</span><br>
+                        <strong style="color:#333;">{{date}} at {{time}} – {{end_time}}</strong>
+                    </td></tr>
+                    <tr><td style="padding:8px 0;">
+                        <span style="color:#666;font-size:13px;">Class</span><br>
+                        <strong style="color:#333;">{{class_type_name}}</strong>
+                    </td></tr>
+                </table>
+            </td></tr>
+        </table>
+        {{cancel_policy_html}}
+    </td></tr>
+    <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#999;">The {{business_name}} team<br>{{location_address_line}}<br>{{location_phone}}</p>
+    </td></tr>
+</table>
+</body></html>
+HTML,
+                'text' => <<<TEXT
+CLASS REMINDER
+
+Hi {{client_name}},
+
+This is a reminder that you have {{class_type_name}} at {{business_name}}.
+
+{{location_block_text}}• When: {{date}} at {{time}} – {{end_time}}
+• Class: {{class_type_name}}
+
+{{cancel_policy_text}}
+---
+The {{business_name}} team
+{{location_address_line}} {{location_phone}}
+TEXT,
+            ],
+        ];
+        return $templates[$locale];
+    }
 }

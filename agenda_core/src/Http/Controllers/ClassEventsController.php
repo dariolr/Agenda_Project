@@ -11,6 +11,7 @@ use Agenda\Infrastructure\Repositories\ClassEventRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\UseCases\Notifications\QueueClassBookingNotification;
 
 final class ClassEventsController
 {
@@ -20,6 +21,7 @@ final class ClassEventsController
         private readonly LocationRepository $locationRepo,
         private readonly UserRepository $userRepo,
         private readonly ?ClientRepository $clientRepo = null,
+        private readonly ?QueueClassBookingNotification $queueClassBookingNotification = null,
     ) {}
 
     public function indexTypes(Request $request): Response
@@ -731,12 +733,12 @@ final class ClassEventsController
         }
 
         try {
-            $ok = $this->classEventRepo->cancelBooking($businessId, $classEventId, $customerId);
+            $result = $this->classEventRepo->cancelBooking($businessId, $classEventId, $customerId);
         } catch (\Throwable) {
             return Response::serverError('Unable to cancel class booking', $request->traceId);
         }
 
-        if (!$ok) {
+        if (!$result['ok']) {
             return Response::notFound('Class booking not found', $request->traceId);
         }
         return Response::success(['cancelled' => true]);
@@ -810,6 +812,21 @@ final class ClassEventsController
             return Response::serverError('Unable to create class booking', $request->traceId);
         }
 
+        // Notifica: confirmed o waitlisted a seconda dello status
+        if ($this->queueClassBookingNotification !== null && !empty($booking['id'])) {
+            $status = strtolower((string) ($booking['status'] ?? ''));
+            $channel = $status === 'waitlisted' ? 'class_booking_waitlisted' : 'class_booking_confirmed';
+            try {
+                $this->queueClassBookingNotification->execute(
+                    (int) $booking['id'],
+                    $routeBusinessId,
+                    $channel
+                );
+            } catch (\Throwable) {
+                // notification failure must not block booking response
+            }
+        }
+
         return Response::created($this->formatClassBooking($booking));
     }
 
@@ -854,15 +871,46 @@ final class ClassEventsController
             }
         }
 
+        // Recupera il booking ID prima di cancellare (per la notifica)
+        $existingBooking = $this->classEventRepo->findBookingByCustomer(
+            $routeBusinessId,
+            $classEventId,
+            (int) $clientId
+        );
+
         try {
-            $ok = $this->classEventRepo->cancelBooking($routeBusinessId, $classEventId, (int) $clientId);
+            $result = $this->classEventRepo->cancelBooking($routeBusinessId, $classEventId, (int) $clientId);
         } catch (\Throwable) {
             return Response::serverError('Unable to cancel class booking', $request->traceId);
         }
 
-        if (!$ok) {
+        if (!$result['ok']) {
             return Response::notFound('Class booking not found', $request->traceId);
         }
+
+        if ($this->queueClassBookingNotification !== null) {
+            // Notifica cancellazione al cliente che ha annullato
+            if ($existingBooking !== null && !empty($existingBooking['id'])) {
+                try {
+                    $this->queueClassBookingNotification->execute(
+                        (int) $existingBooking['id'],
+                        $routeBusinessId,
+                        'class_booking_cancelled'
+                    );
+                } catch (\Throwable) {}
+            }
+            // Notifica promozione da waitlist
+            if ($result['promotedClassBookingId'] !== null) {
+                try {
+                    $this->queueClassBookingNotification->execute(
+                        $result['promotedClassBookingId'],
+                        $routeBusinessId,
+                        'class_booking_promoted'
+                    );
+                } catch (\Throwable) {}
+            }
+        }
+
         return Response::success(['cancelled' => true]);
     }
 
