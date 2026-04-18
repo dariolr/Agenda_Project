@@ -16,6 +16,7 @@ import '/core/network/network_providers.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/date_range_provider.dart';
 import '/features/agenda/presentation/dialogs/booking_history_dialog.dart';
+import '/features/agenda/providers/business_providers.dart';
 import '/features/agenda/providers/location_providers.dart';
 import '/features/auth/providers/current_business_user_provider.dart';
 import '/features/bookings_list/providers/bookings_list_filter_provider.dart';
@@ -132,16 +133,21 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
     super.dispose();
   }
 
-  int get _businessId => ref.read(currentLocationProvider).businessId;
+  int get _businessId => ref.read(currentBusinessIdProvider);
 
   void _onScroll() {
+    final businessId = _businessId;
+    if (businessId <= 0) return;
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      ref.read(bookingsListProvider.notifier).loadMore(_businessId);
+      ref.read(bookingsListProvider.notifier).loadMore(businessId);
     }
   }
 
   Future<void> _loadInitialData() async {
+    final businessId = _businessId;
+    if (businessId <= 0) return;
+
     final currentUserRole = ref.read(currentUserRoleProvider);
     final currentUserStaffId = ref.read(currentUserStaffIdProvider);
     final forcedStaffIds =
@@ -191,7 +197,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
             sortOrder: currentFilters.sortOrder,
           ),
         );
-    await ref.read(bookingsListProvider.notifier).loadBookings(_businessId);
+    await ref.read(bookingsListProvider.notifier).loadBookings(businessId);
   }
 
   String _formatDate(DateTime date) {
@@ -271,11 +277,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   }
 
   Future<void> _viewBookingHistory(BookingListItem booking) async {
-    await showBookingHistoryDialog(
-      context,
-      ref,
-      bookingId: booking.id,
-    );
+    await showBookingHistoryDialog(context, ref, bookingId: booking.id);
   }
 
   void _showLocationFilter(BuildContext context) async {
@@ -456,6 +458,14 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
       }
     });
 
+    // Se il business diventa disponibile dopo il restore della route,
+    // avvia il primo caricamento appena l'ID è valido.
+    ref.listen<int>(currentBusinessIdProvider, (previous, next) {
+      if (next <= 0) return;
+      if (previous == next) return;
+      _loadInitialData();
+    });
+
     // Note: This screen is displayed inside ScaffoldWithNavigation,
     // so it should NOT have its own Scaffold/AppBar.
     // Material wrapper needed for FilterChip widgets.
@@ -583,8 +593,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
               _buildFilterChip(
                 context,
                 label: l10n.reportsFilterStatus,
-                selected:
-                    _selectedStatuses.length < _allBookingStatuses.length,
+                selected: _selectedStatuses.length < _allBookingStatuses.length,
                 onTap: () => _showStatusFilter(context),
               ),
               _buildFilterChip(
@@ -638,9 +647,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
         textAlignVertical: TextAlignVertical.center,
         decoration: InputDecoration(
           hintText: l10n.bookingsListFilterClient,
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           isDense: true,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 10,
@@ -751,42 +758,42 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
             trackVisibility: true,
             scrollbarOrientation: ScrollbarOrientation.bottom,
             child: SingleChildScrollView(
-            controller: _horizontalScrollController,
-            scrollDirection: Axis.horizontal,
-            child: Theme(
-              data: Theme.of(
-                context,
-              ).copyWith(dividerColor: colorScheme.outline.withOpacity(0.2)),
-              child: DataTable(
-                dividerThickness: 0.2,
-                horizontalMargin: 16,
-                headingRowColor: WidgetStateProperty.all(
-                  colorScheme.surfaceContainerHighest,
-                ),
-                columns: [
-                  DataColumn(label: Text(l10n.bookingsListColumnDateTime)),
-                  DataColumn(label: Text(l10n.bookingsListColumnClient)),
-                  DataColumn(label: Text(l10n.bookingsListColumnServices)),
-                  DataColumn(label: Text(l10n.bookingsListColumnStaff)),
-                  DataColumn(label: Text(l10n.bookingsListColumnStatus)),
-                  DataColumn(
-                    label: Text(l10n.bookingsListColumnPrice),
-                    numeric: true,
+              controller: _horizontalScrollController,
+              scrollDirection: Axis.horizontal,
+              child: Theme(
+                data: Theme.of(
+                  context,
+                ).copyWith(dividerColor: colorScheme.outline.withOpacity(0.2)),
+                child: DataTable(
+                  dividerThickness: 0.2,
+                  horizontalMargin: 16,
+                  headingRowColor: WidgetStateProperty.all(
+                    colorScheme.surfaceContainerHighest,
                   ),
-                  DataColumn(label: Text(l10n.bookingsListColumnCreatedAt)),
-                  DataColumn(label: Text(l10n.bookingsListColumnActions)),
-                ],
-                rows: state.bookings
-                    .map(
-                      (booking) => _buildDataRow(
-                        booking,
-                        canManageBookings: canManageBookings,
-                      ),
-                    )
-                    .toList(),
+                  columns: [
+                    DataColumn(label: Text(l10n.bookingsListColumnDateTime)),
+                    DataColumn(label: Text(l10n.bookingsListColumnClient)),
+                    DataColumn(label: Text(l10n.bookingsListColumnServices)),
+                    DataColumn(label: Text(l10n.bookingsListColumnStaff)),
+                    DataColumn(label: Text(l10n.bookingsListColumnStatus)),
+                    DataColumn(
+                      label: Text(l10n.bookingsListColumnPrice),
+                      numeric: true,
+                    ),
+                    DataColumn(label: Text(l10n.bookingsListColumnCreatedAt)),
+                    DataColumn(label: Text(l10n.bookingsListColumnActions)),
+                  ],
+                  rows: state.bookings
+                      .map(
+                        (booking) => _buildDataRow(
+                          booking,
+                          canManageBookings: canManageBookings,
+                        ),
+                      )
+                      .toList(),
+                ),
               ),
             ),
-          ),
           ),
           if (state.isLoadingMore)
             const Padding(

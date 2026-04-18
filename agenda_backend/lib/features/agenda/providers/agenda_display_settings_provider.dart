@@ -21,6 +21,7 @@ class AgendaDisplaySettings {
     this.cardColorOpacity = 1.0,
     this.extraMinutesBandIntensity = 0.5,
     this.hoverUnrelatedCardDimIntensity = 0.0,
+    this.useRoundedCardCorners = false,
     this.showPricesOverride,
     this.cardColorSourceOverride,
     this.showCancelledAppointments = false,
@@ -30,6 +31,7 @@ class AgendaDisplaySettings {
   final double cardColorOpacity;
   final double extraMinutesBandIntensity;
   final double hoverUnrelatedCardDimIntensity;
+  final bool useRoundedCardCorners;
   final bool? showPricesOverride;
   final AgendaCardColorSource? cardColorSourceOverride;
   final bool showCancelledAppointments;
@@ -39,6 +41,7 @@ class AgendaDisplaySettings {
     double? cardColorOpacity,
     double? extraMinutesBandIntensity,
     double? hoverUnrelatedCardDimIntensity,
+    bool? useRoundedCardCorners,
     bool? showPricesOverride,
     AgendaCardColorSource? cardColorSourceOverride,
     bool? showCancelledAppointments,
@@ -52,6 +55,8 @@ class AgendaDisplaySettings {
           extraMinutesBandIntensity ?? this.extraMinutesBandIntensity,
       hoverUnrelatedCardDimIntensity:
           hoverUnrelatedCardDimIntensity ?? this.hoverUnrelatedCardDimIntensity,
+      useRoundedCardCorners:
+          useRoundedCardCorners ?? this.useRoundedCardCorners,
       showPricesOverride: clearShowPricesOverride
           ? null
           : (showPricesOverride ?? this.showPricesOverride),
@@ -105,6 +110,10 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
             _minHoverUnrelatedCardDimIntensity,
             _maxHoverUnrelatedCardDimIntensity,
           ),
+      useRoundedCardCorners: prefs.getAgendaUseRoundedCardCorners(
+        businessId,
+        locationId: locationId,
+      ),
       showPricesOverride: prefs.getAgendaShowPricesOverride(
         businessId,
         locationId: locationId,
@@ -193,6 +202,20 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
         .setAgendaShowPricesOverride(businessId, value, locationId: locationId);
   }
 
+  Future<void> setUseRoundedCardCorners(bool value) async {
+    final businessId = _businessId();
+    final locationId = _locationId();
+    if (businessId <= 0 || locationId <= 0) return;
+    state = state.copyWith(useRoundedCardCorners: value);
+    await ref
+        .read(preferencesServiceProvider)
+        .setAgendaUseRoundedCardCorners(
+          businessId,
+          value,
+          locationId: locationId,
+        );
+  }
+
   Future<void> setCardColorSourceOverride(AgendaCardColorSource? value) async {
     final businessId = _businessId();
     final locationId = _locationId();
@@ -255,6 +278,11 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
       null,
       locationId: locationId,
     );
+    await prefs.setAgendaUseRoundedCardCorners(
+      businessId,
+      false,
+      locationId: locationId,
+    );
     await prefs.setAgendaCardColorSourceOverride(
       businessId,
       null,
@@ -293,6 +321,10 @@ final agendaHoverUnrelatedCardDimIntensityProvider = Provider<double>((ref) {
   return ref
       .watch(agendaDisplaySettingsProvider)
       .hoverUnrelatedCardDimIntensity;
+});
+
+final agendaUseRoundedCardCornersProvider = Provider<bool>((ref) {
+  return ref.watch(agendaDisplaySettingsProvider).useRoundedCardCorners;
 });
 
 final effectiveShowAppointmentPriceInCardProvider = Provider<bool>((ref) {

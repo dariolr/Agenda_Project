@@ -25,6 +25,7 @@ import 'package:agenda_backend/features/agenda/providers/dragged_card_size_provi
 import 'package:agenda_backend/features/agenda/providers/initial_scroll_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/pending_drop_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/selected_appointment_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/staff_slot_availability_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/temp_drag_time_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
@@ -528,7 +529,7 @@ class _SingleStaffWeekHeaderCell extends ConsumerWidget {
   }
 }
 
-class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
+class _SingleStaffWeekTimelineColumn extends ConsumerStatefulWidget {
   const _SingleStaffWeekTimelineColumn({
     required this.staffId,
     required this.day,
@@ -544,11 +545,29 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
   final List<ClassEvent> classEvents;
   final double width;
   final bool showRightBorder;
+
+  @override
+  ConsumerState<_SingleStaffWeekTimelineColumn> createState() =>
+      _SingleStaffWeekTimelineColumnState();
+}
+
+class _SingleStaffWeekTimelineColumnState
+    extends ConsumerState<_SingleStaffWeekTimelineColumn> {
+  int? _hoveredClassEventId;
+  int? _hoveredTimeBlockId;
+
+  int get staffId => widget.staffId;
+  DateTime get day => widget.day;
+  List<Appointment> get appointments => widget.appointments;
+  List<ClassEvent> get classEvents => widget.classEvents;
+  double get width => widget.width;
+  bool get showRightBorder => widget.showRightBorder;
+
   double get _contentWidth =>
       (width - (showRightBorder ? 1.0 : 0.0)).clamp(0.0, double.infinity);
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final theme = Theme.of(context);
     final isToday = DateUtils.isSameDay(day, ref.watch(tenantTodayProvider));
@@ -568,6 +587,7 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
         const <TimeBlock>[];
 
     final geometry = _buildGeometry(layoutConfig);
+    final blockGeometry = _buildBlockGeometry(layoutConfig, timeBlocks);
     final appointmentColors = _resolveAppointmentColors(context, ref);
     final classTypes = ref.watch(classTypesProvider).value ?? const [];
     final classTypeById = <int, ClassType>{
@@ -662,10 +682,11 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
             }),
           ),
           for (final block in timeBlocks)
-            _buildTimeBlock(ref, block, layoutConfig),
+            _buildTimeBlock(ref, block, layoutConfig, blockGeometry),
           for (final appointment in appointments)
             _buildAppointment(
               context,
+              ref,
               appointment,
               layoutConfig,
               geometry,
@@ -674,6 +695,7 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
           for (final event in classEvents)
             _buildClassEvent(
               context,
+              ref,
               event,
               layoutConfig,
               geometry,
@@ -717,6 +739,20 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
           start: event.startsAtLocal ?? event.startsAtUtc.toLocal(),
           end: event.endsAtLocal ?? event.endsAtUtc.toLocal(),
         ),
+    ];
+    return computeLayoutGeometry(
+      entries,
+      useClusterMaxConcurrency: layoutConfig.useClusterMaxConcurrency,
+    );
+  }
+
+  Map<int, EventGeometry> _buildBlockGeometry(
+    LayoutConfig layoutConfig,
+    List<TimeBlock> blocks,
+  ) {
+    final entries = <LayoutEntry>[
+      for (final block in blocks)
+        LayoutEntry(id: block.id, start: block.startTime, end: block.endTime),
     ];
     return computeLayoutGeometry(
       entries,
@@ -776,6 +812,7 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
 
   Widget _buildAppointment(
     BuildContext context,
+    WidgetRef ref,
     Appointment appointment,
     LayoutConfig layoutConfig,
     Map<int, EventGeometry> geometry,
@@ -786,9 +823,8 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     final endMinutes = appointment.endTime.difference(dayStart).inMinutes;
     final top = layoutConfig.offsetForMinuteOfDay(startMinutes);
     final height = layoutConfig.heightForMinutes(endMinutes - startMinutes);
-    const appointmentVerticalGap = 1.0;
-    final visualTop = top + (appointmentVerticalGap / 2);
-    final visualHeight = (height - appointmentVerticalGap)
+    final visualTop = top + (LayoutConfig.cardVerticalGap / 2);
+    final visualHeight = (height - LayoutConfig.cardVerticalGap)
         .clamp(0.0, double.infinity)
         .toDouble();
     if (visualHeight <= 0) {
@@ -804,19 +840,37 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     final cardWidth = (contentWidth * eventGeometry.widthFraction - padding * 2)
         .clamp(0.0, double.infinity)
         .toDouble();
+    const narrowOverlapRatioThreshold = 0.65;
+    const narrowOverlapMaxWidthPx = 320.0;
+    final isNarrowOverlappedCard =
+        fullWidth > 0 &&
+        (cardWidth / fullWidth) <= narrowOverlapRatioThreshold &&
+        cardWidth <= narrowOverlapMaxWidthPx &&
+        cardWidth < fullWidth - 1.0;
+    final selectedAppts = ref.watch(selectedAppointmentProvider);
+    final isExpanded =
+        selectedAppts.focusAppointmentId == appointment.id &&
+        isNarrowOverlappedCard;
+    final effectiveLeft = isExpanded ? padding : cardLeft;
+    final effectiveWidth = isExpanded ? fullWidth : cardWidth;
 
-    return Positioned(
+    return AnimatedPositioned(
+      key: ValueKey(
+        'week_appointment_${appointment.id}_${day.toIso8601String()}',
+      ),
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOutCubic,
       top: visualTop,
-      left: cardLeft,
-      width: cardWidth,
+      left: effectiveLeft,
+      width: effectiveWidth,
       height: visualHeight,
       child: AppointmentCard(
         appointment: appointment,
         color:
             appointmentColors[appointment.id] ??
             Theme.of(context).colorScheme.primary,
-        columnWidth: cardWidth,
-        columnOffset: cardLeft,
+        columnWidth: effectiveWidth,
+        columnOffset: effectiveLeft,
         dragTargetWidth: fullWidth,
       ),
     );
@@ -824,6 +878,7 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
 
   Widget _buildClassEvent(
     BuildContext context,
+    WidgetRef ref,
     ClassEvent event,
     LayoutConfig layoutConfig,
     Map<int, EventGeometry> geometry,
@@ -837,6 +892,13 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     final endMinutes = end.difference(dayStart).inMinutes;
     final top = layoutConfig.offsetForMinuteOfDay(startMinutes);
     final height = layoutConfig.heightForMinutes(endMinutes - startMinutes);
+    final visualTop = top + (LayoutConfig.cardVerticalGap / 2);
+    final visualHeight = (height - LayoutConfig.cardVerticalGap)
+        .clamp(0.0, double.infinity)
+        .toDouble();
+    if (visualHeight <= 0) {
+      return const SizedBox.shrink();
+    }
     final eventGeometry =
         geometry[_classEventLayoutId(event.id)] ??
         const EventGeometry(leftFraction: 0, widthFraction: 1);
@@ -846,6 +908,20 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     final cardWidth = (contentWidth * eventGeometry.widthFraction - padding * 2)
         .clamp(0.0, double.infinity)
         .toDouble();
+    final fullWidth = (contentWidth - padding * 2)
+        .clamp(0.0, double.infinity)
+        .toDouble();
+    const narrowOverlapRatioThreshold = 0.65;
+    const narrowOverlapMaxWidthPx = 320.0;
+    final isNarrowOverlappedCard =
+        fullWidth > 0 &&
+        (cardWidth / fullWidth) <= narrowOverlapRatioThreshold &&
+        cardWidth <= narrowOverlapMaxWidthPx &&
+        cardWidth < fullWidth - 1.0;
+    final isExpanded =
+        _hoveredClassEventId == event.id && isNarrowOverlappedCard;
+    final effectiveLeft = isExpanded ? padding : cardLeft;
+    final effectiveWidth = isExpanded ? fullWidth : cardWidth;
     final classType = classTypeById[event.classTypeId];
     final parsedColor = _parseClassTypeColor(classType?.colorHex);
     final color = parsedColor ?? theme.colorScheme.tertiaryContainer;
@@ -853,56 +929,73 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
         ThemeData.estimateBrightnessForColor(color) == Brightness.dark
         ? Colors.white
         : theme.colorScheme.onTertiaryContainer;
-    final classTitle =
-        (classType?.name.trim().isNotEmpty ?? false)
+    final classTitle = (classType?.name.trim().isNotEmpty ?? false)
         ? classType!.name.trim()
         : context.l10n.classEventsUntitled;
 
-    return Positioned(
-      top: top,
-      left: cardLeft,
-      width: cardWidth,
-      height: height,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: theme.colorScheme.tertiary),
-        ),
-        child: DefaultTextStyle(
-          style:
-              theme.textTheme.bodySmall?.copyWith(color: foreground) ??
-              TextStyle(color: foreground),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                classTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: foreground,
+    return AnimatedPositioned(
+      key: ValueKey('week_class_${event.id}_${day.toIso8601String()}'),
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOutCubic,
+      top: visualTop,
+      left: effectiveLeft,
+      width: effectiveWidth,
+      height: visualHeight,
+      child: MouseRegion(
+        opaque: true,
+        cursor: SystemMouseCursors.click,
+        onEnter: (_) {
+          ref.read(selectedAppointmentProvider.notifier).clear();
+          if (_hoveredClassEventId != event.id) {
+            setState(() => _hoveredClassEventId = event.id);
+          }
+        },
+        onExit: (_) {
+          if (_hoveredClassEventId == event.id) {
+            setState(() => _hoveredClassEventId = null);
+          }
+        },
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: theme.colorScheme.tertiary),
+          ),
+          child: DefaultTextStyle(
+            style:
+                theme.textTheme.bodySmall?.copyWith(color: foreground) ??
+                TextStyle(color: foreground),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  classTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: foreground,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '${DtFmt.hm(context, start.hour, start.minute)} - ${DtFmt.hm(context, end.hour, end.minute)}',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                context.l10n.classEventsCapacitySummary(
-                  event.confirmedCount,
-                  event.capacityTotal,
-                  event.waitlistCount,
+                const SizedBox(height: 2),
+                Text(
+                  '${DtFmt.hm(context, start.hour, start.minute)} - ${DtFmt.hm(context, end.hour, end.minute)}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+                const SizedBox(height: 2),
+                Text(
+                  context.l10n.classEventsCapacitySummary(
+                    event.confirmedCount,
+                    event.capacityTotal,
+                    event.waitlistCount,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -913,6 +1006,7 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     WidgetRef ref,
     TimeBlock block,
     LayoutConfig layoutConfig,
+    Map<int, EventGeometry> blockGeometry,
   ) {
     final previewEnd = ref.watch(blockResizingEndTimeProvider(block.id));
     final effectiveBlock = previewEnd == null
@@ -934,24 +1028,68 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
     }
 
     final padding = LayoutConfig.columnInnerPadding;
-    final cardWidth = (_contentWidth - padding * 2)
+    final fullWidth = (_contentWidth - padding * 2)
         .clamp(0.0, double.infinity)
         .toDouble();
+    final geometry =
+        blockGeometry[effectiveBlock.id] ??
+        const EventGeometry(leftFraction: 0, widthFraction: 1);
+    final cardLeft = _contentWidth * geometry.leftFraction + padding;
+    final cardWidth = (_contentWidth * geometry.widthFraction - padding * 2)
+        .clamp(0.0, double.infinity)
+        .toDouble();
+    const narrowOverlapRatioThreshold = 0.65;
+    const narrowOverlapMaxWidthPx = 320.0;
+    final isNarrowOverlappedCard =
+        fullWidth > 0 &&
+        (cardWidth / fullWidth) <= narrowOverlapRatioThreshold &&
+        cardWidth <= narrowOverlapMaxWidthPx &&
+        cardWidth < fullWidth - 1.0;
+    final isExpanded =
+        _hoveredTimeBlockId == effectiveBlock.id && isNarrowOverlappedCard;
+    final effectiveLeft = isExpanded ? padding : cardLeft;
+    final effectiveWidth = isExpanded ? fullWidth : cardWidth;
     final top = layoutConfig.offsetForMinuteOfDay(clampedStartMinutes);
     final height = layoutConfig.heightForMinutes(
       clampedEndMinutes - clampedStartMinutes,
     );
+    final visualTop = top + (LayoutConfig.cardVerticalGap / 2);
+    final visualHeight = (height - LayoutConfig.cardVerticalGap)
+        .clamp(0.0, double.infinity)
+        .toDouble();
+    if (visualHeight <= 0) {
+      return const SizedBox.shrink();
+    }
 
-    return Positioned(
+    return AnimatedPositioned(
       key: ValueKey('block_${effectiveBlock.id}_${day.toIso8601String()}'),
-      top: top,
-      left: padding,
-      width: cardWidth,
-      height: height,
-      child: TimeBlockWidget(
-        block: effectiveBlock,
-        height: height,
-        width: cardWidth,
+      duration: const Duration(milliseconds: 150),
+      curve: Curves.easeOutCubic,
+      top: visualTop,
+      left: effectiveLeft,
+      width: effectiveWidth,
+      height: visualHeight,
+      child: MouseRegion(
+        onEnter: (_) {
+          ref.read(selectedAppointmentProvider.notifier).clear();
+          if (_hoveredClassEventId != null ||
+              _hoveredTimeBlockId != effectiveBlock.id) {
+            setState(() {
+              _hoveredClassEventId = null;
+              _hoveredTimeBlockId = effectiveBlock.id;
+            });
+          }
+        },
+        onExit: (_) {
+          if (_hoveredTimeBlockId == effectiveBlock.id) {
+            setState(() => _hoveredTimeBlockId = null);
+          }
+        },
+        child: TimeBlockWidget(
+          block: effectiveBlock,
+          height: visualHeight,
+          width: effectiveWidth,
+        ),
       ),
     );
   }
@@ -1296,7 +1434,8 @@ class _SingleStaffWeekTimelineColumn extends ConsumerWidget {
       targetStaffId: staffId,
       bookingAppointments: bookingAppointments,
     );
-    if (wholeMoveResult != MoveBookingByAnchorResult.success || !context.mounted) {
+    if (wholeMoveResult != MoveBookingByAnchorResult.success ||
+        !context.mounted) {
       return;
     }
     try {

@@ -45,6 +45,8 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
   final ScrollController _scrollController = ScrollController();
   Timer? _autoScrollTimer;
+  AppointmentTypeFilterOption _appointmentTypeFilter =
+      AppointmentTypeFilterOption.all;
 
   // NOTE: Non serve initState con refresh() perché:
   // 1. I provider AsyncNotifier caricano i dati automaticamente nel build()
@@ -96,19 +98,51 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final canManageServices = ref.watch(currentUserCanManageServicesProvider);
     final servicesAsync = ref.watch(servicesProvider);
     final allCategories = ref.watch(sortedCategoriesProvider);
-    final packages = ref.watch(servicePackagesProvider).value ?? const <ServicePackage>[];
+    final packages =
+        ref.watch(servicePackagesProvider).value ?? const <ServicePackage>[];
     final services = servicesAsync.value ?? const <Service>[];
-    final classTypes = ref.watch(classTypesProvider).value ?? const <ClassType>[];
+    final classTypes =
+        ref.watch(classTypesProvider).value ?? const <ClassType>[];
+    final location = ref.watch(currentLocationProvider);
     final serviceById = {for (final s in services) s.id: s};
     final hasServiceOrPackageEntries =
         services.any((s) => s.categoryId > 0) ||
         packages.any((package) {
           var categoryId = package.categoryId;
           if (categoryId == 0 && package.items.isNotEmpty) {
-            categoryId = serviceById[package.items.first.serviceId]?.categoryId ?? 0;
+            categoryId =
+                serviceById[package.items.first.serviceId]?.categoryId ?? 0;
           }
           return categoryId > 0;
         });
+    final hasServicesForLocation = services.any((s) => s.categoryId > 0);
+    final hasPackagesForLocation = packages.any((package) {
+      var categoryId = package.categoryId;
+      if (categoryId == 0 && package.items.isNotEmpty) {
+        categoryId =
+            serviceById[package.items.first.serviceId]?.categoryId ?? 0;
+      }
+      return categoryId > 0;
+    });
+    final hasClassesForLocation = classTypes.any((classType) {
+      final hasCategory = (classType.serviceCategoryId ?? 0) > 0;
+      final isEnabledForLocation =
+          classType.locationIds.isEmpty ||
+          classType.locationIds.contains(location.id);
+      return classType.isActive && hasCategory && isEnabledForLocation;
+    });
+    final availableFilterOptions = _resolveAvailableFilterOptions(
+      hasServices: hasServicesForLocation,
+      hasPackages: hasPackagesForLocation,
+      hasClasses: hasClassesForLocation,
+    );
+    final shouldShowTypeFilter = _shouldShowTypeFilter(
+      availableFilterOptions: availableFilterOptions,
+    );
+    final effectiveFilterOption =
+        availableFilterOptions.contains(_appointmentTypeFilter)
+        ? _appointmentTypeFilter
+        : AppointmentTypeFilterOption.all;
     // Pre-carica le risorse solo per ruoli che possono modificare servizi.
     if (canManageServices) {
       ref.watch(resourcesProvider);
@@ -123,7 +157,8 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     for (final package in packages) {
       var categoryId = package.categoryId;
       if (categoryId == 0 && package.items.isNotEmpty) {
-        categoryId = serviceById[package.items.first.serviceId]?.categoryId ?? 0;
+        categoryId =
+            serviceById[package.items.first.serviceId]?.categoryId ?? 0;
       }
       if (categoryId > 0) {
         localNonEmptyCategoryIds.add(categoryId);
@@ -142,11 +177,13 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         servicePackagesForLocationsProvider(locationIdsKey),
       );
       final allCategoriesWithServices = <int>{
-        for (final s in allLocationsServicesAsync.value?.services ?? const <Service>[])
+        for (final s
+            in allLocationsServicesAsync.value?.services ?? const <Service>[])
           if (s.categoryId > 0) s.categoryId,
       };
       final allServicesById = <int, Service>{
-        for (final s in allLocationsServicesAsync.value?.services ?? const <Service>[])
+        for (final s
+            in allLocationsServicesAsync.value?.services ?? const <Service>[])
           s.id: s,
       };
       final allCategoriesWithPackages = <int>{};
@@ -188,7 +225,8 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final canReorderCategories = categories.length >= 2;
     final canReorderServicesAndPackages = hasServiceOrPackageEntries;
     final canReorderClasses = canReorderClassTypes;
-    if (reorderMode == ServicesReorderMode.categories && !canReorderCategories) {
+    if (reorderMode == ServicesReorderMode.categories &&
+        !canReorderCategories) {
       reorderMode = ServicesReorderMode.none;
     } else if (reorderMode == ServicesReorderMode.servicesAndPackages &&
         !canReorderServicesAndPackages) {
@@ -211,6 +249,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
             reorderMode: reorderMode,
             isWide: isWide,
             colorScheme: colorScheme,
+            shouldShowTypeFilter: shouldShowTypeFilter,
+            availableFilterOptions: availableFilterOptions,
+            filterOption: effectiveFilterOption,
           ),
         ),
       ],
@@ -225,6 +266,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     required ServicesReorderMode reorderMode,
     required bool isWide,
     required ColorScheme colorScheme,
+    required bool shouldShowTypeFilter,
+    required List<AppointmentTypeFilterOption> availableFilterOptions,
+    required AppointmentTypeFilterOption filterOption,
   }) {
     if (servicesAsync.isLoading) {
       return const Center(child: CircularProgressIndicator());
@@ -257,6 +301,14 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (reorderMode == ServicesReorderMode.none &&
+              shouldShowTypeFilter) ...[
+            _buildAppointmentTypeFilter(
+              context,
+              availableFilterOptions: availableFilterOptions,
+            ),
+            const SizedBox(height: 8),
+          ],
           Expanded(
             child: reorderMode == ServicesReorderMode.categories
                 ? _buildReorderCategories(context, ref, categories)
@@ -270,10 +322,104 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
                     categories,
                     isWide,
                     colorScheme,
+                    filterOption,
                   ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAppointmentTypeFilter(
+    BuildContext context, {
+    required List<AppointmentTypeFilterOption> availableFilterOptions,
+  }) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    String labelForOption(AppointmentTypeFilterOption option) {
+      switch (option) {
+        case AppointmentTypeFilterOption.all:
+          return context.l10n.filterAll;
+        case AppointmentTypeFilterOption.services:
+          return context.l10n.servicesTabLabel;
+        case AppointmentTypeFilterOption.packages:
+          return context.l10n.servicePackagesTabLabel;
+        case AppointmentTypeFilterOption.servicesAndPackages:
+          return context.l10n.servicesTypeFilterServicesAndPackages;
+        case AppointmentTypeFilterOption.classes:
+          return context.l10n.servicesTypeFilterClasses;
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: availableFilterOptions
+              .map(
+                (option) => _buildFilterChip(
+                  context: context,
+                  label: labelForOption(option),
+                  option: option,
+                  colorScheme: colorScheme,
+                ),
+              )
+              .toList(),
+        ),
+      ),
+    );
+  }
+
+  List<AppointmentTypeFilterOption> _resolveAvailableFilterOptions({
+    required bool hasServices,
+    required bool hasPackages,
+    required bool hasClasses,
+  }) {
+    final options = <AppointmentTypeFilterOption>[
+      AppointmentTypeFilterOption.all,
+    ];
+    if (hasServices) options.add(AppointmentTypeFilterOption.services);
+    if (hasPackages) options.add(AppointmentTypeFilterOption.packages);
+    if (hasServices && hasPackages) {
+      options.add(AppointmentTypeFilterOption.servicesAndPackages);
+    }
+    if (hasClasses) options.add(AppointmentTypeFilterOption.classes);
+    return options;
+  }
+
+  bool _shouldShowTypeFilter({
+    required List<AppointmentTypeFilterOption> availableFilterOptions,
+  }) {
+    final concreteTypesCount = availableFilterOptions
+        .where((option) => option != AppointmentTypeFilterOption.all)
+        .length;
+    return concreteTypesCount > 1;
+  }
+
+  Widget _buildFilterChip({
+    required BuildContext context,
+    required String label,
+    required AppointmentTypeFilterOption option,
+    required ColorScheme colorScheme,
+  }) {
+    final isSelected = _appointmentTypeFilter == option;
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      selectedColor: colorScheme.primary.withOpacity(0.16),
+      checkmarkColor: colorScheme.primary,
+      side: BorderSide(
+        color: isSelected
+            ? colorScheme.primary.withOpacity(0.4)
+            : colorScheme.outlineVariant,
+      ),
+      onSelected: (_) {
+        if (_appointmentTypeFilter == option) return;
+        setState(() => _appointmentTypeFilter = option);
+      },
     );
   }
 
@@ -306,7 +452,8 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       );
     }
 
-    final rows = <({bool isHeader, ClassType? classType, ServiceCategory? c})>[];
+    final rows =
+        <({bool isHeader, ClassType? classType, ServiceCategory? c})>[];
     for (final c in cats) {
       final list = entriesByCategory[c.id] ?? const <ClassType>[];
       if (list.isEmpty) continue;
@@ -372,7 +519,8 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
               if (entry.id != entryOld.id) entry,
           ];
 
-          final dropOnHeader = newIndex < rows.length && rows[newIndex].isHeader;
+          final dropOnHeader =
+              newIndex < rows.length && rows[newIndex].isHeader;
           var fallbackCategoryId = oldCatId;
           final fallbackStartIndex = dropOnHeader
               ? newIndex - 1
@@ -385,7 +533,10 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
             }
           }
 
-          final targetFlatIndex = entryFlatIndexFromRowsIndex(newIndex, oldIndex);
+          final targetFlatIndex = entryFlatIndexFromRowsIndex(
+            newIndex,
+            oldIndex,
+          );
           final (targetCatId, indexInTargetCat) = dropOnHeader
               ? (
                   fallbackCategoryId,
@@ -413,23 +564,15 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
           if (targetCatId == oldCatId) {
             oldItems.insert(targetIndex, movingItem);
             unawaited(
-              _persistClassTypesOrder(
-                context,
-                ref,
-                {oldCatId: oldItems},
-              ),
+              _persistClassTypesOrder(context, ref, {oldCatId: oldItems}),
             );
           } else {
             newItems.insert(targetIndex, movingItem);
             unawaited(
-              _persistClassTypesOrder(
-                context,
-                ref,
-                {
-                  oldCatId: oldItems,
-                  targetCatId: newItems,
-                },
-              ),
+              _persistClassTypesOrder(context, ref, {
+                oldCatId: oldItems,
+                targetCatId: newItems,
+              }),
             );
           }
         },
@@ -505,10 +648,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
           await repo.updateClassType(
             businessId: businessId,
             classTypeId: classType.id,
-            payload: {
-              'service_category_id': categoryId,
-              'sort_order': i,
-            },
+            payload: {'service_category_id': categoryId, 'sort_order': i},
           );
         }
       }
@@ -935,8 +1075,10 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     List<ServiceCategory> cats,
     bool isWide,
     ColorScheme colorScheme,
+    AppointmentTypeFilterOption filterOption,
   ) {
     final canManageServices = ref.watch(currentUserCanManageServicesProvider);
+    final isSuperadmin = ref.watch(authProvider).user?.isSuperadmin ?? false;
     final servicesNotifier = ref.read(servicesProvider.notifier);
     if (cats.isEmpty) {
       return Center(
@@ -1035,6 +1177,9 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       onClassTypeSchedule: (classType) =>
           _openClassEventDialog(context, ref, classType: classType),
       readOnly: !canManageServices,
+      showClassTypeAddOption: isSuperadmin,
+      filterOption: filterOption,
+      emptyFilterStateMessage: context.l10n.noServicesFound,
     );
   }
 
@@ -1118,10 +1263,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     }
   }
 
-  Future<void> _confirmDeleteClassType(
-    WidgetRef ref,
-    int classTypeId,
-  ) async {
+  Future<void> _confirmDeleteClassType(WidgetRef ref, int classTypeId) async {
     if (!mounted) return;
     final l10n = context.l10n;
 

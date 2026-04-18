@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/models/appointment.dart';
+import '../../../domain/config/layout_config.dart';
 import 'appointment_card_interactive.dart';
 
 /// Wrapper unico che istanzia la versione interattiva
@@ -26,7 +27,9 @@ class AppointmentCard extends ConsumerWidget {
     this.dragTargetWidth,
     this.expandToLeft = false,
     this.showExtraMinutesBand = true,
-    this.borderRadius = const BorderRadius.all(Radius.circular(6)),
+    this.borderRadius = const BorderRadius.all(
+      Radius.circular(LayoutConfig.cardBorderRadiusCompact),
+    ),
     this.forceCompactPresentation = false,
   });
 

@@ -1316,7 +1316,9 @@ class _ServicesAddAction extends ConsumerWidget {
         formFactor == AppFormFactor.desktop;
     final services = ref.watch(servicesProvider).value ?? [];
     final packages = ref.watch(servicePackagesProvider).value ?? [];
-    final classTypes = ref.watch(classTypesProvider).value ?? const <ClassType>[];
+    final classTypes =
+        ref.watch(classTypesProvider).value ?? const <ClassType>[];
+    final isSuperadmin = ref.watch(authProvider).user?.isSuperadmin ?? false;
     final categories = ref.watch(serviceCategoriesProvider);
     final hasCategories = categories.length >= 2;
     final hasServices = services.isNotEmpty;
@@ -1428,13 +1430,14 @@ class _ServicesAddAction extends ConsumerWidget {
               child: Text(l10n.servicesNewServiceMenu),
             ),
             AdaptiveDropdownItem(
-              value: 'class_type',
-              child: Text(l10n.classTypesCreateTitle),
-            ),
-            AdaptiveDropdownItem(
               value: 'package',
               child: Text(l10n.servicePackageNewMenu),
             ),
+            if (isSuperadmin)
+              AdaptiveDropdownItem(
+                value: 'class_type',
+                child: Text(l10n.classTypesCreateTitle),
+              ),
           ],
           onSelected: (value) {
             if (value == 'category') {
@@ -1517,11 +1520,7 @@ class _ServicesEndReorderAction extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               child: compact
-                  ? Icon(
-                      Icons.check,
-                      color: scheme.onErrorContainer,
-                      size: 22,
-                    )
+                  ? Icon(Icons.check, color: scheme.onErrorContainer, size: 22)
                   : Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

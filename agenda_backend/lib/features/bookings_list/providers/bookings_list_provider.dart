@@ -279,6 +279,16 @@ class BookingsListNotifier extends Notifier<BookingsListState> {
 
   /// Carica la prima pagina (reset)
   Future<void> loadBookings(int businessId) async {
+    if (businessId <= 0) {
+      state = state.copyWith(
+        bookings: const [],
+        total: 0,
+        offset: 0,
+        isLoading: false,
+        clearError: true,
+      );
+      return;
+    }
     final filters = ref.read(bookingsListFiltersProvider);
     state = state.copyWith(isLoading: true, clearError: true);
 
@@ -317,7 +327,7 @@ class BookingsListNotifier extends Notifier<BookingsListState> {
 
   /// Carica la pagina successiva (append)
   Future<void> loadMore(int businessId) async {
-    if (state.isLoadingMore || !state.hasMore) return;
+    if (businessId <= 0 || state.isLoadingMore || !state.hasMore) return;
 
     final filters = ref.read(bookingsListFiltersProvider);
     state = state.copyWith(isLoadingMore: true);

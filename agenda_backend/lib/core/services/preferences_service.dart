@@ -71,6 +71,12 @@ class PrefsKeys {
   }) =>
       'agenda_hover_unrelated_card_dim_intensity_${_scope(businessId, locationId)}';
 
+  /// Mostra card con angoli arrotondati (scope business + location)
+  static String agendaUseRoundedCardCorners(
+    int businessId, {
+    required int locationId,
+  }) => 'agenda_use_rounded_card_corners_${_scope(businessId, locationId)}';
+
   /// Override superadmin: mostra prezzi in card (scope business + location)
   static String agendaShowPricesOverride(
     int businessId, {
@@ -426,6 +432,30 @@ class PreferencesService {
     );
   }
 
+  bool getAgendaUseRoundedCardCorners(
+    int businessId, {
+    required int locationId,
+  }) {
+    return _prefs.getBool(
+          PrefsKeys.agendaUseRoundedCardCorners(
+            businessId,
+            locationId: locationId,
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> setAgendaUseRoundedCardCorners(
+    int businessId,
+    bool value, {
+    required int locationId,
+  }) async {
+    await _prefs.setBool(
+      PrefsKeys.agendaUseRoundedCardCorners(businessId, locationId: locationId),
+      value,
+    );
+  }
+
   bool? getAgendaShowPricesOverride(int businessId, {required int locationId}) {
     return _prefs.getBool(
       PrefsKeys.agendaShowPricesOverride(businessId, locationId: locationId),
@@ -648,6 +678,8 @@ class PreferencesService {
             'agenda_hover_unrelated_card_dim_intensity_${businessId}_',
           ) ||
           key == 'agenda_hover_unrelated_card_dim_intensity_$businessId' ||
+          key.startsWith('agenda_use_rounded_card_corners_${businessId}_') ||
+          key == 'agenda_use_rounded_card_corners_$businessId' ||
           key.startsWith('agenda_show_prices_override_${businessId}_') ||
           key == 'agenda_show_prices_override_$businessId' ||
           key.startsWith('agenda_use_service_colors_override_${businessId}_') ||
@@ -672,6 +704,7 @@ class PreferencesService {
           key.startsWith('agenda_card_color_opacity_') ||
           key.startsWith('agenda_extra_minutes_band_intensity_') ||
           key.startsWith('agenda_hover_unrelated_card_dim_intensity_') ||
+          key.startsWith('agenda_use_rounded_card_corners_') ||
           key.startsWith('agenda_show_prices_override_') ||
           key.startsWith('agenda_use_service_colors_override_') ||
           key.startsWith('agenda_show_cancelled_appointments_') ||

@@ -301,6 +301,10 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("Visualizza importi"),
     "agendaDisplaySettingsSuperadminTitle":
         MessageLookupByLibrary.simpleMessage("Impostazioni di visualizzazione"),
+    "agendaDisplaySettingsUseRoundedCardCornersLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Applica angoli arrotondati agli appuntamenti",
+        ),
     "agendaNextDay": MessageLookupByLibrary.simpleMessage("Giorno successivo"),
     "agendaNextMonth": MessageLookupByLibrary.simpleMessage("Mese successivo"),
     "agendaNextWeek": MessageLookupByLibrary.simpleMessage(
@@ -942,7 +946,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "classEventsSchedulesUpdateSuccessTitle":
         MessageLookupByLibrary.simpleMessage("Programmazione aggiornata"),
     "classEventsShowExpiredSchedules": MessageLookupByLibrary.simpleMessage(
-      "Mostra anche scadute",
+      "Mostra anche passate",
     ),
     "classEventsStaffInactiveChangeRequired": MessageLookupByLibrary.simpleMessage(
       "Lo staff assegnato non è più attivo: seleziona uno staff attivo per salvare.",
@@ -2393,6 +2397,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "servicesSelectedCount": m71,
     "servicesTabLabel": MessageLookupByLibrary.simpleMessage("Servizi"),
+    "servicesTypeFilterClasses": MessageLookupByLibrary.simpleMessage("Classi"),
+    "servicesTypeFilterServicesAndPackages":
+        MessageLookupByLibrary.simpleMessage("Servizi e pacchetti"),
     "setPriceToEnable": MessageLookupByLibrary.simpleMessage(
       "Imposta un prezzo per abilitarlo",
     ),

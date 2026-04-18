@@ -40,6 +40,7 @@ class CategoryItem extends StatefulWidget {
   final bool addTopSpacing;
   final bool readOnly;
   final bool isCollapsible;
+  final bool showClassTypeAddOption;
 
   const CategoryItem({
     super.key,
@@ -70,6 +71,7 @@ class CategoryItem extends StatefulWidget {
     required this.addTopSpacing,
     this.readOnly = false,
     this.isCollapsible = false,
+    this.showClassTypeAddOption = true,
   });
 
   @override
@@ -96,8 +98,9 @@ class _CategoryItemState extends State<CategoryItem> {
   @override
   Widget build(BuildContext context) {
     final isEmptyCategory = widget.entries.isEmpty;
-    final categoryBorderColor =
-        widget.colorScheme.outlineVariant.withOpacity(0.16);
+    final categoryBorderColor = widget.colorScheme.outlineVariant.withOpacity(
+      0.16,
+    );
 
     return Container(
       margin: EdgeInsets.only(top: widget.addTopSpacing ? 32 : 0, bottom: 24),
@@ -131,8 +134,7 @@ class _CategoryItemState extends State<CategoryItem> {
                     : null,
                 borderRadius: BorderRadius.vertical(
                   top: const Radius.circular(16),
-                  bottom:
-                      _isExpanded ? Radius.zero : const Radius.circular(16),
+                  bottom: _isExpanded ? Radius.zero : const Radius.circular(16),
                 ),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
@@ -150,9 +152,7 @@ class _CategoryItemState extends State<CategoryItem> {
                                 widget.category.name,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .titleMedium
+                                style: Theme.of(context).textTheme.titleMedium
                                     ?.copyWith(fontWeight: FontWeight.w500),
                               ),
                             ),
@@ -170,9 +170,7 @@ class _CategoryItemState extends State<CategoryItem> {
                               widget.category.description!,
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
+                              style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(color: Colors.black54),
                             ),
                           ),
@@ -210,10 +208,11 @@ class _CategoryItemState extends State<CategoryItem> {
                               value: _AddMenuAction.package,
                               child: Text(context.l10n.servicePackageNewMenu),
                             ),
-                            PopupMenuItem(
-                              value: _AddMenuAction.classType,
-                              child: Text(context.l10n.classTypesCreateTitle),
-                            ),
+                            if (widget.showClassTypeAddOption)
+                              PopupMenuItem(
+                                value: _AddMenuAction.classType,
+                                child: Text(context.l10n.classTypesCreateTitle),
+                              ),
                           ],
                         ),
                         IconButton(

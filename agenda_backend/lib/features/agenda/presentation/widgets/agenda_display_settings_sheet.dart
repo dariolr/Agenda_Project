@@ -143,6 +143,16 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
             value: showPrices,
             onChanged: notifier.setShowPricesOverride,
           ),
+          const SizedBox(height: _sectionSpacing),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              context.l10n.agendaDisplaySettingsUseRoundedCardCornersLabel,
+              style: settingLabelStyle,
+            ),
+            value: settings.useRoundedCardCorners,
+            onChanged: notifier.setUseRoundedCardCorners,
+          ),
           // const SizedBox(height: _sectionSpacing),
           // SwitchListTile.adaptive(
           //   contentPadding: EdgeInsets.zero,

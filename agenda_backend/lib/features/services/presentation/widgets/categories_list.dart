@@ -8,6 +8,14 @@ import '../../../../core/models/service_package.dart';
 import '../../providers/services_sorted_providers.dart';
 import 'category_item.dart';
 
+enum AppointmentTypeFilterOption {
+  all,
+  services,
+  packages,
+  servicesAndPackages,
+  classes,
+}
+
 /// Lista dei pannelli categoria aggiornata per la vista normale.
 class CategoriesList extends ConsumerWidget {
   final List<ServiceCategory> categories;
@@ -35,6 +43,9 @@ class CategoriesList extends ConsumerWidget {
   final ValueChanged<ClassType> onClassTypeSchedule;
   final ScrollController scrollController;
   final bool readOnly;
+  final bool showClassTypeAddOption;
+  final AppointmentTypeFilterOption filterOption;
+  final String emptyFilterStateMessage;
 
   const CategoriesList({
     super.key,
@@ -62,16 +73,52 @@ class CategoriesList extends ConsumerWidget {
     required this.onClassTypeDelete,
     required this.onClassTypeSchedule,
     required this.scrollController,
+    required this.emptyFilterStateMessage,
     this.readOnly = false,
+    this.showClassTypeAddOption = true,
+    this.filterOption = AppointmentTypeFilterOption.all,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    bool includeEntry(ServiceCategoryEntry entry) {
+      switch (filterOption) {
+        case AppointmentTypeFilterOption.all:
+          return true;
+        case AppointmentTypeFilterOption.services:
+          return entry.isService;
+        case AppointmentTypeFilterOption.packages:
+          return entry.isPackage;
+        case AppointmentTypeFilterOption.servicesAndPackages:
+          return entry.isService || entry.isPackage;
+        case AppointmentTypeFilterOption.classes:
+          return entry.isClassType;
+      }
+    }
+
     // Pre-fetch all entries to compute the collapsible threshold.
     final entriesPerCategory = {
       for (final cat in categories)
-        cat.id: ref.watch(sortedCategoryEntriesProvider(cat.id)),
+        cat.id: ref
+            .watch(sortedCategoryEntriesProvider(cat.id))
+            .where(includeEntry)
+            .toList(),
     };
+    final visibleCategories = filterOption == AppointmentTypeFilterOption.all
+        ? categories
+        : categories
+              .where((category) => entriesPerCategory[category.id]!.isNotEmpty)
+              .toList();
+    if (visibleCategories.isEmpty) {
+      return Center(
+        child: Text(
+          emptyFilterStateMessage,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+      );
+    }
     final totalEntries = entriesPerCategory.values.fold<int>(
       0,
       (sum, e) => sum + e.length,
@@ -81,15 +128,14 @@ class CategoriesList extends ConsumerWidget {
     return ListView.builder(
       controller: scrollController,
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-      itemCount: categories.length,
+      itemCount: visibleCategories.length,
       itemBuilder: (context, index) {
-        final category = categories[index];
+        final category = visibleCategories[index];
         final entries = entriesPerCategory[category.id]!;
         final hasPrev = index > 0;
-        final prevIsNonEmpty =
-            hasPrev
-                ? entriesPerCategory[categories[index - 1].id]!.isNotEmpty
-                : false;
+        final prevIsNonEmpty = hasPrev
+            ? entriesPerCategory[visibleCategories[index - 1].id]!.isNotEmpty
+            : false;
         final isFirstEmptyAfterNonEmpty =
             entries.isEmpty && (!hasPrev || prevIsNonEmpty);
 
@@ -144,6 +190,7 @@ class CategoriesList extends ConsumerWidget {
               addTopSpacing: isFirstEmptyAfterNonEmpty,
               readOnly: readOnly,
               isCollapsible: isCollapsible,
+              showClassTypeAddOption: showClassTypeAddOption,
             ),
           ),
         );

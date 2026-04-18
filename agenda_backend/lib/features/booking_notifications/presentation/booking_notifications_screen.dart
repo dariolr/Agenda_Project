@@ -15,7 +15,6 @@ import '/core/services/tenant_time_service.dart';
 import '/core/widgets/app_bottom_sheet.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/business_providers.dart';
-import '/features/agenda/providers/location_providers.dart';
 import '/features/agenda/providers/tenant_time_provider.dart';
 import '/features/auth/providers/auth_provider.dart';
 import '/features/auth/providers/current_business_user_provider.dart';
@@ -84,16 +83,20 @@ class _BookingNotificationsScreenState
   bool get _canSelectBusiness =>
       widget.enableBusinessSelectorForSuperadmin && _isSuperadmin;
 
-  int get _fallbackBusinessId => ref.read(currentLocationProvider).businessId;
+  int get _fallbackBusinessId => ref.read(currentBusinessIdProvider);
 
   List<int> _activeBusinessIds(List<Business> businesses) {
+    List<int> ids;
     if (_canSelectBusiness) {
       if (_selectedBusinessId == null) {
-        return businesses.map((b) => b.id).toList();
+        ids = businesses.map((b) => b.id).toList();
+      } else {
+        ids = [_selectedBusinessId!];
       }
-      return [_selectedBusinessId!];
+    } else {
+      ids = [_fallbackBusinessId];
     }
-    return [_fallbackBusinessId];
+    return ids.toSet().where((id) => id > 0).toList(growable: false);
   }
 
   List<Business> _readBusinesses() {
@@ -223,6 +226,17 @@ class _BookingNotificationsScreenState
         );
       }
     });
+
+    ref.listen<int>(currentBusinessIdProvider, (previous, next) {
+      if (_canSelectBusiness) return;
+      if (next <= 0) return;
+      if (previous == next) return;
+      _loadInitialData();
+      if (selectedTabIndex == 1) {
+        _loadWhatsappDataIfPossible();
+      }
+    });
+
     return Scaffold(
       appBar: widget.showStandaloneAppBar
           ? AppBar(
@@ -399,63 +413,65 @@ class _BookingNotificationsScreenState
                 controller: _horizontalScrollController,
                 scrollDirection: Axis.horizontal,
                 child: Theme(
-                data: Theme.of(
-                  context,
-                ).copyWith(dividerColor: colorScheme.outline.withOpacity(0.2)),
-                child: DataTable(
-                  showCheckboxColumn: false,
-                  dividerThickness: 0.2,
-                  horizontalMargin: 16,
-                  sortColumnIndex: sortColumnIndex,
-                  sortAscending: sortAscending,
-                  headingRowColor: WidgetStateProperty.all(
-                    colorScheme.surfaceContainerHighest,
+                  data: Theme.of(context).copyWith(
+                    dividerColor: colorScheme.outline.withOpacity(0.2),
                   ),
-                  columns: [
-                    DataColumn(
-                      label: Text(l10n.bookingNotificationsFieldCreatedAt),
-                      onSort: (_, ascending) =>
-                          _onSortChanged('created', ascending),
+                  child: DataTable(
+                    showCheckboxColumn: false,
+                    dividerThickness: 0.2,
+                    horizontalMargin: 16,
+                    sortColumnIndex: sortColumnIndex,
+                    sortAscending: sortAscending,
+                    headingRowColor: WidgetStateProperty.all(
+                      colorScheme.surfaceContainerHighest,
                     ),
-                    if (showLastAttemptColumn)
+                    columns: [
                       DataColumn(
-                        label: Text(
-                          l10n.bookingNotificationsFieldLastAttemptAt,
-                        ),
+                        label: Text(l10n.bookingNotificationsFieldCreatedAt),
                         onSort: (_, ascending) =>
-                            _onSortChanged('last_attempt', ascending),
+                            _onSortChanged('created', ascending),
                       ),
-                    DataColumn(
-                      label: Text(l10n.bookingNotificationsFieldSentAt),
-                      onSort: (_, ascending) =>
-                          _onSortChanged('sent', ascending),
-                    ),
-                    DataColumn(
-                      label: Text(l10n.bookingNotificationsFieldClient),
-                    ),
-                    DataColumn(label: Text(l10n.bookingNotificationsFieldType)),
-                    DataColumn(
-                      label: Text(l10n.bookingNotificationsFieldRecipient),
-                    ),
-                    DataColumn(
-                      label: Text(l10n.bookingNotificationsFilterStatus),
-                    ),
-                    DataColumn(
-                      label: Text(l10n.bookingNotificationsFieldAppointment),
-                      onSort: (_, ascending) =>
-                          _onSortChanged('appointment', ascending),
-                    ),
-                    DataColumn(
-                      label: Text(l10n.bookingNotificationsFieldLocation),
-                    ),
-                    DataColumn(
-                      label: Text(l10n.bookingNotificationsFieldError),
-                    ),
-                  ],
-                  rows: state.notifications.map(_buildDataRow).toList(),
+                      if (showLastAttemptColumn)
+                        DataColumn(
+                          label: Text(
+                            l10n.bookingNotificationsFieldLastAttemptAt,
+                          ),
+                          onSort: (_, ascending) =>
+                              _onSortChanged('last_attempt', ascending),
+                        ),
+                      DataColumn(
+                        label: Text(l10n.bookingNotificationsFieldSentAt),
+                        onSort: (_, ascending) =>
+                            _onSortChanged('sent', ascending),
+                      ),
+                      DataColumn(
+                        label: Text(l10n.bookingNotificationsFieldClient),
+                      ),
+                      DataColumn(
+                        label: Text(l10n.bookingNotificationsFieldType),
+                      ),
+                      DataColumn(
+                        label: Text(l10n.bookingNotificationsFieldRecipient),
+                      ),
+                      DataColumn(
+                        label: Text(l10n.bookingNotificationsFilterStatus),
+                      ),
+                      DataColumn(
+                        label: Text(l10n.bookingNotificationsFieldAppointment),
+                        onSort: (_, ascending) =>
+                            _onSortChanged('appointment', ascending),
+                      ),
+                      DataColumn(
+                        label: Text(l10n.bookingNotificationsFieldLocation),
+                      ),
+                      DataColumn(
+                        label: Text(l10n.bookingNotificationsFieldError),
+                      ),
+                    ],
+                    rows: state.notifications.map(_buildDataRow).toList(),
+                  ),
                 ),
               ),
-            ),
             ),
             if (state.isLoadingMore)
               const Padding(

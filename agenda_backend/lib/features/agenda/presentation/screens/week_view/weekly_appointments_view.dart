@@ -13,6 +13,7 @@ import 'package:agenda_backend/core/widgets/adaptive_dropdown.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
 import 'package:agenda_backend/features/agenda/domain/agenda_card_color_source.dart';
+import 'package:agenda_backend/features/agenda/domain/config/layout_config.dart';
 import 'package:agenda_backend/features/agenda/mappers/appointments_by_day.dart';
 import 'package:agenda_backend/features/agenda/presentation/dialogs/add_block_dialog.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/week_view/single_staff_weekly_timeline.dart';
@@ -876,6 +877,9 @@ class _WeeklyAppointmentTileState
       effectiveShowAppointmentPriceInCardProvider,
     );
     final cardTextScale = ref.watch(agendaCardTextScaleProvider);
+    final useRoundedCardCorners = ref.watch(
+      agendaUseRoundedCardCornersProvider,
+    );
     final effectiveHeightScale = cardTextScale > 1.0 ? cardTextScale : 1.0;
     final baseTileHeight = showPriceInCard
         ? _WeeklyAppointmentTile._tileHeight
@@ -886,11 +890,21 @@ class _WeeklyAppointmentTileState
         ? _WeeklyAppointmentTile._staffFooterHeight
         : 0.0;
     final cardBorderRadius = widget.showStaffNameFooter
-        ? const BorderRadius.only(
-            topLeft: Radius.circular(6),
-            topRight: Radius.circular(6),
-          )
-        : const BorderRadius.all(Radius.circular(8));
+        ? (useRoundedCardCorners
+              ? const BorderRadius.only(
+                  topLeft: Radius.circular(
+                    LayoutConfig.cardBorderRadiusCompact,
+                  ),
+                  topRight: Radius.circular(
+                    LayoutConfig.cardBorderRadiusCompact,
+                  ),
+                )
+              : BorderRadius.zero)
+        : (useRoundedCardCorners
+              ? const BorderRadius.all(
+                  Radius.circular(LayoutConfig.cardBorderRadiusNormal),
+                )
+              : BorderRadius.zero);
 
     return SizedBox(
       height: tileHeight,
@@ -943,9 +957,13 @@ class _WeeklyAppointmentTileState
                     padding: const EdgeInsets.symmetric(horizontal: 6),
                     decoration: BoxDecoration(
                       color: color,
-                      borderRadius: const BorderRadius.vertical(
-                        bottom: Radius.circular(6),
-                      ),
+                      borderRadius: useRoundedCardCorners
+                          ? const BorderRadius.vertical(
+                              bottom: Radius.circular(
+                                LayoutConfig.cardBorderRadiusCompact,
+                              ),
+                            )
+                          : BorderRadius.zero,
                       border: Border(
                         left: BorderSide(color: color),
                         right: BorderSide(color: color),
@@ -1080,11 +1098,13 @@ class _WeeklyClassEventTile extends ConsumerWidget {
     final color =
         _parseClassTypeColor(classType?.colorHex) ??
         theme.colorScheme.tertiaryContainer;
-    final title =
-        (classType?.name.trim().isNotEmpty ?? false)
+    final title = (classType?.name.trim().isNotEmpty ?? false)
         ? classType!.name.trim()
         : context.l10n.classEventsUntitled;
     final cardTextScale = ref.watch(agendaCardTextScaleProvider);
+    final useRoundedCardCorners = ref.watch(
+      agendaUseRoundedCardCornersProvider,
+    );
     final effectiveHeightScale = cardTextScale > 1.0 ? cardTextScale : 1.0;
     final tileHeight =
         _WeeklyAppointmentTile._tileHeight * effectiveHeightScale;
@@ -1096,11 +1116,21 @@ class _WeeklyClassEventTile extends ConsumerWidget {
         ? _WeeklyAppointmentTile._staffFooterHeight
         : 0.0;
     final cardBorderRadius = showStaffNameFooter
-        ? const BorderRadius.only(
-            topLeft: Radius.circular(6),
-            topRight: Radius.circular(6),
-          )
-        : const BorderRadius.all(Radius.circular(8));
+        ? (useRoundedCardCorners
+              ? const BorderRadius.only(
+                  topLeft: Radius.circular(
+                    LayoutConfig.cardBorderRadiusCompact,
+                  ),
+                  topRight: Radius.circular(
+                    LayoutConfig.cardBorderRadiusCompact,
+                  ),
+                )
+              : BorderRadius.zero)
+        : (useRoundedCardCorners
+              ? const BorderRadius.all(
+                  Radius.circular(LayoutConfig.cardBorderRadiusNormal),
+                )
+              : BorderRadius.zero);
     final startsAt =
         classEvent.startsAtLocal ?? classEvent.startsAtUtc.toLocal();
     final endsAt = classEvent.endsAtLocal ?? classEvent.endsAtUtc.toLocal();
@@ -1110,7 +1140,11 @@ class _WeeklyClassEventTile extends ConsumerWidget {
 
     return GestureDetector(
       onTap: canManageBookings && endsAt.isAfter(DateTime.now())
-          ? () => showCreateClassEventDialog(context, ref, initialEvent: classEvent)
+          ? () => showCreateClassEventDialog(
+              context,
+              ref,
+              initialEvent: classEvent,
+            )
           : null,
       child: SizedBox(
         height: tileHeight,
@@ -1142,7 +1176,9 @@ class _WeeklyClassEventTile extends ConsumerWidget {
                     timeLabel,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(color: foreground),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: foreground,
+                    ),
                   ),
                   const SizedBox(height: 2),
                   Text(
@@ -1168,9 +1204,13 @@ class _WeeklyClassEventTile extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: color,
-                  borderRadius: const BorderRadius.vertical(
-                    bottom: Radius.circular(6),
-                  ),
+                  borderRadius: useRoundedCardCorners
+                      ? const BorderRadius.vertical(
+                          bottom: Radius.circular(
+                            LayoutConfig.cardBorderRadiusCompact,
+                          ),
+                        )
+                      : BorderRadius.zero,
                   border: Border(
                     left: BorderSide(color: color),
                     right: BorderSide(color: color),

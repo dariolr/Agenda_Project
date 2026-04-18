@@ -803,6 +803,26 @@ class L10n {
     );
   }
 
+  /// `Services and packages`
+  String get servicesTypeFilterServicesAndPackages {
+    return Intl.message(
+      'Services and packages',
+      name: 'servicesTypeFilterServicesAndPackages',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Classes`
+  String get servicesTypeFilterClasses {
+    return Intl.message(
+      'Classes',
+      name: 'servicesTypeFilterClasses',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Packages`
   String get servicePackagesTitle {
     return Intl.message(
@@ -11345,6 +11365,16 @@ class L10n {
     return Intl.message(
       'Show prices in cards',
       name: 'agendaDisplaySettingsShowPricesLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Use rounded card corners`
+  String get agendaDisplaySettingsUseRoundedCardCornersLabel {
+    return Intl.message(
+      'Use rounded card corners',
+      name: 'agendaDisplaySettingsUseRoundedCardCornersLabel',
       desc: '',
       args: [],
     );

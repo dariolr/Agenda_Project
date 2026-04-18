@@ -63,7 +63,9 @@ class AppointmentCardInteractive extends ConsumerStatefulWidget {
     this.dragTargetWidth,
     this.expandToLeft = false,
     this.showExtraMinutesBand = true,
-    this.borderRadius = const BorderRadius.all(Radius.circular(6)),
+    this.borderRadius = const BorderRadius.all(
+      Radius.circular(LayoutConfig.cardBorderRadiusCompact),
+    ),
     this.forceCompactPresentation = false,
   });
 
@@ -816,9 +818,16 @@ class _AppointmentCardInteractiveState
       isPriceDisplayEnabled: isPriceDisplayEnabled,
       forceCompactPresentation: widget.forceCompactPresentation,
     );
-    final baseBorderRadius = presentation.isUltraShort || presentation.isShort
-        ? widget.borderRadius
-        : const BorderRadius.all(Radius.circular(LayoutConfig.borderRadius));
+    final useRoundedCardCorners = ref.watch(
+      agendaUseRoundedCardCornersProvider,
+    );
+    final baseBorderRadius = !useRoundedCardCorners
+        ? BorderRadius.zero
+        : (presentation.isUltraShort || presentation.isShort
+              ? widget.borderRadius
+              : const BorderRadius.all(
+                  Radius.circular(LayoutConfig.cardBorderRadiusNormal),
+                ));
     final radiusScale = presentation.isUltraShort
         ? 0.58
         : (presentation.isShort ? 0.75 : 1.0);
@@ -956,6 +965,12 @@ class _AppointmentCardInteractiveState
                     formattedEndTime,
                     client,
                     info,
+                    inlineNoteText: hasNotes
+                        ? _resolveInlineCardNoteText(
+                            bookingNotes: hasBookingNotes ? bookingNotes : null,
+                            clientNotes: hasClientNotes ? clientNotes : null,
+                          )
+                        : null,
                     showNotes: hasNotes && !forFeedback,
                     notesTooltipMessage: _resolveNotesTooltipMessage(
                       bookingNotes: hasBookingNotes ? bookingNotes : null,
@@ -1055,6 +1070,7 @@ class _AppointmentCardInteractiveState
     String end,
     String client,
     String info, {
+    String? inlineNoteText,
     required _CardPresentationModel presentation,
     required bool showNotes,
     String? notesTooltipMessage,
@@ -1231,8 +1247,9 @@ class _AppointmentCardInteractiveState
               recurrenceIndex < recurrenceTotal
           ? recurrenceIndex + 1
           : recurrenceIndex;
-      final normalizedOriginalRecurrenceIndex =
-          originalRecurrenceIndex != null ? originalRecurrenceIndex + 1 : null;
+      final normalizedOriginalRecurrenceIndex = originalRecurrenceIndex != null
+          ? originalRecurrenceIndex + 1
+          : null;
       final tooltipText =
           normalizedRecurrenceIndex != null && recurrenceTotal != null
           ? (() {
@@ -1435,6 +1452,13 @@ class _AppointmentCardInteractiveState
             bookingTotal != null && !showInlineServicePrice;
         final hasBottomPriceRow =
             showBottomAppointmentPrice || showBottomBookingTotal;
+        final showInlineNoteRow =
+            inlineNoteText != null &&
+            info.isNotEmpty &&
+            presentation.showServiceRow &&
+            !presentation.showPriceInlineWithService &&
+            !useAnchoredRowsLayout &&
+            presentation.durationMinutes >= 40;
         final compactPricesInline =
             !presentation.forceCompactPresentation &&
             presentation.durationMinutes < 20 &&
@@ -1548,6 +1572,18 @@ class _AppointmentCardInteractiveState
                       style: serviceTextStyle,
                     ))
             : null;
+        final Widget? fourthRow = showInlineNoteRow
+            ? Text(
+                inlineNoteText,
+                maxLines: 1,
+                softWrap: false,
+                overflow: TextOverflow.ellipsis,
+                style: serviceTextStyle.copyWith(
+                  color: Colors.black45,
+                  fontStyle: FontStyle.italic,
+                ),
+              )
+            : null;
 
         final textContent = useAnchoredRowsLayout
             ? Stack(
@@ -1567,6 +1603,7 @@ class _AppointmentCardInteractiveState
                   firstRow,
                   if (secondRow != null) secondRow,
                   if (thirdRow != null) thirdRow,
+                  if (fourthRow != null) fourthRow,
                 ],
               );
         final anchoredTextContent = useAnchoredRowsLayout
@@ -1689,6 +1726,25 @@ class _AppointmentCardInteractiveState
   }
 
   String? _resolveNotesTooltipMessage({
+    String? bookingNotes,
+    String? clientNotes,
+  }) {
+    final normalizedBookingNotes = _normalizeNoteText(bookingNotes);
+    final normalizedClientNotes = _normalizeNoteText(clientNotes);
+    if (normalizedBookingNotes == null && normalizedClientNotes == null) {
+      return null;
+    }
+    if (normalizedBookingNotes != null && normalizedClientNotes != null) {
+      return '${context.l10n.clientNoteLabel}: $normalizedClientNotes\n'
+          '${context.l10n.appointmentNoteLabel}: $normalizedBookingNotes';
+    }
+    if (normalizedBookingNotes != null) {
+      return '${context.l10n.appointmentNoteLabel}: $normalizedBookingNotes';
+    }
+    return '${context.l10n.clientNoteLabel}: $normalizedClientNotes';
+  }
+
+  String? _resolveInlineCardNoteText({
     String? bookingNotes,
     String? clientNotes,
   }) {
@@ -2005,7 +2061,11 @@ class _AppointmentCardInteractiveState
               offset: Offset(0, translateY),
               child: Material(
                 color: Colors.transparent,
-                borderRadius: const BorderRadius.all(Radius.circular(6)),
+                borderRadius: ref.watch(agendaUseRoundedCardCornersProvider)
+                    ? const BorderRadius.all(
+                        Radius.circular(LayoutConfig.cardBorderRadiusCompact),
+                      )
+                    : BorderRadius.zero,
                 clipBehavior: Clip.antiAlias,
                 child: _buildCard(
                   forFeedback: true,

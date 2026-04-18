@@ -261,7 +261,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
               return null;
             },
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           TextFormField(
             controller: _descriptionController,
             enabled: !isBusy,
@@ -271,7 +271,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
               border: const OutlineInputBorder(),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           DropdownButtonFormField<int?>(
             value: _selectedServiceCategoryId,
             decoration: InputDecoration(
@@ -301,7 +301,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                 ? null
                 : (value) => setState(() => _selectedServiceCategoryId = value),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 16),
           _ClassTypeColorPicker(
             selectedColorHex: _selectedColorHex,
             palette: _classTypePalette,
@@ -309,7 +309,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
             onChanged: (hex) => setState(() => _selectedColorHex = hex),
           ),
           if (shouldShowLocationsSelector) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             _ClassTypeLocationsMultiSelect(
               locations: visibleLocations,
               selectedIds: effectiveSelectedLocationIds,
@@ -330,161 +330,180 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                 ),
               ),
           ],
-          if (_isEdit) ...[
-            const SizedBox(height: 12),
-            Text(
-              l10n.classEventsSchedulesListTitle,
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-            const SizedBox(height: 8),
-            Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                border: Border.all(
-                  color: Theme.of(context).colorScheme.outline.withOpacity(0.35),
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              padding: const EdgeInsets.all(10),
-              child: allSchedulesAsync.when(
-                loading: () => const LinearProgressIndicator(minHeight: 2),
-                error: (_, __) => Text(
-                  l10n.errorTitle,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
-                ),
-                data: (schedules) {
-                  final nowUtc = TenantTimeService.nowInTimezone(timezone).toUtc();
-                  final futureSchedules = schedules
-                      .where((event) => event.endsAtUtc.isAfter(nowUtc))
-                      .toList();
-                  final hasExpiredSchedules =
-                      futureSchedules.length != schedules.length;
-                  final displayedSchedules = _showExpiredSchedules
-                      ? schedules
-                      : futureSchedules;
-                  final colorScheme = Theme.of(context).colorScheme;
+          if (_isEdit)
+            allSchedulesAsync.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (schedules) {
+                if (schedules.isEmpty) return const SizedBox.shrink();
+                final nowUtc = TenantTimeService.nowInTimezone(timezone).toUtc();
+                final futureSchedules = schedules
+                    .where((event) => event.endsAtUtc.isAfter(nowUtc))
+                    .toList();
+                final hasExpiredSchedules =
+                    futureSchedules.length != schedules.length;
+                final displayedSchedules = _showExpiredSchedules
+                    ? schedules
+                    : futureSchedules;
+                final colorScheme = Theme.of(context).colorScheme;
 
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (hasExpiredSchedules)
-                        SwitchListTile(
-                          dense: true,
-                          contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            l10n.classEventsShowExpiredSchedules,
-                            style: Theme.of(context).textTheme.bodySmall,
-                          ),
-                          value: _showExpiredSchedules,
-                          onChanged: (value) {
-                            setState(() => _showExpiredSchedules = value);
-                          },
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(height: 20),
+                    Text(
+                      l10n.classEventsSchedulesListTitle,
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      width: double.infinity,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: colorScheme.outline.withOpacity(0.35),
                         ),
-                      if (displayedSchedules.isEmpty)
-                        Text(
-                          l10n.classEventsNoScheduledDates,
-                          style: Theme.of(context).textTheme.bodySmall,
-                        )
-                      else
-                        SizedBox(
-                          height:
-                              (displayedSchedules.length * 60).clamp(96, 280).toDouble(),
-                          child: ListView.separated(
-                            primary: false,
-                            itemCount: displayedSchedules.length,
-                            separatorBuilder: (_, __) => const AppDivider(height: 1),
-                            itemBuilder: (context, index) {
-                              final schedule = displayedSchedules[index];
-                              final startsAtLocal =
-                                  schedule.startsAtLocal ??
-                                  TenantTimeService.fromUtcToTenant(
-                                    schedule.startsAtUtc,
-                                    timezone,
-                                  );
-                              final endsAtLocal =
-                                  schedule.endsAtLocal ??
-                                  TenantTimeService.fromUtcToTenant(
-                                    schedule.endsAtUtc,
-                                    timezone,
-                                  );
-                              final locationName =
-                                  locationNameById[schedule.locationId] ??
-                                  '#${schedule.locationId}';
-                              final staffName =
-                                  staffNameById[schedule.staffId] ??
-                                  '#${schedule.staffId}';
-                              final isPast = schedule.endsAtUtc.isBefore(nowUtc);
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      padding: const EdgeInsets.all(10),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          if (hasExpiredSchedules)
+                            SwitchListTile(
+                              dense: true,
+                              contentPadding: EdgeInsets.zero,
+                              title: Text(
+                                l10n.classEventsShowExpiredSchedules,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                              value: _showExpiredSchedules,
+                              onChanged: (value) {
+                                setState(() => _showExpiredSchedules = value);
+                              },
+                            ),
+                          if (displayedSchedules.isEmpty)
+                            Text(
+                              l10n.classEventsNoScheduledDates,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            )
+                          else
+                            SizedBox(
+                              height: (displayedSchedules.length * 60)
+                                  .clamp(96, 280)
+                                  .toDouble(),
+                              child: ListView.separated(
+                                primary: false,
+                                itemCount: displayedSchedules.length,
+                                separatorBuilder: (_, __) =>
+                                    const AppDivider(height: 1),
+                                itemBuilder: (context, index) {
+                                  final schedule = displayedSchedules[index];
+                                  final startsAtLocal =
+                                      schedule.startsAtLocal ??
+                                      TenantTimeService.fromUtcToTenant(
+                                        schedule.startsAtUtc,
+                                        timezone,
+                                      );
+                                  final endsAtLocal =
+                                      schedule.endsAtLocal ??
+                                      TenantTimeService.fromUtcToTenant(
+                                        schedule.endsAtUtc,
+                                        timezone,
+                                      );
+                                  final locationName =
+                                      locationNameById[schedule.locationId] ??
+                                      '#${schedule.locationId}';
+                                  final staffName =
+                                      staffNameById[schedule.staffId] ??
+                                      '#${schedule.staffId}';
+                                  final isPast =
+                                      schedule.endsAtUtc.isBefore(nowUtc);
 
-                              return ListTile(
-                                dense: true,
-                                visualDensity: VisualDensity.compact,
-                                title: Text(
-                                  '${DateFormat('dd/MM/yyyy').format(startsAtLocal)} • ${DtFmt.hm(context, startsAtLocal.hour, startsAtLocal.minute)} - ${DtFmt.hm(context, endsAtLocal.hour, endsAtLocal.minute)}',
-                                  style: isPast
-                                      ? TextStyle(color: colorScheme.onSurface.withOpacity(0.45))
-                                      : null,
-                                ),
-                                subtitle: Text(
-                                  '$locationName • $staffName',
-                                  style: isPast
-                                      ? TextStyle(color: colorScheme.onSurface.withOpacity(0.35))
-                                      : null,
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      tooltip: l10n.actionEdit,
-                                      icon: const Icon(Icons.edit_outlined, size: 18),
-                                      onPressed: (!isPast && !isBusy)
-                                          ? () => showCreateClassEventDialog(
-                                              context,
-                                              ref,
-                                              initialEvent: schedule,
-                                              useRootNavigator: false,
+                                  return ListTile(
+                                    dense: true,
+                                    visualDensity: VisualDensity.compact,
+                                    title: Text(
+                                      '${DateFormat('dd/MM/yyyy').format(startsAtLocal)} • ${DtFmt.hm(context, startsAtLocal.hour, startsAtLocal.minute)} - ${DtFmt.hm(context, endsAtLocal.hour, endsAtLocal.minute)}',
+                                      style: isPast
+                                          ? TextStyle(
+                                              color: colorScheme.onSurface
+                                                  .withOpacity(0.45),
                                             )
                                           : null,
                                     ),
-                                    IconButton(
-                                      tooltip: l10n.duplicateAction,
-                                      icon: const Icon(Icons.copy_outlined, size: 18),
-                                      onPressed: isBusy
-                                          ? null
-                                          : () => _duplicateSchedule(schedule),
+                                    subtitle: Text(
+                                      '$locationName • $staffName',
+                                      style: isPast
+                                          ? TextStyle(
+                                              color: colorScheme.onSurface
+                                                  .withOpacity(0.35),
+                                            )
+                                          : null,
                                     ),
-                                    IconButton(
-                                      tooltip: l10n.actionDelete,
-                                      icon: Icon(
-                                        Icons.delete_outline,
-                                        size: 18,
-                                        color: colorScheme.error,
-                                      ),
-                                      onPressed: isBusy
-                                          ? null
-                                          : () => _deleteSchedule(schedule),
+                                    trailing: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        IconButton(
+                                          tooltip: l10n.actionEdit,
+                                          icon: const Icon(
+                                            Icons.edit_outlined,
+                                            size: 18,
+                                          ),
+                                          onPressed: (!isPast && !isBusy)
+                                              ? () =>
+                                                  showCreateClassEventDialog(
+                                                    context,
+                                                    ref,
+                                                    initialEvent: schedule,
+                                                    useRootNavigator: false,
+                                                  )
+                                              : null,
+                                        ),
+                                        IconButton(
+                                          tooltip: l10n.duplicateAction,
+                                          icon: const Icon(
+                                            Icons.copy_outlined,
+                                            size: 18,
+                                          ),
+                                          onPressed: isBusy
+                                              ? null
+                                              : () =>
+                                                  _duplicateSchedule(schedule),
+                                        ),
+                                        IconButton(
+                                          tooltip: l10n.actionDelete,
+                                          icon: Icon(
+                                            Icons.delete_outline,
+                                            size: 18,
+                                            color: colorScheme.error,
+                                          ),
+                                          onPressed: isBusy
+                                              ? null
+                                              : () =>
+                                                  _deleteSchedule(schedule),
+                                        ),
+                                      ],
                                     ),
-                                  ],
-                                ),
-                                onTap: (!isPast && !isBusy)
-                                    ? () => showCreateClassEventDialog(
-                                        context,
-                                        ref,
-                                        initialEvent: schedule,
-                                        useRootNavigator: false,
-                                      )
-                                    : null,
-                              );
-                            },
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
+                                    onTap: (!isPast && !isBusy)
+                                        ? () => showCreateClassEventDialog(
+                                            context,
+                                            ref,
+                                            initialEvent: schedule,
+                                            useRootNavigator: false,
+                                          )
+                                        : null,
+                                  );
+                                },
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
-          ],
         ],
       ),
     );
@@ -1133,8 +1152,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       orElse: () => false,
     );
 
-    const double gap = 16;
-    const double sectionGap = 24;
+    const double gap = 20;
+    const double sectionGap = 32;
     final colorScheme = Theme.of(context).colorScheme;
     final currencySymbol = NumberFormat.currency(
       name: ref.watch(effectiveCurrencyProvider),

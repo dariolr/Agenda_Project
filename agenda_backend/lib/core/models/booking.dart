@@ -1,3 +1,5 @@
+const Object _bookingFieldUnchanged = Object();
+
 class Booking {
   final int id;
   final int businessId;
@@ -46,7 +48,7 @@ class Booking {
     int? locationId,
     int? clientId,
     String? clientName,
-    String? notes,
+    Object? notes = _bookingFieldUnchanged,
     String? status,
     int? replacesBookingId,
     int? replacedByBookingId,
@@ -61,7 +63,9 @@ class Booking {
       locationId: locationId ?? this.locationId,
       clientId: clientId ?? this.clientId,
       clientName: clientName ?? this.clientName,
-      notes: notes ?? this.notes,
+      notes: identical(notes, _bookingFieldUnchanged)
+          ? this.notes
+          : notes as String?,
       status: status ?? this.status,
       replacesBookingId: replacesBookingId ?? this.replacesBookingId,
       replacedByBookingId: replacedByBookingId ?? this.replacedByBookingId,

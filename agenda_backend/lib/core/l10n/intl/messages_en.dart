@@ -292,6 +292,8 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("Show prices in cards"),
     "agendaDisplaySettingsSuperadminTitle":
         MessageLookupByLibrary.simpleMessage("Agenda Settings"),
+    "agendaDisplaySettingsUseRoundedCardCornersLabel":
+        MessageLookupByLibrary.simpleMessage("Use rounded card corners"),
     "agendaNextDay": MessageLookupByLibrary.simpleMessage("Next day"),
     "agendaNextMonth": MessageLookupByLibrary.simpleMessage("Next month"),
     "agendaNextWeek": MessageLookupByLibrary.simpleMessage("Next Week"),
@@ -2283,6 +2285,11 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "servicesSelectedCount": m71,
     "servicesTabLabel": MessageLookupByLibrary.simpleMessage("Services"),
+    "servicesTypeFilterClasses": MessageLookupByLibrary.simpleMessage(
+      "Classes",
+    ),
+    "servicesTypeFilterServicesAndPackages":
+        MessageLookupByLibrary.simpleMessage("Services and packages"),
     "setPriceToEnable": MessageLookupByLibrary.simpleMessage(
       "Set a price to enable this option",
     ),

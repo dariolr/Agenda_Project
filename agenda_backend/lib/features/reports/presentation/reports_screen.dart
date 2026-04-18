@@ -12,6 +12,7 @@ import '../../../core/models/service_category.dart';
 import '../../../core/models/staff.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/location_providers.dart';
+import '../../agenda/providers/business_providers.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../services/providers/service_categories_provider.dart';
 import '../../services/providers/services_provider.dart';
@@ -163,8 +164,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     final filterState = ref.read(reportsFilterProvider);
 
     // Get current business ID
-    final location = ref.read(currentLocationProvider);
-    final businessId = location.businessId;
+    final businessId = ref.read(currentBusinessIdProvider);
+    if (businessId <= 0) return;
 
     final params = ReportParams(
       businessId: businessId,
@@ -187,8 +188,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     final filterState = ref.read(reportsFilterProvider);
 
     // Get current business ID
-    final location = ref.read(currentLocationProvider);
-    final businessId = location.businessId;
+    final businessId = ref.read(currentBusinessIdProvider);
+    if (businessId <= 0) return;
 
     final params = ReportParams(
       businessId: businessId,
@@ -222,6 +223,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         } else {
           _fetchWorkHoursReport();
         }
+      }
+    });
+
+    // Se il business diventa disponibile dopo il bootstrap (es. restore route
+    // direttamente su /report), evita chiamate con business_id=0 e triggera
+    // il primo fetch appena l'ID è valido.
+    ref.listen<int>(currentBusinessIdProvider, (previous, next) {
+      if (next <= 0) return;
+      if (previous == next) return;
+      if (_currentTab == 0) {
+        _fetchReport();
+      } else {
+        _fetchWorkHoursReport();
       }
     });
 
@@ -871,109 +885,111 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         .where((entry) => !entry.isRevenue)
         .toList(growable: false);
 
-    final rows = <({
-      String label,
-      int valueCents,
-      double? percentage,
-      Color? backgroundColor,
-    })>[
-      (
-        label: hasRevenuePaymentMethod
-            ? (totalToCollectCents == summary.dueCents
-                  ? l10n.paymentAppointmentsToCollect
-                  : l10n.paymentRequired)
-            : l10n.paymentRequired,
-        valueCents: summary.dueCents,
-        percentage: percentageOfDue(summary.dueCents, hideWhenFull: true),
-        backgroundColor: null,
-      ),
-      if (totalToCollectCents != summary.dueCents)
-        (
-          label: l10n.paymentTotalToCollect,
-          valueCents: totalToCollectCents,
-          percentage: percentageOfDue(totalToCollectCents),
-          backgroundColor: null,
-        ),
-      if (summary.paymentMethodBreakdown.isNotEmpty) ...[
-        if (hasRevenuePaymentMethod)
+    final rows =
+        <
+          ({
+            String label,
+            int valueCents,
+            double? percentage,
+            Color? backgroundColor,
+          })
+        >[
           (
-            label: l10n.paymentEntered,
-            valueCents: collectedCents,
-            percentage: percentageOfDue(collectedCents),
+            label: hasRevenuePaymentMethod
+                ? (totalToCollectCents == summary.dueCents
+                      ? l10n.paymentAppointmentsToCollect
+                      : l10n.paymentRequired)
+                : l10n.paymentRequired,
+            valueCents: summary.dueCents,
+            percentage: percentageOfDue(summary.dueCents, hideWhenFull: true),
             backgroundColor: null,
           ),
-        if (hasRevenuePaymentMethod)
-          (
-            label: l10n.paymentOutstanding,
-            valueCents: outstandingCents,
-            percentage: percentageOfDue(outstandingCents),
-            backgroundColor: null,
-          ),
-        ...revenueMethodEntries.map(
-          (entry) => (
-            label: entry.methodName,
-            valueCents: entry.amountCents,
-            percentage: percentageOfDue(entry.amountCents),
-            backgroundColor: null,
-          ),
-        ),
-        ...nonRevenueMethodEntries.map(
-          (entry) => (
-            label: entry.methodName,
-            valueCents: entry.amountCents,
-            percentage: percentageOfDue(entry.amountCents),
-            backgroundColor: colorScheme.surfaceContainerHighest.withOpacity(
-              0.35,
+          if (totalToCollectCents != summary.dueCents)
+            (
+              label: l10n.paymentTotalToCollect,
+              valueCents: totalToCollectCents,
+              percentage: percentageOfDue(totalToCollectCents),
+              backgroundColor: null,
             ),
-          ),
-        ),
-      ] else ...[
-        if (hasRevenuePaymentMethod)
+          if (summary.paymentMethodBreakdown.isNotEmpty) ...[
+            if (hasRevenuePaymentMethod)
+              (
+                label: l10n.paymentEntered,
+                valueCents: collectedCents,
+                percentage: percentageOfDue(collectedCents),
+                backgroundColor: null,
+              ),
+            if (hasRevenuePaymentMethod)
+              (
+                label: l10n.paymentOutstanding,
+                valueCents: outstandingCents,
+                percentage: percentageOfDue(outstandingCents),
+                backgroundColor: null,
+              ),
+            ...revenueMethodEntries.map(
+              (entry) => (
+                label: entry.methodName,
+                valueCents: entry.amountCents,
+                percentage: percentageOfDue(entry.amountCents),
+                backgroundColor: null,
+              ),
+            ),
+            ...nonRevenueMethodEntries.map(
+              (entry) => (
+                label: entry.methodName,
+                valueCents: entry.amountCents,
+                percentage: percentageOfDue(entry.amountCents),
+                backgroundColor: colorScheme.surfaceContainerHighest
+                    .withOpacity(0.35),
+              ),
+            ),
+          ] else ...[
+            if (hasRevenuePaymentMethod)
+              (
+                label: l10n.paymentEntered,
+                valueCents: collectedCents,
+                percentage: percentageOfDue(collectedCents),
+                backgroundColor: null,
+              ),
+            (
+              label: l10n.paymentMethodCash,
+              valueCents: summary.cashCents,
+              percentage: percentageOfDue(summary.cashCents),
+              backgroundColor: null,
+            ),
+            (
+              label: l10n.paymentMethodCard,
+              valueCents: summary.cardCents,
+              percentage: percentageOfDue(summary.cardCents),
+              backgroundColor: null,
+            ),
+            (
+              label: l10n.paymentMethodVoucher,
+              valueCents: summary.voucherCents,
+              percentage: percentageOfDue(summary.voucherCents),
+              backgroundColor: null,
+            ),
+            (
+              label: l10n.paymentMethodOther,
+              valueCents: summary.otherCents,
+              percentage: percentageOfDue(summary.otherCents),
+              backgroundColor: null,
+            ),
+            if (hasRevenuePaymentMethod)
+              (
+                label: l10n.paymentOutstanding,
+                valueCents: outstandingCents,
+                percentage: percentageOfDue(outstandingCents),
+                backgroundColor: null,
+              ),
+          ],
           (
-            label: l10n.paymentEntered,
-            valueCents: collectedCents,
-            percentage: percentageOfDue(collectedCents),
+            label: l10n.paymentMethodDiscount,
+            valueCents: summary.discountCents,
+            percentage: percentageOfDue(summary.discountCents),
             backgroundColor: null,
           ),
-        (
-          label: l10n.paymentMethodCash,
-          valueCents: summary.cashCents,
-          percentage: percentageOfDue(summary.cashCents),
-          backgroundColor: null,
-        ),
-        (
-          label: l10n.paymentMethodCard,
-          valueCents: summary.cardCents,
-          percentage: percentageOfDue(summary.cardCents),
-          backgroundColor: null,
-        ),
-        (
-          label: l10n.paymentMethodVoucher,
-          valueCents: summary.voucherCents,
-          percentage: percentageOfDue(summary.voucherCents),
-          backgroundColor: null,
-        ),
-        (
-          label: l10n.paymentMethodOther,
-          valueCents: summary.otherCents,
-          percentage: percentageOfDue(summary.otherCents),
-          backgroundColor: null,
-        ),
-        if (hasRevenuePaymentMethod)
-          (
-            label: l10n.paymentOutstanding,
-            valueCents: outstandingCents,
-            percentage: percentageOfDue(outstandingCents),
-            backgroundColor: null,
-          ),
-      ],
-      (
-        label: l10n.paymentMethodDiscount,
-        valueCents: summary.discountCents,
-        percentage: percentageOfDue(summary.discountCents),
-        backgroundColor: null,
-      ),
-    ];
+        ];
 
     return _buildBreakdownSection(
       context,

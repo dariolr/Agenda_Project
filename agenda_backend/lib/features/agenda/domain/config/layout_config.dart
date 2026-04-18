@@ -19,7 +19,10 @@ class LayoutConfig {
   static const double minColumnWidthMobile =
       100; // Larghezza minima colonna su mobile
   static const double minColumnWidthDesktop = 160;
-  static const double borderRadius = 8;
+  static const double cardBorderRadiusNormal = 8;
+  static const double cardBorderRadiusCompact = 6;
+  static const double cardVerticalGap = 1;
+  static const double borderRadius = cardBorderRadiusNormal;
   static const double borderWidth = 1;
   static const int maxVisibleStaff = 6;
 

@@ -145,7 +145,6 @@ class _ClassTypeListItemState extends State<ClassTypeListItem> {
 
                               var futureCount = 0;
                               var expiredCount = 0;
-                              int? capacity;
                               int? durationMinutes;
                               String? priceText;
 
@@ -174,7 +173,6 @@ class _ClassTypeListItemState extends State<ClassTypeListItem> {
                                               .first
                                           : null);
                                 if (representativeEvent != null) {
-                                  capacity = representativeEvent.capacityTotal;
                                   durationMinutes = representativeEvent.endsAtUtc
                                       .difference(representativeEvent.startsAtUtc)
                                       .inMinutes;
@@ -199,9 +197,6 @@ class _ClassTypeListItemState extends State<ClassTypeListItem> {
                               final expiredLabel = hasData
                                   ? '${context.l10n.classEventsExpiredBadge}: $expiredCount'
                                   : '${context.l10n.classEventsExpiredBadge}: -';
-                              final capacityLabel = hasData
-                                  ? '${context.l10n.classEventsFieldCapacity}: ${capacity ?? '-'}'
-                                  : '${context.l10n.classEventsFieldCapacity}: -';
                               final durationLabel = hasData && durationMinutes != null
                                   ? context.localizedDurationLabel(durationMinutes!)
                                   : null;
@@ -250,7 +245,6 @@ class _ClassTypeListItemState extends State<ClassTypeListItem> {
                                     children: [
                                       _ClassTypeBadge(label: futureLabel),
                                       _ClassTypeBadge(label: expiredLabel),
-                                      _ClassTypeBadge(label: capacityLabel),
                                     ],
                                   ),
                                 ],

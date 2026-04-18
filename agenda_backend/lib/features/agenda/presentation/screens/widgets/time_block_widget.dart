@@ -7,6 +7,7 @@ import '../../../../../core/l10n/date_time_formats.dart';
 import '../../../../../core/l10n/l10_extension.dart';
 import '../../../../../core/models/time_block.dart';
 import '../../../domain/config/layout_config.dart';
+import '../../../providers/agenda_display_settings_provider.dart';
 import '../../../providers/block_resizing_provider.dart';
 import '../../../providers/is_resizing_provider.dart';
 import '../../../providers/layout_config_provider.dart';
@@ -141,7 +142,9 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
   }
 
   void _performResizeCancel() {
-    ref.read(blockResizingProvider.notifier).cancelResize(blockId: widget.block.id);
+    ref
+        .read(blockResizingProvider.notifier)
+        .cancelResize(blockId: widget.block.id);
     ref.read(isResizingProvider.notifier).stop();
     if (mounted) {
       setState(() {
@@ -155,6 +158,15 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final useRoundedCardCorners = ref.watch(
+      agendaUseRoundedCardCornersProvider,
+    );
+    final blockBorderRadius = useRoundedCardCorners
+        ? BorderRadius.circular(LayoutConfig.cardBorderRadiusNormal)
+        : BorderRadius.zero;
+    final blockInnerBorderRadius = useRoundedCardCorners
+        ? BorderRadius.circular(LayoutConfig.cardBorderRadiusNormal - 1)
+        : BorderRadius.zero;
     final effectiveEnd =
         ref.watch(blockResizingEndTimeProvider(widget.block.id)) ??
         widget.block.endTime;
@@ -204,11 +216,11 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
             height: widget.height,
             decoration: BoxDecoration(
               color: blockColor,
-              borderRadius: BorderRadius.circular(LayoutConfig.borderRadius),
+              borderRadius: blockBorderRadius,
               border: Border.all(color: borderColor, width: 1.5),
             ),
             child: ClipRRect(
-              borderRadius: BorderRadius.circular(LayoutConfig.borderRadius - 1),
+              borderRadius: blockInnerBorderRadius,
               child: Stack(
                 children: [
                   CustomPaint(
