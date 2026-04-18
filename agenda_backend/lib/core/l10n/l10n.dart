@@ -3464,6 +3464,36 @@ class L10n {
     );
   }
 
+  /// `New reminder`
+  String get blockPromemoriaDialogTitleNew {
+    return Intl.message(
+      'New reminder',
+      name: 'blockPromemoriaDialogTitleNew',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit reminder`
+  String get blockPromemoriaDialogTitleEdit {
+    return Intl.message(
+      'Edit reminder',
+      name: 'blockPromemoriaDialogTitleEdit',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reminder`
+  String get blockPromemoriaLabel {
+    return Intl.message(
+      'Reminder',
+      name: 'blockPromemoriaLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `All day`
   String get blockAllDay {
     return Intl.message('All day', name: 'blockAllDay', desc: '', args: []);

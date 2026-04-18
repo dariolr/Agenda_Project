@@ -171,8 +171,11 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
         ref.watch(blockResizingEndTimeProvider(widget.block.id)) ??
         widget.block.endTime;
     final effectiveBlock = widget.block.copyWith(endTime: effectiveEnd);
-    final blockColor = colorScheme.error.withOpacity(0.15);
-    final borderColor = colorScheme.error.withOpacity(0.5);
+    final accentColor = widget.block.allowOnlineBookingDuringBlock
+        ? const Color(0xFF2E7D32)
+        : colorScheme.error;
+    final blockColor = accentColor.withOpacity(0.15);
+    final borderColor = accentColor.withOpacity(0.5);
     final canResize = !widget.block.isAllDay;
 
     return Listener(
@@ -226,7 +229,7 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
                   CustomPaint(
                     size: Size(widget.width, widget.height),
                     painter: _DiagonalPatternPainter(
-                      color: colorScheme.error.withOpacity(0.1),
+                      color: accentColor.withOpacity(0.1),
                     ),
                   ),
                   LayoutBuilder(
@@ -266,19 +269,24 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
                               children: [
                                 if (!isCompact) ...[
                                   Icon(
-                                    Icons.block,
+                                    effectiveBlock.allowOnlineBookingDuringBlock
+                                        ? Icons.event_note
+                                        : Icons.block,
                                     size: 14,
-                                    color: colorScheme.error,
+                                    color: accentColor,
                                   ),
                                   const SizedBox(width: 4),
                                 ],
                                 Expanded(
                                   child: Text(
-                                    effectiveBlock.reason ?? 'Blocco',
+                                    effectiveBlock.reason ??
+                                        (effectiveBlock.allowOnlineBookingDuringBlock
+                                            ? context.l10n.blockPromemoriaLabel
+                                            : 'Blocco'),
                                     style: TextStyle(
                                       fontSize: isCompact ? 10 : 12,
                                       fontWeight: FontWeight.w600,
-                                      color: colorScheme.error,
+                                      color: accentColor,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -292,7 +300,7 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
                                 _formatTimeRange(context, effectiveBlock),
                                 style: TextStyle(
                                   fontSize: 10,
-                                  color: colorScheme.error.withOpacity(0.8),
+                                  color: accentColor.withOpacity(0.8),
                                 ),
                               ),
                             ],
@@ -310,7 +318,7 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
                           width: 22,
                           height: 4,
                           decoration: BoxDecoration(
-                            color: colorScheme.error.withOpacity(0.9),
+                            color: accentColor.withOpacity(0.9),
                             borderRadius: BorderRadius.circular(4),
                           ),
                         ),

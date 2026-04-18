@@ -167,7 +167,11 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
         : staff;
     final isDialog = widget.presentation == _BlockDialogPresentation.dialog;
 
-    final title = isEdit ? l10n.blockDialogTitleEdit : l10n.blockDialogTitleNew;
+    final title = _allowOnlineBookingDuringBlock
+        ? (isEdit
+              ? l10n.blockPromemoriaDialogTitleEdit
+              : l10n.blockPromemoriaDialogTitleNew)
+        : (isEdit ? l10n.blockDialogTitleEdit : l10n.blockDialogTitleNew);
     final content = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -370,21 +374,30 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
           ),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            AppSwitch(
-              value: _allowOnlineBookingDuringBlock,
-              onChanged: (v) =>
-                  setState(() => _allowOnlineBookingDuringBlock = v),
+        InkWell(
+          onTap: () => setState(
+            () => _allowOnlineBookingDuringBlock = !_allowOnlineBookingDuringBlock,
+          ),
+          borderRadius: BorderRadius.circular(8),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              children: [
+                AppSwitch(
+                  value: _allowOnlineBookingDuringBlock,
+                  onChanged: (v) =>
+                      setState(() => _allowOnlineBookingDuringBlock = v),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    l10n.blockAllowOnlineBookingDuringBlock,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                l10n.blockAllowOnlineBookingDuringBlock,
-                style: Theme.of(context).textTheme.bodyMedium,
-              ),
-            ),
-          ],
+          ),
         ),
         if (!isEdit) ...[
           const SizedBox(height: 12),
