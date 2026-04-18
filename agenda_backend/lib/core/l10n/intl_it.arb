@@ -506,6 +506,7 @@
   "blockTimeError": "L'ora di fine deve essere successiva all'ora di inizio",
   "blockReason": "Motivo (opzionale)",
   "blockReasonHint": "Es. Riunione, Pausa, ecc.",
+  "blockAllowOnlineBookingDuringBlock": "Consenti prenotazioni online durante questo blocco",
   "serviceStartsAfterMidnight": "Impossibile aggiungere il servizio: l'orario supera la mezzanotte. Modifica l'orario di inizio o l'operatore.",
   "sortByTitle": "Ordina per",
   "selectStaffTitle": "Seleziona team",

@@ -25,7 +25,7 @@ final class TimeBlockRepository
     ): array {
         $stmt = $this->db->getPdo()->prepare('
             SELECT tb.id, tb.business_id, tb.location_id, tb.start_time, tb.end_time,
-                   tb.is_all_day, tb.reason, tb.created_at, tb.updated_at
+                   tb.is_all_day, tb.allow_online_booking_during_block, tb.reason, tb.created_at, tb.updated_at
             FROM time_blocks tb
             WHERE tb.location_id = :location_id
               AND tb.start_time < :to_date
@@ -58,7 +58,7 @@ final class TimeBlockRepository
     ): array {
         $stmt = $this->db->getPdo()->prepare('
             SELECT tb.id, tb.business_id, tb.location_id, tb.start_time, tb.end_time,
-                   tb.is_all_day, tb.reason, tb.created_at, tb.updated_at
+                   tb.is_all_day, tb.allow_online_booking_during_block, tb.reason, tb.created_at, tb.updated_at
             FROM time_blocks tb
             WHERE tb.business_id = :business_id
               AND tb.start_time < :to_date
@@ -92,7 +92,7 @@ final class TimeBlockRepository
 
         $stmt = $this->db->getPdo()->prepare('
             SELECT tb.id, tb.business_id, tb.location_id, tb.start_time, tb.end_time,
-                   tb.is_all_day, tb.reason
+                   tb.is_all_day, tb.allow_online_booking_during_block, tb.reason
             FROM time_blocks tb
             INNER JOIN time_block_staff tbs ON tb.id = tbs.time_block_id
             WHERE tbs.staff_id = :staff_id
@@ -118,7 +118,7 @@ final class TimeBlockRepository
     {
         $stmt = $this->db->getPdo()->prepare('
             SELECT id, business_id, location_id, start_time, end_time,
-                   is_all_day, reason, created_at, updated_at
+                   is_all_day, allow_online_booking_during_block, reason, created_at, updated_at
             FROM time_blocks
             WHERE id = :id
         ');
@@ -153,8 +153,24 @@ final class TimeBlockRepository
         $pdo = $this->db->getPdo();
         
         $stmt = $pdo->prepare('
-            INSERT INTO time_blocks (business_id, location_id, start_time, end_time, is_all_day, reason)
-            VALUES (:business_id, :location_id, :start_time, :end_time, :is_all_day, :reason)
+            INSERT INTO time_blocks (
+                business_id,
+                location_id,
+                start_time,
+                end_time,
+                is_all_day,
+                allow_online_booking_during_block,
+                reason
+            )
+            VALUES (
+                :business_id,
+                :location_id,
+                :start_time,
+                :end_time,
+                :is_all_day,
+                :allow_online_booking_during_block,
+                :reason
+            )
         ');
         $stmt->execute([
             'business_id' => $data['business_id'],
@@ -162,6 +178,7 @@ final class TimeBlockRepository
             'start_time' => $data['start_time'],
             'end_time' => $data['end_time'],
             'is_all_day' => $data['is_all_day'] ?? 0,
+            'allow_online_booking_during_block' => $data['allow_online_booking_during_block'] ?? 0,
             'reason' => $data['reason'] ?? null,
         ]);
         
@@ -183,7 +200,7 @@ final class TimeBlockRepository
         $fields = [];
         $params = ['id' => $id];
 
-        foreach (['start_time', 'end_time', 'is_all_day', 'reason'] as $field) {
+        foreach (['start_time', 'end_time', 'is_all_day', 'allow_online_booking_during_block', 'reason'] as $field) {
             if (array_key_exists($field, $data)) {
                 $fields[] = "$field = :$field";
                 $params[$field] = $data[$field];

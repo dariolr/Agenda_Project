@@ -22,6 +22,9 @@ class TimeBlock {
   /// Se true, il blocco copre l'intera giornata lavorativa.
   final bool isAllDay;
 
+  /// Se true, il blocco non riduce la disponibilità online.
+  final bool allowOnlineBookingDuringBlock;
+
   const TimeBlock({
     required this.id,
     required this.businessId,
@@ -31,6 +34,7 @@ class TimeBlock {
     required this.endTime,
     this.reason,
     this.isAllDay = false,
+    this.allowOnlineBookingDuringBlock = false,
   });
 
   factory TimeBlock.fromJson(Map<String, dynamic> json) => TimeBlock(
@@ -43,7 +47,10 @@ class TimeBlock {
     startTime: DateTime.parse(json['start_time'] as String),
     endTime: DateTime.parse(json['end_time'] as String),
     reason: json['reason'] as String?,
-    isAllDay: json['is_all_day'] as bool? ?? false,
+    isAllDay: _asBool(json['is_all_day']),
+    allowOnlineBookingDuringBlock: _asBool(
+      json['allow_online_booking_during_block'],
+    ),
   );
 
   Map<String, dynamic> toJson() => {
@@ -55,6 +62,7 @@ class TimeBlock {
     'end_time': endTime.toIso8601String(),
     if (reason != null) 'reason': reason,
     'is_all_day': isAllDay,
+    'allow_online_booking_during_block': allowOnlineBookingDuringBlock,
   };
 
   TimeBlock copyWith({
@@ -66,6 +74,7 @@ class TimeBlock {
     DateTime? endTime,
     String? reason,
     bool? isAllDay,
+    bool? allowOnlineBookingDuringBlock,
   }) {
     return TimeBlock(
       id: id ?? this.id,
@@ -76,6 +85,8 @@ class TimeBlock {
       endTime: endTime ?? this.endTime,
       reason: reason ?? this.reason,
       isAllDay: isAllDay ?? this.isAllDay,
+      allowOnlineBookingDuringBlock:
+          allowOnlineBookingDuringBlock ?? this.allowOnlineBookingDuringBlock,
     );
   }
 
@@ -104,4 +115,10 @@ class TimeBlock {
 
   @override
   int get hashCode => id.hashCode;
+
+  static bool _asBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value.toInt() == 1;
+    return false;
+  }
 }

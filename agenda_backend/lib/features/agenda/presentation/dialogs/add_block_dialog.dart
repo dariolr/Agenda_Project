@@ -86,6 +86,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
   final _reasonController = TextEditingController();
   final ScrollController _staffScrollController = ScrollController();
   bool _isAllDay = false;
+  bool _allowOnlineBookingDuringBlock = false;
   RecurrenceConfig? _recurrenceConfig;
   String? _staffError;
   String? _timeError;
@@ -114,6 +115,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
       _selectedStaffIds = Set.from(block.staffIds);
       _reasonController.text = block.reason ?? '';
       _isAllDay = block.isAllDay;
+      _allowOnlineBookingDuringBlock = block.allowOnlineBookingDuringBlock;
     } else {
       _date = DateUtils.dateOnly(widget.initialDate ?? agendaDate);
       _startTime = widget.initialTime ?? const TimeOfDay(hour: 10, minute: 0);
@@ -124,6 +126,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
       _selectedStaffIds = widget.initialStaffId != null
           ? {widget.initialStaffId!}
           : {};
+      _allowOnlineBookingDuringBlock = false;
     }
 
     final role = ref.read(currentUserRoleProvider);
@@ -365,6 +368,23 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
               isDense: true,
             ),
           ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            AppSwitch(
+              value: _allowOnlineBookingDuringBlock,
+              onChanged: (v) =>
+                  setState(() => _allowOnlineBookingDuringBlock = v),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                l10n.blockAllowOnlineBookingDuringBlock,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+          ],
         ),
         if (!isEdit) ...[
           const SizedBox(height: 12),
@@ -708,6 +728,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
                 excludedRecurrenceIndices: excludedIndices.toSet(),
                 reason: reason,
                 isAllDay: _isAllDay,
+                allowOnlineBookingDuringBlock: _allowOnlineBookingDuringBlock,
               );
         } else {
           // Nuovo blocco singolo
@@ -719,6 +740,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
                 endTime: endDateTime,
                 reason: reason,
                 isAllDay: _isAllDay,
+                allowOnlineBookingDuringBlock: _allowOnlineBookingDuringBlock,
               );
         }
       } else {
@@ -732,6 +754,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
               endTime: endDateTime,
               reason: reason,
               isAllDay: _isAllDay,
+              allowOnlineBookingDuringBlock: _allowOnlineBookingDuringBlock,
             );
       }
 

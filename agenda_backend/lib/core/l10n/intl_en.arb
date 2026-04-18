@@ -506,6 +506,7 @@
   "blockTimeError": "End time must be after start time",
   "blockReason": "Reason (optional)",
   "blockReasonHint": "E.g. Meeting, Break, etc.",
+  "blockAllowOnlineBookingDuringBlock": "Allow online bookings during this block",
   "serviceStartsAfterMidnight": "Cannot add service: the time exceeds midnight. Change the start time or staff member.",
   "sortByTitle": "Sort by",
   "selectStaffTitle": "Select team",

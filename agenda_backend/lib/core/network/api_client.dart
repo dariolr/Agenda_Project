@@ -2387,6 +2387,7 @@ class ApiClient {
     required String endTime,
     required List<int> staffIds,
     bool isAllDay = false,
+    bool allowOnlineBookingDuringBlock = false,
     String? reason,
   }) async {
     final response = await post(
@@ -2396,6 +2397,7 @@ class ApiClient {
         'end_time': endTime,
         'staff_ids': staffIds,
         'is_all_day': isAllDay,
+        'allow_online_booking_during_block': allowOnlineBookingDuringBlock,
         if (reason != null) 'reason': reason,
       },
     );
@@ -2410,6 +2412,7 @@ class ApiClient {
     String? endTime,
     List<int>? staffIds,
     bool? isAllDay,
+    bool? allowOnlineBookingDuringBlock,
     String? reason,
   }) async {
     final data = <String, dynamic>{};
@@ -2417,6 +2420,9 @@ class ApiClient {
     if (endTime != null) data['end_time'] = endTime;
     if (staffIds != null) data['staff_ids'] = staffIds;
     if (isAllDay != null) data['is_all_day'] = isAllDay;
+    if (allowOnlineBookingDuringBlock != null) {
+      data['allow_online_booking_during_block'] = allowOnlineBookingDuringBlock;
+    }
     if (reason != null) data['reason'] = reason;
 
     final response = await put('/v1/time-blocks/$blockId', data: data);
@@ -2811,7 +2817,8 @@ class ApiClient {
       data: {
         'code': code,
         if (state != null && state.trim().isNotEmpty) 'state': state,
-        if (sessionInfoVersion != null) 'session_info_version': sessionInfoVersion,
+        if (sessionInfoVersion != null)
+          'session_info_version': sessionInfoVersion,
         if (wabaId != null && wabaId.trim().isNotEmpty) 'waba_id': wabaId,
         if (phoneNumberId != null && phoneNumberId.trim().isNotEmpty)
           'phone_number_id': phoneNumberId,

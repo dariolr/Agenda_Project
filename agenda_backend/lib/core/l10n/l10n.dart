@@ -3534,6 +3534,16 @@ class L10n {
     );
   }
 
+  /// `Allow online bookings during this block`
+  String get blockAllowOnlineBookingDuringBlock {
+    return Intl.message(
+      'Allow online bookings during this block',
+      name: 'blockAllowOnlineBookingDuringBlock',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Cannot add service: the time exceeds midnight. Change the start time or staff member.`
   String get serviceStartsAfterMidnight {
     return Intl.message(

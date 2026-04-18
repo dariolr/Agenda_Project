@@ -171,7 +171,8 @@ final class ComputeAvailability
                 $durationMinutes,
                 $timezone,
                 $minBookingTime,
-                $includeClassEvents
+                $includeClassEvents,
+                $isPublic
             );
 
             foreach ($staffSlots as $slot) {
@@ -329,7 +330,8 @@ final class ComputeAvailability
         int $durationMinutes,
         DateTimeZone $timezone,
         DateTimeImmutable $minBookingTime,
-        bool $includeClassEvents
+        bool $includeClassEvents,
+        bool $isPublic
     ): array {
         $dateStr = $date->format('Y-m-d');
         $slotIntervalMinutes = $this->getSlotIntervalMinutes();
@@ -403,6 +405,9 @@ final class ComputeAvailability
 
         // Convert time blocks to DateTimeImmutable and add to occupied
         foreach ($timeBlocks as $block) {
+            if ($isPublic && !empty($block['allow_online_booking_during_block'])) {
+                continue;
+            }
             $occupied[] = [
                 'start' => new DateTimeImmutable($block['start_time'], $timezone),
                 'end' => new DateTimeImmutable($block['end_time'], $timezone),

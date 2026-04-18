@@ -121,7 +121,12 @@ final class TimeBlocksController
             'start_time' => $body['start_time'],
             'end_time' => $body['end_time'],
             'staff_ids' => $body['staff_ids'],
-            'is_all_day' => $body['is_all_day'] ?? false,
+            'is_all_day' => isset($body['is_all_day'])
+                ? ((bool) $body['is_all_day'] ? 1 : 0)
+                : 0,
+            'allow_online_booking_during_block' => isset($body['allow_online_booking_during_block'])
+                ? ((bool) $body['allow_online_booking_during_block'] ? 1 : 0)
+                : 0,
             'reason' => $body['reason'] ?? null,
         ]);
 
@@ -162,6 +167,9 @@ final class TimeBlocksController
         }
         if (array_key_exists('is_all_day', $body)) {
             $updateData['is_all_day'] = $body['is_all_day'] ? 1 : 0;
+        }
+        if (array_key_exists('allow_online_booking_during_block', $body)) {
+            $updateData['allow_online_booking_during_block'] = $body['allow_online_booking_during_block'] ? 1 : 0;
         }
         if (array_key_exists('reason', $body)) {
             $updateData['reason'] = $body['reason'];

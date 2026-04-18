@@ -47,6 +47,12 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
   }
 
   TimeBlock _parseTimeBlock(Map<String, dynamic> json) {
+    bool asBool(dynamic value) {
+      if (value is bool) return value;
+      if (value is num) return value.toInt() == 1;
+      return false;
+    }
+
     return TimeBlock(
       id: json['id'] as int,
       businessId: json['business_id'] as int,
@@ -55,7 +61,10 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
       startTime: DateTime.parse(json['start_time'] as String),
       endTime: DateTime.parse(json['end_time'] as String),
       reason: json['reason'] as String?,
-      isAllDay: (json['is_all_day'] as int?) == 1,
+      isAllDay: asBool(json['is_all_day']),
+      allowOnlineBookingDuringBlock: asBool(
+        json['allow_online_booking_during_block'],
+      ),
     );
   }
 
@@ -71,6 +80,7 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
     required DateTime endTime,
     String? reason,
     bool isAllDay = false,
+    bool allowOnlineBookingDuringBlock = false,
   }) async {
     final apiClient = ref.read(apiClientProvider);
     final location = ref.read(currentLocationProvider);
@@ -81,6 +91,7 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
       endTime: _formatDateTime(endTime),
       staffIds: staffIds,
       isAllDay: isAllDay,
+      allowOnlineBookingDuringBlock: allowOnlineBookingDuringBlock,
       reason: reason,
     );
 
@@ -99,6 +110,7 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
     Set<int>? excludedRecurrenceIndices,
     String? reason,
     bool isAllDay = false,
+    bool allowOnlineBookingDuringBlock = false,
   }) async {
     final apiClient = ref.read(apiClientProvider);
     final location = ref.read(currentLocationProvider);
@@ -119,6 +131,7 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
         endTime: _formatDateTime(occurrenceStart.add(duration)),
         staffIds: staffIds,
         isAllDay: isAllDay,
+        allowOnlineBookingDuringBlock: allowOnlineBookingDuringBlock,
         reason: reason,
       );
       createdBlocks.add(_parseTimeBlock(data));
@@ -137,6 +150,7 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
     List<int>? staffIds,
     String? reason,
     bool? isAllDay,
+    bool? allowOnlineBookingDuringBlock,
   }) async {
     final apiClient = ref.read(apiClientProvider);
 
@@ -146,6 +160,7 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
       endTime: endTime != null ? _formatDateTime(endTime) : null,
       staffIds: staffIds,
       isAllDay: isAllDay,
+      allowOnlineBookingDuringBlock: allowOnlineBookingDuringBlock,
       reason: reason,
     );
 
@@ -243,6 +258,12 @@ final timeBlocksForStaffOnDateProvider =
       }
 
       TimeBlock parseTimeBlock(Map<String, dynamic> json) {
+        bool asBool(dynamic value) {
+          if (value is bool) return value;
+          if (value is num) return value.toInt() == 1;
+          return false;
+        }
+
         return TimeBlock(
           id: json['id'] as int,
           businessId: json['business_id'] as int,
@@ -251,7 +272,10 @@ final timeBlocksForStaffOnDateProvider =
           startTime: DateTime.parse(json['start_time'] as String),
           endTime: DateTime.parse(json['end_time'] as String),
           reason: json['reason'] as String?,
-          isAllDay: (json['is_all_day'] as int?) == 1,
+          isAllDay: asBool(json['is_all_day']),
+          allowOnlineBookingDuringBlock: asBool(
+            json['allow_online_booking_during_block'],
+          ),
         );
       }
 

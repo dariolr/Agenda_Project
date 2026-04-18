@@ -417,6 +417,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "availabilityTitleFor": m0,
     "blockAllDay": MessageLookupByLibrary.simpleMessage("All day"),
+    "blockAllowOnlineBookingDuringBlock": MessageLookupByLibrary.simpleMessage(
+      "Allow online bookings during this block",
+    ),
     "blockDialogTitleEdit": MessageLookupByLibrary.simpleMessage("Edit block"),
     "blockDialogTitleNew": MessageLookupByLibrary.simpleMessage("New block"),
     "blockEndTime": MessageLookupByLibrary.simpleMessage("End time"),

@@ -436,6 +436,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "availabilityTitleFor": m0,
     "blockAllDay": MessageLookupByLibrary.simpleMessage("Giornata intera"),
+    "blockAllowOnlineBookingDuringBlock": MessageLookupByLibrary.simpleMessage(
+      "Consenti prenotazioni online durante questo blocco",
+    ),
     "blockDialogTitleEdit": MessageLookupByLibrary.simpleMessage(
       "Modifica blocco",
     ),
