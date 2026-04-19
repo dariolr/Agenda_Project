@@ -448,11 +448,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "classEventGroupLesson": MessageLookupByLibrary.simpleMessage(
       "Lezione di gruppo",
     ),
-    "classEventSpotsAvailable": m11,
-    "classEventSpotsLeft": m12,
     "classEventJoinWaitlistLabel": MessageLookupByLibrary.simpleMessage(
       "Iscriviti in lista d\'attesa",
     ),
+    "classEventSpotsAvailable": m11,
+    "classEventSpotsLeft": m12,
     "classEventWaitlistDialogConfirm": MessageLookupByLibrary.simpleMessage(
       "Iscriviti",
     ),

@@ -443,13 +443,6 @@ class MessageLookup extends MessageLookupByLibrary {
       "Modifica blocco",
     ),
     "blockDialogTitleNew": MessageLookupByLibrary.simpleMessage("Nuovo blocco"),
-    "blockPromemoriaDialogTitleEdit": MessageLookupByLibrary.simpleMessage(
-      "Modifica promemoria",
-    ),
-    "blockPromemoriaDialogTitleNew": MessageLookupByLibrary.simpleMessage(
-      "Nuovo promemoria",
-    ),
-    "blockPromemoriaLabel": MessageLookupByLibrary.simpleMessage("Promemoria"),
     "blockEndTime": MessageLookupByLibrary.simpleMessage("Orario fine"),
     "blockReason": MessageLookupByLibrary.simpleMessage("Motivo (opzionale)"),
     "blockReasonHint": MessageLookupByLibrary.simpleMessage(
@@ -893,7 +886,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "In programma",
     ),
     "classEventsNewScheduleButton": MessageLookupByLibrary.simpleMessage(
-      "Nuova programmazione",
+      "Nuova programmazione classe",
     ),
     "classEventsNoClassTypes": MessageLookupByLibrary.simpleMessage(
       "Nessun tipo classe disponibile",

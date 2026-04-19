@@ -422,13 +422,6 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "blockDialogTitleEdit": MessageLookupByLibrary.simpleMessage("Edit block"),
     "blockDialogTitleNew": MessageLookupByLibrary.simpleMessage("New block"),
-    "blockPromemoriaDialogTitleEdit": MessageLookupByLibrary.simpleMessage(
-      "Edit reminder",
-    ),
-    "blockPromemoriaDialogTitleNew": MessageLookupByLibrary.simpleMessage(
-      "New reminder",
-    ),
-    "blockPromemoriaLabel": MessageLookupByLibrary.simpleMessage("Reminder"),
     "blockEndTime": MessageLookupByLibrary.simpleMessage("End time"),
     "blockReason": MessageLookupByLibrary.simpleMessage("Reason (optional)"),
     "blockReasonHint": MessageLookupByLibrary.simpleMessage(
@@ -852,7 +845,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "classEventsFutureBadge": MessageLookupByLibrary.simpleMessage("Scheduled"),
     "classEventsNewScheduleButton": MessageLookupByLibrary.simpleMessage(
-      "New schedule",
+      "New class schedule",
     ),
     "classEventsNoClassTypes": MessageLookupByLibrary.simpleMessage(
       "No class types available",

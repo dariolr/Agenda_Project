@@ -902,6 +902,10 @@ class _AgendaAddAction extends ConsumerWidget {
             child: Text(l10n.agendaAddAppointment),
           ),
           AdaptiveDropdownItem(
+            value: 'class_schedule',
+            child: Text(l10n.classEventsNewScheduleButton),
+          ),
+          AdaptiveDropdownItem(
             value: 'block',
             child: Text(l10n.agendaAddBlock),
           ),
@@ -915,6 +919,8 @@ class _AgendaAddAction extends ConsumerWidget {
               autoOpenDatePicker: true,
               initialStaffId: initialStaffIdForNewBooking,
             );
+          } else if (value == 'class_schedule') {
+            showCreateClassEventDialog(context, ref);
           } else if (value == 'block') {
             showAddBlockDialog(
               context,

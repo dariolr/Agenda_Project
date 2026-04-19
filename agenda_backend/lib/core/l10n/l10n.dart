@@ -9169,10 +9169,10 @@ class L10n {
     );
   }
 
-  /// `New schedule`
+  /// `New class schedule`
   String get classEventsNewScheduleButton {
     return Intl.message(
-      'New schedule',
+      'New class schedule',
       name: 'classEventsNewScheduleButton',
       desc: '',
       args: [],

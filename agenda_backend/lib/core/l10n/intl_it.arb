@@ -1487,7 +1487,7 @@
   "classEventsActionCancelBooking": "Annulla prenotazione",
   "classEventsAddButton": "Aggiungi",
   "classEventsCreateTitle": "Programmazione",
-  "classEventsNewScheduleButton": "Nuova programmazione",
+  "classEventsNewScheduleButton": "Nuova programmazione classe",
   "classEventsEditTitle": "Modifica programmazione",
   "classEventsEditModeLabel": "Modalità modifica",
   "classEventsFieldTitleOptional": "Titolo (opzionale)",
