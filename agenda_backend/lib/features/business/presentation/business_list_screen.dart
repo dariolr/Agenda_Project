@@ -52,23 +52,24 @@ class BusinessListScreen extends ConsumerWidget {
         data: (businesses) {
           final orderedBusinesses = sortBusinessesForSelection(businesses);
           return Column(
-          children: [
-            if (isDesktop) const _DesktopRailPositionToggle(),
-            Expanded(
-              child: _BusinessList(
-                businesses: orderedBusinesses,
-                onSelect: (business) => _selectBusiness(context, ref, business),
-                onEdit: (business) =>
-                    _showEditBusinessDialog(context, ref, business),
-                onResendInvite: (business) =>
-                    _showResendInviteDialog(context, ref, business),
-                onSuspend: (business) =>
-                    _showSuspendDialog(context, ref, business),
-                onDelete: (business) =>
-                    _showDeleteDialog(context, ref, business),
+            children: [
+              if (isDesktop) const _DesktopRailPositionToggle(),
+              Expanded(
+                child: _BusinessList(
+                  businesses: orderedBusinesses,
+                  onSelect: (business) =>
+                      _selectBusiness(context, ref, business),
+                  onEdit: (business) =>
+                      _showEditBusinessDialog(context, ref, business),
+                  onResendInvite: (business) =>
+                      _showResendInviteDialog(context, ref, business),
+                  onSuspend: (business) =>
+                      _showSuspendDialog(context, ref, business),
+                  onDelete: (business) =>
+                      _showDeleteDialog(context, ref, business),
+                ),
               ),
-            ),
-          ],
+            ],
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -446,11 +447,10 @@ class _DesktopRailPositionToggle extends ConsumerWidget {
       padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
       child: Card(
         margin: EdgeInsets.zero,
-        child: SwitchListTile(
+        child: SwitchListTile.adaptive(
           value: value,
-          onChanged: (value) => ref
-              .read(desktopRailStartsAtTopProvider.notifier)
-              .set(value),
+          onChanged: (value) =>
+              ref.read(desktopRailStartsAtTopProvider.notifier).set(value),
           title: Text(context.l10n.superadminRailStartTopLabel),
           subtitle: Text(context.l10n.superadminRailStartTopHelp),
           secondary: const Icon(Icons.view_sidebar_outlined),

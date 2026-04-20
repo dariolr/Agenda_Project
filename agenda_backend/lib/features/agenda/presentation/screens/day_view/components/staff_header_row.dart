@@ -14,16 +14,15 @@ import '../../../../../staff/presentation/dialogs/staff_dialog.dart';
 
 class StaffHeaderRow extends ConsumerWidget {
   final List<Staff> staffList;
-  final ScrollController
-  scrollController; // non usato per scrollare qui, ma utile per offset/read
-  final double columnWidth;
-  final double hourColumnWidth; // NON usato per lasciare spazio iniziale
+  final ScrollController scrollController;
+  final List<double> columnWidths;
+  final double hourColumnWidth;
 
   const StaffHeaderRow({
     super.key,
     required this.staffList,
     required this.scrollController,
-    required this.columnWidth,
+    required this.columnWidths,
     required this.hourColumnWidth,
   });
 
@@ -50,7 +49,7 @@ class StaffHeaderRow extends ConsumerWidget {
           return Stack(
             children: [
               Container(
-                width: columnWidth,
+                width: columnWidths[index],
                 height: headerHeight,
                 padding: EdgeInsets.symmetric(horizontal: headerHeight * 0.08),
                 child: Center(

@@ -1,6 +1,0 @@
-Cutoff UTC: 2026-04-04 19:36:00
-Total bookings created after cutoff: 3
-Business 12 bookings created after cutoff: 0
-
-By business:
-7	3

@@ -551,6 +551,17 @@ final class NotificationRepository
             }
         }
 
+        if (!empty($filters['provider'])) {
+            if (is_array($filters['provider'])) {
+                $placeholders = implode(',', array_fill(0, count($filters['provider']), '?'));
+                $where[] = "nq.provider_used IN ($placeholders)";
+                $params = array_merge($params, $filters['provider']);
+            } else {
+                $where[] = 'nq.provider_used = ?';
+                $params[] = (string) $filters['provider'];
+            }
+        }
+
         if (!empty($filters['search'])) {
             $search = '%' . trim((string) $filters['search']) . '%';
             $where[] = '(nq.recipient_name LIKE ? OR nq.recipient_email LIKE ? OR nq.subject LIKE ? OR b.client_name LIKE ? OR c.first_name LIKE ? OR c.last_name LIKE ?)';

@@ -283,6 +283,10 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("Intensità colori appuntamenti"),
     "agendaDisplaySettingsCardTextZoomLabel":
         MessageLookupByLibrary.simpleMessage("Zoom testo"),
+    "agendaDisplaySettingsExpandStaffColumnsOnOverlapLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Ridimensiona colonne staff in base agli appuntamenti sovrapposti",
+        ),
     "agendaDisplaySettingsExtraMinutesBandIntensityLabel":
         MessageLookupByLibrary.simpleMessage(
           "Intensità colori tempo aggiuntivo",
@@ -444,6 +448,13 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "blockDialogTitleNew": MessageLookupByLibrary.simpleMessage("Nuovo blocco"),
     "blockEndTime": MessageLookupByLibrary.simpleMessage("Orario fine"),
+    "blockPromemoriaDialogTitleEdit": MessageLookupByLibrary.simpleMessage(
+      "Modifica promemoria",
+    ),
+    "blockPromemoriaDialogTitleNew": MessageLookupByLibrary.simpleMessage(
+      "Nuovo promemoria",
+    ),
+    "blockPromemoriaLabel": MessageLookupByLibrary.simpleMessage("Promemoria"),
     "blockReason": MessageLookupByLibrary.simpleMessage("Motivo (opzionale)"),
     "blockReasonHint": MessageLookupByLibrary.simpleMessage(
       "Es. Riunione, Pausa, ecc.",
@@ -577,6 +588,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotificationsFieldLocation": MessageLookupByLibrary.simpleMessage(
       "Sede",
     ),
+    "bookingNotificationsFieldProviderUsed":
+        MessageLookupByLibrary.simpleMessage("Provider usato"),
     "bookingNotificationsFieldRecipient": MessageLookupByLibrary.simpleMessage(
       "Destinatario",
     ),
@@ -585,6 +598,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "bookingNotificationsFieldType": MessageLookupByLibrary.simpleMessage(
       "Tipo",
+    ),
+    "bookingNotificationsFilterProvider": MessageLookupByLibrary.simpleMessage(
+      "Provider",
     ),
     "bookingNotificationsFilterStatus": MessageLookupByLibrary.simpleMessage(
       "Stato",
@@ -600,6 +616,17 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "bookingNotificationsNotAvailable": MessageLookupByLibrary.simpleMessage(
       "N/D",
+    ),
+    "bookingNotificationsProviderBlockedDemo":
+        MessageLookupByLibrary.simpleMessage("Demo bloccato"),
+    "bookingNotificationsProviderBrevo": MessageLookupByLibrary.simpleMessage(
+      "Brevo",
+    ),
+    "bookingNotificationsProviderMailgun": MessageLookupByLibrary.simpleMessage(
+      "Mailgun",
+    ),
+    "bookingNotificationsProviderSmtp": MessageLookupByLibrary.simpleMessage(
+      "SMTP",
     ),
     "bookingNotificationsSearchHint": MessageLookupByLibrary.simpleMessage(
       "Cliente, destinatario, oggetto",
@@ -838,13 +865,13 @@ class MessageLookup extends MessageLookupByLibrary {
     "classEventsCapacitySummary": m12,
     "classEventsCapacitySummaryNoWaitlist": m13,
     "classEventsCreateErrorMessage": MessageLookupByLibrary.simpleMessage(
-      "Impossibile creare la classe",
+      "Impossibile creare la lezione",
     ),
     "classEventsCreateSuccessMessage": MessageLookupByLibrary.simpleMessage(
-      "La classe è stata creata correttamente",
+      "La lezione è stata creata correttamente",
     ),
     "classEventsCreateSuccessTitle": MessageLookupByLibrary.simpleMessage(
-      "Classe creata",
+      "Lezione creata",
     ),
     "classEventsCreateTitle": MessageLookupByLibrary.simpleMessage(
       "Programmazione",
@@ -856,14 +883,14 @@ class MessageLookup extends MessageLookupByLibrary {
       "Modifica programmazione",
     ),
     "classEventsEmpty": MessageLookupByLibrary.simpleMessage(
-      "Nessuna classe nel giorno selezionato.",
+      "Nessuna lezione nel giorno selezionato.",
     ),
     "classEventsExpiredBadge": MessageLookupByLibrary.simpleMessage("Passate"),
     "classEventsFieldCapacity": MessageLookupByLibrary.simpleMessage(
       "Capienza",
     ),
     "classEventsFieldClassType": MessageLookupByLibrary.simpleMessage(
-      "Tipo classe",
+      "Tipo lezione",
     ),
     "classEventsFieldDate": MessageLookupByLibrary.simpleMessage("Data"),
     "classEventsFieldEndTime": MessageLookupByLibrary.simpleMessage("Ora fine"),
@@ -886,13 +913,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "In programma",
     ),
     "classEventsNewScheduleButton": MessageLookupByLibrary.simpleMessage(
-      "Nuova programmazione classe",
+      "Nuova programmazione lezione",
     ),
     "classEventsNoClassTypes": MessageLookupByLibrary.simpleMessage(
-      "Nessun tipo classe disponibile",
+      "Nessun tipo lezione disponibile",
     ),
     "classEventsNoLocationsForClassType": MessageLookupByLibrary.simpleMessage(
-      "Nessuna sede abilitata per questo tipo classe",
+      "Nessuna sede abilitata per questo tipo lezione",
     ),
     "classEventsNoScheduledDates": MessageLookupByLibrary.simpleMessage(
       "Nessuna data programmata",
@@ -955,8 +982,8 @@ class MessageLookup extends MessageLookupByLibrary {
       "Lo staff assegnato non è più attivo: seleziona uno staff attivo per salvare.",
     ),
     "classEventsStaffInactiveOption": m18,
-    "classEventsTitle": MessageLookupByLibrary.simpleMessage("Classi"),
-    "classEventsUntitled": MessageLookupByLibrary.simpleMessage("Classe"),
+    "classEventsTitle": MessageLookupByLibrary.simpleMessage("Lezioni"),
+    "classEventsUntitled": MessageLookupByLibrary.simpleMessage("Lezione"),
     "classEventsValidationCapacityMin": MessageLookupByLibrary.simpleMessage(
       "Inserisci una capienza minima",
     ),
@@ -981,57 +1008,57 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "classTypesAddButton": MessageLookupByLibrary.simpleMessage("Nuovo tipo"),
     "classTypesCloneSuccessMessage": MessageLookupByLibrary.simpleMessage(
-      "Il tipo classe è stato duplicato correttamente",
+      "Il tipo lezione è stato duplicato correttamente",
     ),
     "classTypesCloneSuccessTitle": MessageLookupByLibrary.simpleMessage(
-      "Tipo classe duplicato",
+      "Tipo lezione duplicato",
     ),
     "classTypesCloneSuffix": MessageLookupByLibrary.simpleMessage("Copia"),
     "classTypesCreateSuccessMessage": MessageLookupByLibrary.simpleMessage(
-      "Il tipo classe è stato creato correttamente",
+      "Il tipo lezione è stato creato correttamente",
     ),
     "classTypesCreateSuccessTitle": MessageLookupByLibrary.simpleMessage(
-      "Tipo classe creato",
+      "Tipo lezione creato",
     ),
     "classTypesCreateSuperadminOnlyMessage":
         MessageLookupByLibrary.simpleMessage(
-          "La creazione di un tipo classe è in via di sviluppo.",
+          "La creazione di un tipo lezione è in via di sviluppo.",
         ),
     "classTypesCreateTitle": MessageLookupByLibrary.simpleMessage(
-      "Nuovo tipo classe",
+      "Nuovo tipo lezione",
     ),
     "classTypesDeactivateConfirmMessage": MessageLookupByLibrary.simpleMessage(
-      "Il tipo classe verrà disattivato e non sarà selezionabile per nuove programmazioni.",
+      "Il tipo lezione verrà disattivato e non sarà selezionabile per nuove programmazioni.",
     ),
     "classTypesDeactivateConfirmTitle": MessageLookupByLibrary.simpleMessage(
-      "Cancellare il tipo classe?",
+      "Cancellare il tipo lezione?",
     ),
     "classTypesDeactivateSuccessMessage": MessageLookupByLibrary.simpleMessage(
-      "Il tipo classe è stato disattivato",
+      "Il tipo lezione è stato disattivato",
     ),
     "classTypesDeactivateSuccessTitle": MessageLookupByLibrary.simpleMessage(
-      "Tipo classe cancellato",
+      "Tipo lezione cancellato",
     ),
     "classTypesDeleteConfirmMessage": MessageLookupByLibrary.simpleMessage(
-      "Questa azione elimina definitivamente il tipo classe.",
+      "Questa azione elimina definitivamente il tipo lezione.",
     ),
     "classTypesDeleteConfirmTitle": MessageLookupByLibrary.simpleMessage(
-      "Eliminare il tipo classe?",
+      "Eliminare il tipo lezione?",
     ),
     "classTypesDeleteInUseErrorMessage": MessageLookupByLibrary.simpleMessage(
-      "Impossibile eliminare il tipo classe perché esistono programmazioni associate",
+      "Impossibile eliminare il tipo lezione perché esistono programmazioni associate",
     ),
     "classTypesDeleteSuccessMessage": MessageLookupByLibrary.simpleMessage(
-      "Il tipo classe è stato eliminato",
+      "Il tipo lezione è stato eliminato",
     ),
     "classTypesDeleteSuccessTitle": MessageLookupByLibrary.simpleMessage(
-      "Tipo classe eliminato",
+      "Tipo lezione eliminato",
     ),
     "classTypesEditTitle": MessageLookupByLibrary.simpleMessage(
-      "Modifica tipo classe",
+      "Modifica tipo lezione",
     ),
     "classTypesEmpty": MessageLookupByLibrary.simpleMessage(
-      "Nessun tipo classe configurato",
+      "Nessun tipo lezione configurato",
     ),
     "classTypesFieldCategoryCode": MessageLookupByLibrary.simpleMessage(
       "Categoria",
@@ -1047,41 +1074,41 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "classTypesFieldName": MessageLookupByLibrary.simpleMessage("Nome"),
     "classTypesLocationsSelectionHelper": MessageLookupByLibrary.simpleMessage(
-      "Seleziona le sedi in cui questo tipo classe può essere programmato. Questa scelta è modificabile in qualsiasi momento.",
+      "Seleziona le sedi in cui questo tipo lezione può essere programmato. Questa scelta è modificabile in qualsiasi momento.",
     ),
     "classTypesLocationsSelectionTitle": MessageLookupByLibrary.simpleMessage(
       "Sedi abilitate",
     ),
     "classTypesManageButton": MessageLookupByLibrary.simpleMessage(
-      "Tipi classe",
+      "Tipi lezione",
     ),
     "classTypesManageTitle": MessageLookupByLibrary.simpleMessage(
-      "Gestione tipi classe",
+      "Gestione tipi lezione",
     ),
     "classTypesMutationErrorMessage": MessageLookupByLibrary.simpleMessage(
-      "Impossibile salvare il tipo classe",
+      "Impossibile salvare il tipo lezione",
     ),
     "classTypesReactivateConfirmMessage": MessageLookupByLibrary.simpleMessage(
-      "Il tipo classe tornerà disponibile per nuove programmazioni.",
+      "Il tipo lezione tornerà disponibile per nuove programmazioni.",
     ),
     "classTypesReactivateConfirmTitle": MessageLookupByLibrary.simpleMessage(
-      "Riattivare il tipo classe?",
+      "Riattivare il tipo lezione?",
     ),
     "classTypesReactivateSuccessMessage": MessageLookupByLibrary.simpleMessage(
-      "Il tipo classe è stato riattivato",
+      "Il tipo lezione è stato riattivato",
     ),
     "classTypesReactivateSuccessTitle": MessageLookupByLibrary.simpleMessage(
-      "Tipo classe riattivato",
+      "Tipo lezione riattivato",
     ),
     "classTypesStatusActive": MessageLookupByLibrary.simpleMessage("Attivo"),
     "classTypesStatusInactive": MessageLookupByLibrary.simpleMessage(
       "Non attivo",
     ),
     "classTypesUpdateSuccessMessage": MessageLookupByLibrary.simpleMessage(
-      "Il tipo classe è stato aggiornato correttamente",
+      "Il tipo lezione è stato aggiornato correttamente",
     ),
     "classTypesUpdateSuccessTitle": MessageLookupByLibrary.simpleMessage(
-      "Tipo classe aggiornato",
+      "Tipo lezione aggiornato",
     ),
     "clientAppointmentsCancelledBadge": MessageLookupByLibrary.simpleMessage(
       "ANNULLATA",
@@ -1526,7 +1553,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Consulta lo storico delle prenotazioni",
     ),
     "moreClassEventsDescription": MessageLookupByLibrary.simpleMessage(
-      "Gestisci classi e programmazioni di gruppo",
+      "Gestisci lezioni e programmazioni di gruppo",
     ),
     "moreLocationsDescription": MessageLookupByLibrary.simpleMessage(
       "Gestisci le sedi del business",
@@ -2045,7 +2072,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "removeClient": MessageLookupByLibrary.simpleMessage("Rimuovi cliente"),
     "reorderCategoriesLabel": MessageLookupByLibrary.simpleMessage("Categorie"),
-    "reorderClassesLabel": MessageLookupByLibrary.simpleMessage("Classi"),
+    "reorderClassesLabel": MessageLookupByLibrary.simpleMessage("Lezioni"),
     "reorderDoneButtonLabel": MessageLookupByLibrary.simpleMessage(
       "Fine ordinamento",
     ),
@@ -2400,7 +2427,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "servicesSelectedCount": m71,
     "servicesTabLabel": MessageLookupByLibrary.simpleMessage("Servizi"),
-    "servicesTypeFilterClasses": MessageLookupByLibrary.simpleMessage("Classi"),
+    "servicesTypeFilterClasses": MessageLookupByLibrary.simpleMessage(
+      "Lezioni",
+    ),
     "servicesTypeFilterServicesAndPackages":
         MessageLookupByLibrary.simpleMessage("Servizi e pacchetti"),
     "setPriceToEnable": MessageLookupByLibrary.simpleMessage(

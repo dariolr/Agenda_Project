@@ -4,7 +4,6 @@ import '../../../../../core/models/appointment.dart';
 import '../../../../../core/models/staff.dart';
 import '../../../../../core/widgets/no_scrollbar_behavior.dart';
 import '../../../domain/config/layout_config.dart';
-import '../helper/responsive_layout.dart';
 import 'staff_column.dart';
 
 class AgendaStaffBody extends StatelessWidget {
@@ -16,6 +15,7 @@ class AgendaStaffBody extends StatelessWidget {
     required this.appointments,
     required this.layoutConfig,
     required this.availableWidth,
+    required this.staffColumnWidths,
     required this.isResizing,
     required this.dragLayerLink,
     required this.bodyKey,
@@ -28,6 +28,7 @@ class AgendaStaffBody extends StatelessWidget {
   final List<Appointment> appointments;
   final LayoutConfig layoutConfig;
   final double availableWidth;
+  final List<double> staffColumnWidths;
   final bool isResizing;
   final LayerLink? dragLayerLink;
   final GlobalKey bodyKey;
@@ -35,14 +36,8 @@ class AgendaStaffBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final layout = ResponsiveLayout.of(
-      context,
-      staffCount: staffList.length,
-      config: layoutConfig,
-      availableWidth: availableWidth,
-    );
-
-    final totalContentWidth = layout.columnWidth * staffList.length;
+    // staffColumnWidths già calcolati dal parent (uniformi o per-staff con expand)
+    final totalContentWidth = staffColumnWidths.fold(0.0, (sum, w) => sum + w);
 
     // final hourColumnWidth = layoutConfig.hourColumnWidth;
 
@@ -86,7 +81,7 @@ class AgendaStaffBody extends StatelessWidget {
                               return StaffColumn(
                                 staff: staff,
                                 appointments: staffAppointments,
-                                columnWidth: layout.columnWidth,
+                                columnWidth: staffColumnWidths[index],
                                 isInteractionLocked: isInteractionLocked,
                                 // Questo flag ora è ignorato all'interno di StaffColumn,
                                 // ma lo manteniamo per compatibilità.

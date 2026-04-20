@@ -11,7 +11,7 @@ class AgendaStaffHeader extends StatelessWidget {
     required this.hourColumnWidth,
     required this.totalHeight,
     required this.headerHeight,
-    required this.columnWidth,
+    required this.columnWidths,
     required this.scrollController,
   });
 
@@ -19,7 +19,7 @@ class AgendaStaffHeader extends StatelessWidget {
   final double hourColumnWidth;
   final double totalHeight;
   final double headerHeight;
-  final double columnWidth;
+  final List<double> columnWidths;
   final ScrollController scrollController;
 
   @override
@@ -43,7 +43,7 @@ class AgendaStaffHeader extends StatelessWidget {
             child: StaffHeaderRow(
               staffList: staffList,
               scrollController: scrollController,
-              columnWidth: columnWidth,
+              columnWidths: columnWidths,
               hourColumnWidth: hourColumnWidth,
             ),
           ),

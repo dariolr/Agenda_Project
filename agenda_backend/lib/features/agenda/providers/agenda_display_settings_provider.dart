@@ -22,6 +22,7 @@ class AgendaDisplaySettings {
     this.extraMinutesBandIntensity = 0.5,
     this.hoverUnrelatedCardDimIntensity = 0.0,
     this.useRoundedCardCorners = false,
+    this.expandStaffColumnsOnOverlap = true,
     this.showPricesOverride,
     this.cardColorSourceOverride,
     this.showCancelledAppointments = false,
@@ -32,6 +33,7 @@ class AgendaDisplaySettings {
   final double extraMinutesBandIntensity;
   final double hoverUnrelatedCardDimIntensity;
   final bool useRoundedCardCorners;
+  final bool expandStaffColumnsOnOverlap;
   final bool? showPricesOverride;
   final AgendaCardColorSource? cardColorSourceOverride;
   final bool showCancelledAppointments;
@@ -42,6 +44,7 @@ class AgendaDisplaySettings {
     double? extraMinutesBandIntensity,
     double? hoverUnrelatedCardDimIntensity,
     bool? useRoundedCardCorners,
+    bool? expandStaffColumnsOnOverlap,
     bool? showPricesOverride,
     AgendaCardColorSource? cardColorSourceOverride,
     bool? showCancelledAppointments,
@@ -57,6 +60,8 @@ class AgendaDisplaySettings {
           hoverUnrelatedCardDimIntensity ?? this.hoverUnrelatedCardDimIntensity,
       useRoundedCardCorners:
           useRoundedCardCorners ?? this.useRoundedCardCorners,
+      expandStaffColumnsOnOverlap:
+          expandStaffColumnsOnOverlap ?? this.expandStaffColumnsOnOverlap,
       showPricesOverride: clearShowPricesOverride
           ? null
           : (showPricesOverride ?? this.showPricesOverride),
@@ -111,6 +116,10 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
             _maxHoverUnrelatedCardDimIntensity,
           ),
       useRoundedCardCorners: prefs.getAgendaUseRoundedCardCorners(
+        businessId,
+        locationId: locationId,
+      ),
+      expandStaffColumnsOnOverlap: prefs.getAgendaExpandStaffColumnsOnOverlap(
         businessId,
         locationId: locationId,
       ),
@@ -216,6 +225,20 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
         );
   }
 
+  Future<void> setExpandStaffColumnsOnOverlap(bool value) async {
+    final businessId = _businessId();
+    final locationId = _locationId();
+    if (businessId <= 0 || locationId <= 0) return;
+    state = state.copyWith(expandStaffColumnsOnOverlap: value);
+    await ref
+        .read(preferencesServiceProvider)
+        .setAgendaExpandStaffColumnsOnOverlap(
+          businessId,
+          value,
+          locationId: locationId,
+        );
+  }
+
   Future<void> setCardColorSourceOverride(AgendaCardColorSource? value) async {
     final businessId = _businessId();
     final locationId = _locationId();
@@ -283,6 +306,11 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
       false,
       locationId: locationId,
     );
+    await prefs.setAgendaExpandStaffColumnsOnOverlap(
+      businessId,
+      true,
+      locationId: locationId,
+    );
     await prefs.setAgendaCardColorSourceOverride(
       businessId,
       null,
@@ -324,7 +352,13 @@ final agendaHoverUnrelatedCardDimIntensityProvider = Provider<double>((ref) {
 });
 
 final agendaUseRoundedCardCornersProvider = Provider<bool>((ref) {
-  return ref.watch(agendaDisplaySettingsProvider).useRoundedCardCorners;
+  return false;
+});
+
+final agendaExpandStaffColumnsOnOverlapProvider = Provider<bool>((ref) {
+  return ref.watch(
+    agendaDisplaySettingsProvider.select((s) => s.expandStaffColumnsOnOverlap),
+  );
 });
 
 final effectiveShowAppointmentPriceInCardProvider = Provider<bool>((ref) {

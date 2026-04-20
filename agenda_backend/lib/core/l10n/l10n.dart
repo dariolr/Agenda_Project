@@ -8320,6 +8320,16 @@ class L10n {
     );
   }
 
+  /// `Provider`
+  String get bookingNotificationsFilterProvider {
+    return Intl.message(
+      'Provider',
+      name: 'bookingNotificationsFilterProvider',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `All statuses`
   String get bookingNotificationsStatusAll {
     return Intl.message(
@@ -8390,6 +8400,46 @@ class L10n {
     );
   }
 
+  /// `SMTP`
+  String get bookingNotificationsProviderSmtp {
+    return Intl.message(
+      'SMTP',
+      name: 'bookingNotificationsProviderSmtp',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Brevo`
+  String get bookingNotificationsProviderBrevo {
+    return Intl.message(
+      'Brevo',
+      name: 'bookingNotificationsProviderBrevo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Mailgun`
+  String get bookingNotificationsProviderMailgun {
+    return Intl.message(
+      'Mailgun',
+      name: 'bookingNotificationsProviderMailgun',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Blocked demo`
+  String get bookingNotificationsProviderBlockedDemo {
+    return Intl.message(
+      'Blocked demo',
+      name: 'bookingNotificationsProviderBlockedDemo',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Booking created`
   String get bookingNotificationsChannelConfirmed {
     return Intl.message(
@@ -8435,6 +8485,16 @@ class L10n {
     return Intl.message(
       'Type',
       name: 'bookingNotificationsFieldType',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Provider used`
+  String get bookingNotificationsFieldProviderUsed {
+    return Intl.message(
+      'Provider used',
+      name: 'bookingNotificationsFieldProviderUsed',
       desc: '',
       args: [],
     );
@@ -11405,6 +11465,16 @@ class L10n {
     return Intl.message(
       'Show prices in cards',
       name: 'agendaDisplaySettingsShowPricesLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Resize staff columns based on overlapping appointments`
+  String get agendaDisplaySettingsExpandStaffColumnsOnOverlapLabel {
+    return Intl.message(
+      'Resize staff columns based on overlapping appointments',
+      name: 'agendaDisplaySettingsExpandStaffColumnsOnOverlapLabel',
       desc: '',
       args: [],
     );

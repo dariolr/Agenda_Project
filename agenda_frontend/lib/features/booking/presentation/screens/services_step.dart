@@ -424,13 +424,13 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     return eventsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => _ErrorView(
-        title: 'Errore nel caricamento delle classi',
+        title: 'Errore nel caricamento delle lezioni',
         onRetry: () => ref.read(classEventsProvider.notifier).refresh(),
       ),
       data: (events) {
         if (events.isEmpty) {
           return const _EmptyView(
-            title: 'Nessuna classe disponibile',
+            title: 'Nessuna lezione disponibile',
             subtitle: 'Non ci sono lezioni di gruppo programmate al momento.',
           );
         }

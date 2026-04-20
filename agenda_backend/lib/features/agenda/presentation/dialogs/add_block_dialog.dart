@@ -317,7 +317,7 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
                     itemBuilder: (context, index) {
                       final member = visibleStaff[index];
                       final isSelected = _selectedStaffIds.contains(member.id);
-                      return CheckboxListTile(
+                      return SwitchListTile.adaptive(
                         value: isSelected,
                         onChanged: isStaffRole
                             ? null
@@ -376,7 +376,8 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
         const SizedBox(height: 12),
         InkWell(
           onTap: () => setState(
-            () => _allowOnlineBookingDuringBlock = !_allowOnlineBookingDuringBlock,
+            () => _allowOnlineBookingDuringBlock =
+                !_allowOnlineBookingDuringBlock,
           ),
           borderRadius: BorderRadius.circular(8),
           child: Padding(

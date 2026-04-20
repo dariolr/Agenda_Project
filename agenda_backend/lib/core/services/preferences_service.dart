@@ -95,6 +95,14 @@ class PrefsKeys {
     required int locationId,
   }) => 'agenda_show_cancelled_appointments_${_scope(businessId, locationId)}';
 
+  /// Espande le colonne staff in base al picco di sovrapposizioni card
+  /// (scope business + location)
+  static String agendaExpandStaffColumnsOnOverlap(
+    int businessId, {
+    required int locationId,
+  }) =>
+      'agenda_expand_staff_columns_on_overlap_${_scope(businessId, locationId)}';
+
   /// Chiave per ultimo business visitato dal superadmin
   static const superadminLastBusinessId = 'superadmin_last_business_id';
   static const superadminShowBusinessPickerOnLogin =
@@ -532,6 +540,33 @@ class PreferencesService {
     );
   }
 
+  bool getAgendaExpandStaffColumnsOnOverlap(
+    int businessId, {
+    required int locationId,
+  }) {
+    return _prefs.getBool(
+          PrefsKeys.agendaExpandStaffColumnsOnOverlap(
+            businessId,
+            locationId: locationId,
+          ),
+        ) ??
+        true;
+  }
+
+  Future<void> setAgendaExpandStaffColumnsOnOverlap(
+    int businessId,
+    bool value, {
+    required int locationId,
+  }) async {
+    await _prefs.setBool(
+      PrefsKeys.agendaExpandStaffColumnsOnOverlap(
+        businessId,
+        locationId: locationId,
+      ),
+      value,
+    );
+  }
+
   // ============================================
   // Desktop Rail Position
   // ============================================
@@ -684,7 +719,10 @@ class PreferencesService {
           key == 'agenda_show_prices_override_$businessId' ||
           key.startsWith('agenda_use_service_colors_override_${businessId}_') ||
           key == 'agenda_use_service_colors_override_$businessId' ||
-          key.startsWith('agenda_show_cancelled_appointments_${businessId}_')) {
+          key.startsWith('agenda_show_cancelled_appointments_${businessId}_') ||
+          key.startsWith(
+            'agenda_expand_staff_columns_on_overlap_${businessId}_',
+          )) {
         await _prefs.remove(key);
       }
     }
@@ -708,6 +746,7 @@ class PreferencesService {
           key.startsWith('agenda_show_prices_override_') ||
           key.startsWith('agenda_use_service_colors_override_') ||
           key.startsWith('agenda_show_cancelled_appointments_') ||
+          key.startsWith('agenda_expand_staff_columns_on_overlap_') ||
           key.startsWith('last_visited_route_user_') ||
           key.startsWith('last_visited_route_updated_at_user_') ||
           key.startsWith('current_location_id') ||

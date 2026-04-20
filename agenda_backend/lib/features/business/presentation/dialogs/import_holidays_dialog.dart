@@ -408,7 +408,7 @@ class _ImportHolidaysDialogState extends ConsumerState<ImportHolidaysDialog> {
                               index,
                             );
 
-                            return CheckboxListTile(
+                            return SwitchListTile.adaptive(
                               value: isSelected,
                               onChanged: isAlreadyAdded
                                   ? null

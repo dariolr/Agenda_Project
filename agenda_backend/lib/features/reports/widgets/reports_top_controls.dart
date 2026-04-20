@@ -185,24 +185,21 @@ class _ReportsTopControlsContent extends StatelessWidget {
         // Full period toggle - inline on desktop
         if (_supportsFullPeriod && !isCompact) ...[
           const SizedBox(width: 16),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                height: 24,
-                child: Switch(
-                  value: useFullPeriod,
-                  onChanged: onFullPeriodChanged,
-                ),
-              ),
-              const SizedBox(width: 4),
-              Text(
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 280),
+            child: SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
+              dense: true,
+              title: Text(
                 l10n.reportsFullPeriodToggle,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
-            ],
+              value: useFullPeriod,
+              onChanged: onFullPeriodChanged,
+            ),
           ),
         ],
       ],

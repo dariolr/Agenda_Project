@@ -336,7 +336,9 @@ foreach ($notifications as $notification) {
         if ($verbose) {
             echo "FAILED: {$error}\n";
         } else {
-            error_log("Notification {$id} failed: {$error}");
+            if (!shouldSilenceReminderFailureLog($channel, $error)) {
+                error_log("Notification {$id} failed: {$error}");
+            }
         }
     }
     
@@ -363,6 +365,24 @@ function isHardFailure(string $error): bool
     }
 
     return str_contains($normalized, 'invalid recipient email');
+}
+
+/**
+ * Suppress known non-actionable reminder failures from error logs.
+ */
+function shouldSilenceReminderFailureLog(string $channel, string $error): bool
+{
+    if ($channel !== 'booking_reminder') {
+        return false;
+    }
+
+    $normalized = strtolower(trim($error));
+    if ($normalized === '') {
+        return false;
+    }
+
+    return str_contains($normalized, 'unable to rebuild reminder ics')
+        && str_contains($normalized, 'retry skipped: booking status is completed');
 }
 
 /**

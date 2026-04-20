@@ -76,6 +76,12 @@ class ClientsApi {
     );
   }
 
+  /// GET /v1/clients/{id}
+  Future<Client> fetchClientById(int clientId) async {
+    final data = await _apiClient.get('${ApiConfig.clients}/$clientId');
+    return _clientFromJson(data);
+  }
+
   /// POST /v1/clients
   Future<Client> createClient(Client client) async {
     final data = await _apiClient.post(

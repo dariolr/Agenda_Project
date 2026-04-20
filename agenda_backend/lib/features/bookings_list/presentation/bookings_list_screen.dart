@@ -1049,7 +1049,7 @@ class _LocationFilterDialogState extends State<_LocationFilterDialog> {
                   final location = widget.locations[index];
                   final isSelected = _selected.contains(location.id);
 
-                  return CheckboxListTile(
+                  return SwitchListTile.adaptive(
                     title: Text(location.name),
                     value: isSelected,
                     onChanged: (checked) {
@@ -1143,7 +1143,7 @@ class _StaffFilterDialogState extends State<_StaffFilterDialog> {
                   final staff = widget.staff[index];
                   final isSelected = _selected.contains(staff.id);
 
-                  return CheckboxListTile(
+                  return SwitchListTile.adaptive(
                     title: Text(staff.name),
                     value: isSelected,
                     onChanged: (checked) {
@@ -1463,7 +1463,7 @@ class _MultiSelectDialogState<T> extends State<_MultiSelectDialog<T>> {
           mainAxisSize: MainAxisSize.min,
           children: widget.items.entries.map((entry) {
             final isSelected = _selected.contains(entry.key);
-            return CheckboxListTile(
+            return SwitchListTile.adaptive(
               title: Text(entry.value),
               value: isSelected,
               onChanged: (checked) {

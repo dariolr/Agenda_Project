@@ -29,6 +29,8 @@ class ClientsRepository {
     return response.clients;
   }
 
+  Future<Client> getById(int clientId) => _api.fetchClientById(clientId);
+
   Future<Client> add(Client client) => _api.createClient(client);
   Future<Client> save(Client client) => _api.updateClient(client);
   Future<void> delete(int clientId) => _api.deleteClient(clientId);

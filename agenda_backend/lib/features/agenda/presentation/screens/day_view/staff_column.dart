@@ -520,13 +520,47 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     // 6. RIMOSSO il blocco addPostFrameCallback da qui
 
     final layoutConfig = ref.watch(layoutConfigProvider);
+    final staffBlocks = ref.watch(timeBlocksForStaffProvider(widget.staff.id));
+
+    // Geometria unificata: tutti i tipi di card (appuntamenti, classi, blocchi)
+    // vengono messi in un unico pool prima di computeLayoutGeometry, così gli
+    // overlap cross-tipo vengono rilevati e le card si affiancano correttamente.
+    final allDayEntries = <LayoutEntry>[
+      ...staffAppointments.map(
+        (a) => LayoutEntry(id: a.id, start: a.startTime, end: a.endTime),
+      ),
+      ...staffClassEvents.map(
+        (e) => LayoutEntry(
+          id: _classEventLayoutId(e.id),
+          start: e.startsAtLocal ?? e.startsAtUtc.toLocal(),
+          end: e.endsAtLocal ?? e.endsAtUtc.toLocal(),
+        ),
+      ),
+      ...staffBlocks.map(
+        (b) => LayoutEntry(
+          id: _blockLayoutId(b.id),
+          start: b.startTime,
+          end: b.endTime,
+        ),
+      ),
+    ];
+    final int maxDayConcurrency = layoutConfig.expandColumnsOnOverlap
+        ? computeMaxConcurrency(allDayEntries)
+        : 1;
+    final unifiedGeometry = computeLayoutGeometry(
+      allDayEntries,
+      useClusterMaxConcurrency: layoutConfig.expandColumnsOnOverlap
+          ? false
+          : layoutConfig.useClusterMaxConcurrency,
+      minTotalColumns: maxDayConcurrency,
+    );
+
     final slotHeight = layoutConfig.slotHeight;
     final totalSlots = layoutConfig.totalSlots;
     final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
     final agendaDate = ref.watch(agendaDateProvider);
     final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
     final showPrices = ref.watch(effectiveShowAppointmentPriceInCardProvider);
-    final staffBlocks = ref.watch(timeBlocksForStaffProvider(widget.staff.id));
 
     // Interaction lock propagated from parent (evaluated once per visible group)
     final isInteractionLocked = widget.isInteractionLocked;
@@ -703,7 +737,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     }
 
     // 🔹 Blocchi di non disponibilità
-    stackChildren.addAll(_buildTimeBlocks(slotHeight, effectiveColumnWidth));
+    stackChildren.addAll(
+      _buildTimeBlocks(slotHeight, effectiveColumnWidth, unifiedGeometry),
+    );
 
     // 🔹 Appuntamenti + classi (con larghezza ridotta se ci sono slot pieni)
     stackChildren.addAll(
@@ -713,6 +749,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         staffClassEvents,
         effectiveColumnWidth,
         classTypeById,
+        unifiedGeometry,
       ),
     );
 
@@ -961,6 +998,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     List<ClassEvent> classEvents,
     double columnWidth,
     Map<int, ClassType> classTypeById,
+    Map<int, EventGeometry> unifiedGeometry,
   ) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
@@ -1005,25 +1043,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final focusedExpandedEntries = <Widget>[];
 
     final originalAppointmentsMap = {for (var a in appointments) a.id: a};
-    final layoutEntries =
-        layoutAppointments
-            .map(
-              (a) => LayoutEntry(id: a.id, start: a.startTime, end: a.endTime),
-            )
-            .toList()
-          ..addAll(
-            classEvents.map(
-              (event) => LayoutEntry(
-                id: _classEventLayoutId(event.id),
-                start: event.startsAtLocal ?? event.startsAtUtc.toLocal(),
-                end: event.endsAtLocal ?? event.endsAtUtc.toLocal(),
-              ),
-            ),
-          );
-    final layoutGeometry = computeLayoutGeometry(
-      layoutEntries,
-      useClusterMaxConcurrency: layoutConfig.useClusterMaxConcurrency,
-    );
 
     for (final layoutAppt in layoutAppointments) {
       final originalAppt = originalAppointmentsMap[layoutAppt.id]!;
@@ -1051,7 +1070,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       }
 
       final geometry =
-          layoutGeometry[originalAppt.id] ??
+          unifiedGeometry[originalAppt.id] ??
           const EventGeometry(leftFraction: 0, widthFraction: 1);
       final hasPendingDrop = pendingDrop?.appointmentId == originalAppt.id;
       final isOriginalPosition =
@@ -1106,6 +1125,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       const narrowOverlapRatioThreshold = 0.65;
       const narrowOverlapMaxWidthPx = 320.0;
       final isNarrowOverlappedCard =
+          !layoutConfig.expandColumnsOnOverlap &&
           fullColumnWidth > 0 &&
           (cardWidth / fullColumnWidth) <= narrowOverlapRatioThreshold &&
           cardWidth <= narrowOverlapMaxWidthPx &&
@@ -1168,7 +1188,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       final startMinutes = startsAt.difference(dayStart).inMinutes;
       final endMinutes = endsAt.difference(dayStart).inMinutes;
       final geometry =
-          layoutGeometry[_classEventLayoutId(classEvent.id)] ??
+          unifiedGeometry[_classEventLayoutId(classEvent.id)] ??
           const EventGeometry(leftFraction: 0, widthFraction: 1);
       final padding = LayoutConfig.columnInnerPadding;
       final fullColumnWidth = math.max(columnWidth - padding * 2, 0.0);
@@ -1178,6 +1198,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         0.0,
       );
       final isNarrowOverlappedCard =
+          !layoutConfig.expandColumnsOnOverlap &&
           fullColumnWidth > 0 &&
           (cardWidth / fullColumnWidth) <= 0.65 &&
           cardWidth <= 320.0 &&
@@ -1512,7 +1533,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   }
 
   /// Costruisce i widget per i blocchi di non disponibilità dello staff.
-  List<Widget> _buildTimeBlocks(double slotHeight, double columnWidth) {
+  List<Widget> _buildTimeBlocks(
+    double slotHeight,
+    double columnWidth,
+    Map<int, EventGeometry> unifiedGeometry,
+  ) {
     final blocks = ref.watch(timeBlocksForStaffProvider(widget.staff.id));
     if (blocks.isEmpty) return [];
 
@@ -1535,19 +1560,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         previewEnd == null ? block : block.copyWith(endTime: previewEnd),
       );
     }
-    final blockLayoutEntries = effectiveBlocks
-        .map(
-          (block) => LayoutEntry(
-            id: block.id,
-            start: block.startTime,
-            end: block.endTime,
-          ),
-        )
-        .toList();
-    final blockLayoutGeometry = computeLayoutGeometry(
-      blockLayoutEntries,
-      useClusterMaxConcurrency: layoutConfig.useClusterMaxConcurrency,
-    );
 
     for (final effectiveBlock in effectiveBlocks) {
       final block = effectiveBlock;
@@ -1578,7 +1590,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       final visualHeight = math.max(height - LayoutConfig.cardVerticalGap, 0.0);
       if (visualHeight <= 0) continue;
       final geometry =
-          blockLayoutGeometry[block.id] ??
+          unifiedGeometry[_blockLayoutId(block.id)] ??
           const EventGeometry(leftFraction: 0, widthFraction: 1);
       final fullColumnWidth = math.max(columnWidth - padding * 2, 0.0);
       final cardLeft = columnWidth * geometry.leftFraction + padding;
@@ -1589,6 +1601,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       const narrowOverlapRatioThreshold = 0.65;
       const narrowOverlapMaxWidthPx = 320.0;
       final isNarrowOverlappedCard =
+          !layoutConfig.expandColumnsOnOverlap &&
           fullColumnWidth > 0 &&
           (cardWidth / fullColumnWidth) <= narrowOverlapRatioThreshold &&
           cardWidth <= narrowOverlapMaxWidthPx &&
@@ -2069,6 +2082,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 }
 
 int _classEventLayoutId(int classEventId) => -1000000 - classEventId;
+int _blockLayoutId(int blockId) => -2000000 - blockId;
 
 class _ClassEventDragData {
   const _ClassEventDragData({
@@ -2146,11 +2160,14 @@ class _ClassEventCard extends ConsumerWidget {
       builder: (context, constraints) {
         final maxHeight = constraints.maxHeight;
         final ultraCompact = maxHeight <= 20;
+        final centerVerticallyForShort = maxHeight <= 24;
         final compact = maxHeight <= 30;
         final showMeta = maxHeight > 24;
         final showCapacity = maxHeight > 46;
         final horizontalPadding = ultraCompact ? 6.0 : 8.0;
-        final verticalPadding = ultraCompact
+        final verticalPadding = centerVerticallyForShort
+            ? 0.0
+            : ultraCompact
             ? 1.0
             : compact
             ? 2.0
@@ -2191,43 +2208,102 @@ class _ClassEventCard extends ConsumerWidget {
             ),
           ),
           child: ClipRect(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+            child: Stack(
+              fit: StackFit.expand,
               children: [
-                if (showMeta) ...[
-                  Text(
-                    metaLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: capacityStyle,
-                  ),
-                  const SizedBox(height: 2),
-                ],
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: titleStyle,
-                ),
-                if (showCapacity) ...[
-                  const SizedBox(height: 2),
-                  Text(
-                    (event.waitlistCount > 0)
-                        ? l10n.classEventsCapacitySummary(
-                            event.confirmedCount,
-                            event.capacityTotal,
-                            event.waitlistCount,
-                          )
-                        : l10n.classEventsCapacitySummaryNoWaitlist(
-                            event.confirmedCount,
-                            event.capacityTotal,
+                centerVerticallyForShort
+                    ? SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minHeight: constraints.maxHeight,
                           ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: capacityStyle,
-                  ),
-                ],
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (showMeta) ...[
+                                  Text(
+                                    metaLabel,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: capacityStyle,
+                                  ),
+                                  const SizedBox(height: 2),
+                                ],
+                                Text(
+                                  title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: titleStyle,
+                                ),
+                                if (showCapacity) ...[
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    (event.waitlistCount > 0)
+                                        ? l10n.classEventsCapacitySummary(
+                                            event.confirmedCount,
+                                            event.capacityTotal,
+                                            event.waitlistCount,
+                                          )
+                                        : l10n.classEventsCapacitySummaryNoWaitlist(
+                                            event.confirmedCount,
+                                            event.capacityTotal,
+                                          ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: capacityStyle,
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        physics: const NeverScrollableScrollPhysics(),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (showMeta) ...[
+                              Text(
+                                metaLabel,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: capacityStyle,
+                              ),
+                              const SizedBox(height: 2),
+                            ],
+                            Text(
+                              title,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: titleStyle,
+                            ),
+                            if (showCapacity) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                (event.waitlistCount > 0)
+                                    ? l10n.classEventsCapacitySummary(
+                                        event.confirmedCount,
+                                        event.capacityTotal,
+                                        event.waitlistCount,
+                                      )
+                                    : l10n.classEventsCapacitySummaryNoWaitlist(
+                                        event.confirmedCount,
+                                        event.capacityTotal,
+                                      ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: capacityStyle,
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
               ],
             ),
           ),

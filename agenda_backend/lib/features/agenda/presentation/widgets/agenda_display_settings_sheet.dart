@@ -147,11 +147,13 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
             title: Text(
-              context.l10n.agendaDisplaySettingsUseRoundedCardCornersLabel,
+              context
+                  .l10n
+                  .agendaDisplaySettingsExpandStaffColumnsOnOverlapLabel,
               style: settingLabelStyle,
             ),
-            value: settings.useRoundedCardCorners,
-            onChanged: notifier.setUseRoundedCardCorners,
+            value: settings.expandStaffColumnsOnOverlap,
+            onChanged: notifier.setExpandStaffColumnsOnOverlap,
           ),
           // const SizedBox(height: _sectionSpacing),
           // SwitchListTile.adaptive(

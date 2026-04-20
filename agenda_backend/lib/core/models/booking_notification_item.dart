@@ -13,6 +13,7 @@ class BookingNotificationItem {
   final String? clientName;
   final String channel;
   final String status;
+  final String? providerUsed;
   final String? recipientEmail;
   final String? recipientName;
   final String? subject;
@@ -37,6 +38,7 @@ class BookingNotificationItem {
     this.clientName,
     required this.channel,
     required this.status,
+    this.providerUsed,
     this.recipientEmail,
     this.recipientName,
     this.subject,
@@ -244,7 +246,8 @@ class BookingNotificationItem {
         ? Map<String, dynamic>.from(payloadVariables)
         : const <String, dynamic>{};
 
-    final resolvedBody = firstNonEmpty([
+    final resolvedBody =
+        firstNonEmpty([
           json['body'],
           json['message_body'],
           json['text_body'],
@@ -305,6 +308,7 @@ class BookingNotificationItem {
       clientName: json['client_name'] as String?,
       channel: json['channel'] as String? ?? '',
       status: json['status'] as String? ?? '',
+      providerUsed: json['provider_used'] as String?,
       recipientEmail: json['recipient_email'] as String?,
       recipientName: json['recipient_name'] as String?,
       subject: json['subject'] as String?,

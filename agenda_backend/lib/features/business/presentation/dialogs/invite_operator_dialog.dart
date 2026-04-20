@@ -94,7 +94,7 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
       content: LocalLoadingOverlay(
         isLoading: _isLoading,
         child: Form(
-      autovalidateMode: AutovalidateMode.onUserInteraction,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           key: _formKey,
           child: SingleChildScrollView(
             child: Column(
@@ -420,157 +420,157 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-          // Header
-          Text(
-            l10n.operatorsInviteTitle,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            l10n.operatorsInviteSubtitle,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            // Header
+            Text(
+              l10n.operatorsInviteTitle,
+              style: Theme.of(context).textTheme.titleLarge,
             ),
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 4),
+            Text(
+              l10n.operatorsInviteSubtitle,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 24),
 
-          // Form
-          Expanded(
-            child: Form(
-      autovalidateMode: AutovalidateMode.onUserInteraction,
-              key: _formKey,
-              child: ListView(
-                children: [
-                  TextFormField(
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      labelText: l10n.operatorsInviteEmail,
-                      border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.email_outlined),
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    autofocus: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return l10n.validationRequired;
-                      }
-                      if (!_isValidEmail(value)) {
-                        return l10n.validationInvalidEmail;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    l10n.operatorsInviteRole,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 8),
-                  _RoleSelector(
-                    selectedRole: _selectedRole,
-                    onChanged: (role) => setState(() {
-                      _selectedRole = role;
-                      if (role == 'staff') {
-                        _selectedScopeType = 'locations';
-                        _selectedLocationIds.clear();
-                        if (locations.length == 1) {
-                          _selectedLocationIds.add(locations.first.id);
+            // Form
+            Expanded(
+              child: Form(
+                autovalidateMode: AutovalidateMode.onUserInteraction,
+                key: _formKey,
+                child: ListView(
+                  children: [
+                    TextFormField(
+                      controller: _emailController,
+                      decoration: InputDecoration(
+                        labelText: l10n.operatorsInviteEmail,
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.email_outlined),
+                      ),
+                      keyboardType: TextInputType.emailAddress,
+                      autofocus: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return l10n.validationRequired;
                         }
-                      }
-                      _enforceSingleLocationForStaff();
-                      if (role != 'staff') {
-                        _selectedStaffId = null;
-                      } else {
-                        _clearInvalidSelectedStaff(availableStaff);
-                      }
-                    }),
-                  ),
-                  if (locations.length > 1) ...[
-                    const SizedBox(height: 24),
-                    const AppDivider(),
-                    const SizedBox(height: 16),
-                    if (_selectedRole != 'staff') ...[
-                      _ScopeTypeSelector(
-                        selectedScopeType: _selectedScopeType,
-                        onChanged: (scope) => setState(() {
-                          _selectedScopeType = scope;
-                          if (scope == 'business') {
-                            _selectedLocationIds.clear();
-                          }
-                          _enforceSingleLocationForStaff();
-                          _clearInvalidSelectedStaff(availableStaff);
-                        }),
-                      ),
-                    ],
-                    if (_selectedRole == 'staff' ||
-                        _selectedScopeType == 'locations') ...[
-                      const SizedBox(height: 16),
-                      _LocationsMultiSelect(
-                        locations: locations,
-                        selectedIds: _selectedLocationIds,
-                        singleSelection: _selectedRole == 'staff',
-                        onChanged: (ids) => setState(() {
-                          final previousSelection = Set<int>.from(
-                            _selectedLocationIds,
-                          );
-                          _selectedLocationIds.clear();
-                          if (_selectedRole == 'staff') {
-                            if (ids.isNotEmpty) {
-                              _selectedLocationIds.add(ids.last);
-                            }
-                          } else {
-                            _selectedLocationIds.addAll(ids);
-                          }
-                          if (_selectedRole == 'staff' &&
-                              previousSelection.length == 1 &&
-                              _selectedLocationIds.length == 1 &&
-                              previousSelection.first !=
-                                  _selectedLocationIds.first) {
-                            _selectedStaffId = null;
-                          }
-                          _clearInvalidSelectedStaff(availableStaff);
-                        }),
-                      ),
-                    ],
-                  ],
-                  if (_selectedRole == 'staff') ...[
-                    const SizedBox(height: 16),
-                    _StaffSingleSelect(
-                      staff: availableStaff,
-                      selectedStaffId: _selectedStaffId,
-                      isEnabled:
-                          _selectedScopeType != 'locations' ||
-                          _selectedLocationIds.isNotEmpty,
-                      onChanged: (staffId) =>
-                          setState(() => _selectedStaffId = staffId),
+                        if (!_isValidEmail(value)) {
+                          return l10n.validationInvalidEmail;
+                        }
+                        return null;
+                      },
                     ),
+                    const SizedBox(height: 24),
+                    Text(
+                      l10n.operatorsInviteRole,
+                      style: Theme.of(context).textTheme.titleSmall,
+                    ),
+                    const SizedBox(height: 8),
+                    _RoleSelector(
+                      selectedRole: _selectedRole,
+                      onChanged: (role) => setState(() {
+                        _selectedRole = role;
+                        if (role == 'staff') {
+                          _selectedScopeType = 'locations';
+                          _selectedLocationIds.clear();
+                          if (locations.length == 1) {
+                            _selectedLocationIds.add(locations.first.id);
+                          }
+                        }
+                        _enforceSingleLocationForStaff();
+                        if (role != 'staff') {
+                          _selectedStaffId = null;
+                        } else {
+                          _clearInvalidSelectedStaff(availableStaff);
+                        }
+                      }),
+                    ),
+                    if (locations.length > 1) ...[
+                      const SizedBox(height: 24),
+                      const AppDivider(),
+                      const SizedBox(height: 16),
+                      if (_selectedRole != 'staff') ...[
+                        _ScopeTypeSelector(
+                          selectedScopeType: _selectedScopeType,
+                          onChanged: (scope) => setState(() {
+                            _selectedScopeType = scope;
+                            if (scope == 'business') {
+                              _selectedLocationIds.clear();
+                            }
+                            _enforceSingleLocationForStaff();
+                            _clearInvalidSelectedStaff(availableStaff);
+                          }),
+                        ),
+                      ],
+                      if (_selectedRole == 'staff' ||
+                          _selectedScopeType == 'locations') ...[
+                        const SizedBox(height: 16),
+                        _LocationsMultiSelect(
+                          locations: locations,
+                          selectedIds: _selectedLocationIds,
+                          singleSelection: _selectedRole == 'staff',
+                          onChanged: (ids) => setState(() {
+                            final previousSelection = Set<int>.from(
+                              _selectedLocationIds,
+                            );
+                            _selectedLocationIds.clear();
+                            if (_selectedRole == 'staff') {
+                              if (ids.isNotEmpty) {
+                                _selectedLocationIds.add(ids.last);
+                              }
+                            } else {
+                              _selectedLocationIds.addAll(ids);
+                            }
+                            if (_selectedRole == 'staff' &&
+                                previousSelection.length == 1 &&
+                                _selectedLocationIds.length == 1 &&
+                                previousSelection.first !=
+                                    _selectedLocationIds.first) {
+                              _selectedStaffId = null;
+                            }
+                            _clearInvalidSelectedStaff(availableStaff);
+                          }),
+                        ),
+                      ],
+                    ],
+                    if (_selectedRole == 'staff') ...[
+                      const SizedBox(height: 16),
+                      _StaffSingleSelect(
+                        staff: availableStaff,
+                        selectedStaffId: _selectedStaffId,
+                        isEnabled:
+                            _selectedScopeType != 'locations' ||
+                            _selectedLocationIds.isNotEmpty,
+                        onChanged: (staffId) =>
+                            setState(() => _selectedStaffId = staffId),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
-          ),
 
-          // Actions
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: _isLoading
-                      ? null
-                      : () => Navigator.of(context).pop(),
-                  child: Text(l10n.actionCancel),
+            // Actions
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _isLoading
+                        ? null
+                        : () => Navigator.of(context).pop(),
+                    child: Text(l10n.actionCancel),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: FilledButton(
-                  onPressed: _isLoading ? null : _submit,
-                  child: Text(l10n.operatorsInviteSend),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _isLoading ? null : _submit,
+                    child: Text(l10n.operatorsInviteSend),
+                  ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
           ],
         ),
       ),
@@ -1142,9 +1142,9 @@ class _LocationCheckboxTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CheckboxListTile(
+    return SwitchListTile.adaptive(
       value: isSelected,
-      onChanged: (value) => onChanged(value ?? false),
+      onChanged: onChanged,
       title: Text(location.name),
       subtitle: location.address != null
           ? Text(

@@ -4,8 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../../core/models/appointment.dart';
 import '../../../../../core/models/staff.dart';
 import '../../../domain/config/layout_config.dart';
+import '../../../providers/agenda_display_settings_provider.dart';
 import '../../../providers/agenda_interaction_lock_provider.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/agenda_scroll_provider.dart';
@@ -16,6 +18,7 @@ import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/is_resizing_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../../../providers/tenant_time_provider.dart';
+import '../helper/layout_geometry_helper.dart';
 import '../helper/responsive_layout.dart';
 import '../widgets/current_time_line.dart';
 import 'agenda_staff_body.dart';
@@ -209,15 +212,25 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       (s) => s.id == appointment.staffId,
     );
     if (staffIndex >= 0) {
+      final expandColumnsOnOverlap = ref.read(
+        agendaExpandStaffColumnsOnOverlapProvider,
+      );
       final layout = ResponsiveLayout.of(
         context,
         staffCount: widget.staffList.length,
         config: layoutConfig,
         availableWidth: viewportWidth,
       );
-      final columnWidth = layout.columnWidth;
-      final targetX =
-          (staffIndex * columnWidth) - (viewportWidth - columnWidth) / 2;
+      final staffWidths = _computeStaffColumnWidths(
+        baseColumnWidth: layout.columnWidth,
+        expandColumnsOnOverlap: expandColumnsOnOverlap,
+        appointments: appointments,
+      );
+      final staffWidth = staffWidths[staffIndex];
+      final staffOffset = staffWidths
+          .take(staffIndex)
+          .fold(0.0, (sum, w) => sum + w);
+      final targetX = staffOffset - (viewportWidth - staffWidth) / 2;
       final maxX = horizontalCtrl.position.maxScrollExtent;
       final clampedX = targetX.clamp(0.0, maxX);
       if ((horizontalCtrl.offset - clampedX).abs() > 0.5) {
@@ -388,6 +401,24 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     _autoScrollArmed = false;
   }
 
+  List<double> _computeStaffColumnWidths({
+    required double baseColumnWidth,
+    required bool expandColumnsOnOverlap,
+    required List<Appointment> appointments,
+  }) {
+    if (!expandColumnsOnOverlap) {
+      return List.filled(widget.staffList.length, baseColumnWidth);
+    }
+    return widget.staffList.map((staff) {
+      final entries = appointments
+          .where((a) => a.staffId == staff.id)
+          .map((a) => LayoutEntry(id: a.id, start: a.startTime, end: a.endTime))
+          .toList();
+      final maxConc = computeMaxConcurrency(entries);
+      return baseColumnWidth * maxConc;
+    }).toList();
+  }
+
   @override
   void dispose() {
     _dragSub.close();
@@ -425,6 +456,9 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     final appointments = ref.watch(appointmentsForCurrentLocationProvider);
     final scrollState = ref.watch(agendaScrollProvider(_scrollKey));
     final layoutConfig = ref.watch(layoutConfigProvider);
+    final expandColumnsOnOverlap = ref.watch(
+      agendaExpandStaffColumnsOnOverlapProvider,
+    );
     // Evaluate the interaction lock once here for the current visible group
     final isInteractionLocked = ref.watch(agendaDayScrollLockProvider);
 
@@ -468,6 +502,12 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
         final isResizing = ref.watch(isResizingProvider);
 
+        final staffColumnWidths = _computeStaffColumnWidths(
+          baseColumnWidth: layout.columnWidth,
+          expandColumnsOnOverlap: expandColumnsOnOverlap,
+          appointments: appointments,
+        );
+
         return Stack(
           clipBehavior: Clip.none,
           children: [
@@ -481,6 +521,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                 appointments: appointments,
                 layoutConfig: layoutConfig,
                 availableWidth: availableWidth,
+                staffColumnWidths: staffColumnWidths,
                 isResizing: isResizing,
                 dragLayerLink: link,
                 bodyKey: _bodyKey,
@@ -509,7 +550,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                   hourColumnWidth: hourW,
                   totalHeight: totalHeight,
                   headerHeight: headerHeight,
-                  columnWidth: layout.columnWidth,
+                  columnWidths: staffColumnWidths,
                   scrollController: _headerHCtrl,
                 ),
               ),

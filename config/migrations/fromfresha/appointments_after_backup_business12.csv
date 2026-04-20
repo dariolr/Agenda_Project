@@ -1,1 +1,0 @@
-booking_id,business_id,location_id,client_id,client_first_name,client_last_name,client_name,source,status,booking_created_at_utc,booking_item_id,service_id,service_name_snapshot,staff_id,item_start_time_utc,item_end_time_utc

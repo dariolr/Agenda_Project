@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,7 +18,6 @@ import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/business_providers.dart';
 import '/features/agenda/providers/tenant_time_provider.dart';
 import '/features/auth/providers/auth_provider.dart';
-import '/features/auth/providers/current_business_user_provider.dart';
 import '/features/booking_notifications/providers/booking_notifications_provider.dart';
 import '/features/booking_notifications/providers/whatsapp_integration_provider.dart';
 import '/features/booking_notifications/presentation/whatsapp_management_panel.dart';
@@ -47,6 +47,7 @@ class _BookingNotificationsScreenState
   Timer? _searchDebounce;
   String? _selectedStatus;
   String? _selectedChannel;
+  String? _selectedProvider;
   int? _selectedBusinessId;
   int _selectedTabIndex = 0;
 
@@ -186,6 +187,16 @@ class _BookingNotificationsScreenState
         .loadNotificationsForBusinesses(_activeBusinessIds(_readBusinesses()));
   }
 
+  void _onProviderChanged(String? value) {
+    setState(() => _selectedProvider = value);
+    ref
+        .read(bookingNotificationsFiltersProvider.notifier)
+        .setProviders(value == null ? null : [value]);
+    ref
+        .read(bookingNotificationsProvider.notifier)
+        .loadNotificationsForBusinesses(_activeBusinessIds(_readBusinesses()));
+  }
+
   void _onBusinessChanged(int? value) {
     setState(() => _selectedBusinessId = value);
     ref
@@ -201,7 +212,7 @@ class _BookingNotificationsScreenState
     final formFactor = ref.watch(formFactorProvider);
     final isDesktop = formFactor == AppFormFactor.desktop;
     final canAccessWhatsappSection = ref.watch(
-      canManageBusinessSettingsProvider,
+      authProvider.select((s) => s.user?.isSuperadmin ?? false),
     );
     final selectedTabIndex = canAccessWhatsappSection ? _selectedTabIndex : 0;
     final businesses = ref
@@ -288,12 +299,15 @@ class _BookingNotificationsScreenState
               searchController: _searchController,
               selectedStatus: _selectedStatus,
               selectedChannel: _selectedChannel,
+              selectedProvider: _selectedProvider,
               showBusinessFilter: _canSelectBusiness,
+              showProviderFilter: _canSelectBusiness,
               selectedBusinessId: _selectedBusinessId,
               businesses: businesses,
               onSearchChanged: _onSearchChanged,
               onStatusChanged: _onStatusChanged,
               onChannelChanged: _onChannelChanged,
+              onProviderChanged: _onProviderChanged,
               onBusinessChanged: _onBusinessChanged,
             ),
             Padding(
@@ -387,14 +401,23 @@ class _BookingNotificationsScreenState
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
     final showLastAttemptColumn = _canSelectBusiness;
+    final showProviderColumn = _canSelectBusiness;
     final filters = ref.watch(bookingNotificationsFiltersProvider);
     final sortBy = filters.sortBy;
     final sortAscending = filters.sortOrder == 'asc';
+    var colIndex = 0;
+    final createdColumnIndex = colIndex++;
+    final lastAttemptColumnIndex = showLastAttemptColumn ? colIndex++ : null;
+    final sentColumnIndex = colIndex++;
+    colIndex += 3; // client, type, recipient
+    if (showProviderColumn) colIndex++;
+    colIndex += 1; // status
+    final appointmentColumnIndex = colIndex;
     final sortColumnIndex = switch (sortBy) {
-      'created' => 0,
-      'last_attempt' => showLastAttemptColumn ? 1 : null,
-      'sent' => showLastAttemptColumn ? 2 : 1,
-      'appointment' => showLastAttemptColumn ? 6 : 5,
+      'created' => createdColumnIndex,
+      'last_attempt' => lastAttemptColumnIndex,
+      'sent' => sentColumnIndex,
+      'appointment' => appointmentColumnIndex,
       _ => null,
     };
 
@@ -409,66 +432,83 @@ class _BookingNotificationsScreenState
               thumbVisibility: true,
               trackVisibility: true,
               scrollbarOrientation: ScrollbarOrientation.bottom,
-              child: SingleChildScrollView(
-                controller: _horizontalScrollController,
-                scrollDirection: Axis.horizontal,
-                child: Theme(
-                  data: Theme.of(context).copyWith(
-                    dividerColor: colorScheme.outline.withOpacity(0.2),
-                  ),
-                  child: DataTable(
-                    showCheckboxColumn: false,
-                    dividerThickness: 0.2,
-                    horizontalMargin: 16,
-                    sortColumnIndex: sortColumnIndex,
-                    sortAscending: sortAscending,
-                    headingRowColor: WidgetStateProperty.all(
-                      colorScheme.surfaceContainerHighest,
+              child: ScrollConfiguration(
+                behavior: ScrollConfiguration.of(context).copyWith(
+                  dragDevices: {
+                    PointerDeviceKind.touch,
+                    PointerDeviceKind.mouse,
+                    PointerDeviceKind.trackpad,
+                  },
+                ),
+                child: SingleChildScrollView(
+                  controller: _horizontalScrollController,
+                  scrollDirection: Axis.horizontal,
+                  child: Theme(
+                    data: Theme.of(context).copyWith(
+                      dividerColor: colorScheme.outline.withOpacity(0.2),
                     ),
-                    columns: [
-                      DataColumn(
-                        label: Text(l10n.bookingNotificationsFieldCreatedAt),
-                        onSort: (_, ascending) =>
-                            _onSortChanged('created', ascending),
+                    child: DataTable(
+                      showCheckboxColumn: false,
+                      dividerThickness: 0.2,
+                      horizontalMargin: 16,
+                      sortColumnIndex: sortColumnIndex,
+                      sortAscending: sortAscending,
+                      headingRowColor: WidgetStateProperty.all(
+                        colorScheme.surfaceContainerHighest,
                       ),
-                      if (showLastAttemptColumn)
+                      columns: [
+                        DataColumn(
+                          label: Text(l10n.bookingNotificationsFieldCreatedAt),
+                          onSort: (_, ascending) =>
+                              _onSortChanged('created', ascending),
+                        ),
+                        if (showLastAttemptColumn)
+                          DataColumn(
+                            label: Text(
+                              l10n.bookingNotificationsFieldLastAttemptAt,
+                            ),
+                            onSort: (_, ascending) =>
+                                _onSortChanged('last_attempt', ascending),
+                          ),
+                        DataColumn(
+                          label: Text(l10n.bookingNotificationsFieldSentAt),
+                          onSort: (_, ascending) =>
+                              _onSortChanged('sent', ascending),
+                        ),
+                        DataColumn(
+                          label: Text(l10n.bookingNotificationsFieldClient),
+                        ),
+                        DataColumn(
+                          label: Text(l10n.bookingNotificationsFieldType),
+                        ),
+                        if (showProviderColumn)
+                          DataColumn(
+                            label: Text(
+                              l10n.bookingNotificationsFieldProviderUsed,
+                            ),
+                          ),
+                        DataColumn(
+                          label: Text(l10n.bookingNotificationsFieldRecipient),
+                        ),
+                        DataColumn(
+                          label: Text(l10n.bookingNotificationsFilterStatus),
+                        ),
                         DataColumn(
                           label: Text(
-                            l10n.bookingNotificationsFieldLastAttemptAt,
+                            l10n.bookingNotificationsFieldAppointment,
                           ),
                           onSort: (_, ascending) =>
-                              _onSortChanged('last_attempt', ascending),
+                              _onSortChanged('appointment', ascending),
                         ),
-                      DataColumn(
-                        label: Text(l10n.bookingNotificationsFieldSentAt),
-                        onSort: (_, ascending) =>
-                            _onSortChanged('sent', ascending),
-                      ),
-                      DataColumn(
-                        label: Text(l10n.bookingNotificationsFieldClient),
-                      ),
-                      DataColumn(
-                        label: Text(l10n.bookingNotificationsFieldType),
-                      ),
-                      DataColumn(
-                        label: Text(l10n.bookingNotificationsFieldRecipient),
-                      ),
-                      DataColumn(
-                        label: Text(l10n.bookingNotificationsFilterStatus),
-                      ),
-                      DataColumn(
-                        label: Text(l10n.bookingNotificationsFieldAppointment),
-                        onSort: (_, ascending) =>
-                            _onSortChanged('appointment', ascending),
-                      ),
-                      DataColumn(
-                        label: Text(l10n.bookingNotificationsFieldLocation),
-                      ),
-                      DataColumn(
-                        label: Text(l10n.bookingNotificationsFieldError),
-                      ),
-                    ],
-                    rows: state.notifications.map(_buildDataRow).toList(),
+                        DataColumn(
+                          label: Text(l10n.bookingNotificationsFieldLocation),
+                        ),
+                        DataColumn(
+                          label: Text(l10n.bookingNotificationsFieldError),
+                        ),
+                      ],
+                      rows: state.notifications.map(_buildDataRow).toList(),
+                    ),
                   ),
                 ),
               ),
@@ -498,6 +538,7 @@ class _BookingNotificationsScreenState
 
   DataRow _buildDataRow(BookingNotificationItem item) {
     final showLastAttemptColumn = _canSelectBusiness;
+    final showProviderColumn = _canSelectBusiness;
     return DataRow(
       onSelectChanged: (_) => _showNotificationBody(item),
       cells: [
@@ -537,6 +578,17 @@ class _BookingNotificationsScreenState
             ),
           ),
         ),
+        if (showProviderColumn)
+          _tappableDataCell(
+            item,
+            SizedBox(
+              width: 120,
+              child: Text(
+                _bookingNotificationProviderLabel(context, item.providerUsed),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
         _tappableDataCell(
           item,
           SizedBox(
@@ -707,6 +759,7 @@ class _BookingNotificationsScreenState
           final item = state.notifications[index];
           return _NotificationCard(
             notification: item,
+            showProvider: _canSelectBusiness,
             onOpenBody: () => _showNotificationBody(item),
           );
         },
@@ -720,24 +773,30 @@ class _FiltersBar extends StatelessWidget {
     required this.searchController,
     required this.selectedStatus,
     required this.selectedChannel,
+    required this.selectedProvider,
     required this.showBusinessFilter,
+    required this.showProviderFilter,
     required this.selectedBusinessId,
     required this.businesses,
     required this.onSearchChanged,
     required this.onStatusChanged,
     required this.onChannelChanged,
+    required this.onProviderChanged,
     required this.onBusinessChanged,
   });
 
   final TextEditingController searchController;
   final String? selectedStatus;
   final String? selectedChannel;
+  final String? selectedProvider;
   final bool showBusinessFilter;
+  final bool showProviderFilter;
   final int? selectedBusinessId;
   final List<Business> businesses;
   final ValueChanged<String> onSearchChanged;
   final ValueChanged<String?> onStatusChanged;
   final ValueChanged<String?> onChannelChanged;
+  final ValueChanged<String?> onProviderChanged;
   final ValueChanged<int?> onBusinessChanged;
 
   @override
@@ -753,6 +812,7 @@ class _FiltersBar extends StatelessWidget {
           final businessWidth = availableWidth < 280 ? availableWidth : 260.0;
           final statusWidth = availableWidth < 240 ? availableWidth : 220.0;
           final typeWidth = availableWidth < 270 ? availableWidth : 250.0;
+          final providerWidth = availableWidth < 240 ? availableWidth : 220.0;
 
           return Wrap(
             spacing: 12,
@@ -912,6 +972,43 @@ class _FiltersBar extends StatelessWidget {
                   onChanged: onChannelChanged,
                 ),
               ),
+              if (showProviderFilter)
+                SizedBox(
+                  width: providerWidth,
+                  child: DropdownButtonFormField<String?>(
+                    value: selectedProvider,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: l10n.bookingNotificationsFilterProvider,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    items: [
+                      DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text(
+                          l10n.filterAll,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem<String?>(
+                        value: 'smtp',
+                        child: Text(
+                          l10n.bookingNotificationsProviderSmtp,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem<String?>(
+                        value: 'brevo',
+                        child: Text(
+                          l10n.bookingNotificationsProviderBrevo,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                    onChanged: onProviderChanged,
+                  ),
+                ),
             ],
           );
         },
@@ -923,10 +1020,12 @@ class _FiltersBar extends StatelessWidget {
 class _NotificationCard extends ConsumerWidget {
   const _NotificationCard({
     required this.notification,
+    required this.showProvider,
     required this.onOpenBody,
   });
 
   final BookingNotificationItem notification;
+  final bool showProvider;
   final VoidCallback onOpenBody;
 
   String _formatDateTime(
@@ -980,6 +1079,11 @@ class _NotificationCard extends ConsumerWidget {
                 '${l10n.bookingNotificationsFieldType}: ${notification.channelLabel(context)}',
                 style: theme.textTheme.bodyMedium,
               ),
+              if (showProvider)
+                Text(
+                  '${l10n.bookingNotificationsFieldProviderUsed}: ${_bookingNotificationProviderLabel(context, notification.providerUsed)}',
+                  style: theme.textTheme.bodyMedium,
+                ),
               if ((notification.clientName ?? '').isNotEmpty)
                 Text(
                   '${l10n.bookingNotificationsFieldClient}: ${notification.clientName}',
@@ -1117,5 +1221,25 @@ class _NotificationStatusChip extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+String _bookingNotificationProviderLabel(
+  BuildContext context,
+  String? provider,
+) {
+  final value = (provider ?? '').trim().toLowerCase();
+  switch (value) {
+    case 'smtp':
+      return context.l10n.bookingNotificationsProviderSmtp;
+    case 'brevo':
+      return context.l10n.bookingNotificationsProviderBrevo;
+    case 'mailgun':
+      return context.l10n.bookingNotificationsProviderMailgun;
+    case 'blocked-demo-provider':
+      return context.l10n.bookingNotificationsProviderBlockedDemo;
+    default:
+      if (value.isEmpty) return context.l10n.bookingNotificationsNotAvailable;
+      return provider!;
   }
 }

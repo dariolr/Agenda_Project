@@ -43,6 +43,7 @@ class LayoutConfig {
     useServiceColorsForAppointments: true,
     enableOccupiedSlotStrip: false,
     showTopbarAddLabel: false,
+    expandColumnsOnOverlap: true,
   );
 
   // ──────────────────────────────────────────────
@@ -63,6 +64,11 @@ class LayoutConfig {
   /// Se true, il pulsante "Aggiungi" in topbar mostra anche la label.
   final bool showTopbarAddLabel;
 
+  /// Se true, la larghezza di ogni colonna staff si moltiplica per il numero
+  /// massimo di appuntamenti sovrapposti nella giornata, così ogni card
+  /// mantiene la propria larghezza naturale (baseWidth) anche in caso di overlap.
+  final bool expandColumnsOnOverlap;
+
   const LayoutConfig({
     required this.slotHeight,
     required this.headerHeight,
@@ -72,6 +78,7 @@ class LayoutConfig {
     required this.useServiceColorsForAppointments,
     required this.enableOccupiedSlotStrip,
     required this.showTopbarAddLabel,
+    required this.expandColumnsOnOverlap,
   });
 
   @override
@@ -86,7 +93,8 @@ class LayoutConfig {
         useServiceColorsForAppointments ==
             other.useServiceColorsForAppointments &&
         enableOccupiedSlotStrip == other.enableOccupiedSlotStrip &&
-        showTopbarAddLabel == other.showTopbarAddLabel;
+        showTopbarAddLabel == other.showTopbarAddLabel &&
+        expandColumnsOnOverlap == other.expandColumnsOnOverlap;
   }
 
   @override
@@ -99,6 +107,7 @@ class LayoutConfig {
     useServiceColorsForAppointments,
     enableOccupiedSlotStrip,
     showTopbarAddLabel,
+    expandColumnsOnOverlap,
   );
 
   LayoutConfig copyWith({
@@ -110,6 +119,7 @@ class LayoutConfig {
     bool? useServiceColorsForAppointments,
     bool? enableOccupiedSlotStrip,
     bool? showTopbarAddLabel,
+    bool? expandColumnsOnOverlap,
   }) {
     return LayoutConfig(
       slotHeight: slotHeight ?? this.slotHeight,
@@ -124,6 +134,8 @@ class LayoutConfig {
       enableOccupiedSlotStrip:
           enableOccupiedSlotStrip ?? this.enableOccupiedSlotStrip,
       showTopbarAddLabel: showTopbarAddLabel ?? this.showTopbarAddLabel,
+      expandColumnsOnOverlap:
+          expandColumnsOnOverlap ?? this.expandColumnsOnOverlap,
     );
   }
 

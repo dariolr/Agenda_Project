@@ -667,7 +667,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         child: IgnorePointer(
           ignoring: !canManageBookings,
           child: Form(
-      autovalidateMode: AutovalidateMode.onUserInteraction,
+            autovalidateMode: AutovalidateMode.onUserInteraction,
             key: _formKey,
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -2463,9 +2463,11 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           appt.recurrenceRuleId != null &&
           appt.recurrenceIndex != null &&
           appt.recurrenceTotal != null) {
-        final isAllScope = recurringEditResult.scope == RecurringActionScope.all;
+        final isAllScope =
+            recurringEditResult.scope == RecurringActionScope.all;
         final fromIndex = isAllScope ? 0 : appt.recurrenceIndex! + 1;
-        final canPropagateToSeries = isAllScope || fromIndex < appt.recurrenceTotal!;
+        final canPropagateToSeries =
+            isAllScope || fromIndex < appt.recurrenceTotal!;
         if (canPropagateToSeries) {
           final normalizedInitialNotes = _initialNotes.trim().isEmpty
               ? null
@@ -2486,20 +2488,23 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
 
           final sortedItems = [...validItems]
             ..sort(
-              (a, b) =>
-                  _minutesOfDay(a.startTime).compareTo(_minutesOfDay(b.startTime)),
+              (a, b) => _minutesOfDay(
+                a.startTime,
+              ).compareTo(_minutesOfDay(b.startTime)),
             );
-          final sortedInitialItems = [
-            ..._initialServiceItems.where(
-              (item) =>
-                  item.serviceId != null &&
-                  item.serviceId! > 0 &&
-                  item.staffId != null,
-            ),
-          ]..sort(
-              (a, b) =>
-                  _minutesOfDay(a.startTime).compareTo(_minutesOfDay(b.startTime)),
-            );
+          final sortedInitialItems =
+              [
+                ..._initialServiceItems.where(
+                  (item) =>
+                      item.serviceId != null &&
+                      item.serviceId! > 0 &&
+                      item.staffId != null,
+                ),
+              ]..sort(
+                (a, b) => _minutesOfDay(
+                  a.startTime,
+                ).compareTo(_minutesOfDay(b.startTime)),
+              );
           final firstStart = sortedItems.first.startTime;
           final initialStart = TimeOfDay.fromDateTime(appt.startTime);
           final seriesTime =
@@ -2507,24 +2512,29 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               ? _formatApiTime(firstStart)
               : null;
           final baseStartMinutes = _minutesOfDay(firstStart);
-          final recurringItemsForSeries = sortedItems.map((item) {
-            final totalDuration =
-                item.durationMinutes +
-                (item.blockedExtraMinutes > 0 ? item.blockedExtraMinutes : 0);
-            final offsetMinutes = _minutesOfDay(item.startTime) - baseStartMinutes;
-            return RecurringBookingItemRequest(
-              serviceId: item.serviceId!,
-              staffId: item.staffId,
-              serviceVariantId: item.serviceVariantId,
-              startOffsetMinutes: offsetMinutes,
-              durationMinutes: totalDuration,
-              blockedExtraMinutes: item.blockedExtraMinutes,
-              processingExtraMinutes: item.processingExtraMinutes,
-              price: item.price,
-              packageId: item.packageId,
-              pricingSource: item.pricingSource,
-            );
-          }).toList(growable: false);
+          final recurringItemsForSeries = sortedItems
+              .map((item) {
+                final totalDuration =
+                    item.durationMinutes +
+                    (item.blockedExtraMinutes > 0
+                        ? item.blockedExtraMinutes
+                        : 0);
+                final offsetMinutes =
+                    _minutesOfDay(item.startTime) - baseStartMinutes;
+                return RecurringBookingItemRequest(
+                  serviceId: item.serviceId!,
+                  staffId: item.staffId,
+                  serviceVariantId: item.serviceVariantId,
+                  startOffsetMinutes: offsetMinutes,
+                  durationMinutes: totalDuration,
+                  blockedExtraMinutes: item.blockedExtraMinutes,
+                  processingExtraMinutes: item.processingExtraMinutes,
+                  price: item.price,
+                  packageId: item.packageId,
+                  pricingSource: item.pricingSource,
+                );
+              })
+              .toList(growable: false);
           final shouldPropagateItems = recurringItemsForSeries.isNotEmpty;
           int? seriesDurationMinutes;
           int? seriesServiceId;
@@ -2580,7 +2590,8 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
               }
             }
             if (editedAnchor.serviceVariantId != null &&
-                editedAnchor.serviceVariantId != initialAnchor.serviceVariantId) {
+                editedAnchor.serviceVariantId !=
+                    initialAnchor.serviceVariantId) {
               seriesServiceVariantId = editedAnchor.serviceVariantId;
             }
 
@@ -2843,7 +2854,8 @@ class _ClientSelectionField extends ConsumerWidget {
     final targetClientId = clientId;
     if (targetClientId == null) return;
 
-    final client = ref.read(clientsByIdProvider)[targetClientId];
+    final client = await _resolveClientForEdit(ref, targetClientId);
+    if (!context.mounted) return;
     if (client == null) return;
 
     final updatedClient = await showClientEditDialog(
@@ -2854,6 +2866,21 @@ class _ClientSelectionField extends ConsumerWidget {
     if (updatedClient == null) return;
 
     onClientSelected(updatedClient.id, updatedClient.name);
+  }
+
+  Future<Client?> _resolveClientForEdit(
+    WidgetRef ref,
+    int targetClientId,
+  ) async {
+    final cachedClient = ref.read(clientsByIdProvider)[targetClientId];
+    if (cachedClient != null) return cachedClient;
+
+    final repository = ref.read(clientsRepositoryProvider);
+    try {
+      return await repository.getById(targetClientId);
+    } catch (_) {
+      return null;
+    }
   }
 
   Future<void> _showClientPicker(BuildContext context, WidgetRef ref) async {

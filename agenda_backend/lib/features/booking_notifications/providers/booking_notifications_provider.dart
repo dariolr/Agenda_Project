@@ -7,6 +7,7 @@ class BookingNotificationsFilters {
   final String? search;
   final List<String>? status;
   final List<String>? channels;
+  final List<String>? providers;
   final String sortBy;
   final String sortOrder;
 
@@ -14,6 +15,7 @@ class BookingNotificationsFilters {
     this.search,
     this.status,
     this.channels,
+    this.providers,
     this.sortBy = 'last_attempt',
     this.sortOrder = 'desc',
   });
@@ -25,6 +27,8 @@ class BookingNotificationsFilters {
     bool clearStatus = false,
     List<String>? channels,
     bool clearChannels = false,
+    List<String>? providers,
+    bool clearProviders = false,
     String? sortBy,
     String? sortOrder,
   }) {
@@ -32,6 +36,7 @@ class BookingNotificationsFilters {
       search: clearSearch ? null : (search ?? this.search),
       status: clearStatus ? null : (status ?? this.status),
       channels: clearChannels ? null : (channels ?? this.channels),
+      providers: clearProviders ? null : (providers ?? this.providers),
       sortBy: sortBy ?? this.sortBy,
       sortOrder: sortOrder ?? this.sortOrder,
     );
@@ -67,6 +72,13 @@ class BookingNotificationsFiltersNotifier
     state = state.copyWith(
       channels: channels,
       clearChannels: channels == null || channels.isEmpty,
+    );
+  }
+
+  void setProviders(List<String>? providers) {
+    state = state.copyWith(
+      providers: providers,
+      clearProviders: providers == null || providers.isEmpty,
     );
   }
 
@@ -108,7 +120,7 @@ class BookingNotificationsState {
     this.error,
   });
 
-  bool get hasMore => offset + notifications.length < total;
+  bool get hasMore => notifications.length < total;
   bool get isEmpty => notifications.isEmpty && !isLoading;
 
   BookingNotificationsState copyWith({
@@ -179,15 +191,19 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
     state = state.copyWith(isLoadingMore: true);
 
     try {
-      final newOffset = state.offset + state.limit;
+      final newOffset = state.notifications.length;
       final result = await _fetchCombinedResult(
         businessIds: businessIds,
         filters: filters,
         offset: newOffset,
         pageSize: state.limit,
       );
+      final existing = <int>{for (final item in state.notifications) item.id};
+      final appended = result.notifications
+          .where((item) => !existing.contains(item.id))
+          .toList(growable: false);
       state = state.copyWith(
-        notifications: result.notifications,
+        notifications: [...state.notifications, ...appended],
         total: result.total,
         offset: newOffset,
         isLoadingMore: false,
@@ -221,20 +237,13 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
         search: filters.search,
         status: filters.status,
         channels: filters.channels,
+        providers: filters.providers,
         sortBy: filters.sortBy,
         sortOrder: filters.sortOrder,
         limit: pageSize,
         offset: offset,
       );
-      final result = BookingNotificationsResult.fromJson(response);
-      final visible = _applyClientVisibilityRules(result.notifications, filters);
-      final hiddenCount = result.notifications.length - visible.length;
-      return BookingNotificationsResult(
-        notifications: visible,
-        total: (result.total - hiddenCount).clamp(0, result.total),
-        limit: result.limit,
-        offset: result.offset,
-      );
+      return BookingNotificationsResult.fromJson(response);
     }
 
     final perBusinessLimit = offset + pageSize;
@@ -245,6 +254,7 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
           search: filters.search,
           status: filters.status,
           channels: filters.channels,
+          providers: filters.providers,
           sortBy: filters.sortBy,
           sortOrder: filters.sortOrder,
           limit: perBusinessLimit,
@@ -258,14 +268,13 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
     for (final response in responses) {
       final result = BookingNotificationsResult.fromJson(response);
       total += result.total;
-      merged.addAll(_applyClientVisibilityRules(result.notifications, filters));
+      merged.addAll(result.notifications);
     }
 
-    merged.sort((a, b) => _compareBySort(a, b, filters.sortBy, filters.sortOrder));
-    final visibleCount = perBusinessLimit < merged.length
-        ? perBusinessLimit
-        : merged.length;
-    final visible = merged.take(visibleCount).toList(growable: false);
+    merged.sort(
+      (a, b) => _compareBySort(a, b, filters.sortBy, filters.sortOrder),
+    );
+    final visible = merged.skip(offset).take(pageSize).toList(growable: false);
 
     return BookingNotificationsResult(
       notifications: visible,
@@ -285,20 +294,40 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
     DateTime bDate;
     switch (sortBy) {
       case 'sent':
-        aDate = a.sentAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        bDate = b.sentAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        aDate =
+            a.sentAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        bDate =
+            b.sentAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
         break;
       case 'scheduled':
-        aDate = a.scheduledAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        bDate = b.scheduledAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        aDate =
+            a.scheduledAt ??
+            a.createdAt ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        bDate =
+            b.scheduledAt ??
+            b.createdAt ??
+            DateTime.fromMillisecondsSinceEpoch(0);
         break;
       case 'last_attempt':
-        aDate = a.lastAttemptAt ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        bDate = b.lastAttemptAt ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        aDate =
+            a.lastAttemptAt ??
+            a.createdAt ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        bDate =
+            b.lastAttemptAt ??
+            b.createdAt ??
+            DateTime.fromMillisecondsSinceEpoch(0);
         break;
       case 'appointment':
-        aDate = a.firstStartTime ?? a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
-        bDate = b.firstStartTime ?? b.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
+        aDate =
+            a.firstStartTime ??
+            a.createdAt ??
+            DateTime.fromMillisecondsSinceEpoch(0);
+        bDate =
+            b.firstStartTime ??
+            b.createdAt ??
+            DateTime.fromMillisecondsSinceEpoch(0);
         break;
       default:
         aDate = a.createdAt ?? DateTime.fromMillisecondsSinceEpoch(0);
@@ -310,20 +339,5 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
       return a.id.compareTo(b.id);
     }
     return sortOrder == 'asc' ? cmp : -cmp;
-  }
-
-  List<BookingNotificationItem> _applyClientVisibilityRules(
-    List<BookingNotificationItem> notifications,
-    BookingNotificationsFilters filters,
-  ) {
-    final statuses = filters.status;
-    final failedOnly = statuses != null &&
-        statuses.length == 1 &&
-        statuses.first == 'failed';
-    if (!failedOnly) return notifications;
-
-    return notifications
-        .where((item) => !item.isLateWindowReplacedReminderFailure)
-        .toList(growable: false);
   }
 }

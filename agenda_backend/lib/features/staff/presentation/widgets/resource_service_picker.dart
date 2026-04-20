@@ -441,7 +441,7 @@ class _CategorySection extends StatelessWidget {
 
               final isSelected = selectedIds.contains(variantId);
 
-              return CheckboxListTile(
+              return SwitchListTile.adaptive(
                 value: isSelected,
                 onChanged: (_) => onToggle(variantId),
                 title: Text(service.name, style: theme.textTheme.bodyMedium),

@@ -349,8 +349,9 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
         _selectedTimezone = _businessTimezoneOrDefault();
         _selectedCountryCode = _businessCountryOrDefault();
       }
-      final initialBookingLocale =
-          widget.initial!.bookingDefaultLocale?.trim().toLowerCase();
+      final initialBookingLocale = widget.initial!.bookingDefaultLocale
+          ?.trim()
+          .toLowerCase();
       _selectedBookingDefaultLocale =
           (initialBookingLocale == 'it' || initialBookingLocale == 'en')
           ? initialBookingLocale
@@ -416,8 +417,9 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           _selectedTimezone = _businessTimezoneOrDefault();
           _selectedCountryCode = _businessCountryOrDefault();
         }
-        final lastBookingLocale =
-            lastLocation.bookingDefaultLocale?.trim().toLowerCase();
+        final lastBookingLocale = lastLocation.bookingDefaultLocale
+            ?.trim()
+            .toLowerCase();
         _selectedBookingDefaultLocale =
             (lastBookingLocale == 'it' || lastBookingLocale == 'en')
             ? lastBookingLocale
@@ -565,9 +567,9 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           border: OutlineInputBorder(),
           isDense: true,
         ),
-        items: _timezonesForCountry(_selectedCountryCode)
-            .map((tz) => DropdownMenuItem(value: tz, child: Text(tz)))
-            .toList(),
+        items: _timezonesForCountry(
+          _selectedCountryCode,
+        ).map((tz) => DropdownMenuItem(value: tz, child: Text(tz))).toList(),
         onChanged: (value) {
           if (value == null) return;
           setState(() => _selectedTimezone = value);
@@ -654,7 +656,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
             ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 12),
-          SwitchListTile(
+          SwitchListTile.adaptive(
             title: Text(l10n.teamLocationIsActiveLabel),
             subtitle: Text(
               l10n.teamLocationIsActiveHint,
@@ -678,7 +680,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
               ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 12),
-            SwitchListTile(
+            SwitchListTile.adaptive(
               title: Text(l10n.teamLocationAllowCustomerChooseStaffLabel),
               subtitle: Text(
                 l10n.teamLocationAllowCustomerChooseStaffHint,
@@ -975,12 +977,13 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                       border: const OutlineInputBorder(),
                       isDense: true,
                       hintText: _nomenclatureDefaultHint(context, key),
-                      hintStyle: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.45),
-                        fontStyle: FontStyle.italic,
-                      ),
+                      hintStyle: Theme.of(context).textTheme.bodyMedium
+                          ?.copyWith(
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurface.withValues(alpha: 0.45),
+                            fontStyle: FontStyle.italic,
+                          ),
                     ),
                   ),
                 );

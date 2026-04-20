@@ -25,6 +25,12 @@ class EventGeometry {
 Map<int, EventGeometry> computeLayoutGeometry(
   List<LayoutEntry> entries, {
   bool useClusterMaxConcurrency = false,
+  // Denominatore minimo per il calcolo di leftFraction/widthFraction.
+  // Usato con expandColumnsOnOverlap: forza tutte le frazioni ad essere
+  // relative al massimo di concorrenza della giornata intera, così ogni
+  // carta occupa esattamente baseColumnWidth indipendentemente da quando
+  // cadono i suoi overlap.
+  int minTotalColumns = 1,
 }) {
   if (entries.isEmpty) return const {};
 
@@ -119,9 +125,10 @@ Map<int, EventGeometry> computeLayoutGeometry(
     } else {
       for (final entry in cluster) {
         final concurrency = concurrencyMap[entry.id] ?? 1;
-        final widthFraction = 1 / concurrency;
+        final effectiveDenominator = math.max(concurrency, minTotalColumns);
+        final widthFraction = 1 / effectiveDenominator;
         final columnIndex = columnAssignments[entry.id] ?? 0;
-        final leftFraction = columnIndex * widthFraction;
+        final leftFraction = columnIndex / effectiveDenominator;
         geometryMap[entry.id] = EventGeometry(
           leftFraction: leftFraction,
           widthFraction: widthFraction,
@@ -131,6 +138,49 @@ Map<int, EventGeometry> computeLayoutGeometry(
   }
 
   return geometryMap;
+}
+
+/// Restituisce il numero massimo di appuntamenti sovrapposti in un qualsiasi
+/// istante della giornata (peak concurrency). Usato per calcolare di quanto
+/// espandere la colonna quando [LayoutConfig.expandColumnsOnOverlap] è true.
+int computeMaxConcurrency(List<LayoutEntry> entries) {
+  if (entries.isEmpty) return 1;
+
+  final sorted = entries.toList()
+    ..sort((a, b) {
+      final c = a.start.compareTo(b.start);
+      return c != 0 ? c : a.id.compareTo(b.id);
+    });
+
+  var currentCluster = <LayoutEntry>[];
+  DateTime? currentMaxEnd;
+  int globalMax = 1;
+
+  void processCluster() {
+    if (currentCluster.isEmpty) return;
+    final concurrencyMap = _computeConcurrency(currentCluster);
+    final clusterMax = concurrencyMap.values.fold<int>(1, math.max);
+    if (clusterMax > globalMax) globalMax = clusterMax;
+  }
+
+  for (final entry in sorted) {
+    if (currentCluster.isEmpty) {
+      currentCluster = [entry];
+      currentMaxEnd = entry.end;
+      continue;
+    }
+    if (entry.start.isBefore(currentMaxEnd!)) {
+      currentCluster.add(entry);
+      if (entry.end.isAfter(currentMaxEnd)) currentMaxEnd = entry.end;
+    } else {
+      processCluster();
+      currentCluster = [entry];
+      currentMaxEnd = entry.end;
+    }
+  }
+  processCluster();
+
+  return globalMax;
 }
 
 bool _entriesOverlap(LayoutEntry a, LayoutEntry b) {

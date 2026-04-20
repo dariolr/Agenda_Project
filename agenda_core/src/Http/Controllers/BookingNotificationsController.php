@@ -69,6 +69,13 @@ final class BookingNotificationsController
                 : $channelParam;
         }
 
+        if ($request->queryParam('provider') !== null) {
+            $providerParam = (string) $request->queryParam('provider');
+            $filters['provider'] = strpos($providerParam, ',') !== false
+                ? array_values(array_filter(array_map('trim', explode(',', $providerParam))))
+                : $providerParam;
+        }
+
         if ($request->queryParam('start_date') !== null) {
             $filters['start_date'] = (string) $request->queryParam('start_date');
         }

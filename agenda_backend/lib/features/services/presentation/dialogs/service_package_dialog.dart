@@ -43,10 +43,7 @@ Future<void> showServicePackageDialog(
       builder: (_) => dialog,
     );
   } else {
-    await showDialog<void>(
-      context: context,
-      builder: (_) => dialog,
-    );
+    await showDialog<void>(context: context, builder: (_) => dialog);
   }
 }
 
@@ -100,8 +97,7 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
     );
     _isActive = pkg?.isActive ?? true;
     _isBookableOnline = pkg?.isBookableOnline ?? true;
-    _selectedCategoryId =
-        pkg?.categoryId ?? widget.preselectedCategoryId;
+    _selectedCategoryId = pkg?.categoryId ?? widget.preselectedCategoryId;
     if (_selectedCategoryId == null && widget.categories.length == 1) {
       _selectedCategoryId = widget.categories.first.id;
     }
@@ -132,11 +128,13 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
       isLoading: _isSaving,
       child: AppFormDialog(
         title: Text(
-          isEditing ? l10n.servicePackageEditTitle : l10n.servicePackageNewTitle,
+          isEditing
+              ? l10n.servicePackageEditTitle
+              : l10n.servicePackageNewTitle,
         ),
         contentPadding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
         content: Form(
-      autovalidateMode: AutovalidateMode.onUserInteraction,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -150,10 +148,9 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
                   decoration: const InputDecoration(
                     border: OutlineInputBorder(),
                   ),
-                  validator: (value) =>
-                      value == null || value.trim().isEmpty
-                          ? l10n.validationRequired
-                          : null,
+                  validator: (value) => value == null || value.trim().isEmpty
+                      ? l10n.validationRequired
+                      : null,
                 ),
               ),
               const SizedBox(height: 16),
@@ -204,9 +201,7 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
                           decimal: true,
                         ),
                         inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r'[0-9.,]'),
-                          ),
+                          FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
                         ],
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
@@ -253,15 +248,14 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
                 ],
               ),
               const SizedBox(height: 16),
-              SwitchListTile(
+              SwitchListTile.adaptive(
                 value: _isActive,
                 onChanged: (value) => setState(() => _isActive = value),
                 title: Text(l10n.servicePackageActiveLabel),
               ),
-              SwitchListTile(
+              SwitchListTile.adaptive(
                 value: _isBookableOnline,
-                onChanged: (value) =>
-                    setState(() => _isBookableOnline = value),
+                onChanged: (value) => setState(() => _isBookableOnline = value),
                 title: Text(l10n.bookableOnlineSwitch),
               ),
               const SizedBox(height: 12),
@@ -274,9 +268,7 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
                 height: 240,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    border: Border.all(
-                      color: Theme.of(context).dividerColor,
-                    ),
+                    border: Border.all(color: Theme.of(context).dividerColor),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: ClipRRect(
@@ -297,9 +289,7 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
                 const SizedBox(height: 8),
                 Text(
                   _servicesError!,
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.error,
-                  ),
+                  style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
               ],
               const SizedBox(height: 16),
@@ -394,9 +384,9 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
           if (mounted) {
             setState(() => _isSaving = true);
           }
-          await ref.read(servicePackagesProvider.notifier).deletePackage(
-                packageId,
-              );
+          await ref
+              .read(servicePackagesProvider.notifier)
+              .deletePackage(packageId);
           if (!context.mounted) return;
           await FeedbackDialog.showSuccess(
             context,

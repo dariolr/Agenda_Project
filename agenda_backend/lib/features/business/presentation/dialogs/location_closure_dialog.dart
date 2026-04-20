@@ -63,7 +63,9 @@ class _LocationClosureDialogState extends ConsumerState<LocationClosureDialog> {
   Future<void> _selectStartDate() async {
     final picked = await _showAutoCloseDatePicker(
       initialDate: _startDate,
-      firstDate: ref.read(tenantNowProvider).subtract(const Duration(days: 365)),
+      firstDate: ref
+          .read(tenantNowProvider)
+          .subtract(const Duration(days: 365)),
       lastDate: ref.read(tenantNowProvider).add(const Duration(days: 365 * 3)),
     );
     if (picked != null && mounted) {
@@ -286,7 +288,7 @@ class _LocationClosureDialogState extends ConsumerState<LocationClosureDialog> {
             child: Column(
               children: locations.map((location) {
                 final isSelected = _selectedLocationIds.contains(location.id);
-                return CheckboxListTile(
+                return SwitchListTile.adaptive(
                   title: Text(location.name),
                   subtitle: (location.address?.isNotEmpty ?? false)
                       ? Text(
@@ -324,7 +326,7 @@ class _LocationClosureDialogState extends ConsumerState<LocationClosureDialog> {
       content: SizedBox(
         width: 450,
         child: Form(
-      autovalidateMode: AutovalidateMode.onUserInteraction,
+          autovalidateMode: AutovalidateMode.onUserInteraction,
           key: _formKey,
           child: SingleChildScrollView(
             child: Column(

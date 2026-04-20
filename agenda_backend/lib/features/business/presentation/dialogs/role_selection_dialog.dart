@@ -152,8 +152,7 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
             if (_selectedRole == 'staff' &&
                 _selectedScopeType == 'locations' &&
                 _selectedLocationIds.length > 1) {
-              final isIt =
-                  Localizations.localeOf(context).languageCode == 'it';
+              final isIt = Localizations.localeOf(context).languageCode == 'it';
               FeedbackDialog.showError(
                 context,
                 title: l10n.errorTitle,
@@ -659,9 +658,9 @@ class _LocationCheckboxTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CheckboxListTile(
+    return SwitchListTile.adaptive(
       value: isSelected,
-      onChanged: (value) => onChanged(value ?? false),
+      onChanged: onChanged,
       title: Text(location.name),
       subtitle: location.address != null
           ? Text(

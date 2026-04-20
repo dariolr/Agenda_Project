@@ -457,10 +457,10 @@ class MessageLookup extends MessageLookupByLibrary {
       "Iscriviti",
     ),
     "classEventWaitlistDialogMessage": MessageLookupByLibrary.simpleMessage(
-      "Questa classe è al completo. Vuoi iscriverti alla lista d\'attesa?",
+      "Questa lezione è al completo. Vuoi iscriverti alla lista d\'attesa?",
     ),
     "classEventWaitlistDialogTitle": MessageLookupByLibrary.simpleMessage(
-      "Classe al completo",
+      "Lezione al completo",
     ),
     "classEventWaitlistLabel": MessageLookupByLibrary.simpleMessage(
       "Lista d\'attesa",

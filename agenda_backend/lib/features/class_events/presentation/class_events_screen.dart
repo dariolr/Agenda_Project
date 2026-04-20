@@ -336,7 +336,9 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
               error: (_, __) => const SizedBox.shrink(),
               data: (schedules) {
                 if (schedules.isEmpty) return const SizedBox.shrink();
-                final nowUtc = TenantTimeService.nowInTimezone(timezone).toUtc();
+                final nowUtc = TenantTimeService.nowInTimezone(
+                  timezone,
+                ).toUtc();
                 final futureSchedules = schedules
                     .where((event) => event.endsAtUtc.isAfter(nowUtc))
                     .toList();
@@ -370,7 +372,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           if (hasExpiredSchedules)
-                            SwitchListTile(
+                            SwitchListTile.adaptive(
                               dense: true,
                               contentPadding: EdgeInsets.zero,
                               title: Text(
@@ -417,8 +419,9 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                                   final staffName =
                                       staffNameById[schedule.staffId] ??
                                       '#${schedule.staffId}';
-                                  final isPast =
-                                      schedule.endsAtUtc.isBefore(nowUtc);
+                                  final isPast = schedule.endsAtUtc.isBefore(
+                                    nowUtc,
+                                  );
 
                                   return ListTile(
                                     dense: true,
@@ -452,12 +455,12 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                                           ),
                                           onPressed: (!isPast && !isBusy)
                                               ? () =>
-                                                  showCreateClassEventDialog(
-                                                    context,
-                                                    ref,
-                                                    initialEvent: schedule,
-                                                    useRootNavigator: false,
-                                                  )
+                                                    showCreateClassEventDialog(
+                                                      context,
+                                                      ref,
+                                                      initialEvent: schedule,
+                                                      useRootNavigator: false,
+                                                    )
                                               : null,
                                         ),
                                         IconButton(
@@ -468,8 +471,9 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                                           ),
                                           onPressed: isBusy
                                               ? null
-                                              : () =>
-                                                  _duplicateSchedule(schedule),
+                                              : () => _duplicateSchedule(
+                                                  schedule,
+                                                ),
                                         ),
                                         IconButton(
                                           tooltip: l10n.actionDelete,
@@ -480,8 +484,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                                           ),
                                           onPressed: isBusy
                                               ? null
-                                              : () =>
-                                                  _deleteSchedule(schedule),
+                                              : () => _deleteSchedule(schedule),
                                         ),
                                       ],
                                     ),
@@ -629,10 +632,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
       if (mounted) setState(() => _isScheduleActionLoading = true);
       final businessId = ref.read(currentBusinessIdProvider);
       final repo = ref.read(classEventsRepositoryProvider);
-      await repo.deleteEvent(
-        businessId: businessId,
-        classEventId: schedule.id,
-      );
+      await repo.deleteEvent(businessId: businessId, classEventId: schedule.id);
       _invalidateScheduleProviders(widget.initial!.id);
     } catch (error) {
       if (!mounted) return;
@@ -971,9 +971,9 @@ class _ClassTypeLocationCheckboxTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CheckboxListTile(
+    return SwitchListTile.adaptive(
       value: isSelected,
-      onChanged: enabled ? (value) => onChanged(value ?? false) : null,
+      onChanged: enabled ? onChanged : null,
       title: Text(location.name),
       subtitle: location.address != null
           ? Text(
@@ -1236,7 +1236,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
               ),
 
             // ── staff (se multiplo) ──
-            if (!isEditMode ? staff.length > 1 : staffDropdownItems.length > 1) ...[
+            if (!isEditMode
+                ? staff.length > 1
+                : staffDropdownItems.length > 1) ...[
               DropdownButtonFormField<int>(
                 value: _staffId,
                 decoration: InputDecoration(
@@ -1273,9 +1275,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                 padding: const EdgeInsets.only(bottom: gap),
                 child: Text(
                   l10n.classEventsStaffInactiveChangeRequired,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colorScheme.error,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: colorScheme.error),
                 ),
               ),
             if (!isEditMode && staff.isEmpty)
@@ -1386,11 +1388,13 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                 ),
               ],
             ),
-            SwitchListTile(
+            SwitchListTile.adaptive(
               contentPadding: const EdgeInsets.symmetric(horizontal: 4),
               title: Text(l10n.classEventsFieldWaitlistEnabled),
               value: _waitlistEnabled,
-              onChanged: isLoading ? null : (v) => setState(() => _waitlistEnabled = v),
+              onChanged: isLoading
+                  ? null
+                  : (v) => setState(() => _waitlistEnabled = v),
             ),
 
             if (!isEditMode) ...[
@@ -1671,10 +1675,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     try {
       final businessId = ref.read(currentBusinessIdProvider);
       final repo = ref.read(classEventsRepositoryProvider);
-      await repo.deleteEvent(
-        businessId: businessId,
-        classEventId: event.id,
-      );
+      await repo.deleteEvent(businessId: businessId, classEventId: event.id);
       ref.invalidate(classEventsProvider);
       ref.invalidate(classEventsForRangeProvider);
       ref.invalidate(classEventsForCurrentLocationDayProvider);

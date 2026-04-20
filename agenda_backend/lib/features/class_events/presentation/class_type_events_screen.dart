@@ -54,8 +54,7 @@ class ClassTypeEventsScreen extends ConsumerStatefulWidget {
       _ClassTypeEventsScreenState();
 }
 
-class _ClassTypeEventsScreenState
-    extends ConsumerState<ClassTypeEventsScreen> {
+class _ClassTypeEventsScreenState extends ConsumerState<ClassTypeEventsScreen> {
   bool _showExpired = false;
 
   @override
@@ -75,12 +74,8 @@ class _ClassTypeEventsScreenState
     final locations = ref.watch(locationsProvider);
     final allStaff = ref.watch(allStaffProvider).value ?? const <Staff>[];
 
-    final locationNameById = {
-      for (final l in locations) l.id: l.name,
-    };
-    final staffNameById = {
-      for (final s in allStaff) s.id: s.displayName,
-    };
+    final locationNameById = {for (final l in locations) l.id: l.name};
+    final staffNameById = {for (final s in allStaff) s.id: s.displayName};
 
     final upcoming = upcomingAsync.value ?? const <ClassEvent>[];
     final all = allAsync.value ?? const <ClassEvent>[];
@@ -217,7 +212,7 @@ class _ClassTypeEventsScreenState
 
           // Toggle past events
           if (expired.isNotEmpty)
-            SwitchListTile(
+            SwitchListTile.adaptive(
               dense: true,
               contentPadding: EdgeInsets.zero,
               title: Text(
@@ -249,9 +244,7 @@ class _ClassTypeEventsScreenState
           else
             Container(
               decoration: BoxDecoration(
-                border: Border.all(
-                  color: colorScheme.outline.withOpacity(0.3),
-                ),
+                border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: ClipRRect(
@@ -296,8 +289,9 @@ class _ClassTypeEventsScreenState
     }
     try {
       final allTypes = await ref.read(classTypesProvider.future);
-      final existingNames =
-          allTypes.map((t) => t.name.trim().toLowerCase()).toSet();
+      final existingNames = allTypes
+          .map((t) => t.name.trim().toLowerCase())
+          .toSet();
       final baseName =
           '${widget.classType.name.trim()} ${l10n.classTypesCloneSuffix}';
       var candidateName = baseName;
@@ -518,7 +512,7 @@ class _ClassTypeEventsSummaryFormState
             ),
             const SizedBox(height: 12),
             if (expired.isNotEmpty)
-              SwitchListTile(
+              SwitchListTile.adaptive(
                 dense: true,
                 contentPadding: EdgeInsets.zero,
                 title: Text(
@@ -548,7 +542,9 @@ class _ClassTypeEventsSummaryFormState
             else
               Container(
                 decoration: BoxDecoration(
-                  border: Border.all(color: colorScheme.outline.withOpacity(0.3)),
+                  border: Border.all(
+                    color: colorScheme.outline.withOpacity(0.3),
+                  ),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: ClipRRect(
@@ -640,8 +636,7 @@ class _EventTile extends StatelessWidget {
         TenantTimeService.fromUtcToTenant(event.endsAtUtc, timezone);
     final locationName =
         locationNameById[event.locationId] ?? '#${event.locationId}';
-    final staffName =
-        staffNameById[event.staffId] ?? '#${event.staffId}';
+    final staffName = staffNameById[event.staffId] ?? '#${event.staffId}';
     final nowUtc = DateTime.now().toUtc();
     final isPast = event.endsAtUtc.isBefore(nowUtc);
 
@@ -659,9 +654,7 @@ class _EventTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
-          isPast
-              ? Icons.history_outlined
-              : Icons.calendar_today_outlined,
+          isPast ? Icons.history_outlined : Icons.calendar_today_outlined,
           size: 16,
           color: isPast
               ? colorScheme.onSurfaceVariant
@@ -678,9 +671,9 @@ class _EventTile extends StatelessWidget {
       ),
       subtitle: Text(
         '$locationName • $staffName',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: colorScheme.onSurfaceVariant,
-        ),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
       ),
       trailing: canManage && !isPast
           ? IconButton(

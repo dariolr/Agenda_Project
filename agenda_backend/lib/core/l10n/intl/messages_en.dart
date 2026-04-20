@@ -276,6 +276,10 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("Color intensity"),
     "agendaDisplaySettingsCardTextZoomLabel":
         MessageLookupByLibrary.simpleMessage("Card text zoom"),
+    "agendaDisplaySettingsExpandStaffColumnsOnOverlapLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Resize staff columns based on overlapping appointments",
+        ),
     "agendaDisplaySettingsExtraMinutesBandIntensityLabel":
         MessageLookupByLibrary.simpleMessage("Additional extra-band intensity"),
     "agendaDisplaySettingsHoverUnrelatedDimIntensityLabel":
@@ -423,6 +427,13 @@ class MessageLookup extends MessageLookupByLibrary {
     "blockDialogTitleEdit": MessageLookupByLibrary.simpleMessage("Edit block"),
     "blockDialogTitleNew": MessageLookupByLibrary.simpleMessage("New block"),
     "blockEndTime": MessageLookupByLibrary.simpleMessage("End time"),
+    "blockPromemoriaDialogTitleEdit": MessageLookupByLibrary.simpleMessage(
+      "Edit reminder",
+    ),
+    "blockPromemoriaDialogTitleNew": MessageLookupByLibrary.simpleMessage(
+      "New reminder",
+    ),
+    "blockPromemoriaLabel": MessageLookupByLibrary.simpleMessage("Reminder"),
     "blockReason": MessageLookupByLibrary.simpleMessage("Reason (optional)"),
     "blockReasonHint": MessageLookupByLibrary.simpleMessage(
       "E.g. Meeting, Break, etc.",
@@ -550,6 +561,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotificationsFieldLocation": MessageLookupByLibrary.simpleMessage(
       "Location",
     ),
+    "bookingNotificationsFieldProviderUsed":
+        MessageLookupByLibrary.simpleMessage("Provider used"),
     "bookingNotificationsFieldRecipient": MessageLookupByLibrary.simpleMessage(
       "Recipient",
     ),
@@ -558,6 +571,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "bookingNotificationsFieldType": MessageLookupByLibrary.simpleMessage(
       "Type",
+    ),
+    "bookingNotificationsFilterProvider": MessageLookupByLibrary.simpleMessage(
+      "Provider",
     ),
     "bookingNotificationsFilterStatus": MessageLookupByLibrary.simpleMessage(
       "Status",
@@ -573,6 +589,17 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "bookingNotificationsNotAvailable": MessageLookupByLibrary.simpleMessage(
       "N/A",
+    ),
+    "bookingNotificationsProviderBlockedDemo":
+        MessageLookupByLibrary.simpleMessage("Blocked demo"),
+    "bookingNotificationsProviderBrevo": MessageLookupByLibrary.simpleMessage(
+      "Brevo",
+    ),
+    "bookingNotificationsProviderMailgun": MessageLookupByLibrary.simpleMessage(
+      "Mailgun",
+    ),
+    "bookingNotificationsProviderSmtp": MessageLookupByLibrary.simpleMessage(
+      "SMTP",
     ),
     "bookingNotificationsSearchHint": MessageLookupByLibrary.simpleMessage(
       "Client, recipient, subject",

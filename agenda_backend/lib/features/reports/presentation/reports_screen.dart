@@ -488,24 +488,19 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
               return Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: Row(
-                  children: [
-                    Switch(
-                      value: filterState.useFullPeriod,
-                      onChanged: (value) {
-                        final notifier = ref.read(
-                          reportsFilterProvider.notifier,
-                        );
-                        notifier.setFullPeriod(value);
-                        notifier.applyPreset(filterState.selectedPreset);
-                      },
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      l10n.reportsFullPeriodToggle,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                  ],
+                child: SwitchListTile.adaptive(
+                  contentPadding: EdgeInsets.zero,
+                  dense: true,
+                  title: Text(
+                    l10n.reportsFullPeriodToggle,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                  value: filterState.useFullPeriod,
+                  onChanged: (value) {
+                    final notifier = ref.read(reportsFilterProvider.notifier);
+                    notifier.setFullPeriod(value);
+                    notifier.applyPreset(filterState.selectedPreset);
+                  },
                 ),
               );
             },
@@ -2615,7 +2610,7 @@ class _MultiSelectDialogState<T> extends State<_MultiSelectDialog<T>> {
             Expanded(
               child: ListView(
                 children: widget.items.entries.map((entry) {
-                  return CheckboxListTile(
+                  return SwitchListTile.adaptive(
                     title: Text(entry.value),
                     value: _selected.contains(entry.key),
                     onChanged: (checked) {

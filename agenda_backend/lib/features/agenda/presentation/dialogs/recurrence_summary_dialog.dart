@@ -611,7 +611,10 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
         )
         .length;
     final excludedUnavailableCount = widget.preview.dates
-        .where((d) => d.isUnavailable && _excludedIndices.contains(d.recurrenceIndex))
+        .where(
+          (d) =>
+              d.isUnavailable && _excludedIndices.contains(d.recurrenceIndex),
+        )
         .length;
     final hasExcludedConflictOnly = excludedConflictOnlyCount > 0;
     final hasExcludedUnavailable = excludedUnavailableCount > 0;
@@ -724,7 +727,7 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
                   final isUnavailable = date.isUnavailable;
                   final hasBlockingIssue = hasConflict || isUnavailable;
 
-                  return CheckboxListTile(
+                  return SwitchListTile.adaptive(
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     controlAffinity: ListTileControlAffinity.leading,
