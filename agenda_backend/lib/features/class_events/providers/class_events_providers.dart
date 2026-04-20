@@ -40,13 +40,8 @@ class ClassEventsRangeRequest {
   }
 
   @override
-  int get hashCode => Object.hash(
-    businessId,
-    fromUtc,
-    toUtc,
-    locationId,
-    classTypeId,
-  );
+  int get hashCode =>
+      Object.hash(businessId, fromUtc, toUtc, locationId, classTypeId);
 }
 
 final classEventsRepositoryProvider = Provider<ClassEventsRepository>((ref) {
@@ -147,78 +142,79 @@ final classEventsProvider = FutureProvider<List<ClassEvent>>((ref) async {
   );
 });
 
-final classEventsForCurrentLocationDayProvider = FutureProvider<List<ClassEvent>>((
-  ref,
-) async {
-  final businessId = ref.watch(currentBusinessIdProvider);
-  final location = ref.watch(currentLocationProvider);
-  final date = ref.watch(agendaDateProvider);
-  final timezone = ref.watch(effectiveTenantTimezoneProvider);
+final classEventsForCurrentLocationDayProvider =
+    FutureProvider<List<ClassEvent>>((ref) async {
+      final businessId = ref.watch(currentBusinessIdProvider);
+      final location = ref.watch(currentLocationProvider);
+      final date = ref.watch(agendaDateProvider);
+      final timezone = ref.watch(effectiveTenantTimezoneProvider);
 
-  if (businessId <= 0 || location.id <= 0) return const [];
+      if (businessId <= 0 || location.id <= 0) return const [];
 
-  final fromLocal = DateTime(date.year, date.month, date.day);
-  final toLocal = fromLocal.add(const Duration(days: 1));
+      final fromLocal = DateTime(date.year, date.month, date.day);
+      final toLocal = fromLocal.add(const Duration(days: 1));
 
-  return ref.watch(
-    classEventsForRangeProvider(
-      ClassEventsRangeRequest(
-        businessId: businessId,
-        fromUtc: TenantTimeService.tenantLocalToUtc(fromLocal, timezone),
-        toUtc: TenantTimeService.tenantLocalToUtc(toLocal, timezone),
-        locationId: location.id,
-      ),
-    ).future,
-  );
-});
+      return ref.watch(
+        classEventsForRangeProvider(
+          ClassEventsRangeRequest(
+            businessId: businessId,
+            fromUtc: TenantTimeService.tenantLocalToUtc(fromLocal, timezone),
+            toUtc: TenantTimeService.tenantLocalToUtc(toLocal, timezone),
+            locationId: location.id,
+          ),
+        ).future,
+      );
+    });
 
-final classEventsForLocationDayProvider = FutureProvider.family<
-  List<ClassEvent>,
-  ({DateTime day, int locationId, int businessId})
->((ref, params) async {
-  if (params.businessId <= 0 || params.locationId <= 0) return const [];
+final classEventsForLocationDayProvider =
+    FutureProvider.family<
+      List<ClassEvent>,
+      ({DateTime day, int locationId, int businessId})
+    >((ref, params) async {
+      if (params.businessId <= 0 || params.locationId <= 0) return const [];
 
-  final timezone = ref.watch(effectiveTenantTimezoneProvider);
-  final day = DateTime(params.day.year, params.day.month, params.day.day);
-  final nextDay = day.add(const Duration(days: 1));
+      final timezone = ref.watch(effectiveTenantTimezoneProvider);
+      final day = DateTime(params.day.year, params.day.month, params.day.day);
+      final nextDay = day.add(const Duration(days: 1));
 
-  return ref.watch(
-    classEventsForRangeProvider(
-      ClassEventsRangeRequest(
-        businessId: params.businessId,
-        fromUtc: TenantTimeService.tenantLocalToUtc(day, timezone),
-        toUtc: TenantTimeService.tenantLocalToUtc(nextDay, timezone),
-        locationId: params.locationId,
-      ),
-    ).future,
-  );
-});
+      return ref.watch(
+        classEventsForRangeProvider(
+          ClassEventsRangeRequest(
+            businessId: params.businessId,
+            fromUtc: TenantTimeService.tenantLocalToUtc(day, timezone),
+            toUtc: TenantTimeService.tenantLocalToUtc(nextDay, timezone),
+            locationId: params.locationId,
+          ),
+        ).future,
+      );
+    });
 
-final classEventsForLocationWeekProvider = FutureProvider.family<
-  List<ClassEvent>,
-  ({DateTime weekStart, int locationId, int businessId})
->((ref, params) async {
-  if (params.businessId <= 0 || params.locationId <= 0) return const [];
+final classEventsForLocationWeekProvider =
+    FutureProvider.family<
+      List<ClassEvent>,
+      ({DateTime weekStart, int locationId, int businessId})
+    >((ref, params) async {
+      if (params.businessId <= 0 || params.locationId <= 0) return const [];
 
-  final timezone = ref.watch(effectiveTenantTimezoneProvider);
-  final weekStart = DateTime(
-    params.weekStart.year,
-    params.weekStart.month,
-    params.weekStart.day,
-  );
-  final weekEnd = weekStart.add(const Duration(days: 7));
+      final timezone = ref.watch(effectiveTenantTimezoneProvider);
+      final weekStart = DateTime(
+        params.weekStart.year,
+        params.weekStart.month,
+        params.weekStart.day,
+      );
+      final weekEnd = weekStart.add(const Duration(days: 7));
 
-  return ref.watch(
-    classEventsForRangeProvider(
-      ClassEventsRangeRequest(
-        businessId: params.businessId,
-        fromUtc: TenantTimeService.tenantLocalToUtc(weekStart, timezone),
-        toUtc: TenantTimeService.tenantLocalToUtc(weekEnd, timezone),
-        locationId: params.locationId,
-      ),
-    ).future,
-  );
-});
+      return ref.watch(
+        classEventsForRangeProvider(
+          ClassEventsRangeRequest(
+            businessId: params.businessId,
+            fromUtc: TenantTimeService.tenantLocalToUtc(weekStart, timezone),
+            toUtc: TenantTimeService.tenantLocalToUtc(weekEnd, timezone),
+            locationId: params.locationId,
+          ),
+        ).future,
+      );
+    });
 
 final upcomingClassEventsByTypeProvider =
     FutureProvider.family<List<ClassEvent>, int>((ref, classTypeId) async {
@@ -311,7 +307,12 @@ class ClassEventBookingController extends AsyncNotifier<void> {
   @override
   Future<void> build() async {}
 
-  Future<void> book({required int classEventId, int? customerId}) async {
+  Future<void> book({
+    required int classEventId,
+    int? customerId,
+    String? targetStatus,
+    int? classTypeId,
+  }) async {
     state = const AsyncLoading();
     final businessId = ref.read(currentBusinessIdProvider);
     final repo = ref.read(classEventsRepositoryProvider);
@@ -320,6 +321,7 @@ class ClassEventBookingController extends AsyncNotifier<void> {
         businessId: businessId,
         classEventId: classEventId,
         customerId: customerId,
+        targetStatus: targetStatus,
       );
       state = const AsyncData(null);
     } catch (error, stackTrace) {
@@ -330,9 +332,62 @@ class ClassEventBookingController extends AsyncNotifier<void> {
     ref.invalidate(classEventsForCurrentLocationDayProvider);
     ref.invalidate(classEventDetailProvider(classEventId));
     ref.invalidate(classEventParticipantsProvider(classEventId));
+    if (classTypeId != null && classTypeId > 0) {
+      ref.invalidate(allClassEventsByTypeProvider(classTypeId));
+      ref.invalidate(upcomingClassEventsByTypeProvider(classTypeId));
+      ref.invalidate(upcomingClassEventsCountByTypeProvider(classTypeId));
+    }
   }
 
-  Future<void> cancel({required int classEventId, int? customerId}) async {
+  void reset() {
+    state = const AsyncData(null);
+  }
+
+  Future<void> demoteAndPromoteFirst({
+    required int classEventId,
+    required int customerId,
+    required int? promoteCustomerId,
+    int? classTypeId,
+  }) async {
+    state = const AsyncLoading();
+    final businessId = ref.read(currentBusinessIdProvider);
+    final repo = ref.read(classEventsRepositoryProvider);
+    try {
+      await repo.book(
+        businessId: businessId,
+        classEventId: classEventId,
+        customerId: customerId,
+        targetStatus: 'waitlisted',
+      );
+      if (promoteCustomerId != null && promoteCustomerId != customerId) {
+        await repo.book(
+          businessId: businessId,
+          classEventId: classEventId,
+          customerId: promoteCustomerId,
+          targetStatus: 'confirmed',
+        );
+      }
+      state = const AsyncData(null);
+    } catch (error, stackTrace) {
+      state = AsyncError(error, stackTrace);
+    }
+    ref.invalidate(classEventsProvider);
+    ref.invalidate(classEventsForRangeProvider);
+    ref.invalidate(classEventsForCurrentLocationDayProvider);
+    ref.invalidate(classEventDetailProvider(classEventId));
+    ref.invalidate(classEventParticipantsProvider(classEventId));
+    if (classTypeId != null && classTypeId > 0) {
+      ref.invalidate(allClassEventsByTypeProvider(classTypeId));
+      ref.invalidate(upcomingClassEventsByTypeProvider(classTypeId));
+      ref.invalidate(upcomingClassEventsCountByTypeProvider(classTypeId));
+    }
+  }
+
+  Future<void> cancel({
+    required int classEventId,
+    int? customerId,
+    int? classTypeId,
+  }) async {
     state = const AsyncLoading();
     final businessId = ref.read(currentBusinessIdProvider);
     final repo = ref.read(classEventsRepositoryProvider);
@@ -351,6 +406,11 @@ class ClassEventBookingController extends AsyncNotifier<void> {
     ref.invalidate(classEventsForCurrentLocationDayProvider);
     ref.invalidate(classEventDetailProvider(classEventId));
     ref.invalidate(classEventParticipantsProvider(classEventId));
+    if (classTypeId != null && classTypeId > 0) {
+      ref.invalidate(allClassEventsByTypeProvider(classTypeId));
+      ref.invalidate(upcomingClassEventsByTypeProvider(classTypeId));
+      ref.invalidate(upcomingClassEventsCountByTypeProvider(classTypeId));
+    }
   }
 }
 

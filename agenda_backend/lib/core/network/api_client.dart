@@ -1220,10 +1220,15 @@ class ApiClient {
     required int businessId,
     required int classEventId,
     int? customerId,
+    String? targetStatus,
   }) async {
     final response = await post(
       ApiConfig.classEventBook(businessId, classEventId),
-      data: {if (customerId != null) 'customer_id': customerId},
+      data: {
+        if (customerId != null) 'customer_id': customerId,
+        if (targetStatus != null && targetStatus.isNotEmpty)
+          'target_status': targetStatus,
+      },
     );
     final data = response['data'];
     final payload = data is Map<String, dynamic> ? data : response;

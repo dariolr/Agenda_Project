@@ -406,20 +406,41 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     required ColorScheme colorScheme,
   }) {
     final isSelected = _appointmentTypeFilter == option;
-    return FilterChip(
-      label: Text(label),
-      selected: isSelected,
-      selectedColor: colorScheme.primary.withOpacity(0.16),
-      checkmarkColor: colorScheme.primary,
-      side: BorderSide(
-        color: isSelected
-            ? colorScheme.primary.withOpacity(0.4)
-            : colorScheme.outlineVariant,
-      ),
-      onSelected: (_) {
+    final labelStyle =
+        Theme.of(context).chipTheme.labelStyle ??
+        Theme.of(context).textTheme.labelLarge ??
+        const TextStyle(fontSize: 14);
+    return InkWell(
+      onTap: () {
         if (_appointmentTypeFilter == option) return;
         setState(() => _appointmentTypeFilter = option);
       },
+      borderRadius: BorderRadius.circular(8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? colorScheme.primary.withOpacity(0.16)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected
+                ? colorScheme.primary.withOpacity(0.4)
+                : colorScheme.outlineVariant,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isSelected) ...[
+              Icon(Icons.check, size: 16, color: colorScheme.primary),
+              const SizedBox(width: 4),
+            ],
+            Text(label, style: labelStyle),
+          ],
+        ),
+      ),
     );
   }
 

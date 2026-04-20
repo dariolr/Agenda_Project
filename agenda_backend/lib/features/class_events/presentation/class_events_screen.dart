@@ -4,10 +4,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '/app/widgets/client_circle_avatar.dart';
+import '/app/widgets/staff_circle_avatar.dart';
 import '/app/providers/form_factor_provider.dart';
 import '/core/l10n/date_time_formats.dart';
 import '/core/l10n/l10_extension.dart';
 import '/core/models/appointment.dart';
+import '/core/models/class_booking.dart';
 import '/core/models/class_event.dart';
 import '/core/models/class_type.dart';
 import '/core/models/location.dart';
@@ -18,6 +21,7 @@ import '/core/services/tenant_time_service.dart';
 import '/core/utils/color_utils.dart';
 import '/core/widgets/app_bottom_sheet.dart';
 import '/core/widgets/app_buttons.dart';
+import '/core/widgets/app_dialogs.dart';
 import '/core/widgets/app_form.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/domain/config/layout_config.dart';
@@ -32,6 +36,9 @@ import '/features/agenda/providers/location_providers.dart';
 import '/features/agenda/providers/staff_slot_availability_provider.dart';
 import '/features/agenda/providers/tenant_time_provider.dart';
 import '/features/business/providers/location_closures_provider.dart';
+import '/features/clients/domain/clients.dart';
+import '/features/clients/presentation/dialogs/client_edit_dialog.dart';
+import '/features/clients/providers/clients_providers.dart';
 import '/features/staff/providers/availability_exceptions_provider.dart';
 import '/features/staff/providers/staff_planning_provider.dart';
 import '/features/staff/providers/staff_providers.dart';
@@ -1005,12 +1012,65 @@ class _CreateClassForm extends ConsumerStatefulWidget {
   ConsumerState<_CreateClassForm> createState() => _CreateClassFormState();
 }
 
+class _ClassEventFormSnapshot {
+  const _ClassEventFormSnapshot({
+    required this.classTypeId,
+    required this.locationId,
+    required this.staffId,
+    required this.date,
+    required this.startTimeMinutes,
+    required this.endTimeMinutes,
+    required this.capacity,
+    required this.price,
+    required this.waitlistEnabled,
+    required this.recurrenceFrequency,
+    required this.recurrenceInterval,
+    required this.recurrenceMaxOccurrences,
+    required this.recurrenceEndDateIso,
+    required this.recurrenceConflictStrategy,
+  });
+
+  final int? classTypeId;
+  final int? locationId;
+  final int? staffId;
+  final DateTime date;
+  final int startTimeMinutes;
+  final int endTimeMinutes;
+  final String capacity;
+  final String price;
+  final bool waitlistEnabled;
+  final RecurrenceFrequency? recurrenceFrequency;
+  final int? recurrenceInterval;
+  final int? recurrenceMaxOccurrences;
+  final String? recurrenceEndDateIso;
+  final ConflictStrategy? recurrenceConflictStrategy;
+
+  bool sameAs(_ClassEventFormSnapshot other) {
+    return classTypeId == other.classTypeId &&
+        locationId == other.locationId &&
+        staffId == other.staffId &&
+        date == other.date &&
+        startTimeMinutes == other.startTimeMinutes &&
+        endTimeMinutes == other.endTimeMinutes &&
+        capacity == other.capacity &&
+        price == other.price &&
+        waitlistEnabled == other.waitlistEnabled &&
+        recurrenceFrequency == other.recurrenceFrequency &&
+        recurrenceInterval == other.recurrenceInterval &&
+        recurrenceMaxOccurrences == other.recurrenceMaxOccurrences &&
+        recurrenceEndDateIso == other.recurrenceEndDateIso &&
+        recurrenceConflictStrategy == other.recurrenceConflictStrategy;
+  }
+}
+
 class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   static const int _timeStepMinutes = 15;
   final _formKey = GlobalKey<FormState>();
   final _capacityController = TextEditingController();
   final _priceController = TextEditingController();
   bool _didInitializeDependencies = false;
+  bool _initialSnapshotCaptured = false;
+  _ClassEventFormSnapshot? _initialSnapshot;
 
   ClassEvent? _editingEvent;
   RecurrenceConfig? _recurrenceConfig;
@@ -1045,6 +1105,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     // Reset the create controller in case a previous operation left it in a
     // stuck AsyncLoading state (e.g. network hang while the form was closed).
     ref.invalidate(classEventCreateControllerProvider);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) ref.read(classEventBookingControllerProvider.notifier).reset();
+    });
     if (_editingEvent != null) {
       _applyEventToForm(_editingEvent!);
     } else {
@@ -1068,6 +1131,12 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final isLoading = createState.isLoading;
     final l10n = context.l10n;
     final isEditMode = _editingEvent != null;
+    final classEventId = _editingEvent?.id;
+    final participantsAsync = classEventId == null
+        ? const AsyncData<List<ClassBooking>>(<ClassBooking>[])
+        : ref.watch(classEventParticipantsProvider(classEventId));
+    final bookingMutationState = ref.watch(classEventBookingControllerProvider);
+    final isParticipantsActionLoading = bookingMutationState.isLoading;
     final businessId = ref.watch(currentBusinessIdProvider);
 
     final classTypes = classTypesAsync.value ?? const <ClassType>[];
@@ -1111,6 +1180,10 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       selectableStaffIds: selectableStaffIds,
       isEditMode: isEditMode,
       editingStaffId: editingStaffId,
+    );
+    _captureInitialSnapshotIfNeeded(
+      classTypesAsync: classTypesAsync,
+      staffAsync: staffAsync,
     );
     final inactiveAssignedName = inactiveAssignedStaffId == null
         ? null
@@ -1159,263 +1232,267 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       name: ref.watch(effectiveCurrencyProvider),
     ).currencySymbol;
 
-    return AppFormScaffold(
-      title: Text(
-        isEditMode ? l10n.classEventsEditTitle : l10n.classEventsCreateTitle,
-      ),
-      isLoading: isLoading,
-      mobileExpandToAvailableHeight: true,
-      content: Form(
-        autovalidateMode: AutovalidateMode.onUserInteraction,
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // ── stato caricamento / errori ──
-            if (classTypesAsync.isLoading || staffAsync.isLoading)
-              const Padding(
-                padding: EdgeInsets.only(bottom: gap),
-                child: LinearProgressIndicator(),
-              ),
-            if (classTypesAsync.hasError || staffAsync.hasError)
-              Padding(
-                padding: const EdgeInsets.only(bottom: gap),
-                child: Text(
-                  l10n.errorTitle,
-                  style: TextStyle(color: colorScheme.error),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) {
+          return;
+        }
+        await _handleClose();
+      },
+      child: AppFormScaffold(
+        title: Text(
+          isEditMode ? l10n.classEventsEditTitle : l10n.classEventsCreateTitle,
+        ),
+        isLoading: isLoading,
+        mobileExpandToAvailableHeight: true,
+        content: Form(
+          autovalidateMode: AutovalidateMode.onUserInteraction,
+          key: _formKey,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // ── stato caricamento / errori ──
+              if (classTypesAsync.isLoading || staffAsync.isLoading)
+                const Padding(
+                  padding: EdgeInsets.only(bottom: gap),
+                  child: LinearProgressIndicator(),
                 ),
-              ),
-
-            // ── etichetta modifica ──
-            if (isEditMode) ...[
-              Text(
-                l10n.classEventsEditModeLabel,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: gap),
-            ],
-
-            // ── sede (solo creazione, se multipla) ──
-            if (!isEditMode && filteredLocations.length > 1) ...[
-              DropdownButtonFormField<int>(
-                value: _locationId,
-                decoration: InputDecoration(
-                  labelText: l10n.classEventsFieldLocation,
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.place_outlined),
-                ),
-                items: filteredLocations
-                    .map(
-                      (location) => DropdownMenuItem<int>(
-                        value: location.id,
-                        child: Text(location.name),
-                      ),
-                    )
-                    .toList(),
-                onChanged: isLoading
-                    ? null
-                    : (value) => setState(() {
-                        _locationId = value;
-                        _staffId = null;
-                      }),
-                validator: (value) =>
-                    value == null ? l10n.classEventsValidationRequired : null,
-              ),
-              const SizedBox(height: gap),
-            ],
-            if (filteredLocations.isEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: gap),
-                child: Text(
-                  l10n.classEventsNoLocationsForClassType,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-
-            // ── staff (se multiplo) ──
-            if (!isEditMode
-                ? staff.length > 1
-                : staffDropdownItems.length > 1) ...[
-              DropdownButtonFormField<int>(
-                value: _staffId,
-                decoration: InputDecoration(
-                  labelText: l10n.classEventsFieldStaff,
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.person_outline),
-                ),
-                items: staffDropdownItems
-                    .map(
-                      (item) => DropdownMenuItem<int>(
-                        value: item.id,
-                        child: Text(item.label),
-                      ),
-                    )
-                    .toList(),
-                onChanged: isLoading
-                    ? null
-                    : (value) => setState(() => _staffId = value),
-                validator: (value) {
-                  if (value == null) return l10n.classEventsValidationRequired;
-                  if (isEditMode &&
-                      editingStaffId != null &&
-                      hasInactiveAssignedOption &&
-                      value == editingStaffId) {
-                    return l10n.classEventsStaffInactiveChangeRequired;
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: gap),
-            ],
-            if (requiresStaffReplacement)
-              Padding(
-                padding: const EdgeInsets.only(bottom: gap),
-                child: Text(
-                  l10n.classEventsStaffInactiveChangeRequired,
-                  style: Theme.of(
-                    context,
-                  ).textTheme.bodySmall?.copyWith(color: colorScheme.error),
-                ),
-              ),
-            if (!isEditMode && staff.isEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: gap),
-                child: Text(
-                  l10n.classEventsNoStaffForLocation,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-            if (classTypes.isEmpty)
-              Padding(
-                padding: const EdgeInsets.only(bottom: gap),
-                child: Text(
-                  l10n.classEventsNoClassTypes,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
-              ),
-
-            // ══ Sezione: Quando ══
-            _PickerField(
-              label: l10n.classEventsFieldDate,
-              value: _formatDate(_date),
-              icon: Icons.calendar_today_outlined,
-              onTap: isLoading ? null : _pickDate,
-            ),
-            const SizedBox(height: gap),
-            Row(
-              children: [
-                Expanded(
-                  child: _ScheduleTimeField(
-                    label: l10n.classEventsFieldStartTime,
-                    time: _startTime,
-                    onTap: isLoading ? null : () => _pickTime(isStart: true),
+              if (classTypesAsync.hasError || staffAsync.hasError)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: gap),
+                  child: Text(
+                    l10n.errorTitle,
+                    style: TextStyle(color: colorScheme.error),
                   ),
                 ),
-                const SizedBox(width: gap),
-                Expanded(
-                  child: _ScheduleTimeField(
-                    label: l10n.classEventsFieldEndTime,
-                    time: _endTime,
-                    onTap: isLoading ? null : () => _pickTime(isStart: false),
+
+              // ── etichetta modifica ──
+              if (isEditMode) ...[
+                Text(
+                  l10n.classEventsEditModeLabel,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: gap),
+              ],
+
+              // ── sede (solo creazione, se multipla) ──
+              if (!isEditMode && filteredLocations.length > 1) ...[
+                DropdownButtonFormField<int>(
+                  value: _locationId,
+                  decoration: InputDecoration(
+                    labelText: l10n.classEventsFieldLocation,
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.place_outlined),
+                  ),
+                  items: filteredLocations
+                      .map(
+                        (location) => DropdownMenuItem<int>(
+                          value: location.id,
+                          child: Text(location.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: isLoading
+                      ? null
+                      : (value) => setState(() {
+                          _locationId = value;
+                          _staffId = null;
+                        }),
+                  validator: (value) =>
+                      value == null ? l10n.classEventsValidationRequired : null,
+                ),
+                const SizedBox(height: gap),
+              ],
+              if (filteredLocations.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: gap),
+                  child: Text(
+                    l10n.classEventsNoLocationsForClassType,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+
+              // ── staff (se multiplo) ──
+              if (!isEditMode
+                  ? staff.length > 1
+                  : staffDropdownItems.length > 1) ...[
+                DropdownButtonFormField<int>(
+                  value: _staffId,
+                  decoration: InputDecoration(
+                    labelText: l10n.classEventsFieldStaff,
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.person_outline),
+                  ),
+                  items: staffDropdownItems
+                      .map(
+                        (item) => DropdownMenuItem<int>(
+                          value: item.id,
+                          child: Text(item.label),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: isLoading
+                      ? null
+                      : (value) => setState(() => _staffId = value),
+                  validator: (value) {
+                    if (value == null) {
+                      return l10n.classEventsValidationRequired;
+                    }
+                    if (isEditMode &&
+                        editingStaffId != null &&
+                        hasInactiveAssignedOption &&
+                        value == editingStaffId) {
+                      return l10n.classEventsStaffInactiveChangeRequired;
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: gap),
+              ],
+              if (requiresStaffReplacement)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: gap),
+                  child: Text(
+                    l10n.classEventsStaffInactiveChangeRequired,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: colorScheme.error),
+                  ),
+                ),
+              if (!isEditMode && staff.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: gap),
+                  child: Text(
+                    l10n.classEventsNoStaffForLocation,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+              if (classTypes.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: gap),
+                  child: Text(
+                    l10n.classEventsNoClassTypes,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
+                ),
+
+              // ══ Sezione: Quando ══
+              _PickerField(
+                label: l10n.classEventsFieldDate,
+                value: _formatDate(_date),
+                icon: Icons.calendar_today_outlined,
+                onTap: isLoading ? null : _pickDate,
+              ),
+              const SizedBox(height: gap),
+              Row(
+                children: [
+                  Expanded(
+                    child: _ScheduleTimeField(
+                      label: l10n.classEventsFieldStartTime,
+                      time: _startTime,
+                      onTap: isLoading ? null : () => _pickTime(isStart: true),
+                    ),
+                  ),
+                  const SizedBox(width: gap),
+                  Expanded(
+                    child: _ScheduleTimeField(
+                      label: l10n.classEventsFieldEndTime,
+                      time: _endTime,
+                      onTap: isLoading ? null : () => _pickTime(isStart: false),
+                    ),
+                  ),
+                ],
+              ),
+
+              if (hasAppointmentConflict) ...[
+                const SizedBox(height: gap),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: colorScheme.errorContainer.withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: colorScheme.error),
+                  ),
+                  child: Text(
+                    l10n.bookingUnavailableTimeWarningService,
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
               ],
-            ),
 
-            if (hasAppointmentConflict) ...[
-              const SizedBox(height: gap),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: colorScheme.errorContainer.withOpacity(0.5),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: colorScheme.error),
-                ),
-                child: Text(
-                  l10n.bookingUnavailableTimeWarningService,
-                  style: Theme.of(context).textTheme.bodySmall,
-                ),
+              // ══ Sezione: Dettagli ══
+              const SizedBox(height: sectionGap),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _capacityController,
+                      keyboardType: TextInputType.number,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      enabled: !isLoading,
+                      decoration: InputDecoration(
+                        labelText: l10n.classEventsFieldCapacity,
+                        border: const OutlineInputBorder(),
+                        prefixIcon: const Icon(Icons.people_outline),
+                      ),
+                      validator: (value) {
+                        final parsed = int.tryParse(value ?? '');
+                        if (parsed == null || parsed <= 0) {
+                          return l10n.classEventsValidationCapacityMin;
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: gap),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _priceController,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
+                      inputFormatters: [
+                        FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
+                      ],
+                      enabled: !isLoading,
+                      decoration: InputDecoration(
+                        labelText: l10n.classEventsFieldPrice,
+                        border: const OutlineInputBorder(),
+                        prefixText: '$currencySymbol ',
+                        hintText: l10n.classEventsFieldPriceFreeHint,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+              const SizedBox(height: sectionGap),
+              SwitchListTile.adaptive(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                title: Text(l10n.classEventsFieldWaitlistEnabled),
+                value: _waitlistEnabled,
+                onChanged: isLoading
+                    ? null
+                    : (v) => setState(() => _waitlistEnabled = v),
+              ),
 
-            // ══ Sezione: Dettagli ══
-            const SizedBox(height: sectionGap),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _capacityController,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    enabled: !isLoading,
-                    decoration: InputDecoration(
-                      labelText: l10n.classEventsFieldCapacity,
-                      border: const OutlineInputBorder(),
-                      prefixIcon: const Icon(Icons.people_outline),
-                    ),
-                    validator: (value) {
-                      final parsed = int.tryParse(value ?? '');
-                      if (parsed == null || parsed <= 0) {
-                        return l10n.classEventsValidationCapacityMin;
-                      }
-                      return null;
-                    },
-                  ),
-                ),
-                const SizedBox(width: gap),
-                Expanded(
-                  child: TextFormField(
-                    controller: _priceController,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    inputFormatters: [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9.,]')),
-                    ],
-                    enabled: !isLoading,
-                    decoration: InputDecoration(
-                      labelText: l10n.classEventsFieldPrice,
-                      border: const OutlineInputBorder(),
-                      prefixText: '$currencySymbol ',
-                      hintText: l10n.classEventsFieldPriceFreeHint,
-                    ),
-                  ),
+              if (isEditMode && classEventId != null) ...[
+                const SizedBox(height: sectionGap),
+                _buildParticipantsSection(
+                  classEventId: classEventId,
+                  participantsAsync: participantsAsync,
+                  isActionLoading: isParticipantsActionLoading,
                 ),
               ],
-            ),
-            SwitchListTile.adaptive(
-              contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-              title: Text(l10n.classEventsFieldWaitlistEnabled),
-              value: _waitlistEnabled,
-              onChanged: isLoading
-                  ? null
-                  : (v) => setState(() => _waitlistEnabled = v),
-            ),
 
-            if (!isEditMode) ...[
-              const SizedBox(height: gap),
-              RecurrencePicker(
-                startDate: DateTime(
-                  _date.year,
-                  _date.month,
-                  _date.day,
-                  _startTime.hour,
-                  _startTime.minute,
-                ),
-                title: l10n.classEventsRepeatSchedule,
-                initialConfig: _recurrenceConfig,
-                onChanged: (config) {
-                  setState(() => _recurrenceConfig = config);
-                },
-              ),
-              if (_recurrenceConfig != null) ...[
-                const SizedBox(height: 8),
-                RecurrencePreview(
+              if (!isEditMode) ...[
+                const SizedBox(height: gap),
+                RecurrencePicker(
                   startDate: DateTime(
                     _date.year,
                     _date.month,
@@ -1423,41 +1500,569 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                     _startTime.hour,
                     _startTime.minute,
                   ),
-                  config: _recurrenceConfig!,
+                  title: l10n.classEventsRepeatSchedule,
+                  initialConfig: _recurrenceConfig,
+                  onChanged: (config) {
+                    setState(() => _recurrenceConfig = config);
+                  },
                 ),
+                if (_recurrenceConfig != null) ...[
+                  const SizedBox(height: 8),
+                  RecurrencePreview(
+                    startDate: DateTime(
+                      _date.year,
+                      _date.month,
+                      _date.day,
+                      _startTime.hour,
+                      _startTime.minute,
+                    ),
+                    config: _recurrenceConfig!,
+                  ),
+                ],
               ],
             ],
-          ],
+          ),
         ),
+        actions: [
+          if (isEditMode)
+            AppAsyncDangerButton(
+              onPressed: _deleteCurrentEvent,
+              child: Text(l10n.actionDelete),
+            ),
+          AppOutlinedActionButton(
+            onPressed: isLoading ? null : _handleClose,
+            child: Text(l10n.actionCancel),
+          ),
+          AppAsyncFilledButton(
+            isLoading: isLoading,
+            onPressed:
+                _canSubmit(
+                  classTypes: classTypes,
+                  staff: staff,
+                  requiresStaffReplacement: requiresStaffReplacement,
+                )
+                ? _submit
+                : null,
+            child: Text(
+              !isEditMode && _recurrenceConfig != null
+                  ? l10n.actionPreview
+                  : l10n.actionSave,
+            ),
+          ),
+        ],
       ),
-      actions: [
-        if (isEditMode)
-          AppAsyncDangerButton(
-            onPressed: _deleteCurrentEvent,
-            child: Text(l10n.actionDelete),
+    );
+  }
+
+  Future<void> _handleClose() async {
+    final shouldProceed = await _confirmDiscardChangesIfNeeded();
+    if (!shouldProceed || !mounted) return;
+    Navigator.of(context).pop();
+  }
+
+  Future<bool> _confirmDiscardChangesIfNeeded() async {
+    if (!_hasUnsavedChanges) return true;
+    final l10n = context.l10n;
+    return showConfirmDialog(
+      context,
+      title: Text(l10n.discardChangesTitle),
+      content: Text(l10n.discardChangesMessage),
+      confirmLabel: l10n.actionDiscard,
+      cancelLabel: l10n.actionKeepEditing,
+      danger: true,
+    );
+  }
+
+  bool get _hasUnsavedChanges {
+    final initial = _initialSnapshot;
+    if (!_initialSnapshotCaptured || initial == null) return false;
+    return !_buildSnapshot().sameAs(initial);
+  }
+
+  void _captureInitialSnapshotIfNeeded({
+    required AsyncValue<List<ClassType>> classTypesAsync,
+    required AsyncValue<List<Staff>> staffAsync,
+  }) {
+    if (_initialSnapshotCaptured) return;
+    if (classTypesAsync.isLoading || staffAsync.isLoading) return;
+    _initialSnapshot = _buildSnapshot();
+    _initialSnapshotCaptured = true;
+  }
+
+  _ClassEventFormSnapshot _buildSnapshot() {
+    final recurrence = _recurrenceConfig;
+    final normalizedDate = DateTime(_date.year, _date.month, _date.day);
+    final recurrenceEndDate = recurrence?.endDate;
+    final recurrenceEndDateIso = recurrenceEndDate == null
+        ? null
+        : '${recurrenceEndDate.year.toString().padLeft(4, '0')}-${recurrenceEndDate.month.toString().padLeft(2, '0')}-${recurrenceEndDate.day.toString().padLeft(2, '0')}';
+    return _ClassEventFormSnapshot(
+      classTypeId: _classTypeId,
+      locationId: _locationId,
+      staffId: _staffId,
+      date: normalizedDate,
+      startTimeMinutes: _toDayMinutes(_startTime),
+      endTimeMinutes: _toDayMinutes(_endTime),
+      capacity: _capacityController.text.trim(),
+      price: _priceController.text.trim(),
+      waitlistEnabled: _waitlistEnabled,
+      recurrenceFrequency: recurrence?.frequency,
+      recurrenceInterval: recurrence?.intervalValue,
+      recurrenceMaxOccurrences: recurrence?.maxOccurrences,
+      recurrenceEndDateIso: recurrenceEndDateIso,
+      recurrenceConflictStrategy: recurrence?.conflictStrategy,
+    );
+  }
+
+  Widget _buildParticipantsSection({
+    required int classEventId,
+    required AsyncValue<List<ClassBooking>> participantsAsync,
+    required bool isActionLoading,
+  }) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isCompact = ref.watch(formFactorProvider) == AppFormFactor.mobile;
+    final participants = participantsAsync.value ?? const <ClassBooking>[];
+    final confirmed = participants.where((b) => b.isConfirmed).toList()
+      ..sort((a, b) => a.bookedAtUtc.compareTo(b.bookedAtUtc));
+    final waitlisted = participants.where((b) => b.isWaitlisted).toList()
+      ..sort(
+        (a, b) =>
+            (a.waitlistPosition ?? 9999).compareTo(b.waitlistPosition ?? 9999),
+      );
+    final activeCustomerIds = participants
+        .where((b) => b.isConfirmed || b.isWaitlisted)
+        .map((b) => b.customerId)
+        .toSet();
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        border: Border.all(color: colorScheme.outline.withOpacity(0.35)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.all(12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  l10n.classEventsParticipantsTitle,
+                  style: theme.textTheme.titleSmall,
+                ),
+              ),
+              AppFilledButton(
+                onPressed: isActionLoading
+                    ? null
+                    : () => _addClassBooking(
+                        classEventId: classEventId,
+                        targetStatus: 'confirmed',
+                        excludedCustomerIds: activeCustomerIds,
+                      ),
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                child: isCompact
+                    ? const Icon(Icons.add, size: 18)
+                    : Text('+ ${l10n.classEventsParticipantsAddConfirmed}'),
+              ),
+            ],
           ),
-        AppOutlinedActionButton(
-          onPressed: isLoading ? null : () => Navigator.of(context).pop(),
-          child: Text(l10n.actionCancel),
-        ),
-        AppAsyncFilledButton(
-          isLoading: isLoading,
-          onPressed:
-              _canSubmit(
-                classTypes: classTypes,
-                staff: staff,
-                requiresStaffReplacement: requiresStaffReplacement,
-              )
-              ? _submit
-              : null,
-          child: Text(
-            !isEditMode && _recurrenceConfig != null
-                ? l10n.actionPreview
-                : l10n.actionSave,
+          const SizedBox(height: 12),
+          if (participantsAsync.isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: LinearProgressIndicator(),
+            ),
+          if (participantsAsync.hasError)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                l10n.classEventsParticipantsLoadError,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: colorScheme.error,
+                ),
+              ),
+            ),
+          if (!participantsAsync.isLoading && !participantsAsync.hasError) ...[
+            _buildParticipantGroup(
+              title: l10n.classEventsParticipantsConfirmedTitle,
+              emptyLabel: l10n.classEventsParticipantsEmptyConfirmed,
+              bookings: confirmed,
+              isActionLoading: isActionLoading,
+              classEventId: classEventId,
+              showWaitlistActions: false,
+              showTitle: false,
+            ),
+            const SizedBox(height: 8),
+            const AppDivider(height: 1),
+            const SizedBox(height: 8),
+            _buildParticipantGroup(
+              title: l10n.classEventsParticipantsWaitlistTitle,
+              emptyLabel: _waitlistEnabled
+                  ? l10n.classEventsParticipantsEmptyWaitlist
+                  : l10n.classEventsWaitlistDisabledHint,
+              bookings: waitlisted,
+              isActionLoading: isActionLoading,
+              classEventId: classEventId,
+              showWaitlistActions: true,
+              headerAction: _waitlistEnabled
+                  ? AppFilledButton(
+                      onPressed: isActionLoading
+                          ? null
+                          : () => _addClassBooking(
+                              classEventId: classEventId,
+                              targetStatus: 'waitlisted',
+                              excludedCustomerIds: activeCustomerIds,
+                            ),
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      child: isCompact
+                          ? const Icon(Icons.add, size: 18)
+                          : Text('+ ${l10n.classEventsParticipantsAddWaitlist}'),
+                    )
+                  : null,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildParticipantGroup({
+    required String title,
+    required String emptyLabel,
+    required List<ClassBooking> bookings,
+    required bool isActionLoading,
+    required int classEventId,
+    required bool showWaitlistActions,
+    bool showTitle = true,
+    Widget? headerAction,
+  }) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final clientsById = ref.watch(clientsByIdProvider);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (showTitle) ...[
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  title,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ),
+              if (headerAction != null) headerAction,
+            ],
           ),
-        ),
+          const SizedBox(height: 6),
+        ],
+        if (bookings.isEmpty)
+          Text(emptyLabel, style: theme.textTheme.bodySmall)
+        else
+          ...bookings.map((booking) {
+            final name = booking.customerDisplayName.isNotEmpty
+                ? booking.customerDisplayName
+                : l10n.classEventsParticipantCustomer(booking.customerId);
+            final waitlistSuffix =
+                showWaitlistActions && booking.waitlistPosition != null
+                ? ' • #${booking.waitlistPosition}'
+                : '';
+            final client = clientsById[booking.customerId];
+            final initials = booking.customerDisplayName.trim().isNotEmpty
+                ? initialsFromName(booking.customerDisplayName, maxChars: 2)
+                : '?';
+
+            return ListTile(
+              dense: true,
+              visualDensity: VisualDensity.compact,
+              contentPadding: EdgeInsets.zero,
+              leading: ClientCircleAvatar(
+                height: 28,
+                clientColorHex: client?.colorHex,
+                isHighlighted: false,
+                initials: initials,
+              ),
+              title: Text(name, overflow: TextOverflow.ellipsis),
+              subtitle: waitlistSuffix.isNotEmpty
+                  ? Text(waitlistSuffix.trim())
+                  : null,
+              trailing: Wrap(
+                spacing: 4,
+                children: [
+                  if (showWaitlistActions)
+                    IconButton(
+                      tooltip: l10n.classEventsParticipantsPromoteAction,
+                      onPressed: isActionLoading
+                          ? null
+                          : () => _setClassBookingStatus(
+                              classEventId: classEventId,
+                              customerId: booking.customerId,
+                              targetStatus: 'confirmed',
+                            ),
+                      icon: const Icon(Icons.arrow_upward, size: 18),
+                    )
+                  else if (_waitlistEnabled)
+                    IconButton(
+                      tooltip: l10n.classEventsParticipantsDemoteAction,
+                      onPressed: isActionLoading
+                          ? null
+                          : () => _demoteToWaitlist(
+                              classEventId: classEventId,
+                              customerId: booking.customerId,
+                            ),
+                      icon: const Icon(Icons.arrow_downward, size: 18),
+                    ),
+                  IconButton(
+                    tooltip: l10n.classEventsParticipantsRemoveAction,
+                    onPressed: isActionLoading
+                        ? null
+                        : () => _removeClassBooking(
+                            classEventId: classEventId,
+                            customerId: booking.customerId,
+                          ),
+                    icon: Icon(
+                      Icons.remove_circle_outline,
+                      color: colorScheme.error,
+                      size: 18,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
       ],
     );
+  }
+
+  Future<void> _addClassBooking({
+    required int classEventId,
+    required String targetStatus,
+    required Set<int> excludedCustomerIds,
+  }) async {
+    final selectedCustomerId = await _pickClientForClassBooking(
+      excludedCustomerIds: excludedCustomerIds,
+    );
+    if (selectedCustomerId == null || !mounted) return;
+    await _setClassBookingStatus(
+      classEventId: classEventId,
+      customerId: selectedCustomerId,
+      targetStatus: targetStatus,
+    );
+  }
+
+  Future<void> _setClassBookingStatus({
+    required int classEventId,
+    required int customerId,
+    required String targetStatus,
+  }) async {
+    final l10n = context.l10n;
+    try {
+      await ref
+          .read(classEventBookingControllerProvider.notifier)
+          .book(
+            classEventId: classEventId,
+            customerId: customerId,
+            targetStatus: targetStatus,
+            classTypeId: _classTypeId,
+          );
+    } catch (_) {
+      // Gestito via stato del provider.
+    }
+    if (!mounted) return;
+    final state = ref.read(classEventBookingControllerProvider);
+    if (state.hasError) {
+      final error = state.error;
+      final message = error is ApiException
+          ? error.message
+          : l10n.classEventsParticipantsMutationError;
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: message,
+      );
+    } else if (targetStatus == 'confirmed' && _editingEvent != null) {
+      await _syncCapacityFromEvent(classEventId);
+    }
+  }
+
+  Future<void> _syncCapacityFromEvent(int classEventId) async {
+    try {
+      final updated = await ref.read(
+        classEventDetailProvider(classEventId).future,
+      );
+      if (!mounted) return;
+      if (updated.capacityTotal != _editingEvent?.capacityTotal) {
+        setState(() {
+          _capacityController.text = updated.capacityTotal.toString();
+          _editingEvent = updated;
+        });
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _demoteToWaitlist({
+    required int classEventId,
+    required int customerId,
+  }) async {
+    final l10n = context.l10n;
+    // Capture the pre-existing waitlist before the mutation so we don't
+    // accidentally promote the participant we're about to move down.
+    final currentParticipants =
+        ref.read(classEventParticipantsProvider(classEventId)).value ??
+        const <ClassBooking>[];
+    final firstWaitlisted =
+        (currentParticipants.where((b) => b.isWaitlisted).toList()
+              ..sort(
+                (a, b) => (a.waitlistPosition ?? 9999).compareTo(
+                  b.waitlistPosition ?? 9999,
+                ),
+              ))
+            .firstOrNull;
+
+    try {
+      await ref
+          .read(classEventBookingControllerProvider.notifier)
+          .demoteAndPromoteFirst(
+            classEventId: classEventId,
+            customerId: customerId,
+            promoteCustomerId: firstWaitlisted?.customerId,
+            classTypeId: _classTypeId,
+          );
+    } catch (_) {}
+
+    if (!mounted) return;
+    final state = ref.read(classEventBookingControllerProvider);
+    if (state.hasError) {
+      final error = state.error;
+      final message = error is ApiException
+          ? error.message
+          : l10n.classEventsParticipantsMutationError;
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: message,
+      );
+    } else if (firstWaitlisted != null && _editingEvent != null) {
+      await _syncCapacityFromEvent(classEventId);
+    }
+  }
+
+  Future<void> _removeClassBooking({
+    required int classEventId,
+    required int customerId,
+  }) async {
+    final l10n = context.l10n;
+    try {
+      await ref
+          .read(classEventBookingControllerProvider.notifier)
+          .cancel(
+            classEventId: classEventId,
+            customerId: customerId,
+            classTypeId: _classTypeId,
+          );
+    } catch (_) {
+      // Gestito via stato del provider.
+    }
+    if (!mounted) return;
+    final state = ref.read(classEventBookingControllerProvider);
+    if (state.hasError) {
+      final error = state.error;
+      final message = error is ApiException
+          ? error.message
+          : l10n.classEventsParticipantsMutationError;
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: message,
+      );
+    }
+  }
+
+  Future<int?> _pickClientForClassBooking({
+    required Set<int> excludedCustomerIds,
+  }) async {
+    Future<_ClassBookingClientPickerResult?> openClientPicker() {
+      final formFactor = ref.read(formFactorProvider);
+      if (formFactor == AppFormFactor.desktop) {
+        return showDialog<_ClassBookingClientPickerResult?>(
+          context: context,
+          useRootNavigator: true,
+          builder: (ctx) => DismissibleDialog(
+            child: Dialog(
+              insetPadding: const EdgeInsets.symmetric(
+                horizontal: 32,
+                vertical: 24,
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  minWidth: 600,
+                  maxWidth: 720,
+                  maxHeight: 600,
+                ),
+                child: _ClassBookingClientPickerSheet(
+                  excludedCustomerIds: excludedCustomerIds,
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      return AppBottomSheet.show<_ClassBookingClientPickerResult?>(
+        context: context,
+        useRootNavigator: true,
+        padding: EdgeInsets.zero,
+        heightFactor: AppBottomSheet.defaultHeightFactor,
+        builder: (_) => _ClassBookingClientPickerSheet(
+          excludedCustomerIds: excludedCustomerIds,
+        ),
+      );
+    }
+
+    while (true) {
+      final result = await openClientPicker();
+      if (result == null) {
+        return null;
+      }
+
+      if (result.isCreateNew) {
+        if (!mounted) {
+          return null;
+        }
+        Client? initialClient;
+        final prefillName = result.name.trim();
+        if (prefillName.isNotEmpty) {
+          final nameParts = Client.splitFullName(prefillName);
+          initialClient = Client(
+            id: 0,
+            businessId: 0,
+            firstName: nameParts.firstName,
+            lastName: nameParts.lastName,
+            createdAt: ref.read(tenantNowProvider),
+          );
+        }
+        final newClient = await showClientEditDialog(
+          context,
+          ref,
+          client: initialClient,
+        );
+        if (newClient != null) {
+          return newClient.id;
+        }
+        // Se annulla la creazione cliente, riapriamo il picker.
+        continue;
+      }
+
+      return result.id;
+    }
   }
 
   bool _canSubmit({
@@ -1735,17 +2340,71 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       return;
     }
 
+    // Capacity validations only apply when editing an existing event.
+    List<ClassBooking> waitlistedToPromote = const [];
+    if (_editingEvent != null) {
+      final confirmedCount = _editingEvent!.confirmedCount;
+      if (capacity < confirmedCount) {
+        await FeedbackDialog.showError(
+          context,
+          title: l10n.errorTitle,
+          message: l10n.classEventsValidationCapacityBelowConfirmed,
+        );
+        return;
+      }
+
+      if (capacity > _editingEvent!.capacityTotal) {
+        final participants =
+            ref
+                .read(classEventParticipantsProvider(_editingEvent!.id))
+                .value ??
+            const <ClassBooking>[];
+        final waitlisted =
+            participants.where((b) => b.isWaitlisted).toList()
+              ..sort(
+                (a, b) => (a.waitlistPosition ?? 9999).compareTo(
+                  b.waitlistPosition ?? 9999,
+                ),
+              );
+        if (waitlisted.isNotEmpty) {
+          final shouldPromote = await showDialog<bool>(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: Text(l10n.classEventsPromoteWaitlistTitle),
+              content: Text(l10n.classEventsPromoteWaitlistMessage),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(false),
+                  child: Text(l10n.actionNo),
+                ),
+                FilledButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: Text(l10n.actionYes),
+                ),
+              ],
+            ),
+          );
+          if (!mounted) return;
+          if (shouldPromote == true) {
+            final newFreeSpots = capacity - confirmedCount;
+            waitlistedToPromote = waitlisted.take(newFreeSpots).toList();
+          }
+        }
+      }
+    }
+
     final priceCents = _parsePriceCents();
     final currency = ref.read(effectiveCurrencyProvider);
 
     try {
       if (_editingEvent != null) {
+        final eventId = _editingEvent!.id;
         final businessId = ref.read(currentBusinessIdProvider);
         final repo = ref.read(classEventsRepositoryProvider);
         final classTypeIdForRefresh = _classTypeId!;
         await repo.update(
           businessId: businessId,
-          classEventId: _editingEvent!.id,
+          classEventId: eventId,
           payload: {
             'starts_at': _toApiLocalDateTime(startLocal),
             'ends_at': _toApiLocalDateTime(endLocal),
@@ -1756,6 +2415,16 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
             if (priceCents != null) 'currency': currency,
           },
         );
+        if (!mounted) return;
+        for (final booking in waitlistedToPromote) {
+          if (!mounted) break;
+          await _setClassBookingStatus(
+            classEventId: eventId,
+            customerId: booking.customerId,
+            targetStatus: 'confirmed',
+          );
+        }
+        if (!mounted) return;
         final refreshedDayEvents = await ref.refresh(
           classEventsProvider.future,
         );
@@ -2181,6 +2850,188 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         toDate: toDate,
       ),
     ]);
+  }
+}
+
+class _ClassBookingClientPickerResult {
+  const _ClassBookingClientPickerResult(this.id, this.name);
+
+  final int id;
+  final String name;
+
+  bool get isCreateNew => id == -2;
+}
+
+class _ClassBookingClientPickerSheet extends ConsumerStatefulWidget {
+  const _ClassBookingClientPickerSheet({required this.excludedCustomerIds});
+
+  final Set<int> excludedCustomerIds;
+
+  @override
+  ConsumerState<_ClassBookingClientPickerSheet> createState() =>
+      _ClassBookingClientPickerSheetState();
+}
+
+class _ClassBookingClientPickerSheetState
+    extends ConsumerState<_ClassBookingClientPickerSheet> {
+  final _searchController = TextEditingController();
+  final _searchFocusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _searchFocusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final searchState = ref.watch(clientPickerSearchProvider);
+    final clients = searchState.clients
+        .where((c) => !widget.excludedCustomerIds.contains(c.id))
+        .toList();
+    final isLoading = searchState.isLoading;
+
+    return SafeArea(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.selectClientTitle,
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _searchController,
+                  focusNode: _searchFocusNode,
+                  decoration: InputDecoration(
+                    hintText: l10n.searchClientPlaceholder,
+                    prefixIcon: const Icon(Icons.search, size: 20),
+                    suffixIcon: isLoading
+                        ? const Padding(
+                            padding: EdgeInsets.all(12),
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                        : null,
+                    border: const OutlineInputBorder(),
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 10,
+                    ),
+                  ),
+                  onChanged: (value) {
+                    ref
+                        .read(clientPickerSearchProvider.notifier)
+                        .setSearchQuery(value);
+                  },
+                ),
+              ],
+            ),
+          ),
+          const AppDivider(),
+          ListTile(
+            leading: StaffCircleAvatar(
+              height: 32,
+              color: theme.colorScheme.onSurfaceVariant,
+              isHighlighted: false,
+              initials: '',
+              child: Icon(
+                Icons.person_add_outlined,
+                color: theme.colorScheme.onSurface,
+                size: 18,
+              ),
+            ),
+            title: Text(l10n.createNewClient),
+            onTap: () {
+              Navigator.of(context).pop(
+                _ClassBookingClientPickerResult(
+                  -2,
+                  _searchController.text.trim(),
+                ),
+              );
+            },
+          ),
+          const AppDivider(),
+          Expanded(
+            child: isLoading && clients.isEmpty
+                ? const Center(child: CircularProgressIndicator())
+                : searchState.error != null && clients.isEmpty
+                ? Center(
+                    child: Text(
+                      l10n.classEventsParticipantsLoadError,
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  )
+                : clients.isEmpty
+                ? Center(
+                    child: Text(
+                      l10n.clientsEmpty,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    itemCount: clients.length,
+                    itemBuilder: (context, index) {
+                      final client = clients[index];
+                      return ListTile(
+                        leading: ClientCircleAvatar(
+                          height: 32,
+                          clientColorHex: client.colorHex,
+                          isHighlighted: false,
+                          initials: client.name.isNotEmpty
+                              ? initialsFromName(client.name, maxChars: 2)
+                              : '?',
+                        ),
+                        title: Text(client.name),
+                        subtitle: client.phone != null
+                            ? Text(
+                                client.phone!,
+                                style: theme.textTheme.bodySmall,
+                              )
+                            : null,
+                        onTap: () {
+                          Navigator.of(context).pop(
+                            _ClassBookingClientPickerResult(
+                              client.id,
+                              client.name,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

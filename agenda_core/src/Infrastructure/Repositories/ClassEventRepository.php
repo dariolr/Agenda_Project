@@ -794,7 +794,14 @@ final class ClassEventRepository
         return $stmt->rowCount() > 0;
     }
 
-    public function book(int $businessId, int $classEventId, int $customerId): array
+    public function book(
+        int $businessId,
+        int $classEventId,
+        int $customerId,
+        ?string $targetStatus = null,
+        bool $autoExpandCapacity = false,
+        bool $bypassWaitlistCheck = false
+    ): array
     {
         $pdo = $this->db->getPdo();
         $pdo->beginTransaction();
@@ -817,6 +824,10 @@ final class ClassEventRepository
                 $pdo->rollBack();
                 throw new \RuntimeException('class_event_not_bookable');
             }
+            if (!$this->customerBelongsToBusiness($pdo, $businessId, $customerId)) {
+                $pdo->rollBack();
+                throw new \RuntimeException('customer_not_found');
+            }
 
             $bookingStmt = $pdo->prepare(
                 'SELECT * FROM class_bookings
@@ -830,14 +841,145 @@ final class ClassEventRepository
                 'class_event_id' => $classEventId,
                 'customer_id' => $customerId,
             ]);
-            $existing = $bookingStmt->fetch(\PDO::FETCH_ASSOC);
+            $existingRow = $bookingStmt->fetch(\PDO::FETCH_ASSOC);
+            $existing = is_array($existingRow) ? $existingRow : null;
 
             if ($existing && in_array($existing['status'], ['CONFIRMED', 'WAITLISTED'], true)) {
-                $pdo->commit();
-                return $this->findBookingByCustomer($businessId, $classEventId, $customerId) ?? [];
+                $activeStatus = strtoupper((string) $existing['status']);
+                if ($targetStatus === null || $targetStatus === '' || strtoupper($targetStatus) === $activeStatus) {
+                    return $this->finalizeBookTransaction($pdo, $businessId, $classEventId, $customerId);
+                }
+            }
+
+            $targetStatusNormalized = $targetStatus !== null && trim($targetStatus) !== ''
+                ? strtoupper(trim($targetStatus))
+                : null;
+            if ($targetStatusNormalized !== null && !in_array($targetStatusNormalized, ['CONFIRMED', 'WAITLISTED'], true)) {
+                $pdo->rollBack();
+                throw new \RuntimeException('invalid_target_status');
             }
 
             $currentUtc = $this->resolveCurrentUtcForClassEvent($pdo, $businessId, $classEventId);
+            if ($targetStatusNormalized !== null) {
+                if ($targetStatusNormalized === 'CONFIRMED') {
+                    $spotsLeft = (int) $event['capacity_total'] - (int) $event['capacity_reserved'] - (int) $event['confirmed_count'];
+                    if ($spotsLeft <= 0) {
+                        if (!$autoExpandCapacity) {
+                            $pdo->rollBack();
+                            throw new \RuntimeException('class_event_full');
+                        }
+                        $pdo->prepare(
+                            'UPDATE class_events
+                             SET capacity_total = capacity_total + 1,
+                                 updated_at = :updated_at
+                             WHERE business_id = :business_id AND id = :class_event_id'
+                        )->execute([
+                            'business_id'    => $businessId,
+                            'class_event_id' => $classEventId,
+                            'updated_at'     => $currentUtc,
+                        ]);
+                    }
+
+                    if ($existing && strtoupper((string) $existing['status']) === 'WAITLISTED') {
+                        $this->upsertBooking(
+                            $pdo,
+                            $existing,
+                            $businessId,
+                            $classEventId,
+                            $customerId,
+                            'CONFIRMED',
+                            null,
+                            $currentUtc
+                        );
+                        $pdo->prepare(
+                            'UPDATE class_events
+                             SET confirmed_count = confirmed_count + 1,
+                                 waitlist_count = GREATEST(0, waitlist_count - 1),
+                                 updated_at = :updated_at
+                             WHERE business_id = :business_id AND id = :class_event_id'
+                        )->execute([
+                            'business_id' => $businessId,
+                            'class_event_id' => $classEventId,
+                            'updated_at' => $currentUtc,
+                        ]);
+                        $this->repackWaitlist($pdo, $businessId, $classEventId);
+                    } else {
+                        $this->upsertBooking(
+                            $pdo,
+                            $existing,
+                            $businessId,
+                            $classEventId,
+                            $customerId,
+                            'CONFIRMED',
+                            null,
+                            $currentUtc
+                        );
+                        $pdo->prepare(
+                            'UPDATE class_events
+                             SET confirmed_count = confirmed_count + 1,
+                                 updated_at = :updated_at
+                             WHERE business_id = :business_id AND id = :class_event_id'
+                        )->execute([
+                            'business_id' => $businessId,
+                            'class_event_id' => $classEventId,
+                            'updated_at' => $currentUtc,
+                        ]);
+                    }
+                } else {
+                    $isMovingConfirmedToWaitlist = $existing && strtoupper((string) $existing['status']) === 'CONFIRMED';
+                    if (!$isMovingConfirmedToWaitlist && !$bypassWaitlistCheck && (int) ($event['waitlist_enabled'] ?? 0) !== 1) {
+                        $pdo->rollBack();
+                        throw new \RuntimeException('class_event_waitlist_disabled');
+                    }
+                    $waitlistPos = (int) $event['waitlist_count'] + 1;
+                    if ($isMovingConfirmedToWaitlist) {
+                        $this->upsertBooking(
+                            $pdo,
+                            $existing,
+                            $businessId,
+                            $classEventId,
+                            $customerId,
+                            'WAITLISTED',
+                            $waitlistPos,
+                            $currentUtc
+                        );
+                        $pdo->prepare(
+                            'UPDATE class_events
+                             SET confirmed_count = GREATEST(0, confirmed_count - 1),
+                                 waitlist_count = waitlist_count + 1,
+                                 updated_at = :updated_at
+                             WHERE business_id = :business_id AND id = :class_event_id'
+                        )->execute([
+                            'business_id' => $businessId,
+                            'class_event_id' => $classEventId,
+                            'updated_at' => $currentUtc,
+                        ]);
+                    } else {
+                        $this->upsertBooking(
+                            $pdo,
+                            $existing,
+                            $businessId,
+                            $classEventId,
+                            $customerId,
+                            'WAITLISTED',
+                            $waitlistPos,
+                            $currentUtc
+                        );
+                        $pdo->prepare(
+                            'UPDATE class_events
+                             SET waitlist_count = waitlist_count + 1,
+                                 updated_at = :updated_at
+                             WHERE business_id = :business_id AND id = :class_event_id'
+                        )->execute([
+                            'business_id' => $businessId,
+                            'class_event_id' => $classEventId,
+                            'updated_at' => $currentUtc,
+                        ]);
+                    }
+                }
+
+                return $this->finalizeBookTransaction($pdo, $businessId, $classEventId, $customerId);
+            }
             $spotsLeft = (int) $event['capacity_total'] - (int) $event['capacity_reserved'] - (int) $event['confirmed_count'];
             if ($spotsLeft > 0) {
                 $this->upsertBooking(
@@ -887,13 +1029,60 @@ final class ClassEventRepository
                 throw new \RuntimeException('class_event_full');
             }
 
-            $pdo->commit();
-            return $this->findBookingByCustomer($businessId, $classEventId, $customerId) ?? [];
+            return $this->finalizeBookTransaction($pdo, $businessId, $classEventId, $customerId);
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
             throw $e;
+        }
+    }
+
+    private function finalizeBookTransaction(
+        \PDO $pdo,
+        int $businessId,
+        int $classEventId,
+        int $customerId
+    ): array {
+        $booking = $this->findBookingByCustomer($businessId, $classEventId, $customerId);
+        if ($booking === null) {
+            throw new \RuntimeException('class_booking_fetch_failed');
+        }
+        $this->assertValidLocationTimezone($booking);
+        $pdo->commit();
+        return $booking;
+    }
+
+    private function customerBelongsToBusiness(\PDO $pdo, int $businessId, int $customerId): bool
+    {
+        if ($customerId <= 0) {
+            return false;
+        }
+
+        $stmt = $pdo->prepare(
+            'SELECT 1
+             FROM clients
+             WHERE id = :customer_id
+               AND business_id = :business_id
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'customer_id' => $customerId,
+            'business_id' => $businessId,
+        ]);
+        return $stmt->fetchColumn() !== false;
+    }
+
+    private function assertValidLocationTimezone(array $booking): void
+    {
+        $timezone = trim((string) ($booking['location_timezone'] ?? ''));
+        if ($timezone === '') {
+            throw new \RuntimeException('class_booking_missing_timezone');
+        }
+        try {
+            new \DateTimeZone($timezone);
+        } catch (\Throwable) {
+            throw new \RuntimeException('class_booking_invalid_timezone');
         }
     }
 

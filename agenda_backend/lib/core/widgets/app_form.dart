@@ -98,7 +98,7 @@ class AppForm {
           ),
         ),
       ),
-    );
+    ).whenComplete(loadingNotifier.dispose);
   }
 }
 
@@ -387,25 +387,40 @@ class _AppFormBody extends StatefulWidget {
 }
 
 class _AppFormBodyState extends State<_AppFormBody> {
+  void _scheduleSyncToScope() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _syncToScope();
+    });
+  }
+
   void _syncToScope() {
-    context
+    final notifier = context
         .getInheritedWidgetOfExactType<BottomSheetLoadingContext>()
-        ?.notifier
-        .value = widget.isLoading;
+        ?.notifier;
+    if (notifier == null) {
+      return;
+    }
+    if (notifier.value == widget.isLoading) {
+      return;
+    }
+    notifier.value = widget.isLoading;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _syncToScope();
-    });
+    _scheduleSyncToScope();
   }
 
   @override
   void didUpdateWidget(_AppFormBody old) {
     super.didUpdateWidget(old);
-    if (widget.isLoading != old.isLoading) _syncToScope();
+    if (widget.isLoading != old.isLoading) {
+      _scheduleSyncToScope();
+    }
   }
 
   @override

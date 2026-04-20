@@ -692,17 +692,75 @@ final class ClassEventsController
         $customerId = isset($body['customer_id'])
             ? (int) $body['customer_id']
             : $this->resolveCustomerId($businessId, $userId);
+        $targetStatus = isset($body['target_status']) ? strtolower((string) $body['target_status']) : null;
         if ($customerId === null || $customerId <= 0) {
             return Response::error('customer_id is required', 'validation_error', 400, $request->traceId);
         }
+        if ($targetStatus !== null && !in_array($targetStatus, ['confirmed', 'waitlisted'], true)) {
+            return Response::error(
+                'target_status must be confirmed or waitlisted',
+                'validation_error',
+                400,
+                $request->traceId
+            );
+        }
 
         try {
-            $booking = $this->classEventRepo->book($businessId, $classEventId, $customerId);
+            $booking = $this->classEventRepo->book(
+                $businessId,
+                $classEventId,
+                $customerId,
+                $targetStatus,
+                true,
+                true
+            );
         } catch (\RuntimeException $e) {
             return match ($e->getMessage()) {
                 'class_event_not_found' => Response::notFound('Class event not found', $request->traceId),
                 'class_event_not_bookable' => Response::conflict('class_event_not_bookable', 'Class event is not bookable', $request->traceId),
                 'class_event_full' => Response::conflict('class_event_full', 'Class is full', $request->traceId),
+                'customer_not_found' => Response::notFound('Customer not found for this business', $request->traceId),
+                'class_event_waitlist_disabled' => Response::conflict(
+                    'class_event_waitlist_disabled',
+                    'Waitlist is disabled for this class',
+                    $request->traceId
+                ),
+                'invalid_target_status' => Response::error(
+                    'target_status must be confirmed or waitlisted',
+                    'validation_error',
+                    400,
+                    $request->traceId
+                ),
+                'class_booking_fetch_failed' => Response::error(
+                    'Booking created but failed to reload booking payload',
+                    'class_booking_fetch_failed',
+                    500,
+                    $request->traceId
+                ),
+                'class_booking_missing_timezone' => Response::error(
+                    'Location timezone missing for class booking',
+                    'class_booking_missing_timezone',
+                    500,
+                    $request->traceId
+                ),
+                'class_booking_invalid_timezone' => Response::error(
+                    'Location timezone invalid for class booking',
+                    'class_booking_invalid_timezone',
+                    500,
+                    $request->traceId
+                ),
+                'Missing location timezone for class event' => Response::error(
+                    'Location timezone missing for class event',
+                    'class_event_missing_timezone',
+                    500,
+                    $request->traceId
+                ),
+                'Invalid location timezone for class event' => Response::error(
+                    'Location timezone invalid for class event',
+                    'class_event_invalid_timezone',
+                    500,
+                    $request->traceId
+                ),
                 default => Response::serverError('Unable to create class booking', $request->traceId),
             };
         } catch (\Throwable) {

@@ -232,6 +232,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "actionDiscard": MessageLookupByLibrary.simpleMessage("Cancel"),
     "actionEdit": MessageLookupByLibrary.simpleMessage("Edit"),
     "actionKeepEditing": MessageLookupByLibrary.simpleMessage("Keep editing"),
+    "actionNo": MessageLookupByLibrary.simpleMessage("No"),
     "actionPayment": MessageLookupByLibrary.simpleMessage("Payment"),
     "actionPreview": MessageLookupByLibrary.simpleMessage("Preview"),
     "actionRefresh": MessageLookupByLibrary.simpleMessage("Refresh"),
@@ -239,6 +240,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "actionRetry": MessageLookupByLibrary.simpleMessage("Retry"),
     "actionSave": MessageLookupByLibrary.simpleMessage("Save"),
     "actionSelectAll": MessageLookupByLibrary.simpleMessage("Select all"),
+    "actionYes": MessageLookupByLibrary.simpleMessage("Yes"),
     "addAppointmentTypeTooltip": MessageLookupByLibrary.simpleMessage(
       "Add appointment type.",
     ),
@@ -889,8 +891,47 @@ class MessageLookup extends MessageLookupByLibrary {
       "No staff available for selected location",
     ),
     "classEventsParticipantCustomer": m14,
+    "classEventsParticipantsAddConfirmed": MessageLookupByLibrary.simpleMessage(
+      "Add participant",
+    ),
+    "classEventsParticipantsAddWaitlist": MessageLookupByLibrary.simpleMessage(
+      "Add to waitlist",
+    ),
+    "classEventsParticipantsConfirmedTitle":
+        MessageLookupByLibrary.simpleMessage("Confirmed participants"),
+    "classEventsParticipantsDemoteAction": MessageLookupByLibrary.simpleMessage(
+      "Move to waitlist",
+    ),
+    "classEventsParticipantsEmptyConfirmed":
+        MessageLookupByLibrary.simpleMessage("No confirmed participants"),
+    "classEventsParticipantsEmptyWaitlist":
+        MessageLookupByLibrary.simpleMessage("Nobody in waitlist"),
+    "classEventsParticipantsLoadError": MessageLookupByLibrary.simpleMessage(
+      "Unable to load participants",
+    ),
+    "classEventsParticipantsMutationError":
+        MessageLookupByLibrary.simpleMessage("Unable to update participants"),
+    "classEventsParticipantsNoClientsFound":
+        MessageLookupByLibrary.simpleMessage("No customers found"),
+    "classEventsParticipantsPromoteAction":
+        MessageLookupByLibrary.simpleMessage("Promote to participant"),
+    "classEventsParticipantsRemoveAction": MessageLookupByLibrary.simpleMessage(
+      "Remove",
+    ),
+    "classEventsParticipantsSearchClientHint":
+        MessageLookupByLibrary.simpleMessage("Search customer"),
+    "classEventsParticipantsSelectClientTitle":
+        MessageLookupByLibrary.simpleMessage("Select customer"),
     "classEventsParticipantsTitle": MessageLookupByLibrary.simpleMessage(
       "Participants",
+    ),
+    "classEventsParticipantsWaitlistTitle":
+        MessageLookupByLibrary.simpleMessage("Waitlist"),
+    "classEventsPromoteWaitlistMessage": MessageLookupByLibrary.simpleMessage(
+      "The capacity has been increased. Do you want to automatically promote participants from the waitlist to fill the new available spots?",
+    ),
+    "classEventsPromoteWaitlistTitle": MessageLookupByLibrary.simpleMessage(
+      "Promote from waitlist",
     ),
     "classEventsRecurrenceConflictForceDescription":
         MessageLookupByLibrary.simpleMessage(
@@ -943,6 +984,10 @@ class MessageLookup extends MessageLookupByLibrary {
     "classEventsStaffInactiveOption": m18,
     "classEventsTitle": MessageLookupByLibrary.simpleMessage("Classes"),
     "classEventsUntitled": MessageLookupByLibrary.simpleMessage("Class"),
+    "classEventsValidationCapacityBelowConfirmed":
+        MessageLookupByLibrary.simpleMessage(
+          "Capacity cannot be reduced below the number of confirmed participants",
+        ),
     "classEventsValidationCapacityMin": MessageLookupByLibrary.simpleMessage(
       "Enter a minimum capacity",
     ),
@@ -951,6 +996,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "classEventsValidationRequired": MessageLookupByLibrary.simpleMessage(
       "Fill all required fields",
+    ),
+    "classEventsWaitlistDisabledHint": MessageLookupByLibrary.simpleMessage(
+      "Waitlist disabled — enable it if needed",
     ),
     "classTypesActionClone": MessageLookupByLibrary.simpleMessage("Duplicate"),
     "classTypesActionDeactivate": MessageLookupByLibrary.simpleMessage(

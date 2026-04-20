@@ -10,6 +10,8 @@ class ClassBooking {
   final DateTime? checkedInAtUtc;
   final String? paymentStatus;
   final String? notes;
+  final String? customerFirstName;
+  final String? customerLastName;
 
   const ClassBooking({
     required this.id,
@@ -23,10 +25,22 @@ class ClassBooking {
     this.checkedInAtUtc,
     this.paymentStatus,
     this.notes,
+    this.customerFirstName,
+    this.customerLastName,
   });
 
   bool get isConfirmed => status.toUpperCase() == 'CONFIRMED';
   bool get isWaitlisted => status.toUpperCase() == 'WAITLISTED';
+
+  String get customerDisplayName {
+    final parts = <String>[
+      if (customerFirstName != null && customerFirstName!.trim().isNotEmpty)
+        customerFirstName!.trim(),
+      if (customerLastName != null && customerLastName!.trim().isNotEmpty)
+        customerLastName!.trim(),
+    ];
+    return parts.join(' ').trim();
+  }
 
   factory ClassBooking.fromJson(Map<String, dynamic> json) {
     return ClassBooking(
@@ -47,13 +61,16 @@ class ClassBooking {
               (json['cancelled_at'] ?? json['cancelled_at_utc']) as String,
             )
           : null,
-      checkedInAtUtc: (json['checked_in_at'] ?? json['checked_in_at_utc']) != null
+      checkedInAtUtc:
+          (json['checked_in_at'] ?? json['checked_in_at_utc']) != null
           ? DateTime.parse(
               (json['checked_in_at'] ?? json['checked_in_at_utc']) as String,
             )
           : null,
       paymentStatus: json['payment_status'] as String?,
       notes: json['notes'] as String?,
+      customerFirstName: json['customer_first_name'] as String?,
+      customerLastName: json['customer_last_name'] as String?,
     );
   }
 }

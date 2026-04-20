@@ -184,6 +184,16 @@ class L10n {
     return Intl.message('Confirm', name: 'actionConfirm', desc: '', args: []);
   }
 
+  /// `Yes`
+  String get actionYes {
+    return Intl.message('Yes', name: 'actionYes', desc: '', args: []);
+  }
+
+  /// `No`
+  String get actionNo {
+    return Intl.message('No', name: 'actionNo', desc: '', args: []);
+  }
+
   /// `Close`
   String get actionClose {
     return Intl.message('Close', name: 'actionClose', desc: '', args: []);
@@ -9439,6 +9449,36 @@ class L10n {
     );
   }
 
+  /// `Capacity cannot be reduced below the number of confirmed participants`
+  String get classEventsValidationCapacityBelowConfirmed {
+    return Intl.message(
+      'Capacity cannot be reduced below the number of confirmed participants',
+      name: 'classEventsValidationCapacityBelowConfirmed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Promote from waitlist`
+  String get classEventsPromoteWaitlistTitle {
+    return Intl.message(
+      'Promote from waitlist',
+      name: 'classEventsPromoteWaitlistTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The capacity has been increased. Do you want to automatically promote participants from the waitlist to fill the new available spots?`
+  String get classEventsPromoteWaitlistMessage {
+    return Intl.message(
+      'The capacity has been increased. Do you want to automatically promote participants from the waitlist to fill the new available spots?',
+      name: 'classEventsPromoteWaitlistMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `No enabled location for this class type`
   String get classEventsNoLocationsForClassType {
     return Intl.message(
@@ -10107,6 +10147,156 @@ class L10n {
     return Intl.message(
       'Participants',
       name: 'classEventsParticipantsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Confirmed participants`
+  String get classEventsParticipantsConfirmedTitle {
+    return Intl.message(
+      'Confirmed participants',
+      name: 'classEventsParticipantsConfirmedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Waitlist`
+  String get classEventsParticipantsWaitlistTitle {
+    return Intl.message(
+      'Waitlist',
+      name: 'classEventsParticipantsWaitlistTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add participant`
+  String get classEventsParticipantsAddConfirmed {
+    return Intl.message(
+      'Add participant',
+      name: 'classEventsParticipantsAddConfirmed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add to waitlist`
+  String get classEventsParticipantsAddWaitlist {
+    return Intl.message(
+      'Add to waitlist',
+      name: 'classEventsParticipantsAddWaitlist',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Promote to participant`
+  String get classEventsParticipantsPromoteAction {
+    return Intl.message(
+      'Promote to participant',
+      name: 'classEventsParticipantsPromoteAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move to waitlist`
+  String get classEventsParticipantsDemoteAction {
+    return Intl.message(
+      'Move to waitlist',
+      name: 'classEventsParticipantsDemoteAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Remove`
+  String get classEventsParticipantsRemoveAction {
+    return Intl.message(
+      'Remove',
+      name: 'classEventsParticipantsRemoveAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No confirmed participants`
+  String get classEventsParticipantsEmptyConfirmed {
+    return Intl.message(
+      'No confirmed participants',
+      name: 'classEventsParticipantsEmptyConfirmed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nobody in waitlist`
+  String get classEventsParticipantsEmptyWaitlist {
+    return Intl.message(
+      'Nobody in waitlist',
+      name: 'classEventsParticipantsEmptyWaitlist',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Waitlist disabled — enable it if needed`
+  String get classEventsWaitlistDisabledHint {
+    return Intl.message(
+      'Waitlist disabled — enable it if needed',
+      name: 'classEventsWaitlistDisabledHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select customer`
+  String get classEventsParticipantsSelectClientTitle {
+    return Intl.message(
+      'Select customer',
+      name: 'classEventsParticipantsSelectClientTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Search customer`
+  String get classEventsParticipantsSearchClientHint {
+    return Intl.message(
+      'Search customer',
+      name: 'classEventsParticipantsSearchClientHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No customers found`
+  String get classEventsParticipantsNoClientsFound {
+    return Intl.message(
+      'No customers found',
+      name: 'classEventsParticipantsNoClientsFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unable to load participants`
+  String get classEventsParticipantsLoadError {
+    return Intl.message(
+      'Unable to load participants',
+      name: 'classEventsParticipantsLoadError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unable to update participants`
+  String get classEventsParticipantsMutationError {
+    return Intl.message(
+      'Unable to update participants',
+      name: 'classEventsParticipantsMutationError',
       desc: '',
       args: [],
     );

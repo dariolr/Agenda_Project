@@ -119,6 +119,25 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
 
+    // Ripristina lo stato UI dai provider (non-autoDispose → sopravvivono alla navigazione)
+    final savedFilters = ref.read(bookingsListFiltersProvider);
+    if (savedFilters.locationIds?.isNotEmpty == true) {
+      _selectedLocationIds.addAll(savedFilters.locationIds!);
+    }
+    if (savedFilters.staffIds?.isNotEmpty == true) {
+      _selectedStaffIds.addAll(savedFilters.staffIds!);
+    }
+    if (savedFilters.serviceIds?.isNotEmpty == true) {
+      _selectedServiceIds.addAll(savedFilters.serviceIds!);
+    }
+    if (savedFilters.status?.isNotEmpty == true) {
+      _selectedStatuses = savedFilters.status!.toSet();
+    }
+    _onlineOnly = savedFilters.source?.isNotEmpty == true;
+    if (savedFilters.clientSearch?.isNotEmpty == true) {
+      _clientSearchController.text = savedFilters.clientSearch!;
+    }
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadInitialData();
     });

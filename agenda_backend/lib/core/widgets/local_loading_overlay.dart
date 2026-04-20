@@ -34,26 +34,42 @@ class LocalLoadingOverlay extends StatefulWidget {
 }
 
 class _LocalLoadingOverlayState extends State<LocalLoadingOverlay> {
+  void _scheduleSyncToScope() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      _syncToScope();
+    });
+  }
+
   void _syncToScope() {
-    context
+    final notifier = context
         .getInheritedWidgetOfExactType<BottomSheetLoadingContext>()
-        ?.notifier
-        .value = widget.isLoading;
+        ?.notifier;
+    if (notifier == null) {
+      return;
+    }
+    if (notifier.value == widget.isLoading) {
+      return;
+    }
+    notifier.value = widget.isLoading;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Usa postFrameCallback per evitare setState durante la fase di build.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _syncToScope();
-    });
+    // Usa postFrameCallback per evitare notifiche durante la fase di build.
+    _scheduleSyncToScope();
   }
 
   @override
   void didUpdateWidget(LocalLoadingOverlay old) {
     super.didUpdateWidget(old);
-    if (widget.isLoading != old.isLoading) _syncToScope();
+    if (widget.isLoading != old.isLoading) {
+      // Evita notifyListeners durante la build corrente.
+      _scheduleSyncToScope();
+    }
   }
 
   @override

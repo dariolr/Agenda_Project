@@ -48,11 +48,13 @@ class ClassEventsRepository {
     required int businessId,
     required int classEventId,
     int? customerId,
+    String? targetStatus,
   }) {
     return _apiClient.bookClassEvent(
       businessId: businessId,
       classEventId: classEventId,
       customerId: customerId,
+      targetStatus: targetStatus,
     );
   }
 

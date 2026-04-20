@@ -56,12 +56,24 @@ class _BookingNotificationsScreenState
     super.initState();
     _selectedTabIndex = widget.initialTabIndex == 1 ? 1 : 0;
     _scrollController.addListener(_onScroll);
-    if (_canSelectBusiness) {
+
+    // Ripristina lo stato UI dai provider (non-autoDispose → sopravvivono alla navigazione)
+    final existingFilters = ref.read(bookingNotificationsFiltersProvider);
+    _selectedStatus = existingFilters.status?.firstOrNull;
+    _selectedChannel = existingFilters.channels?.firstOrNull;
+    _selectedProvider = existingFilters.providers?.firstOrNull;
+    if (existingFilters.search?.isNotEmpty == true) {
+      _searchController.text = existingFilters.search!;
+    }
+
+    if (_canSelectBusiness && _selectedStatus == null) {
       _selectedStatus = 'failed';
     }
+
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
-      if (_canSelectBusiness) {
+      if (_canSelectBusiness &&
+          ref.read(bookingNotificationsFiltersProvider).status == null) {
         ref.read(bookingNotificationsFiltersProvider.notifier).setStatus(const [
           'failed',
         ]);
