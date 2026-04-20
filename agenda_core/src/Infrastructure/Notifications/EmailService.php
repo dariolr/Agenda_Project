@@ -87,8 +87,6 @@ final class EmailService
             return self::$instance;
         }
 
-        error_log('[EmailService] WARNING: EMAIL_SMTP_ONLY is disabled. Non-SMTP providers/fallback may be used.');
-
         $primary = self::createProvider($_ENV['MAIL_PROVIDER'] ?? 'smtp');
         $fallbackProvider = trim((string) ($_ENV['MAIL_FALLBACK_PROVIDER'] ?? ''));
 
