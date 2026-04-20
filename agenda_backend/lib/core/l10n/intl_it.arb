@@ -1795,6 +1795,7 @@
   "agendaDisplaySettingsAction": "Impostazioni di visualizzazione",
   "agendaDisplaySettingsSuperadminTitle": "Impostazioni di visualizzazione",
   "agendaDisplaySettingsCardTextZoomLabel": "Zoom testo",
+  "agendaDisplaySettingsSlotHeightLabel": "Altezza slot agenda",
   "agendaDisplaySettingsCardColorOpacityLabel": "Intensità colori appuntamenti",
   "agendaDisplaySettingsExtraMinutesBandIntensityLabel": "Intensità colori tempo aggiuntivo",
   "agendaDisplaySettingsHoverUnrelatedDimIntensityLabel": "Intensità del colore su appuntamenti diversi da quelli selezionati",

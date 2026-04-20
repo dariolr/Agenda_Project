@@ -64,6 +64,12 @@ class PrefsKeys {
     required int locationId,
   }) => 'agenda_extra_minutes_band_intensity_${_scope(businessId, locationId)}';
 
+  /// Scala altezza slot agenda (scope business + location)
+  static String agendaSlotHeightScale(
+    int businessId, {
+    required int locationId,
+  }) => 'agenda_slot_height_scale_${_scope(businessId, locationId)}';
+
   /// Intensità de-enfasi card non correlate durante hover (scope business + location)
   static String agendaHoverUnrelatedCardDimIntensity(
     int businessId, {
@@ -413,6 +419,24 @@ class PreferencesService {
     );
   }
 
+  double getAgendaSlotHeightScale(int businessId, {required int locationId}) {
+    final value = _prefs.getDouble(
+      PrefsKeys.agendaSlotHeightScale(businessId, locationId: locationId),
+    );
+    return value ?? 1.0;
+  }
+
+  Future<void> setAgendaSlotHeightScale(
+    int businessId,
+    double scale, {
+    required int locationId,
+  }) async {
+    await _prefs.setDouble(
+      PrefsKeys.agendaSlotHeightScale(businessId, locationId: locationId),
+      scale,
+    );
+  }
+
   double getAgendaHoverUnrelatedCardDimIntensity(
     int businessId, {
     required int locationId,
@@ -709,6 +733,8 @@ class PreferencesService {
             'agenda_extra_minutes_band_intensity_${businessId}_',
           ) ||
           key == 'agenda_extra_minutes_band_intensity_$businessId' ||
+          key.startsWith('agenda_slot_height_scale_${businessId}_') ||
+          key == 'agenda_slot_height_scale_$businessId' ||
           key.startsWith(
             'agenda_hover_unrelated_card_dim_intensity_${businessId}_',
           ) ||
@@ -741,6 +767,7 @@ class PreferencesService {
           key.startsWith('agenda_card_text_scale_') ||
           key.startsWith('agenda_card_color_opacity_') ||
           key.startsWith('agenda_extra_minutes_band_intensity_') ||
+          key.startsWith('agenda_slot_height_scale_') ||
           key.startsWith('agenda_hover_unrelated_card_dim_intensity_') ||
           key.startsWith('agenda_use_rounded_card_corners_') ||
           key.startsWith('agenda_show_prices_override_') ||

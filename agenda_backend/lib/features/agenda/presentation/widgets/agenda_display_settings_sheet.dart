@@ -5,8 +5,8 @@ import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
 import 'package:agenda_backend/core/widgets/app_form.dart';
 import 'package:agenda_backend/features/agenda/domain/agenda_card_color_source.dart';
-import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/agenda_display_settings_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/calendar_view_mode_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
@@ -131,6 +131,38 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
               ),
               const SizedBox(width: 6),
               Text('${(settings.cardTextScale * 100).round()}%'),
+            ],
+          ),
+          const SizedBox(height: _sectionSpacing),
+          Text(
+            context.l10n.agendaDisplaySettingsSlotHeightLabel,
+            style: settingLabelStyle,
+          ),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () {
+                  notifier.setSlotHeightScale(settings.slotHeightScale - 0.05);
+                },
+                icon: const Icon(Icons.remove),
+              ),
+              Expanded(
+                child: Slider(
+                  min: 0.6,
+                  max: 1.6,
+                  divisions: 20,
+                  value: settings.slotHeightScale,
+                  onChanged: notifier.setSlotHeightScale,
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  notifier.setSlotHeightScale(settings.slotHeightScale + 0.05);
+                },
+                icon: const Icon(Icons.add),
+              ),
+              const SizedBox(width: 6),
+              Text('${(settings.slotHeightScale * 100).round()}%'),
             ],
           ),
           const SizedBox(height: _sectionSpacing),

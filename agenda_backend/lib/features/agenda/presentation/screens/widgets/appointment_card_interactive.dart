@@ -812,8 +812,10 @@ class _AppointmentCardInteractiveState
         cardHeight < 34;
     final showStatusIcon = statusVisual != null && !forFeedback;
     final durationMinutes = endTime.difference(startTime).inMinutes;
+    final visualHeightPx = durationMinutes * _layoutConfig.pixelsPerMinute;
     final presentation = _CardPresentationModel(
       durationMinutes: durationMinutes,
+      visualHeightPx: visualHeightPx,
       hasClient: client.trim().isNotEmpty,
       isPriceDisplayEnabled: isPriceDisplayEnabled,
       forceCompactPresentation: widget.forceCompactPresentation,
@@ -835,12 +837,8 @@ class _AppointmentCardInteractiveState
       baseBorderRadius,
       radiusScale,
     );
-    final useAnchoredRowsLayout =
-        !presentation.forceCompactPresentation &&
-        presentation.durationMinutes >= 20 &&
-        presentation.durationMinutes <= 35;
     final boostAnchoredVerticalPadding =
-        useAnchoredRowsLayout && presentation.durationMinutes < 30;
+        presentation.boostAnchoredVerticalPadding;
     const anchoredVerticalPaddingBoost = 1.5;
     final effectiveAppointmentPrice = appointmentPrice;
     final effectiveBookingTotal = presentation.isUltraShort
@@ -1089,14 +1087,8 @@ class _AppointmentCardInteractiveState
     VoidCallback? onNotesTap,
   }) {
     final effectiveColumnWidth = widget.columnWidth ?? _lastSize?.width;
-    final useAnchoredRowsLayout =
-        !presentation.forceCompactPresentation &&
-        presentation.durationMinutes >= 20 &&
-        presentation.durationMinutes <= 35;
-    final boostAnchoredText =
-        useAnchoredRowsLayout &&
-        presentation.durationMinutes >= 25 &&
-        presentation.durationMinutes < 30;
+    final useAnchoredRowsLayout = presentation.useAnchoredRowsLayout;
+    final boostAnchoredText = presentation.boostAnchoredText;
     final boostCompactText = presentation.forceCompactPresentation;
     const anchoredTextSizeBoost = 2.0;
     const compactNoPriceTextBoost = 1.0;
@@ -1458,10 +1450,10 @@ class _AppointmentCardInteractiveState
             presentation.showServiceRow &&
             !presentation.showPriceInlineWithService &&
             !useAnchoredRowsLayout &&
-            presentation.durationMinutes >= 40;
+            presentation.showInlineNoteRow;
         final compactPricesInline =
             !presentation.forceCompactPresentation &&
-            presentation.durationMinutes < 20 &&
+            presentation.compactPricesInline &&
             appointmentPrice != null &&
             bookingTotal != null;
         final isNarrowOverlappedCard =
@@ -2084,8 +2076,18 @@ class _AppointmentCardInteractiveState
 } // Closing brace for _AppointmentCardInteractiveState
 
 class _CardPresentationModel {
+  static const double _ultraShortThresholdPx = 20.0; // 10 min @ 2 px/min
+  static const double _shortThresholdPx = 50.0; // 25 min @ 2 px/min
+  static const double _serviceInlineMaxPx = 40.0; // 20 min @ 2 px/min
+  static const double _anchoredMinPx = 40.0; // 20 min @ 2 px/min
+  static const double _anchoredMaxPx = 70.0; // 35 min @ 2 px/min
+  static const double _anchoredBoostMinPx = 50.0; // 25 min @ 2 px/min
+  static const double _anchoredBoostMaxPx = 60.0; // 30 min @ 2 px/min
+  static const double _inlineNoteMinPx = 80.0; // 40 min @ 2 px/min
+
   const _CardPresentationModel({
     required this.durationMinutes,
+    required this.visualHeightPx,
     required this.hasClient,
     this.isPriceDisplayEnabled = false,
     this.forceCompactPresentation = false,
@@ -2094,33 +2096,52 @@ class _CardPresentationModel {
   });
 
   final int durationMinutes;
+  final double visualHeightPx;
   final bool hasClient;
   final bool isPriceDisplayEnabled;
   final bool forceCompactPresentation;
   final bool hasAppointmentPrice;
   final bool hasBookingTotal;
 
-  bool get isUltraShort => !forceCompactPresentation && durationMinutes <= 10;
-  bool get isShort => forceCompactPresentation || durationMinutes <= 25;
+  bool get isUltraShort =>
+      !forceCompactPresentation && visualHeightPx <= _ultraShortThresholdPx;
+  bool get isShort =>
+      forceCompactPresentation || visualHeightPx <= _shortThresholdPx;
   bool get useUltraShortTextSize =>
-      !forceCompactPresentation && durationMinutes < 10;
+      !forceCompactPresentation && visualHeightPx < _ultraShortThresholdPx;
   bool get centerVertically =>
-      !forceCompactPresentation && durationMinutes < 20;
+      !forceCompactPresentation && visualHeightPx < _serviceInlineMaxPx;
   bool get showServiceInlineWithTime =>
-      !forceCompactPresentation && durationMinutes < 20 && !isUltraShort;
+      !forceCompactPresentation &&
+      visualHeightPx < _serviceInlineMaxPx &&
+      !isUltraShort;
   bool get showServiceRow =>
       forceCompactPresentation ||
-      (!showServiceInlineWithTime && durationMinutes >= 20);
+      (!showServiceInlineWithTime && visualHeightPx >= _serviceInlineMaxPx);
   bool get showPriceInlineWithService =>
       !forceCompactPresentation &&
       isPriceDisplayEnabled &&
-      durationMinutes >= 20 &&
-      durationMinutes <= 35;
+      visualHeightPx >= _anchoredMinPx &&
+      visualHeightPx <= _anchoredMaxPx;
   bool get useCompactResizeHandle => isShort;
   bool get showClientOnSecondRow =>
       hasClient && (!isUltraShort || forceCompactPresentation);
   bool get useUltraCompactLayout => isUltraShort;
   bool get hasPriceRow => hasAppointmentPrice || hasBookingTotal;
+  bool get useAnchoredRowsLayout =>
+      !forceCompactPresentation &&
+      visualHeightPx >= _anchoredMinPx &&
+      visualHeightPx <= _anchoredMaxPx;
+  bool get boostAnchoredVerticalPadding =>
+      useAnchoredRowsLayout && visualHeightPx < _anchoredBoostMaxPx;
+  bool get boostAnchoredText =>
+      useAnchoredRowsLayout &&
+      visualHeightPx >= _anchoredBoostMinPx &&
+      visualHeightPx < _anchoredBoostMaxPx;
+  bool get showInlineNoteRow =>
+      !forceCompactPresentation && visualHeightPx >= _inlineNoteMinPx;
+  bool get compactPricesInline =>
+      !forceCompactPresentation && visualHeightPx < _serviceInlineMaxPx;
 
   double get verticalTopPadding => isShort ? 0.0 : 4.0;
   double get baseBottomPadding => isShort ? 0.0 : 4.0;
@@ -2141,6 +2162,7 @@ class _CardPresentationModel {
 
   _CardPresentationModel copyWith({
     int? durationMinutes,
+    double? visualHeightPx,
     bool? hasClient,
     bool? isPriceDisplayEnabled,
     bool? forceCompactPresentation,
@@ -2149,6 +2171,7 @@ class _CardPresentationModel {
   }) {
     return _CardPresentationModel(
       durationMinutes: durationMinutes ?? this.durationMinutes,
+      visualHeightPx: visualHeightPx ?? this.visualHeightPx,
       hasClient: hasClient ?? this.hasClient,
       isPriceDisplayEnabled:
           isPriceDisplayEnabled ?? this.isPriceDisplayEnabled,

@@ -4,8 +4,11 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
+import '../../../core/services/preferences_service.dart';
 import '../domain/config/agenda_theme.dart';
 import '../domain/config/layout_config.dart';
+import 'business_providers.dart';
+import 'location_providers.dart';
 
 part 'layout_config_provider.g.dart';
 
@@ -13,12 +16,23 @@ part 'layout_config_provider.g.dart';
 @riverpod
 class LayoutConfigNotifier extends _$LayoutConfigNotifier {
   Timer? _resizeDebounce;
+  static const _minSlotHeightScale = 0.6;
+  static const _maxSlotHeightScale = 1.6;
 
   @override
   LayoutConfig build() {
     ref.onDispose(() {
       _resizeDebounce?.cancel();
     });
+    final businessId = ref.watch(currentBusinessIdProvider);
+    final locationId = ref.watch(currentLocationIdProvider);
+    final prefs = ref.watch(preferencesServiceProvider);
+    final slotHeightScale = (businessId > 0 && locationId > 0)
+        ? prefs
+              .getAgendaSlotHeightScale(businessId, locationId: locationId)
+              .clamp(_minSlotHeightScale, _maxSlotHeightScale)
+        : LayoutConfig.defaultSlotHeightScale;
+
     final dispatcher = WidgetsBinding.instance.platformDispatcher;
     final view = dispatcher.implicitView;
     final logicalSize = view != null
@@ -34,9 +48,11 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
     final initialHourWidth = _initialHourColumnWidth();
 
     return LayoutConfig.initial.copyWith(
+      slotHeightScale: slotHeightScale,
       headerHeight: initialHeaderHeight,
       slotHeight: LayoutConfig.slotHeightForMinutesPerSlot(
         LayoutConfig.minutesPerSlotConst,
+        slotHeightScale: slotHeightScale,
       ),
       hourColumnWidth: initialHourWidth,
     );
@@ -55,6 +71,7 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
       final next = state.copyWith(
         slotHeight: LayoutConfig.slotHeightForMinutesPerSlot(
           state.minutesPerSlot,
+          slotHeightScale: state.slotHeightScale,
         ),
         headerHeight: _deriveHeaderHeight(screenWidth),
         hourColumnWidth: _deriveHourColumnWidth(context),
@@ -110,7 +127,24 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
 
     state = state.copyWith(
       minutesPerSlot: minutes,
-      slotHeight: LayoutConfig.slotHeightForMinutesPerSlot(minutes),
+      slotHeight: LayoutConfig.slotHeightForMinutesPerSlot(
+        minutes,
+        slotHeightScale: state.slotHeightScale,
+      ),
+    );
+  }
+
+  void setSlotHeightScale(double scale) {
+    final nextScale = scale.clamp(_minSlotHeightScale, _maxSlotHeightScale);
+    if ((state.slotHeightScale - nextScale).abs() < 0.0001) {
+      return;
+    }
+    state = state.copyWith(
+      slotHeightScale: nextScale,
+      slotHeight: LayoutConfig.slotHeightForMinutesPerSlot(
+        state.minutesPerSlot,
+        slotHeightScale: nextScale,
+      ),
     );
   }
 
@@ -137,5 +171,4 @@ class LayoutConfigNotifier extends _$LayoutConfigNotifier {
     }
     state = state.copyWith(showTopbarAddLabel: enabled);
   }
-
 }

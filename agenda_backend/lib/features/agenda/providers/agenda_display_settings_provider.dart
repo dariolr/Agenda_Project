@@ -18,6 +18,7 @@ AgendaCardColorSource _defaultCardColorSourceForBusiness(int businessId) {
 class AgendaDisplaySettings {
   const AgendaDisplaySettings({
     this.cardTextScale = 1.0,
+    this.slotHeightScale = 1.0,
     this.cardColorOpacity = 1.0,
     this.extraMinutesBandIntensity = 0.5,
     this.hoverUnrelatedCardDimIntensity = 0.0,
@@ -29,6 +30,7 @@ class AgendaDisplaySettings {
   });
 
   final double cardTextScale;
+  final double slotHeightScale;
   final double cardColorOpacity;
   final double extraMinutesBandIntensity;
   final double hoverUnrelatedCardDimIntensity;
@@ -40,6 +42,7 @@ class AgendaDisplaySettings {
 
   AgendaDisplaySettings copyWith({
     double? cardTextScale,
+    double? slotHeightScale,
     double? cardColorOpacity,
     double? extraMinutesBandIntensity,
     double? hoverUnrelatedCardDimIntensity,
@@ -53,6 +56,7 @@ class AgendaDisplaySettings {
   }) {
     return AgendaDisplaySettings(
       cardTextScale: cardTextScale ?? this.cardTextScale,
+      slotHeightScale: slotHeightScale ?? this.slotHeightScale,
       cardColorOpacity: cardColorOpacity ?? this.cardColorOpacity,
       extraMinutesBandIntensity:
           extraMinutesBandIntensity ?? this.extraMinutesBandIntensity,
@@ -77,6 +81,8 @@ class AgendaDisplaySettings {
 class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
   static const _minTextScale = 0.5;
   static const _maxTextScale = 1.5;
+  static const _minSlotHeightScale = 0.6;
+  static const _maxSlotHeightScale = 1.6;
   static const _minCardOpacity = 0.3;
   static const _maxCardOpacity = 1.0;
   static const _minExtraMinutesBandIntensity = 0.0;
@@ -95,8 +101,12 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
     final scale = prefs
         .getAgendaCardTextScale(businessId, locationId: locationId)
         .clamp(_minTextScale, _maxTextScale);
+    final slotHeightScale = prefs
+        .getAgendaSlotHeightScale(businessId, locationId: locationId)
+        .clamp(_minSlotHeightScale, _maxSlotHeightScale);
     return AgendaDisplaySettings(
       cardTextScale: scale,
+      slotHeightScale: slotHeightScale,
       cardColorOpacity: prefs
           .getAgendaCardColorOpacity(businessId, locationId: locationId)
           .clamp(_minCardOpacity, _maxCardOpacity),
@@ -150,6 +160,18 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
     await ref
         .read(preferencesServiceProvider)
         .setAgendaCardTextScale(businessId, next, locationId: locationId);
+  }
+
+  Future<void> setSlotHeightScale(double value) async {
+    final businessId = _businessId();
+    final locationId = _locationId();
+    if (businessId <= 0 || locationId <= 0) return;
+    final next = value.clamp(_minSlotHeightScale, _maxSlotHeightScale);
+    state = state.copyWith(slotHeightScale: next);
+    await ref
+        .read(preferencesServiceProvider)
+        .setAgendaSlotHeightScale(businessId, next, locationId: locationId);
+    ref.read(layoutConfigProvider.notifier).setSlotHeightScale(next);
   }
 
   Future<void> setCardColorOpacity(double value) async {
@@ -281,6 +303,11 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
     state = const AgendaDisplaySettings();
     final prefs = ref.read(preferencesServiceProvider);
     await prefs.setAgendaCardTextScale(businessId, 1.0, locationId: locationId);
+    await prefs.setAgendaSlotHeightScale(
+      businessId,
+      1.0,
+      locationId: locationId,
+    );
     await prefs.setAgendaCardColorOpacity(
       businessId,
       1.0,
@@ -320,6 +347,7 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
     ref
         .read(layoutConfigProvider.notifier)
         .setUseServiceColors(defaultSource == AgendaCardColorSource.services);
+    ref.read(layoutConfigProvider.notifier).setSlotHeightScale(1.0);
     await prefs.setAgendaShowCancelledAppointments(
       businessId,
       false,
@@ -335,6 +363,10 @@ final agendaDisplaySettingsProvider =
 
 final agendaCardTextScaleProvider = Provider<double>((ref) {
   return ref.watch(agendaDisplaySettingsProvider).cardTextScale;
+});
+
+final agendaSlotHeightScaleProvider = Provider<double>((ref) {
+  return ref.watch(agendaDisplaySettingsProvider).slotHeightScale;
 });
 
 final agendaCardColorOpacityProvider = Provider<double>((ref) {

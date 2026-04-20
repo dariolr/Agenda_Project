@@ -303,6 +303,8 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("Mostra appuntamenti cancellati"),
     "agendaDisplaySettingsShowPricesLabel":
         MessageLookupByLibrary.simpleMessage("Visualizza importi"),
+    "agendaDisplaySettingsSlotHeightLabel":
+        MessageLookupByLibrary.simpleMessage("Altezza slot agenda"),
     "agendaDisplaySettingsSuperadminTitle":
         MessageLookupByLibrary.simpleMessage("Impostazioni di visualizzazione"),
     "agendaDisplaySettingsUseRoundedCardCornersLabel":

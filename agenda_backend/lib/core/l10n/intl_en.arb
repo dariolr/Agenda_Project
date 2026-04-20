@@ -1795,6 +1795,7 @@
   "agendaDisplaySettingsAction": "Display settings",
   "agendaDisplaySettingsSuperadminTitle": "Agenda Settings",
   "agendaDisplaySettingsCardTextZoomLabel": "Card text zoom",
+  "agendaDisplaySettingsSlotHeightLabel": "Agenda slot height",
   "agendaDisplaySettingsCardColorOpacityLabel": "Color intensity",
   "agendaDisplaySettingsExtraMinutesBandIntensityLabel": "Additional extra-band intensity",
   "agendaDisplaySettingsHoverUnrelatedDimIntensityLabel": "Unrelated card dimming intensity (desktop hover)",

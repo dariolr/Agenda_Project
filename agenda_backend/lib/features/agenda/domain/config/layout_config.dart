@@ -33,9 +33,11 @@ class LayoutConfig {
   static const double defaultHeaderHeight = 50;
   static const double defaultSlotHeight =
       AgendaTimelineMetrics.pixelsPerMinute * minutesPerSlotConst;
+  static const double defaultSlotHeightScale = 1.0;
 
   static const LayoutConfig initial = LayoutConfig(
     slotHeight: defaultSlotHeight,
+    slotHeightScale: defaultSlotHeightScale,
     headerHeight: defaultHeaderHeight,
     hourColumnWidth: defaultHourColumnWidth,
     minutesPerSlot: minutesPerSlotConst,
@@ -51,6 +53,7 @@ class LayoutConfig {
   // ──────────────────────────────────────────────
 
   final double slotHeight;
+  final double slotHeightScale;
   final double headerHeight;
   final double hourColumnWidth;
   final int minutesPerSlot;
@@ -71,6 +74,7 @@ class LayoutConfig {
 
   const LayoutConfig({
     required this.slotHeight,
+    required this.slotHeightScale,
     required this.headerHeight,
     required this.hourColumnWidth,
     required this.minutesPerSlot,
@@ -86,6 +90,7 @@ class LayoutConfig {
     if (identical(this, other)) return true;
     if (other is! LayoutConfig) return false;
     return slotHeight == other.slotHeight &&
+        slotHeightScale == other.slotHeightScale &&
         headerHeight == other.headerHeight &&
         hourColumnWidth == other.hourColumnWidth &&
         minutesPerSlot == other.minutesPerSlot &&
@@ -100,6 +105,7 @@ class LayoutConfig {
   @override
   int get hashCode => Object.hash(
     slotHeight,
+    slotHeightScale,
     headerHeight,
     hourColumnWidth,
     minutesPerSlot,
@@ -112,6 +118,7 @@ class LayoutConfig {
 
   LayoutConfig copyWith({
     double? slotHeight,
+    double? slotHeightScale,
     double? headerHeight,
     double? hourColumnWidth,
     int? minutesPerSlot,
@@ -123,6 +130,7 @@ class LayoutConfig {
   }) {
     return LayoutConfig(
       slotHeight: slotHeight ?? this.slotHeight,
+      slotHeightScale: slotHeightScale ?? this.slotHeightScale,
       headerHeight: headerHeight ?? this.headerHeight,
       hourColumnWidth: hourColumnWidth ?? this.hourColumnWidth,
       minutesPerSlot: minutesPerSlot ?? this.minutesPerSlot,
@@ -141,25 +149,27 @@ class LayoutConfig {
 
   int get totalSlots => (hoursInDay * 60 ~/ minutesPerSlot);
 
-  double get totalHeight =>
-      AgendaTimelineMetrics.timelineHeightForMinutes(hoursInDay * 60);
+  double get totalHeight => heightForMinutes(hoursInDay * 60);
 
-  double get pixelsPerMinute => AgendaTimelineMetrics.pixelsPerMinute;
+  double get pixelsPerMinute =>
+      AgendaTimelineMetrics.pixelsPerMinute * slotHeightScale;
 
-  double heightForMinutes(num minutes) =>
-      AgendaTimelineMetrics.heightForMinutes(minutes.toDouble());
+  double heightForMinutes(num minutes) => minutes.toDouble() * pixelsPerMinute;
 
   double offsetForMinuteOfDay(num minuteOfDay) =>
-      AgendaTimelineMetrics.topOffsetForMinuteOfDay(minuteOfDay.toDouble());
+      minuteOfDay.toDouble() * pixelsPerMinute;
 
   double minutesFromHeight(double height) =>
-      AgendaTimelineMetrics.minutesForHeight(height);
+      pixelsPerMinute == 0 ? 0 : (height / pixelsPerMinute);
 
   static bool isValidSlotDuration(int minutes) =>
       slotDurationOptions.contains(minutes);
 
-  static double slotHeightForMinutesPerSlot(int minutesPerSlot) =>
-      AgendaTimelineMetrics.slotHeightFor(minutesPerSlot);
+  static double slotHeightForMinutesPerSlot(
+    int minutesPerSlot, {
+    double slotHeightScale = defaultSlotHeightScale,
+  }) =>
+      minutesPerSlot * AgendaTimelineMetrics.pixelsPerMinute * slotHeightScale;
 
   /// Calcola quanti staff possono essere mostrati in base alla larghezza schermo.
   int computeMaxVisibleStaff(

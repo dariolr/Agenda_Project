@@ -11430,6 +11430,16 @@ class L10n {
     );
   }
 
+  /// `Agenda slot height`
+  String get agendaDisplaySettingsSlotHeightLabel {
+    return Intl.message(
+      'Agenda slot height',
+      name: 'agendaDisplaySettingsSlotHeightLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Color intensity`
   String get agendaDisplaySettingsCardColorOpacityLabel {
     return Intl.message(
