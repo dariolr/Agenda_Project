@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
+import '../l10n/l10n.dart';
 import 'api_config.dart';
 import 'token_storage.dart';
 
@@ -18,12 +19,16 @@ class TokenExpiredException implements Exception {
 class ApiException implements Exception {
   final String code;
   final String message;
+  final String? messageKey;
+  final Map<String, dynamic> params;
   final int statusCode;
   final dynamic details;
 
   const ApiException({
     required this.code,
     required this.message,
+    this.messageKey,
+    this.params = const {},
     required this.statusCode,
     this.details,
   });
@@ -32,15 +37,23 @@ class ApiException implements Exception {
   bool get isNotFound => statusCode == 404;
   bool get isConflict => statusCode == 409;
   bool get isSlotConflict => code == 'slot_conflict';
+  String? get reason => params['reason']?.toString();
+  bool hasReason(String value) => reason == value;
+  bool hasMessageKey(String value) => messageKey == value;
   bool get isServiceUnavailable =>
       statusCode == 503 || code == 'database_error';
   bool get isLocationNotFound =>
-      isNotFound && message.toLowerCase().contains('location');
+      (isNotFound && code == 'not_found') &&
+      (hasReason('location_not_found') ||
+          hasMessageKey('errors.location_not_found'));
   bool get isBusinessNotFound =>
-      isNotFound && message.toLowerCase().contains('business');
+      (isNotFound && code == 'not_found') &&
+      (hasReason('business_not_found') ||
+          hasMessageKey('errors.business_not_found'));
 
   @override
-  String toString() => 'ApiException($code): $message';
+  String toString() =>
+      'ApiException($code, key: ${messageKey ?? "-"}): $message';
 }
 
 /// Client HTTP per comunicare con agenda_core API
@@ -269,9 +282,19 @@ class ApiClient {
     }
     throw ApiException(
       code: body['error']?['code'] ?? 'unknown_error',
-      message: body['error']?['message'] ?? 'Unknown error',
+      message: _resolveDisplayMessage(
+        code: (body['error']?['code'] ?? 'unknown_error').toString(),
+        message: body['error']?['message']?.toString(),
+        messageKey: body['error']?['message_key']?.toString(),
+        reason:
+            (body['error']?['params']?['reason'] ??
+                    body['error']?['details']?['reason'])
+                ?.toString(),
+      ),
+      messageKey: body['error']?['message_key']?.toString(),
+      params: _extractErrorParams(body['error']),
       statusCode: response.statusCode ?? 500,
-      details: body['error']?['details'],
+      details: body['error']?['details'] ?? body['error']?['params'],
     );
   }
 
@@ -283,17 +306,166 @@ class ApiClient {
       if (body is Map<String, dynamic>) {
         return ApiException(
           code: body['error']?['code'] ?? 'api_error',
-          message: body['error']?['message'] ?? error.message ?? 'API Error',
+          message: _resolveDisplayMessage(
+            code: (body['error']?['code'] ?? 'api_error').toString(),
+            message: body['error']?['message']?.toString() ?? error.message,
+            messageKey: body['error']?['message_key']?.toString(),
+            reason:
+                (body['error']?['params']?['reason'] ??
+                        body['error']?['details']?['reason'])
+                    ?.toString(),
+          ),
+          messageKey: body['error']?['message_key']?.toString(),
+          params: _extractErrorParams(body['error']),
           statusCode: response.statusCode ?? 500,
-          details: body['error']?['details'],
+          details: body['error']?['details'] ?? body['error']?['params'],
         );
       }
     }
     return ApiException(
       code: 'network_error',
       message: error.message ?? 'Network error',
+      messageKey: 'errors.network_error',
+      params: {'reason': 'network_error', 'type': error.type.name},
       statusCode: error.response?.statusCode ?? 0,
     );
+  }
+
+  Map<String, dynamic> _extractErrorParams(dynamic errorNode) {
+    if (errorNode is! Map) return const {};
+
+    final params = errorNode['params'];
+    if (params is Map<String, dynamic>) return params;
+    if (params is Map) return Map<String, dynamic>.from(params);
+
+    final details = errorNode['details'];
+    if (details is Map<String, dynamic>) return details;
+    if (details is Map) return Map<String, dynamic>.from(details);
+
+    return const {};
+  }
+
+  String _resolveDisplayMessage({
+    required String code,
+    String? message,
+    String? messageKey,
+    String? reason,
+  }) {
+    final localized = _localizedApiErrorMessage(
+      code: code,
+      messageKey: messageKey,
+      reason: reason,
+    );
+    if (localized != null) {
+      return localized;
+    }
+
+    if (message != null && message.trim().isNotEmpty) {
+      return message;
+    }
+
+    final fallback = reason ?? messageKey?.split('.').last ?? code;
+    return _humanizeMachineValue(fallback);
+  }
+
+  String _humanizeMachineValue(String value) {
+    final normalized = value
+        .replaceAll('__', ' ')
+        .replaceAll(RegExp(r'[._-]+'), ' ')
+        .trim();
+    if (normalized.isEmpty) return 'Unknown error';
+    return normalized[0].toUpperCase() + normalized.substring(1);
+  }
+
+  String? _localizedApiErrorMessage({
+    required String code,
+    String? messageKey,
+    String? reason,
+  }) {
+    L10n? l10n;
+    try {
+      l10n = L10n.current;
+    } catch (_) {
+      l10n = null;
+    }
+    if (l10n == null) return null;
+
+    final candidateKeys = <String>{
+      if (reason != null && reason.trim().isNotEmpty) reason.trim(),
+      if (reason != null && reason.contains('__'))
+        reason.split('__').first.trim(),
+      if (messageKey != null && messageKey.trim().isNotEmpty)
+        messageKey.split('.').last.trim(),
+      code.trim(),
+    };
+
+    for (final key in candidateKeys) {
+      final localized = _apiErrorLocalizationForKey(l10n, key);
+      if (localized != null) {
+        return localized;
+      }
+    }
+
+    return null;
+  }
+
+  String? _apiErrorLocalizationForKey(L10n l10n, String key) {
+    return switch (key) {
+      'invalid_credentials' => l10n.apiErrorInvalidCredentials,
+      'invalid_refresh_token' => l10n.apiErrorInvalidRefreshToken,
+      'invalid_reset_token' => l10n.apiErrorInvalidResetToken,
+      'reset_token_expired' => l10n.apiErrorResetTokenExpired,
+      'token_expired' => l10n.apiErrorTokenExpired,
+      'token_invalid' => l10n.apiErrorUnauthorized,
+      'session_revoked' => l10n.apiErrorUnauthorized,
+      'auth_required' => l10n.apiErrorUnauthorized,
+      'unauthorized' => l10n.apiErrorUnauthorized,
+      'access_denied' => l10n.apiErrorForbidden,
+      'forbidden' => l10n.apiErrorForbidden,
+      'bad_request' => l10n.apiErrorValidation,
+      'not_found' => l10n.apiErrorNotFound,
+      'validation_error' => l10n.apiErrorValidation,
+      'account_disabled' => l10n.apiErrorForbidden,
+      'email_already_exists' => l10n.apiErrorValidation,
+      'weak_password' => l10n.apiErrorValidation,
+      'class_type_name_exists' => l10n.apiErrorClassTypeNameExists,
+      'class_event_full' => l10n.apiErrorSlotConflict,
+      'class_event_not_bookable' => l10n.apiErrorValidation,
+      'booking_closed' => l10n.apiErrorValidation,
+      'booking_not_open' => l10n.apiErrorValidation,
+      'slot_conflict' => l10n.apiErrorSlotConflict,
+      'invalid_service' => l10n.apiErrorValidation,
+      'invalid_category' => l10n.apiErrorValidation,
+      'invalid_staff' => l10n.apiErrorValidation,
+      'invalid_location' => l10n.apiErrorValidation,
+      'invalid_client' => l10n.apiErrorValidation,
+      'invalid_time' => l10n.apiErrorValidation,
+      'staff_unavailable' => l10n.apiErrorValidation,
+      'outside_working_hours' => l10n.apiErrorValidation,
+      'already_replaced' => l10n.apiErrorValidation,
+      'not_modifiable' => l10n.apiErrorValidation,
+      'business_closed' => l10n.apiErrorValidation,
+      'missing_location' => l10n.apiErrorValidation,
+      'not_configured' => l10n.apiErrorDatabase,
+      'package_inactive' => l10n.apiErrorValidation,
+      'package_broken' => l10n.apiErrorValidation,
+      'invitation_email_already_registered' => l10n.apiErrorValidation,
+      'invalid_request' => l10n.apiErrorValidation,
+      'invalid_data' => l10n.apiErrorValidation,
+      'invalid_environment' => l10n.apiErrorValidation,
+      'export_failed' => l10n.apiErrorDatabase,
+      'import_failed' => l10n.apiErrorDatabase,
+      'production_unreachable' => l10n.apiErrorDatabase,
+      'production_error' => l10n.apiErrorDatabase,
+      'invalid_export' => l10n.apiErrorDatabase,
+      'sync_failed' => l10n.apiErrorDatabase,
+      'webhook_verify_failed' => l10n.apiErrorForbidden,
+      'demo_blocked' => l10n.apiErrorDemoBlocked,
+      'database_error' => l10n.apiErrorDatabase,
+      'server_error' => l10n.apiErrorDatabase,
+      'internal_error' => l10n.apiErrorDatabase,
+      _ => null,
+    };
   }
 
   // ========== CUSTOMER AUTH ENDPOINTS ==========

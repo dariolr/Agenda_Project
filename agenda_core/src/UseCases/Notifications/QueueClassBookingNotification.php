@@ -220,7 +220,7 @@ final class QueueClassBookingNotification
         if ($this->hasMultipleLocations((int) ($data['business_id'] ?? 0))) {
             $strings = EmailTemplateRenderer::strings($locale);
             $locationBlockHtml = sprintf(
-                '<tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;"><span style="color:#666;">📍 %s</span><br><strong style="color:#333;">%s</strong><br><span style="color:#666;font-size:14px;">%s</span></td></tr>',
+                '<tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;"><strong style="color:#666;">📍 %s</strong><br><span style="color:#333;">%s</span><br><span style="color:#666;font-size:14px;">%s</span></td></tr>',
                 $strings['where_label'],
                 htmlspecialchars((string) ($data['location_name'] ?? ''), ENT_QUOTES, 'UTF-8'),
                 htmlspecialchars((string) ($data['location_address'] ?? ''), ENT_QUOTES, 'UTF-8')

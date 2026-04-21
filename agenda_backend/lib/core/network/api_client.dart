@@ -20,12 +20,16 @@ import 'token_storage.dart';
 class ApiException implements Exception {
   final String code;
   final String message;
+  final String? messageKey;
+  final Map<String, dynamic> params;
   final int statusCode;
   final dynamic details;
 
   const ApiException({
     required this.code,
     required this.message,
+    this.messageKey,
+    this.params = const {},
     required this.statusCode,
     this.details,
   });
@@ -33,9 +37,13 @@ class ApiException implements Exception {
   bool get isUnauthorized => statusCode == 401;
   bool get isConflict => statusCode == 409;
   bool get isSlotConflict => code == 'slot_conflict';
+  String? get reason => params['reason']?.toString();
+  bool hasReason(String value) => reason == value;
+  bool hasMessageKey(String value) => messageKey == value;
 
   @override
-  String toString() => 'ApiException($code): $message';
+  String toString() =>
+      'ApiException($code, key: ${messageKey ?? "-"}): $message';
 }
 
 /// Client HTTP per comunicare con agenda_core API
@@ -272,9 +280,20 @@ class ApiClient {
       }
       throw ApiException(
         code: body['error']?['code'] ?? 'unknown_error',
-        message: body['error']?['message'] ?? 'Unknown error',
+        message: _resolveDisplayMessage(
+          statusCode: response.statusCode ?? 500,
+          code: (body['error']?['code'] ?? 'unknown_error').toString(),
+          message: body['error']?['message']?.toString(),
+          messageKey: body['error']?['message_key']?.toString(),
+          reason:
+              (body['error']?['params']?['reason'] ??
+                      body['error']?['details']?['reason'])
+                  ?.toString(),
+        ),
+        messageKey: body['error']?['message_key']?.toString(),
+        params: _extractErrorParams(body['error']),
         statusCode: response.statusCode ?? 500,
-        details: body['error']?['details'],
+        details: body['error']?['details'] ?? body['error']?['params'],
       );
     } on DioException catch (e) {
       throw _handleError(e);
@@ -330,9 +349,20 @@ class ApiClient {
     }
     throw ApiException(
       code: body['error']?['code'] ?? 'unknown_error',
-      message: body['error']?['message'] ?? 'Unknown error',
+      message: _resolveDisplayMessage(
+        statusCode: response.statusCode ?? 500,
+        code: (body['error']?['code'] ?? 'unknown_error').toString(),
+        message: body['error']?['message']?.toString(),
+        messageKey: body['error']?['message_key']?.toString(),
+        reason:
+            (body['error']?['params']?['reason'] ??
+                    body['error']?['details']?['reason'])
+                ?.toString(),
+      ),
+      messageKey: body['error']?['message_key']?.toString(),
+      params: _extractErrorParams(body['error']),
       statusCode: response.statusCode ?? 500,
-      details: body['error']?['details'],
+      details: body['error']?['details'] ?? body['error']?['params'],
     );
   }
 
@@ -360,16 +390,25 @@ class ApiClient {
       final body = response.data;
       if (body is Map<String, dynamic>) {
         final backendCode = body['error']?['code'] ?? 'api_error';
-        final backendMessage =
-            body['error']?['message'] ?? error.message ?? 'API Error';
+        final backendRawMessage = body['error']?['message']?.toString();
+        final backendMessageKey = body['error']?['message_key']?.toString();
+        final backendReason =
+            (body['error']?['params']?['reason'] ??
+                    body['error']?['details']?['reason'])
+                ?.toString();
         return ApiException(
           code: backendCode,
-          message: _localizedHttpErrorMessage(
+          message: _resolveDisplayMessage(
             statusCode: statusCode,
-            fallbackMessage: backendMessage,
+            code: backendCode.toString(),
+            message: backendRawMessage,
+            messageKey: backendMessageKey,
+            reason: backendReason,
           ),
+          messageKey: backendMessageKey,
+          params: _extractErrorParams(body['error']),
           statusCode: statusCode,
-          details: body['error']?['details'],
+          details: body['error']?['details'] ?? body['error']?['params'],
         );
       }
       return ApiException(
@@ -378,6 +417,8 @@ class ApiClient {
           statusCode: statusCode,
           fallbackMessage: error.message ?? 'HTTP Error',
         ),
+        messageKey: 'errors.http_error',
+        params: {'reason': 'http_error'},
         statusCode: statusCode,
         details: {'uri': error.requestOptions.uri.toString()},
       );
@@ -385,6 +426,8 @@ class ApiClient {
     return ApiException(
       code: 'network_error',
       message: _localizedNetworkErrorMessage(error),
+      messageKey: 'errors.network_error',
+      params: {'reason': 'network_error', 'type': error.type.name},
       statusCode: error.response?.statusCode ?? 0,
       details: {
         'type': error.type.name,
@@ -438,6 +481,150 @@ class ApiClient {
       504 =>
         l10n?.serverError504 ?? 'Server response timeout. Please try again.',
       _ => fallbackMessage,
+    };
+  }
+
+  Map<String, dynamic> _extractErrorParams(dynamic errorNode) {
+    if (errorNode is! Map) return const {};
+
+    final params = errorNode['params'];
+    if (params is Map<String, dynamic>) return params;
+    if (params is Map) return Map<String, dynamic>.from(params);
+
+    final details = errorNode['details'];
+    if (details is Map<String, dynamic>) return details;
+    if (details is Map) return Map<String, dynamic>.from(details);
+
+    return const {};
+  }
+
+  String _resolveDisplayMessage({
+    required int statusCode,
+    required String code,
+    String? message,
+    String? messageKey,
+    String? reason,
+  }) {
+    final localized = _localizedApiErrorMessage(
+      code: code,
+      messageKey: messageKey,
+      reason: reason,
+    );
+    if (localized != null) {
+      return _localizedHttpErrorMessage(
+        statusCode: statusCode,
+        fallbackMessage: localized,
+      );
+    }
+
+    final rawText =
+        message ??
+        _humanizeMachineValue(reason ?? messageKey?.split('.').last ?? code);
+
+    return _localizedHttpErrorMessage(
+      statusCode: statusCode,
+      fallbackMessage: rawText,
+    );
+  }
+
+  String _humanizeMachineValue(String? value) {
+    if (value == null || value.trim().isEmpty) return 'Unknown error';
+    final normalized = value
+        .replaceAll('__', ' ')
+        .replaceAll(RegExp(r'[._-]+'), ' ')
+        .trim();
+    if (normalized.isEmpty) return 'Unknown error';
+    return normalized[0].toUpperCase() + normalized.substring(1);
+  }
+
+  String? _localizedApiErrorMessage({
+    required String code,
+    String? messageKey,
+    String? reason,
+  }) {
+    L10n? l10n;
+    try {
+      l10n = L10n.current;
+    } catch (_) {
+      l10n = null;
+    }
+    if (l10n == null) return null;
+
+    final candidateKeys = <String>{
+      if (reason != null && reason.trim().isNotEmpty) reason.trim(),
+      if (reason != null && reason.contains('__'))
+        reason.split('__').first.trim(),
+      if (messageKey != null && messageKey.trim().isNotEmpty)
+        messageKey.split('.').last.trim(),
+      code.trim(),
+    };
+
+    for (final key in candidateKeys) {
+      final localized = _apiErrorLocalizationForKey(l10n, key);
+      if (localized != null) {
+        return localized;
+      }
+    }
+
+    return null;
+  }
+
+  String? _apiErrorLocalizationForKey(L10n l10n, String key) {
+    return switch (key) {
+      'invalid_credentials' => l10n.apiErrorInvalidCredentials,
+      'invalid_refresh_token' => l10n.apiErrorInvalidRefreshToken,
+      'invalid_reset_token' => l10n.apiErrorInvalidResetToken,
+      'reset_token_expired' => l10n.apiErrorResetTokenExpired,
+      'token_expired' => l10n.apiErrorTokenExpired,
+      'token_invalid' => l10n.apiErrorUnauthorized,
+      'session_revoked' => l10n.apiErrorUnauthorized,
+      'auth_required' => l10n.apiErrorUnauthorized,
+      'unauthorized' => l10n.apiErrorUnauthorized,
+      'access_denied' => l10n.apiErrorForbidden,
+      'forbidden' => l10n.apiErrorForbidden,
+      'bad_request' => l10n.apiErrorValidation,
+      'not_found' => l10n.apiErrorNotFound,
+      'validation_error' => l10n.apiErrorValidation,
+      'account_disabled' => l10n.apiErrorForbidden,
+      'email_already_exists' => l10n.apiErrorValidation,
+      'weak_password' => l10n.apiErrorValidation,
+      'class_type_name_exists' => l10n.apiErrorClassTypeNameExists,
+      'class_event_full' => l10n.apiErrorSlotConflict,
+      'class_event_not_bookable' => l10n.apiErrorValidation,
+      'booking_closed' => l10n.apiErrorValidation,
+      'booking_not_open' => l10n.apiErrorValidation,
+      'slot_conflict' => l10n.apiErrorSlotConflict,
+      'invalid_service' => l10n.apiErrorValidation,
+      'invalid_category' => l10n.apiErrorValidation,
+      'invalid_staff' => l10n.apiErrorValidation,
+      'invalid_location' => l10n.apiErrorValidation,
+      'invalid_client' => l10n.apiErrorValidation,
+      'invalid_time' => l10n.apiErrorValidation,
+      'staff_unavailable' => l10n.apiErrorValidation,
+      'outside_working_hours' => l10n.apiErrorValidation,
+      'already_replaced' => l10n.apiErrorValidation,
+      'not_modifiable' => l10n.apiErrorValidation,
+      'business_closed' => l10n.apiErrorValidation,
+      'missing_location' => l10n.apiErrorValidation,
+      'not_configured' => l10n.apiErrorDatabase,
+      'package_inactive' => l10n.apiErrorValidation,
+      'package_broken' => l10n.apiErrorValidation,
+      'invitation_email_already_registered' => l10n.apiErrorValidation,
+      'invalid_request' => l10n.apiErrorValidation,
+      'invalid_data' => l10n.apiErrorValidation,
+      'invalid_environment' => l10n.apiErrorValidation,
+      'export_failed' => l10n.apiErrorDatabase,
+      'import_failed' => l10n.apiErrorDatabase,
+      'production_unreachable' => l10n.apiErrorDatabase,
+      'production_error' => l10n.apiErrorDatabase,
+      'invalid_export' => l10n.apiErrorDatabase,
+      'sync_failed' => l10n.apiErrorDatabase,
+      'webhook_verify_failed' => l10n.apiErrorForbidden,
+      'demo_blocked' => l10n.apiErrorDemoBlocked,
+      'database_error' => l10n.apiErrorDatabase,
+      'server_error' => l10n.apiErrorDatabase,
+      'internal_error' => l10n.apiErrorDatabase,
+      _ => null,
     };
   }
 
@@ -741,6 +928,8 @@ class ApiClient {
     double? price,
     bool priceExplicitlySet = false,
     bool notifyClient = true,
+    bool notifyClientDecisionByOperator = false,
+    bool suppressAuditEvent = false,
   }) async {
     final data = <String, dynamic>{};
     if (startTime != null) data['start_time'] = startTime;
@@ -766,6 +955,8 @@ class ApiClient {
       data['price'] = price;
     }
     data['notify_client'] = notifyClient;
+    data['notify_client_decision_by_operator'] = notifyClientDecisionByOperator;
+    data['suppress_audit_event'] = suppressAuditEvent;
 
     try {
       final response = await _dio.patch(
@@ -2388,8 +2579,12 @@ class ApiClient {
         .toList();
   }
 
-  /// Create a new time block
+  /// Create a new time block (single or recurring series).
   /// POST /v1/locations/{locationId}/time-blocks
+  ///
+  /// For a recurring series pass [recurrence] and optionally [excludedIndices].
+  /// The response for a single block contains `time_block`; for a series it
+  /// contains `time_blocks` (list) + `recurrence_rule_id` + `created_count`.
   Future<Map<String, dynamic>> createTimeBlock({
     required int locationId,
     required String startTime,
@@ -2398,6 +2593,8 @@ class ApiClient {
     bool isAllDay = false,
     bool allowOnlineBookingDuringBlock = false,
     String? reason,
+    Map<String, dynamic>? recurrence,
+    List<int>? excludedIndices,
   }) async {
     final response = await post(
       '/v1/locations/$locationId/time-blocks',
@@ -2408,13 +2605,20 @@ class ApiClient {
         'is_all_day': isAllDay,
         'allow_online_booking_during_block': allowOnlineBookingDuringBlock,
         if (reason != null) 'reason': reason,
+        if (recurrence != null) 'recurrence': recurrence,
+        if (excludedIndices != null && excludedIndices.isNotEmpty)
+          'excluded_indices': excludedIndices,
       },
     );
-    return Map<String, dynamic>.from(response['time_block'] as Map);
+    return Map<String, dynamic>.from(response as Map);
   }
 
-  /// Update a time block
+  /// Update a time block.
   /// PUT /v1/time-blocks/{blockId}
+  ///
+  /// Pass [scope] = 'all' or 'future' to update shared fields in recurrence series.
+  /// When scope is 'future', optionally pass [fromIndex].
+  /// When scope is 'all'/'future' the response does not contain a `time_block` key.
   Future<Map<String, dynamic>> updateTimeBlock({
     required int blockId,
     String? startTime,
@@ -2423,8 +2627,10 @@ class ApiClient {
     bool? isAllDay,
     bool? allowOnlineBookingDuringBlock,
     String? reason,
+    String scope = 'this',
+    int? fromIndex,
   }) async {
-    final data = <String, dynamic>{};
+    final data = <String, dynamic>{'scope': scope};
     if (startTime != null) data['start_time'] = startTime;
     if (endTime != null) data['end_time'] = endTime;
     if (staffIds != null) data['staff_ids'] = staffIds;
@@ -2433,15 +2639,24 @@ class ApiClient {
       data['allow_online_booking_during_block'] = allowOnlineBookingDuringBlock;
     }
     if (reason != null) data['reason'] = reason;
+    if (fromIndex != null) data['from_index'] = fromIndex;
 
     final response = await put('/v1/time-blocks/$blockId', data: data);
-    return Map<String, dynamic>.from(response['time_block'] as Map);
+    return Map<String, dynamic>.from(response as Map);
   }
 
-  /// Delete a time block
-  /// DELETE /v1/time-blocks/{blockId}
-  Future<void> deleteTimeBlock(int blockId) async {
-    await delete('/v1/time-blocks/$blockId');
+  /// Delete a time block.
+  /// DELETE /v1/time-blocks/{blockId}?scope=this|future|all[&from_index=N]
+  ///
+  /// Pass [scope] = 'all' to delete the entire recurrence series,
+  /// or [scope] = 'future' to delete from [fromIndex].
+  Future<void> deleteTimeBlock(
+    int blockId, {
+    String scope = 'this',
+    int? fromIndex,
+  }) async {
+    final fromIndexPart = fromIndex != null ? '&from_index=$fromIndex' : '';
+    await delete('/v1/time-blocks/$blockId?scope=$scope$fromIndexPart');
   }
 
   // ========== STAFF PLANNING ENDPOINTS ==========

@@ -3,7 +3,7 @@ lib/app/scaffold_with_navigation.dart|showDialog=4|showModalBottomSheet=0
 lib/app/widgets/agenda_control_components.dart|showDialog=1|showModalBottomSheet=0
 lib/app/widgets/agenda_staff_filter_selector.dart|showDialog=0|showModalBottomSheet=1
 lib/app/widgets/user_menu_button.dart|showDialog=1|showModalBottomSheet=0
-lib/features/agenda/presentation/dialogs/add_block_dialog.dart|showDialog=1|showModalBottomSheet=0
+lib/features/agenda/presentation/dialogs/add_block_dialog.dart|showDialog=2|showModalBottomSheet=0
 lib/features/agenda/presentation/dialogs/payment_dialog.dart|showDialog=1|showModalBottomSheet=0
 lib/features/agenda/presentation/dialogs/recurrence_summary_dialog.dart|showDialog=1|showModalBottomSheet=0
 lib/features/agenda/presentation/dialogs/recurring_action_dialog.dart|showDialog=2|showModalBottomSheet=0
@@ -28,10 +28,12 @@ lib/features/business/presentation/dialogs/location_closure_dialog.dart|showDial
 lib/features/business/presentation/invitation_accept_screen.dart|showDialog=1|showModalBottomSheet=0
 lib/features/business/presentation/location_closures_screen.dart|showDialog=1|showModalBottomSheet=0
 lib/features/business/presentation/operators_screen.dart|showDialog=1|showModalBottomSheet=0
-lib/features/class_events/presentation/class_events_screen.dart|showDialog=3|showModalBottomSheet=0
+lib/features/class_events/presentation/class_events_screen.dart|showDialog=5|showModalBottomSheet=0
+lib/features/class_events/presentation/class_type_events_screen.dart|showDialog=1|showModalBottomSheet=0
 lib/features/payments/presentation/dialogs/payment_method_dialog.dart|showDialog=1|showModalBottomSheet=0
 lib/features/services/presentation/dialogs/service_dialog.dart|showDialog=4|showModalBottomSheet=0
 lib/features/services/presentation/dialogs/service_package_dialog.dart|showDialog=1|showModalBottomSheet=0
+lib/features/services/presentation/services_screen.dart|showDialog=1|showModalBottomSheet=0
 lib/features/services/presentation/widgets/category_tile.dart|showDialog=1|showModalBottomSheet=0
 lib/features/staff/presentation/dialogs/add_exception_dialog.dart|showDialog=2|showModalBottomSheet=0
 lib/features/staff/presentation/dialogs/planning_editor_dialog.dart|showDialog=2|showModalBottomSheet=0

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -20,6 +22,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      unawaited(ref.read(clientsProvider.notifier).refresh());
       ref.read(clientAppointmentsRefreshProvider.notifier).bump();
     });
   }

@@ -295,31 +295,204 @@ class _PinGlossyAvatarPainter extends CustomPainter {
   }
 }
 
-/* =========================
-   HELPERS
-   ========================= */
+class AvatarGlossyCircleLetters extends StatelessWidget {
+  final double size;
+  final String letters;
+  final String hexColor;
+  final bool sparkle;
+
+  const AvatarGlossyCircleLetters({
+    super.key,
+    required this.size,
+    required this.letters,
+    required this.hexColor,
+    this.sparkle = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final base = parseHexColor(hexColor);
+
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: _GlossyCircleAvatarPainter(
+          letters: letters,
+          fillColor: base,
+          textColor: Colors.white,
+          sparkle: sparkle,
+        ),
+      ),
+    );
+  }
+}
+
+class _GlossyCircleAvatarPainter extends CustomPainter {
+  final String letters;
+  final Color fillColor;
+  final Color textColor;
+  final bool sparkle;
+
+  _GlossyCircleAvatarPainter({
+    required this.letters,
+    required this.fillColor,
+    required this.textColor,
+    required this.sparkle,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final s = math.min(size.width, size.height);
+    final c = Offset(size.width / 2, size.height / 2);
+    final r = s * 0.42;
+
+    // ombra morbida
+    canvas.drawCircle(
+      c.translate(0, s * 0.03),
+      r,
+      Paint()
+        ..color = Colors.black.withOpacity(0.10)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 16),
+    );
+
+    // bordo esterno soft
+    canvas.drawCircle(
+      c,
+      r * 1.04,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.018
+        ..color = _mix(fillColor, Colors.white, 0.55).withOpacity(0.9),
+    );
+
+    // fill glossy
+    final fillPaint = Paint()
+      ..shader = ui.Gradient.radial(
+        c.translate(-r * 0.35, -r * 0.38),
+        r * 1.5,
+        [
+          _mix(fillColor, Colors.white, 0.30),
+          _mix(fillColor, Colors.white, 0.10),
+          fillColor,
+          _mix(fillColor, Colors.black, 0.14),
+        ],
+        const [0.0, 0.22, 0.62, 1.0],
+      );
+
+    canvas.drawCircle(c, r, fillPaint);
+
+    // highlight superiore
+    final highlightRect = Rect.fromCenter(
+      center: c.translate(0, -r * 0.34),
+      width: r * 1.45,
+      height: r * 0.78,
+    );
+
+    canvas.drawOval(
+      highlightRect,
+      Paint()
+        ..shader = ui.Gradient.linear(
+          highlightRect.topCenter,
+          highlightRect.bottomCenter,
+          [
+            Colors.white.withOpacity(0.32),
+            Colors.white.withOpacity(0.10),
+            Colors.white.withOpacity(0.00),
+          ],
+          const [0.0, 0.45, 1.0],
+        ),
+    );
+
+    // bordo interno leggero
+    canvas.drawCircle(
+      c,
+      r * 0.97,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = s * 0.010
+        ..color = Colors.white.withOpacity(0.35),
+    );
+
+    // lettere
+    final tp = TextPainter(
+      text: TextSpan(
+        text: letters,
+        style: TextStyle(
+          color: textColor,
+          fontWeight: FontWeight.w700,
+          fontSize: s * 0.30,
+          height: 1.0,
+          letterSpacing: -1.0,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.center,
+    )..layout(maxWidth: s);
+
+    tp.paint(canvas, Offset(c.dx - tp.width / 2, c.dy - tp.height / 2));
+
+    if (sparkle) {
+      final sp = c.translate(r * 0.72, -r * 0.68);
+      _drawSparkle(canvas, sp, s * 0.052);
+    }
+  }
+
+  void _drawSparkle(Canvas canvas, Offset center, double r) {
+    final path = Path()
+      ..moveTo(center.dx, center.dy - r)
+      ..lineTo(center.dx + r * 0.20, center.dy - r * 0.20)
+      ..lineTo(center.dx + r, center.dy)
+      ..lineTo(center.dx + r * 0.20, center.dy + r * 0.20)
+      ..lineTo(center.dx, center.dy + r)
+      ..lineTo(center.dx - r * 0.20, center.dy + r * 0.20)
+      ..lineTo(center.dx - r, center.dy)
+      ..lineTo(center.dx - r * 0.20, center.dy - r * 0.20)
+      ..close();
+
+    canvas.saveLayer(Rect.fromCircle(center: center, radius: r * 1.8), Paint());
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = Colors.white.withOpacity(0.30)
+        ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * 0.45),
+    );
+
+    canvas.drawPath(path, Paint()..color = Colors.white.withOpacity(0.96));
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _GlossyCircleAvatarPainter oldDelegate) {
+    return letters != oldDelegate.letters ||
+        fillColor != oldDelegate.fillColor ||
+        textColor != oldDelegate.textColor ||
+        sparkle != oldDelegate.sparkle;
+  }
+}
 
 Color parseHexColor(String input) {
   var hex = input.trim();
   if (hex.startsWith('#')) hex = hex.substring(1);
 
   if (hex.length == 6) {
-    // RRGGBB
     final v = int.parse(hex, radix: 16);
     return Color(0xFF000000 | v);
   }
+
   if (hex.length == 8) {
-    // AARRGGBB
     final v = int.parse(hex, radix: 16);
     return Color(v);
   }
+
   throw FormatException(
     'hexColor non valido: $input (usa RRGGBB o AARRGGBB, con o senza #)',
   );
 }
 
 Color _mix(Color a, Color b, double t) {
-  // t=0 -> a, t=1 -> b
   final clamped = t.clamp(0.0, 1.0);
   return Color.fromARGB(
     (a.alpha + (b.alpha - a.alpha) * clamped).round(),

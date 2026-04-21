@@ -1354,6 +1354,21 @@ class _ServicesAddAction extends ConsumerWidget {
           child: Text(l10n.reorderClassesLabel),
         ),
     ];
+    void activateReorderMode(String value) {
+      if (value == 'reorder_categories') {
+        ref
+            .read(servicesReorderModeProvider.notifier)
+            .setMode(ServicesReorderMode.categories);
+      } else if (value == 'reorder_services_packages') {
+        ref
+            .read(servicesReorderModeProvider.notifier)
+            .setMode(ServicesReorderMode.servicesAndPackages);
+      } else if (value == 'reorder_classes') {
+        ref
+            .read(servicesReorderModeProvider.notifier)
+            .setMode(ServicesReorderMode.classTypes);
+      }
+    }
     const iconOnlyWidth = 46.0;
     final bool isIconOnly = !showLabelEffective;
     Widget buildActionLabel(IconData icon, String label) {
@@ -1373,30 +1388,8 @@ class _ServicesAddAction extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         if (reorderItems.isNotEmpty) ...[
-          AdaptiveDropdown<String>(
-            modalTitle: l10n.reorderTitle,
-            alignment: AdaptiveDropdownAlignment.right,
-            verticalPosition: AdaptiveDropdownVerticalPosition.above,
-            forcePopup: true,
-            hideTriggerWhenOpen: true,
-            popupWidth: 260,
-            items: reorderItems,
-            onSelected: (value) {
-              if (value == 'reorder_categories') {
-                ref
-                    .read(servicesReorderModeProvider.notifier)
-                    .setMode(ServicesReorderMode.categories);
-              } else if (value == 'reorder_services_packages') {
-                ref
-                    .read(servicesReorderModeProvider.notifier)
-                    .setMode(ServicesReorderMode.servicesAndPackages);
-              } else if (value == 'reorder_classes') {
-                ref
-                    .read(servicesReorderModeProvider.notifier)
-                    .setMode(ServicesReorderMode.classTypes);
-              }
-            },
-            child: Material(
+          if (reorderItems.length == 1)
+            Material(
               elevation: 0,
               color: Colors.transparent,
               shape: RoundedRectangleBorder(
@@ -1404,19 +1397,52 @@ class _ServicesAddAction extends ConsumerWidget {
                 side: BorderSide(color: scheme.primary),
               ),
               clipBehavior: Clip.antiAlias,
-              child: SizedBox(
-                height: _actionButtonHeight,
-                width: isIconOnly ? iconOnlyWidth : null,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
+              child: InkWell(
+                onTap: () => activateReorderMode(reorderItems.first.value),
+                child: SizedBox(
+                  height: _actionButtonHeight,
+                  width: isIconOnly ? iconOnlyWidth : null,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: buildActionLabel(Icons.sort, l10n.reorderTitle),
                   ),
-                  child: buildActionLabel(Icons.sort, l10n.reorderTitle),
+                ),
+              ),
+            )
+          else
+            AdaptiveDropdown<String>(
+              modalTitle: l10n.reorderTitle,
+              alignment: AdaptiveDropdownAlignment.right,
+              verticalPosition: AdaptiveDropdownVerticalPosition.above,
+              forcePopup: true,
+              hideTriggerWhenOpen: true,
+              popupWidth: 260,
+              items: reorderItems,
+              onSelected: activateReorderMode,
+              child: Material(
+                elevation: 0,
+                color: Colors.transparent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  side: BorderSide(color: scheme.primary),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: SizedBox(
+                  height: _actionButtonHeight,
+                  width: isIconOnly ? iconOnlyWidth : null,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
+                    child: buildActionLabel(Icons.sort, l10n.reorderTitle),
+                  ),
                 ),
               ),
             ),
-          ),
           const SizedBox(width: 8),
         ],
         AdaptiveDropdown<String>(

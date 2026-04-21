@@ -520,6 +520,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     // 6. RIMOSSO il blocco addPostFrameCallback da qui
 
     final layoutConfig = ref.watch(layoutConfigProvider);
+    final expandColumnsOnOverlap = ref.watch(
+      agendaExpandStaffColumnsOnOverlapProvider,
+    );
     final staffBlocks = ref.watch(timeBlocksForStaffProvider(widget.staff.id));
 
     // Geometria unificata: tutti i tipi di card (appuntamenti, classi, blocchi)
@@ -544,12 +547,12 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         ),
       ),
     ];
-    final int maxDayConcurrency = layoutConfig.expandColumnsOnOverlap
+    final int maxDayConcurrency = expandColumnsOnOverlap
         ? computeMaxConcurrency(allDayEntries)
         : 1;
     final unifiedGeometry = computeLayoutGeometry(
       allDayEntries,
-      useClusterMaxConcurrency: layoutConfig.expandColumnsOnOverlap
+      useClusterMaxConcurrency: expandColumnsOnOverlap
           ? false
           : layoutConfig.useClusterMaxConcurrency,
       minTotalColumns: maxDayConcurrency,
@@ -738,7 +741,12 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     // 🔹 Blocchi di non disponibilità
     stackChildren.addAll(
-      _buildTimeBlocks(slotHeight, effectiveColumnWidth, unifiedGeometry),
+      _buildTimeBlocks(
+        slotHeight,
+        effectiveColumnWidth,
+        unifiedGeometry,
+        expandColumnsOnOverlap,
+      ),
     );
 
     // 🔹 Appuntamenti + classi (con larghezza ridotta se ci sono slot pieni)
@@ -750,6 +758,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         effectiveColumnWidth,
         classTypeById,
         unifiedGeometry,
+        expandColumnsOnOverlap,
       ),
     );
 
@@ -912,7 +921,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         );
         final shouldSkipConfirmation = isSameDayMove && !notificationRequired;
         final confirmResult = shouldSkipConfirmation
-            ? const MoveConfirmResult(confirmed: true, notifyClient: true)
+            ? const MoveConfirmResult(
+                confirmed: true,
+                notifyClient: true,
+                notifyClientDecisionByOperator: false,
+              )
             : await showMoveConfirmDialog(
                 context: context,
                 title: Text(l10n.moveAppointmentConfirmTitle),
@@ -943,6 +956,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           newStart: dropResult.newStart,
           newEnd: dropResult.newEnd,
           notifyClient: confirmResult.notifyClient,
+          notifyClientDecisionByOperator:
+              confirmResult.notifyClientDecisionByOperator,
         );
 
         try {
@@ -999,6 +1014,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     double columnWidth,
     Map<int, ClassType> classTypeById,
     Map<int, EventGeometry> unifiedGeometry,
+    bool expandColumnsOnOverlap,
   ) {
     final draggedId = ref.watch(draggedAppointmentIdProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
@@ -1036,6 +1052,22 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       }
       return appt;
     }).toList();
+    final appointmentHasOverlap = <int, bool>{
+      for (final appt in layoutAppointments) appt.id: false,
+    };
+    for (var i = 0; i < layoutAppointments.length; i++) {
+      final current = layoutAppointments[i];
+      for (var j = i + 1; j < layoutAppointments.length; j++) {
+        final other = layoutAppointments[j];
+        final overlaps =
+            current.startTime.isBefore(other.endTime) &&
+            current.endTime.isAfter(other.startTime);
+        if (overlaps) {
+          appointmentHasOverlap[current.id] = true;
+          appointmentHasOverlap[other.id] = true;
+        }
+      }
+    }
 
     final positionedEntries = <Widget>[];
     final expandedEntries = <Widget>[];
@@ -1083,11 +1115,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
       final padding = LayoutConfig.columnInnerPadding;
       final fullColumnWidth = math.max(columnWidth - padding * 2, 0.0);
-      final cardLeft = columnWidth * geometry.leftFraction + padding;
-      final cardWidth = math.max(
-        columnWidth * geometry.widthFraction - padding * 2,
-        0.0,
-      );
+      final hasOverlapWithAppointments =
+          appointmentHasOverlap[originalAppt.id] ?? false;
+      final shouldForceFullWidth =
+          !expandColumnsOnOverlap && !hasOverlapWithAppointments;
+      final cardLeft = shouldForceFullWidth
+          ? padding
+          : columnWidth * geometry.leftFraction + padding;
+      final cardWidth = shouldForceFullWidth
+          ? fullColumnWidth
+          : math.max(columnWidth * geometry.widthFraction - padding * 2, 0.0);
 
       Color cardColor;
       switch (cardColorSource) {
@@ -1125,7 +1162,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       const narrowOverlapRatioThreshold = 0.65;
       const narrowOverlapMaxWidthPx = 320.0;
       final isNarrowOverlappedCard =
-          !layoutConfig.expandColumnsOnOverlap &&
+          !expandColumnsOnOverlap &&
           fullColumnWidth > 0 &&
           (cardWidth / fullColumnWidth) <= narrowOverlapRatioThreshold &&
           cardWidth <= narrowOverlapMaxWidthPx &&
@@ -1198,7 +1235,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         0.0,
       );
       final isNarrowOverlappedCard =
-          !layoutConfig.expandColumnsOnOverlap &&
+          !expandColumnsOnOverlap &&
           fullColumnWidth > 0 &&
           (cardWidth / fullColumnWidth) <= 0.65 &&
           cardWidth <= 320.0 &&
@@ -1537,6 +1574,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     double slotHeight,
     double columnWidth,
     Map<int, EventGeometry> unifiedGeometry,
+    bool expandColumnsOnOverlap,
   ) {
     final blocks = ref.watch(timeBlocksForStaffProvider(widget.staff.id));
     if (blocks.isEmpty) return [];
@@ -1601,7 +1639,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       const narrowOverlapRatioThreshold = 0.65;
       const narrowOverlapMaxWidthPx = 320.0;
       final isNarrowOverlappedCard =
-          !layoutConfig.expandColumnsOnOverlap &&
+          !expandColumnsOnOverlap &&
           fullColumnWidth > 0 &&
           (cardWidth / fullColumnWidth) <= narrowOverlapRatioThreshold &&
           cardWidth <= narrowOverlapMaxWidthPx &&
@@ -1897,7 +1935,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     );
     final shouldSkipConfirmation = isSameDayMove && !notificationRequired;
     final confirmResult = shouldSkipConfirmation
-        ? const MoveConfirmResult(confirmed: true, notifyClient: true)
+        ? const MoveConfirmResult(
+            confirmed: true,
+            notifyClient: true,
+            notifyClientDecisionByOperator: false,
+          )
         : await showMoveConfirmDialog(
             context: context,
             title: Text(l10n.bookingRescheduleConfirmTitle),
@@ -1935,6 +1977,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             targetStart: targetStart,
             targetStaffId: widget.staff.id,
             notifyClient: confirmResult.notifyClient,
+            notifyClientDecisionByOperator:
+                confirmResult.notifyClientDecisionByOperator,
           );
 
       if (!mounted) return;

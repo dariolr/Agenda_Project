@@ -37,7 +37,7 @@ final class BusinessSyncController
 
         $userId = $request->getAttribute('user_id');
         if (!$this->userRepo->isSuperadmin($userId)) {
-            return Response::error('access_denied', 'Accesso riservato ai superadmin', 403);
+            return Response::error('Accesso riservato ai superadmin', 'access_denied', 403, $request->traceId);
         }
         
         $businessId = (int)$request->getRouteParam('id');
@@ -46,9 +46,9 @@ final class BusinessSyncController
             $data = $this->exportBusiness->execute($businessId);
             return Response::success($data);
         } catch (\InvalidArgumentException $e) {
-            return Response::error('not_found', $e->getMessage(), 404);
+            return Response::error($e->getMessage(), 'not_found', 404, $request->traceId);
         } catch (\Exception $e) {
-            return Response::error('export_failed', $e->getMessage(), 500);
+            return Response::error($e->getMessage(), 'export_failed', 500, $request->traceId);
         }
     }
     
@@ -65,7 +65,7 @@ final class BusinessSyncController
 
         $userId = $request->getAttribute('user_id');
         if (!$this->userRepo->isSuperadmin($userId)) {
-            return Response::error('access_denied', 'Accesso riservato ai superadmin', 403);
+            return Response::error('Accesso riservato ai superadmin', 'access_denied', 403, $request->traceId);
         }
         
         $slug = $request->getRouteParam('slug');
@@ -74,9 +74,9 @@ final class BusinessSyncController
             $data = $this->exportBusiness->executeBySlug($slug);
             return Response::success($data);
         } catch (\InvalidArgumentException $e) {
-            return Response::error('not_found', $e->getMessage(), 404);
+            return Response::error($e->getMessage(), 'not_found', 404, $request->traceId);
         } catch (\Exception $e) {
-            return Response::error('export_failed', $e->getMessage(), 500);
+            return Response::error($e->getMessage(), 'export_failed', 500, $request->traceId);
         }
     }
     
@@ -107,7 +107,7 @@ final class BusinessSyncController
         file_put_contents($logFile, date('Y-m-d H:i:s') . " Import: user_id=$userId\n", FILE_APPEND);
         
         if (!$this->userRepo->isSuperadmin($userId)) {
-            return Response::error('access_denied', 'Accesso riservato ai superadmin', 403);
+            return Response::error('Accesso riservato ai superadmin', 'access_denied', 403, $request->traceId);
         }
         
         $body = $request->getBody();
@@ -120,7 +120,7 @@ final class BusinessSyncController
         
         if (empty($exportData)) {
             file_put_contents($logFile, date('Y-m-d H:i:s') . " Import: exportData is empty\n", FILE_APPEND);
-            return Response::error('invalid_request', 'Campo "data" richiesto con export JSON', 400);
+            return Response::error('Campo "data" richiesto con export JSON', 'invalid_request', 400, $request->traceId);
         }
         
         file_put_contents($logFile, date('Y-m-d H:i:s') . " Import: business=" . ($exportData['business']['name'] ?? 'N/A') . "\n", FILE_APPEND);
@@ -134,11 +134,11 @@ final class BusinessSyncController
             ]);
         } catch (\InvalidArgumentException $e) {
             file_put_contents($logFile, date('Y-m-d H:i:s') . " Import InvalidArg: " . $e->getMessage() . "\n", FILE_APPEND);
-            return Response::error('invalid_data', $e->getMessage(), 400);
+            return Response::error($e->getMessage(), 'invalid_data', 400, $request->traceId);
         } catch (\Exception $e) {
             file_put_contents($logFile, date('Y-m-d H:i:s') . " Import ERROR: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine() . "\n", FILE_APPEND);
             file_put_contents($logFile, date('Y-m-d H:i:s') . " Trace: " . $e->getTraceAsString() . "\n", FILE_APPEND);
-            return Response::error('import_failed', $e->getMessage(), 500);
+            return Response::error($e->getMessage(), 'import_failed', 500, $request->traceId);
         }
     }
     
@@ -157,13 +157,13 @@ final class BusinessSyncController
 
         $userId = $request->getAttribute('user_id');
         if (!$this->userRepo->isSuperadmin($userId)) {
-            return Response::error('access_denied', 'Accesso riservato ai superadmin', 403);
+            return Response::error('Accesso riservato ai superadmin', 'access_denied', 403, $request->traceId);
         }
         
         // Verifica ambiente
         $appEnv = $_ENV['APP_ENV'] ?? 'production';
         if ($appEnv === 'production') {
-            return Response::error('invalid_environment', 'Questa funzione non è disponibile in produzione', 400);
+            return Response::error('Questa funzione non è disponibile in produzione', 'invalid_environment', 400, $request->traceId);
         }
         
         $body = $request->getBody();
@@ -171,7 +171,7 @@ final class BusinessSyncController
         $slug = $body['slug'] ?? null;
         
         if (empty($businessId) && empty($slug)) {
-            return Response::error('invalid_request', 'Specificare business_id o slug', 400);
+            return Response::error('Specificare business_id o slug', 'invalid_request', 400, $request->traceId);
         }
         
         // URL API produzione
@@ -204,18 +204,18 @@ final class BusinessSyncController
             curl_close($ch);
             
             if ($error) {
-                return Response::error('production_unreachable', "Impossibile contattare API produzione: $error", 502);
+                return Response::error("Impossibile contattare API produzione: $error", 'production_unreachable', 502, $request->traceId);
             }
             
             if ($httpCode !== 200) {
                 $errorData = Json::decodeAssoc((string) $response);
                 $errorMsg = $errorData['error']['message'] ?? 'Errore sconosciuto';
-                return Response::error('production_error', "Errore da produzione: $errorMsg", $httpCode >= 400 ? $httpCode : 500);
+                return Response::error("Errore da produzione: $errorMsg", 'production_error', $httpCode >= 400 ? $httpCode : 500, $request->traceId);
             }
             
             $exportResponse = Json::decodeAssoc((string) $response);
             if (!is_array($exportResponse) || !($exportResponse['success'] ?? false) || empty($exportResponse['data'])) {
-                return Response::error('invalid_export', 'Risposta export non valida', 500);
+                return Response::error('Risposta export non valida', 'invalid_export', 500, $request->traceId);
             }
             
             $exportData = $exportResponse['data'];
@@ -229,7 +229,7 @@ final class BusinessSyncController
             ]);
             
         } catch (\Exception $e) {
-            return Response::error('sync_failed', $e->getMessage(), 500);
+            return Response::error($e->getMessage(), 'sync_failed', 500, $request->traceId);
         }
     }
 }

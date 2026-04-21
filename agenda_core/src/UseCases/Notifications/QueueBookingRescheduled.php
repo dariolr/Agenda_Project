@@ -102,7 +102,7 @@ final class QueueBookingRescheduled
         $hasMultipleLocations = $this->hasMultipleLocations((int) ($booking['business_id'] ?? 0));
         $locationBlockHtml = $hasMultipleLocations
             ? sprintf(
-                '<span style="color:#666;">📍 %s</span><br><strong style="color:#333;">%s</strong><br><span style="color:#666;font-size:14px;">%s</span><br>',
+                '<strong style="color:#666;">📍 %s</strong><br><span style="color:#333;">%s</span><br><span style="color:#666;font-size:14px;">%s</span><br>',
                 $strings['where_label'],
                 $locationName,
                 $locationAddress

@@ -3,14 +3,19 @@ import 'package:agenda_backend/features/agenda/presentation/screens/widgets/appo
 import 'package:agenda_backend/features/agenda/providers/agenda_display_settings_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/agenda_interaction_lock_provider.dart';
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
+import 'package:agenda_backend/core/services/preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   testWidgets(
     'AppointmentCardInteractive does not crash when appointment.price is null',
     (tester) async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final sharedPreferences = await SharedPreferences.getInstance();
+
       final appointment = Appointment(
         id: 1,
         bookingId: 10,
@@ -33,15 +38,16 @@ void main() {
               (ref) => true,
             ),
             agendaCardColorOpacityProvider.overrideWith((ref) => 0.85),
-            agendaExtraMinutesBandIntensityProvider.overrideWith(
-              (ref) => 0.25,
-            ),
+            agendaExtraMinutesBandIntensityProvider.overrideWith((ref) => 0.25),
             agendaHoverUnrelatedCardDimIntensityProvider.overrideWith(
               (ref) => 0.0,
             ),
             agendaCardTextScaleProvider.overrideWith((ref) => 1.0),
             currentUserCanManageBookingsProvider.overrideWith((ref) => false),
-            agendaCardHoverProvider.overrideWith(_TestAgendaCardHoverNotifier.new),
+            agendaCardHoverProvider.overrideWith(
+              _TestAgendaCardHoverNotifier.new,
+            ),
+            sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           ],
           child: MaterialApp(
             home: Scaffold(

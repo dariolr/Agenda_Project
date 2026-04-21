@@ -5,16 +5,9 @@ import '../../../../core/models/class_type.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
 import '../../../../core/models/service_package.dart';
+import '../../domain/appointment_type_filter_option.dart';
 import '../../providers/services_sorted_providers.dart';
 import 'category_item.dart';
-
-enum AppointmentTypeFilterOption {
-  all,
-  services,
-  packages,
-  servicesAndPackages,
-  classes,
-}
 
 /// Lista dei pannelli categoria aggiornata per la vista normale.
 class CategoriesList extends ConsumerWidget {

@@ -644,7 +644,6 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
     }
     bool hasError = false;
 
-    // Reset errori
     setState(() {
       _staffError = null;
       _timeError = null;
@@ -655,7 +654,6 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
       hasError = true;
     }
 
-    // Validazione orari
     if (!_isAllDay) {
       final startMinutes = _startTime.hour * 60 + _startTime.minute;
       final endMinutes = _endTime.hour * 60 + _endTime.minute;
@@ -667,109 +665,88 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
 
     if (hasError) return;
 
+    // Compute dates before any dialog so we don't hold loading state
+    // while user interactions are pending.
+    final DateTime startDateTime;
+    final DateTime endDateTime;
+    if (_isAllDay) {
+      startDateTime = DateTime(_date.year, _date.month, _date.day, 0, 0);
+      endDateTime = DateTime(_date.year, _date.month, _date.day, 23, 59);
+    } else {
+      startDateTime = DateTime(
+        _date.year, _date.month, _date.day, _startTime.hour, _startTime.minute,
+      );
+      endDateTime = DateTime(
+        _date.year, _date.month, _date.day, _endTime.hour, _endTime.minute,
+      );
+    }
+    final reason = _reasonController.text.trim().isEmpty
+        ? null
+        : _reasonController.text.trim();
+
+    // — Resolve any dialogs BEFORE setting _isSaving to avoid overlay
+    //   fighting with dialogs and causing the BottomSheetLoadingContext race.
+    List<int>? excludedSet;
+    String scope = 'this';
+    int? fromIndex;
+
+    if (widget.initial == null && _recurrenceConfig != null) {
+      final occurrences = _recurrenceConfig!.calculateOccurrences(startDateTime);
+      final previewDates = <PreviewDateItem>[
+        for (var i = 0; i < occurrences.length; i++)
+          PreviewDateItem(
+            recurrenceIndex: i,
+            startTime: occurrences[i],
+            endTime: occurrences[i].add(endDateTime.difference(startDateTime)),
+            hasConflict: false,
+            isUnavailable: false,
+          ),
+      ];
+      excludedSet = await RecurrencePreviewDialog.show(
+        context,
+        RecurringPreviewResult(
+          totalDates: previewDates.length,
+          dates: previewDates,
+        ),
+        excludeConflictsByDefault: false,
+      );
+      if (excludedSet == null) return; // user cancelled preview
+    } else if (widget.initial != null && widget.initial!.isRecurring) {
+      final chosen = await _showScopeDialog(
+        isDelete: false,
+        recurrenceIndex: widget.initial!.recurrenceIndex,
+      );
+      if (chosen == null) return; // user cancelled scope dialog
+      scope = chosen.$1;
+      fromIndex = chosen.$2;
+    }
+
+    // All dialogs resolved — now show loading and call API.
     setState(() => _isSaving = true);
     try {
-      final DateTime startDateTime;
-      final DateTime endDateTime;
-
-      if (_isAllDay) {
-        // Per blocchi giornata intera, usa l'intera giornata lavorativa
-        startDateTime = DateTime(_date.year, _date.month, _date.day, 0, 0);
-        endDateTime = DateTime(_date.year, _date.month, _date.day, 23, 59);
-      } else {
-        startDateTime = DateTime(
-          _date.year,
-          _date.month,
-          _date.day,
-          _startTime.hour,
-          _startTime.minute,
-        );
-        endDateTime = DateTime(
-          _date.year,
-          _date.month,
-          _date.day,
-          _endTime.hour,
-          _endTime.minute,
-        );
-      }
-
-      final reason = _reasonController.text.trim().isEmpty
-          ? null
-          : _reasonController.text.trim();
-
       if (widget.initial == null) {
-        if (_recurrenceConfig != null) {
-          final occurrences = _recurrenceConfig!.calculateOccurrences(
-            startDateTime,
-          );
-          final previewDates = <PreviewDateItem>[];
-          for (var i = 0; i < occurrences.length; i++) {
-            final occurrenceStart = occurrences[i];
-            final occurrenceEnd = occurrenceStart.add(
-              endDateTime.difference(startDateTime),
-            );
-            final recurrenceIndex = i + 1;
-            previewDates.add(
-              PreviewDateItem(
-                recurrenceIndex: recurrenceIndex,
-                startTime: occurrenceStart,
-                endTime: occurrenceEnd,
-                hasConflict: false,
-                isUnavailable: false,
-              ),
-            );
-          }
-
-          final excludedIndices = await RecurrencePreviewDialog.show(
-            context,
-            RecurringPreviewResult(
-              totalDates: previewDates.length,
-              dates: previewDates,
-            ),
-            excludeConflictsByDefault: false,
-          );
-          if (excludedIndices == null) {
-            return;
-          }
-
-          await ref
-              .read(timeBlocksProvider.notifier)
-              .addRecurringBlocks(
-                staffIds: _selectedStaffIds.toList(),
-                startTime: startDateTime,
-                endTime: endDateTime,
-                recurrence: _recurrenceConfig!,
-                excludedRecurrenceIndices: excludedIndices.toSet(),
-                reason: reason,
-                isAllDay: _isAllDay,
-                allowOnlineBookingDuringBlock: _allowOnlineBookingDuringBlock,
-              );
-        } else {
-          // Nuovo blocco singolo
-          await ref
-              .read(timeBlocksProvider.notifier)
-              .addBlock(
-                staffIds: _selectedStaffIds.toList(),
-                startTime: startDateTime,
-                endTime: endDateTime,
-                reason: reason,
-                isAllDay: _isAllDay,
-                allowOnlineBookingDuringBlock: _allowOnlineBookingDuringBlock,
-              );
-        }
+        await ref.read(timeBlocksProvider.notifier).addBlock(
+          staffIds: _selectedStaffIds.toList(),
+          startTime: startDateTime,
+          endTime: endDateTime,
+          reason: reason,
+          isAllDay: _isAllDay,
+          allowOnlineBookingDuringBlock: _allowOnlineBookingDuringBlock,
+          recurrence: _recurrenceConfig,
+          excludedIndices: excludedSet?.toList(),
+        );
       } else {
-        // Aggiorna blocco esistente
-        await ref
-            .read(timeBlocksProvider.notifier)
-            .updateBlock(
-              blockId: widget.initial!.id,
-              staffIds: _selectedStaffIds.toList(),
-              startTime: startDateTime,
-              endTime: endDateTime,
-              reason: reason,
-              isAllDay: _isAllDay,
-              allowOnlineBookingDuringBlock: _allowOnlineBookingDuringBlock,
-            );
+        await ref.read(timeBlocksProvider.notifier).updateBlock(
+          blockId: widget.initial!.id,
+          staffIds: _selectedStaffIds.toList(),
+          startTime: scope == 'all' ? null : startDateTime,
+          endTime: scope == 'all' ? null : endDateTime,
+          reason: reason,
+          isAllDay: _isAllDay,
+          allowOnlineBookingDuringBlock: _allowOnlineBookingDuringBlock,
+          scope: scope,
+          fromIndex: fromIndex,
+        );
       }
 
       if (!mounted) return;
@@ -780,18 +757,84 @@ class _AddBlockDialogState extends ConsumerState<_AddBlockDialog> {
   }
 
   Future<void> _onDelete() async {
-    if (widget.initial != null) {
-      setState(() => _isSaving = true);
-      try {
-        await ref
-            .read(timeBlocksProvider.notifier)
-            .deleteBlock(widget.initial!.id);
-        if (!mounted) return;
-        Navigator.of(context).pop();
-      } finally {
-        if (mounted) setState(() => _isSaving = false);
-      }
+    if (widget.initial == null) return;
+    final block = widget.initial!;
+    String scope = 'this';
+    int? fromIndex;
+    if (block.isRecurring) {
+      final chosen = await _showScopeDialog(
+        isDelete: true,
+        recurrenceIndex: block.recurrenceIndex,
+      );
+      if (chosen == null) return;
+      scope = chosen.$1;
+      fromIndex = chosen.$2;
     }
+
+    setState(() => _isSaving = true);
+    try {
+      await ref
+          .read(timeBlocksProvider.notifier)
+          .deleteBlock(block.id, scope: scope, fromIndex: fromIndex);
+      if (!mounted) return;
+      Navigator.of(context).pop();
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  /// Shows "Solo questo / Tutti" scope picker for recurring block actions.
+  /// Returns (scope, fromIndex) or null if cancelled.
+  Future<(String, int?)?> _showScopeDialog({
+    required bool isDelete,
+    required int? recurrenceIndex,
+  }) {
+    final l10n = context.l10n;
+    final canShowFuture = (recurrenceIndex ?? 0) > 0;
+    return showDialog<String>(
+      context: context,
+      useRootNavigator: true,
+      builder: (ctx) => AlertDialog(
+        title: Text(
+          isDelete
+              ? l10n.blockRecurringDeleteTitle
+              : l10n.blockRecurringEditTitle,
+        ),
+        content: Text(
+          isDelete
+              ? l10n.blockRecurringDeleteChooseScope
+              : l10n.blockRecurringEditChooseScope,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop('this'),
+            child: Text(l10n.recurringScopeOnlyThis),
+          ),
+          if (canShowFuture)
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop('future'),
+              child: Text(l10n.recurringScopeThisAndFuture),
+            ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop('all'),
+            child: Text(l10n.recurringScopeAll),
+          ),
+        ],
+      ),
+    ).then((chosen) {
+      if (chosen == null) return null;
+      if (chosen == 'future') {
+        return ('future', recurrenceIndex ?? 0);
+      }
+      if (chosen == 'all') {
+        return ('all', null);
+      }
+      return ('this', null);
+    });
   }
 }
 

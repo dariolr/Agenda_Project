@@ -449,7 +449,7 @@ class _AppFormBodyState extends State<_AppFormBody> {
   }
 }
 
-class DismissibleDialog extends StatelessWidget {
+class DismissibleDialog extends StatefulWidget {
   const DismissibleDialog({
     super.key,
     required this.child,
@@ -460,16 +460,95 @@ class DismissibleDialog extends StatelessWidget {
   final bool barrierDismissible;
 
   @override
+  State<DismissibleDialog> createState() => _DismissibleDialogState();
+}
+
+class _DismissibleDialogState extends State<DismissibleDialog>
+    with WidgetsBindingObserver {
+  final FocusNode _dialogFocusNode = FocusNode();
+  FocusNode? _lastFocusedDescendant;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    FocusManager.instance.addListener(_handlePrimaryFocusChanged);
+  }
+
+  @override
+  void dispose() {
+    FocusManager.instance.removeListener(_handlePrimaryFocusChanged);
+    WidgetsBinding.instance.removeObserver(this);
+    _dialogFocusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.paused ||
+        state == AppLifecycleState.hidden) {
+      _storeCurrentFocusedDescendant();
+      return;
+    }
+
+    if (state != AppLifecycleState.resumed) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      final lastFocused = _lastFocusedDescendant;
+      if (lastFocused != null &&
+          lastFocused.context != null &&
+          lastFocused.canRequestFocus) {
+        lastFocused.requestFocus();
+        return;
+      }
+
+      if (_dialogFocusNode.canRequestFocus) {
+        _dialogFocusNode.requestFocus();
+      }
+    });
+  }
+
+  void _handlePrimaryFocusChanged() {
+    _storeCurrentFocusedDescendant();
+  }
+
+  void _storeCurrentFocusedDescendant() {
+    final currentFocus = FocusManager.instance.primaryFocus;
+    if (currentFocus == null || currentFocus == _dialogFocusNode) {
+      return;
+    }
+    if (!_isDescendantOfDialog(currentFocus)) {
+      return;
+    }
+    _lastFocusedDescendant = currentFocus;
+  }
+
+  bool _isDescendantOfDialog(FocusNode node) {
+    return node.ancestors.contains(_dialogFocusNode);
+  }
+
+  @override
   Widget build(BuildContext context) {
     return CallbackShortcuts(
       bindings: <ShortcutActivator, VoidCallback>{
         SingleActivator(LogicalKeyboardKey.escape): () {
-          if (barrierDismissible) {
+          if (widget.barrierDismissible) {
             Navigator.of(context, rootNavigator: true).pop();
           }
         },
       },
-      child: Focus(autofocus: true, child: child),
+      child: Focus(
+        focusNode: _dialogFocusNode,
+        autofocus: true,
+        child: widget.child,
+      ),
     );
   }
 }

@@ -174,6 +174,16 @@ final class AppointmentsController
         $userId = $request->getAttribute('user_id');
         $booking = $this->bookingRepo->findById((int) $appointment['booking_id']);
         $notifyClient = $this->readBoolFromBody($body, 'notify_client', true);
+        $notifyClientDecisionByOperator = $this->readBoolFromBody(
+            $body,
+            'notify_client_decision_by_operator',
+            false
+        );
+        $suppressAuditEvent = $this->readBoolFromBody(
+            $body,
+            'suppress_audit_event',
+            false
+        );
         $requestedLocale = isset($body['locale']) ? (string) $body['locale'] : null;
         $oldBookingFirstStart = $this->extractFirstStartTime($booking);
 
@@ -258,7 +268,7 @@ final class AppointmentsController
         $actuallyChangedFields = $this->getActuallyChangedFields($beforeState, $afterState);
         
         $auditableChangedFields = $this->extractAuditableAppointmentChanges($actuallyChangedFields);
-        if (!empty($auditableChangedFields)) {
+        if (!empty($auditableChangedFields) && !$suppressAuditEvent) {
             $this->createAppointmentUpdatedEvent(
                 $bookingId,
                 $appointmentId,
@@ -286,6 +296,20 @@ final class AppointmentsController
                             $updatedBooking,
                             $oldBookingFirstStart,
                             $requestedLocale
+                        );
+                    }
+                    if (
+                        !$notifyClient &&
+                        $firstStartChanged &&
+                        $notifyClientDecisionByOperator
+                    ) {
+                        $this->createRescheduleNotificationSkippedEvent(
+                            $bookingId,
+                            $appointmentId,
+                            $userId,
+                            $oldBookingFirstStart,
+                            $newBookingFirstStart,
+                            $notifyClientDecisionByOperator
                         );
                     }
 
@@ -662,6 +686,48 @@ final class AppointmentsController
         } catch (\Throwable $e) {
             // Log error but don't fail the update
             file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " createAppointmentUpdatedEvent ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
+        }
+    }
+
+    /**
+     * Create a booking-level audit event when operator explicitly skips
+     * reschedule notification (notify_client=false).
+     */
+    private function createRescheduleNotificationSkippedEvent(
+        int $bookingId,
+        int $appointmentId,
+        ?int $userId,
+        ?string $oldFirstStartTime,
+        ?string $newFirstStartTime,
+        bool $notifyClientDecisionByOperator
+    ): void {
+        if ($this->auditRepo === null) {
+            return;
+        }
+
+        try {
+            $payload = [
+                'appointment_id' => $appointmentId,
+                'channel' => 'booking_rescheduled',
+                'decision' => 'skip_notification',
+                'notify_client_decision_by_operator' => $notifyClientDecisionByOperator,
+                'old_first_start_time' => $oldFirstStartTime,
+                'new_first_start_time' => $newFirstStartTime,
+            ];
+
+            $actorName = $this->auditRepo->resolveActorName('staff', $userId);
+
+            $this->auditRepo->createEvent(
+                $bookingId,
+                'booking_reschedule_notification_skipped',
+                'staff',
+                $userId,
+                $payload,
+                null,
+                $actorName
+            );
+        } catch (\Throwable $e) {
+            file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " createRescheduleNotificationSkippedEvent ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
         }
     }
 

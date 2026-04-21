@@ -58,6 +58,7 @@ use Agenda\Infrastructure\Repositories\StaffPlanningRepository;
 use Agenda\Infrastructure\Repositories\ResourceRepository;
 use Agenda\Infrastructure\Repositories\ServiceVariantResourceRepository;
 use Agenda\Infrastructure\Repositories\TimeBlockRepository;
+use Agenda\Infrastructure\Repositories\TimeBlockRecurrenceRuleRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Repositories\PopularServiceRepository;
@@ -436,6 +437,7 @@ final class Kernel
         $resourceRepo = new ResourceRepository($this->db);
         $variantResourceRepo = new ServiceVariantResourceRepository($this->db);
         $timeBlockRepo = new TimeBlockRepository($this->db);
+        $timeBlockRecurrenceRuleRepo = new TimeBlockRecurrenceRuleRepository($this->db);
         $bookingRepo = new BookingRepository($this->db);
         $clientRepo = new ClientRepository($this->db);
         $clientAuthRepo = new ClientAuthRepository($this->db);
@@ -519,7 +521,7 @@ final class Kernel
             StaffPlanningController::class => new StaffPlanningController($staffPlanningRepo, $staffRepo, $businessUserRepo, $userRepo),
             ResourcesController::class => new ResourcesController($resourceRepo, $locationRepo, $businessUserRepo, $userRepo, $variantResourceRepo),
             ServiceVariantResourceController::class => new ServiceVariantResourceController($variantResourceRepo, $businessUserRepo, $userRepo),
-            TimeBlocksController::class => new TimeBlocksController($timeBlockRepo, $locationRepo, $businessUserRepo, $userRepo),
+            TimeBlocksController::class => new TimeBlocksController($timeBlockRepo, $timeBlockRecurrenceRuleRepo, $locationRepo, $businessUserRepo, $userRepo),
             ReportsController::class => new ReportsController($this->db, $paymentMethodRepo, $businessUserRepo, $userRepo, $locationClosureRepo),
             LocationClosuresController::class => new LocationClosuresController($locationClosureRepo, $locationRepo, $businessUserRepo, $userRepo),
             ClassEventsController::class => new ClassEventsController(

@@ -7,10 +7,10 @@ import '../../../../../../app/widgets/staff_circle_avatar.dart';
 import '../../../../../../core/l10n/l10_extension.dart';
 import '../../../../../../core/models/staff.dart';
 import '../../../../../../core/widgets/app_dialogs.dart';
+import '../../../../../staff/presentation/dialogs/staff_dialog.dart';
 import '../../../../domain/config/layout_config.dart';
 import '../../../../providers/highlighted_staff_provider.dart';
 import '../../../../providers/layout_config_provider.dart';
-import '../../../../../staff/presentation/dialogs/staff_dialog.dart';
 
 class StaffHeaderRow extends ConsumerWidget {
   final List<Staff> staffList;
@@ -60,11 +60,7 @@ class StaffHeaderRow extends ConsumerWidget {
                     isHighlighted: isHighlighted,
                     isBookableOnline: staff.isBookableOnline,
                     color: staff.color,
-                    onEdit: () => showStaffDialog(
-                      context,
-                      ref,
-                      initial: staff,
-                    ),
+                    onEdit: () => showStaffDialog(context, ref, initial: staff),
                   ),
                 ),
               ),
@@ -130,9 +126,7 @@ class _StaffHeaderCellState extends State<_StaffHeaderCell> {
       onExit: (_) => setState(() => _isHovered = false),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        decoration: BoxDecoration(borderRadius: BorderRadius.circular(12)),
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -170,11 +164,11 @@ class _StaffHeaderCellState extends State<_StaffHeaderCell> {
                                   showAppInfoDialog(
                                     context,
                                     title: Text(
-                                      context.l10n
-                                          .staffNotBookableOnlineTitle,
+                                      context.l10n.staffNotBookableOnlineTitle,
                                     ),
                                     content: Text(
-                                      context.l10n
+                                      context
+                                          .l10n
                                           .staffNotBookableOnlineMessage,
                                     ),
                                     closeLabel: context.l10n.actionClose,
@@ -183,15 +177,17 @@ class _StaffHeaderCellState extends State<_StaffHeaderCell> {
                                 child: Container(
                                   padding: const EdgeInsets.all(2),
                                   decoration: BoxDecoration(
-                                    color:
-                                        Theme.of(context).colorScheme.surface,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.surface,
                                     shape: BoxShape.circle,
                                   ),
                                   child: Icon(
                                     Icons.cloud_off_outlined,
                                     size: 14,
-                                    color:
-                                        Theme.of(context).colorScheme.primary,
+                                    color: Theme.of(
+                                      context,
+                                    ).colorScheme.primary,
                                   ),
                                 ),
                               ),

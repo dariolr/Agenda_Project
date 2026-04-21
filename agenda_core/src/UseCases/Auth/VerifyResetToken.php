@@ -33,7 +33,7 @@ final class VerifyResetToken
         $stmt->execute([$tokenHash]);
         $resetToken = $stmt->fetch();
 
-        if ($resetToken === null) {
+        if (!is_array($resetToken)) {
             throw AuthException::invalidResetToken();
         }
 

@@ -194,8 +194,8 @@ final class QueueBookingConfirmation
         $locationBlockHtml = $hasMultipleLocations ? sprintf(
             '<tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                                        <span style="color:#666;">📍 %s</span><br>
-                                        <strong style="color:#333;">%s</strong><br>
+                                        <strong style="color:#666;">📍 %s</strong><br>
+                                        <span style="color:#333;">%s</span><br>
                                         <span style="color:#666;font-size:14px;">%s</span>
                                     </td>
                                 </tr>',
@@ -285,7 +285,7 @@ final class QueueBookingConfirmation
                     $title
                 );
                 $recurrenceSummaryText = sprintf(
-                    "Recurrence:\n%s\nAppointments:\n%d\n%s:\n\n",
+                    "Recurrence:\n%s\nAppointments:\n%d\n%s:\n",
                     $recurrenceTypeLabel,
                     $occurrencesCount,
                     $title
@@ -298,7 +298,7 @@ final class QueueBookingConfirmation
                     $title
                 );
                 $recurrenceSummaryText = sprintf(
-                    "Tipo di ricorrenza:\n%s\nNumero appuntamenti:\n%d\n%s:\n\n",
+                    "Tipo di ricorrenza:\n%s\nNumero appuntamenti:\n%d\n%s:\n",
                     $recurrenceTypeLabel,
                     $occurrencesCount,
                     $title
@@ -340,21 +340,27 @@ final class QueueBookingConfirmation
             return ['', ''];
         }
 
+        $headerHtml = $sectionLabelHtml !== ''
+            ? sprintf('<strong style="color:#666;font-size:13px;">%s</strong><br>', $sectionLabelHtml)
+            : '';
+
         $html = sprintf(
             '<tr>
                 <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                    <span style="color:#666;font-size:13px;">%s</span><br>
-                    <div style="margin:8px 0 0 0;color:#333;">
+                    %s<div style="margin:8px 0 0 0;color:#333;">
                         %s%s
                     </div>
                 </td>
             </tr>',
-            $sectionLabelHtml,
+            $headerHtml,
             $recurrenceSummaryHtml,
             implode('', $itemsHtml)
         );
 
-        $text = ($sectionLabelText !== '' ? $sectionLabelText . ":\n\n" : '') . $recurrenceSummaryText . implode("\n\n", $itemsText) . "\n";
+        $text = ($sectionLabelText !== '' ? $sectionLabelText . ":\n" : '')
+            . $recurrenceSummaryText
+            . implode("\n", $itemsText)
+            . "\n";
 
         return [$html, $text];
     }

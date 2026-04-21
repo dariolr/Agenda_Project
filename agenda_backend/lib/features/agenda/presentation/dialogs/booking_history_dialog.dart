@@ -280,6 +280,8 @@ class _EventTile extends StatelessWidget {
         return _describeItemAdded(payload);
       case 'booking_item_deleted':
         return _describeItemDeleted(payload);
+      case 'booking_reschedule_notification_skipped':
+        return _describeRescheduleNotificationSkipped(payload, locale);
       case 'booking_updated':
         return _describeBookingUpdate(payload);
       default:
@@ -510,6 +512,29 @@ class _EventTile extends StatelessWidget {
     return descriptions.isNotEmpty ? descriptions.join('\n') : null;
   }
 
+  String? _describeRescheduleNotificationSkipped(
+    Map<String, dynamic> payload,
+    String locale,
+  ) {
+    final oldRaw = payload['old_first_start_time'];
+    final newRaw = payload['new_first_start_time'];
+    final oldStart = _parseTime(oldRaw);
+    final newStart = _parseTime(newRaw);
+
+    final isEn = locale.toLowerCase().startsWith('en');
+    if (oldStart != null && newStart != null) {
+      final oldLabel = _formatTimeWithOptionalDate(oldStart, locale, reference: newStart);
+      final newLabel = _formatTimeWithOptionalDate(newStart, locale, reference: oldStart);
+      return isEn
+          ? 'Client notification skipped by operator: booking moved from $oldLabel to $newLabel.'
+          : 'Notifica cliente non inviata su scelta operatore: prenotazione spostata da $oldLabel a $newLabel.';
+    }
+
+    return isEn
+        ? 'Client notification skipped by operator after reschedule.'
+        : 'Notifica cliente non inviata su scelta operatore dopo la riprogrammazione.';
+  }
+
   DateTime? _parseTime(dynamic value) {
     if (value == null) return null;
     if (value is String) {
@@ -608,6 +633,12 @@ class _EventTile extends StatelessWidget {
           Icons.swap_horiz,
           Colors.indigo,
           l10n.bookingHistoryEventReplaced,
+        );
+      case 'booking_reschedule_notification_skipped':
+        return (
+          Icons.notifications_off_outlined,
+          Colors.deepOrange,
+          l10n.bookingHistoryEventUpdated,
         );
       default:
         return (Icons.info_outline, Colors.grey, eventType);

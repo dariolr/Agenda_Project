@@ -21,11 +21,13 @@ import '../../agenda/providers/location_providers.dart';
 import '../../agenda/providers/resource_providers.dart';
 import '../../class_events/presentation/class_events_screen.dart';
 import '../../class_events/providers/class_events_providers.dart';
+import '../domain/appointment_type_filter_option.dart';
 import '../providers/service_categories_provider.dart';
 import '../providers/service_packages_provider.dart';
 import '../providers/services_provider.dart';
 import '../providers/services_reorder_provider.dart';
 import '../providers/services_sorted_providers.dart';
+import '../providers/services_ui_state_provider.dart';
 // utils e validators spostati nei dialog
 import 'dialogs/category_dialog.dart';
 import 'dialogs/service_dialog.dart';
@@ -45,12 +47,6 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
   final ScrollController _scrollController = ScrollController();
   Timer? _autoScrollTimer;
-  AppointmentTypeFilterOption _appointmentTypeFilter =
-      AppointmentTypeFilterOption.all;
-
-  // NOTE: Non serve initState con refresh() perché:
-  // 1. I provider AsyncNotifier caricano i dati automaticamente nel build()
-  // 2. Il refresh al cambio tab avviene in _refreshProvidersForTab()
 
   // ---------- Auto-scroll mentre si trascina ----------
   void _startAutoScroll(Offset pointerInGlobal) {
@@ -84,6 +80,13 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(ref.read(servicesProvider.notifier).refresh());
+      unawaited(ref.read(servicePackagesProvider.notifier).refresh());
+      ref.invalidate(classTypesProvider);
+      ref.invalidate(classTypesWithInactiveProvider);
+    });
   }
 
   @override
@@ -139,10 +142,21 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final shouldShowTypeFilter = _shouldShowTypeFilter(
       availableFilterOptions: availableFilterOptions,
     );
+    final selectedFilterOption = ref.watch(
+      servicesAppointmentTypeFilterProvider,
+    );
     final effectiveFilterOption =
-        availableFilterOptions.contains(_appointmentTypeFilter)
-        ? _appointmentTypeFilter
+        availableFilterOptions.contains(selectedFilterOption)
+        ? selectedFilterOption
         : AppointmentTypeFilterOption.all;
+    if (!availableFilterOptions.contains(selectedFilterOption)) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref
+            .read(servicesAppointmentTypeFilterProvider.notifier)
+            .set(AppointmentTypeFilterOption.all);
+      });
+    }
     // Pre-carica le risorse solo per ruoli che possono modificare servizi.
     if (canManageServices) {
       ref.watch(resourcesProvider);
@@ -405,15 +419,17 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     required AppointmentTypeFilterOption option,
     required ColorScheme colorScheme,
   }) {
-    final isSelected = _appointmentTypeFilter == option;
+    final selectedFilter = ref.watch(servicesAppointmentTypeFilterProvider);
+    final isSelected = selectedFilter == option;
     final labelStyle =
         Theme.of(context).chipTheme.labelStyle ??
         Theme.of(context).textTheme.labelLarge ??
         const TextStyle(fontSize: 14);
     return InkWell(
       onTap: () {
-        if (_appointmentTypeFilter == option) return;
-        setState(() => _appointmentTypeFilter = option);
+        final selectedFilter = ref.read(servicesAppointmentTypeFilterProvider);
+        if (selectedFilter == option) return;
+        ref.read(servicesAppointmentTypeFilterProvider.notifier).set(option);
       },
       borderRadius: BorderRadius.circular(8),
       child: AnimatedContainer(

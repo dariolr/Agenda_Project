@@ -633,7 +633,7 @@ class _InvitationAcceptScreenState
               content: SizedBox(
                 width: 420,
                 child: Form(
-      autovalidateMode: AutovalidateMode.onUserInteraction,
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
                   key: formKey,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
@@ -819,7 +819,8 @@ class _InvitationAcceptScreenState
 
   String _mapApiErrorToMessage(BuildContext context, ApiException e) {
     final l10n = context.l10n;
-    final msg = e.message.toLowerCase();
+    final reason = e.reason ?? '';
+    final key = e.messageKey ?? '';
     if (e.code == 'invitation_email_already_registered') {
       return l10n.invitationRegisterExistingUser;
     }
@@ -827,16 +828,19 @@ class _InvitationAcceptScreenState
       return l10n.invitationAcceptRequiresRegistration;
     }
 
-    if (msg.contains('invitation not found')) {
+    if (reason == 'invitation_not_found' ||
+        key == 'errors.invitation_not_found') {
       return l10n.invitationAcceptErrorInvalid;
     }
-    if (msg.contains('expired')) {
+    if (reason == 'invitation_expired' || key == 'errors.invitation_expired') {
       return l10n.invitationAcceptErrorExpired;
     }
-    if (msg.contains('no longer valid')) {
+    if (reason == 'invitation_no_longer_valid' ||
+        key == 'errors.invitation_no_longer_valid') {
       return l10n.invitationAcceptErrorInvalid;
     }
-    if (msg.contains('different email')) {
+    if (reason == 'invitation_different_email' ||
+        key == 'errors.invitation_different_email') {
       return l10n.invitationAcceptErrorEmailMismatch;
     }
 
@@ -844,10 +848,14 @@ class _InvitationAcceptScreenState
   }
 
   bool _isInvalidInvitationError(ApiException e) {
-    final msg = e.message.toLowerCase();
-    return msg.contains('invitation not found') ||
-        msg.contains('expired') ||
-        msg.contains('no longer valid');
+    final reason = e.reason ?? '';
+    final key = e.messageKey ?? '';
+    return reason == 'invitation_not_found' ||
+        reason == 'invitation_expired' ||
+        reason == 'invitation_no_longer_valid' ||
+        key == 'errors.invitation_not_found' ||
+        key == 'errors.invitation_expired' ||
+        key == 'errors.invitation_no_longer_valid';
   }
 
   String? _passwordPolicyError(String password, L10n l10n) {
@@ -918,7 +926,10 @@ class _InvitationAcceptScreenState
         const SizedBox(height: 12),
         FilledButton(
           onPressed: _goToApplication,
-          child: Text(context.l10n.invitationGoToApplication, textAlign: TextAlign.center),
+          child: Text(
+            context.l10n.invitationGoToApplication,
+            textAlign: TextAlign.center,
+          ),
         ),
       ],
     );

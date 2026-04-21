@@ -12,6 +12,7 @@
 4. Mantenere compatibilità con `agenda_backend` e `agenda_frontend`.
 5. Ogni modifica DB deve avere una query SQL unica e operativa (phpMyAdmin-ready) in `config/migrations/`.
 6. Ogni modifica DB deve aggiornare anche `config/migrations/FULL_DATABASE_SCHEMA.sql`.
+7. Ogni nuovo `error.code`/`error.message_key` introdotto o modificato in `agenda_core` deve essere mappato in `agenda_backend` e/o `agenda_frontend` (traduzioni + resolver errori), evitando fallback hardcoded lato Flutter.
 
 ## Comandi Utili
 ```bash

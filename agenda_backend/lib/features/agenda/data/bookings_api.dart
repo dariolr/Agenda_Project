@@ -304,6 +304,8 @@ class BookingsApi {
     double? price,
     bool priceExplicitlySet = false,
     bool notifyClient = true,
+    bool notifyClientDecisionByOperator = false,
+    bool suppressAuditEvent = false,
   }) async {
     await _apiClient.updateAppointment(
       locationId: locationId,
@@ -322,6 +324,8 @@ class BookingsApi {
       price: price,
       priceExplicitlySet: priceExplicitlySet,
       notifyClient: notifyClient,
+      notifyClientDecisionByOperator: notifyClientDecisionByOperator,
+      suppressAuditEvent: suppressAuditEvent,
     );
   }
 

@@ -359,6 +359,45 @@ class MessageLookup extends MessageLookupByLibrary {
       "Report settimanale",
     ),
     "allLocations": MessageLookupByLibrary.simpleMessage("Tutte le sedi"),
+    "apiErrorClassTypeNameExists": MessageLookupByLibrary.simpleMessage(
+      "Esiste già un tipo classe con questo nome.",
+    ),
+    "apiErrorDatabase": MessageLookupByLibrary.simpleMessage(
+      "Servizio temporaneamente non disponibile. Riprova più tardi.",
+    ),
+    "apiErrorDemoBlocked": MessageLookupByLibrary.simpleMessage(
+      "Questa azione è bloccata in modalità demo.",
+    ),
+    "apiErrorForbidden": MessageLookupByLibrary.simpleMessage(
+      "Non hai i permessi per eseguire questa azione.",
+    ),
+    "apiErrorInvalidCredentials": MessageLookupByLibrary.simpleMessage(
+      "Email o password non valide.",
+    ),
+    "apiErrorInvalidRefreshToken": MessageLookupByLibrary.simpleMessage(
+      "La sessione non è più valida. Accedi di nuovo.",
+    ),
+    "apiErrorInvalidResetToken": MessageLookupByLibrary.simpleMessage(
+      "Il link di reset password non è valido.",
+    ),
+    "apiErrorNotFound": MessageLookupByLibrary.simpleMessage(
+      "La risorsa richiesta non è stata trovata.",
+    ),
+    "apiErrorResetTokenExpired": MessageLookupByLibrary.simpleMessage(
+      "Il link di reset password è scaduto.",
+    ),
+    "apiErrorSlotConflict": MessageLookupByLibrary.simpleMessage(
+      "Lo slot orario selezionato non è più disponibile.",
+    ),
+    "apiErrorTokenExpired": MessageLookupByLibrary.simpleMessage(
+      "La sessione è scaduta. Accedi di nuovo.",
+    ),
+    "apiErrorUnauthorized": MessageLookupByLibrary.simpleMessage(
+      "Autenticazione richiesta.",
+    ),
+    "apiErrorValidation": MessageLookupByLibrary.simpleMessage(
+      "Controlla i dati inseriti.",
+    ),
     "appTitle": MessageLookupByLibrary.simpleMessage("Agenda Platform"),
     "applyClientToAllAppointmentsMessage": MessageLookupByLibrary.simpleMessage(
       "Il cliente verrà associato anche agli appuntamenti di questa prenotazione che sono stati assegnati ad altro operatore.",
@@ -462,6 +501,21 @@ class MessageLookup extends MessageLookupByLibrary {
     "blockReason": MessageLookupByLibrary.simpleMessage("Motivo (opzionale)"),
     "blockReasonHint": MessageLookupByLibrary.simpleMessage(
       "Es. Riunione, Pausa, ecc.",
+    ),
+    "blockRecurringDeleteChooseScope": MessageLookupByLibrary.simpleMessage(
+      "Quali blocchi vuoi eliminare?",
+    ),
+    "blockRecurringDeleteTitle": MessageLookupByLibrary.simpleMessage(
+      "Elimina blocco ricorrente",
+    ),
+    "blockRecurringEditChooseScope": MessageLookupByLibrary.simpleMessage(
+      "Quali blocchi vuoi modificare?",
+    ),
+    "blockRecurringEditTitle": MessageLookupByLibrary.simpleMessage(
+      "Modifica blocco ricorrente",
+    ),
+    "blockRecurringIndicator": MessageLookupByLibrary.simpleMessage(
+      "Blocco ricorrente",
     ),
     "blockSelectStaff": MessageLookupByLibrary.simpleMessage("Seleziona team"),
     "blockSelectStaffError": MessageLookupByLibrary.simpleMessage(
@@ -2066,9 +2120,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Includi non disponibilità",
     ),
     "recurrencePreviewSelected": m62,
-    "recurrencePreviewTitle": MessageLookupByLibrary.simpleMessage(
-      "Anteprima appuntamenti",
-    ),
+    "recurrencePreviewTitle": MessageLookupByLibrary.simpleMessage("Anteprima"),
     "recurrenceRepeatBlock": MessageLookupByLibrary.simpleMessage(
       "Ripeti questo blocco",
     ),

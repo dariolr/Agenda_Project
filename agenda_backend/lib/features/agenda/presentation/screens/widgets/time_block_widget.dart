@@ -235,6 +235,7 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final maxHeight = constraints.maxHeight;
+                      final maxWidth = constraints.maxWidth;
                       if (maxHeight < 18) {
                         return Align(
                           alignment: Alignment.centerLeft,
@@ -251,10 +252,32 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
                           ),
                         );
                       }
+                      if (maxWidth < 24) {
+                        final indicatorWidth = (maxWidth - 6).clamp(8.0, 22.0);
+                        return Align(
+                          alignment: Alignment.centerLeft,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 3),
+                            child: Container(
+                              width: indicatorWidth,
+                              height: 2,
+                              decoration: BoxDecoration(
+                                color: colorScheme.error.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(2),
+                              ),
+                            ),
+                          ),
+                        );
+                      }
 
-                      final isCompact = maxHeight < 30;
+                      final isCompact = maxHeight < 30 || maxWidth < 90;
                       final horizontalPadding = isCompact ? 6.0 : 8.0;
                       final verticalPadding = isCompact ? 2.0 : 4.0;
+                      final showLeadingIcon = !isCompact && maxWidth >= 84;
+                      final showRecurringIcon =
+                          !isCompact &&
+                          effectiveBlock.isRecurring &&
+                          maxWidth >= 110;
 
                       return Padding(
                         padding: EdgeInsets.symmetric(
@@ -267,7 +290,7 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
                           children: [
                             Row(
                               children: [
-                                if (!isCompact) ...[
+                                if (showLeadingIcon) ...[
                                   Icon(
                                     effectiveBlock.allowOnlineBookingDuringBlock
                                         ? Icons.event_note
@@ -292,6 +315,18 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
+                                if (showRecurringIcon)
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 2),
+                                    child: Tooltip(
+                                      message: context.l10n.blockRecurringIndicator,
+                                      child: Icon(
+                                        Icons.repeat,
+                                        size: 12,
+                                        color: accentColor.withOpacity(0.8),
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
                             if (maxHeight > 40) ...[

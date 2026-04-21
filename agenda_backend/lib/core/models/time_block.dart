@@ -1,29 +1,19 @@
 /// Rappresenta un blocco di non disponibilità nell'agenda.
-///
-/// Un blocco può essere assegnato a uno o più membri dello staff
-/// per una fascia oraria specifica.
 class TimeBlock {
   final int id;
   final int businessId;
   final int locationId;
-
-  /// Lista degli ID degli staff a cui è assegnato il blocco.
   final List<int> staffIds;
-
-  /// Inizio del blocco.
   final DateTime startTime;
-
-  /// Fine del blocco.
   final DateTime endTime;
-
-  /// Motivo opzionale del blocco (es. "Riunione", "Pausa pranzo", ecc.).
   final String? reason;
-
-  /// Se true, il blocco copre l'intera giornata lavorativa.
   final bool isAllDay;
-
-  /// Se true, il blocco non riduce la disponibilità online.
   final bool allowOnlineBookingDuringBlock;
+
+  // Recurrence
+  final int? recurrenceRuleId;
+  final int? recurrenceIndex;
+  final bool isRecurrenceParent;
 
   const TimeBlock({
     required this.id,
@@ -35,7 +25,12 @@ class TimeBlock {
     this.reason,
     this.isAllDay = false,
     this.allowOnlineBookingDuringBlock = false,
+    this.recurrenceRuleId,
+    this.recurrenceIndex,
+    this.isRecurrenceParent = false,
   });
+
+  bool get isRecurring => recurrenceRuleId != null;
 
   factory TimeBlock.fromJson(Map<String, dynamic> json) => TimeBlock(
     id: json['id'] as int,
@@ -51,6 +46,9 @@ class TimeBlock {
     allowOnlineBookingDuringBlock: _asBool(
       json['allow_online_booking_during_block'],
     ),
+    recurrenceRuleId: json['recurrence_rule_id'] as int?,
+    recurrenceIndex: json['recurrence_index'] as int?,
+    isRecurrenceParent: _asBool(json['is_recurrence_parent']),
   );
 
   Map<String, dynamic> toJson() => {
@@ -63,6 +61,9 @@ class TimeBlock {
     if (reason != null) 'reason': reason,
     'is_all_day': isAllDay,
     'allow_online_booking_during_block': allowOnlineBookingDuringBlock,
+    if (recurrenceRuleId != null) 'recurrence_rule_id': recurrenceRuleId,
+    if (recurrenceIndex != null) 'recurrence_index': recurrenceIndex,
+    'is_recurrence_parent': isRecurrenceParent,
   };
 
   TimeBlock copyWith({
@@ -75,6 +76,9 @@ class TimeBlock {
     String? reason,
     bool? isAllDay,
     bool? allowOnlineBookingDuringBlock,
+    int? recurrenceRuleId,
+    int? recurrenceIndex,
+    bool? isRecurrenceParent,
   }) {
     return TimeBlock(
       id: id ?? this.id,
@@ -87,21 +91,20 @@ class TimeBlock {
       isAllDay: isAllDay ?? this.isAllDay,
       allowOnlineBookingDuringBlock:
           allowOnlineBookingDuringBlock ?? this.allowOnlineBookingDuringBlock,
+      recurrenceRuleId: recurrenceRuleId ?? this.recurrenceRuleId,
+      recurrenceIndex: recurrenceIndex ?? this.recurrenceIndex,
+      isRecurrenceParent: isRecurrenceParent ?? this.isRecurrenceParent,
     );
   }
 
-  /// Durata del blocco in minuti.
   int get durationMinutes => endTime.difference(startTime).inMinutes;
 
-  /// Verifica se il blocco include uno specifico staff.
   bool includesStaff(int staffId) => staffIds.contains(staffId);
 
-  /// Verifica se il blocco si sovrappone a un intervallo di tempo.
   bool overlaps(DateTime start, DateTime end) {
     return startTime.isBefore(end) && endTime.isAfter(start);
   }
 
-  /// Verifica se il blocco è nella stessa data.
   bool isOnDate(DateTime date) {
     final blockDate = DateTime(startTime.year, startTime.month, startTime.day);
     final targetDate = DateTime(date.year, date.month, date.day);

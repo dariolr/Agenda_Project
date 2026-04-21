@@ -5,9 +5,8 @@ import 'package:go_router/go_router.dart';
 void main() {
   test('appRouter exposes main navigation branches', () {
     final routes = appRouter.configuration.routes;
-    // StatefulShellRoute + 4 route extra
-    // (staff-availability, profilo, operatori, reset-password)
-    expect(routes.length, 5);
+    // StatefulShellRoute + extra top-level routes.
+    expect(routes.length, 7);
 
     final shellRoute = routes.first;
     expect(shellRoute, isA<StatefulShellRoute>());

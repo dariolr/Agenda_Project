@@ -137,8 +137,8 @@ final class QueueBookingReminder
         $locationBlockHtml = $hasMultipleLocations ? sprintf(
             '<tr>
                                     <td style="padding:5px 0;">
-                                        <span style="color:#666;">📍 %s</span><br>
-                                        <strong style="color:#333;">%s</strong><br>
+                                        <strong style="color:#666;">📍 %s</strong><br>
+                                        <span style="color:#333;">%s</span><br>
                                         <span style="color:#666;font-size:14px;">%s</span>
                                     </td>
                                 </tr>',

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,11 +13,27 @@ import '../providers/service_packages_provider.dart';
 import '../providers/services_provider.dart';
 import 'dialogs/service_package_dialog.dart';
 
-class ServicePackagesScreen extends ConsumerWidget {
+class ServicePackagesScreen extends ConsumerStatefulWidget {
   const ServicePackagesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ServicePackagesScreen> createState() =>
+      _ServicePackagesScreenState();
+}
+
+class _ServicePackagesScreenState extends ConsumerState<ServicePackagesScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(ref.read(servicePackagesProvider.notifier).refresh());
+      unawaited(ref.read(servicesProvider.notifier).refresh());
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final packagesAsync = ref.watch(servicePackagesProvider);
     final servicesAsync = ref.watch(servicesProvider);
     final categories = ref.watch(serviceCategoriesProvider);

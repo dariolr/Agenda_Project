@@ -20,12 +20,10 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
     final location = ref.watch(currentLocationProvider);
     final agendaDate = ref.watch(agendaDateProvider);
 
-    // Non caricare se location non è ancora valida
     if (location.id <= 0) {
       return [];
     }
 
-    // Carica blocchi per la data corrente dell'agenda (stesso pattern degli appuntamenti)
     final dayStart = DateUtils.dateOnly(agendaDate);
     final dayEnd = dayStart.add(const Duration(days: 1));
 
@@ -35,7 +33,7 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
         fromDate: _formatDateTime(dayStart),
         toDate: _formatDateTime(dayEnd),
       );
-      return data.map(_parseTimeBlock).toList();
+      return data.map(TimeBlock.fromJson).toList();
     } catch (_) {
       return [];
     }
@@ -46,46 +44,42 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
         '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
   }
 
-  TimeBlock _parseTimeBlock(Map<String, dynamic> json) {
-    bool asBool(dynamic value) {
-      if (value is bool) return value;
-      if (value is num) return value.toInt() == 1;
-      return false;
-    }
-
-    return TimeBlock(
-      id: json['id'] as int,
-      businessId: json['business_id'] as int,
-      locationId: json['location_id'] as int,
-      staffIds: (json['staff_ids'] as List).map((e) => e as int).toList(),
-      startTime: DateTime.parse(json['start_time'] as String),
-      endTime: DateTime.parse(json['end_time'] as String),
-      reason: json['reason'] as String?,
-      isAllDay: asBool(json['is_all_day']),
-      allowOnlineBookingDuringBlock: asBool(
-        json['allow_online_booking_during_block'],
-      ),
-    );
-  }
-
   Future<void> refresh() async {
-    // Invalida il provider per forzare un rebuild con la data corrente
     ref.invalidateSelf();
   }
 
-  /// Aggiunge un nuovo blocco di non disponibilità.
-  Future<TimeBlock> addBlock({
+  /// Adds a single or recurring series of time blocks.
+  ///
+  /// When [recurrence] is provided the backend creates the whole series in one
+  /// call and returns `{time_blocks: [...], recurrence_rule_id, created_count}`.
+  /// [excludedIndices] (0-based) skips those occurrences server-side.
+  Future<List<TimeBlock>> addBlock({
     required List<int> staffIds,
     required DateTime startTime,
     required DateTime endTime,
     String? reason,
     bool isAllDay = false,
     bool allowOnlineBookingDuringBlock = false,
+    RecurrenceConfig? recurrence,
+    List<int>? excludedIndices,
   }) async {
     final apiClient = ref.read(apiClientProvider);
     final location = ref.read(currentLocationProvider);
 
-    final data = await apiClient.createTimeBlock(
+    Map<String, dynamic>? recurrencePayload;
+    if (recurrence != null) {
+      recurrencePayload = {
+        'frequency': recurrence.frequency.value,
+        'interval_value': recurrence.intervalValue,
+        if (recurrence.maxOccurrences != null)
+          'max_occurrences': recurrence.maxOccurrences,
+        if (recurrence.endDate != null)
+          'end_date':
+              '${recurrence.endDate!.year}-${recurrence.endDate!.month.toString().padLeft(2, '0')}-${recurrence.endDate!.day.toString().padLeft(2, '0')}',
+      };
+    }
+
+    final response = await apiClient.createTimeBlock(
       locationId: location.id,
       startTime: _formatDateTime(startTime),
       endTime: _formatDateTime(endTime),
@@ -93,56 +87,30 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
       isAllDay: isAllDay,
       allowOnlineBookingDuringBlock: allowOnlineBookingDuringBlock,
       reason: reason,
+      recurrence: recurrencePayload,
+      excludedIndices: excludedIndices,
     );
 
-    final block = _parseTimeBlock(data);
-    final current = state.value ?? [];
-    state = AsyncData([...current, block]);
-    return block;
-  }
-
-  /// Aggiunge una serie di blocchi ricorrenti.
-  Future<List<TimeBlock>> addRecurringBlocks({
-    required List<int> staffIds,
-    required DateTime startTime,
-    required DateTime endTime,
-    required RecurrenceConfig recurrence,
-    Set<int>? excludedRecurrenceIndices,
-    String? reason,
-    bool isAllDay = false,
-    bool allowOnlineBookingDuringBlock = false,
-  }) async {
-    final apiClient = ref.read(apiClientProvider);
-    final location = ref.read(currentLocationProvider);
-    final duration = endTime.difference(startTime);
-    final occurrences = recurrence.calculateOccurrences(startTime);
-    final createdBlocks = <TimeBlock>[];
-
-    final excluded = excludedRecurrenceIndices ?? const <int>{};
-    for (var i = 0; i < occurrences.length; i++) {
-      final recurrenceIndex = i + 1;
-      if (excluded.contains(recurrenceIndex)) {
-        continue;
-      }
-      final occurrenceStart = occurrences[i];
-      final data = await apiClient.createTimeBlock(
-        locationId: location.id,
-        startTime: _formatDateTime(occurrenceStart),
-        endTime: _formatDateTime(occurrenceStart.add(duration)),
-        staffIds: staffIds,
-        isAllDay: isAllDay,
-        allowOnlineBookingDuringBlock: allowOnlineBookingDuringBlock,
-        reason: reason,
-      );
-      createdBlocks.add(_parseTimeBlock(data));
+    final List<TimeBlock> created;
+    if (response.containsKey('time_blocks')) {
+      created = (response['time_blocks'] as List)
+          .map((b) => TimeBlock.fromJson(Map<String, dynamic>.from(b as Map)))
+          .toList();
+    } else {
+      created = [
+        TimeBlock.fromJson(
+          Map<String, dynamic>.from(response['time_block'] as Map),
+        ),
+      ];
     }
 
     final current = state.value ?? [];
-    state = AsyncData([...current, ...createdBlocks]);
-    return createdBlocks;
+    state = AsyncData([...current, ...created]);
+    return created;
   }
 
-  /// Aggiorna un blocco esistente.
+  /// Updates a single block (scope='this') or shared fields across the series
+  /// (scope='all'). When scope='all', the local state is refreshed entirely.
   Future<void> updateBlock({
     required int blockId,
     DateTime? startTime,
@@ -151,10 +119,12 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
     String? reason,
     bool? isAllDay,
     bool? allowOnlineBookingDuringBlock,
+    String scope = 'this',
+    int? fromIndex,
   }) async {
     final apiClient = ref.read(apiClientProvider);
 
-    final data = await apiClient.updateTimeBlock(
+    final response = await apiClient.updateTimeBlock(
       blockId: blockId,
       startTime: startTime != null ? _formatDateTime(startTime) : null,
       endTime: endTime != null ? _formatDateTime(endTime) : null,
@@ -162,9 +132,19 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
       isAllDay: isAllDay,
       allowOnlineBookingDuringBlock: allowOnlineBookingDuringBlock,
       reason: reason,
+      scope: scope,
+      fromIndex: fromIndex,
     );
 
-    final updated = _parseTimeBlock(data);
+    if (scope == 'all' || scope == 'future') {
+      // Reload to reflect all changes across the series
+      ref.invalidateSelf();
+      return;
+    }
+
+    final updated = TimeBlock.fromJson(
+      Map<String, dynamic>.from(response['time_block'] as Map),
+    );
     final current = state.value ?? [];
     state = AsyncData([
       for (final block in current)
@@ -172,10 +152,24 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
     ]);
   }
 
-  /// Elimina un blocco per id.
-  Future<void> deleteBlock(int blockId) async {
+  /// Deletes a single block (scope='this') or the entire series (scope='all').
+  Future<void> deleteBlock(
+    int blockId, {
+    String scope = 'this',
+    int? fromIndex,
+  }) async {
     final apiClient = ref.read(apiClientProvider);
-    await apiClient.deleteTimeBlock(blockId);
+    await apiClient.deleteTimeBlock(
+      blockId,
+      scope: scope,
+      fromIndex: fromIndex,
+    );
+
+    if (scope == 'all' || scope == 'future') {
+      // We don't know all the IDs in the series, so invalidate and reload
+      ref.invalidateSelf();
+      return;
+    }
 
     final current = state.value ?? [];
     state = AsyncData([
@@ -184,7 +178,6 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
     ]);
   }
 
-  /// Sposta un blocco a un nuovo orario.
   Future<void> moveBlock({
     required int blockId,
     required DateTime newStart,
@@ -193,7 +186,6 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
     await updateBlock(blockId: blockId, startTime: newStart, endTime: newEnd);
   }
 
-  /// Modifica gli staff assegnati a un blocco.
   Future<void> updateBlockStaff({
     required int blockId,
     required List<int> staffIds,
@@ -207,9 +199,6 @@ final timeBlocksProvider =
       TimeBlocksNotifier.new,
     );
 
-/// Blocchi filtrati per la sede corrente e la data corrente dell'agenda.
-/// Il provider principale già carica solo i blocchi per la data dell'agenda,
-/// quindi qui filtriamo solo per location (in caso di blocchi multi-location).
 final timeBlocksForCurrentLocationProvider = Provider<List<TimeBlock>>((ref) {
   final location = ref.watch(currentLocationProvider);
   final blocksAsync = ref.watch(timeBlocksProvider);
@@ -221,7 +210,6 @@ final timeBlocksForCurrentLocationProvider = Provider<List<TimeBlock>>((ref) {
   ];
 });
 
-/// Blocchi per uno staff specifico nella data corrente dell'agenda.
 final timeBlocksForStaffProvider = Provider.family<List<TimeBlock>, int>((
   ref,
   staffId,
@@ -257,28 +245,6 @@ final timeBlocksForStaffOnDateProvider =
             '${dt.hour.toString().padLeft(2, '0')}:${dt.minute.toString().padLeft(2, '0')}:${dt.second.toString().padLeft(2, '0')}';
       }
 
-      TimeBlock parseTimeBlock(Map<String, dynamic> json) {
-        bool asBool(dynamic value) {
-          if (value is bool) return value;
-          if (value is num) return value.toInt() == 1;
-          return false;
-        }
-
-        return TimeBlock(
-          id: json['id'] as int,
-          businessId: json['business_id'] as int,
-          locationId: json['location_id'] as int,
-          staffIds: (json['staff_ids'] as List).map((e) => e as int).toList(),
-          startTime: DateTime.parse(json['start_time'] as String),
-          endTime: DateTime.parse(json['end_time'] as String),
-          reason: json['reason'] as String?,
-          isAllDay: asBool(json['is_all_day']),
-          allowOnlineBookingDuringBlock: asBool(
-            json['allow_online_booking_during_block'],
-          ),
-        );
-      }
-
       try {
         final data = await apiClient.getTimeBlocks(
           location.id,
@@ -287,8 +253,8 @@ final timeBlocksForStaffOnDateProvider =
         );
         return [
           for (final raw in data)
-            if (parseTimeBlock(raw).includesStaff(params.staffId))
-              parseTimeBlock(raw),
+            if (TimeBlock.fromJson(raw).includesStaff(params.staffId))
+              TimeBlock.fromJson(raw),
         ];
       } catch (_) {
         return const [];

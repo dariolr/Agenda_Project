@@ -344,6 +344,45 @@ class MessageLookup extends MessageLookupByLibrary {
       "Weekly report",
     ),
     "allLocations": MessageLookupByLibrary.simpleMessage("All locations"),
+    "apiErrorClassTypeNameExists": MessageLookupByLibrary.simpleMessage(
+      "A class type with this name already exists.",
+    ),
+    "apiErrorDatabase": MessageLookupByLibrary.simpleMessage(
+      "Service temporarily unavailable. Please try again later.",
+    ),
+    "apiErrorDemoBlocked": MessageLookupByLibrary.simpleMessage(
+      "This action is blocked in demo mode.",
+    ),
+    "apiErrorForbidden": MessageLookupByLibrary.simpleMessage(
+      "You do not have permission to perform this action.",
+    ),
+    "apiErrorInvalidCredentials": MessageLookupByLibrary.simpleMessage(
+      "Invalid email or password.",
+    ),
+    "apiErrorInvalidRefreshToken": MessageLookupByLibrary.simpleMessage(
+      "Your session is no longer valid. Please sign in again.",
+    ),
+    "apiErrorInvalidResetToken": MessageLookupByLibrary.simpleMessage(
+      "The password reset link is not valid.",
+    ),
+    "apiErrorNotFound": MessageLookupByLibrary.simpleMessage(
+      "The requested resource was not found.",
+    ),
+    "apiErrorResetTokenExpired": MessageLookupByLibrary.simpleMessage(
+      "The password reset link has expired.",
+    ),
+    "apiErrorSlotConflict": MessageLookupByLibrary.simpleMessage(
+      "The selected time slot is no longer available.",
+    ),
+    "apiErrorTokenExpired": MessageLookupByLibrary.simpleMessage(
+      "Your session has expired. Please sign in again.",
+    ),
+    "apiErrorUnauthorized": MessageLookupByLibrary.simpleMessage(
+      "Authentication required.",
+    ),
+    "apiErrorValidation": MessageLookupByLibrary.simpleMessage(
+      "Please check the entered data.",
+    ),
     "appTitle": MessageLookupByLibrary.simpleMessage("Agenda Platform"),
     "applyClientToAllAppointmentsMessage": MessageLookupByLibrary.simpleMessage(
       "The client will also be associated with the appointments in this booking that have been assigned to other staff members.",
@@ -441,6 +480,21 @@ class MessageLookup extends MessageLookupByLibrary {
     "blockReason": MessageLookupByLibrary.simpleMessage("Reason (optional)"),
     "blockReasonHint": MessageLookupByLibrary.simpleMessage(
       "E.g. Meeting, Break, etc.",
+    ),
+    "blockRecurringDeleteChooseScope": MessageLookupByLibrary.simpleMessage(
+      "Which blocks do you want to delete?",
+    ),
+    "blockRecurringDeleteTitle": MessageLookupByLibrary.simpleMessage(
+      "Delete recurring block",
+    ),
+    "blockRecurringEditChooseScope": MessageLookupByLibrary.simpleMessage(
+      "Which blocks do you want to edit?",
+    ),
+    "blockRecurringEditTitle": MessageLookupByLibrary.simpleMessage(
+      "Edit recurring block",
+    ),
+    "blockRecurringIndicator": MessageLookupByLibrary.simpleMessage(
+      "Recurring block",
     ),
     "blockSelectStaff": MessageLookupByLibrary.simpleMessage("Select team"),
     "blockSelectStaffError": MessageLookupByLibrary.simpleMessage(
@@ -1972,9 +2026,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Include unavailable slots",
     ),
     "recurrencePreviewSelected": m62,
-    "recurrencePreviewTitle": MessageLookupByLibrary.simpleMessage(
-      "Appointment preview",
-    ),
+    "recurrencePreviewTitle": MessageLookupByLibrary.simpleMessage("Preview"),
     "recurrenceRepeatBlock": MessageLookupByLibrary.simpleMessage(
       "Repeat this block",
     ),

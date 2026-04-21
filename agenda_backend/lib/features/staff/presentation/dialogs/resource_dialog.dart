@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,9 +11,11 @@ import '../../../../core/models/location.dart';
 import '../../../../core/models/resource.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/network/network_providers.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
+import '../../../../core/widgets/feedback_dialog.dart';
 import '../../../../core/widgets/app_form.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../agenda/providers/resource_providers.dart';
@@ -101,8 +105,34 @@ class _ResourceDialogState extends ConsumerState<_ResourceDialog> {
         _selectedServiceVariantIds = variantIds;
         _originalServiceVariantIds = {...variantIds};
       });
-    } catch (e) {
-      // Ignora errori di caricamento
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      if (e.statusCode == 404 || e.code == 'not_found') {
+        // Resource may have been deleted from another session.
+        unawaited(ref.read(resourcesProvider.notifier).refresh());
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: e.message,
+        );
+        if (mounted) {
+          Navigator.of(context, rootNavigator: true).pop();
+        }
+        return;
+      }
+
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.errorTitle,
+        message: e.message,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.errorTitle,
+        message: context.l10n.errorTitle,
+      );
     } finally {
       if (mounted) {
         setState(() => _isLoadingServices = false);
@@ -177,6 +207,20 @@ class _ResourceDialogState extends ConsumerState<_ResourceDialog> {
       if (mounted) {
         Navigator.of(context, rootNavigator: true).pop(!widget.isEditing);
       }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.errorTitle,
+        message: e.message,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.errorTitle,
+        message: context.l10n.errorTitle,
+      );
     } finally {
       if (mounted) {
         setState(() => _isSaving = false);

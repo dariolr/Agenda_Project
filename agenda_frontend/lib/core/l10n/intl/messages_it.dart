@@ -143,6 +143,45 @@ class MessageLookup extends MessageLookupByLibrary {
     "actionNext": MessageLookupByLibrary.simpleMessage("Avanti"),
     "actionRegister": MessageLookupByLibrary.simpleMessage("Registrati"),
     "actionRetry": MessageLookupByLibrary.simpleMessage("Riprova"),
+    "apiErrorClassTypeNameExists": MessageLookupByLibrary.simpleMessage(
+      "Esiste già un tipo classe con questo nome.",
+    ),
+    "apiErrorDatabase": MessageLookupByLibrary.simpleMessage(
+      "Servizio temporaneamente non disponibile. Riprova più tardi.",
+    ),
+    "apiErrorDemoBlocked": MessageLookupByLibrary.simpleMessage(
+      "Questa azione è bloccata in modalità demo.",
+    ),
+    "apiErrorForbidden": MessageLookupByLibrary.simpleMessage(
+      "Non hai i permessi per eseguire questa azione.",
+    ),
+    "apiErrorInvalidCredentials": MessageLookupByLibrary.simpleMessage(
+      "Email o password non valide.",
+    ),
+    "apiErrorInvalidRefreshToken": MessageLookupByLibrary.simpleMessage(
+      "La sessione non è più valida. Accedi di nuovo.",
+    ),
+    "apiErrorInvalidResetToken": MessageLookupByLibrary.simpleMessage(
+      "Il link di reset password non è valido.",
+    ),
+    "apiErrorNotFound": MessageLookupByLibrary.simpleMessage(
+      "La risorsa richiesta non è stata trovata.",
+    ),
+    "apiErrorResetTokenExpired": MessageLookupByLibrary.simpleMessage(
+      "Il link di reset password è scaduto.",
+    ),
+    "apiErrorSlotConflict": MessageLookupByLibrary.simpleMessage(
+      "Lo slot orario selezionato non è più disponibile.",
+    ),
+    "apiErrorTokenExpired": MessageLookupByLibrary.simpleMessage(
+      "La sessione è scaduta. Accedi di nuovo.",
+    ),
+    "apiErrorUnauthorized": MessageLookupByLibrary.simpleMessage(
+      "Autenticazione richiesta.",
+    ),
+    "apiErrorValidation": MessageLookupByLibrary.simpleMessage(
+      "Controlla i dati inseriti.",
+    ),
     "appTitle": MessageLookupByLibrary.simpleMessage("Prenota Online"),
     "authBusinessNotFound": MessageLookupByLibrary.simpleMessage(
       "Impossibile caricare le informazioni del business. Riprova.",

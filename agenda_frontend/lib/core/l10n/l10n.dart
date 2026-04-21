@@ -134,6 +134,136 @@ class L10n {
     return Intl.message('Error', name: 'errorTitle', desc: '', args: []);
   }
 
+  /// `Invalid email or password.`
+  String get apiErrorInvalidCredentials {
+    return Intl.message(
+      'Invalid email or password.',
+      name: 'apiErrorInvalidCredentials',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your session is no longer valid. Please sign in again.`
+  String get apiErrorInvalidRefreshToken {
+    return Intl.message(
+      'Your session is no longer valid. Please sign in again.',
+      name: 'apiErrorInvalidRefreshToken',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The password reset link is not valid.`
+  String get apiErrorInvalidResetToken {
+    return Intl.message(
+      'The password reset link is not valid.',
+      name: 'apiErrorInvalidResetToken',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The password reset link has expired.`
+  String get apiErrorResetTokenExpired {
+    return Intl.message(
+      'The password reset link has expired.',
+      name: 'apiErrorResetTokenExpired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your session has expired. Please sign in again.`
+  String get apiErrorTokenExpired {
+    return Intl.message(
+      'Your session has expired. Please sign in again.',
+      name: 'apiErrorTokenExpired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Authentication required.`
+  String get apiErrorUnauthorized {
+    return Intl.message(
+      'Authentication required.',
+      name: 'apiErrorUnauthorized',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You do not have permission to perform this action.`
+  String get apiErrorForbidden {
+    return Intl.message(
+      'You do not have permission to perform this action.',
+      name: 'apiErrorForbidden',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The requested resource was not found.`
+  String get apiErrorNotFound {
+    return Intl.message(
+      'The requested resource was not found.',
+      name: 'apiErrorNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please check the entered data.`
+  String get apiErrorValidation {
+    return Intl.message(
+      'Please check the entered data.',
+      name: 'apiErrorValidation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `A class type with this name already exists.`
+  String get apiErrorClassTypeNameExists {
+    return Intl.message(
+      'A class type with this name already exists.',
+      name: 'apiErrorClassTypeNameExists',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The selected time slot is no longer available.`
+  String get apiErrorSlotConflict {
+    return Intl.message(
+      'The selected time slot is no longer available.',
+      name: 'apiErrorSlotConflict',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This action is blocked in demo mode.`
+  String get apiErrorDemoBlocked {
+    return Intl.message(
+      'This action is blocked in demo mode.',
+      name: 'apiErrorDemoBlocked',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Service temporarily unavailable. Please try again later.`
+  String get apiErrorDatabase {
+    return Intl.message(
+      'Service temporarily unavailable. Please try again later.',
+      name: 'apiErrorDatabase',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `An error occurred`
   String get errorGeneric {
     return Intl.message(

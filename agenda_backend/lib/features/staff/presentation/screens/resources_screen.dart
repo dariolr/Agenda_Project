@@ -38,7 +38,7 @@ final resourceServiceCountsProvider = FutureProvider.family<Map<int, int>, int>(
   },
 );
 
-class ResourcesScreen extends ConsumerWidget {
+class ResourcesScreen extends ConsumerStatefulWidget {
   const ResourcesScreen({
     super.key,
     required this.location,
@@ -51,14 +51,29 @@ class ResourcesScreen extends ConsumerWidget {
   final bool enableLocationSelectionInForm;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ResourcesScreen> createState() => _ResourcesScreenState();
+}
+
+class _ResourcesScreenState extends ConsumerState<ResourcesScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(resourcesProvider.notifier).refresh();
+      ref.invalidate(resourceServiceCountsProvider(widget.location.id));
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final selectableLocations = enableLocationSelectionInForm
+    final selectableLocations = widget.enableLocationSelectionInForm
         ? ref.watch(sortedLocationsProvider)
         : const <Location>[];
-    final resources = ref.watch(locationResourcesProvider(location.id));
+    final resources = ref.watch(locationResourcesProvider(widget.location.id));
     final serviceCountsAsync = ref.watch(
-      resourceServiceCountsProvider(location.id),
+      resourceServiceCountsProvider(widget.location.id),
     );
     final serviceCounts = serviceCountsAsync.value ?? {};
 
@@ -77,7 +92,7 @@ class ResourcesScreen extends ConsumerWidget {
                 onEdit: () => showResourceDialog(
                   context,
                   ref,
-                  locationId: location.id,
+                  locationId: widget.location.id,
                   resource: resource,
                   selectableLocations: selectableLocations,
                 ),
@@ -86,14 +101,14 @@ class ResourcesScreen extends ConsumerWidget {
             },
           );
 
-    final body = enableLocationSelectionInForm
+    final body = widget.enableLocationSelectionInForm
         ? _ResourcesByLocationList(
             locations: selectableLocations,
             selectableLocations: selectableLocations,
           )
         : listBody;
 
-    if (!showAppBar) return body;
+    if (!widget.showAppBar) return body;
 
     return Scaffold(
       appBar: AppBar(
@@ -103,7 +118,7 @@ class ResourcesScreen extends ConsumerWidget {
         centerTitle: false,
         actions: [
           _StandaloneResourcesAddAction(
-            locationId: location.id,
+            locationId: widget.location.id,
             selectableLocations: selectableLocations,
           ),
         ],

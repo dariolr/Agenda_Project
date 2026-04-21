@@ -1063,6 +1063,24 @@ class _ClassEventFormSnapshot {
   }
 }
 
+class _StagedParticipant {
+  const _StagedParticipant({
+    required this.customerId,
+    required this.displayName,
+    required this.status,
+  });
+
+  final int customerId;
+  final String displayName;
+  final String status; // 'confirmed' | 'waitlisted'
+
+  _StagedParticipant copyWith({String? status}) => _StagedParticipant(
+        customerId: customerId,
+        displayName: displayName,
+        status: status ?? this.status,
+      );
+}
+
 class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   static const int _timeStepMinutes = 15;
   final _formKey = GlobalKey<FormState>();
@@ -1071,6 +1089,11 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   bool _didInitializeDependencies = false;
   bool _initialSnapshotCaptured = false;
   _ClassEventFormSnapshot? _initialSnapshot;
+
+  // Staged participant state — local edits applied only on Save.
+  List<_StagedParticipant>? _stagedParticipants;
+  List<_StagedParticipant>? _originalParticipants;
+  bool _participantsInitialized = false;
 
   ClassEvent? _editingEvent;
   RecurrenceConfig? _recurrenceConfig;
@@ -1105,9 +1128,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     // Reset the create controller in case a previous operation left it in a
     // stuck AsyncLoading state (e.g. network hang while the form was closed).
     ref.invalidate(classEventCreateControllerProvider);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) ref.read(classEventBookingControllerProvider.notifier).reset();
-    });
     if (_editingEvent != null) {
       _applyEventToForm(_editingEvent!);
     } else {
@@ -1135,8 +1155,14 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final participantsAsync = classEventId == null
         ? const AsyncData<List<ClassBooking>>(<ClassBooking>[])
         : ref.watch(classEventParticipantsProvider(classEventId));
-    final bookingMutationState = ref.watch(classEventBookingControllerProvider);
-    final isParticipantsActionLoading = bookingMutationState.isLoading;
+    if (!_participantsInitialized && participantsAsync.hasValue) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_participantsInitialized) {
+          _initStagedParticipants(participantsAsync.value!);
+        }
+      });
+    }
+    const isParticipantsActionLoading = false;
     final businessId = ref.watch(currentBusinessIdProvider);
 
     final classTypes = classTypesAsync.value ?? const <ClassType>[];
@@ -1484,7 +1510,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
               if (isEditMode && classEventId != null) ...[
                 const SizedBox(height: sectionGap),
                 _buildParticipantsSection(
-                  classEventId: classEventId,
                   participantsAsync: participantsAsync,
                   isActionLoading: isParticipantsActionLoading,
                 ),
@@ -1573,10 +1598,59 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     );
   }
 
+  void _initStagedParticipants(List<ClassBooking> bookings) {
+    if (_participantsInitialized) return;
+    final confirmed = bookings
+        .where((b) => b.isConfirmed)
+        .map((b) => _StagedParticipant(
+              customerId: b.customerId,
+              displayName: b.customerDisplayName,
+              status: 'confirmed',
+            ))
+        .toList();
+    final waitlisted = (bookings.where((b) => b.isWaitlisted).toList()
+          ..sort(
+            (a, b) =>
+                (a.waitlistPosition ?? 9999).compareTo(b.waitlistPosition ?? 9999),
+          ))
+        .map((b) => _StagedParticipant(
+              customerId: b.customerId,
+              displayName: b.customerDisplayName,
+              status: 'waitlisted',
+            ))
+        .toList();
+    final staged = [...confirmed, ...waitlisted];
+    setState(() {
+      _stagedParticipants = staged;
+      _originalParticipants = staged
+          .map((p) => _StagedParticipant(
+                customerId: p.customerId,
+                displayName: p.displayName,
+                status: p.status,
+              ))
+          .toList();
+      _participantsInitialized = true;
+    });
+  }
+
+  bool get _participantsDirty {
+    final orig = _originalParticipants;
+    final staged = _stagedParticipants;
+    if (orig == null || staged == null) return false;
+    if (orig.length != staged.length) return true;
+    final origMap = {for (final p in orig) p.customerId: p.status};
+    final stagedIds = {for (final p in staged) p.customerId};
+    if (orig.any((p) => !stagedIds.contains(p.customerId))) return true;
+    for (final p in staged) {
+      if (origMap[p.customerId] != p.status) return true;
+    }
+    return false;
+  }
+
   bool get _hasUnsavedChanges {
     final initial = _initialSnapshot;
     if (!_initialSnapshotCaptured || initial == null) return false;
-    return !_buildSnapshot().sameAs(initial);
+    return !_buildSnapshot().sameAs(initial) || _participantsDirty;
   }
 
   void _captureInitialSnapshotIfNeeded({
@@ -1615,7 +1689,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   }
 
   Widget _buildParticipantsSection({
-    required int classEventId,
     required AsyncValue<List<ClassBooking>> participantsAsync,
     required bool isActionLoading,
   }) {
@@ -1623,17 +1696,11 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final isCompact = ref.watch(formFactorProvider) == AppFormFactor.mobile;
-    final participants = participantsAsync.value ?? const <ClassBooking>[];
-    final confirmed = participants.where((b) => b.isConfirmed).toList()
-      ..sort((a, b) => a.bookedAtUtc.compareTo(b.bookedAtUtc));
-    final waitlisted = participants.where((b) => b.isWaitlisted).toList()
-      ..sort(
-        (a, b) =>
-            (a.waitlistPosition ?? 9999).compareTo(b.waitlistPosition ?? 9999),
-      );
-    final activeCustomerIds = participants
-        .where((b) => b.isConfirmed || b.isWaitlisted)
-        .map((b) => b.customerId)
+    final staged = _stagedParticipants ?? const <_StagedParticipant>[];
+    final confirmed = staged.where((p) => p.status == 'confirmed').toList();
+    final waitlisted = staged.where((p) => p.status == 'waitlisted').toList();
+    final activeCustomerIds = staged
+        .map((p) => p.customerId)
         .toSet();
 
     return Container(
@@ -1658,7 +1725,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                 onPressed: isActionLoading
                     ? null
                     : () => _addClassBooking(
-                        classEventId: classEventId,
                         targetStatus: 'confirmed',
                         excludedCustomerIds: activeCustomerIds,
                       ),
@@ -1685,13 +1751,12 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                 ),
               ),
             ),
-          if (!participantsAsync.isLoading && !participantsAsync.hasError) ...[
+          if (!participantsAsync.isLoading || _participantsInitialized) ...[
             _buildParticipantGroup(
               title: l10n.classEventsParticipantsConfirmedTitle,
               emptyLabel: l10n.classEventsParticipantsEmptyConfirmed,
-              bookings: confirmed,
+              participants: confirmed,
               isActionLoading: isActionLoading,
-              classEventId: classEventId,
               showWaitlistActions: false,
               showTitle: false,
             ),
@@ -1703,16 +1768,14 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
               emptyLabel: _waitlistEnabled
                   ? l10n.classEventsParticipantsEmptyWaitlist
                   : l10n.classEventsWaitlistDisabledHint,
-              bookings: waitlisted,
+              participants: waitlisted,
               isActionLoading: isActionLoading,
-              classEventId: classEventId,
               showWaitlistActions: true,
               headerAction: _waitlistEnabled
                   ? AppFilledButton(
                       onPressed: isActionLoading
                           ? null
                           : () => _addClassBooking(
-                              classEventId: classEventId,
                               targetStatus: 'waitlisted',
                               excludedCustomerIds: activeCustomerIds,
                             ),
@@ -1732,9 +1795,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   Widget _buildParticipantGroup({
     required String title,
     required String emptyLabel,
-    required List<ClassBooking> bookings,
+    required List<_StagedParticipant> participants,
     required bool isActionLoading,
-    required int classEventId,
     required bool showWaitlistActions,
     bool showTitle = true,
     Widget? headerAction,
@@ -1763,20 +1825,19 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           ),
           const SizedBox(height: 6),
         ],
-        if (bookings.isEmpty)
+        if (participants.isEmpty)
           Text(emptyLabel, style: theme.textTheme.bodySmall)
         else
-          ...bookings.map((booking) {
-            final name = booking.customerDisplayName.isNotEmpty
-                ? booking.customerDisplayName
-                : l10n.classEventsParticipantCustomer(booking.customerId);
+          ...participants.indexed.map(((int, _StagedParticipant) entry) {
+            final (index, participant) = entry;
+            final name = participant.displayName.isNotEmpty
+                ? participant.displayName
+                : l10n.classEventsParticipantCustomer(participant.customerId);
             final waitlistSuffix =
-                showWaitlistActions && booking.waitlistPosition != null
-                ? ' • #${booking.waitlistPosition}'
-                : '';
-            final client = clientsById[booking.customerId];
-            final initials = booking.customerDisplayName.trim().isNotEmpty
-                ? initialsFromName(booking.customerDisplayName, maxChars: 2)
+                showWaitlistActions ? ' • #${index + 1}' : '';
+            final client = clientsById[participant.customerId];
+            final initials = participant.displayName.trim().isNotEmpty
+                ? initialsFromName(participant.displayName, maxChars: 2)
                 : '?';
 
             return ListTile(
@@ -1801,9 +1862,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                       tooltip: l10n.classEventsParticipantsPromoteAction,
                       onPressed: isActionLoading
                           ? null
-                          : () => _setClassBookingStatus(
-                              classEventId: classEventId,
-                              customerId: booking.customerId,
+                          : () => _stageStatusChange(
+                              customerId: participant.customerId,
                               targetStatus: 'confirmed',
                             ),
                       icon: const Icon(Icons.arrow_upward, size: 18),
@@ -1813,9 +1873,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                       tooltip: l10n.classEventsParticipantsDemoteAction,
                       onPressed: isActionLoading
                           ? null
-                          : () => _demoteToWaitlist(
-                              classEventId: classEventId,
-                              customerId: booking.customerId,
+                          : () => _stageDemoteToWaitlist(
+                              customerId: participant.customerId,
                             ),
                       icon: const Icon(Icons.arrow_downward, size: 18),
                     ),
@@ -1823,9 +1882,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                     tooltip: l10n.classEventsParticipantsRemoveAction,
                     onPressed: isActionLoading
                         ? null
-                        : () => _removeClassBooking(
-                            classEventId: classEventId,
-                            customerId: booking.customerId,
+                        : () => _stageRemoveParticipant(
+                            customerId: participant.customerId,
                           ),
                     icon: Icon(
                       Icons.remove_circle_outline,
@@ -1842,150 +1900,61 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   }
 
   Future<void> _addClassBooking({
-    required int classEventId,
     required String targetStatus,
     required Set<int> excludedCustomerIds,
   }) async {
-    final selectedCustomerId = await _pickClientForClassBooking(
+    final result = await _pickClientForClassBooking(
       excludedCustomerIds: excludedCustomerIds,
     );
-    if (selectedCustomerId == null || !mounted) return;
-    await _setClassBookingStatus(
-      classEventId: classEventId,
-      customerId: selectedCustomerId,
-      targetStatus: targetStatus,
-    );
+    if (result == null || !mounted) return;
+    setState(() {
+      final staged = List<_StagedParticipant>.from(_stagedParticipants ?? []);
+      staged.removeWhere((p) => p.customerId == result.id);
+      staged.add(_StagedParticipant(
+        customerId: result.id,
+        displayName: result.name,
+        status: targetStatus,
+      ));
+      _stagedParticipants = staged;
+    });
   }
 
-  Future<void> _setClassBookingStatus({
-    required int classEventId,
+  void _stageStatusChange({
     required int customerId,
     required String targetStatus,
-  }) async {
-    final l10n = context.l10n;
-    try {
-      await ref
-          .read(classEventBookingControllerProvider.notifier)
-          .book(
-            classEventId: classEventId,
-            customerId: customerId,
-            targetStatus: targetStatus,
-            classTypeId: _classTypeId,
-          );
-    } catch (_) {
-      // Gestito via stato del provider.
-    }
-    if (!mounted) return;
-    final state = ref.read(classEventBookingControllerProvider);
-    if (state.hasError) {
-      final error = state.error;
-      final message = error is ApiException
-          ? error.message
-          : l10n.classEventsParticipantsMutationError;
-      await FeedbackDialog.showError(
-        context,
-        title: l10n.errorTitle,
-        message: message,
-      );
-    } else if (targetStatus == 'confirmed' && _editingEvent != null) {
-      await _syncCapacityFromEvent(classEventId);
-    }
+  }) {
+    setState(() {
+      _stagedParticipants = (_stagedParticipants ?? []).map((p) {
+        if (p.customerId == customerId) return p.copyWith(status: targetStatus);
+        return p;
+      }).toList();
+    });
   }
 
-  Future<void> _syncCapacityFromEvent(int classEventId) async {
-    try {
-      final updated = await ref.read(
-        classEventDetailProvider(classEventId).future,
-      );
-      if (!mounted) return;
-      if (updated.capacityTotal != _editingEvent?.capacityTotal) {
-        setState(() {
-          _capacityController.text = updated.capacityTotal.toString();
-          _editingEvent = updated;
-        });
-      }
-    } catch (_) {}
+  void _stageDemoteToWaitlist({required int customerId}) {
+    final staged = List<_StagedParticipant>.from(_stagedParticipants ?? []);
+    final demoted = staged.firstWhere((p) => p.customerId == customerId);
+    // First waitlisted in current order, excluding the one being demoted.
+    final waitlistedOthers =
+        staged.where((p) => p.status == 'waitlisted' && p.customerId != customerId);
+    final firstWaitlisted = waitlistedOthers.isEmpty ? null : waitlistedOthers.first;
+    staged.removeWhere((p) => p.customerId == customerId);
+    if (firstWaitlisted != null) {
+      final idx = staged.indexWhere((p) => p.customerId == firstWaitlisted.customerId);
+      if (idx >= 0) staged[idx] = staged[idx].copyWith(status: 'confirmed');
+    }
+    staged.add(demoted.copyWith(status: 'waitlisted'));
+    setState(() => _stagedParticipants = staged);
   }
 
-  Future<void> _demoteToWaitlist({
-    required int classEventId,
-    required int customerId,
-  }) async {
-    final l10n = context.l10n;
-    // Capture the pre-existing waitlist before the mutation so we don't
-    // accidentally promote the participant we're about to move down.
-    final currentParticipants =
-        ref.read(classEventParticipantsProvider(classEventId)).value ??
-        const <ClassBooking>[];
-    final firstWaitlisted =
-        (currentParticipants.where((b) => b.isWaitlisted).toList()
-              ..sort(
-                (a, b) => (a.waitlistPosition ?? 9999).compareTo(
-                  b.waitlistPosition ?? 9999,
-                ),
-              ))
-            .firstOrNull;
-
-    try {
-      await ref
-          .read(classEventBookingControllerProvider.notifier)
-          .demoteAndPromoteFirst(
-            classEventId: classEventId,
-            customerId: customerId,
-            promoteCustomerId: firstWaitlisted?.customerId,
-            classTypeId: _classTypeId,
-          );
-    } catch (_) {}
-
-    if (!mounted) return;
-    final state = ref.read(classEventBookingControllerProvider);
-    if (state.hasError) {
-      final error = state.error;
-      final message = error is ApiException
-          ? error.message
-          : l10n.classEventsParticipantsMutationError;
-      await FeedbackDialog.showError(
-        context,
-        title: l10n.errorTitle,
-        message: message,
-      );
-    } else if (firstWaitlisted != null && _editingEvent != null) {
-      await _syncCapacityFromEvent(classEventId);
-    }
+  void _stageRemoveParticipant({required int customerId}) {
+    setState(() {
+      _stagedParticipants =
+          (_stagedParticipants ?? []).where((p) => p.customerId != customerId).toList();
+    });
   }
 
-  Future<void> _removeClassBooking({
-    required int classEventId,
-    required int customerId,
-  }) async {
-    final l10n = context.l10n;
-    try {
-      await ref
-          .read(classEventBookingControllerProvider.notifier)
-          .cancel(
-            classEventId: classEventId,
-            customerId: customerId,
-            classTypeId: _classTypeId,
-          );
-    } catch (_) {
-      // Gestito via stato del provider.
-    }
-    if (!mounted) return;
-    final state = ref.read(classEventBookingControllerProvider);
-    if (state.hasError) {
-      final error = state.error;
-      final message = error is ApiException
-          ? error.message
-          : l10n.classEventsParticipantsMutationError;
-      await FeedbackDialog.showError(
-        context,
-        title: l10n.errorTitle,
-        message: message,
-      );
-    }
-  }
-
-  Future<int?> _pickClientForClassBooking({
+  Future<_ClassBookingClientPickerResult?> _pickClientForClassBooking({
     required Set<int> excludedCustomerIds,
   }) async {
     Future<_ClassBookingClientPickerResult?> openClientPicker() {
@@ -2029,14 +1998,10 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
 
     while (true) {
       final result = await openClientPicker();
-      if (result == null) {
-        return null;
-      }
+      if (result == null) return null;
 
       if (result.isCreateNew) {
-        if (!mounted) {
-          return null;
-        }
+        if (!mounted) return null;
         Client? initialClient;
         final prefillName = result.name.trim();
         if (prefillName.isNotEmpty) {
@@ -2055,13 +2020,12 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           client: initialClient,
         );
         if (newClient != null) {
-          return newClient.id;
+          return _ClassBookingClientPickerResult(newClient.id, newClient.name);
         }
-        // Se annulla la creazione cliente, riapriamo il picker.
         continue;
       }
 
-      return result.id;
+      return result;
     }
   }
 
@@ -2341,9 +2305,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     }
 
     // Capacity validations only apply when editing an existing event.
-    List<ClassBooking> waitlistedToPromote = const [];
     if (_editingEvent != null) {
-      final confirmedCount = _editingEvent!.confirmedCount;
+      final staged = _stagedParticipants ?? const <_StagedParticipant>[];
+      final confirmedCount = staged.where((p) => p.status == 'confirmed').length;
       if (capacity < confirmedCount) {
         await FeedbackDialog.showError(
           context,
@@ -2354,18 +2318,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       }
 
       if (capacity > _editingEvent!.capacityTotal) {
-        final participants =
-            ref
-                .read(classEventParticipantsProvider(_editingEvent!.id))
-                .value ??
-            const <ClassBooking>[];
-        final waitlisted =
-            participants.where((b) => b.isWaitlisted).toList()
-              ..sort(
-                (a, b) => (a.waitlistPosition ?? 9999).compareTo(
-                  b.waitlistPosition ?? 9999,
-                ),
-              );
+        final waitlisted = staged.where((p) => p.status == 'waitlisted').toList();
         if (waitlisted.isNotEmpty) {
           final shouldPromote = await showDialog<bool>(
             context: context,
@@ -2387,7 +2340,15 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           if (!mounted) return;
           if (shouldPromote == true) {
             final newFreeSpots = capacity - confirmedCount;
-            waitlistedToPromote = waitlisted.take(newFreeSpots).toList();
+            final toPromote = waitlisted.take(newFreeSpots).toList();
+            setState(() {
+              _stagedParticipants = staged.map((p) {
+                if (toPromote.any((w) => w.customerId == p.customerId)) {
+                  return p.copyWith(status: 'confirmed');
+                }
+                return p;
+              }).toList();
+            });
           }
         }
       }
@@ -2416,13 +2377,33 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           },
         );
         if (!mounted) return;
-        for (final booking in waitlistedToPromote) {
+        // Apply staged participant diff.
+        final orig = _originalParticipants ?? const <_StagedParticipant>[];
+        final staged = _stagedParticipants ?? const <_StagedParticipant>[];
+        final origMap = {for (final p in orig) p.customerId: p.status};
+        final stagedMap = {for (final p in staged) p.customerId: p.status};
+        // Removals first (frees up capacity for new additions).
+        for (final p in orig) {
           if (!mounted) break;
-          await _setClassBookingStatus(
-            classEventId: eventId,
-            customerId: booking.customerId,
-            targetStatus: 'confirmed',
-          );
+          if (!stagedMap.containsKey(p.customerId)) {
+            await repo.cancelBooking(
+              businessId: businessId,
+              classEventId: eventId,
+              customerId: p.customerId,
+            );
+          }
+        }
+        // Additions and status changes.
+        for (final p in staged) {
+          if (!mounted) break;
+          if (origMap[p.customerId] != p.status) {
+            await repo.book(
+              businessId: businessId,
+              classEventId: eventId,
+              customerId: p.customerId,
+              targetStatus: p.status,
+            );
+          }
         }
         if (!mounted) return;
         final refreshedDayEvents = await ref.refresh(

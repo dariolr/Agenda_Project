@@ -269,7 +269,7 @@ final class AdminBusinessesController
         } catch (ValidationException $e) {
             return Response::validationError($e->getMessage(), $request->traceId);
         } catch (\RuntimeException $e) {
-            return Response::error($e->getMessage(), 500, $request->traceId);
+            return Response::serverError($e->getMessage(), $request->traceId);
         }
     }
 

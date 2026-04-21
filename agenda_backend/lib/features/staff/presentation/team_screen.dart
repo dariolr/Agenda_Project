@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/location.dart';
@@ -30,9 +32,15 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
   bool isReorderLocations = false;
   bool isReorderStaff = false;
 
-  // NOTE: Non serve initState con refresh() perché:
-  // 1. I provider AsyncNotifier caricano i dati automaticamente nel build()
-  // 2. Il refresh al cambio tab avviene in _refreshProvidersForTab()
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(ref.read(allStaffProvider.notifier).refresh());
+      unawaited(ref.read(locationsProvider.notifier).refresh());
+    });
+  }
 
   void _toggleLocationReorder() {
     setState(() {

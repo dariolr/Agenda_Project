@@ -21,10 +21,12 @@ class MoveConfirmResult {
   const MoveConfirmResult({
     required this.confirmed,
     required this.notifyClient,
+    required this.notifyClientDecisionByOperator,
   });
 
   final bool confirmed;
   final bool notifyClient;
+  final bool notifyClientDecisionByOperator;
 }
 
 bool isMultiServiceBooking(List<Appointment> bookingAppointments) {
@@ -195,7 +197,11 @@ Future<MoveConfirmResult> showMoveConfirmDialog({
       confirmLabel: confirmLabel,
       cancelLabel: cancelLabel,
     );
-    return MoveConfirmResult(confirmed: confirmed, notifyClient: true);
+    return MoveConfirmResult(
+      confirmed: confirmed,
+      notifyClient: true,
+      notifyClientDecisionByOperator: false,
+    );
   }
 
   bool notifyClient = notifyDefault;
@@ -276,6 +282,7 @@ Future<MoveConfirmResult> showMoveConfirmDialog({
   return MoveConfirmResult(
     confirmed: result == true,
     notifyClient: notifyClient,
+    notifyClientDecisionByOperator: result == true,
   );
 }
 
@@ -305,6 +312,7 @@ Future<MoveBookingByAnchorResult> moveWholeBookingFromAnchor({
   required int targetStaffId,
   required List<Appointment> bookingAppointments,
   bool notifyClient = true,
+  bool notifyClientDecisionByOperator = false,
 }) async {
   final session = buildBookingMoveSession(
     bookingId: anchorAppointment.bookingId,
@@ -318,6 +326,7 @@ Future<MoveBookingByAnchorResult> moveWholeBookingFromAnchor({
         targetStart: targetStart,
         targetStaffId: targetStaffId,
         notifyClient: notifyClient,
+        notifyClientDecisionByOperator: notifyClientDecisionByOperator,
       );
 
   if (result != MoveBookingByAnchorResult.success && context.mounted) {

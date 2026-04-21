@@ -947,6 +947,28 @@ CREATE TABLE `staff_services` (
 -- Struttura della tabella `time_blocks`
 --
 
+CREATE TABLE `time_block_recurrence_rules` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `business_id` int UNSIGNED NOT NULL,
+  `frequency` enum('daily','weekly','monthly','custom') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `interval_value` int UNSIGNED NOT NULL DEFAULT '1',
+  `max_occurrences` int UNSIGNED DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  `days_of_week` json DEFAULT NULL,
+  `day_of_month` int UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_tbrr_business_id` (`business_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  COMMENT='Regole di ricorrenza per blocchi di non disponibilità';
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `time_blocks`
+--
+
 CREATE TABLE `time_blocks` (
   `id` int UNSIGNED NOT NULL,
   `business_id` int UNSIGNED NOT NULL,
@@ -956,8 +978,12 @@ CREATE TABLE `time_blocks` (
   `reason` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_all_day` tinyint(1) NOT NULL DEFAULT '0',
   `allow_online_booking_during_block` tinyint(1) NOT NULL DEFAULT '0',
+  `recurrence_rule_id` int UNSIGNED DEFAULT NULL,
+  `recurrence_index` int UNSIGNED DEFAULT NULL,
+  `is_recurrence_parent` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  KEY `idx_tb_recurrence_rule_id` (`recurrence_rule_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------

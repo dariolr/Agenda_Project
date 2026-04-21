@@ -226,6 +226,8 @@ class BookingsRepository {
     double? price,
     bool priceExplicitlySet = false,
     bool notifyClient = true,
+    bool notifyClientDecisionByOperator = false,
+    bool suppressAuditEvent = false,
   }) async {
     return _api.updateAppointment(
       locationId: locationId,
@@ -244,6 +246,8 @@ class BookingsRepository {
       price: price,
       priceExplicitlySet: priceExplicitlySet,
       notifyClient: notifyClient,
+      notifyClientDecisionByOperator: notifyClientDecisionByOperator,
+      suppressAuditEvent: suppressAuditEvent,
     );
   }
 

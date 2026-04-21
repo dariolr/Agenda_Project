@@ -142,8 +142,13 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
     }
 
     final currentOffset = controller.offset;
-    ref.read(agendaVerticalOffsetProvider.notifier).set(currentOffset);
-    widget.onVerticalOffsetChanged?.call(currentOffset);
+    // Se non ci sono colonne staff visibili (es. filtro "team di turno" vuoto),
+    // non sovrascrivere l'offset salvato con 0: va preservato per il prossimo
+    // giorno con disponibilità.
+    if (widget.staffList.isNotEmpty) {
+      ref.read(agendaVerticalOffsetProvider.notifier).set(currentOffset);
+      widget.onVerticalOffsetChanged?.call(currentOffset);
+    }
 
     if (remainingFrames <= 1) {
       if (markInitialScrollDone) {

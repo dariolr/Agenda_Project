@@ -185,6 +185,7 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     required DateTime newStart,
     required DateTime newEnd,
     bool notifyClient = true,
+    bool notifyClientDecisionByOperator = false,
   }) async {
     final currentList = state.value ?? const <Appointment>[];
 
@@ -248,6 +249,7 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
         staffId: newStaffId,
         extraBlockedMinutes: newBlocked,
         notifyClient: notifyClient,
+        notifyClientDecisionByOperator: notifyClientDecisionByOperator,
       );
       _invalidateWeeksForDates([originalAppt.startTime, roundedStart]);
       ref.invalidate(bookingsProvider);
@@ -265,6 +267,7 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     required DateTime targetStart,
     required int targetStaffId,
     bool notifyClient = true,
+    bool notifyClientDecisionByOperator = false,
   }) async {
     if (session.items.isEmpty) return MoveBookingByAnchorResult.failed;
     final currentList = state.value;
@@ -355,6 +358,7 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
 
     try {
       for (final item in session.items) {
+        final isAnchorItem = item.appointmentId == anchor.appointmentId;
         await repository.updateAppointment(
           locationId: location.id,
           appointmentId: item.appointmentId,
@@ -363,6 +367,8 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
           staffId: updatedStaffIds[item.appointmentId],
           extraBlockedMinutes: updatedBlocked[item.appointmentId],
           notifyClient: notifyClient,
+          notifyClientDecisionByOperator: notifyClientDecisionByOperator,
+          suppressAuditEvent: !isAnchorItem,
         );
       }
       _invalidateWeeksForDates([

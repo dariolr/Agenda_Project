@@ -53,7 +53,12 @@ class _LocalLoadingOverlayState extends State<LocalLoadingOverlay> {
     if (notifier.value == widget.isLoading) {
       return;
     }
-    notifier.value = widget.isLoading;
+    try {
+      notifier.value = widget.isLoading;
+    } catch (_) {
+      // The notifier may have been disposed if the bottom sheet closed
+      // before this postFrameCallback fired — safe to ignore.
+    }
   }
 
   @override

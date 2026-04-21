@@ -4,6 +4,7 @@ import 'package:agenda_backend/core/models/service.dart';
 import 'package:agenda_backend/core/models/staff.dart';
 import 'package:agenda_backend/core/models/user.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:agenda_backend/features/auth/domain/auth_state.dart';
 import 'package:agenda_backend/features/auth/providers/auth_provider.dart';
@@ -72,6 +73,11 @@ class _FakeWorkHoursReportNotifier extends WorkHoursReportNotifier {
   }
 }
 
+class _FakeCurrentBusinessIdNotifier extends CurrentBusinessId {
+  @override
+  int build() => 11;
+}
+
 void main() {
   testWidgets(
     'reports screen applies week range coming from agenda launch request',
@@ -90,12 +96,17 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           authProvider.overrideWith(_FakeAuthNotifier.new),
-          locationsProvider.overrideWith(() => _FakeLocationsNotifier([location])),
+          locationsProvider.overrideWith(
+            () => _FakeLocationsNotifier([location]),
+          ),
           currentLocationProvider.overrideWith((ref) => location),
           tenantTodayProvider.overrideWith((ref) => DateTime(2026, 3, 13)),
           tenantNowProvider.overrideWith((ref) => DateTime(2026, 3, 13, 10)),
           servicesProvider.overrideWith(_FakeServicesNotifier.new),
           allStaffProvider.overrideWith(_FakeStaffNotifier.new),
+          currentBusinessIdProvider.overrideWith(
+            _FakeCurrentBusinessIdNotifier.new,
+          ),
           reportsProvider.overrideWith(_FakeReportsNotifier.new),
           workHoursReportProvider.overrideWith(
             _FakeWorkHoursReportNotifier.new,
@@ -104,19 +115,20 @@ void main() {
       );
       addTearDown(container.dispose);
 
-      container.read(agendaReportLaunchProvider.notifier).request(
-        startDate: DateTime(2026, 3, 9),
-        endDate: DateTime(2026, 3, 15),
-        locationId: location.id,
-      );
+      container
+          .read(agendaReportLaunchProvider.notifier)
+          .request(
+            startDate: DateTime(2026, 3, 9),
+            endDate: DateTime(2026, 3, 15),
+            locationId: location.id,
+          );
 
       final router = GoRouter(
         initialLocation: '/report',
         routes: [
           GoRoute(
             path: '/report',
-            builder: (context, state) =>
-                const Scaffold(body: ReportsScreen()),
+            builder: (context, state) => const Scaffold(body: ReportsScreen()),
           ),
         ],
       );
