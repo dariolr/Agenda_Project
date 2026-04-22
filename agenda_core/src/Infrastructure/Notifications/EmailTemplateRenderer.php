@@ -169,13 +169,13 @@ final class EmailTemplateRenderer
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                                         <strong style="color:#666;font-size:13px;">Quando</strong><br>
-                                        <span style="color:#333;">{{date}} alle {{time}}</span>
+                                        <span style="color:#333;font-size:13px;">{{date}} alle {{time}}</span>
                                     </td>
                                 </tr>
                                 {{recurring_schedule_html}}
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                                        <strong style="color:#333;font-size:13px;">Cosa</strong><br>
+                                        <strong style="color:#666;font-size:13px;">Cosa</strong><br>
                                         <span style="color:#333;font-size:13px;">{{services}}</span>
                                     </td>
                                 </tr>
@@ -276,13 +276,13 @@ TEXT,
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                                         <strong style="color:#666;font-size:13px;">When</strong><br>
-                                        <span style="color:#333;">{{date}} at {{time}}</span>
+                                        <span style="color:#333;font-size:13px;">{{date}} at {{time}}</span>
                                     </td>
                                 </tr>
                                 {{recurring_schedule_html}}
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                                        <strong style="color:#333;font-size:13px;">What</strong><br>
+                                        <strong style="color:#666;font-size:13px;">What</strong><br>
                                         <span style="color:#333;font-size:13px;">{{services}}</span>
                                     </td>
                                 </tr>
@@ -397,7 +397,7 @@ TEXT,
                                 {{recurring_schedule_html}}
                                 <tr>
                                     <td style="padding:8px 0;">
-                                        <strong style="color:#333;font-size:13px;">Cosa</strong><br>
+                                        <strong style="color:#666;font-size:13px;">Cosa</strong><br>
                                         <span style="color:#333;font-size:13px;">{{services}}</span>
                                     </td>
                                 </tr>
@@ -486,7 +486,7 @@ TEXT,
                                 {{recurring_schedule_html}}
                                 <tr>
                                     <td style="padding:8px 0;">
-                                        <strong style="color:#333;font-size:13px;">What</strong><br>
+                                        <strong style="color:#666;font-size:13px;">What</strong><br>
                                         <span style="color:#333;font-size:13px;">{{services}}</span>
                                     </td>
                                 </tr>
@@ -588,7 +588,7 @@ TEXT,
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                                         <strong style="color:#666;font-size:13px;">Quando</strong><br>
-                                        <span style="color:#333;">{{date}} alle {{time}}</span>
+                                        <span style="color:#333;font-size:13px;">{{date}} alle {{time}}</span>
                                     </td>
                                 </tr>
                                 <tr>
@@ -682,7 +682,7 @@ TEXT,
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                                         <strong style="color:#666;font-size:13px;">When</strong><br>
-                                        <span style="color:#333;">{{date}} at {{time}}</span>
+                                        <span style="color:#333;font-size:13px;">{{date}} at {{time}}</span>
                                     </td>
                                 </tr>
                                 <tr>
@@ -789,7 +789,7 @@ TEXT,
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                                         <strong style="color:#666;font-size:13px;">Quando</strong><br>
-                                        <span style="color:#333;">{{date}} alle {{time}}</span>
+                                        <span style="color:#333;font-size:13px;">{{date}} alle {{time}}</span>
                                     </td>
                                 </tr>
                                 <tr>
@@ -882,7 +882,7 @@ TEXT,
                                 <tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                                         <strong style="color:#666;font-size:13px;">When</strong><br>
-                                        <span style="color:#333;">{{date}} at {{time}}</span>
+                                        <span style="color:#333;font-size:13px;">{{date}} at {{time}}</span>
                                     </td>
                                 </tr>
                                 <tr>
@@ -990,7 +990,7 @@ TEXT,
                     <tr>
                         <td style="padding:15px;background-color:#e8f5e9;border-radius:0 0 8px 8px;">
                             <span style="color:#2e7d32;font-weight:bold;">Nuova data</span><br>
-                            <span style="color:#333;">{{date}} alle {{time}}</span>
+                            <span style="color:#333;font-size:13px;">{{date}} alle {{time}}</span>
                         </td>
                     </tr>
                 </table>
@@ -1086,7 +1086,7 @@ TEXT,
                     <tr>
                         <td style="padding:15px;background-color:#e8f5e9;border-radius:0 0 8px 8px;">
                             <span style="color:#2e7d32;font-weight:bold;">New date</span><br>
-                            <span style="color:#333;">{{date}} at {{time}}</span>
+                            <span style="color:#333;font-size:13px;">{{date}} at {{time}}</span>
                         </td>
                     </tr>
                 </table>
@@ -1723,11 +1723,11 @@ TEXT,
                     {{location_block_html}}
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">Quando</strong><br>
-                        <span style="color:#333;">{{date}} alle {{time}} – {{end_time}}</span>
+                        <span style="color:#333;font-size:13px;">{{date}} alle {{time}} – {{end_time}}</span>
                     </td></tr>
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">Lezione</strong><br>
-                        <span style="color:#333;">{{class_type_name}}</span>
+                        <span style="color:#333;font-size:13px;">{{class_type_name}}</span>
                     </td></tr>
                     {{price_row_html}}
                 </table>
@@ -1777,11 +1777,11 @@ TEXT,
                     {{location_block_html}}
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">When</strong><br>
-                        <span style="color:#333;">{{date}} at {{time}} – {{end_time}}</span>
+                        <span style="color:#333;font-size:13px;">{{date}} at {{time}} – {{end_time}}</span>
                     </td></tr>
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">Class</strong><br>
-                        <span style="color:#333;">{{class_type_name}}</span>
+                        <span style="color:#333;font-size:13px;">{{class_type_name}}</span>
                     </td></tr>
                     {{price_row_html}}
                 </table>
@@ -1839,15 +1839,15 @@ TEXT,
                     {{location_block_html}}
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">Quando</strong><br>
-                        <span style="color:#333;">{{date}} alle {{time}} – {{end_time}}</span>
+                        <span style="color:#333;font-size:13px;">{{date}} alle {{time}} – {{end_time}}</span>
                     </td></tr>
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">Lezione</strong><br>
-                        <span style="color:#333;">{{class_type_name}}</span>
+                        <span style="color:#333;font-size:13px;">{{class_type_name}}</span>
                     </td></tr>
                     <tr><td style="padding:8px 0;">
                         <strong style="color:#666;font-size:13px;">Posizione in lista</strong><br>
-                        <span style="color:#333;">{{waitlist_position}}</span>
+                        <span style="color:#333;font-size:13px;">{{waitlist_position}}</span>
                     </td></tr>
                 </table>
             </td></tr>
@@ -1899,15 +1899,15 @@ TEXT,
                     {{location_block_html}}
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">When</strong><br>
-                        <span style="color:#333;">{{date}} at {{time}} – {{end_time}}</span>
+                        <span style="color:#333;font-size:13px;">{{date}} at {{time}} – {{end_time}}</span>
                     </td></tr>
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">Class</strong><br>
-                        <span style="color:#333;">{{class_type_name}}</span>
+                        <span style="color:#333;font-size:13px;">{{class_type_name}}</span>
                     </td></tr>
                     <tr><td style="padding:8px 0;">
                         <strong style="color:#666;font-size:13px;">Waitlist position</strong><br>
-                        <span style="color:#333;">{{waitlist_position}}</span>
+                        <span style="color:#333;font-size:13px;">{{waitlist_position}}</span>
                     </td></tr>
                 </table>
             </td></tr>
@@ -1967,11 +1967,11 @@ TEXT,
                     {{location_block_html}}
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">Quando</strong><br>
-                        <span style="color:#333;">{{date}} alle {{time}} – {{end_time}}</span>
+                        <span style="color:#333;font-size:13px;">{{date}} alle {{time}} – {{end_time}}</span>
                     </td></tr>
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">Lezione</strong><br>
-                        <span style="color:#333;">{{class_type_name}}</span>
+                        <span style="color:#333;font-size:13px;">{{class_type_name}}</span>
                     </td></tr>
                     {{price_row_html}}
                 </table>
@@ -2021,11 +2021,11 @@ TEXT,
                     {{location_block_html}}
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">When</strong><br>
-                        <span style="color:#333;">{{date}} at {{time}} – {{end_time}}</span>
+                        <span style="color:#333;font-size:13px;">{{date}} at {{time}} – {{end_time}}</span>
                     </td></tr>
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">Class</strong><br>
-                        <span style="color:#333;">{{class_type_name}}</span>
+                        <span style="color:#333;font-size:13px;">{{class_type_name}}</span>
                     </td></tr>
                     {{price_row_html}}
                 </table>
@@ -2082,11 +2082,11 @@ TEXT,
                 <table width="100%" cellpadding="0" cellspacing="0">
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">Quando</strong><br>
-                        <span style="color:#333;">{{date}} alle {{time}} – {{end_time}}</span>
+                        <span style="color:#333;font-size:13px;">{{date}} alle {{time}} – {{end_time}}</span>
                     </td></tr>
                     <tr><td style="padding:8px 0;">
                         <strong style="color:#666;font-size:13px;">Lezione</strong><br>
-                        <span style="color:#333;">{{class_type_name}}</span>
+                        <span style="color:#333;font-size:13px;">{{class_type_name}}</span>
                     </td></tr>
                 </table>
             </td></tr>
@@ -2135,11 +2135,11 @@ TEXT,
                 <table width="100%" cellpadding="0" cellspacing="0">
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">When</strong><br>
-                        <span style="color:#333;">{{date}} at {{time}} – {{end_time}}</span>
+                        <span style="color:#333;font-size:13px;">{{date}} at {{time}} – {{end_time}}</span>
                     </td></tr>
                     <tr><td style="padding:8px 0;">
                         <strong style="color:#666;font-size:13px;">Class</strong><br>
-                        <span style="color:#333;">{{class_type_name}}</span>
+                        <span style="color:#333;font-size:13px;">{{class_type_name}}</span>
                     </td></tr>
                 </table>
             </td></tr>
@@ -2197,11 +2197,11 @@ TEXT,
                     {{location_block_html}}
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">Quando</strong><br>
-                        <span style="color:#333;">{{date}} alle {{time}} – {{end_time}}</span>
+                        <span style="color:#333;font-size:13px;">{{date}} alle {{time}} – {{end_time}}</span>
                     </td></tr>
                     <tr><td style="padding:8px 0;">
                         <strong style="color:#666;font-size:13px;">Lezione</strong><br>
-                        <span style="color:#333;">{{class_type_name}}</span>
+                        <span style="color:#333;font-size:13px;">{{class_type_name}}</span>
                     </td></tr>
                 </table>
             </td></tr>
@@ -2250,11 +2250,11 @@ TEXT,
                     {{location_block_html}}
                     <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
                         <strong style="color:#666;font-size:13px;">When</strong><br>
-                        <span style="color:#333;">{{date}} at {{time}} – {{end_time}}</span>
+                        <span style="color:#333;font-size:13px;">{{date}} at {{time}} – {{end_time}}</span>
                     </td></tr>
                     <tr><td style="padding:8px 0;">
                         <strong style="color:#666;font-size:13px;">Class</strong><br>
-                        <span style="color:#333;">{{class_type_name}}</span>
+                        <span style="color:#333;font-size:13px;">{{class_type_name}}</span>
                     </td></tr>
                 </table>
             </td></tr>
