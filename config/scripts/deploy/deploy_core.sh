@@ -101,6 +101,11 @@ echo "   Da: $LOCAL_DIR"
 echo "   A:  $SSH_ALIAS:$REMOTE_BASE"
 echo ""
 
+if [[ ! -f "$LOCAL_DIR/public/logo.png" ]]; then
+  echo "ERROR: file logo mancante: $LOCAL_DIR/public/logo.png"
+  exit 1
+fi
+
 # === VERIFICA PRE-DEPLOY ===
 # Controlla che non esistano cartelle vietate sul server
 echo "🔍 Verifica cartelle vietate sul server..."

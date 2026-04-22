@@ -24,7 +24,76 @@ final class EmailTemplateRenderer
         foreach ($variables as $key => $value) {
             $template = str_replace('{{' . $key . '}}', (string) $value, $template);
         }
+        $template = self::appendPoweredByBlock($template);
         return $template;
+    }
+
+    private static function appendPoweredByBlock(string $template): string
+    {
+        if (stripos($template, '</body>') === false) {
+            return $template;
+        }
+
+        if (str_contains($template, 'data-powered-by-romeolab="1"')) {
+            return $template;
+        }
+
+        $romeoLabUrl = self::romeoLabUrl();
+        $romeoLabLogoUrl = self::romeoLabLogoUrl();
+        if ($romeoLabUrl === null || $romeoLabLogoUrl === null) {
+            return $template;
+        }
+
+        $block = <<<HTML
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#f5f5f5;">
+    <tr>
+        <td style="padding:22px 30px 24px;text-align:center;" data-powered-by-romeolab="1">
+            <p style="margin:0;color:#999;font-size:13px;line-height:1.4;">powered by</p>
+            <p style="margin:10px 0 0;">
+                <a href="__ROMEO_LAB_URL__" target="_blank" rel="noopener noreferrer" style="text-decoration:none;">
+                    <img src="__ROMEO_LAB_LOGO_URL__" alt="Romeo lab" width="64" style="display:block;margin:0 auto;width:64px;max-width:64px;height:auto;border:0;outline:none;text-decoration:none;">
+                </a>
+            </p>
+        </td>
+    </tr>
+</table>
+HTML;
+
+        $poweredByHtml = strtr(
+            $block,
+            [
+                '__ROMEO_LAB_URL__' => $romeoLabUrl,
+                '__ROMEO_LAB_LOGO_URL__' => $romeoLabLogoUrl,
+            ]
+        );
+
+        return (string) preg_replace('/<\/body>/i', $poweredByHtml . "\n</body>", $template, 1);
+    }
+
+    private static function romeoLabUrl(): ?string
+    {
+        $url = self::envValue('ROMEO_LAB_URL');
+        if (filter_var($url, FILTER_VALIDATE_URL)) {
+            return rtrim($url, '/');
+        }
+
+        return null;
+    }
+
+    private static function romeoLabLogoUrl(): ?string
+    {
+        $apiBaseUrl = self::envValue('API_BASE_URL');
+        if (filter_var($apiBaseUrl, FILTER_VALIDATE_URL)) {
+            return rtrim($apiBaseUrl, '/') . '/logo.png';
+        }
+
+        return null;
+    }
+
+    private static function envValue(string $key): string
+    {
+        $value = $_ENV[$key] ?? getenv($key) ?: '';
+        return trim((string) $value);
     }
 
     public static function normalizeLocale(?string $locale): string

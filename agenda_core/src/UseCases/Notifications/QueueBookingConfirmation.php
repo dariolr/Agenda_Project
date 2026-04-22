@@ -279,26 +279,38 @@ final class QueueBookingConfirmation
         if ($occurrencesCount >= 2) {
             if ($isEnglish) {
                 $recurrenceSummaryHtml = sprintf(
-                    '<div style="margin:0;color:#333;"><strong>Recurrence:</strong><br>%s<br><strong>Appointments:</strong><br>%d<br><strong>%s:</strong></div>',
+                    '<div style="margin:0;">'
+                    . '<strong style="color:#666;font-size:13px;">Recurrence:</strong><br>'
+                    . '<span style="color:#333;font-size:13px;">%s</span><br><br>'
+                    . '<strong style="color:#666;font-size:13px;">Appointments:</strong><br>'
+                    . '<span style="color:#333;font-size:13px;">%d</span><br><br>'
+                    . '<strong style="color:#666;font-size:13px;">%s:</strong>'
+                    . '</div>',
                     htmlspecialchars($recurrenceTypeLabel, ENT_QUOTES, 'UTF-8'),
                     $occurrencesCount,
                     $title
                 );
                 $recurrenceSummaryText = sprintf(
-                    "Recurrence:\n%s\nAppointments:\n%d\n%s:\n",
+                    "Recurrence:\n%s\n\nAppointments:\n%d\n\n%s:\n",
                     $recurrenceTypeLabel,
                     $occurrencesCount,
                     $title
                 );
             } else {
                 $recurrenceSummaryHtml = sprintf(
-                    '<div style="margin:0;color:#333;"><strong>Tipo di ricorrenza:</strong><br>%s<br><strong>Numero appuntamenti:</strong><br>%d<br><strong>%s:</strong></div>',
+                    '<div style="margin:0;">'
+                    . '<strong style="color:#666;font-size:13px;">Tipo di ricorrenza:</strong><br>'
+                    . '<span style="color:#333;font-size:13px;">%s</span><br><br>'
+                    . '<strong style="color:#666;font-size:13px;">Numero appuntamenti:</strong><br>'
+                    . '<span style="color:#333;font-size:13px;">%d</span><br><br>'
+                    . '<strong style="color:#666;font-size:13px;">%s:</strong>'
+                    . '</div>',
                     htmlspecialchars($recurrenceTypeLabel, ENT_QUOTES, 'UTF-8'),
                     $occurrencesCount,
                     $title
                 );
                 $recurrenceSummaryText = sprintf(
-                    "Tipo di ricorrenza:\n%s\nNumero appuntamenti:\n%d\n%s:\n",
+                    "Tipo di ricorrenza:\n%s\n\nNumero appuntamenti:\n%d\n\n%s:\n",
                     $recurrenceTypeLabel,
                     $occurrencesCount,
                     $title
@@ -329,7 +341,7 @@ final class QueueBookingConfirmation
             $lineLabel = sprintf('%s - %s', $dateLabel, $timeLabel);
             $itemsHtml[] = sprintf(
                 '<div style="margin:8px 0 0 0;">
-                    <div>%s</div>
+                    <div style="color:#333;font-size:13px;">%s</div>
                 </div>',
                 $lineLabel
             );
@@ -347,7 +359,7 @@ final class QueueBookingConfirmation
         $html = sprintf(
             '<tr>
                 <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                    %s<div style="margin:8px 0 0 0;color:#333;">
+                    %s<div style="margin:8px 0 0 0;color:#333;font-size:13px;">
                         %s%s
                     </div>
                 </td>
