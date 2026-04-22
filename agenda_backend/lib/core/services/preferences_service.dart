@@ -574,7 +574,7 @@ class PreferencesService {
             locationId: locationId,
           ),
         ) ??
-        true;
+        false;
   }
 
   Future<void> setAgendaExpandStaffColumnsOnOverlap(

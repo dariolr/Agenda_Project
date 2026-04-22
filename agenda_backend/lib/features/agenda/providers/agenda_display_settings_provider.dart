@@ -23,7 +23,7 @@ class AgendaDisplaySettings {
     this.extraMinutesBandIntensity = 0.5,
     this.hoverUnrelatedCardDimIntensity = 0.0,
     this.useRoundedCardCorners = false,
-    this.expandStaffColumnsOnOverlap = true,
+    this.expandStaffColumnsOnOverlap = false,
     this.showPricesOverride,
     this.cardColorSourceOverride,
     this.showCancelledAppointments = false,
@@ -335,7 +335,7 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
     );
     await prefs.setAgendaExpandStaffColumnsOnOverlap(
       businessId,
-      true,
+      false,
       locationId: locationId,
     );
     await prefs.setAgendaCardColorSourceOverride(
