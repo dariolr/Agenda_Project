@@ -952,7 +952,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Add to waitlist",
     ),
     "classEventsParticipantsConfirmedTitle":
-        MessageLookupByLibrary.simpleMessage("Confirmed participants"),
+        MessageLookupByLibrary.simpleMessage("Confirmed"),
     "classEventsParticipantsDemoteAction": MessageLookupByLibrary.simpleMessage(
       "Move to waitlist",
     ),
@@ -967,6 +967,12 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("Unable to update participants"),
     "classEventsParticipantsNoClientsFound":
         MessageLookupByLibrary.simpleMessage("No customers found"),
+    "classEventsParticipantsPriorityDown": MessageLookupByLibrary.simpleMessage(
+      "Move down",
+    ),
+    "classEventsParticipantsPriorityUp": MessageLookupByLibrary.simpleMessage(
+      "Move up",
+    ),
     "classEventsParticipantsPromoteAction":
         MessageLookupByLibrary.simpleMessage("Promote to participant"),
     "classEventsParticipantsRemoveAction": MessageLookupByLibrary.simpleMessage(
@@ -982,7 +988,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "classEventsParticipantsWaitlistTitle":
         MessageLookupByLibrary.simpleMessage("Waitlist"),
     "classEventsPromoteWaitlistMessage": MessageLookupByLibrary.simpleMessage(
-      "The capacity has been increased. Do you want to automatically promote participants from the waitlist to fill the new available spots?",
+      "Do you want to automatically promote participants from the waitlist to fill the available spots?",
     ),
     "classEventsPromoteWaitlistTitle": MessageLookupByLibrary.simpleMessage(
       "Promote from waitlist",

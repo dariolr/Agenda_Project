@@ -70,6 +70,18 @@ class ClassEventsRepository {
     );
   }
 
+  Future<void> reorderWaitlist({
+    required int businessId,
+    required int classEventId,
+    required List<int> customerIds,
+  }) {
+    return _apiClient.reorderClassEventWaitlist(
+      businessId: businessId,
+      classEventId: classEventId,
+      customerIds: customerIds,
+    );
+  }
+
   Future<ClassEvent> create({
     required int businessId,
     required Map<String, dynamic> payload,
@@ -93,7 +105,7 @@ class ClassEventsRepository {
     required int businessId,
     required int classEventId,
   }) {
-    return _apiClient.deleteClassEvent(
+    return _apiClient.cancelClassEvent(
       businessId: businessId,
       classEventId: classEventId,
     );

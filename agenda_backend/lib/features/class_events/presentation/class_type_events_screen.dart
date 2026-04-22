@@ -123,6 +123,7 @@ class _ClassTypeEventsScreenState extends ConsumerState<ClassTypeEventsScreen> {
               ),
             ),
             PopupMenuButton<_Action>(
+              icon: const Icon(Icons.more_vert),
               borderRadius: BorderRadius.circular(10),
               onSelected: (action) async {
                 switch (action) {

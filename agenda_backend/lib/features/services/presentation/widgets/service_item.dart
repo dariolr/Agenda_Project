@@ -238,6 +238,7 @@ class ServiceItem extends ConsumerWidget {
 
   Widget _buildPopupMenu() {
     return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert),
       onSelected: (value) {
         switch (value) {
           case 'edit':

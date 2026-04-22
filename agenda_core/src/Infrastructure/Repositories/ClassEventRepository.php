@@ -1227,6 +1227,115 @@ final class ClassEventRepository
         }
     }
 
+    public function reorderWaitlist(int $businessId, int $classEventId, array $customerIds): void
+    {
+        $orderedCustomerIds = array_values(array_unique(array_map(
+            static fn ($id): int => (int) $id,
+            $customerIds
+        )));
+        $orderedCustomerIds = array_values(array_filter(
+            $orderedCustomerIds,
+            static fn (int $id): bool => $id > 0
+        ));
+
+        $pdo = $this->db->getPdo();
+        $pdo->beginTransaction();
+        try {
+            $eventStmt = $pdo->prepare(
+                'SELECT id
+                 FROM class_events
+                 WHERE business_id = :business_id
+                   AND id = :class_event_id
+                 LIMIT 1
+                 FOR UPDATE'
+            );
+            $eventStmt->execute([
+                'business_id' => $businessId,
+                'class_event_id' => $classEventId,
+            ]);
+            $event = $eventStmt->fetch(\PDO::FETCH_ASSOC);
+            if (!$event) {
+                $pdo->rollBack();
+                throw new \RuntimeException('class_event_not_found');
+            }
+
+            $waitlistStmt = $pdo->prepare(
+                'SELECT id, customer_id
+                 FROM class_bookings
+                 WHERE business_id = :business_id
+                   AND class_event_id = :class_event_id
+                   AND status = "WAITLISTED"
+                 ORDER BY waitlist_position ASC, booked_at ASC, id ASC
+                 FOR UPDATE'
+            );
+            $waitlistStmt->execute([
+                'business_id' => $businessId,
+                'class_event_id' => $classEventId,
+            ]);
+            $waitlistedRows = $waitlistStmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            if (count($waitlistedRows) !== count($orderedCustomerIds)) {
+                $pdo->rollBack();
+                throw new \RuntimeException('invalid_waitlist_order');
+            }
+
+            $existingCustomerIds = array_map(
+                static fn (array $row): int => (int) $row['customer_id'],
+                $waitlistedRows
+            );
+            sort($existingCustomerIds);
+            $orderedForCompare = $orderedCustomerIds;
+            sort($orderedForCompare);
+            if ($existingCustomerIds !== $orderedForCompare) {
+                $pdo->rollBack();
+                throw new \RuntimeException('invalid_waitlist_order');
+            }
+
+            $bookingIdByCustomerId = [];
+            foreach ($waitlistedRows as $row) {
+                $bookingIdByCustomerId[(int) $row['customer_id']] = (int) $row['id'];
+            }
+
+            $currentUtc = $this->resolveCurrentUtcForClassEvent($pdo, $businessId, $classEventId);
+            $updateStmt = $pdo->prepare(
+                'UPDATE class_bookings
+                 SET waitlist_position = :waitlist_position,
+                     updated_at = :updated_at
+                 WHERE id = :id'
+            );
+            foreach ($orderedCustomerIds as $index => $customerId) {
+                $bookingId = $bookingIdByCustomerId[$customerId] ?? null;
+                if ($bookingId === null) {
+                    $pdo->rollBack();
+                    throw new \RuntimeException('invalid_waitlist_order');
+                }
+                $updateStmt->execute([
+                    'waitlist_position' => $index + 1,
+                    'updated_at' => $currentUtc,
+                    'id' => $bookingId,
+                ]);
+            }
+
+            $pdo->prepare(
+                'UPDATE class_events
+                 SET updated_at = :updated_at
+                 WHERE business_id = :business_id
+                   AND id = :class_event_id'
+            )->execute([
+                'updated_at' => $currentUtc,
+                'business_id' => $businessId,
+                'class_event_id' => $classEventId,
+            ]);
+
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     public function findClientIdByUser(int $businessId, int $userId): ?int
     {
         $stmt = $this->db->getPdo()->prepare(

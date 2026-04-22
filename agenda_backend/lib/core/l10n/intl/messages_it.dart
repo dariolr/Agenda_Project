@@ -993,7 +993,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Aggiungi in lista d\'attesa",
     ),
     "classEventsParticipantsConfirmedTitle":
-        MessageLookupByLibrary.simpleMessage("Partecipanti confermati"),
+        MessageLookupByLibrary.simpleMessage("Confermati"),
     "classEventsParticipantsDemoteAction": MessageLookupByLibrary.simpleMessage(
       "Sposta in lista d\'attesa",
     ),
@@ -1010,6 +1010,12 @@ class MessageLookup extends MessageLookupByLibrary {
         ),
     "classEventsParticipantsNoClientsFound":
         MessageLookupByLibrary.simpleMessage("Nessun cliente trovato"),
+    "classEventsParticipantsPriorityDown": MessageLookupByLibrary.simpleMessage(
+      "Sposta giù",
+    ),
+    "classEventsParticipantsPriorityUp": MessageLookupByLibrary.simpleMessage(
+      "Sposta su",
+    ),
     "classEventsParticipantsPromoteAction":
         MessageLookupByLibrary.simpleMessage("Promuovi a partecipante"),
     "classEventsParticipantsRemoveAction": MessageLookupByLibrary.simpleMessage(
@@ -1023,9 +1029,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Partecipanti",
     ),
     "classEventsParticipantsWaitlistTitle":
-        MessageLookupByLibrary.simpleMessage("Lista d\'attesa"),
+        MessageLookupByLibrary.simpleMessage("Lista attesa"),
     "classEventsPromoteWaitlistMessage": MessageLookupByLibrary.simpleMessage(
-      "La capienza è stata aumentata. Vuoi promuovere automaticamente i partecipanti dalla lista d\'attesa per occupare i nuovi posti disponibili?",
+      "Vuoi promuovere automaticamente i partecipanti dalla lista d\'attesa per occupare i posti disponibili?",
     ),
     "classEventsPromoteWaitlistTitle": MessageLookupByLibrary.simpleMessage(
       "Promuovi dalla lista d\'attesa",

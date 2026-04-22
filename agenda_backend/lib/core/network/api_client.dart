@@ -1438,6 +1438,18 @@ class ApiClient {
     );
   }
 
+  /// POST /v1/businesses/{business_id}/class-events/{id}/reorder-waitlist
+  Future<void> reorderClassEventWaitlist({
+    required int businessId,
+    required int classEventId,
+    required List<int> customerIds,
+  }) async {
+    await post(
+      ApiConfig.classEventReorderWaitlist(businessId, classEventId),
+      data: {'customer_ids': customerIds},
+    );
+  }
+
   /// POST /v1/businesses/{business_id}/class-events
   Future<ClassEvent> createClassEvent({
     required int businessId,

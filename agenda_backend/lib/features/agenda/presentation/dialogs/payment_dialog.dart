@@ -619,7 +619,7 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
       case BookingPaymentLineType.voucher:
         return Icons.card_giftcard_outlined;
       case BookingPaymentLineType.other:
-        return Icons.more_horiz_outlined;
+        return Icons.more_vert_outlined;
       default:
         return Icons.payments_outlined;
     }

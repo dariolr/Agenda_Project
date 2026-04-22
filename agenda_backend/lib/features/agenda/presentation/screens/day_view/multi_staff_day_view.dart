@@ -78,6 +78,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
   final GlobalKey _bodyKey = GlobalKey();
   final GlobalKey _headerKey = GlobalKey();
+  final LayerLink _dragLayerLink = LayerLink();
 
   late final Object _scrollIdentity = Object();
   AgendaScrollKey get _scrollKey => AgendaScrollKey(
@@ -90,6 +91,10 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(dragLayerLinkProvider.notifier).set(_dragLayerLink);
+    });
     _dragBodyNotifier = ref.read(dragBodyBoxProvider.notifier);
 
     // Listener drag → auto scroll verticale
@@ -309,6 +314,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   void _onVerticalScrollChanged() {
     final controller = _verticalCtrl;
     if (controller == null) return;
+    if (widget.staffList.isEmpty) return;
     widget.onScrollOffsetChanged?.call(controller.offset);
   }
 
@@ -472,6 +478,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         if (!mounted) return;
         if (!identical(_verticalCtrl, verticalCtrl)) return;
         if (!verticalCtrl.hasClients) return;
+        if (widget.staffList.isEmpty) return;
         widget.onScrollOffsetChanged?.call(verticalCtrl.offset);
       });
     }
@@ -493,7 +500,6 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
         final totalHeight = layoutConfig.totalHeight;
         final hourW = layoutConfig.hourColumnWidth;
         final headerHeight = layoutConfig.headerHeight;
-        final LayerLink? link = ref.watch(dragLayerLinkProvider);
         final selectedDate = ref.watch(agendaDateProvider);
         final isToday = DateUtils.isSameDay(
           selectedDate,
@@ -523,7 +529,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
                 availableWidth: availableWidth,
                 staffColumnWidths: staffColumnWidths,
                 isResizing: isResizing,
-                dragLayerLink: link,
+                dragLayerLink: _dragLayerLink,
                 bodyKey: _bodyKey,
                 isInteractionLocked: isInteractionLocked,
               ),

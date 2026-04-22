@@ -293,6 +293,7 @@ class _InvitationTile extends ConsumerWidget {
         : 'Reinvia invito';
     final trailing = enableActions
         ? PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
             onSelected: (value) {
               if (value == 'resend') {
                 _resendInvitation(context, ref);
@@ -573,6 +574,7 @@ class _UserTile extends ConsumerWidget {
         trailing: !canEditRole
             ? null
             : PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
                 onSelected: (value) {
                   if (value == 'edit') {
                     _showEditRoleDialog(context, ref, locations);

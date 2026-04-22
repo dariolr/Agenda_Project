@@ -19,6 +19,7 @@ import '/core/models/staff.dart';
 import '/core/network/api_client.dart';
 import '/core/services/tenant_time_service.dart';
 import '/core/utils/color_utils.dart';
+import '/core/utils/service_color_palette.dart';
 import '/core/widgets/app_bottom_sheet.dart';
 import '/core/widgets/app_buttons.dart';
 import '/core/widgets/app_dialogs.dart';
@@ -86,6 +87,35 @@ Color? _tryParseHexColor(String? hex) {
   }
 }
 
+class _MiniInfoPill extends StatelessWidget {
+  const _MiniInfoPill({required this.label, this.isMuted = false});
+
+  final String label;
+  final bool isMuted;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final textStyle = Theme.of(context).textTheme.labelSmall?.copyWith(
+      fontSize: 11,
+      height: 1.1,
+      color: isMuted
+          ? colorScheme.onSurface.withOpacity(0.6)
+          : colorScheme.onSurfaceVariant,
+    );
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: isMuted
+            ? colorScheme.surfaceContainerHighest.withOpacity(0.55)
+            : colorScheme.surfaceContainerHighest.withOpacity(0.75),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(label, style: textStyle),
+    );
+  }
+}
+
 Future<void> showCreateClassTypeDialog(
   BuildContext context,
   WidgetRef ref, {
@@ -111,6 +141,7 @@ Future<void> showCreateClassEventDialog(
   WidgetRef ref, {
   int? initialClassTypeId,
   ClassEvent? initialEvent,
+  ClassEvent? prefillEvent,
   bool useRootNavigator = true,
 }) async {
   final currentLocation = ref.read(currentLocationProvider);
@@ -124,6 +155,7 @@ Future<void> showCreateClassEventDialog(
       initialLocationId: currentLocation.id,
       initialDate: initialDate,
       initialEvent: initialEvent,
+      prefillEvent: prefillEvent,
     ),
   );
 }
@@ -140,24 +172,6 @@ class _ClassTypeFormDialog extends ConsumerStatefulWidget {
 }
 
 class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
-  static const List<Color> _classTypePalette = [
-    Color(0xFFE53935),
-    Color(0xFFD81B60),
-    Color(0xFF8E24AA),
-    Color(0xFF5E35B1),
-    Color(0xFF3949AB),
-    Color(0xFF1E88E5),
-    Color(0xFF039BE5),
-    Color(0xFF00ACC1),
-    Color(0xFF00897B),
-    Color(0xFF43A047),
-    Color(0xFF7CB342),
-    Color(0xFFC0CA33),
-    Color(0xFFFDD835),
-    Color(0xFFFFB300),
-    Color(0xFFFB8C00),
-    Color(0xFFF4511E),
-  ];
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _nameController;
   late final TextEditingController _descriptionController;
@@ -208,6 +222,12 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
         ? ref.watch(allClassEventsByTypeProvider(widget.initial!.id))
         : const AsyncData<List<ClassEvent>>(<ClassEvent>[]);
     final timezone = ref.watch(effectiveTenantTimezoneProvider);
+    final businessPaletteSetting = ref
+        .watch(currentBusinessProvider)
+        .serviceColorPalette;
+    final classTypePalette = serviceColorPaletteForSetting(
+      businessPaletteSetting,
+    );
     final locationNameById = {
       for (final location in locations) location.id: location.name,
     };
@@ -217,6 +237,18 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     final hasSelectedCategoryInList =
         _selectedServiceCategoryId == null ||
         serviceCategories.any((c) => c.id == _selectedServiceCategoryId);
+    if (!_isEdit) {
+      final validCategoryIds = serviceCategories
+          .map((category) => category.id)
+          .toSet();
+      if (_selectedServiceCategoryId != null &&
+          !validCategoryIds.contains(_selectedServiceCategoryId)) {
+        _selectedServiceCategoryId = null;
+      }
+      if (_selectedServiceCategoryId == null && serviceCategories.length == 1) {
+        _selectedServiceCategoryId = serviceCategories.first.id;
+      }
+    }
     final businessContext = ref
         .watch(currentBusinessUserContextProvider)
         .maybeWhen(data: (ctx) => ctx, orElse: () => null);
@@ -311,7 +343,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
           const SizedBox(height: 16),
           _ClassTypeColorPicker(
             selectedColorHex: _selectedColorHex,
-            palette: _classTypePalette,
+            palette: classTypePalette,
             enabled: !isBusy,
             onChanged: (hex) => setState(() => _selectedColorHex = hex),
           ),
@@ -430,6 +462,15 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                                     nowUtc,
                                   );
 
+                                  final confirmedChipLabel =
+                                      '${l10n.classEventsParticipantsConfirmedTitle}: ${schedule.confirmedCount}/${schedule.capacityTotal}';
+                                  final waitlistChipLabel =
+                                      '${l10n.classEventsParticipantsWaitlistTitle}: ${schedule.waitlistCount}';
+                                  final showCapacityPills =
+                                      schedule.waitlistCount > 0 ||
+                                      schedule.confirmedCount >=
+                                          schedule.capacityTotal;
+
                                   return ListTile(
                                     dense: true,
                                     visualDensity: VisualDensity.compact,
@@ -442,34 +483,61 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                                             )
                                           : null,
                                     ),
-                                    subtitle: Text(
-                                      '$locationName • $staffName',
-                                      style: isPast
-                                          ? TextStyle(
-                                              color: colorScheme.onSurface
-                                                  .withOpacity(0.35),
-                                            )
-                                          : null,
+                                    subtitle: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          '$locationName • $staffName',
+                                          style: isPast
+                                              ? TextStyle(
+                                                  color: colorScheme.onSurface
+                                                      .withOpacity(0.35),
+                                                )
+                                              : null,
+                                        ),
+                                        if (showCapacityPills) ...[
+                                          const SizedBox(height: 6),
+                                          Wrap(
+                                            spacing: 6,
+                                            runSpacing: 6,
+                                            children: [
+                                              _MiniInfoPill(
+                                                label: confirmedChipLabel,
+                                                isMuted: isPast,
+                                              ),
+                                              if (schedule.waitlistEnabled ||
+                                                  schedule.waitlistCount > 0)
+                                                _MiniInfoPill(
+                                                  label: waitlistChipLabel,
+                                                  isMuted: isPast,
+                                                ),
+                                            ],
+                                          ),
+                                        ],
+                                      ],
                                     ),
                                     trailing: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        IconButton(
-                                          tooltip: l10n.actionEdit,
-                                          icon: const Icon(
-                                            Icons.edit_outlined,
-                                            size: 18,
+                                        if (!isPast)
+                                          IconButton(
+                                            tooltip: l10n.actionEdit,
+                                            icon: const Icon(
+                                              Icons.edit_outlined,
+                                              size: 18,
+                                            ),
+                                            onPressed: isBusy
+                                                ? null
+                                                : () =>
+                                                      showCreateClassEventDialog(
+                                                        context,
+                                                        ref,
+                                                        initialEvent: schedule,
+                                                        useRootNavigator: false,
+                                                      ),
                                           ),
-                                          onPressed: (!isPast && !isBusy)
-                                              ? () =>
-                                                    showCreateClassEventDialog(
-                                                      context,
-                                                      ref,
-                                                      initialEvent: schedule,
-                                                      useRootNavigator: false,
-                                                    )
-                                              : null,
-                                        ),
                                         IconButton(
                                           tooltip: l10n.duplicateAction,
                                           icon: const Icon(
@@ -571,45 +639,13 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
 
   Future<void> _duplicateSchedule(ClassEvent schedule) async {
     if (!mounted || widget.initial == null) return;
-    final l10n = context.l10n;
-    final timezone = ref.read(effectiveTenantTimezoneProvider);
-    final startsAtLocal =
-        schedule.startsAtLocal ??
-        TenantTimeService.fromUtcToTenant(schedule.startsAtUtc, timezone);
-    final endsAtLocal =
-        schedule.endsAtLocal ??
-        TenantTimeService.fromUtcToTenant(schedule.endsAtUtc, timezone);
-
-    try {
-      if (mounted) setState(() => _isScheduleActionLoading = true);
-      final businessId = ref.read(currentBusinessIdProvider);
-      final repo = ref.read(classEventsRepositoryProvider);
-      await repo.create(
-        businessId: businessId,
-        payload: {
-          'class_type_id': widget.initial!.id,
-          'starts_at': _toApiLocalDateTime(startsAtLocal),
-          'ends_at': _toApiLocalDateTime(endsAtLocal),
-          'location_id': schedule.locationId,
-          'staff_id': schedule.staffId,
-          'capacity_total': schedule.capacityTotal,
-          'waitlist_enabled': schedule.waitlistEnabled,
-        },
-      );
-      _invalidateScheduleProviders(widget.initial!.id);
-    } catch (error) {
-      if (!mounted) return;
-      final message = error is ApiException
-          ? error.message
-          : l10n.classEventsCreateErrorMessage;
-      await FeedbackDialog.showError(
-        context,
-        title: l10n.errorTitle,
-        message: message,
-      );
-    } finally {
-      if (mounted) setState(() => _isScheduleActionLoading = false);
-    }
+    await showCreateClassEventDialog(
+      context,
+      ref,
+      initialClassTypeId: widget.initial!.id,
+      prefillEvent: schedule,
+      useRootNavigator: false,
+    );
   }
 
   Future<void> _deleteSchedule(ClassEvent schedule) async {
@@ -663,16 +699,6 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     ref.invalidate(allClassEventsByTypeProvider(classTypeId));
     ref.invalidate(upcomingClassEventsByTypeProvider(classTypeId));
     ref.invalidate(upcomingClassEventsCountByTypeProvider(classTypeId));
-  }
-
-  String _toApiLocalDateTime(DateTime value) {
-    final y = value.year.toString().padLeft(4, '0');
-    final m = value.month.toString().padLeft(2, '0');
-    final d = value.day.toString().padLeft(2, '0');
-    final h = value.hour.toString().padLeft(2, '0');
-    final min = value.minute.toString().padLeft(2, '0');
-    final s = value.second.toString().padLeft(2, '0');
-    return '$y-$m-${d}T$h:$min:$s';
   }
 
   Future<void> _submit() async {
@@ -1001,12 +1027,14 @@ class _CreateClassForm extends ConsumerStatefulWidget {
     required this.initialDate,
     this.initialClassTypeId,
     this.initialEvent,
+    this.prefillEvent,
   });
 
   final int initialLocationId;
   final DateTime initialDate;
   final int? initialClassTypeId;
   final ClassEvent? initialEvent;
+  final ClassEvent? prefillEvent;
 
   @override
   ConsumerState<_CreateClassForm> createState() => _CreateClassFormState();
@@ -1075,10 +1103,10 @@ class _StagedParticipant {
   final String status; // 'confirmed' | 'waitlisted'
 
   _StagedParticipant copyWith({String? status}) => _StagedParticipant(
-        customerId: customerId,
-        displayName: displayName,
-        status: status ?? this.status,
-      );
+    customerId: customerId,
+    displayName: displayName,
+    status: status ?? this.status,
+  );
 }
 
 class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
@@ -1096,6 +1124,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   bool _participantsInitialized = false;
 
   ClassEvent? _editingEvent;
+  ClassEvent? _prefillEvent;
   RecurrenceConfig? _recurrenceConfig;
   int? _classTypeId;
   int? _locationId;
@@ -1109,6 +1138,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   void initState() {
     super.initState();
     _editingEvent = widget.initialEvent;
+    _prefillEvent = widget.prefillEvent;
     _classTypeId = widget.initialClassTypeId;
     _locationId = widget.initialLocationId;
     _date = DateTime(
@@ -1130,6 +1160,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     ref.invalidate(classEventCreateControllerProvider);
     if (_editingEvent != null) {
       _applyEventToForm(_editingEvent!);
+    } else if (_prefillEvent != null) {
+      _applyEventToForm(_prefillEvent!, includeDate: false);
     } else {
       _initializeDefaultTimesForCreate();
     }
@@ -1602,32 +1634,39 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     if (_participantsInitialized) return;
     final confirmed = bookings
         .where((b) => b.isConfirmed)
-        .map((b) => _StagedParticipant(
-              customerId: b.customerId,
-              displayName: b.customerDisplayName,
-              status: 'confirmed',
-            ))
+        .map(
+          (b) => _StagedParticipant(
+            customerId: b.customerId,
+            displayName: b.customerDisplayName,
+            status: 'confirmed',
+          ),
+        )
         .toList();
-    final waitlisted = (bookings.where((b) => b.isWaitlisted).toList()
-          ..sort(
-            (a, b) =>
-                (a.waitlistPosition ?? 9999).compareTo(b.waitlistPosition ?? 9999),
-          ))
-        .map((b) => _StagedParticipant(
-              customerId: b.customerId,
-              displayName: b.customerDisplayName,
-              status: 'waitlisted',
+    final waitlisted =
+        (bookings.where((b) => b.isWaitlisted).toList()..sort(
+              (a, b) => (a.waitlistPosition ?? 9999).compareTo(
+                b.waitlistPosition ?? 9999,
+              ),
             ))
-        .toList();
+            .map(
+              (b) => _StagedParticipant(
+                customerId: b.customerId,
+                displayName: b.customerDisplayName,
+                status: 'waitlisted',
+              ),
+            )
+            .toList();
     final staged = [...confirmed, ...waitlisted];
     setState(() {
       _stagedParticipants = staged;
       _originalParticipants = staged
-          .map((p) => _StagedParticipant(
-                customerId: p.customerId,
-                displayName: p.displayName,
-                status: p.status,
-              ))
+          .map(
+            (p) => _StagedParticipant(
+              customerId: p.customerId,
+              displayName: p.displayName,
+              status: p.status,
+            ),
+          )
           .toList();
       _participantsInitialized = true;
     });
@@ -1638,11 +1677,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final staged = _stagedParticipants;
     if (orig == null || staged == null) return false;
     if (orig.length != staged.length) return true;
-    final origMap = {for (final p in orig) p.customerId: p.status};
-    final stagedIds = {for (final p in staged) p.customerId};
-    if (orig.any((p) => !stagedIds.contains(p.customerId))) return true;
-    for (final p in staged) {
-      if (origMap[p.customerId] != p.status) return true;
+    for (var i = 0; i < orig.length; i++) {
+      if (orig[i].customerId != staged[i].customerId) return true;
+      if (orig[i].status != staged[i].status) return true;
     }
     return false;
   }
@@ -1697,11 +1734,14 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final colorScheme = theme.colorScheme;
     final isCompact = ref.watch(formFactorProvider) == AppFormFactor.mobile;
     final staged = _stagedParticipants ?? const <_StagedParticipant>[];
+    final isBootstrappingParticipants =
+        !_participantsInitialized &&
+        !participantsAsync.isLoading &&
+        participantsAsync.hasValue &&
+        !participantsAsync.hasError;
     final confirmed = staged.where((p) => p.status == 'confirmed').toList();
     final waitlisted = staged.where((p) => p.status == 'waitlisted').toList();
-    final activeCustomerIds = staged
-        .map((p) => p.customerId)
-        .toSet();
+    final activeCustomerIds = staged.map((p) => p.customerId).toSet();
 
     return Container(
       width: double.infinity,
@@ -1728,7 +1768,10 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                         targetStatus: 'confirmed',
                         excludedCustomerIds: activeCustomerIds,
                       ),
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 12,
+                ),
                 child: isCompact
                     ? const Icon(Icons.add, size: 18)
                     : Text('+ ${l10n.classEventsParticipantsAddConfirmed}'),
@@ -1737,6 +1780,11 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           ),
           const SizedBox(height: 12),
           if (participantsAsync.isLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: LinearProgressIndicator(),
+            ),
+          if (isBootstrappingParticipants)
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 8),
               child: LinearProgressIndicator(),
@@ -1751,7 +1799,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                 ),
               ),
             ),
-          if (!participantsAsync.isLoading || _participantsInitialized) ...[
+          if (_participantsInitialized) ...[
             _buildParticipantGroup(
               title: l10n.classEventsParticipantsConfirmedTitle,
               emptyLabel: l10n.classEventsParticipantsEmptyConfirmed,
@@ -1779,10 +1827,15 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                               targetStatus: 'waitlisted',
                               excludedCustomerIds: activeCustomerIds,
                             ),
-                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 8,
+                        horizontal: 12,
+                      ),
                       child: isCompact
                           ? const Icon(Icons.add, size: 18)
-                          : Text('+ ${l10n.classEventsParticipantsAddWaitlist}'),
+                          : Text(
+                              '+ ${l10n.classEventsParticipantsAddWaitlist}',
+                            ),
                     )
                   : null,
             ),
@@ -1833,8 +1886,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
             final name = participant.displayName.isNotEmpty
                 ? participant.displayName
                 : l10n.classEventsParticipantCustomer(participant.customerId);
-            final waitlistSuffix =
-                showWaitlistActions ? ' • #${index + 1}' : '';
+            final waitlistSuffix = showWaitlistActions
+                ? ' • #${index + 1}'
+                : '';
             final client = clientsById[participant.customerId];
             final initials = participant.displayName.trim().isNotEmpty
                 ? initialsFromName(participant.displayName, maxChars: 2)
@@ -1857,6 +1911,32 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
               trailing: Wrap(
                 spacing: 4,
                 children: [
+                  if (showWaitlistActions)
+                    (index > 0)
+                        ? IconButton(
+                            tooltip: l10n.classEventsParticipantsPriorityUp,
+                            onPressed: isActionLoading
+                                ? null
+                                : () => _stageMoveWaitlistPriority(
+                                    customerId: participant.customerId,
+                                    moveUp: true,
+                                  ),
+                            icon: const Icon(Icons.arrow_drop_up, size: 20),
+                          )
+                        : const SizedBox(width: 40, height: 40),
+                  if (showWaitlistActions)
+                    (index < participants.length - 1)
+                        ? IconButton(
+                            tooltip: l10n.classEventsParticipantsPriorityDown,
+                            onPressed: isActionLoading
+                                ? null
+                                : () => _stageMoveWaitlistPriority(
+                                    customerId: participant.customerId,
+                                    moveUp: false,
+                                  ),
+                            icon: const Icon(Icons.arrow_drop_down, size: 20),
+                          )
+                        : const SizedBox(width: 40, height: 40),
                   if (showWaitlistActions)
                     IconButton(
                       tooltip: l10n.classEventsParticipantsPromoteAction,
@@ -1910,11 +1990,13 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     setState(() {
       final staged = List<_StagedParticipant>.from(_stagedParticipants ?? []);
       staged.removeWhere((p) => p.customerId == result.id);
-      staged.add(_StagedParticipant(
-        customerId: result.id,
-        displayName: result.name,
-        status: targetStatus,
-      ));
+      staged.add(
+        _StagedParticipant(
+          customerId: result.id,
+          displayName: result.name,
+          status: targetStatus,
+        ),
+      );
       _stagedParticipants = staged;
     });
   }
@@ -1935,12 +2017,17 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final staged = List<_StagedParticipant>.from(_stagedParticipants ?? []);
     final demoted = staged.firstWhere((p) => p.customerId == customerId);
     // First waitlisted in current order, excluding the one being demoted.
-    final waitlistedOthers =
-        staged.where((p) => p.status == 'waitlisted' && p.customerId != customerId);
-    final firstWaitlisted = waitlistedOthers.isEmpty ? null : waitlistedOthers.first;
+    final waitlistedOthers = staged.where(
+      (p) => p.status == 'waitlisted' && p.customerId != customerId,
+    );
+    final firstWaitlisted = waitlistedOthers.isEmpty
+        ? null
+        : waitlistedOthers.first;
     staged.removeWhere((p) => p.customerId == customerId);
     if (firstWaitlisted != null) {
-      final idx = staged.indexWhere((p) => p.customerId == firstWaitlisted.customerId);
+      final idx = staged.indexWhere(
+        (p) => p.customerId == firstWaitlisted.customerId,
+      );
       if (idx >= 0) staged[idx] = staged[idx].copyWith(status: 'confirmed');
     }
     staged.add(demoted.copyWith(status: 'waitlisted'));
@@ -1949,9 +2036,49 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
 
   void _stageRemoveParticipant({required int customerId}) {
     setState(() {
-      _stagedParticipants =
-          (_stagedParticipants ?? []).where((p) => p.customerId != customerId).toList();
+      _stagedParticipants = (_stagedParticipants ?? [])
+          .where((p) => p.customerId != customerId)
+          .toList();
     });
+  }
+
+  void _stageMoveWaitlistPriority({
+    required int customerId,
+    required bool moveUp,
+  }) {
+    final staged = List<_StagedParticipant>.from(
+      _stagedParticipants ?? const [],
+    );
+    if (staged.isEmpty) return;
+
+    final currentGlobalIndex = staged.indexWhere(
+      (p) => p.customerId == customerId,
+    );
+    if (currentGlobalIndex < 0) return;
+    if (staged[currentGlobalIndex].status != 'waitlisted') return;
+
+    final waitlistIndexes = <int>[];
+    for (var i = 0; i < staged.length; i++) {
+      if (staged[i].status == 'waitlisted') {
+        waitlistIndexes.add(i);
+      }
+    }
+    final waitlistPosition = waitlistIndexes.indexOf(currentGlobalIndex);
+    if (waitlistPosition < 0) return;
+
+    final targetWaitlistPosition = moveUp
+        ? waitlistPosition - 1
+        : waitlistPosition + 1;
+    if (targetWaitlistPosition < 0 ||
+        targetWaitlistPosition >= waitlistIndexes.length) {
+      return;
+    }
+
+    final targetGlobalIndex = waitlistIndexes[targetWaitlistPosition];
+    final currentParticipant = staged[currentGlobalIndex];
+    staged[currentGlobalIndex] = staged[targetGlobalIndex];
+    staged[targetGlobalIndex] = currentParticipant;
+    setState(() => _stagedParticipants = staged);
   }
 
   Future<_ClassBookingClientPickerResult?> _pickClientForClassBooking({
@@ -2101,16 +2228,22 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
 
   Future<void> _pickDate() async {
     final now = ref.read(tenantNowProvider);
-    final picked = await showDatePicker(
+    final picked = await showDialog<DateTime>(
       context: context,
-      initialDate: _date,
-      firstDate: now.subtract(const Duration(days: 3650)),
-      lastDate: now.add(const Duration(days: 3650)),
+      builder: (context) {
+        return Dialog(
+          child: CalendarDatePicker(
+            initialDate: _date,
+            firstDate: now.subtract(const Duration(days: 365)),
+            lastDate: now.add(const Duration(days: 365 * 2)),
+            onDateChanged: (value) => Navigator.of(context).pop(value),
+          ),
+        );
+      },
     );
-    if (picked == null || !mounted) return;
-    setState(() {
-      _date = DateTime(picked.year, picked.month, picked.day);
-    });
+    if (picked != null && mounted) {
+      setState(() => _date = DateUtils.dateOnly(picked));
+    }
   }
 
   Future<void> _pickTime({required bool isStart}) async {
@@ -2125,10 +2258,22 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     if (picked == null || !mounted) return;
     setState(() {
       if (isStart) {
+        final oldStartMinutes = _toDayMinutes(_startTime);
+        final oldEndMinutes = _toDayMinutes(_endTime);
+        final newStartMinutes = _toDayMinutes(picked);
+        final shiftDelta = newStartMinutes - oldStartMinutes;
+        const maxDayMinutes = (24 * 60) - 1;
+        final minEndMinutes = (newStartMinutes + _timeStepMinutes).clamp(
+          0,
+          maxDayMinutes,
+        );
+        final shiftedEndMinutes = (oldEndMinutes + shiftDelta).clamp(
+          minEndMinutes,
+          maxDayMinutes,
+        );
+
         _startTime = picked;
-        if (_toDayMinutes(_endTime) <= _toDayMinutes(_startTime)) {
-          _endTime = _nextTimeSlot(_startTime);
-        }
+        _endTime = _fromDayMinutes(shiftedEndMinutes);
       } else {
         _endTime = picked;
         if (_toDayMinutes(_endTime) <= _toDayMinutes(_startTime)) {
@@ -2172,11 +2317,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   TimeOfDay _fromDayMinutes(int totalMinutes) {
     final clamped = totalMinutes.clamp(0, (24 * 60) - 1);
     return TimeOfDay(hour: clamped ~/ 60, minute: clamped % 60);
-  }
-
-  TimeOfDay _nextTimeSlot(TimeOfDay time) {
-    final nextMinutes = _toDayMinutes(time) + _timeStepMinutes;
-    return _fromDayMinutes(nextMinutes);
   }
 
   Future<TimeOfDay?> _showTimeSelection({
@@ -2307,7 +2447,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     // Capacity validations only apply when editing an existing event.
     if (_editingEvent != null) {
       final staged = _stagedParticipants ?? const <_StagedParticipant>[];
-      final confirmedCount = staged.where((p) => p.status == 'confirmed').length;
+      final confirmedCount = staged
+          .where((p) => p.status == 'confirmed')
+          .length;
       if (capacity < confirmedCount) {
         await FeedbackDialog.showError(
           context,
@@ -2317,39 +2459,37 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         return;
       }
 
-      if (capacity > _editingEvent!.capacityTotal) {
-        final waitlisted = staged.where((p) => p.status == 'waitlisted').toList();
-        if (waitlisted.isNotEmpty) {
-          final shouldPromote = await showDialog<bool>(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: Text(l10n.classEventsPromoteWaitlistTitle),
-              content: Text(l10n.classEventsPromoteWaitlistMessage),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(ctx).pop(false),
-                  child: Text(l10n.actionNo),
-                ),
-                FilledButton(
-                  onPressed: () => Navigator.of(ctx).pop(true),
-                  child: Text(l10n.actionYes),
-                ),
-              ],
-            ),
-          );
-          if (!mounted) return;
-          if (shouldPromote == true) {
-            final newFreeSpots = capacity - confirmedCount;
-            final toPromote = waitlisted.take(newFreeSpots).toList();
-            setState(() {
-              _stagedParticipants = staged.map((p) {
-                if (toPromote.any((w) => w.customerId == p.customerId)) {
-                  return p.copyWith(status: 'confirmed');
-                }
-                return p;
-              }).toList();
-            });
-          }
+      final waitlisted = staged.where((p) => p.status == 'waitlisted').toList();
+      final freeSpots = capacity - confirmedCount;
+      if (waitlisted.isNotEmpty && freeSpots > 0) {
+        final shouldPromote = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(l10n.classEventsPromoteWaitlistTitle),
+            content: Text(l10n.classEventsPromoteWaitlistMessage),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(false),
+                child: Text(l10n.actionNo),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(ctx).pop(true),
+                child: Text(l10n.actionYes),
+              ),
+            ],
+          ),
+        );
+        if (!mounted) return;
+        if (shouldPromote == true) {
+          final toPromote = waitlisted.take(freeSpots).toList();
+          setState(() {
+            _stagedParticipants = staged.map((p) {
+              if (toPromote.any((w) => w.customerId == p.customerId)) {
+                return p.copyWith(status: 'confirmed');
+              }
+              return p;
+            }).toList();
+          });
         }
       }
     }
@@ -2406,6 +2546,40 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           }
         }
         if (!mounted) return;
+        final origWaitlistedCustomerIds = orig
+            .where((p) => p.status == 'waitlisted')
+            .map((p) => p.customerId)
+            .toList();
+        final waitlistedCustomerIds = staged
+            .where((p) => p.status == 'waitlisted')
+            .map((p) => p.customerId)
+            .toList();
+
+        final sameWaitlistPool =
+            origWaitlistedCustomerIds.length == waitlistedCustomerIds.length &&
+            origWaitlistedCustomerIds.toSet().containsAll(
+              waitlistedCustomerIds,
+            ) &&
+            waitlistedCustomerIds.toSet().containsAll(
+              origWaitlistedCustomerIds,
+            );
+        final waitlistOrderChanged =
+            sameWaitlistPool &&
+            !List.generate(
+              waitlistedCustomerIds.length,
+              (i) => waitlistedCustomerIds[i] == origWaitlistedCustomerIds[i],
+            ).every((same) => same);
+
+        if (waitlistOrderChanged) {
+          await repo.reorderWaitlist(
+            businessId: businessId,
+            classEventId: eventId,
+            customerIds: waitlistedCustomerIds,
+          );
+        }
+        if (!mounted) return;
+        ref.invalidate(classEventDetailProvider(eventId));
+        ref.invalidate(classEventParticipantsProvider(eventId));
         final refreshedDayEvents = await ref.refresh(
           classEventsProvider.future,
         );
@@ -2599,7 +2773,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     }
   }
 
-  void _applyEventToForm(ClassEvent event) {
+  void _applyEventToForm(ClassEvent event, {bool includeDate = true}) {
     final timezone = ref.read(effectiveTenantTimezoneProvider);
     final startsAtLocal =
         event.startsAtLocal ??
@@ -2615,11 +2789,13 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         ? (event.priceCents! / 100).toStringAsFixed(2)
         : '';
     _waitlistEnabled = event.waitlistEnabled;
-    _date = DateTime(
-      startsAtLocal.year,
-      startsAtLocal.month,
-      startsAtLocal.day,
-    );
+    if (includeDate) {
+      _date = DateTime(
+        startsAtLocal.year,
+        startsAtLocal.month,
+        startsAtLocal.day,
+      );
+    }
     _startTime = TimeOfDay(
       hour: startsAtLocal.hour,
       minute: startsAtLocal.minute,

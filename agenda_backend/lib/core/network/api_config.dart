@@ -165,6 +165,10 @@ class ApiConfig {
   static String classEventCancelBooking(int businessId, int classEventId) =>
       '/v1/businesses/$businessId/class-events/$classEventId/cancel-booking';
 
+  /// Riordino lista di attesa class event.
+  static String classEventReorderWaitlist(int businessId, int classEventId) =>
+      '/v1/businesses/$businessId/class-events/$classEventId/reorder-waitlist';
+
   /// Lista partecipanti class event.
   static String classEventParticipants(int businessId, int classEventId) =>
       '/v1/businesses/$businessId/class-events/$classEventId/participants';

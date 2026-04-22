@@ -188,6 +188,7 @@ class ServicePackageListItem extends ConsumerWidget {
 
   Widget _buildPopupMenu(BuildContext context) {
     return PopupMenuButton<String>(
+      icon: const Icon(Icons.more_vert),
       onSelected: (value) {
         switch (value) {
           case 'edit':

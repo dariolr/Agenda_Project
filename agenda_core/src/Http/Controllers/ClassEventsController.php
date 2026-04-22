@@ -802,6 +802,53 @@ final class ClassEventsController
         return Response::success(['cancelled' => true]);
     }
 
+    public function reorderWaitlist(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        $classEventId = (int) $request->getRouteParam('id');
+        $userId = $request->userId();
+        if ($userId === null) {
+            return Response::unauthorized('Authentication required', $request->traceId);
+        }
+        if (!$this->canManage($userId, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        $body = $request->getBody() ?? [];
+        $customerIdsRaw = $body['customer_ids'] ?? null;
+        if (!is_array($customerIdsRaw)) {
+            return Response::error('customer_ids must be an array', 'validation_error', 400, $request->traceId);
+        }
+
+        $customerIds = array_values(array_map(static fn ($id): int => (int) $id, $customerIdsRaw));
+        $customerIds = array_values(array_filter($customerIds, static fn (int $id): bool => $id > 0));
+        if (count($customerIds) !== count($customerIdsRaw)) {
+            return Response::error('customer_ids must contain only positive integers', 'validation_error', 400, $request->traceId);
+        }
+        if (count(array_unique($customerIds)) !== count($customerIds)) {
+            return Response::error('customer_ids must be unique', 'validation_error', 400, $request->traceId);
+        }
+
+        try {
+            $this->classEventRepo->reorderWaitlist($businessId, $classEventId, $customerIds);
+        } catch (\RuntimeException $e) {
+            return match ($e->getMessage()) {
+                'class_event_not_found' => Response::notFound('Class event not found', $request->traceId),
+                'invalid_waitlist_order' => Response::error(
+                    'Invalid waitlist order payload',
+                    'invalid_waitlist_order',
+                    400,
+                    $request->traceId
+                ),
+                default => Response::serverError('Unable to reorder waitlist', $request->traceId),
+            };
+        } catch (\Throwable) {
+            return Response::serverError('Unable to reorder waitlist', $request->traceId);
+        }
+
+        return Response::success(['reordered' => true]);
+    }
+
     /**
      * POST /v1/customer/{business_id}/class-events/{id}/book
      * Prenota un posto in un evento di classe come cliente autenticato.

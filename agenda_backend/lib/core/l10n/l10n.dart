@@ -9649,10 +9649,10 @@ class L10n {
     );
   }
 
-  /// `The capacity has been increased. Do you want to automatically promote participants from the waitlist to fill the new available spots?`
+  /// `Do you want to automatically promote participants from the waitlist to fill the available spots?`
   String get classEventsPromoteWaitlistMessage {
     return Intl.message(
-      'The capacity has been increased. Do you want to automatically promote participants from the waitlist to fill the new available spots?',
+      'Do you want to automatically promote participants from the waitlist to fill the available spots?',
       name: 'classEventsPromoteWaitlistMessage',
       desc: '',
       args: [],
@@ -10332,10 +10332,10 @@ class L10n {
     );
   }
 
-  /// `Confirmed participants`
+  /// `Confirmed`
   String get classEventsParticipantsConfirmedTitle {
     return Intl.message(
-      'Confirmed participants',
+      'Confirmed',
       name: 'classEventsParticipantsConfirmedTitle',
       desc: '',
       args: [],
@@ -10367,6 +10367,26 @@ class L10n {
     return Intl.message(
       'Add to waitlist',
       name: 'classEventsParticipantsAddWaitlist',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move up`
+  String get classEventsParticipantsPriorityUp {
+    return Intl.message(
+      'Move up',
+      name: 'classEventsParticipantsPriorityUp',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move down`
+  String get classEventsParticipantsPriorityDown {
+    return Intl.message(
+      'Move down',
+      name: 'classEventsParticipantsPriorityDown',
       desc: '',
       args: [],
     );

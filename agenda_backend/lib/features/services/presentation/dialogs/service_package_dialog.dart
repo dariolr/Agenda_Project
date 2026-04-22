@@ -98,7 +98,16 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
     _isActive = pkg?.isActive ?? true;
     _isBookableOnline = pkg?.isBookableOnline ?? true;
     _selectedCategoryId = pkg?.categoryId ?? widget.preselectedCategoryId;
-    if (_selectedCategoryId == null && widget.categories.length == 1) {
+    final validCategoryIds = widget.categories
+        .map((category) => category.id)
+        .toSet();
+    if (_selectedCategoryId != null &&
+        !validCategoryIds.contains(_selectedCategoryId)) {
+      _selectedCategoryId = null;
+    }
+    if (pkg == null &&
+        _selectedCategoryId == null &&
+        widget.categories.length == 1) {
       _selectedCategoryId = widget.categories.first.id;
     }
     if (pkg != null) {

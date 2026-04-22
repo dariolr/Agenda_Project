@@ -345,6 +345,7 @@ CREATE TABLE `class_types` (
   `service_category_id` int UNSIGNED DEFAULT NULL COMMENT 'Categoria servizi associata al tipo classe',
   `sort_order` int NOT NULL DEFAULT '0',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `active_name` varchar(255) GENERATED ALWAYS AS (case when (`is_active` = 1) then `name` else NULL end) STORED,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1220,7 +1221,7 @@ ALTER TABLE `class_event_resource_requirements`
 ALTER TABLE `class_types`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uk_class_types_id_business` (`id`,`business_id`),
-  ADD UNIQUE KEY `uk_class_types_business_name` (`business_id`,`name`),
+  ADD UNIQUE KEY `uk_class_types_business_active_name` (`business_id`,`active_name`),
   ADD KEY `idx_class_types_business_active` (`business_id`,`is_active`),
   ADD KEY `idx_class_types_business_sort` (`business_id`,`sort_order`),
   ADD KEY `idx_class_types_service_category` (`service_category_id`);

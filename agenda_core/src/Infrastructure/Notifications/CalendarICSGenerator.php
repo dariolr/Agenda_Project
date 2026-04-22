@@ -44,6 +44,83 @@ final class CalendarICSGenerator
     }
 
     /**
+     * Generate one ICS file containing multiple VEVENT entries.
+     *
+     * @param array{
+     *   title: string,
+     *   description: string,
+     *   location: string,
+     *   timezone?: string,
+     *   booking_id?: int
+     * } $event Base event data
+     * @param array<int, array{
+     *   start_time?: string,
+     *   end_time?: string,
+     *   id?: int,
+     *   booking_id?: int
+     * }> $occurrences
+     */
+    public static function generateIcsContentForOccurrences(array $event, array $occurrences): string
+    {
+        $timezone = self::normalizeTimezone($event['timezone'] ?? null);
+        $tz = new DateTimeZone($timezone);
+        $utcNow = (new DateTimeImmutable('now', new DateTimeZone('UTC')))->format('Ymd\THis\Z');
+
+        $title = self::escapeIcsText((string) ($event['title'] ?? 'Appuntamento'));
+        $description = self::escapeIcsText((string) ($event['description'] ?? ''));
+        $location = self::escapeIcsText((string) ($event['location'] ?? ''));
+        $fallbackBookingId = (int) ($event['booking_id'] ?? 0);
+
+        $ics = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//RomeoLab Agenda//IT',
+            'CALSCALE:GREGORIAN',
+            'METHOD:PUBLISH',
+            'X-WR-TIMEZONE:' . $timezone,
+        ];
+
+        $added = 0;
+        foreach ($occurrences as $index => $occurrence) {
+            $startRaw = trim((string) ($occurrence['start_time'] ?? ''));
+            $endRaw = trim((string) ($occurrence['end_time'] ?? ''));
+            if ($startRaw === '' || $endRaw === '') {
+                continue;
+            }
+
+            try {
+                $startLocal = new DateTimeImmutable($startRaw, $tz);
+                $endLocal = new DateTimeImmutable($endRaw, $tz);
+            } catch (\Throwable) {
+                continue;
+            }
+
+            $bookingId = (int) ($occurrence['booking_id'] ?? $occurrence['id'] ?? $fallbackBookingId);
+            $uid = sprintf('booking-%d-%s-%d@romeolab.it', $bookingId, $startLocal->format('Ymd\THis'), $index);
+
+            $ics[] = 'BEGIN:VEVENT';
+            $ics[] = 'UID:' . $uid;
+            $ics[] = 'DTSTAMP:' . $utcNow;
+            $ics[] = 'DTSTART;TZID=' . $timezone . ':' . $startLocal->format('Ymd\THis');
+            $ics[] = 'DTEND;TZID=' . $timezone . ':' . $endLocal->format('Ymd\THis');
+            $ics[] = 'SUMMARY:' . $title;
+            $ics[] = 'DESCRIPTION:' . $description;
+            $ics[] = 'LOCATION:' . $location;
+            $ics[] = 'STATUS:CONFIRMED';
+            $ics[] = 'SEQUENCE:0';
+            $ics[] = 'END:VEVENT';
+            $added++;
+        }
+
+        if ($added === 0 && !empty($event['start_time']) && !empty($event['end_time'])) {
+            return self::generateIcsContent($event);
+        }
+
+        $ics[] = 'END:VCALENDAR';
+        return implode("\r\n", $ics);
+    }
+
+    /**
      * Generate ICS file content.
      */
     private static function generateIcs(

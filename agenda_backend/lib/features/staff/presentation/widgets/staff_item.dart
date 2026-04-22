@@ -167,6 +167,7 @@ class _StaffItemState extends ConsumerState<StaffItem> {
                       ],
                     )
                   : PopupMenuButton<String>(
+                      icon: const Icon(Icons.more_vert),
                       onSelected: (value) {
                         if (value == 'edit') widget.onEdit();
                         if (value == 'duplicate') widget.onDuplicate();

@@ -6,6 +6,7 @@ import 'package:agenda_backend/core/models/class_event.dart';
 import 'package:agenda_backend/core/models/class_type.dart';
 import 'package:agenda_backend/core/models/staff.dart';
 import 'package:agenda_backend/core/utils/color_utils.dart';
+import 'package:agenda_backend/core/utils/price_utils.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
 import 'package:agenda_backend/core/widgets/feedback_dialog.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
@@ -925,13 +926,39 @@ class _SingleStaffWeekTimelineColumnState
     final classType = classTypeById[event.classTypeId];
     final parsedColor = _parseClassTypeColor(classType?.colorHex);
     final color = parsedColor ?? theme.colorScheme.tertiaryContainer;
-    final foreground =
-        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-        ? Colors.white
-        : theme.colorScheme.onTertiaryContainer;
+    final isDarkBackground =
+        ThemeData.estimateBrightnessForColor(color) == Brightness.dark;
+    final primaryTextColor = isDarkBackground ? Colors.white : Colors.black87;
+    final secondaryTextColor = isDarkBackground
+        ? Colors.white70
+        : Colors.black54;
     final classTitle = (classType?.name.trim().isNotEmpty ?? false)
         ? classType!.name.trim()
         : context.l10n.classEventsUntitled;
+    final showPriceInCard = ref.watch(
+      effectiveShowAppointmentPriceInCardProvider,
+    );
+    String? currencyCode;
+    String? unitPriceLabel;
+    if (showPriceInCard && event.priceCents != null && event.priceCents! > 0) {
+      final eventCurrency = event.currency?.trim();
+      currencyCode = (eventCurrency != null && eventCurrency.isNotEmpty)
+          ? eventCurrency
+          : PriceFormatter.effectiveCurrency(ref);
+      unitPriceLabel = PriceFormatter.format(
+        context: context,
+        amount: event.priceCents! / 100.0,
+        currencyCode: currencyCode,
+      );
+    }
+    String? totalPriceLabel;
+    if (unitPriceLabel != null && event.confirmedCount > 0) {
+      totalPriceLabel = PriceFormatter.format(
+        context: context,
+        amount: (event.priceCents! * event.confirmedCount) / 100.0,
+        currencyCode: currencyCode ?? PriceFormatter.effectiveCurrency(ref),
+      );
+    }
 
     return AnimatedPositioned(
       key: ValueKey('week_class_${event.id}_${day.toIso8601String()}'),
@@ -964,8 +991,14 @@ class _SingleStaffWeekTimelineColumnState
           ),
           child: DefaultTextStyle(
             style:
-                theme.textTheme.bodySmall?.copyWith(color: foreground) ??
-                TextStyle(color: foreground),
+                theme.textTheme.bodySmall?.copyWith(
+                  color: secondaryTextColor,
+                  fontWeight: FontWeight.w400,
+                ) ??
+                TextStyle(
+                  color: secondaryTextColor,
+                  fontWeight: FontWeight.w400,
+                ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -974,26 +1007,60 @@ class _SingleStaffWeekTimelineColumnState
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: foreground,
+                    color: primaryTextColor,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  '${DtFmt.hm(context, start.hour, start.minute)} - ${DtFmt.hm(context, end.hour, end.minute)}',
+                  unitPriceLabel == null
+                      ? '${DtFmt.hm(context, start.hour, start.minute)} - ${DtFmt.hm(context, end.hour, end.minute)}'
+                      : '${DtFmt.hm(context, start.hour, start.minute)} - ${DtFmt.hm(context, end.hour, end.minute)} • $unitPriceLabel',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  context.l10n.classEventsCapacitySummary(
-                    event.confirmedCount,
-                    event.capacityTotal,
-                    event.waitlistCount,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: secondaryTextColor,
+                    fontWeight: FontWeight.w400,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
                 ),
+                if (event.waitlistCount > 0 ||
+                    event.confirmedCount >= event.capacityTotal) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    (event.waitlistEnabled || event.waitlistCount > 0)
+                        ? context.l10n.classEventsCapacitySummary(
+                            event.confirmedCount,
+                            event.capacityTotal,
+                            event.waitlistCount,
+                          )
+                        : context.l10n.classEventsCapacitySummaryNoWaitlist(
+                            event.confirmedCount,
+                            event.capacityTotal,
+                          ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: secondaryTextColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+                if (totalPriceLabel != null) ...[
+                  const SizedBox(height: 2),
+                  Align(
+                    alignment: Alignment.bottomRight,
+                    child: Text(
+                      totalPriceLabel,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.right,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: primaryTextColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),

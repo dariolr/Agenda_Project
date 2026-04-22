@@ -8,6 +8,7 @@ class DragLayerLinkNotifier extends Notifier<LayerLink> {
   @override
   LayerLink build() => LayerLink();
 
+  void set(LayerLink link) => state = link;
   void reset() => state = LayerLink();
   void resetOnMicrotask() {
     Future.microtask(() => state = LayerLink());

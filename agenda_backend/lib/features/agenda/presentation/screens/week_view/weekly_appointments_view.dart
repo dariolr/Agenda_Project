@@ -9,20 +9,21 @@ import 'package:agenda_backend/core/models/staff.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart'
     show StaffPlanning;
 import 'package:agenda_backend/core/utils/color_utils.dart';
+import 'package:agenda_backend/core/utils/price_utils.dart';
 import 'package:agenda_backend/core/widgets/adaptive_dropdown.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
-import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
 import 'package:agenda_backend/features/agenda/domain/agenda_card_color_source.dart';
 import 'package:agenda_backend/features/agenda/domain/config/layout_config.dart';
+import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
 import 'package:agenda_backend/features/agenda/mappers/appointments_by_day.dart';
 import 'package:agenda_backend/features/agenda/presentation/dialogs/add_block_dialog.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/week_view/single_staff_weekly_timeline.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/appointment_card_base.dart';
 import 'package:agenda_backend/features/agenda/presentation/widgets/appointment_dialog.dart';
 import 'package:agenda_backend/features/agenda/presentation/widgets/booking_dialog.dart';
-import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/agenda_display_settings_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/agenda_interaction_lock_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
@@ -30,10 +31,10 @@ import 'package:agenda_backend/features/agenda/providers/selected_appointment_pr
 import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/weekly_appointments_provider.dart';
-import 'package:agenda_backend/features/agenda/utils/week_range.dart';
 import 'package:agenda_backend/features/agenda/utils/client_color_utils.dart';
-import 'package:agenda_backend/features/business/providers/location_closures_provider.dart';
+import 'package:agenda_backend/features/agenda/utils/week_range.dart';
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
+import 'package:agenda_backend/features/business/providers/location_closures_provider.dart';
 import 'package:agenda_backend/features/class_events/presentation/class_events_screen.dart';
 import 'package:agenda_backend/features/class_events/providers/class_events_providers.dart';
 import 'package:agenda_backend/features/clients/providers/clients_providers.dart';
@@ -1078,6 +1079,8 @@ class _WeeklyAppointmentTileState
 }
 
 class _WeeklyClassEventTile extends ConsumerWidget {
+  static const double _leftColorBandWidth = 4.0;
+
   const _WeeklyClassEventTile({
     required this.classEvent,
     required this.showStaffNameFooter,
@@ -1090,6 +1093,9 @@ class _WeeklyClassEventTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
+    final showPriceInCard = ref.watch(
+      effectiveShowAppointmentPriceInCardProvider,
+    );
     final classTypes = ref.watch(classTypesProvider).value ?? const [];
     final classType = classTypes.cast<ClassType?>().firstWhere(
       (item) => item?.id == classEvent.classTypeId,
@@ -1108,10 +1114,12 @@ class _WeeklyClassEventTile extends ConsumerWidget {
     final effectiveHeightScale = cardTextScale > 1.0 ? cardTextScale : 1.0;
     final tileHeight =
         _WeeklyAppointmentTile._tileHeight * effectiveHeightScale;
-    final foreground =
-        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-        ? Colors.white
-        : theme.colorScheme.onTertiaryContainer;
+    final isDarkBackground =
+        ThemeData.estimateBrightnessForColor(color) == Brightness.dark;
+    final primaryTextColor = isDarkBackground ? Colors.white : Colors.black87;
+    final secondaryTextColor = isDarkBackground
+        ? Colors.white70
+        : Colors.black54;
     final footerHeight = showStaffNameFooter
         ? _WeeklyAppointmentTile._staffFooterHeight
         : 0.0;
@@ -1134,8 +1142,34 @@ class _WeeklyClassEventTile extends ConsumerWidget {
     final startsAt =
         classEvent.startsAtLocal ?? classEvent.startsAtUtc.toLocal();
     final endsAt = classEvent.endsAtLocal ?? classEvent.endsAtUtc.toLocal();
-    final timeLabel =
+    final baseTimeLabel =
         '${DtFmt.hm(context, startsAt.hour, startsAt.minute)} - ${DtFmt.hm(context, endsAt.hour, endsAt.minute)}';
+    String? currencyCode;
+    String? unitPriceLabel;
+    if (showPriceInCard &&
+        classEvent.priceCents != null &&
+        classEvent.priceCents! > 0) {
+      final eventCurrency = classEvent.currency?.trim();
+      currencyCode = (eventCurrency != null && eventCurrency.isNotEmpty)
+          ? eventCurrency
+          : PriceFormatter.effectiveCurrency(ref);
+      unitPriceLabel = PriceFormatter.format(
+        context: context,
+        amount: classEvent.priceCents! / 100.0,
+        currencyCode: currencyCode,
+      );
+    }
+    String? totalPriceLabel;
+    if (unitPriceLabel != null && classEvent.confirmedCount > 0) {
+      totalPriceLabel = PriceFormatter.format(
+        context: context,
+        amount: (classEvent.priceCents! * classEvent.confirmedCount) / 100.0,
+        currencyCode: currencyCode ?? PriceFormatter.effectiveCurrency(ref),
+      );
+    }
+    final timeLabel = unitPriceLabel == null
+        ? baseTimeLabel
+        : '$baseTimeLabel • $unitPriceLabel';
     final staffName = _resolveStaffDisplayName(ref, classEvent.staffId);
 
     return GestureDetector(
@@ -1157,43 +1191,82 @@ class _WeeklyClassEventTile extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: color,
                 borderRadius: cardBorderRadius,
-                border: Border.all(color: theme.colorScheme.tertiary),
+                border: Border(
+                  left: BorderSide(color: color, width: _leftColorBandWidth),
+                  top: BorderSide(color: theme.colorScheme.tertiary),
+                  right: BorderSide(color: theme.colorScheme.tertiary),
+                  bottom: BorderSide(color: theme.colorScheme.tertiary),
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Stack(
                 children: [
-                  Text(
-                    title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.labelSmall?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: foreground,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: primaryTextColor,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        timeLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: secondaryTextColor,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                      if (classEvent.waitlistCount > 0 ||
+                          classEvent.confirmedCount >=
+                              classEvent.capacityTotal) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          (classEvent.waitlistEnabled ||
+                                  classEvent.waitlistCount > 0)
+                              ? context.l10n.classEventsCapacitySummary(
+                                  classEvent.confirmedCount,
+                                  classEvent.capacityTotal,
+                                  classEvent.waitlistCount,
+                                )
+                              : context.l10n
+                                    .classEventsCapacitySummaryNoWaitlist(
+                                      classEvent.confirmedCount,
+                                      classEvent.capacityTotal,
+                                    ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: secondaryTextColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                      if (totalPriceLabel != null) const SizedBox(height: 12),
+                    ],
                   ),
-                  const SizedBox(height: 2),
-                  Text(
-                    timeLabel,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: foreground,
+                  if (totalPriceLabel != null)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Text(
+                        totalPriceLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: primaryTextColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    context.l10n.classEventsCapacitySummary(
-                      classEvent.confirmedCount,
-                      classEvent.capacityTotal,
-                      classEvent.waitlistCount,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: foreground,
-                      fontSize: 11,
-                    ),
-                  ),
                 ],
               ),
             ),
@@ -1222,9 +1295,10 @@ class _WeeklyClassEventTile extends ConsumerWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodySmall?.copyWith(
-                    fontSize: 11,
+                    fontSize: 9,
                     fontWeight: FontWeight.w700,
-                    color: foreground,
+                    height: 1.0,
+                    color: primaryTextColor,
                   ),
                 ),
               ),

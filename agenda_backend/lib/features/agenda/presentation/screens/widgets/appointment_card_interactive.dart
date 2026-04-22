@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '/core/models/appointment.dart';
 import '/core/l10n/date_time_formats.dart';
+import '/core/models/appointment.dart';
 import '/core/utils/price_utils.dart';
 import '/core/utils/string_utils.dart';
 import '../../../../../../app/providers/form_factor_provider.dart';
@@ -17,11 +17,12 @@ import '../../../../clients/providers/clients_providers.dart';
 import '../../../../services/providers/services_provider.dart';
 import '../../../domain/config/agenda_theme.dart';
 import '../../../domain/config/layout_config.dart';
-import '../../../providers/agenda_interaction_lock_provider.dart';
 import '../../../providers/agenda_display_settings_provider.dart';
+import '../../../providers/agenda_interaction_lock_provider.dart';
 import '../../../providers/agenda_providers.dart';
 import '../../../providers/appointment_providers.dart';
 import '../../../providers/bookings_provider.dart';
+import '../../../providers/calendar_view_mode_provider.dart';
 import '../../../providers/drag_layer_link_provider.dart';
 import '../../../providers/drag_offset_provider.dart';
 import '../../../providers/drag_session_provider.dart';
@@ -30,7 +31,6 @@ import '../../../providers/dragged_base_range_provider.dart';
 import '../../../providers/dragged_last_staff_provider.dart';
 import '../../../providers/highlighted_staff_provider.dart';
 import '../../../providers/is_resizing_provider.dart';
-import '../../../providers/calendar_view_mode_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../../../providers/resizing_provider.dart';
 import '../../../providers/selected_appointment_provider.dart';
@@ -76,6 +76,7 @@ class AppointmentCardInteractive extends ConsumerStatefulWidget {
 
 class _AppointmentCardInteractiveState
     extends ConsumerState<AppointmentCardInteractive> {
+  static const double _leftColorBandWidth = 4.0;
   Size? _lastSize;
   Offset? _lastPointerGlobalPosition;
   bool _isDraggingResize = false;
@@ -803,6 +804,15 @@ class _AppointmentCardInteractiveState
         : (showThickBorder
               ? Color.alphaBlend(Colors.black.withOpacity(0.05), widget.color)
               : widget.color);
+    final showLeftColorBand = !showThickBorder;
+    final leftBandContrastFactor = ((baseCardOpacity - 0.3) / 0.7).clamp(
+      0.0,
+      1.0,
+    );
+    final leftBandColor = Color.alphaBlend(
+      selectedContrastBaseColor.withOpacity(0.18 * leftBandContrastFactor),
+      widget.color,
+    );
     final statusVisual = _statusVisual(context);
     final cardHeight = _lastSize?.height ?? 0;
     final showCompactStatusBar =
@@ -904,7 +914,14 @@ class _AppointmentCardInteractiveState
           decoration: BoxDecoration(
             color: renderedCardColor,
             borderRadius: effectiveBorderRadius,
-            border: Border.all(color: borderColor, width: borderWidth),
+            border: Border(
+              left: showLeftColorBand
+                  ? BorderSide(color: leftBandColor, width: _leftColorBandWidth)
+                  : BorderSide(color: borderColor, width: borderWidth),
+              top: BorderSide(color: borderColor, width: borderWidth),
+              right: BorderSide(color: borderColor, width: borderWidth),
+              bottom: BorderSide(color: borderColor, width: borderWidth),
+            ),
             boxShadow: [
               if (isSelectedHighlight)
                 BoxShadow(

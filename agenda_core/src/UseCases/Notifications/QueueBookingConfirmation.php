@@ -558,9 +558,21 @@ final class QueueBookingConfirmation
             $booking['business_name'] ?? '',
             $locale
         );
+        $filename = 'appuntamento.ics';
         $icsContent = CalendarICSGenerator::generateIcsContent($eventData);
+
+        if ($this->isRecurringBooking($booking)) {
+            $occurrences = $booking['recurring_occurrences'] ?? null;
+            if (is_array($occurrences) && count($occurrences) >= 2) {
+                $icsContent = CalendarICSGenerator::generateIcsContentForOccurrences($eventData, $occurrences);
+                $filename = EmailTemplateRenderer::normalizeLocale($locale) === 'en'
+                    ? 'recurring-bookings.ics'
+                    : 'appuntamenti-ricorrenti.ics';
+            }
+        }
+
         return [
-            'attachments' => [CalendarICSGenerator::createIcsAttachment($icsContent)],
+            'attachments' => [CalendarICSGenerator::createIcsAttachment($icsContent, $filename)],
         ];
     }
 }

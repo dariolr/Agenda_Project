@@ -285,93 +285,84 @@ class AppFormScaffold extends StatelessWidget {
     }
 
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
-    return SafeArea(
-      top: false,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final contentSection = SingleChildScrollView(
-            child: Padding(
-              padding: mobileContentPadding,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  DefaultTextStyle(
-                    style:
-                        theme.textTheme.titleLarge ??
-                        const TextStyle(fontSize: 22),
-                    child: title,
-                  ),
-                  const SizedBox(height: 12),
-                  content,
-                  SizedBox(height: mobileBottomSpacing),
-                ],
+    final mediaQuery = MediaQuery.of(context);
+    final fallbackMaxHeight = mediaQuery.size.height * 0.9;
+    final bottomSafeArea = mediaQuery.viewPadding.bottom;
+    final contentSection = SingleChildScrollView(
+      child: Padding(
+        padding: mobileContentPadding,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DefaultTextStyle(
+              style: theme.textTheme.titleLarge ?? const TextStyle(fontSize: 22),
+              child: title,
+            ),
+            const SizedBox(height: 12),
+            content,
+            SizedBox(height: mobileBottomSpacing),
+          ],
+        ),
+      ),
+    );
+
+    Widget mobileBody;
+    if (mobileExpandToAvailableHeight) {
+      mobileBody = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: contentSection),
+          if (actions.isNotEmpty && !isKeyboardOpen) ...[
+            const AppDivider(height: 1),
+            Padding(
+              padding: mobileActionsPadding,
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: actions,
+                ),
               ),
             ),
-          );
-
-          Widget mobileBody;
-          if (mobileExpandToAvailableHeight) {
-            mobileBody = SizedBox(
-              height: constraints.maxHeight,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(child: contentSection),
-                  if (actions.isNotEmpty && !isKeyboardOpen) ...[
-                    const AppDivider(height: 1),
-                    Padding(
-                      padding: mobileActionsPadding,
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Wrap(
-                          alignment: WrapAlignment.end,
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: actions,
-                        ),
-                      ),
-                    ),
-                  ],
-                  SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
-                ],
+          ],
+          SizedBox(height: bottomSafeArea),
+        ],
+      );
+    } else {
+      mobileBody = ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: fallbackMaxHeight),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Flexible(fit: FlexFit.loose, child: contentSection),
+            if (actions.isNotEmpty && !isKeyboardOpen) ...[
+              const AppDivider(height: 1),
+              Padding(
+                padding: mobileActionsPadding,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: Wrap(
+                    alignment: WrapAlignment.end,
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: actions,
+                  ),
+                ),
               ),
-            );
-          } else {
-            final maxHeight = constraints.maxHeight.isFinite
-                ? constraints.maxHeight
-                : MediaQuery.of(context).size.height * 0.9;
-            mobileBody = ConstrainedBox(
-              constraints: BoxConstraints(maxHeight: maxHeight),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Flexible(fit: FlexFit.loose, child: contentSection),
-                  if (actions.isNotEmpty && !isKeyboardOpen) ...[
-                    const AppDivider(height: 1),
-                    Padding(
-                      padding: mobileActionsPadding,
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: Wrap(
-                          alignment: WrapAlignment.end,
-                          spacing: 12,
-                          runSpacing: 12,
-                          children: actions,
-                        ),
-                      ),
-                    ),
-                  ],
-                  SizedBox(height: MediaQuery.of(context).viewPadding.bottom),
-                ],
-              ),
-            );
-          }
+            ],
+            SizedBox(height: bottomSafeArea),
+          ],
+        ),
+      );
+    }
 
-          return _AppFormBody(isLoading: isLoading, child: mobileBody);
-        },
-      ),
+    return SafeArea(
+      top: false,
+      child: _AppFormBody(isLoading: isLoading, child: mobileBody),
     );
   }
 }
@@ -406,7 +397,12 @@ class _AppFormBodyState extends State<_AppFormBody> {
     if (notifier.value == widget.isLoading) {
       return;
     }
-    notifier.value = widget.isLoading;
+    try {
+      notifier.value = widget.isLoading;
+    } catch (_) {
+      // The notifier may already be disposed if the bottom sheet closed
+      // before this post-frame sync executed.
+    }
   }
 
   @override

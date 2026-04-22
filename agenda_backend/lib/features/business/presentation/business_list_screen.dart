@@ -694,6 +694,7 @@ class _BusinessCard extends StatelessWidget {
               ),
               // Menu azioni
               PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
                 onSelected: (value) {
                   switch (value) {
                     case 'edit':
@@ -762,7 +763,6 @@ class _BusinessCard extends StatelessWidget {
                     ),
                   ),
                 ],
-                icon: const Icon(Icons.more_vert),
               ),
               // Freccia per entrare (solo su schermi non compatti)
               if (!isCompact) ...[

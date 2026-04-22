@@ -268,6 +268,7 @@ final class Kernel
         $this->router->get('/v1/businesses/{business_id}/class-events/{id}/participants', ClassEventsController::class, 'participants', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/class-events/{id}/book', ClassEventsController::class, 'book', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/class-events/{id}/cancel-booking', ClassEventsController::class, 'cancelBooking', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/class-events/{id}/reorder-waitlist', ClassEventsController::class, 'reorderWaitlist', ['auth']);
 
         // Service Packages (public)
         $this->router->get('/v1/locations/{location_id}/service-packages', ServicePackagesController::class, 'index', ['location_path']);

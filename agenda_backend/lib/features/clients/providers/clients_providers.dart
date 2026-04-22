@@ -322,15 +322,9 @@ class ClientsNotifier extends AsyncNotifier<ClientsState> {
   Future<Client> addClient(Client client) async {
     final repository = ref.read(clientsRepositoryProvider);
     final newClient = await repository.add(client);
-    final current = state.value ?? const ClientsState();
-    // Inserisci all'inizio della lista (sarà riordinato al prossimo refresh)
-    state = AsyncValue.data(
-      current.copyWith(
-        clients: [newClient, ...current.clients],
-        total: current.total + 1,
-        allClientsTotal: current.allClientsTotal + 1,
-      ),
-    );
+    // Ricarica subito lista con ricerca/ordinamento correnti per mantenere
+    // l'ordine coerente dopo la creazione.
+    await refresh();
     return newClient;
   }
 

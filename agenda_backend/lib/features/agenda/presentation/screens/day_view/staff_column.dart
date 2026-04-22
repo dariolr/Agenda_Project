@@ -701,7 +701,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       ),
     );
 
-    final staffDailyTotal = _computeStaffDailyTotal(staffAppointments);
+    final staffDailyTotal = _computeStaffDailyTotal(
+      staffAppointments: staffAppointments,
+      classEvents: staffClassEvents,
+    );
     final staffDailyServicesCount = _computeStaffDailyServicesCount(
       staffAppointments: staffAppointments,
       classEvents: staffClassEvents,
@@ -1699,10 +1702,22 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     return positionedBlocks;
   }
 
-  double _computeStaffDailyTotal(List<Appointment> appointments) {
-    return appointments
+  double _computeStaffDailyTotal({
+    required List<Appointment> staffAppointments,
+    required List<ClassEvent> classEvents,
+  }) {
+    final appointmentsTotal = staffAppointments
         .where((a) => !a.isCancelled && !a.isReplaced)
         .fold<double>(0, (sum, a) => sum + (a.price ?? 0));
+    final classEventsTotal = classEvents
+        .where((event) => event.status.toUpperCase() != 'CANCELLED')
+        .fold<double>(0, (sum, event) {
+          final priceCents = event.priceCents ?? 0;
+          final confirmedCount = event.confirmedCount;
+          if (priceCents <= 0 || confirmedCount <= 0) return sum;
+          return sum + ((priceCents * confirmedCount) / 100.0);
+        });
+    return appointmentsTotal + classEventsTotal;
   }
 
   int _computeStaffDailyServicesCount({
@@ -1740,6 +1755,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       if (occupiedByAppointment) return true;
 
       final occupiedByClass = classEvents.any((event) {
+        if (event.status.toUpperCase() == 'CANCELLED') return false;
         final startsAt = event.startsAtLocal ?? event.startsAtUtc.toLocal();
         final endsAt = event.endsAtLocal ?? event.endsAtUtc.toLocal();
         return startsAt.isBefore(slotEnd) && endsAt.isAfter(slotStart);
@@ -1762,6 +1778,36 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     bool isSlotOccupied(int slotIndex) {
       return isSlotOccupiedByAppointmentsOrClasses(slotIndex) ||
           isSlotOccupiedByBlock(slotIndex);
+    }
+
+    int? resolveLastBookingOrClassSlot() {
+      for (int slotIndex = totalSlots - 1; slotIndex >= 0; slotIndex--) {
+        if (isSlotOccupiedByAppointmentsOrClasses(slotIndex)) {
+          return slotIndex;
+        }
+      }
+      return null;
+    }
+
+    // Regola prioritaria: dopo l'ultima prenotazione/classe, usa il primo
+    // slot NON disponibile (fine turno), se presente.
+    final lastBookingOrClassSlot = resolveLastBookingOrClassSlot();
+    if (lastBookingOrClassSlot != null) {
+      for (int i = lastBookingOrClassSlot + 1; i < totalSlots; i++) {
+        final isAvailable = availableSlots.contains(i);
+        if (!isAvailable && !isSlotOccupiedByAppointmentsOrClasses(i)) {
+          return i;
+        }
+      }
+
+      // Fallback: primo slot libero dopo l'ultima prenotazione/classe.
+      final candidate = lastBookingOrClassSlot + 1;
+      if (candidate < totalSlots && !isSlotOccupied(candidate)) {
+        return candidate;
+      }
+      for (int i = candidate + 1; i < totalSlots; i++) {
+        if (!isSlotOccupied(i)) return i;
+      }
     }
 
     int? preferredSlot;
@@ -2179,26 +2225,41 @@ class _ClassEventCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final l10n = context.l10n;
+    final showPriceInCard = ref.watch(
+      effectiveShowAppointmentPriceInCardProvider,
+    );
     final timeLabel =
         '${DtFmt.hm(context, displayStart.hour, displayStart.minute)} - ${DtFmt.hm(context, displayEnd.hour, displayEnd.minute)}';
+    String? currencyCode;
     String? priceLabel;
-    if (event.priceCents != null && event.priceCents! > 0) {
-      final currency = event.currency;
-      if (currency != null && currency.trim().isNotEmpty) {
-        priceLabel = PriceFormatter.format(
-          context: context,
-          amount: event.priceCents! / 100.0,
-          currencyCode: currency,
-        );
-      }
+    if (showPriceInCard && event.priceCents != null && event.priceCents! > 0) {
+      final eventCurrency = event.currency?.trim();
+      currencyCode = (eventCurrency != null && eventCurrency.isNotEmpty)
+          ? eventCurrency
+          : PriceFormatter.effectiveCurrency(ref);
+      priceLabel = PriceFormatter.format(
+        context: context,
+        amount: event.priceCents! / 100.0,
+        currencyCode: currencyCode,
+      );
+    }
+    String? totalPriceLabel;
+    if (priceLabel != null && event.confirmedCount > 0) {
+      totalPriceLabel = PriceFormatter.format(
+        context: context,
+        amount: (event.priceCents! * event.confirmedCount) / 100.0,
+        currencyCode: currencyCode ?? PriceFormatter.effectiveCurrency(ref),
+      );
     }
     final metaLabel = priceLabel == null
         ? timeLabel
         : '$timeLabel • $priceLabel';
-    final foreground =
-        ThemeData.estimateBrightnessForColor(color) == Brightness.dark
-        ? Colors.white
-        : theme.colorScheme.onTertiaryContainer;
+    final isDarkBackground =
+        ThemeData.estimateBrightnessForColor(color) == Brightness.dark;
+    final primaryTextColor = isDarkBackground ? Colors.white : Colors.black87;
+    final secondaryTextColor = isDarkBackground
+        ? Colors.white70
+        : Colors.black54;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -2208,6 +2269,7 @@ class _ClassEventCard extends ConsumerWidget {
         final compact = maxHeight <= 30;
         final showMeta = maxHeight > 24;
         final showCapacity = maxHeight > 46;
+        final showBottomTotal = totalPriceLabel != null && maxHeight > 30;
         final horizontalPadding = ultraCompact ? 6.0 : 8.0;
         final verticalPadding = centerVerticallyForShort
             ? 0.0
@@ -2222,20 +2284,25 @@ class _ClassEventCard extends ConsumerWidget {
                     ? theme.textTheme.labelSmall?.copyWith(fontSize: 10)
                     : theme.textTheme.labelSmall)
                 ?.copyWith(
-                  color: foreground,
-                  fontWeight: FontWeight.w800,
+                  color: primaryTextColor,
+                  fontWeight: FontWeight.w700,
                   height: 1.0,
                 );
 
-        final capacityStyle =
+        final metaStyle =
             (ultraCompact
                     ? theme.textTheme.bodySmall?.copyWith(fontSize: 10)
                     : theme.textTheme.bodySmall)
                 ?.copyWith(
-                  color: foreground,
-                  fontWeight: FontWeight.w600,
+                  color: secondaryTextColor,
+                  fontWeight: FontWeight.w400,
                   height: 1.0,
                 );
+
+        final capacityStyle = metaStyle?.copyWith(
+          fontWeight: FontWeight.w500,
+          height: 1.0,
+        );
 
         return Container(
           padding: EdgeInsets.symmetric(
@@ -2273,7 +2340,7 @@ class _ClassEventCard extends ConsumerWidget {
                                     metaLabel,
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
-                                    style: capacityStyle,
+                                    style: metaStyle,
                                   ),
                                   const SizedBox(height: 2),
                                 ],
@@ -2283,10 +2350,14 @@ class _ClassEventCard extends ConsumerWidget {
                                   overflow: TextOverflow.ellipsis,
                                   style: titleStyle,
                                 ),
-                                if (showCapacity) ...[
+                                if (showCapacity &&
+                                    (event.waitlistCount > 0 ||
+                                        event.confirmedCount >=
+                                            event.capacityTotal)) ...[
                                   const SizedBox(height: 2),
                                   Text(
-                                    (event.waitlistCount > 0)
+                                    (event.waitlistEnabled ||
+                                            event.waitlistCount > 0)
                                         ? l10n.classEventsCapacitySummary(
                                             event.confirmedCount,
                                             event.capacityTotal,
@@ -2301,6 +2372,7 @@ class _ClassEventCard extends ConsumerWidget {
                                     style: capacityStyle,
                                   ),
                                 ],
+                                if (showBottomTotal) const SizedBox(height: 12),
                               ],
                             ),
                           ),
@@ -2317,7 +2389,7 @@ class _ClassEventCard extends ConsumerWidget {
                                 metaLabel,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: capacityStyle,
+                                style: metaStyle,
                               ),
                               const SizedBox(height: 2),
                             ],
@@ -2327,10 +2399,14 @@ class _ClassEventCard extends ConsumerWidget {
                               overflow: TextOverflow.ellipsis,
                               style: titleStyle,
                             ),
-                            if (showCapacity) ...[
+                            if (showCapacity &&
+                                (event.waitlistCount > 0 ||
+                                    event.confirmedCount >=
+                                        event.capacityTotal)) ...[
                               const SizedBox(height: 2),
                               Text(
-                                (event.waitlistCount > 0)
+                                (event.waitlistEnabled ||
+                                        event.waitlistCount > 0)
                                     ? l10n.classEventsCapacitySummary(
                                         event.confirmedCount,
                                         event.capacityTotal,
@@ -2345,9 +2421,25 @@ class _ClassEventCard extends ConsumerWidget {
                                 style: capacityStyle,
                               ),
                             ],
+                            if (showBottomTotal) const SizedBox(height: 12),
                           ],
                         ),
                       ),
+                if (showBottomTotal)
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: Text(
+                      totalPriceLabel,
+                      textAlign: TextAlign.right,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: metaStyle?.copyWith(
+                        color: primaryTextColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
