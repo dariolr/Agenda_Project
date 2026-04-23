@@ -137,9 +137,9 @@ final class QueueBookingReminder
         $locationBlockHtml = $hasMultipleLocations ? sprintf(
             '<tr>
                                     <td style="padding:5px 0;">
-                                        <strong style="color:#666;">📍 %s</strong><br>
-                                        <span style="color:#333;">%s</span><br>
-                                        <span style="color:#666;font-size:14px;">%s</span>
+                                        <strong style="color:#666;font-size:13px;">%s</strong><br>
+                                        <span style="color:#333;font-size:13px;">%s</span><br>
+                                        <span style="color:#333;font-size:13px;">%s</span>
                                     </td>
                                 </tr>',
             $strings['where_label'],
@@ -147,7 +147,7 @@ final class QueueBookingReminder
             $locationAddress
         ) : '';
         $locationBlockText = $hasMultipleLocations
-            ? sprintf("📍 %s: %s, %s\n", $strings['where_label'], $locationName, $locationAddress)
+            ? sprintf("%s: %s, %s\n", $strings['where_label'], $locationName, $locationAddress)
             : '';
 
         $calendar = $this->buildCalendarData($booking, $locale);

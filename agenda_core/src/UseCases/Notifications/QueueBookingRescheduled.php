@@ -102,14 +102,14 @@ final class QueueBookingRescheduled
         $hasMultipleLocations = $this->hasMultipleLocations((int) ($booking['business_id'] ?? 0));
         $locationBlockHtml = $hasMultipleLocations
             ? sprintf(
-                '<strong style="color:#666;">📍 %s</strong><br><span style="color:#333;">%s</span><br><span style="color:#666;font-size:14px;">%s</span><br>',
+                '<strong style="color:#666;font-size:13px;">%s</strong><br><span style="color:#333;font-size:13px;">%s</span><br><span style="color:#333;font-size:13px;">%s</span><br>',
                 $strings['where_label'],
                 $locationName,
                 $locationAddress
             )
             : '';
         $locationBlockText = $hasMultipleLocations
-            ? sprintf("📍 %s: %s, %s\n", $strings['where_label'], $locationName, $locationAddress)
+            ? sprintf("%s: %s, %s\n", $strings['where_label'], $locationName, $locationAddress)
             : '';
 
         $calendar = $this->buildCalendarData($booking, $locale, $locationName, $locationAddress);

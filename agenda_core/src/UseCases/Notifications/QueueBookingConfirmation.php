@@ -180,8 +180,8 @@ final class QueueBookingConfirmation
             $totalRowHtml = sprintf(
                 '<tr>
                                     <td style="padding:8px 0;">
-                                        <span style="color:#666;font-size:13px;">%s</span><br>
-                                        <strong style="color:#333;">€%s</strong>
+                                        <strong style="color:#666;font-size:13px;">%s</strong><br>
+                                        <span style="color:#333;font-size:13px;">€%s</span>
                                     </td>
                                 </tr>',
                 $label,
@@ -194,9 +194,9 @@ final class QueueBookingConfirmation
         $locationBlockHtml = $hasMultipleLocations ? sprintf(
             '<tr>
                                     <td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
-                                        <strong style="color:#666;">📍 %s</strong><br>
-                                        <span style="color:#333;">%s</span><br>
-                                        <span style="color:#666;font-size:14px;">%s</span>
+                                        <strong style="color:#666;font-size:13px;">%s</strong><br>
+                                        <span style="color:#333;font-size:13px;">%s</span><br>
+                                        <span style="color:#333;font-size:13px;">%s</span>
                                     </td>
                                 </tr>',
             $strings['where_label'],
@@ -204,7 +204,7 @@ final class QueueBookingConfirmation
             $locationAddress
         ) : '';
         $locationBlockText = $hasMultipleLocations
-            ? sprintf("📍 %s: %s, %s\n", $strings['where_label'], $locationName, $locationAddress)
+            ? sprintf("%s: %s, %s\n", $strings['where_label'], $locationName, $locationAddress)
             : '';
         [$recurringScheduleHtml, $recurringScheduleText] = $this->buildRecurringScheduleBlocks(
             $booking,
