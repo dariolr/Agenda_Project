@@ -89,9 +89,6 @@ final class ClassEventsController
         if ($userId === null) {
             return Response::unauthorized('Authentication required', $request->traceId);
         }
-        if (!$this->userRepo->isSuperadmin($userId)) {
-            return Response::forbidden('Only superadmin can create class types', $request->traceId);
-        }
         if (!$this->canManage($userId, $businessId)) {
             return Response::forbidden('Access denied', $request->traceId);
         }
