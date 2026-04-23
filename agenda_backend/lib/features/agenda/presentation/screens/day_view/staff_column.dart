@@ -102,6 +102,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   double? _hoverY;
   bool _isApplyingBookingReschedule = false;
   int? _hoveredClassEventId;
+  int? _resizeHoveredClassEventId;
   int? _hoveredTimeBlockId;
   int? _draggingClassEventId;
   final Map<int, DateTime> _classResizePreviewEndByEventId = {};
@@ -1274,9 +1275,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         curve: Curves.easeOutCubic,
         child: MouseRegion(
           opaque: true,
-          cursor: canManageBookings && endsAt.isAfter(DateTime.now())
-              ? SystemMouseCursors.click
-              : SystemMouseCursors.basic,
+          cursor: _resizeHoveredClassEventId == classEvent.id
+              ? SystemMouseCursors.resizeUpDown
+              : (canManageBookings && endsAt.isAfter(DateTime.now())
+                    ? SystemMouseCursors.click
+                    : SystemMouseCursors.basic),
           onEnter: (_) {
             ref.read(selectedAppointmentProvider.notifier).clear();
             if (_hoveredClassEventId != classEvent.id) {
@@ -1286,6 +1289,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           onExit: (_) {
             if (_hoveredClassEventId == classEvent.id) {
               setState(() => _hoveredClassEventId = null);
+            }
+            if (_resizeHoveredClassEventId == classEvent.id) {
+              setState(() => _resizeHoveredClassEventId = null);
             }
           },
           child: GestureDetector(
@@ -1352,6 +1358,27 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                         .set(cardBox.size);
                     final local = bodyBox.globalToLocal(event.position);
                     ref.read(dragPositionProvider.notifier).set(local);
+                  },
+                  onPointerUp: (_) => clearClassDragState(),
+                  onPointerCancel: (_) => clearClassDragState(),
+                  onPointerHover: (event) {
+                    if (!canManageBookings) return;
+                    final cardBox =
+                        cardContext.findRenderObject() as RenderBox?;
+                    if (cardBox == null) return;
+                    final localPos = cardBox.globalToLocal(event.position);
+                    final h = cardBox.size.height;
+                    final resizeHitHeight = (h * 0.35).clamp(8.0, 24.0);
+                    final inZone =
+                        localPos.dx >= 0 &&
+                        localPos.dy >= 0 &&
+                        localPos.dx <= cardBox.size.width &&
+                        localPos.dy <= h &&
+                        localPos.dy >= (h - resizeHitHeight);
+                    final newId = inZone ? classEvent.id : null;
+                    if (_resizeHoveredClassEventId != newId) {
+                      setState(() => _resizeHoveredClassEventId = newId);
+                    }
                   },
                   child: LongPressDraggable<_ClassEventDragData>(
                     data: _ClassEventDragData(
@@ -1445,6 +1472,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                             classTypeById[classEvent.classTypeId]?.colorHex,
                           ) ??
                           Theme.of(context).colorScheme.tertiaryContainer,
+                      showResizeHandle:
+                          _resizeHoveredClassEventId == classEvent.id,
                     ),
                   ),
                 );
@@ -2212,6 +2241,7 @@ class _ClassEventCard extends ConsumerWidget {
     required this.displayEnd,
     required this.title,
     required this.color,
+    this.showResizeHandle = false,
   });
 
   final ClassEvent event;
@@ -2220,6 +2250,7 @@ class _ClassEventCard extends ConsumerWidget {
   final DateTime displayEnd;
   final String title;
   final Color color;
+  final bool showResizeHandle;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -2232,16 +2263,20 @@ class _ClassEventCard extends ConsumerWidget {
         '${DtFmt.hm(context, displayStart.hour, displayStart.minute)} - ${DtFmt.hm(context, displayEnd.hour, displayEnd.minute)}';
     String? currencyCode;
     String? priceLabel;
-    if (showPriceInCard && event.priceCents != null && event.priceCents! > 0) {
-      final eventCurrency = event.currency?.trim();
-      currencyCode = (eventCurrency != null && eventCurrency.isNotEmpty)
-          ? eventCurrency
-          : PriceFormatter.effectiveCurrency(ref);
-      priceLabel = PriceFormatter.format(
-        context: context,
-        amount: event.priceCents! / 100.0,
-        currencyCode: currencyCode,
-      );
+    if (showPriceInCard) {
+      if (event.priceCents != null && event.priceCents! > 0) {
+        final eventCurrency = event.currency?.trim();
+        currencyCode = (eventCurrency != null && eventCurrency.isNotEmpty)
+            ? eventCurrency
+            : PriceFormatter.effectiveCurrency(ref);
+        priceLabel = PriceFormatter.format(
+          context: context,
+          amount: event.priceCents! / 100.0,
+          currencyCode: currencyCode,
+        );
+      } else if (event.priceCents != null && event.priceCents == 0) {
+        priceLabel = l10n.appointmentPriceFree;
+      }
     }
     String? totalPriceLabel;
     if (priceLabel != null && event.confirmedCount > 0) {
@@ -2254,8 +2289,18 @@ class _ClassEventCard extends ConsumerWidget {
     final metaLabel = priceLabel == null
         ? timeLabel
         : '$timeLabel • $priceLabel';
+    final cardColorIntensity = ref.watch(agendaCardColorOpacityProvider);
+    final baseCardOpacity = cardColorIntensity.clamp(0.3, 1.0);
+    final renderedCardColor = Color.alphaBlend(
+      color.withOpacity(baseCardOpacity),
+      Colors.white,
+    );
+    final borderColor = showResizeHandle
+        ? Color.alphaBlend(Colors.black.withOpacity(0.05), color)
+        : color;
     final isDarkBackground =
-        ThemeData.estimateBrightnessForColor(color) == Brightness.dark;
+        ThemeData.estimateBrightnessForColor(renderedCardColor) ==
+        Brightness.dark;
     final primaryTextColor = isDarkBackground ? Colors.white : Colors.black87;
     final secondaryTextColor = isDarkBackground
         ? Colors.white70
@@ -2310,13 +2355,11 @@ class _ClassEventCard extends ConsumerWidget {
             vertical: verticalPadding,
           ),
           decoration: BoxDecoration(
-            color: color,
+            color: renderedCardColor,
             borderRadius: ref.watch(agendaUseRoundedCardCornersProvider)
                 ? BorderRadius.circular(LayoutConfig.cardBorderRadiusNormal)
                 : BorderRadius.zero,
-            border: Border.all(
-              color: theme.colorScheme.tertiary.withOpacity(0.8),
-            ),
+            border: Border.all(color: borderColor),
           ),
           child: ClipRect(
             child: Stack(
@@ -2350,10 +2393,7 @@ class _ClassEventCard extends ConsumerWidget {
                                   overflow: TextOverflow.ellipsis,
                                   style: titleStyle,
                                 ),
-                                if (showCapacity &&
-                                    (event.waitlistCount > 0 ||
-                                        event.confirmedCount >=
-                                            event.capacityTotal)) ...[
+                                if (showCapacity) ...[
                                   const SizedBox(height: 2),
                                   Text(
                                     (event.waitlistEnabled ||
@@ -2399,10 +2439,7 @@ class _ClassEventCard extends ConsumerWidget {
                               overflow: TextOverflow.ellipsis,
                               style: titleStyle,
                             ),
-                            if (showCapacity &&
-                                (event.waitlistCount > 0 ||
-                                    event.confirmedCount >=
-                                        event.capacityTotal)) ...[
+                            if (showCapacity) ...[
                               const SizedBox(height: 2),
                               Text(
                                 (event.waitlistEnabled ||
@@ -2437,6 +2474,25 @@ class _ClassEventCard extends ConsumerWidget {
                       style: metaStyle?.copyWith(
                         color: primaryTextColor,
                         fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                if (showResizeHandle)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 2,
+                    child: IgnorePointer(
+                      child: Align(
+                        alignment: Alignment.bottomCenter,
+                        child: Container(
+                          width: 22,
+                          height: 4,
+                          decoration: BoxDecoration(
+                            color: borderColor.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
                       ),
                     ),
                   ),

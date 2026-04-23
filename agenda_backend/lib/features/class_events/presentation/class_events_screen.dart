@@ -1190,7 +1190,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   int? _staffId;
   late DateTime _date;
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
-  TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 0);
+  TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 30);
   bool _waitlistEnabled = true;
 
   @override
@@ -1257,6 +1257,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final businessId = ref.watch(currentBusinessIdProvider);
 
     final classTypes = classTypesAsync.value ?? const <ClassType>[];
+    final classTypesForLocation = !isEditMode
+        ? _classTypesForLocation(classTypes, widget.initialLocationId)
+        : classTypes;
     final allStaff = staffAsync.value ?? const <Staff>[];
     final filteredLocations = _locationsForSelectedClassType(
       locations: locations,
@@ -1283,8 +1286,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       selectableStaffIds.add(inactiveAssignedStaffId);
     }
 
-    if (classTypes.isNotEmpty && _classTypeId == null) {
-      _classTypeId = classTypes.first.id;
+    if (classTypesForLocation.isNotEmpty && _classTypeId == null) {
+      _classTypeId = classTypesForLocation.first.id;
     }
     if (filteredLocations.isEmpty) {
       _locationId = null;
@@ -1392,6 +1395,36 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                   ),
+                ),
+                const SizedBox(height: gap),
+              ],
+
+              // ── tipo lezione (solo creazione, se multiplo) ──
+              if (!isEditMode && classTypesForLocation.length > 1) ...[
+                DropdownButtonFormField<int>(
+                  value: _classTypeId,
+                  decoration: InputDecoration(
+                    labelText: l10n.classEventsFieldClassType,
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.category_outlined),
+                  ),
+                  items: classTypesForLocation
+                      .map(
+                        (ct) => DropdownMenuItem<int>(
+                          value: ct.id,
+                          child: Text(ct.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: isLoading
+                      ? null
+                      : (value) => setState(() {
+                          _classTypeId = value;
+                          _locationId = null;
+                          _staffId = null;
+                        }),
+                  validator: (value) =>
+                      value == null ? l10n.classEventsValidationRequired : null,
                 ),
                 const SizedBox(height: gap),
               ],
@@ -2300,6 +2333,17 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     return null;
   }
 
+  List<ClassType> _classTypesForLocation(
+    List<ClassType> classTypes,
+    int locationId,
+  ) {
+    return classTypes
+        .where(
+          (ct) => ct.locationIds.isEmpty || ct.locationIds.contains(locationId),
+        )
+        .toList();
+  }
+
   List<Location> _locationsForSelectedClassType({
     required List<Location> locations,
     required List<ClassType> classTypes,
@@ -2401,7 +2445,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final maxStartMinutes = (24 * 60) - (_timeStepMinutes * 2);
     final safeStartMinutes = roundedStartMinutes.clamp(0, maxStartMinutes);
     _startTime = _fromDayMinutes(safeStartMinutes);
-    _endTime = _fromDayMinutes(safeStartMinutes + _timeStepMinutes);
+    _endTime = _fromDayMinutes(safeStartMinutes + 90);
   }
 
   int _roundUpToStepMinutes(int totalMinutes) {

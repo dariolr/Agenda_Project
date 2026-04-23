@@ -1066,6 +1066,25 @@ class _AppointmentCardInteractiveState
                     ),
                   ),
                 ),
+              if (!isGhost && !forFeedback && _isResizeZoneHovered)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 2,
+                  child: IgnorePointer(
+                    child: Align(
+                      alignment: Alignment.bottomCenter,
+                      child: Container(
+                        width: 22,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: borderColor.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),

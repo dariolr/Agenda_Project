@@ -871,6 +871,16 @@ class _AgendaAddAction extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final l10n = context.l10n;
     final agendaDate = ref.watch(agendaDateProvider);
+    final currentLocation = ref.watch(currentLocationProvider);
+    final classTypes = ref.watch(classTypesProvider).value ?? const <ClassType>[];
+    final hasActiveClassTypeForLocation = classTypes.any((classType) {
+      if (!classType.isActive) return false;
+      final enabledEverywhere = classType.locationIds.isEmpty;
+      final enabledForLocation = classType.locationIds.contains(
+        currentLocation.id,
+      );
+      return enabledEverywhere || enabledForLocation;
+    });
     final currentUserRole = ref.watch(currentUserRoleProvider);
     final currentUserStaffId = ref.watch(currentUserStaffIdProvider);
     final initialStaffIdForNewBooking =
@@ -905,10 +915,11 @@ class _AgendaAddAction extends ConsumerWidget {
             value: 'appointment',
             child: Text(l10n.agendaAddAppointment),
           ),
-          AdaptiveDropdownItem(
-            value: 'class_schedule',
-            child: Text(l10n.classEventsNewScheduleButton),
-          ),
+          if (hasActiveClassTypeForLocation)
+            AdaptiveDropdownItem(
+              value: 'class_schedule',
+              child: Text(l10n.classEventsNewScheduleButton),
+            ),
           AdaptiveDropdownItem(
             value: 'block',
             child: Text(l10n.agendaAddBlock),
