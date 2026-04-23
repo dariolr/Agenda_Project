@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Agenda\Http\Controllers;
 
+use Agenda\Domain\Helpers\ColorHex;
 use Agenda\Domain\Helpers\Unicode;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
@@ -130,10 +131,15 @@ final class StaffController
         if (empty($body['name'])) {
             return Response::error('Name is required', 'validation_error', 400, $request->traceId);
         }
+        $colorHexResult = ColorHex::normalizeOptional($body['color_hex'] ?? null, 'color_hex');
+        if (isset($colorHexResult['error'])) {
+            return Response::error((string) $colorHexResult['error'], 'validation_error', 400, $request->traceId);
+        }
+        $colorHex = $colorHexResult['value'] ?? '#3B82F6';
 
         $staffId = $this->staffRepository->create($businessId, $body['name'], [
             'surname' => $body['surname'] ?? '',
-            'color_hex' => $body['color_hex'] ?? '#3B82F6',
+            'color_hex' => $colorHex,
             'avatar_url' => $body['avatar_url'] ?? null,
             'is_bookable_online' => $body['is_bookable_online'] ?? true,
         ]);
@@ -212,7 +218,13 @@ final class StaffController
         $updateData = [];
         if (isset($body['name'])) $updateData['name'] = $body['name'];
         if (isset($body['surname'])) $updateData['surname'] = $body['surname'];
-        if (isset($body['color_hex'])) $updateData['color_hex'] = $body['color_hex'];
+        if (isset($body['color_hex'])) {
+            $colorHexResult = ColorHex::normalizeOptional($body['color_hex'], 'color_hex');
+            if (isset($colorHexResult['error'])) {
+                return Response::error((string) $colorHexResult['error'], 'validation_error', 400, $request->traceId);
+            }
+            $updateData['color_hex'] = $colorHexResult['value'] ?? null;
+        }
         if (isset($body['avatar_url'])) $updateData['avatar_url'] = $body['avatar_url'];
         if (isset($body['is_bookable_online'])) $updateData['is_bookable_online'] = $body['is_bookable_online'] ? 1 : 0;
         if (isset($body['sort_order'])) $updateData['sort_order'] = (int) $body['sort_order'];

@@ -2,15 +2,15 @@ import 'dart:async';
 
 import 'package:agenda_backend/app/providers/global_loading_provider.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
+import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/day_view/agenda_day.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/day_view/components/hour_column.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/week_view/weekly_appointments_view.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/agenda_dividers.dart';
-import 'package:agenda_backend/core/widgets/app_buttons.dart';
-import 'package:agenda_backend/features/agenda/providers/agenda_display_settings_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/agenda_bootstrap_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/agenda_display_settings_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/booking_reschedule_capability_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/booking_reschedule_provider.dart';
@@ -52,12 +52,14 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   final AgendaDayController _timelineController = AgendaDayController();
   late final ProviderSubscription<AgendaScrollRequest?> _scrollRequestSub;
   late final ProviderSubscription<int> _locationSub;
+  late final ProviderSubscription<int> _businessIdSub;
   late final ProviderSubscription<bool> _initialScrollSub;
   Timer? _pollingTimer;
 
   /// Intervallo polling: 10 secondi in debug, 5 minuti in produzione
   static const _pollingIntervalDebug = Duration(seconds: 10);
   static const _pollingIntervalProd = Duration(minutes: 5);
+  static const _pollingIntervalBusiness4Prod = Duration(minutes: 1);
 
   double? _pendingHourOffset;
   bool _pendingApplyScheduled = false;
@@ -133,10 +135,29 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     _pollingTimer?.cancel();
     _scrollRequestSub.close();
     _locationSub.close();
+    _businessIdSub.close();
     _initialScrollSub.close();
     _timelineController.dispose();
     _hourColumnController.dispose();
     super.dispose();
+  }
+
+  Duration _resolvePollingIntervalForBusiness(int businessId) {
+    if (kDebugMode) return _pollingIntervalDebug;
+    if (businessId == 4) return _pollingIntervalBusiness4Prod;
+    return _pollingIntervalProd;
+  }
+
+  void _restartPollingTimerForBusiness(int businessId) {
+    _pollingTimer?.cancel();
+    final interval = _resolvePollingIntervalForBusiness(businessId);
+    _pollingTimer = Timer.periodic(interval, (_) {
+      if (!mounted) return;
+      // Ricarica solo gli appuntamenti (dati che cambiano più frequentemente)
+      _isPolling = true;
+      ref.invalidate(appointmentsProvider);
+      _invalidateCurrentWeekAppointments();
+    });
   }
 
   void _handleMasterScroll(double offset) {
@@ -232,16 +253,9 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     // 1. I provider AsyncNotifier caricano i dati automaticamente nel build()
     // 2. Il refresh al cambio tab avviene in _refreshProvidersForTab()
 
-    // Polling automatico per aggiornare gli appuntamenti
-    // Debug: ogni 10 secondi, Produzione: ogni 5 minuti
-    final interval = kDebugMode ? _pollingIntervalDebug : _pollingIntervalProd;
-    _pollingTimer = Timer.periodic(interval, (_) {
-      if (!mounted) return;
-      // Ricarica solo gli appuntamenti (dati che cambiano più frequentemente)
-      _isPolling = true;
-      ref.invalidate(appointmentsProvider);
-      _invalidateCurrentWeekAppointments();
-    });
+    // Polling automatico per aggiornare gli appuntamenti.
+    // In produzione business_id=4 usa intervallo a 2 minuti.
+    _restartPollingTimerForBusiness(ref.read(currentBusinessIdProvider));
 
     _scrollRequestSub = ref.listenManual<AgendaScrollRequest?>(
       agendaScrollRequestProvider,
@@ -295,6 +309,14 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       if (session == null) return;
       ref.read(agendaDateProvider.notifier).set(session.originDate);
       ref.read(bookingRescheduleSessionProvider.notifier).clear();
+    });
+
+    _businessIdSub = ref.listenManual<int>(currentBusinessIdProvider, (
+      prev,
+      next,
+    ) {
+      if (prev == next) return;
+      _restartPollingTimerForBusiness(next);
     });
   }
 

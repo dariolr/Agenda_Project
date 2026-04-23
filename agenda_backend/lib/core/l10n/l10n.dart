@@ -8350,6 +8350,26 @@ class L10n {
     );
   }
 
+  /// `Appointment types`
+  String get moreAppointmentTypesTitle {
+    return Intl.message(
+      'Appointment types',
+      name: 'moreAppointmentTypesTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manage services, classes, categories and pricing`
+  String get moreAppointmentTypesDescription {
+    return Intl.message(
+      'Manage services, classes, categories and pricing',
+      name: 'moreAppointmentTypesDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Manage business locations`
   String get moreLocationsDescription {
     return Intl.message(

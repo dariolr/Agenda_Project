@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../app/theme/app_spacing.dart';
@@ -74,6 +77,42 @@ class ClientFormState extends ConsumerState<ClientForm> {
     super.dispose();
   }
 
+  Future<void> _pickClientColor() async {
+    final initialColor = _selectedColorHex == null
+        ? _clientPalette.first
+        : ColorUtils.fromHex(_selectedColorHex!);
+    var tempColor = initialColor;
+    final selected = await showDialog<Color>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          content: SingleChildScrollView(
+            child: ColorPicker(
+              pickerColor: tempColor,
+              onColorChanged: (color) => tempColor = color,
+              enableAlpha: false,
+              displayThumbColor: true,
+              pickerAreaHeightPercent: 0.72,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(context.l10n.actionCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(tempColor),
+              child: Text(context.l10n.actionConfirm),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted || selected == null) return;
+    setState(() => _selectedColorHex = ColorUtils.toHex(selected));
+    widget.onChanged?.call();
+  }
+
   bool validate() => _formKey.currentState?.validate() ?? false;
 
   Client buildClient() {
@@ -109,6 +148,7 @@ class ClientFormState extends ConsumerState<ClientForm> {
     final l10n = context.l10n;
     final formFactor = ref.watch(formFactorProvider);
     final isSingleColumn = formFactor != AppFormFactor.desktop;
+    final isEditingClient = (widget.initial?.id ?? 0) > 0;
 
     final firstNameField = LabeledFormField(
       label: l10n.formFirstName,
@@ -170,7 +210,10 @@ class ClientFormState extends ConsumerState<ClientForm> {
         ),
         keyboardType: TextInputType.emailAddress,
         textInputAction: TextInputAction.next,
-        onChanged: (_) => widget.onChanged?.call(),
+        onChanged: (_) {
+          setState(() {});
+          widget.onChanged?.call();
+        },
         validator: (v) {
           final t = v?.trim() ?? '';
           if (t.isEmpty) return null;
@@ -191,7 +234,10 @@ class ClientFormState extends ConsumerState<ClientForm> {
         initialPhone: widget.initial?.phone,
         isDense: true,
         useOutlineBorder: true,
-        onChanged: (_) => widget.onChanged?.call(),
+        onChanged: (_) {
+          setState(() {});
+          widget.onChanged?.call();
+        },
         validator: (v) {
           final t = v?.trim().replaceAll(RegExp(r'\s+'), '') ?? '';
           if (t.isEmpty) return null;
@@ -216,29 +262,108 @@ class ClientFormState extends ConsumerState<ClientForm> {
       ),
     );
 
+    final emailValue = _email.text.trim();
+    final phoneValue =
+        (_phoneFieldKey.currentState?.fullPhone ?? widget.initial?.phone ?? '')
+            .trim();
+    final canEmail = _isValidEmail(emailValue);
+    final canCall = _isValidPhone(phoneValue);
+    final canWhatsApp = canCall;
+    final showContactActionsInEditForm =
+        isEditingClient && (canEmail || canCall || canWhatsApp);
+
+    final contactActionsField = LabeledFormField(
+      label: l10n.formClient,
+      child: Center(
+        child: Wrap(
+          alignment: WrapAlignment.center,
+          spacing: AppSpacing.formFieldSpacing,
+          runSpacing: 8,
+          children: [
+            OutlinedButton.icon(
+              onPressed: canCall ? () => _openPhone(phoneValue) : null,
+              icon: const Icon(Icons.call_outlined, size: 18),
+              label: Text(l10n.formPhone),
+            ),
+            OutlinedButton.icon(
+              onPressed: canEmail ? () => _openEmail(emailValue) : null,
+              icon: const Icon(Icons.email_outlined, size: 18),
+              label: Text(l10n.formEmail),
+            ),
+            OutlinedButton.icon(
+              onPressed: canWhatsApp ? () => _openWhatsAppChat(phoneValue) : null,
+              icon: Builder(
+                builder: (context) {
+                  final iconColor = IconTheme.of(context).color;
+                  return SvgPicture.asset(
+                    'assets/icons/whatsapp.svg',
+                    width: 18,
+                    height: 18,
+                    colorFilter: iconColor == null
+                        ? null
+                        : ColorFilter.mode(iconColor, BlendMode.srcIn),
+                  );
+                },
+              ),
+              label: Text(l10n.whatsappTabTitle),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    final selectedColorHex = _selectedColorHex?.trim().toUpperCase();
+    final paletteHexes = {
+      for (final color in _clientPalette) ColorUtils.toHex(color).toUpperCase(),
+    };
+    final showCustomSelectedColor =
+        selectedColorHex != null &&
+        selectedColorHex.isNotEmpty &&
+        !paletteHexes.contains(selectedColorHex);
+    final selectedCustomColor = showCustomSelectedColor
+        ? ColorUtils.fromHex(selectedColorHex)
+        : null;
+
     final colorField = LabeledFormField(
       label: l10n.clientColorLabel,
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _ColorChoiceDot(
-            color: null,
-            selected: _selectedColorHex == null,
-            onTap: () {
-              setState(() => _selectedColorHex = null);
-              widget.onChanged?.call();
-            },
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              _ColorChoiceDot(
+                color: null,
+                selected: _selectedColorHex == null,
+                onTap: () {
+                  setState(() => _selectedColorHex = null);
+                  widget.onChanged?.call();
+                },
+              ),
+              for (final color in _clientPalette)
+                _ColorChoiceDot(
+                  color: color,
+                  selected: selectedColorHex == ColorUtils.toHex(color).toUpperCase(),
+                  onTap: () {
+                    setState(() => _selectedColorHex = ColorUtils.toHex(color));
+                    widget.onChanged?.call();
+                  },
+                ),
+              if (selectedCustomColor != null)
+                _ColorChoiceDot(
+                  color: selectedCustomColor,
+                  selected: true,
+                  onTap: () {},
+                ),
+            ],
           ),
-          for (final color in _clientPalette)
-            _ColorChoiceDot(
-              color: color,
-              selected: _selectedColorHex == ColorUtils.toHex(color),
-              onTap: () {
-                setState(() => _selectedColorHex = ColorUtils.toHex(color));
-                widget.onChanged?.call();
-              },
-            ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _pickClientColor,
+            icon: const Icon(Icons.palette_outlined, size: 18),
+            label: Text(l10n.actionEdit),
+          ),
         ],
       ),
     );
@@ -269,6 +394,10 @@ class ClientFormState extends ConsumerState<ClientForm> {
             emailField,
             const SizedBox(height: AppSpacing.formRowSpacing),
             phoneField,
+            if (showContactActionsInEditForm) ...[
+              const SizedBox(height: AppSpacing.formRowSpacing),
+              contactActionsField,
+            ],
             const SizedBox(height: AppSpacing.formRowSpacing),
             onlineBookingField,
             const SizedBox(height: AppSpacing.formRowSpacing),
@@ -296,6 +425,10 @@ class ClientFormState extends ConsumerState<ClientForm> {
                 Expanded(child: phoneField),
               ],
             ),
+            if (showContactActionsInEditForm) ...[
+              const SizedBox(height: AppSpacing.formRowSpacing),
+              contactActionsField,
+            ],
             const SizedBox(height: AppSpacing.formRowSpacing),
 
             // Riga 3: Prenotabile online (full width)
@@ -313,6 +446,37 @@ class ClientFormState extends ConsumerState<ClientForm> {
       ),
     );
   }
+}
+
+bool _isValidEmail(String email) {
+  if (email.isEmpty) return false;
+  final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+  return emailRegex.hasMatch(email);
+}
+
+bool _isValidPhone(String phone) {
+  if (phone.isEmpty) return false;
+  final normalized = phone.replaceAll(RegExp(r'\s+'), '');
+  final phoneRegex = RegExp(r'^\+?\d{6,15}$');
+  return phoneRegex.hasMatch(normalized);
+}
+
+Future<void> _openEmail(String email) async {
+  final uri = Uri(scheme: 'mailto', path: email.trim());
+  await launchUrl(uri, mode: LaunchMode.externalApplication);
+}
+
+Future<void> _openPhone(String phone) async {
+  final normalized = phone.trim().replaceAll(RegExp(r'\s+'), '');
+  final uri = Uri(scheme: 'tel', path: normalized);
+  await launchUrl(uri, mode: LaunchMode.externalApplication);
+}
+
+Future<void> _openWhatsAppChat(String phone) async {
+  final digitsOnly = phone.replaceAll(RegExp(r'\D+'), '');
+  if (digitsOnly.isEmpty) return;
+  final uri = Uri.parse('https://wa.me/$digitsOnly');
+  await launchUrl(uri, mode: LaunchMode.externalApplication);
 }
 
 class _ColorChoiceDot extends StatelessWidget {

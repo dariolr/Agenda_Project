@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Agenda\Http\Controllers;
 
+use Agenda\Domain\Helpers\ColorHex;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
@@ -107,7 +108,7 @@ final class ClassEventsController
             return Response::error((string) $locationIdsResult['error'], 'validation_error', 400, $request->traceId);
         }
         $locationIds = $locationIdsResult['location_ids'] ?? null;
-        $colorHexResult = $this->normalizeColorHex($body['color_hex'] ?? null);
+        $colorHexResult = ColorHex::normalizeOptional($body['color_hex'] ?? null, 'color_hex');
         if (isset($colorHexResult['error'])) {
             return Response::error((string) $colorHexResult['error'], 'validation_error', 400, $request->traceId);
         }
@@ -176,7 +177,7 @@ final class ClassEventsController
             $body['name'] = $name;
         }
         if (array_key_exists('color_hex', $body)) {
-            $colorHexResult = $this->normalizeColorHex($body['color_hex']);
+            $colorHexResult = ColorHex::normalizeOptional($body['color_hex'], 'color_hex');
             if (isset($colorHexResult['error'])) {
                 return Response::error((string) $colorHexResult['error'], 'validation_error', 400, $request->traceId);
             }
@@ -1467,24 +1468,6 @@ final class ClassEventsController
             'is_active' => (int) ($row['is_active'] ?? 1) === 1,
             'location_ids' => array_values(array_map('intval', $locationIds)),
         ];
-    }
-
-    private function normalizeColorHex(mixed $raw): array
-    {
-        if ($raw === null) {
-            return ['value' => null];
-        }
-        if (!is_string($raw)) {
-            return ['error' => 'color_hex must be a string'];
-        }
-        $value = trim($raw);
-        if ($value === '') {
-            return ['value' => null];
-        }
-        if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $value)) {
-            return ['error' => 'color_hex must be in format #RRGGBB'];
-        }
-        return ['value' => strtoupper($value)];
     }
 
     private function normalizeServiceCategoryId(int $businessId, mixed $raw, bool $required): array

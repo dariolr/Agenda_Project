@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/l10n/date_time_formats.dart';
 import '/core/models/appointment.dart';
+import '/core/utils/color_utils.dart';
 import '/core/utils/price_utils.dart';
 import '/core/utils/string_utils.dart';
 import '../../../../../../app/providers/form_factor_provider.dart';
@@ -687,13 +688,29 @@ class _AppointmentCardInteractiveState
       resizingEntryProvider(widget.appointment.id),
     );
     final booking = ref.watch(bookingsProvider)[widget.appointment.bookingId];
+    final clientsById = ref.watch(clientsByIdProvider);
     final bookingNotes = booking?.notes?.trim();
     final clientNotes = widget.appointment.clientId != null
-        ? ref
-              .watch(clientsByIdProvider)[widget.appointment.clientId!]
-              ?.notes
-              ?.trim()
+        ? clientsById[widget.appointment.clientId!]?.notes?.trim()
         : null;
+    final clientColorHex = widget.appointment.clientId != null
+        ? clientsById[widget.appointment.clientId!]?.colorHex?.trim()
+        : null;
+    final hasExplicitClientColor =
+        clientColorHex != null && clientColorHex.isNotEmpty;
+    final cardColorSource = ref.watch(effectiveAgendaCardColorSourceProvider);
+    final showClientColorDot =
+        hasExplicitClientColor &&
+        cardColorSource.name != 'clients' &&
+        widget.appointment.clientName.trim().isNotEmpty;
+    Color? clientDotColor;
+    if (showClientColorDot) {
+      try {
+        clientDotColor = ColorUtils.fromHex(clientColorHex);
+      } catch (_) {
+        clientDotColor = null;
+      }
+    }
     final hasBookingNotes = bookingNotes != null && bookingNotes.isNotEmpty;
     final hasClientNotes = clientNotes != null && clientNotes.isNotEmpty;
     final hasNotes = hasBookingNotes || hasClientNotes;
@@ -793,6 +810,15 @@ class _AppointmentCardInteractiveState
             Brightness.dark
         ? Colors.white
         : Colors.black;
+    final isDarkCardBackground =
+        ThemeData.estimateBrightnessForColor(renderedCardColor) ==
+        Brightness.dark;
+    final primaryTextColor = isDarkCardBackground
+        ? Colors.white
+        : Colors.black87;
+    final secondaryTextColor = isDarkCardBackground
+        ? Colors.white70
+        : Colors.black54;
     final borderWidth = isSelectedHighlight
         ? 2.0
         : (showThickBorder ? 2.5 : 1.0);
@@ -980,6 +1006,8 @@ class _AppointmentCardInteractiveState
                     formattedEndTime,
                     client,
                     info,
+                    showClientColorDot: showClientColorDot && clientDotColor != null,
+                    clientDotColor: clientDotColor,
                     inlineNoteText: hasNotes
                         ? _resolveInlineCardNoteText(
                             bookingNotes: hasBookingNotes ? bookingNotes : null,
@@ -1016,6 +1044,8 @@ class _AppointmentCardInteractiveState
                             clientNotes: hasClientNotes ? clientNotes : null,
                           )
                         : null,
+                    primaryTextColor: primaryTextColor,
+                    secondaryTextColor: secondaryTextColor,
                     presentation: presentation.copyWith(
                       hasAppointmentPrice: effectiveAppointmentPrice != null,
                       hasBookingTotal: effectiveBookingTotal != null,
@@ -1085,6 +1115,8 @@ class _AppointmentCardInteractiveState
     String end,
     String client,
     String info, {
+    required bool showClientColorDot,
+    required Color? clientDotColor,
     String? inlineNoteText,
     required _CardPresentationModel presentation,
     required bool showNotes,
@@ -1102,6 +1134,8 @@ class _AppointmentCardInteractiveState
     int? originalRecurrenceIndex,
     int? originalRecurrenceTotal,
     VoidCallback? onNotesTap,
+    required Color primaryTextColor,
+    required Color secondaryTextColor,
   }) {
     final effectiveColumnWidth = widget.columnWidth ?? _lastSize?.width;
     final useAnchoredRowsLayout = presentation.useAnchoredRowsLayout;
@@ -1125,41 +1159,41 @@ class _AppointmentCardInteractiveState
     final scaledTrailingIconSize = trailingIconSize * cardTextScale;
     final scaledStatusDotSize = statusDotSize * cardTextScale;
     final timeTextStyle = TextStyle(
-      color: Colors.black87,
+      color: primaryTextColor,
       fontWeight: FontWeight.w400,
       fontSize: scaledPrimaryFontSize,
     );
     final clientTextStyle = TextStyle(
-      color: Colors.black87,
+      color: primaryTextColor,
       fontWeight: FontWeight.w700,
       fontSize: scaledPrimaryFontSize,
     );
     final stackedClientTextStyle = TextStyle(
-      color: Colors.black87,
+      color: primaryTextColor,
       fontWeight: FontWeight.w700,
       fontSize: scaledPrimaryFontSize,
       height: 1.1,
     );
     final serviceTextStyle = TextStyle(
-      color: Colors.black54,
+      color: secondaryTextColor,
       fontWeight: FontWeight.w500,
       fontSize: scaledPrimaryFontSize,
       height: 1.1,
     );
     final priceSecondaryTextStyle = TextStyle(
       fontSize: scaledPriceFontSize,
-      color: Colors.black54,
+      color: secondaryTextColor,
       height: 1.1,
     );
     final pricePrimaryTextStyle = TextStyle(
       fontSize: scaledPriceFontSize,
-      color: Colors.black87,
+      color: primaryTextColor,
       height: 1.1,
     );
     final appointmentPriceTextStyle = strikeAppointmentPrice
         ? priceSecondaryTextStyle.copyWith(
             decoration: TextDecoration.lineThrough,
-            decorationColor: Colors.black54,
+            decorationColor: secondaryTextColor,
           )
         : pricePrimaryTextStyle;
     final stackClientUnderTime = presentation.showClientOnSecondRow;
@@ -1211,7 +1245,7 @@ class _AppointmentCardInteractiveState
                     ? Text(
                         shortNotesBadgeText,
                         style: TextStyle(
-                          color: Colors.black54,
+                          color: secondaryTextColor,
                           fontWeight: FontWeight.w700,
                           fontSize: (scaledTrailingIconSize * 0.82).clamp(
                             8.0,
@@ -1223,7 +1257,7 @@ class _AppointmentCardInteractiveState
                     : Icon(
                         Icons.sticky_note_2_outlined,
                         size: scaledTrailingIconSize,
-                        color: Colors.black54,
+                        color: secondaryTextColor,
                       ),
               ),
             ),
@@ -1242,7 +1276,7 @@ class _AppointmentCardInteractiveState
           child: Icon(
             Icons.cloud_outlined,
             size: scaledTrailingIconSize,
-            color: isOnlineStaff ? Colors.red : Colors.black54,
+            color: isOnlineStaff ? Colors.red : secondaryTextColor,
           ),
         ),
       );
@@ -1301,7 +1335,7 @@ class _AppointmentCardInteractiveState
                           recurrenceLabel,
                           maxLines: 1,
                           style: TextStyle(
-                            color: Colors.black54,
+                            color: secondaryTextColor,
                             fontWeight: FontWeight.w700,
                             fontSize: (scaledTrailingIconSize * 0.76).clamp(
                               8.0,
@@ -1316,7 +1350,7 @@ class _AppointmentCardInteractiveState
                 : Icon(
                     Icons.repeat,
                     size: scaledTrailingIconSize,
-                    color: Colors.black54,
+                    color: secondaryTextColor,
                   ),
           ),
         ),
@@ -1325,12 +1359,12 @@ class _AppointmentCardInteractiveState
 
     if (presentation.useUltraCompactLayout) {
       final compactTimeStyle = TextStyle(
-        color: Colors.black87,
+        color: primaryTextColor,
         fontWeight: FontWeight.w400,
         fontSize: presentation.primaryTextFontSize ?? 8,
       );
       final compactClientStyle = TextStyle(
-        color: Colors.black87,
+        color: primaryTextColor,
         fontWeight: FontWeight.w700,
         fontSize: presentation.primaryTextFontSize ?? 8,
       );
@@ -1348,7 +1382,12 @@ class _AppointmentCardInteractiveState
                 text: fullTime ? '$start - $end ' : '$start ',
                 style: compactTimeStyle,
               ),
-              TextSpan(text: client, style: compactClientStyle),
+              ..._buildClientInlineSpans(
+                client,
+                textStyle: compactClientStyle,
+                showClientColorDot: showClientColorDot,
+                clientDotColor: clientDotColor,
+              ),
               if (info.isNotEmpty && client.isNotEmpty)
                 TextSpan(text: ' - ', style: compactTimeStyle),
               if (info.isNotEmpty)
@@ -1520,7 +1559,12 @@ class _AppointmentCardInteractiveState
                                 : '$start - $end  ',
                             style: timeTextStyle,
                           ),
-                          TextSpan(text: client, style: clientTextStyle),
+                          ..._buildClientInlineSpans(
+                            client,
+                            textStyle: clientTextStyle,
+                            showClientColorDot: showClientColorDot,
+                            clientDotColor: clientDotColor,
+                          ),
                         ],
                       ),
                     ),
@@ -1530,12 +1574,11 @@ class _AppointmentCardInteractiveState
         );
 
         final Widget? secondRow = (stackClientUnderTime && client.isNotEmpty)
-            ? Text(
+            ? _buildClientTextRow(
                 client,
-                maxLines: 1,
-                softWrap: false,
-                overflow: TextOverflow.ellipsis,
                 style: stackedClientTextStyle,
+                showClientColorDot: showClientColorDot,
+                clientDotColor: clientDotColor,
               )
             : null;
 
@@ -1714,6 +1757,69 @@ class _AppointmentCardInteractiveState
           ),
         );
       },
+    );
+  }
+
+  List<InlineSpan> _buildClientInlineSpans(
+    String client, {
+    required TextStyle textStyle,
+    required bool showClientColorDot,
+    required Color? clientDotColor,
+  }) {
+    if (client.isEmpty) return const <InlineSpan>[];
+    if (!showClientColorDot || clientDotColor == null) {
+      return <InlineSpan>[TextSpan(text: client, style: textStyle)];
+    }
+    return <InlineSpan>[
+      WidgetSpan(
+        alignment: PlaceholderAlignment.middle,
+        child: Container(
+          width: 7,
+          height: 7,
+          margin: const EdgeInsets.only(right: 4),
+          decoration: BoxDecoration(
+            color: clientDotColor,
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
+      TextSpan(text: client, style: textStyle),
+    ];
+  }
+
+  Widget _buildClientTextRow(
+    String client, {
+    required TextStyle style,
+    required bool showClientColorDot,
+    required Color? clientDotColor,
+  }) {
+    if (!showClientColorDot || clientDotColor == null) {
+      return Text(
+        client,
+        maxLines: 1,
+        softWrap: false,
+        overflow: TextOverflow.ellipsis,
+        style: style,
+      );
+    }
+    return Row(
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(color: clientDotColor, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text(
+            client,
+            maxLines: 1,
+            softWrap: false,
+            overflow: TextOverflow.ellipsis,
+            style: style,
+          ),
+        ),
+      ],
     );
   }
 

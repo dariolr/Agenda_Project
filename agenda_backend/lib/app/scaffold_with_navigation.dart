@@ -137,6 +137,10 @@ class _ScaffoldWithNavigationState
 
     final formFactor = ref.watch(formFactorProvider);
     final isAgenda = currentIndex == 0;
+    if (isAgenda) {
+      // Keep mobile/tablet agenda chrome in sync when switching day/week mode.
+      ref.watch(calendarViewModeProvider);
+    }
     final isClients = currentIndex == 1;
     final isServices = currentIndex == 2;
     final isStaff = currentIndex == 3;
@@ -1828,6 +1832,7 @@ class _MobileAgendaDateSwitcher extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: AgendaDateSwitcher(
+        key: ValueKey<bool>(isWeekMode),
         label: label,
         selectedDate: selectedDate,
         onPrevious: isWeekMode ? null : dateController.previousDay,

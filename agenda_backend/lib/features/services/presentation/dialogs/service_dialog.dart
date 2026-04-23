@@ -2,6 +2,7 @@ import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/resource_providers.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -48,6 +49,39 @@ enum _AdditionalTimeSelection { none, processing, blocked }
 
 Color _contrastFor(Color color) {
   return color.computeLuminance() > 0.5 ? Colors.black : Colors.white;
+}
+
+Future<Color?> _openFullColorPicker(
+  BuildContext context, {
+  required Color initialColor,
+}) async {
+  var tempColor = initialColor;
+  return showDialog<Color>(
+    context: context,
+    builder: (dialogContext) {
+      return AlertDialog(
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: tempColor,
+            onColorChanged: (color) => tempColor = color,
+            enableAlpha: false,
+            displayThumbColor: true,
+            pickerAreaHeightPercent: 0.72,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(context.l10n.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(tempColor),
+            child: Text(context.l10n.actionConfirm),
+          ),
+        ],
+      );
+    },
+  );
 }
 
 class _SwitchTile extends StatelessWidget {
@@ -1348,47 +1382,67 @@ Future<void> showServiceDialog(
           label: context.l10n.serviceColorLabel,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Wrap(
-              spacing: 10,
-              runSpacing: 10,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                for (final color in uniquePalette)
-                  GestureDetector(
-                    onTap: canEditDialog
-                        ? () => setState(() {
-                            selectedColor = color;
-                          })
-                        : null,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 150),
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: selectedColor.value == color.value
-                              ? Theme.of(context).colorScheme.onSurface
-                              : Colors.black.withOpacity(0.08),
-                          width: selectedColor.value == color.value ? 2 : 1,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    for (final color in uniquePalette)
+                      GestureDetector(
+                        onTap: canEditDialog
+                            ? () => setState(() {
+                                selectedColor = color;
+                              })
+                            : null,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 150),
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: selectedColor.value == color.value
+                                  ? Theme.of(context).colorScheme.onSurface
+                                  : Colors.black.withOpacity(0.08),
+                              width: selectedColor.value == color.value ? 2 : 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                        ],
+                          child: selectedColor.value == color.value
+                              ? Icon(
+                                  Icons.check,
+                                  color: _contrastFor(color),
+                                  size: 18,
+                                )
+                              : null,
+                        ),
                       ),
-                      child: selectedColor.value == color.value
-                          ? Icon(
-                              Icons.check,
-                              color: _contrastFor(color),
-                              size: 18,
-                            )
-                          : null,
-                    ),
-                  ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: canEditDialog
+                      ? () async {
+                          final color = await _openFullColorPicker(
+                            context,
+                            initialColor: selectedColor,
+                          );
+                          if (color == null || !context.mounted) return;
+                          setState(() => selectedColor = color);
+                        }
+                      : null,
+                  icon: const Icon(Icons.palette_outlined),
+                  label: Text(context.l10n.actionEdit),
+                ),
               ],
             ),
           ),

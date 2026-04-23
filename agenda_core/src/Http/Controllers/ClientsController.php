@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Agenda\Http\Controllers;
 
+use Agenda\Domain\Helpers\ColorHex;
 use Agenda\Domain\Helpers\DataMasker;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
@@ -122,6 +123,11 @@ final class ClientsController
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
+        $colorHexResult = ColorHex::normalizeOptional($body['color_hex'] ?? null, 'color_hex');
+        if (isset($colorHexResult['error'])) {
+            return Response::error((string) $colorHexResult['error'], 'validation_error', 400, $request->traceId);
+        }
+        $colorHex = $colorHexResult['value'] ?? null;
 
         // Create client
         $stmt = $this->clientRepo->db()->getPdo()->prepare(
@@ -136,7 +142,7 @@ final class ClientsController
             $body['email'] ?? null,
             $body['phone'] ?? null,
             $body['notes'] ?? null,
-            $body['color_hex'] ?? null,
+            $colorHex,
             (int) ((bool) ($body['is_archived'] ?? false)),
             $blocked === null ? 0 : (int) $blocked,
         ]);
@@ -168,10 +174,17 @@ final class ClientsController
 
         // Update allowed fields
         $data = [];
-        foreach (['first_name', 'last_name', 'email', 'phone', 'notes', 'color_hex'] as $field) {
+        foreach (['first_name', 'last_name', 'email', 'phone', 'notes'] as $field) {
             if (array_key_exists($field, $body)) {
                 $data[$field] = $body[$field];
             }
+        }
+        if (array_key_exists('color_hex', $body)) {
+            $colorHexResult = ColorHex::normalizeOptional($body['color_hex'], 'color_hex');
+            if (isset($colorHexResult['error'])) {
+                return Response::error((string) $colorHexResult['error'], 'validation_error', 400, $request->traceId);
+            }
+            $data['color_hex'] = $colorHexResult['value'] ?? null;
         }
         $blocked = $this->resolveBlocked($body, null);
         if ($blocked !== null) {

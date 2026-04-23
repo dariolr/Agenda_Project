@@ -15,7 +15,6 @@ import '/core/widgets/app_form.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/location_providers.dart';
 import '/features/agenda/providers/tenant_time_provider.dart';
-import '/features/auth/providers/auth_provider.dart';
 import '/features/auth/providers/current_business_user_provider.dart';
 import '/features/staff/providers/staff_providers.dart';
 import '../providers/class_events_providers.dart';
@@ -279,15 +278,8 @@ class _ClassTypeEventsScreenState extends ConsumerState<ClassTypeEventsScreen> {
 
   Future<void> _duplicate(BuildContext context) async {
     final l10n = context.l10n;
-    final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
-    if (!isSuperadmin) {
-      await FeedbackDialog.showError(
-        context,
-        title: l10n.errorTitle,
-        message: l10n.classTypesCreateSuperadminOnlyMessage,
-      );
-      return;
-    }
+    final canManageServices = ref.read(currentUserCanManageServicesProvider);
+    if (!canManageServices) return;
     try {
       final allTypes = await ref.read(classTypesProvider.future);
       final existingNames = allTypes

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Agenda\Http\Controllers;
 
+use Agenda\Domain\Helpers\ColorHex;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\ServiceRepository;
@@ -217,6 +218,12 @@ final class ServicesController
         if (empty($name)) {
             return Response::error('Name is required', 'validation_error', 400);
         }
+        $rawColor = array_key_exists('color', $body) ? $body['color'] : ($body['color_hex'] ?? null);
+        $colorHexResult = ColorHex::normalizeOptional($rawColor, 'color');
+        if (isset($colorHexResult['error'])) {
+            return Response::error((string) $colorHexResult['error'], 'validation_error', 400, $request->traceId);
+        }
+        $colorHex = $colorHexResult['value'] ?? null;
 
         $service = $this->serviceRepository->create(
             businessId: $businessId,
@@ -226,7 +233,7 @@ final class ServicesController
             description: $body['description'] ?? null,
             durationMinutes: (int) ($body['duration_minutes'] ?? 30),
             price: (float) ($body['price'] ?? 0),
-            colorHex: $body['color'] ?? $body['color_hex'] ?? null,
+            colorHex: $colorHex,
             isBookableOnline: (bool) ($body['is_bookable_online'] ?? true),
             isPriceStartingFrom: (bool) ($body['is_price_starting_from'] ?? false),
             processingTime: isset($body['processing_time']) ? (int) $body['processing_time'] : null,
@@ -254,6 +261,12 @@ final class ServicesController
         if (empty($name)) {
             return Response::error('Name is required', 'validation_error', 400);
         }
+        $rawColor = array_key_exists('color', $body) ? $body['color'] : ($body['color_hex'] ?? null);
+        $colorHexResult = ColorHex::normalizeOptional($rawColor, 'color');
+        if (isset($colorHexResult['error'])) {
+            return Response::error((string) $colorHexResult['error'], 'validation_error', 400, $request->traceId);
+        }
+        $colorHex = $colorHexResult['value'] ?? null;
 
         $locationIds = $body['location_ids'] ?? [];
         if (empty($locationIds) || !is_array($locationIds)) {
@@ -276,7 +289,7 @@ final class ServicesController
             description: $body['description'] ?? null,
             durationMinutes: (int) ($body['duration_minutes'] ?? 30),
             price: (float) ($body['price'] ?? 0),
-            colorHex: $body['color'] ?? $body['color_hex'] ?? null,
+            colorHex: $colorHex,
             isBookableOnline: (bool) ($body['is_bookable_online'] ?? true),
             isPriceStartingFrom: (bool) ($body['is_price_starting_from'] ?? false),
             processingTime: isset($body['processing_time']) ? (int) $body['processing_time'] : null,
@@ -319,6 +332,16 @@ final class ServicesController
         if (!$location || (int) $location['business_id'] !== $businessId) {
             return Response::error('Invalid location_id', 'validation_error', 400);
         }
+        $hasColor = array_key_exists('color', $body) || array_key_exists('color_hex', $body);
+        $colorHex = null;
+        if ($hasColor) {
+            $rawColor = array_key_exists('color', $body) ? $body['color'] : ($body['color_hex'] ?? null);
+            $colorHexResult = ColorHex::normalizeOptional($rawColor, 'color');
+            if (isset($colorHexResult['error'])) {
+                return Response::error((string) $colorHexResult['error'], 'validation_error', 400, $request->traceId);
+            }
+            $colorHex = $colorHexResult['value'] ?? null;
+        }
 
         // Handle processing_time and blocked_time (can be set to 0 explicitly)
         $processingTime = null;
@@ -346,7 +369,7 @@ final class ServicesController
             description: $body['description'] ?? null,
             durationMinutes: isset($body['duration_minutes']) ? (int) $body['duration_minutes'] : null,
             price: isset($body['price']) ? (float) $body['price'] : null,
-            colorHex: $body['color'] ?? $body['color_hex'] ?? null,
+            colorHex: $colorHex,
             isBookableOnline: isset($body['is_bookable_online']) ? (bool) $body['is_bookable_online'] : null,
             isPriceStartingFrom: isset($body['is_price_starting_from']) ? (bool) $body['is_price_starting_from'] : null,
             sortOrder: isset($body['sort_order']) ? (int) $body['sort_order'] : null,

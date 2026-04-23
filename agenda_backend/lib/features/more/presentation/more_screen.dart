@@ -58,8 +58,8 @@ class MoreScreen extends ConsumerWidget {
       if (canViewServices)
         _MoreItem(
           icon: Icons.category_outlined,
-          title: l10n.navServices,
-          description: l10n.moreServicesDescription,
+          title: l10n.moreAppointmentTypesTitle,
+          description: l10n.moreAppointmentTypesDescription,
           color: const Color(0xFF4CAF50), // Green
           onTap: () => context.go(_withFromAltro('/servizi')),
         ),

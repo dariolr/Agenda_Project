@@ -40,6 +40,8 @@ class TopControls extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Ensure top controls rebuild immediately when agenda view mode changes.
+    ref.watch(calendarViewModeProvider);
     final formFactor = ref.watch(formFactorProvider);
     final layoutConfig = ref.watch(layoutConfigProvider);
 

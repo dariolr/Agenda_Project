@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart' show setEquals;
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +11,7 @@ import '../../../../app/widgets/staff_circle_avatar.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/location.dart';
 import '../../../../core/models/staff.dart';
+import '../../../../core/utils/color_utils.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
@@ -234,6 +236,38 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     return initialsFromName(fullName, maxChars: 3);
   }
 
+  Future<void> _pickCustomColor() async {
+    var tempColor = _selectedColor;
+    final selected = await showDialog<Color>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          content: SingleChildScrollView(
+            child: ColorPicker(
+              pickerColor: tempColor,
+              onColorChanged: (color) => tempColor = color,
+              enableAlpha: false,
+              displayThumbColor: true,
+              pickerAreaHeightPercent: 0.72,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(context.l10n.actionCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(tempColor),
+              child: Text(context.l10n.actionConfirm),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted || selected == null) return;
+    setState(() => _selectedColor = selected);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -305,6 +339,9 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
               )
               .name
         : null;
+    final hasCustomSelectedColor = !_palette.any(
+      (c) => c.value == _selectedColor.value,
+    );
     if (!_didAutoScrollColor) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!_colorScrollController.hasClients) return;
@@ -425,6 +462,15 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
             height: 44,
             child: Row(
               children: [
+                if (hasCustomSelectedColor) ...[
+                  StaffCircleAvatar(
+                    height: 36,
+                    color: _selectedColor,
+                    isHighlighted: true,
+                    initials: _buildInitials(),
+                  ),
+                  const SizedBox(width: 10),
+                ],
                 Expanded(
                   child: ShaderMask(
                     shaderCallback: (rect) {
@@ -478,6 +524,15 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                   ),
                 ),
               ],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: isReadOnly ? null : _pickCustomColor,
+              icon: const Icon(Icons.palette_outlined),
+              label: Text(l10n.actionEdit),
             ),
           ),
           const SizedBox(height: AppSpacing.formRowSpacing),
@@ -786,8 +841,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
           staffId: widget.initial!.id,
           name: name,
           surname: surname,
-          colorHex:
-              '#${_selectedColor.value.toRadixString(16).substring(2).toUpperCase()}',
+          colorHex: ColorUtils.toHex(_selectedColor),
           isBookableOnline: canManageStaff ? _isBookableOnline : null,
           locationIds: canManageStaff ? _selectedLocationIds.toList() : null,
           serviceIds: (canManageStaff || canEditScopedProfile)
@@ -800,8 +854,7 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
         await notifier.createStaff(
           name: name,
           surname: surname,
-          colorHex:
-              '#${_selectedColor.value.toRadixString(16).substring(2).toUpperCase()}',
+          colorHex: ColorUtils.toHex(_selectedColor),
           isBookableOnline: _isBookableOnline,
           locationIds: _selectedLocationIds.toList(),
           serviceIds: _selectedServiceIds.toList(),

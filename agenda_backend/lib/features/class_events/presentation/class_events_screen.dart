@@ -1,4 +1,5 @@
 import 'package:agenda_backend/core/widgets/app_dividers.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,7 +44,6 @@ import '/features/clients/providers/clients_providers.dart';
 import '/features/staff/providers/availability_exceptions_provider.dart';
 import '/features/staff/providers/staff_planning_provider.dart';
 import '/features/staff/providers/staff_providers.dart';
-import '/features/auth/providers/auth_provider.dart';
 import '../../../core/models/recurrence_rule.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../auth/providers/current_business_user_provider.dart';
@@ -54,7 +54,7 @@ String _resolveClassTypeErrorMessage(Object error, BuildContext context) {
   final l10n = context.l10n;
   if (error is ApiException) {
     if (error.statusCode == 403) {
-      return l10n.classTypesCreateSuperadminOnlyMessage;
+      return l10n.apiErrorForbidden;
     }
     if (error.code == 'class_type_in_use') {
       return l10n.classTypesDeleteInUseErrorMessage;
@@ -62,17 +62,6 @@ String _resolveClassTypeErrorMessage(Object error, BuildContext context) {
     return error.message;
   }
   return l10n.classTypesMutationErrorMessage;
-}
-
-Future<void> _showClassTypesCreateSuperadminOnlyFeedback(
-  BuildContext context,
-) async {
-  final l10n = context.l10n;
-  await FeedbackDialog.showError(
-    context,
-    title: l10n.errorTitle,
-    message: l10n.classTypesCreateSuperadminOnlyMessage,
-  );
 }
 
 Color? _tryParseHexColor(String? hex) {
@@ -122,9 +111,13 @@ Future<void> showCreateClassTypeDialog(
   ClassType? initial,
   int? preselectedCategoryId,
 }) async {
-  final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
-  if (initial == null && !isSuperadmin) {
-    await _showClassTypesCreateSuperadminOnlyFeedback(context);
+  final canManageServices = ref.read(currentUserCanManageServicesProvider);
+  if (!canManageServices) {
+    await FeedbackDialog.showError(
+      context,
+      title: context.l10n.errorTitle,
+      message: context.l10n.apiErrorForbidden,
+    );
     return;
   }
   await AppForm.show<void>(
@@ -136,18 +129,20 @@ Future<void> showCreateClassTypeDialog(
   );
 }
 
-Future<void> showCreateClassEventDialog(
+Future<bool> showCreateClassEventDialog(
   BuildContext context,
   WidgetRef ref, {
   int? initialClassTypeId,
   ClassEvent? initialEvent,
   ClassEvent? prefillEvent,
   bool useRootNavigator = true,
+  bool closeParentOnSave = false,
 }) async {
   final currentLocation = ref.read(currentLocationProvider);
   final initialDate = ref.read(agendaDateProvider);
 
-  await AppForm.show<void>(
+  final saved =
+      await AppForm.show<bool>(
     context: context,
     useRootNavigator: useRootNavigator,
     builder: (_) => _CreateClassForm(
@@ -157,7 +152,14 @@ Future<void> showCreateClassEventDialog(
       initialEvent: initialEvent,
       prefillEvent: prefillEvent,
     ),
-  );
+  ) ==
+  true;
+
+  if (saved && closeParentOnSave && context.mounted) {
+    Navigator.of(context).pop();
+  }
+
+  return saved;
 }
 
 class _ClassTypeFormDialog extends ConsumerStatefulWidget {
@@ -204,6 +206,40 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     super.dispose();
   }
 
+  Future<void> _pickClassTypeColor(String fallbackColorHex) async {
+    final initialColor =
+        _tryParseHexColor(_selectedColorHex) ?? ColorUtils.fromHex(fallbackColorHex);
+    var tempColor = initialColor;
+    final selected = await showDialog<Color>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          content: SingleChildScrollView(
+            child: ColorPicker(
+              pickerColor: tempColor,
+              onColorChanged: (color) => tempColor = color,
+              enableAlpha: false,
+              displayThumbColor: true,
+              pickerAreaHeightPercent: 0.72,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text(context.l10n.actionCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(tempColor),
+              child: Text(context.l10n.actionConfirm),
+            ),
+          ],
+        );
+      },
+    );
+    if (!mounted || selected == null) return;
+    setState(() => _selectedColorHex = ColorUtils.toHex(selected));
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
@@ -228,6 +264,13 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     final classTypePalette = serviceColorPaletteForSetting(
       businessPaletteSetting,
     );
+    final fallbackColorHex = classTypePalette.isNotEmpty
+        ? ColorUtils.toHex(classTypePalette.first)
+        : '#CCCCCC';
+    final selectedColorHexForUi =
+        _selectedColorHex?.trim().isNotEmpty == true
+        ? _selectedColorHex!
+        : fallbackColorHex;
     final locationNameById = {
       for (final location in locations) location.id: location.name,
     };
@@ -342,10 +385,11 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
           ),
           const SizedBox(height: 16),
           _ClassTypeColorPicker(
-            selectedColorHex: _selectedColorHex,
+            selectedColorHex: selectedColorHexForUi,
             palette: classTypePalette,
             enabled: !isBusy,
             onChanged: (hex) => setState(() => _selectedColorHex = hex),
+            onPickCustom: () => _pickClassTypeColor(fallbackColorHex),
           ),
           if (shouldShowLocationsSelector) ...[
             const SizedBox(height: 16),
@@ -536,6 +580,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                                                         ref,
                                                         initialEvent: schedule,
                                                         useRootNavigator: false,
+                                                        closeParentOnSave: true,
                                                       ),
                                           ),
                                         IconButton(
@@ -569,6 +614,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                                             ref,
                                             initialEvent: schedule,
                                             useRootNavigator: false,
+                                            closeParentOnSave: true,
                                           )
                                         : null,
                                   );
@@ -613,6 +659,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                       ref,
                       initialClassTypeId: classTypeId,
                       useRootNavigator: false,
+                      closeParentOnSave: true,
                     );
                     if (!mounted) return;
                     setState(() => _showExpiredSchedules = true);
@@ -645,6 +692,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
       initialClassTypeId: widget.initial!.id,
       prefillEvent: schedule,
       useRootNavigator: false,
+      closeParentOnSave: true,
     );
   }
 
@@ -738,6 +786,19 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
         hasSingleVisibleLocation && singleVisibleLocationId != null
         ? <int>[singleVisibleLocationId]
         : effectiveSelectedLocationIds.toList();
+    final businessPaletteSetting = ref
+        .read(currentBusinessProvider)
+        .serviceColorPalette;
+    final classTypePalette = serviceColorPaletteForSetting(
+      businessPaletteSetting,
+    );
+    final fallbackColorHex = classTypePalette.isNotEmpty
+        ? ColorUtils.toHex(classTypePalette.first)
+        : '#CCCCCC';
+    final colorHexForSubmit =
+        _selectedColorHex?.trim().isNotEmpty == true
+        ? _selectedColorHex
+        : fallbackColorHex;
 
     if (!_formKey.currentState!.validate()) return;
     if (locationIdsForSubmit.isEmpty) {
@@ -756,7 +817,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
               classTypeId: widget.initial!.id,
               name: _nameController.text,
               description: _descriptionController.text,
-              colorHex: _selectedColorHex,
+              colorHex: colorHexForSubmit,
               serviceCategoryId: _selectedServiceCategoryId,
               locationIds: locationIdsForSubmit,
             );
@@ -766,7 +827,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
             .create(
               name: _nameController.text,
               description: _descriptionController.text,
-              colorHex: _selectedColorHex,
+              colorHex: colorHexForSubmit,
               serviceCategoryId: _selectedServiceCategoryId,
               locationIds: locationIdsForSubmit,
             );
@@ -889,22 +950,23 @@ class _ClassTypeColorPicker extends StatelessWidget {
     required this.palette,
     required this.enabled,
     required this.onChanged,
+    required this.onPickCustom,
   });
 
-  final String? selectedColorHex;
+  final String selectedColorHex;
   final List<Color> palette;
   final bool enabled;
-  final ValueChanged<String?> onChanged;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onPickCustom;
 
   @override
   Widget build(BuildContext context) {
-    final selectedHex = selectedColorHex?.trim().toUpperCase();
+    final selectedHex = selectedColorHex.trim().toUpperCase();
     final selectedColor = _tryParseHexColor(selectedHex);
     final paletteHexes = {
       for (final color in palette) ColorUtils.toHex(color).toUpperCase(),
     };
     final showCustomSelected =
-        selectedHex != null &&
         selectedHex.isNotEmpty &&
         selectedColor != null &&
         !paletteHexes.contains(selectedHex);
@@ -921,12 +983,6 @@ class _ClassTypeColorPicker extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            _ClassTypeColorDot(
-              color: null,
-              selected: selectedHex == null || selectedHex.isEmpty,
-              enabled: enabled,
-              onTap: () => onChanged(null),
-            ),
             for (final color in palette)
               _ClassTypeColorDot(
                 color: color,
@@ -943,6 +999,12 @@ class _ClassTypeColorPicker extends StatelessWidget {
               ),
           ],
         ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: enabled ? onPickCustom : null,
+          icon: const Icon(Icons.palette_outlined),
+          label: Text(context.l10n.actionEdit),
+        ),
       ],
     );
   }
@@ -956,7 +1018,7 @@ class _ClassTypeColorDot extends StatelessWidget {
     required this.onTap,
   });
 
-  final Color? color;
+  final Color color;
   final bool selected;
   final bool enabled;
   final VoidCallback onTap;
@@ -977,12 +1039,9 @@ class _ClassTypeColorDot extends StatelessWidget {
           height: 28,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: color ?? Colors.transparent,
+            color: color,
             border: Border.all(color: borderColor, width: selected ? 2 : 1),
           ),
-          child: color == null
-              ? Icon(Icons.block, size: 14, color: scheme.onSurfaceVariant)
-              : null,
         ),
       ),
     );
@@ -1614,7 +1673,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   Future<void> _handleClose() async {
     final shouldProceed = await _confirmDiscardChangesIfNeeded();
     if (!shouldProceed || !mounted) return;
-    Navigator.of(context).pop();
+    Navigator.of(context).pop(false);
   }
 
   Future<bool> _confirmDiscardChangesIfNeeded() async {
@@ -1761,7 +1820,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                   style: theme.textTheme.titleSmall,
                 ),
               ),
-              AppFilledButton(
+              AppOutlinedActionButton(
                 onPressed: isActionLoading
                     ? null
                     : () => _addClassBooking(
@@ -1820,7 +1879,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
               isActionLoading: isActionLoading,
               showWaitlistActions: true,
               headerAction: _waitlistEnabled
-                  ? AppFilledButton(
+                  ? AppOutlinedActionButton(
                       onPressed: isActionLoading
                           ? null
                           : () => _addClassBooking(
@@ -1898,6 +1957,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
               dense: true,
               visualDensity: VisualDensity.compact,
               contentPadding: EdgeInsets.zero,
+              onTap: isActionLoading
+                  ? null
+                  : () => _openParticipantClientEdit(participant.customerId),
               leading: ClientCircleAvatar(
                 height: 28,
                 clientColorHex: client?.colorHex,
@@ -1998,6 +2060,40 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         ),
       );
       _stagedParticipants = staged;
+    });
+  }
+
+  Future<void> _openParticipantClientEdit(int customerId) async {
+    final client = ref.read(clientsByIdProvider)[customerId];
+    if (client == null) {
+      if (!mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.errorTitle,
+        message: context.l10n.classEventsParticipantsLoadError,
+      );
+      return;
+    }
+
+    final updatedClient = await showClientEditDialog(
+      context,
+      ref,
+      client: client,
+    );
+    if (updatedClient == null || !mounted) return;
+
+    setState(() {
+      _stagedParticipants = (_stagedParticipants ?? const <_StagedParticipant>[])
+          .map(
+            (p) => p.customerId == updatedClient.id
+                ? _StagedParticipant(
+                    customerId: p.customerId,
+                    displayName: updatedClient.name,
+                    status: p.status,
+                  )
+                : p,
+          )
+          .toList();
     });
   }
 
@@ -2604,7 +2700,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           );
         }
         if (!mounted) return;
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
         return;
       } else if (_recurrenceConfig == null) {
         await ref
@@ -2624,7 +2720,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         ref.invalidate(allClassEventsByTypeProvider(_classTypeId!));
         ref.invalidate(upcomingClassEventsCountByTypeProvider(_classTypeId!));
         if (!mounted) return;
-        Navigator.of(context).pop();
+        Navigator.of(context).pop(true);
         return;
       } else {
         final businessId = ref.read(currentBusinessIdProvider);
@@ -2759,7 +2855,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         }
       }
       if (!mounted) return;
-      Navigator.of(context).pop();
+      Navigator.of(context).pop(true);
     } catch (error) {
       if (!mounted) return;
       final message = error is ApiException

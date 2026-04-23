@@ -1658,6 +1658,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "labelStaff": MessageLookupByLibrary.simpleMessage("Team:"),
     "lastVisitLabel": m37,
     "minutesLabel": MessageLookupByLibrary.simpleMessage("min"),
+    "moreAppointmentTypesDescription": MessageLookupByLibrary.simpleMessage(
+      "Gestisci servizi, lezioni, categorie e listini",
+    ),
+    "moreAppointmentTypesTitle": MessageLookupByLibrary.simpleMessage(
+      "Tipi di appuntamenti",
+    ),
     "moreBookingNotificationsDescription": MessageLookupByLibrary.simpleMessage(
       "Visualizza lo storico delle notifiche prenotazioni",
     ),

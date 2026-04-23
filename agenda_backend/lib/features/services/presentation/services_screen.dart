@@ -14,7 +14,6 @@ import '../../../core/utils/color_utils.dart';
 import '../../../core/utils/price_utils.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/feedback_dialog.dart';
-import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
@@ -1115,7 +1114,6 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     AppointmentTypeFilterOption filterOption,
   ) {
     final canManageServices = ref.watch(currentUserCanManageServicesProvider);
-    final isSuperadmin = ref.watch(authProvider).user?.isSuperadmin ?? false;
     final servicesNotifier = ref.read(servicesProvider.notifier);
     if (cats.isEmpty) {
       return Center(
@@ -1214,7 +1212,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       onClassTypeSchedule: (classType) =>
           _openClassEventDialog(context, ref, classType: classType),
       readOnly: !canManageServices,
-      showClassTypeAddOption: isSuperadmin,
+      showClassTypeAddOption: canManageServices,
       filterOption: filterOption,
       emptyFilterStateMessage: context.l10n.noServicesFound,
     );
@@ -1254,15 +1252,8 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     ClassType source,
   ) async {
     final l10n = context.l10n;
-    final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
-    if (!isSuperadmin) {
-      await FeedbackDialog.showError(
-        context,
-        title: l10n.errorTitle,
-        message: l10n.classTypesCreateSuperadminOnlyMessage,
-      );
-      return;
-    }
+    final canManageServices = ref.read(currentUserCanManageServicesProvider);
+    if (!canManageServices) return;
     try {
       final allTypes = await ref.read(classTypesProvider.future);
       final existingNames = allTypes

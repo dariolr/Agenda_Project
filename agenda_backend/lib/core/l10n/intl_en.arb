@@ -1367,6 +1367,8 @@
   "bookingsListLoading": "Loading...",
   "bookingsListNoClient": "No client",
   "moreServicesDescription": "Manage services, categories and pricing",
+  "moreAppointmentTypesTitle": "Appointment types",
+  "moreAppointmentTypesDescription": "Manage services, classes, categories and pricing",
   "moreLocationsDescription": "Manage business locations",
   "moreTeamDescription": "Manage operators, locations and working hours",
   "moreReportsDescription": "View statistics and business performance",
