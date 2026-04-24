@@ -1625,7 +1625,14 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
     final effectiveBlocks = <TimeBlock>[];
     for (final block in blocks) {
-      final previewEnd = ref.watch(blockResizingEndTimeProvider(block.id));
+      final resizeSessionKey = blockResizeSessionKey(
+        blockId: block.id,
+        staffId: widget.staff.id,
+        day: agendaDate,
+      );
+      final previewEnd = ref.watch(
+        blockResizingEndTimeProvider(resizeSessionKey),
+      );
       effectiveBlocks.add(
         previewEnd == null ? block : block.copyWith(endTime: previewEnd),
       );
@@ -1709,6 +1716,12 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             block: effectiveBlock,
             height: visualHeight,
             width: effectiveWidth,
+            resizeSessionKey: blockResizeSessionKey(
+              blockId: block.id,
+              staffId: widget.staff.id,
+              day: agendaDate,
+            ),
+            staffId: widget.staff.id,
           ),
         ),
       );

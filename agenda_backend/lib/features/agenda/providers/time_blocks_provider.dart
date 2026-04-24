@@ -192,6 +192,70 @@ class TimeBlocksNotifier extends AsyncNotifier<List<TimeBlock>> {
   }) async {
     await updateBlock(blockId: blockId, staffIds: staffIds);
   }
+
+  /// Splits a shared block while resizing only one staff card.
+  ///
+  /// Creates a dedicated block for [staffId] with [newEndTime], then removes
+  /// that staff from the original shared block. Local state is committed once
+  /// at the end to avoid transient duplicate cards in UI.
+  Future<void> splitBlockForSingleStaffResize({
+    required TimeBlock originalBlock,
+    required int staffId,
+    required DateTime newEndTime,
+  }) async {
+    final apiClient = ref.read(apiClientProvider);
+    final location = ref.read(currentLocationProvider);
+    final remainingStaffIds = originalBlock.staffIds
+        .where((id) => id != staffId)
+        .toList();
+
+    if (remainingStaffIds.isEmpty) {
+      await updateBlock(blockId: originalBlock.id, endTime: newEndTime);
+      return;
+    }
+
+    final createResponse = await apiClient.createTimeBlock(
+      locationId: location.id,
+      startTime: _formatDateTime(originalBlock.startTime),
+      endTime: _formatDateTime(newEndTime),
+      staffIds: [staffId],
+      isAllDay: originalBlock.isAllDay,
+      allowOnlineBookingDuringBlock:
+          originalBlock.allowOnlineBookingDuringBlock,
+      reason: originalBlock.reason,
+    );
+
+    final created = createResponse.containsKey('time_block')
+        ? TimeBlock.fromJson(
+            Map<String, dynamic>.from(createResponse['time_block'] as Map),
+          )
+        : TimeBlock.fromJson(
+            Map<String, dynamic>.from(
+              (createResponse['time_blocks'] as List).first as Map,
+            ),
+          );
+
+    final updateResponse = await apiClient.updateTimeBlock(
+      blockId: originalBlock.id,
+      staffIds: remainingStaffIds,
+      scope: 'this',
+    );
+    final updatedOriginal = TimeBlock.fromJson(
+      Map<String, dynamic>.from(updateResponse['time_block'] as Map),
+    );
+
+    final current = state.value ?? [];
+    final nextById = <int, TimeBlock>{};
+    for (final block in current) {
+      if (block.id == updatedOriginal.id) {
+        nextById[block.id] = updatedOriginal;
+      } else {
+        nextById[block.id] = block;
+      }
+    }
+    nextById[created.id] = created;
+    state = AsyncData(nextById.values.toList());
+  }
 }
 
 final timeBlocksProvider =

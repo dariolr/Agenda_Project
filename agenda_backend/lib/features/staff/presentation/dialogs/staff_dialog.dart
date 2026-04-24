@@ -342,10 +342,14 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
     final hasCustomSelectedColor = !_palette.any(
       (c) => c.value == _selectedColor.value,
     );
+    final displayPalette = <Color>[
+      if (hasCustomSelectedColor) _selectedColor,
+      ..._palette,
+    ];
     if (!_didAutoScrollColor) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!_colorScrollController.hasClients) return;
-        final index = _palette.indexWhere(
+        final index = displayPalette.indexWhere(
           (c) => c.value == _selectedColor.value,
         );
         if (index < 0) return;
@@ -462,15 +466,6 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
             height: 44,
             child: Row(
               children: [
-                if (hasCustomSelectedColor) ...[
-                  StaffCircleAvatar(
-                    height: 36,
-                    color: _selectedColor,
-                    isHighlighted: true,
-                    initials: _buildInitials(),
-                  ),
-                  const SizedBox(width: 10),
-                ],
                 Expanded(
                   child: ShaderMask(
                     shaderCallback: (rect) {
@@ -499,10 +494,10 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                         padding: const EdgeInsets.symmetric(horizontal: 4),
                         scrollDirection: Axis.horizontal,
                         physics: const BouncingScrollPhysics(),
-                        itemCount: _palette.length,
+                        itemCount: displayPalette.length,
                         separatorBuilder: (_, __) => const SizedBox(width: 10),
                         itemBuilder: (context, index) {
-                          final color = _palette[index];
+                          final color = displayPalette[index];
                           final initials = _buildInitials();
                           return GestureDetector(
                             onTap: isReadOnly
@@ -579,12 +574,11 @@ class _StaffDialogState extends ConsumerState<_StaffDialog> {
                         ),
                         child: Text(
                           '${_selectedLocationIds.length}/$totalLocationsCount',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.labelSmall?.copyWith(
-                            color: Theme.of(context).colorScheme.primary,
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: Theme.of(context).textTheme.labelSmall
+                              ?.copyWith(
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                       ),
                   ],

@@ -34,14 +34,14 @@ class _BlockResizingEntry {
 }
 
 class BlockResizingState {
-  final Map<int, _BlockResizingEntry> entries;
+  final Map<String, _BlockResizingEntry> entries;
   final bool isResizing;
 
   const BlockResizingState({this.entries = const {}, this.isResizing = false});
   const BlockResizingState.initial() : entries = const {}, isResizing = false;
 
   BlockResizingState copyWith({
-    Map<int, _BlockResizingEntry>? entries,
+    Map<String, _BlockResizingEntry>? entries,
     bool? isResizing,
   }) {
     return BlockResizingState(
@@ -56,7 +56,7 @@ class BlockResizingNotifier extends Notifier<BlockResizingState> {
   BlockResizingState build() => const BlockResizingState.initial();
 
   void startResize({
-    required int blockId,
+    required String resizeSessionKey,
     required double currentHeightPx,
     required DateTime startTime,
     required DateTime endTime,
@@ -68,26 +68,27 @@ class BlockResizingNotifier extends Notifier<BlockResizingState> {
       currentPreviewHeightPx: currentHeightPx,
       provisionalEndTime: endTime,
     );
-    final updated = Map<int, _BlockResizingEntry>.from(state.entries);
-    updated[blockId] = newEntry;
+    final updated = Map<String, _BlockResizingEntry>.from(state.entries);
+    updated[resizeSessionKey] = newEntry;
     state = state.copyWith(entries: updated, isResizing: true);
   }
 
   void updateDuringResize({
-    required int blockId,
+    required String resizeSessionKey,
     required double deltaDy,
     required double pixelsPerMinute,
     required DateTime dayEnd,
     required int minDurationMinutes,
     required int snapMinutes,
   }) {
-    final entry = state.entries[blockId];
+    final entry = state.entries[resizeSessionKey];
     if (entry == null) return;
 
     double proposedHeightPx = entry.currentPreviewHeightPx + deltaDy;
     final minHeightPx = minDurationMinutes * pixelsPerMinute;
-    final rawMaxDurationMinutes =
-        dayEnd.difference(entry.startTimeInitial).inMinutes;
+    final rawMaxDurationMinutes = dayEnd
+        .difference(entry.startTimeInitial)
+        .inMinutes;
     final effectiveMaxDurationMinutes = rawMaxDurationMinutes <= 0
         ? minDurationMinutes
         : rawMaxDurationMinutes < minDurationMinutes
@@ -95,15 +96,15 @@ class BlockResizingNotifier extends Notifier<BlockResizingState> {
         : rawMaxDurationMinutes;
     final maxHeightPx = effectiveMaxDurationMinutes * pixelsPerMinute;
 
-    proposedHeightPx = proposedHeightPx.clamp(minHeightPx, maxHeightPx).toDouble();
+    proposedHeightPx = proposedHeightPx
+        .clamp(minHeightPx, maxHeightPx)
+        .toDouble();
     final proposedDurationMinutes = proposedHeightPx / pixelsPerMinute;
-    final snappedMinutes = _snapToStep(
-      proposedDurationMinutes,
-      snapMinutes,
-    ).clamp(
-      minDurationMinutes.toDouble(),
-      effectiveMaxDurationMinutes.toDouble(),
-    );
+    final snappedMinutes = _snapToStep(proposedDurationMinutes, snapMinutes)
+        .clamp(
+          minDurationMinutes.toDouble(),
+          effectiveMaxDurationMinutes.toDouble(),
+        );
 
     DateTime candidateEnd = entry.startTimeInitial.add(
       Duration(minutes: snappedMinutes.round()),
@@ -116,30 +117,30 @@ class BlockResizingNotifier extends Notifier<BlockResizingState> {
       currentPreviewHeightPx: proposedHeightPx,
       provisionalEndTime: candidateEnd,
     );
-    final updated = Map<int, _BlockResizingEntry>.from(state.entries);
-    updated[blockId] = updatedEntry;
+    final updated = Map<String, _BlockResizingEntry>.from(state.entries);
+    updated[resizeSessionKey] = updatedEntry;
     state = state.copyWith(entries: updated, isResizing: true);
   }
 
-  DateTime? commitResizeAndEnd({required int blockId}) {
-    final entry = state.entries[blockId];
+  DateTime? commitResizeAndEnd({required String resizeSessionKey}) {
+    final entry = state.entries[resizeSessionKey];
     final finalEnd = entry?.provisionalEndTime;
     if (entry == null) return null;
 
-    final updated = Map<int, _BlockResizingEntry>.from(state.entries);
-    updated.remove(blockId);
+    final updated = Map<String, _BlockResizingEntry>.from(state.entries);
+    updated.remove(resizeSessionKey);
     state = state.copyWith(entries: updated, isResizing: updated.isNotEmpty);
     return finalEnd;
   }
 
-  void cancelResize({required int blockId}) {
-    final updated = Map<int, _BlockResizingEntry>.from(state.entries);
-    updated.remove(blockId);
+  void cancelResize({required String resizeSessionKey}) {
+    final updated = Map<String, _BlockResizingEntry>.from(state.entries);
+    updated.remove(resizeSessionKey);
     state = state.copyWith(entries: updated, isResizing: updated.isNotEmpty);
   }
 
-  DateTime? previewEndTimeFor(int blockId) =>
-      state.entries[blockId]?.provisionalEndTime;
+  DateTime? previewEndTimeFor(String resizeSessionKey) =>
+      state.entries[resizeSessionKey]?.provisionalEndTime;
 
   double _snapToStep(double minutes, int step) {
     if (step <= 1) return minutes;
@@ -154,6 +155,18 @@ final blockResizingProvider =
       BlockResizingNotifier.new,
     );
 
-final blockResizingEndTimeProvider = Provider.family<DateTime?, int>(
-  (ref, blockId) => ref.watch(blockResizingProvider).entries[blockId]?.provisionalEndTime,
+String blockResizeSessionKey({
+  required int blockId,
+  required int staffId,
+  required DateTime day,
+}) {
+  final dateOnly = DateTime(day.year, day.month, day.day);
+  return '$blockId::$staffId::${dateOnly.toIso8601String()}';
+}
+
+final blockResizingEndTimeProvider = Provider.family<DateTime?, String>(
+  (ref, resizeSessionKey) => ref
+      .watch(blockResizingProvider)
+      .entries[resizeSessionKey]
+      ?.provisionalEndTime,
 );

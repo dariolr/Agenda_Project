@@ -143,17 +143,17 @@ Future<bool> showCreateClassEventDialog(
 
   final saved =
       await AppForm.show<bool>(
-    context: context,
-    useRootNavigator: useRootNavigator,
-    builder: (_) => _CreateClassForm(
-      initialClassTypeId: initialClassTypeId,
-      initialLocationId: currentLocation.id,
-      initialDate: initialDate,
-      initialEvent: initialEvent,
-      prefillEvent: prefillEvent,
-    ),
-  ) ==
-  true;
+        context: context,
+        useRootNavigator: useRootNavigator,
+        builder: (_) => _CreateClassForm(
+          initialClassTypeId: initialClassTypeId,
+          initialLocationId: currentLocation.id,
+          initialDate: initialDate,
+          initialEvent: initialEvent,
+          prefillEvent: prefillEvent,
+        ),
+      ) ==
+      true;
 
   if (saved && closeParentOnSave && context.mounted) {
     Navigator.of(context).pop();
@@ -208,7 +208,8 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
 
   Future<void> _pickClassTypeColor(String fallbackColorHex) async {
     final initialColor =
-        _tryParseHexColor(_selectedColorHex) ?? ColorUtils.fromHex(fallbackColorHex);
+        _tryParseHexColor(_selectedColorHex) ??
+        ColorUtils.fromHex(fallbackColorHex);
     var tempColor = initialColor;
     final selected = await showDialog<Color>(
       context: context,
@@ -267,8 +268,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     final fallbackColorHex = classTypePalette.isNotEmpty
         ? ColorUtils.toHex(classTypePalette.first)
         : '#CCCCCC';
-    final selectedColorHexForUi =
-        _selectedColorHex?.trim().isNotEmpty == true
+    final selectedColorHexForUi = _selectedColorHex?.trim().isNotEmpty == true
         ? _selectedColorHex!
         : fallbackColorHex;
     final locationNameById = {
@@ -795,8 +795,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     final fallbackColorHex = classTypePalette.isNotEmpty
         ? ColorUtils.toHex(classTypePalette.first)
         : '#CCCCCC';
-    final colorHexForSubmit =
-        _selectedColorHex?.trim().isNotEmpty == true
+    final colorHexForSubmit = _selectedColorHex?.trim().isNotEmpty == true
         ? _selectedColorHex
         : fallbackColorHex;
 
@@ -970,6 +969,11 @@ class _ClassTypeColorPicker extends StatelessWidget {
         selectedHex.isNotEmpty &&
         selectedColor != null &&
         !paletteHexes.contains(selectedHex);
+    final customSelectedColor = showCustomSelected ? selectedColor : null;
+    final displayPalette = <Color>[
+      if (customSelectedColor != null) customSelectedColor,
+      ...palette,
+    ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -983,19 +987,12 @@ class _ClassTypeColorPicker extends StatelessWidget {
           spacing: 8,
           runSpacing: 8,
           children: [
-            for (final color in palette)
+            for (final color in displayPalette)
               _ClassTypeColorDot(
                 color: color,
                 selected: selectedHex == ColorUtils.toHex(color).toUpperCase(),
                 enabled: enabled,
                 onTap: () => onChanged(ColorUtils.toHex(color)),
-              ),
-            if (showCustomSelected)
-              _ClassTypeColorDot(
-                color: selectedColor,
-                selected: true,
-                enabled: enabled,
-                onTap: () => onChanged(selectedHex),
               ),
           ],
         ),
@@ -2116,17 +2113,18 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     if (updatedClient == null || !mounted) return;
 
     setState(() {
-      _stagedParticipants = (_stagedParticipants ?? const <_StagedParticipant>[])
-          .map(
-            (p) => p.customerId == updatedClient.id
-                ? _StagedParticipant(
-                    customerId: p.customerId,
-                    displayName: updatedClient.name,
-                    status: p.status,
-                  )
-                : p,
-          )
-          .toList();
+      _stagedParticipants =
+          (_stagedParticipants ?? const <_StagedParticipant>[])
+              .map(
+                (p) => p.customerId == updatedClient.id
+                    ? _StagedParticipant(
+                        customerId: p.customerId,
+                        displayName: updatedClient.name,
+                        status: p.status,
+                      )
+                    : p,
+              )
+              .toList();
     });
   }
 

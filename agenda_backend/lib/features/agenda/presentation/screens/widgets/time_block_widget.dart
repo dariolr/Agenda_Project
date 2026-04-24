@@ -13,18 +13,23 @@ import '../../../providers/is_resizing_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../../../providers/time_blocks_provider.dart';
 import '../../dialogs/add_block_dialog.dart';
+import '../../widgets/booking_dialog.dart';
 
 /// Widget per visualizzare un blocco di non disponibilità nell'agenda.
 class TimeBlockWidget extends ConsumerStatefulWidget {
   final TimeBlock block;
   final double height;
   final double width;
+  final String resizeSessionKey;
+  final int staffId;
 
   const TimeBlockWidget({
     super.key,
     required this.block,
     required this.height,
     required this.width,
+    required this.resizeSessionKey,
+    required this.staffId,
   });
 
   @override
@@ -70,7 +75,7 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
     ref
         .read(blockResizingProvider.notifier)
         .startResize(
-          blockId: widget.block.id,
+          resizeSessionKey: widget.resizeSessionKey,
           currentHeightPx: currentHeightPx,
           startTime: widget.block.startTime,
           endTime: widget.block.endTime,
@@ -94,7 +99,7 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
     ref
         .read(blockResizingProvider.notifier)
         .updateDuringResize(
-          blockId: widget.block.id,
+          resizeSessionKey: widget.resizeSessionKey,
           deltaDy: deltaY,
           pixelsPerMinute: ref.read(layoutConfigProvider).pixelsPerMinute,
           dayEnd: dayEnd,
@@ -106,7 +111,7 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
   Future<void> _performResizeEnd() async {
     final newEnd = ref
         .read(blockResizingProvider.notifier)
-        .previewEndTimeFor(widget.block.id);
+        .previewEndTimeFor(widget.resizeSessionKey);
     final minEnd = widget.block.startTime.add(const Duration(minutes: 5));
     final effectiveEnd = newEnd != null && newEnd.isAfter(minEnd)
         ? newEnd
@@ -114,16 +119,28 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
 
     try {
       if (newEnd != null) {
-        await ref
-            .read(timeBlocksProvider.notifier)
-            .updateBlock(blockId: widget.block.id, endTime: effectiveEnd);
+        final notifier = ref.read(timeBlocksProvider.notifier);
+        final isSharedAcrossStaff = widget.block.staffIds.length > 1;
+
+        if (!isSharedAcrossStaff) {
+          await notifier.updateBlock(
+            blockId: widget.block.id,
+            endTime: effectiveEnd,
+          );
+        } else {
+          await notifier.splitBlockForSingleStaffResize(
+            originalBlock: widget.block,
+            staffId: widget.staffId,
+            newEndTime: effectiveEnd,
+          );
+        }
       }
     } finally {
       // Rimuovi la preview solo dopo il commit, per evitare il flash
       // alla dimensione originale tra mouse-up e risposta API.
       ref
           .read(blockResizingProvider.notifier)
-          .cancelResize(blockId: widget.block.id);
+          .cancelResize(resizeSessionKey: widget.resizeSessionKey);
       if (mounted) {
         setState(() {
           _isResizing = false;
@@ -144,7 +161,7 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
   void _performResizeCancel() {
     ref
         .read(blockResizingProvider.notifier)
-        .cancelResize(blockId: widget.block.id);
+        .cancelResize(resizeSessionKey: widget.resizeSessionKey);
     ref.read(isResizingProvider.notifier).stop();
     if (mounted) {
       setState(() {
@@ -153,6 +170,29 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
       });
     }
     _lastPointerGlobalPosition = null;
+  }
+
+  DateTime _resolveSecondaryTapStartTime({
+    required TapDownDetails details,
+    required DateTime blockStart,
+    required DateTime blockEnd,
+  }) {
+    final durationMinutes = blockEnd.difference(blockStart).inMinutes;
+    if (durationMinutes <= 0) return blockStart;
+
+    final renderBox = context.findRenderObject() as RenderBox?;
+    final cardHeightPx = (renderBox?.size.height ?? widget.height)
+        .clamp(1.0, double.infinity)
+        .toDouble();
+    final localDy = details.localPosition.dy.clamp(0.0, cardHeightPx);
+    final tapRatio = localDy / cardHeightPx;
+    final rawOffsetMinutes = durationMinutes * tapRatio;
+    final slotMinutes = ref.read(layoutConfigProvider).minutesPerSlot;
+    final snappedOffsetMinutes =
+        ((rawOffsetMinutes / slotMinutes).round() * slotMinutes).toInt();
+    final candidate = blockStart.add(Duration(minutes: snappedOffsetMinutes));
+    if (candidate.isAfter(blockEnd)) return blockEnd;
+    return candidate;
   }
 
   @override
@@ -168,7 +208,7 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
         ? BorderRadius.circular(LayoutConfig.cardBorderRadiusNormal - 1)
         : BorderRadius.zero;
     final effectiveEnd =
-        ref.watch(blockResizingEndTimeProvider(widget.block.id)) ??
+        ref.watch(blockResizingEndTimeProvider(widget.resizeSessionKey)) ??
         widget.block.endTime;
     final effectiveBlock = widget.block.copyWith(endTime: effectiveEnd);
     final accentColor = widget.block.allowOnlineBookingDuringBlock
@@ -207,6 +247,23 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
       child: MouseRegion(
         cursor: canResize ? SystemMouseCursors.resizeUpDown : MouseCursor.defer,
         child: GestureDetector(
+          onSecondaryTapDown: (details) {
+            final secondaryTapTime = _resolveSecondaryTapStartTime(
+              details: details,
+              blockStart: widget.block.startTime,
+              blockEnd: effectiveBlock.endTime,
+            );
+            showBookingDialog(
+              context,
+              ref,
+              date: DateUtils.dateOnly(secondaryTapTime),
+              time: TimeOfDay(
+                hour: secondaryTapTime.hour,
+                minute: secondaryTapTime.minute,
+              ),
+              initialStaffId: widget.staffId,
+            );
+          },
           onTap: () {
             if (_suppressTapAfterResize) {
               _suppressTapAfterResize = false;
@@ -303,7 +360,8 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
                                 Expanded(
                                   child: Text(
                                     effectiveBlock.reason ??
-                                        (effectiveBlock.allowOnlineBookingDuringBlock
+                                        (effectiveBlock
+                                                .allowOnlineBookingDuringBlock
                                             ? context.l10n.blockPromemoriaLabel
                                             : 'Blocco'),
                                     style: TextStyle(
@@ -319,7 +377,8 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
                                   Padding(
                                     padding: const EdgeInsets.only(left: 2),
                                     child: Tooltip(
-                                      message: context.l10n.blockRecurringIndicator,
+                                      message:
+                                          context.l10n.blockRecurringIndicator,
                                       child: Icon(
                                         Icons.repeat,
                                         size: 12,

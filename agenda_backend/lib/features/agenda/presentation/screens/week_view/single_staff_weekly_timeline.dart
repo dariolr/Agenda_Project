@@ -1075,7 +1075,14 @@ class _SingleStaffWeekTimelineColumnState
     LayoutConfig layoutConfig,
     Map<int, EventGeometry> blockGeometry,
   ) {
-    final previewEnd = ref.watch(blockResizingEndTimeProvider(block.id));
+    final resizeSessionKey = blockResizeSessionKey(
+      blockId: block.id,
+      staffId: staffId,
+      day: day,
+    );
+    final previewEnd = ref.watch(
+      blockResizingEndTimeProvider(resizeSessionKey),
+    );
     final effectiveBlock = previewEnd == null
         ? block
         : block.copyWith(endTime: previewEnd);
@@ -1156,6 +1163,8 @@ class _SingleStaffWeekTimelineColumnState
           block: effectiveBlock,
           height: visualHeight,
           width: effectiveWidth,
+          resizeSessionKey: resizeSessionKey,
+          staffId: staffId,
         ),
       ),
     );

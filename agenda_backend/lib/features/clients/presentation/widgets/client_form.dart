@@ -291,7 +291,9 @@ class ClientFormState extends ConsumerState<ClientForm> {
               label: Text(l10n.formEmail),
             ),
             OutlinedButton.icon(
-              onPressed: canWhatsApp ? () => _openWhatsAppChat(phoneValue) : null,
+              onPressed: canWhatsApp
+                  ? () => _openWhatsAppChat(phoneValue)
+                  : null,
               icon: Builder(
                 builder: (context) {
                   final iconColor = IconTheme.of(context).color;
@@ -323,6 +325,10 @@ class ClientFormState extends ConsumerState<ClientForm> {
     final selectedCustomColor = showCustomSelectedColor
         ? ColorUtils.fromHex(selectedColorHex)
         : null;
+    final displayPalette = <Color>[
+      if (selectedCustomColor != null) selectedCustomColor,
+      ..._clientPalette,
+    ];
 
     final colorField = LabeledFormField(
       label: l10n.clientColorLabel,
@@ -341,20 +347,15 @@ class ClientFormState extends ConsumerState<ClientForm> {
                   widget.onChanged?.call();
                 },
               ),
-              for (final color in _clientPalette)
+              for (final color in displayPalette)
                 _ColorChoiceDot(
                   color: color,
-                  selected: selectedColorHex == ColorUtils.toHex(color).toUpperCase(),
+                  selected:
+                      selectedColorHex == ColorUtils.toHex(color).toUpperCase(),
                   onTap: () {
                     setState(() => _selectedColorHex = ColorUtils.toHex(color));
                     widget.onChanged?.call();
                   },
-                ),
-              if (selectedCustomColor != null)
-                _ColorChoiceDot(
-                  color: selectedCustomColor,
-                  selected: true,
-                  onTap: () {},
                 ),
             ],
           ),

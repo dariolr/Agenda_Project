@@ -1385,48 +1385,61 @@ Future<void> showServiceDialog(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Wrap(
-                  spacing: 10,
-                  runSpacing: 10,
-                  children: [
-                    for (final color in uniquePalette)
-                      GestureDetector(
-                        onTap: canEditDialog
-                            ? () => setState(() {
-                                selectedColor = color;
-                              })
-                            : null,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          width: 36,
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: selectedColor.value == color.value
-                                  ? Theme.of(context).colorScheme.onSurface
-                                  : Colors.black.withOpacity(0.08),
-                              width: selectedColor.value == color.value ? 2 : 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.08),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                Builder(
+                  builder: (context) {
+                    final displayPalette = <Color>[
+                      if (!uniquePalette.any(
+                        (c) => c.value == selectedColor.value,
+                      ))
+                        selectedColor,
+                      ...uniquePalette,
+                    ];
+                    return Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        for (final color in displayPalette)
+                          GestureDetector(
+                            onTap: canEditDialog
+                                ? () => setState(() {
+                                    selectedColor = color;
+                                  })
+                                : null,
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              width: 36,
+                              height: 36,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: selectedColor.value == color.value
+                                      ? Theme.of(context).colorScheme.onSurface
+                                      : Colors.black.withOpacity(0.08),
+                                  width: selectedColor.value == color.value
+                                      ? 2
+                                      : 1,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.08),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
                               ),
-                            ],
+                              child: selectedColor.value == color.value
+                                  ? Icon(
+                                      Icons.check,
+                                      color: _contrastFor(color),
+                                      size: 18,
+                                    )
+                                  : null,
+                            ),
                           ),
-                          child: selectedColor.value == color.value
-                              ? Icon(
-                                  Icons.check,
-                                  color: _contrastFor(color),
-                                  size: 18,
-                                )
-                              : null,
-                        ),
-                      ),
-                  ],
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
