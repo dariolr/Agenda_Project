@@ -14,6 +14,7 @@ class Service {
   final int? blockedTime; // tempo aggiuntivo bloccato (da API)
   final double? price; // da API
   final String? color; // da API
+  final bool isActive;
   final bool isBookableOnline; // prenotabile online
   final bool isPriceStartingFrom; // "a partire da" flag
   final int? serviceVariantId; // ID della variante per location (da API)
@@ -33,6 +34,7 @@ class Service {
     this.blockedTime,
     this.price,
     this.color,
+    this.isActive = true,
     this.isBookableOnline = true,
     this.isPriceStartingFrom = false,
     this.serviceVariantId,
@@ -52,6 +54,7 @@ class Service {
     int? blockedTime,
     double? price,
     String? color,
+    bool? isActive,
     bool? isBookableOnline,
     bool? isPriceStartingFrom,
     int? serviceVariantId,
@@ -69,6 +72,7 @@ class Service {
     blockedTime: blockedTime ?? this.blockedTime,
     price: price ?? this.price,
     color: color ?? this.color,
+    isActive: isActive ?? this.isActive,
     isBookableOnline: isBookableOnline ?? this.isBookableOnline,
     isPriceStartingFrom: isPriceStartingFrom ?? this.isPriceStartingFrom,
     serviceVariantId: serviceVariantId ?? this.serviceVariantId,
@@ -99,6 +103,9 @@ class Service {
       blockedTime: json['blocked_time'] as int?,
       price: (json['price'] as num?)?.toDouble(),
       color: json['color'] as String?,
+      isActive:
+          (json['is_active'] as bool?) ??
+          ((json['is_active'] as num?)?.toInt() == 1),
       isBookableOnline: json['is_bookable_online'] as bool? ?? true,
       isPriceStartingFrom: json['is_price_starting_from'] as bool? ?? false,
       serviceVariantId: json['service_variant_id'] as int?,
@@ -117,6 +124,7 @@ class Service {
     if (durationMinutes != null) 'duration_minutes': durationMinutes,
     if (price != null) 'price': price,
     if (color != null) 'color': color,
+    'is_active': isActive,
     'is_bookable_online': isBookableOnline,
     'is_price_starting_from': isPriceStartingFrom,
     if (serviceVariantId != null) 'service_variant_id': serviceVariantId,

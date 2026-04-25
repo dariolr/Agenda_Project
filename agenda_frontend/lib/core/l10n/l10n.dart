@@ -2708,6 +2708,106 @@ class L10n {
     );
   }
 
+  /// `Services`
+  String get tabServices {
+    return Intl.message('Services', name: 'tabServices', desc: '', args: []);
+  }
+
+  /// `Events`
+  String get tabEvents {
+    return Intl.message('Events', name: 'tabEvents', desc: '', args: []);
+  }
+
+  /// `Services / events`
+  String get bookingStepServicesAndEvents {
+    return Intl.message(
+      'Services / events',
+      name: 'bookingStepServicesAndEvents',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Event not selectable`
+  String get tabConflictEventsTitle {
+    return Intl.message(
+      'Event not selectable',
+      name: 'tabConflictEventsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You've already selected one or more services. A booking can include either services or a group event, not both. Deselect the services to choose an event.`
+  String get tabConflictEventsSubtitle {
+    return Intl.message(
+      'You\'ve already selected one or more services. A booking can include either services or a group event, not both. Deselect the services to choose an event.',
+      name: 'tabConflictEventsSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Services not selectable`
+  String get tabConflictServicesTitle {
+    return Intl.message(
+      'Services not selectable',
+      name: 'tabConflictServicesTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You've already selected the event "{eventName}". A booking can include either services or a group event, not both. Deselect the event to choose services.`
+  String tabConflictServicesSubtitle(String eventName) {
+    return Intl.message(
+      'You\'ve already selected the event "$eventName". A booking can include either services or a group event, not both. Deselect the event to choose services.',
+      name: 'tabConflictServicesSubtitle',
+      desc: '',
+      args: [eventName],
+    );
+  }
+
+  /// `Choose a service or event`
+  String get servicesAndEventsTitle {
+    return Intl.message(
+      'Choose a service or event',
+      name: 'servicesAndEventsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select a service or join a group event`
+  String get servicesAndEventsSubtitle {
+    return Intl.message(
+      'Select a service or join a group event',
+      name: 'servicesAndEventsSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Choose an event`
+  String get eventsTitle {
+    return Intl.message(
+      'Choose an event',
+      name: 'eventsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select the event you want to attend`
+  String get eventsSubtitle {
+    return Intl.message(
+      'Select the event you want to attend',
+      name: 'eventsSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `CANCELLED`
   String get cancelledBadge {
     return Intl.message(
@@ -2723,6 +2823,36 @@ class L10n {
     return Intl.message(
       'Waitlist',
       name: 'classBookingWaitlistedBadge',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Already booked`
+  String get classEventAlreadyBooked {
+    return Intl.message(
+      'Already booked',
+      name: 'classEventAlreadyBooked',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Already on waitlist`
+  String get classEventAlreadyWaitlisted {
+    return Intl.message(
+      'Already on waitlist',
+      name: 'classEventAlreadyWaitlisted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manage booking`
+  String get classEventManageBooking {
+    return Intl.message(
+      'Manage booking',
+      name: 'classEventManageBooking',
       desc: '',
       args: [],
     );
@@ -2773,20 +2903,20 @@ class L10n {
     );
   }
 
-  /// `Class is full`
+  /// `Event is full`
   String get classEventWaitlistDialogTitle {
     return Intl.message(
-      'Class is full',
+      'Event is full',
       name: 'classEventWaitlistDialogTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `This class is full. Would you like to join the waitlist?`
+  /// `This event is full. Would you like to join the waitlist?`
   String get classEventWaitlistDialogMessage {
     return Intl.message(
-      'This class is full. Would you like to join the waitlist?',
+      'This event is full. Would you like to join the waitlist?',
       name: 'classEventWaitlistDialogMessage',
       desc: '',
       args: [],
@@ -2813,10 +2943,10 @@ class L10n {
     );
   }
 
-  /// `Group class`
+  /// `Group event`
   String get classEventGroupLesson {
     return Intl.message(
-      'Group class',
+      'Group event',
       name: 'classEventGroupLesson',
       desc: '',
       args: [],

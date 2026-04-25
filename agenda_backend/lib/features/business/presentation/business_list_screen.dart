@@ -14,6 +14,7 @@ import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../../auth/providers/current_business_user_provider.dart';
+import '../../billing/presentation/admin_business_billing_config_dialog.dart';
 import '../domain/business_sorting.dart';
 import '../providers/business_providers.dart';
 import '../providers/superadmin_selected_business_provider.dart';
@@ -65,6 +66,8 @@ class BusinessListScreen extends ConsumerWidget {
                       _showResendInviteDialog(context, ref, business),
                   onSuspend: (business) =>
                       _showSuspendDialog(context, ref, business),
+                  onBilling: (business) =>
+                      _showBillingDialog(context, ref, business),
                   onDelete: (business) =>
                       _showDeleteDialog(context, ref, business),
                 ),
@@ -314,6 +317,21 @@ class BusinessListScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _showBillingDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Business business,
+  ) async {
+    final updated = await showAdminBusinessBillingConfigDialog(
+      context,
+      businessId: business.id,
+      businessName: business.name,
+    );
+    if (updated == true) {
+      ref.read(businessesRefreshProvider.notifier).refresh();
+    }
+  }
+
   Future<void> _executeSuspend(
     BuildContext context,
     WidgetRef ref,
@@ -468,6 +486,7 @@ class _BusinessList extends StatelessWidget {
     required this.onEdit,
     required this.onResendInvite,
     required this.onSuspend,
+    required this.onBilling,
     required this.onDelete,
   });
 
@@ -476,6 +495,7 @@ class _BusinessList extends StatelessWidget {
   final void Function(Business) onEdit;
   final void Function(Business) onResendInvite;
   final void Function(Business) onSuspend;
+  final void Function(Business) onBilling;
   final void Function(Business) onDelete;
 
   @override
@@ -538,6 +558,7 @@ class _BusinessList extends StatelessWidget {
               onEdit: () => onEdit(business),
               onResendInvite: () => onResendInvite(business),
               onSuspend: () => onSuspend(business),
+              onBilling: () => onBilling(business),
               onDelete: () => onDelete(business),
             );
           },
@@ -554,6 +575,7 @@ class _BusinessCard extends StatelessWidget {
     required this.onEdit,
     required this.onResendInvite,
     required this.onSuspend,
+    required this.onBilling,
     required this.onDelete,
   });
 
@@ -562,6 +584,7 @@ class _BusinessCard extends StatelessWidget {
   final VoidCallback onEdit;
   final VoidCallback onResendInvite;
   final VoidCallback onSuspend;
+  final VoidCallback onBilling;
   final VoidCallback onDelete;
 
   @override
@@ -703,6 +726,8 @@ class _BusinessCard extends StatelessWidget {
                       onResendInvite();
                     case 'suspend':
                       onSuspend();
+                    case 'billing':
+                      onBilling();
                     case 'delete':
                       onDelete();
                   }
@@ -740,6 +765,16 @@ class _BusinessCard extends StatelessWidget {
                       title: Text(
                         business.isSuspended ? 'Riattiva' : 'Sospendi',
                       ),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: 'billing',
+                    child: ListTile(
+                      leading: const Icon(Icons.workspace_premium_outlined),
+                      title: Text(context.l10n.billingTitle),
                       contentPadding: EdgeInsets.zero,
                       dense: true,
                     ),

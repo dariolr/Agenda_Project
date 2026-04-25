@@ -133,13 +133,18 @@ Future<bool> showCreateClassEventDialog(
   BuildContext context,
   WidgetRef ref, {
   int? initialClassTypeId,
+  DateTime? initialDate,
+  TimeOfDay? initialStartTime,
+  TimeOfDay? initialEndTime,
+  int? initialStaffId,
   ClassEvent? initialEvent,
   ClassEvent? prefillEvent,
   bool useRootNavigator = true,
   bool closeParentOnSave = false,
 }) async {
   final currentLocation = ref.read(currentLocationProvider);
-  final initialDate = ref.read(agendaDateProvider);
+  final DateTime resolvedInitialDate =
+      initialDate ?? ref.read(agendaDateProvider);
 
   final saved =
       await AppForm.show<bool>(
@@ -148,7 +153,10 @@ Future<bool> showCreateClassEventDialog(
         builder: (_) => _CreateClassForm(
           initialClassTypeId: initialClassTypeId,
           initialLocationId: currentLocation.id,
-          initialDate: initialDate,
+          initialDate: resolvedInitialDate,
+          initialStartTime: initialStartTime,
+          initialEndTime: initialEndTime,
+          initialStaffId: initialStaffId,
           initialEvent: initialEvent,
           prefillEvent: prefillEvent,
         ),
@@ -1082,6 +1090,9 @@ class _CreateClassForm extends ConsumerStatefulWidget {
     required this.initialLocationId,
     required this.initialDate,
     this.initialClassTypeId,
+    this.initialStartTime,
+    this.initialEndTime,
+    this.initialStaffId,
     this.initialEvent,
     this.prefillEvent,
   });
@@ -1089,6 +1100,9 @@ class _CreateClassForm extends ConsumerStatefulWidget {
   final int initialLocationId;
   final DateTime initialDate;
   final int? initialClassTypeId;
+  final TimeOfDay? initialStartTime;
+  final TimeOfDay? initialEndTime;
+  final int? initialStaffId;
   final ClassEvent? initialEvent;
   final ClassEvent? prefillEvent;
 
@@ -1197,11 +1211,18 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     _prefillEvent = widget.prefillEvent;
     _classTypeId = widget.initialClassTypeId;
     _locationId = widget.initialLocationId;
+    _staffId = widget.initialStaffId;
     _date = DateTime(
       widget.initialDate.year,
       widget.initialDate.month,
       widget.initialDate.day,
     );
+    if (widget.initialStartTime != null) {
+      _startTime = widget.initialStartTime!;
+      _endTime =
+          widget.initialEndTime ??
+          _fromDayMinutes(_toDayMinutes(_startTime) + 90);
+    }
   }
 
   @override

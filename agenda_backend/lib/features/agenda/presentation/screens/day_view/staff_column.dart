@@ -48,6 +48,7 @@ import '../../../providers/highlighted_staff_provider.dart';
 // Nota: isResizingProvider viene gestito a un livello superiore (MultiStaffDayView),
 // non è necessario importarlo qui.
 import '../../../providers/layout_config_provider.dart';
+import '../../../providers/location_providers.dart';
 import '../../../providers/resizing_provider.dart';
 import '../../../providers/selected_appointment_provider.dart';
 import '../../../providers/staff_columns_geometry_provider.dart';
@@ -1140,6 +1141,13 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             if (serviceColor != null) {
               cardColor = serviceColor;
             } else {
+              final snapshotColor = _parseClassTypeColor(
+                originalAppt.serviceColorHex,
+              );
+              if (snapshotColor != null) {
+                cardColor = snapshotColor;
+                break;
+              }
               final variant = ref.watch(
                 serviceVariantByIdProvider(originalAppt.serviceVariantId),
               );
@@ -1264,6 +1272,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       if (visualHeight <= 0) {
         continue;
       }
+      final classType = classTypeById[classEvent.classTypeId];
+      final classEventTitle = (classType?.name.trim().isNotEmpty ?? false)
+          ? classType!.name.trim()
+          : (classEvent.classTypeName?.trim().isNotEmpty ?? false)
+          ? classEvent.classTypeName!.trim()
+          : context.l10n.classEventsUntitled;
+      final classEventColor =
+          _parseClassTypeColor(classType?.colorHex) ??
+          _parseClassTypeColor(classEvent.classTypeColorHex) ??
+          Theme.of(context).colorScheme.tertiaryContainer;
 
       final classCardWidget = AnimatedPositioned(
         key: ValueKey('class_event_${classEvent.id}'),
@@ -1321,6 +1339,12 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                     _classResizeSession?.eventId == classEvent.id
                 ? _cancelClassResize
                 : null,
+            onSecondaryTapDown: (details) => _handleCardSecondaryTap(
+              details: details,
+              cardTop: visualTop,
+              cardHeight: visualHeight,
+              dayStart: dayStart,
+            ),
             onTap: canManageBookings && endsAt.isAfter(DateTime.now())
                 ? () => showCreateClassEventDialog(
                     context,
@@ -1416,20 +1440,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                             width: effectiveWidth,
                             displayStart: startsAt,
                             displayEnd: endsAt,
-                            title:
-                                (classTypeById[classEvent.classTypeId]?.name
-                                        .trim()
-                                        .isNotEmpty ??
-                                    false)
-                                ? classTypeById[classEvent.classTypeId]!.name
-                                      .trim()
-                                : context.l10n.classEventsUntitled,
-                            color:
-                                _parseClassTypeColor(
-                                  classTypeById[classEvent.classTypeId]
-                                      ?.colorHex,
-                                ) ??
-                                Theme.of(context).colorScheme.tertiaryContainer,
+                            title: classEventTitle,
+                            color: classEventColor,
                           ),
                         ),
                       ),
@@ -1441,18 +1453,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                         width: effectiveWidth,
                         displayStart: startsAt,
                         displayEnd: endsAt,
-                        title:
-                            (classTypeById[classEvent.classTypeId]?.name
-                                    .trim()
-                                    .isNotEmpty ??
-                                false)
-                            ? classTypeById[classEvent.classTypeId]!.name.trim()
-                            : context.l10n.classEventsUntitled,
-                        color:
-                            _parseClassTypeColor(
-                              classTypeById[classEvent.classTypeId]?.colorHex,
-                            ) ??
-                            Theme.of(context).colorScheme.tertiaryContainer,
+                        title: classEventTitle,
+                        color: classEventColor,
                       ),
                     ),
                     child: _ClassEventCard(
@@ -1460,18 +1462,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                       width: effectiveWidth,
                       displayStart: startsAt,
                       displayEnd: endsAt,
-                      title:
-                          (classTypeById[classEvent.classTypeId]?.name
-                                  .trim()
-                                  .isNotEmpty ??
-                              false)
-                          ? classTypeById[classEvent.classTypeId]!.name.trim()
-                          : context.l10n.classEventsUntitled,
-                      color:
-                          _parseClassTypeColor(
-                            classTypeById[classEvent.classTypeId]?.colorHex,
-                          ) ??
-                          Theme.of(context).colorScheme.tertiaryContainer,
+                      title: classEventTitle,
+                      color: classEventColor,
                       showResizeHandle:
                           _resizeHoveredClassEventId == classEvent.id,
                     ),
@@ -1531,6 +1523,13 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
               if (serviceColor != null) {
                 cardColor = serviceColor;
               } else {
+                final snapshotColor = _parseClassTypeColor(
+                  originalAppt.serviceColorHex,
+                );
+                if (snapshotColor != null) {
+                  cardColor = snapshotColor;
+                  break;
+                }
                 final variant = ref.watch(
                   serviceVariantByIdProvider(originalAppt.serviceVariantId),
                 );
@@ -1722,6 +1721,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
               day: agendaDate,
             ),
             staffId: widget.staff.id,
+            onSecondaryCreate: _openDefaultComposerAt,
           ),
         ),
       );
@@ -1962,13 +1962,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     required BookingRescheduleSession? rescheduleSession,
   }) async {
     if (rescheduleSession == null) {
-      showBookingDialog(
-        context,
-        ref,
-        date: DateUtils.dateOnly(dt),
-        time: TimeOfDay(hour: dt.hour, minute: dt.minute),
-        initialStaffId: widget.staff.id,
-      );
+      await _openDefaultComposerAt(dt);
       return;
     }
 
@@ -2167,12 +2161,44 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     required double cardTop,
     required double cardHeight,
   }) async {
-    final layoutConfig = ref.read(layoutConfigProvider);
     final dayStart = DateTime(
       appointment.startTime.year,
       appointment.startTime.month,
       appointment.startTime.day,
     );
+    final targetStart = _resolveCardSecondaryTapStartTime(
+      details: details,
+      cardTop: cardTop,
+      cardHeight: cardHeight,
+      dayStart: dayStart,
+    );
+
+    await _openDefaultComposerAt(targetStart);
+  }
+
+  Future<void> _handleCardSecondaryTap({
+    required TapDownDetails details,
+    required double cardTop,
+    required double cardHeight,
+    required DateTime dayStart,
+  }) async {
+    final targetStart = _resolveCardSecondaryTapStartTime(
+      details: details,
+      cardTop: cardTop,
+      cardHeight: cardHeight,
+      dayStart: dayStart,
+    );
+
+    await _openDefaultComposerAt(targetStart);
+  }
+
+  DateTime _resolveCardSecondaryTapStartTime({
+    required TapDownDetails details,
+    required double cardTop,
+    required double cardHeight,
+    required DateTime dayStart,
+  }) {
+    final layoutConfig = ref.read(layoutConfigProvider);
     final maxAgendaHeight = layoutConfig.heightForMinutes(
       LayoutConfig.hoursInDay * 60,
     );
@@ -2186,7 +2212,23 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           0,
           math.max(totalMinutes - slotStepMinutes, 0),
         )).toInt();
-    final targetStart = dayStart.add(Duration(minutes: roundedMinutes));
+    return dayStart.add(Duration(minutes: roundedMinutes));
+  }
+
+  Future<void> _openDefaultComposerAt(DateTime targetStart) async {
+    if (_shouldOpenClassEventComposerByDefault()) {
+      await showCreateClassEventDialog(
+        context,
+        ref,
+        initialDate: DateUtils.dateOnly(targetStart),
+        initialStartTime: TimeOfDay(
+          hour: targetStart.hour,
+          minute: targetStart.minute,
+        ),
+        initialStaffId: widget.staff.id,
+      );
+      return;
+    }
 
     await showBookingDialog(
       context,
@@ -2195,6 +2237,27 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       time: TimeOfDay(hour: targetStart.hour, minute: targetStart.minute),
       initialStaffId: widget.staff.id,
     );
+  }
+
+  bool _shouldOpenClassEventComposerByDefault() {
+    final location = ref.read(currentLocationProvider);
+    final services = ref.read(servicesProvider).value ?? const [];
+    final classTypes = ref.read(classTypesProvider).value ?? const [];
+    final serviceCount = services.where((service) {
+      if (!service.isActive) return false;
+      final serviceLocationId = service.locationId;
+      return serviceLocationId == null ||
+          location.id <= 0 ||
+          serviceLocationId == location.id;
+    }).length;
+    final classTypeCount = classTypes.where((classType) {
+      return classType.isActive &&
+          (location.id <= 0 ||
+              classType.locationIds.isEmpty ||
+              classType.locationIds.contains(location.id));
+    }).length;
+
+    return classTypeCount > serviceCount;
   }
 
   bool _hasReachableClientContact(List<Appointment> bookingAppointments) {

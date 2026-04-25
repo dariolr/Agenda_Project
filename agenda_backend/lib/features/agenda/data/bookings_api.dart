@@ -306,6 +306,7 @@ class BookingsApi {
     bool notifyClient = true,
     bool notifyClientDecisionByOperator = false,
     bool suppressAuditEvent = false,
+    bool suppressAppointmentUpdateAudit = false,
   }) async {
     await _apiClient.updateAppointment(
       locationId: locationId,
@@ -326,6 +327,7 @@ class BookingsApi {
       notifyClient: notifyClient,
       notifyClientDecisionByOperator: notifyClientDecisionByOperator,
       suppressAuditEvent: suppressAuditEvent,
+      suppressAppointmentUpdateAudit: suppressAppointmentUpdateAudit,
     );
   }
 

@@ -4,6 +4,8 @@ class ClassEvent {
   final int id;
   final int businessId;
   final int classTypeId;
+  final String? classTypeName;
+  final String? classTypeColorHex;
   final DateTime startsAtUtc;
   final DateTime endsAtUtc;
   final DateTime? startsAtLocal;
@@ -30,6 +32,8 @@ class ClassEvent {
     required this.id,
     required this.businessId,
     required this.classTypeId,
+    this.classTypeName,
+    this.classTypeColorHex,
     required this.startsAtUtc,
     required this.endsAtUtc,
     this.startsAtLocal,
@@ -64,18 +68,18 @@ class ClassEvent {
           (json['tenant_id'] as num?)?.toInt() ??
           0,
       classTypeId: (json['class_type_id'] as num?)?.toInt() ?? 0,
+      classTypeName: (json['class_type_name'] as String?)?.trim(),
+      classTypeColorHex: (json['class_type_color_hex'] as String?)?.trim(),
       startsAtUtc: _parseUtcDateTime(
         (json['starts_at'] ?? json['starts_at_utc']) as String,
       ),
       endsAtUtc: _parseUtcDateTime(
         (json['ends_at'] ?? json['ends_at_utc']) as String,
       ),
-      startsAtLocal:
-          (json['starts_at_local'] as String?) != null
+      startsAtLocal: (json['starts_at_local'] as String?) != null
           ? _parseLocalDateTime(json['starts_at_local'] as String)
           : null,
-      endsAtLocal:
-          (json['ends_at_local'] as String?) != null
+      endsAtLocal: (json['ends_at_local'] as String?) != null
           ? _parseLocalDateTime(json['ends_at_local'] as String)
           : null,
       locationId: (json['location_id'] as num).toInt(),
@@ -90,12 +94,14 @@ class ClassEvent {
       capacityReserved: (json['capacity_reserved'] as num?)?.toInt() ?? 0,
       confirmedCount: (json['confirmed_count'] as num?)?.toInt() ?? 0,
       waitlistCount: (json['waitlist_count'] as num?)?.toInt() ?? 0,
-      waitlistEnabled: (json['waitlist_enabled'] as bool?) ??
+      waitlistEnabled:
+          (json['waitlist_enabled'] as bool?) ??
           ((json['waitlist_enabled'] as num?)?.toInt() == 1),
-      bookingOpenAtUtc: (json['booking_open_at'] ?? json['booking_open_at_utc']) !=
-              null
+      bookingOpenAtUtc:
+          (json['booking_open_at'] ?? json['booking_open_at_utc']) != null
           ? _parseUtcDateTime(
-              (json['booking_open_at'] ?? json['booking_open_at_utc']) as String,
+              (json['booking_open_at'] ?? json['booking_open_at_utc'])
+                  as String,
             )
           : null,
       bookingCloseAtUtc:

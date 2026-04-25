@@ -7,6 +7,7 @@ import '../../../app/providers/form_factor_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
+import '../../billing/providers/billing_provider.dart';
 
 /// Schermata "Altro" con cards per le sezioni secondarie
 class MoreScreen extends ConsumerWidget {
@@ -35,6 +36,12 @@ class MoreScreen extends ConsumerWidget {
         ? ref.watch(businessOwnerProvider)
         : null;
     final showProfile = !isSuperadmin || businessOwner != null;
+    final showBilling = ref
+        .watch(billingSubscriptionProvider)
+        .maybeWhen(
+          data: (billing) => billing.billingEnabled,
+          orElse: () => false,
+        );
 
     final configurationItems = [
       if (canManageSettings)
@@ -79,6 +86,14 @@ class MoreScreen extends ConsumerWidget {
           description: l10n.paymentMethodsDescription,
           color: const Color(0xFF6D4C41),
           onTap: () => context.go(_withFromAltro('/altro/metodi-pagamento')),
+        ),
+      if (showBilling)
+        _MoreItem(
+          icon: Icons.workspace_premium_outlined,
+          title: l10n.billingTitle,
+          description: l10n.billingDescription,
+          color: const Color(0xFF455A64),
+          onTap: () => context.go(_withFromAltro('/altro/abbonamento')),
         ),
       if (canManageSettings && isSuperadmin)
         _MoreItem(

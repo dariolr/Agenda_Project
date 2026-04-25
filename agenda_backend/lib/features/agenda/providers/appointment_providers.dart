@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../core/models/appointment.dart';
+import '../../../core/models/booking.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
 import '../../clients/providers/clients_providers.dart';
@@ -42,7 +43,9 @@ final recurringSeriesCardMetricsProvider =
       final rawBookings = response['bookings'];
       if (rawBookings is! List) return null;
 
-      final allBookings = rawBookings.whereType<Map<String, dynamic>>().toList();
+      final allBookings = rawBookings
+          .whereType<Map<String, dynamic>>()
+          .toList();
       allBookings.sort((a, b) {
         final aIndex = (a['recurrence_index'] as num?)?.toInt() ?? -1;
         final bIndex = (b['recurrence_index'] as num?)?.toInt() ?? -1;
@@ -66,11 +69,11 @@ final recurringSeriesCardMetricsProvider =
 
       final recurrenceRule =
           response['recurrence_rule'] as Map<String, dynamic>?;
-      final plannedSeriesTotal =
-          (recurrenceRule?['max_occurrences'] as num?)?.toInt();
+      final plannedSeriesTotal = (recurrenceRule?['max_occurrences'] as num?)
+          ?.toInt();
       final seriesTotalFromApi = (response['total_bookings'] as num?)?.toInt();
-      final effectiveSeriesTotal = plannedSeriesTotal != null &&
-              plannedSeriesTotal > 0
+      final effectiveSeriesTotal =
+          plannedSeriesTotal != null && plannedSeriesTotal > 0
           ? plannedSeriesTotal
           : (seriesTotalFromApi ?? allBookings.length);
       return RecurringSeriesCardMetrics(
@@ -121,18 +124,19 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
 
     // Popola bookingsProvider con i metadata dei booking (incluse le note)
     final bookingsNotifier = ref.read(bookingsProvider.notifier);
-    for (final entry in result.bookingMetadata.entries) {
-      final metadata = entry.value;
-      bookingsNotifier.ensureBooking(
-        bookingId: metadata.id,
-        businessId: metadata.businessId,
-        locationId: metadata.locationId,
-        clientId: metadata.clientId,
-        clientName: metadata.clientName ?? '',
-        notes: metadata.notes,
-        status: metadata.status ?? 'confirmed',
-      );
-    }
+    bookingsNotifier.ensureBookingsBulk(
+      result.bookingMetadata.values.map(
+        (metadata) => Booking(
+          id: metadata.id,
+          businessId: metadata.businessId,
+          locationId: metadata.locationId,
+          clientId: metadata.clientId,
+          clientName: metadata.clientName ?? '',
+          notes: metadata.notes,
+          status: metadata.status ?? 'confirmed',
+        ),
+      ),
+    );
 
     return result.appointments;
   }
@@ -359,6 +363,11 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     try {
       for (final item in session.items) {
         final isAnchorItem = item.appointmentId == anchor.appointmentId;
+        final shouldUseBookingLevelAudit =
+            session.items.length > 1 &&
+            !notifyClient &&
+            notifyClientDecisionByOperator &&
+            isAnchorItem;
         await repository.updateAppointment(
           locationId: location.id,
           appointmentId: item.appointmentId,
@@ -369,6 +378,7 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
           notifyClient: notifyClient,
           notifyClientDecisionByOperator: notifyClientDecisionByOperator,
           suppressAuditEvent: !isAnchorItem,
+          suppressAppointmentUpdateAudit: shouldUseBookingLevelAudit,
         );
       }
       _invalidateWeeksForDates([

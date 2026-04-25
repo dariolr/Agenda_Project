@@ -534,9 +534,31 @@
     }
   },
 
+  "tabServices": "Services",
+  "tabEvents": "Events",
+
+  "bookingStepServicesAndEvents": "Services / events",
+
+  "tabConflictEventsTitle": "Event not selectable",
+  "tabConflictEventsSubtitle": "You've already selected one or more services. A booking can include either services or a group event, not both. Deselect the services to choose an event.",
+  "tabConflictServicesTitle": "Services not selectable",
+  "tabConflictServicesSubtitle": "You've already selected the event \"{eventName}\". A booking can include either services or a group event, not both. Deselect the event to choose services.",
+  "@tabConflictServicesSubtitle": {
+    "placeholders": {
+      "eventName": { "type": "String" }
+    }
+  },
+  "servicesAndEventsTitle": "Choose a service or event",
+  "servicesAndEventsSubtitle": "Select a service or join a group event",
+  "eventsTitle": "Choose an event",
+  "eventsSubtitle": "Select the event you want to attend",
+
   "cancelledBadge": "CANCELLED",
   "classBookingWaitlistedBadge": "Waitlist",
 
+  "classEventAlreadyBooked": "Already booked",
+  "classEventAlreadyWaitlisted": "Already on waitlist",
+  "classEventManageBooking": "Manage booking",
   "classEventFull": "Full",
   "classEventSpotsLeft": "{count} spots",
   "@classEventSpotsLeft": {
@@ -552,11 +574,11 @@
   },
   "classEventWaitlistLabel": "Waitlist",
   "classEventJoinWaitlistLabel": "Join waitlist",
-  "classEventWaitlistDialogTitle": "Class is full",
-  "classEventWaitlistDialogMessage": "This class is full. Would you like to join the waitlist?",
+  "classEventWaitlistDialogTitle": "Event is full",
+  "classEventWaitlistDialogMessage": "This event is full. Would you like to join the waitlist?",
   "classEventWaitlistDialogConfirm": "Join waitlist",
   "classEventWaitlistNotice": "You'll be added to the waitlist",
-  "classEventGroupLesson": "Group class",
+  "classEventGroupLesson": "Group event",
 
   "confirmationWaitlistTitle": "You're on the waitlist!",
   "confirmationWaitlistSubtitle": "You'll be confirmed as soon as a spot opens up",

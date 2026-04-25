@@ -536,6 +536,16 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       prevStep = BookingStep.values[prevIndex];
     }
 
+    // Se è selezionato un evento, salta staff e dateTime
+    if (state.request.isClassEventBooking) {
+      while (prevIndex > 0 &&
+          (prevStep == BookingStep.staff ||
+              prevStep == BookingStep.dateTime)) {
+        prevIndex--;
+        prevStep = BookingStep.values[prevIndex];
+      }
+    }
+
     // Se c'è una sola location, salta lo step location
     if (prevStep == BookingStep.location && !_hasMultipleLocations) {
       // Non andare oltre, siamo già al primo step

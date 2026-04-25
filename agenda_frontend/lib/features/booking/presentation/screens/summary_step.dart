@@ -109,13 +109,15 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                     context,
                     theme,
                     request.selectedClassEvent!,
+                    phraseOverrides,
                   ),
                   const SizedBox(height: 16),
                 ],
 
                 // === BRANCH SERVIZIO NORMALE ===
                 // Data e ora
-                if (!request.isClassEventBooking && request.selectedSlot != null)
+                if (!request.isClassEventBooking &&
+                    request.selectedSlot != null)
                   _SummarySection(
                     title: l10n.summaryDateTime,
                     icon: Icons.calendar_today,
@@ -127,99 +129,26 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                       style: theme.textTheme.bodyMedium,
                     ),
                   ),
-                if (!request.isClassEventBooking && request.selectedSlot != null)
+                if (!request.isClassEventBooking &&
+                    request.selectedSlot != null)
                   const SizedBox(height: 16),
 
                 // Servizi selezionati (con operatore)
-                if (request.isClassEventBooking) const SizedBox.shrink()
+                if (request.isClassEventBooking)
+                  const SizedBox.shrink()
                 else
-                _SummarySection(
-                  title: bookingSummaryServicesLabel(
-                    context,
-                    customServiceLabel,
-                    phraseOverrides: phraseOverrides,
-                  ),
-                  icon: Icons.list_alt,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (totals.selectedPackages.isNotEmpty)
-                        ...totals.selectedPackages.map((package) {
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 4),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        package.name,
-                                        style: theme.textTheme.bodyMedium
-                                            ?.copyWith(
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                      ),
-                                      if (totals.selectedItemCount > 1)
-                                        Text(
-                                          context.localizedDurationLabel(
-                                            package.customerVisibleDurationMinutes(
-                                              selectedServiceById,
-                                            ),
-                                          ),
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurface
-                                                    .withOpacity(0.6),
-                                              ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                if (totals.selectedItemCount > 1)
-                                  Text(
-                                    _formatTotalPrice(
-                                      context,
-                                      package.effectivePrice,
-                                    ).replaceFirst('€', '').trim(),
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      color: theme.colorScheme.onSurface
-                                          .withOpacity(0.6),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          );
-                        }),
-                      ...request.services
-                          .where(
-                            (service) =>
-                                request.isServiceManuallySelected(service.id),
-                          )
-                          .map((service) {
-                            final staff = request.staffForService(service.id);
-                            final isCovered = totals.coveredServiceIds.contains(
-                              service.id,
-                            );
-                            final operatorLabel =
-                                request.isAnyOperatorForService(service.id)
-                                ? bookingAnyStaffLabel(
-                                    context,
-                                    customStaffLabel,
-                                    phraseOverrides: phraseOverrides,
-                                  )
-                                : (staff != null
-                                      ? staff.fullName
-                                      : bookingAnyStaffLabel(
-                                          context,
-                                          customStaffLabel,
-                                          phraseOverrides: phraseOverrides,
-                                        ));
+                  _SummarySection(
+                    title: bookingSummaryServicesLabel(
+                      context,
+                      customServiceLabel,
+                      phraseOverrides: phraseOverrides,
+                    ),
+                    icon: Icons.list_alt,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (totals.selectedPackages.isNotEmpty)
+                          ...totals.selectedPackages.map((package) {
                             return Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               child: Row(
@@ -233,28 +162,19 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                           CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          service.name,
+                                          package.name,
                                           style: theme.textTheme.bodyMedium
                                               ?.copyWith(
                                                 fontWeight: FontWeight.w600,
                                               ),
                                         ),
-                                        Text(
-                                          operatorLabel,
-                                          style: theme.textTheme.bodySmall
-                                              ?.copyWith(
-                                                color: theme
-                                                    .colorScheme
-                                                    .onSurface
-                                                    .withOpacity(0.6),
-                                              ),
-                                        ),
-                                        if (totals.selectedItemCount > 1 &&
-                                            !isCovered)
+                                        if (totals.selectedItemCount > 1)
                                           Text(
                                             context.localizedDurationLabel(
-                                              service
-                                                  .customerVisibleDurationMinutes,
+                                              package
+                                                  .customerVisibleDurationMinutes(
+                                                    selectedServiceById,
+                                                  ),
                                             ),
                                             style: theme.textTheme.bodySmall
                                                 ?.copyWith(
@@ -267,10 +187,12 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                       ],
                                     ),
                                   ),
-                                  if (totals.selectedItemCount > 1 &&
-                                      !isCovered)
+                                  if (totals.selectedItemCount > 1)
                                     Text(
-                                      service.formattedPrice,
+                                      _formatTotalPrice(
+                                        context,
+                                        package.effectivePrice,
+                                      ).replaceFirst('€', '').trim(),
                                       style: theme.textTheme.bodySmall
                                           ?.copyWith(
                                             color: theme.colorScheme.onSurface
@@ -281,96 +203,181 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                               ),
                             );
                           }),
-                      const SizedBox(height: 12),
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          return SizedBox(
-                            height: 1,
-                            child: Stack(
+                        ...request.services
+                            .where(
+                              (service) =>
+                                  request.isServiceManuallySelected(service.id),
+                            )
+                            .map((service) {
+                              final staff = request.staffForService(service.id);
+                              final isCovered = totals.coveredServiceIds
+                                  .contains(service.id);
+                              final operatorLabel =
+                                  request.isAnyOperatorForService(service.id)
+                                  ? bookingAnyStaffLabel(
+                                      context,
+                                      customStaffLabel,
+                                      phraseOverrides: phraseOverrides,
+                                    )
+                                  : (staff != null
+                                        ? staff.fullName
+                                        : bookingAnyStaffLabel(
+                                            context,
+                                            customStaffLabel,
+                                            phraseOverrides: phraseOverrides,
+                                          ));
+                              return Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 4,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            service.name,
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                          Text(
+                                            operatorLabel,
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withOpacity(0.6),
+                                                ),
+                                          ),
+                                          if (totals.selectedItemCount > 1 &&
+                                              !isCovered)
+                                            Text(
+                                              context.localizedDurationLabel(
+                                                service
+                                                    .customerVisibleDurationMinutes,
+                                              ),
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurface
+                                                        .withOpacity(0.6),
+                                                  ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                    if (totals.selectedItemCount > 1 &&
+                                        !isCovered)
+                                      Text(
+                                        service.formattedPrice,
+                                        style: theme.textTheme.bodySmall
+                                            ?.copyWith(
+                                              color: theme.colorScheme.onSurface
+                                                  .withOpacity(0.6),
+                                            ),
+                                      ),
+                                  ],
+                                ),
+                              );
+                            }),
+                        const SizedBox(height: 12),
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            return SizedBox(
+                              height: 1,
+                              child: Stack(
+                                children: [
+                                  Positioned(
+                                    left: -16,
+                                    right: -16,
+                                    top: 0,
+                                    child: Divider(
+                                      height: 1,
+                                      color: theme.dividerColor,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              l10n.summaryDuration,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Row(
                               children: [
-                                Positioned(
-                                  left: -16,
-                                  right: -16,
-                                  top: 0,
-                                  child: Divider(
-                                    height: 1,
-                                    color: theme.dividerColor,
+                                Text(
+                                  l10n.summaryPrice,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
                                   ),
                                 ),
                               ],
                             ),
-                          );
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            l10n.summaryDuration,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              fontWeight: FontWeight.w600,
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.schedule,
+                                  size: 16,
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.7),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  context.localizedDurationLabel(
+                                    totals.totalDurationMinutes,
+                                  ),
+                                  style: theme.textTheme.bodyMedium,
+                                ),
+                              ],
                             ),
-                          ),
-                          Row(
-                            children: [
-                              Text(
-                                l10n.summaryPrice,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.schedule,
-                                size: 16,
-                                color: theme.colorScheme.onSurface.withOpacity(
-                                  0.7,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                context.localizedDurationLabel(
-                                  totals.totalDurationMinutes,
-                                ),
-                                style: theme.textTheme.bodyMedium,
-                              ),
-                            ],
-                          ),
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.euro,
-                                size: 16,
-                                color: theme.colorScheme.primary,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                _formatTotalPrice(
-                                  context,
-                                  totals.totalPrice,
-                                ).replaceFirst('€', '').trim(),
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: FontWeight.w700,
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.euro,
+                                  size: 16,
                                   color: theme.colorScheme.primary,
                                 ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
+                                const SizedBox(width: 6),
+                                Text(
+                                  _formatTotalPrice(
+                                    context,
+                                    totals.totalPrice,
+                                  ).replaceFirst('€', '').trim(),
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: theme.colorScheme.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
                 const SizedBox(height: 16),
 
                 const SizedBox(height: 24),
@@ -489,6 +496,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
     BuildContext context,
     ThemeData theme,
     ClassEvent event,
+    Map<String, String>? phraseOverrides,
   ) {
     final startTime = DateTime.tryParse(event.displayStartsAt);
     final endTime = DateTime.tryParse(event.displayEndsAt);
@@ -508,7 +516,10 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
     }
 
     return _SummarySection(
-      title: context.l10n.classEventGroupLesson,
+      title: bookingSummaryEventLabel(
+        context,
+        phraseOverrides: phraseOverrides,
+      ),
       icon: Icons.fitness_center_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -590,8 +601,15 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
               const SizedBox(width: 6),
               Text(
                 event.isFull
-                    ? context.l10n.classEventFull
-                    : context.l10n.classEventSpotsAvailable(event.spotsLeft),
+                    ? bookingClassEventFullLabel(
+                        context,
+                        phraseOverrides: phraseOverrides,
+                      )
+                    : bookingClassEventSpotsAvailableLabel(
+                        context,
+                        event.spotsLeft,
+                        phraseOverrides: phraseOverrides,
+                      ),
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: event.isFull
                       ? theme.colorScheme.error
@@ -618,7 +636,10 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                   ),
                   const SizedBox(width: 6),
                   Text(
-                    context.l10n.classEventWaitlistNotice,
+                    bookingClassEventWaitlistNotice(
+                      context,
+                      phraseOverrides: phraseOverrides,
+                    ),
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: Colors.orange.shade700,
                       fontWeight: FontWeight.w600,

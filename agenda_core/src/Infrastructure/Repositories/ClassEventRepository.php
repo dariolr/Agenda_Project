@@ -357,6 +357,7 @@ final class ClassEventRepository
             SELECT
                 ce.*,
                 ct.name AS class_type_name,
+                ct.color_hex AS class_type_color_hex,
                 l.timezone AS location_timezone,
                 cb.status AS my_booking_status
             FROM class_events ce
@@ -514,6 +515,7 @@ final class ClassEventRepository
             SELECT
                 ce.*,
                 ct.name AS class_type_name,
+                ct.color_hex AS class_type_color_hex,
                 l.timezone AS location_timezone,
                 cb.status AS my_booking_status
             FROM class_events ce

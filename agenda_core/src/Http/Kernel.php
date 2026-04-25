@@ -32,6 +32,11 @@ use Agenda\Http\Controllers\ClassEventsController;
 use Agenda\Http\Controllers\ReportsController;
 use Agenda\Http\Controllers\PaymentMethodsController;
 use Agenda\Http\Controllers\WhatsappController;
+use Agenda\Http\Controllers\Billing\AdminBusinessBillingController;
+use Agenda\Http\Controllers\Billing\BusinessBillingController;
+use Agenda\Http\Controllers\Billing\StripeWebhookController;
+use Agenda\Domain\Billing\BillingProviderCode;
+use Agenda\Domain\Billing\BillingProviderFactory;
 use Agenda\Http\Middleware\AuthMiddleware;
 use Agenda\Http\Middleware\BusinessAccessMiddleware;
 use Agenda\Http\Middleware\CustomerAuthMiddleware;
@@ -66,6 +71,11 @@ use Agenda\Infrastructure\Repositories\LocationClosureRepository;
 use Agenda\Infrastructure\Repositories\ClassEventRepository;
 use Agenda\Infrastructure\Repositories\ForgotPasswordRateLimitRepository;
 use Agenda\Infrastructure\Repositories\WhatsappRepository;
+use Agenda\Infrastructure\Repositories\Billing\BillingProviderEventRepository;
+use Agenda\Infrastructure\Repositories\Billing\BusinessBillingConfigRepository;
+use Agenda\Infrastructure\Repositories\Billing\BusinessBillingSubscriptionRepository;
+use Agenda\Infrastructure\Billing\Stripe\StripeBillingProvider;
+use Agenda\Infrastructure\Billing\Stripe\StripeClientFactory;
 use Agenda\Infrastructure\Security\JwtService;
 use Agenda\Infrastructure\Security\PasswordHasher;
 use Agenda\Infrastructure\Security\TokenCipher;
@@ -150,6 +160,8 @@ final class Kernel
         $this->router->put('/v1/admin/businesses/{id}', AdminBusinessesController::class, 'update', ['auth']);
         $this->router->delete('/v1/admin/businesses/{id}', AdminBusinessesController::class, 'destroy', ['auth']);
         $this->router->post('/v1/admin/businesses/{id}/resend-invite', AdminBusinessesController::class, 'resendInvite', ['auth']);
+        $this->router->get('/v1/admin/businesses/{businessId}/billing-config', AdminBusinessBillingController::class, 'show', ['auth']);
+        $this->router->put('/v1/admin/businesses/{businessId}/billing-config', AdminBusinessBillingController::class, 'update', ['auth']);
         $this->router->patch('/v1/admin/users/{userId}', AuthController::class, 'updateUserAdmin', ['auth']);
         $this->router->post('/v1/admin/users/{userId}/set-password', AuthController::class, 'setPasswordAdmin', ['auth']);
 
@@ -166,11 +178,15 @@ final class Kernel
         // Public Meta webhook endpoint (verification + events)
         $this->router->get('/v1/whatsapp/webhook', WhatsappController::class, 'webhookPublicVerify');
         $this->router->post('/v1/whatsapp/webhook', WhatsappController::class, 'webhookPublicIngest');
+        $this->router->post('/v1/stripe/webhook', StripeWebhookController::class, 'handle');
         
         // Calendar ICS download (public, token-protected)
 
         // Businesses and Locations (auth required)
         $this->router->get('/v1/businesses', BusinessController::class, 'index', ['auth']);
+        $this->router->get('/v1/billing/subscription', BusinessBillingController::class, 'subscription', ['auth']);
+        $this->router->post('/v1/billing/checkout-session', BusinessBillingController::class, 'checkoutSession', ['auth']);
+        $this->router->post('/v1/billing/portal-session', BusinessBillingController::class, 'portalSession', ['auth']);
         $this->router->get('/v1/businesses/{id}', BusinessController::class, 'show', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/locations', LocationsController::class, 'index', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/locations', LocationsController::class, 'store', ['auth']);
@@ -448,12 +464,21 @@ final class Kernel
         $classEventRepo = new ClassEventRepository($this->db);
         $forgotPasswordRateLimitRepo = new ForgotPasswordRateLimitRepository($this->db);
         $whatsappRepo = new WhatsappRepository($this->db);
+        $billingConfigRepo = new BusinessBillingConfigRepository($this->db);
+        $billingSubscriptionRepo = new BusinessBillingSubscriptionRepository($this->db);
+        $billingEventRepo = new BillingProviderEventRepository($this->db);
 
         // Services
         $jwtService = new JwtService();
         $passwordHasher = new PasswordHasher();
         $tokenCipher = new TokenCipher();
         $metaEmbeddedSignupService = new MetaWhatsAppEmbeddedSignupService();
+        $billingProviderFactory = new BillingProviderFactory([
+            BillingProviderCode::STRIPE => new StripeBillingProvider(
+                new StripeClientFactory(),
+                $billingConfigRepo
+            ),
+        ]);
 
         // Operator Auth Use Cases
         $loginUser = new LoginUser($userRepo, $sessionRepo, $jwtService, $passwordHasher);
@@ -507,6 +532,9 @@ final class Kernel
             BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo, $createRecurringBooking, $previewRecurringBooking, $recurrenceRuleRepo, $modifyRecurringSeries, $notificationRepo),
             BookingPaymentsController::class => new BookingPaymentsController($this->db, $bookingRepo, $bookingPaymentRepo, $paymentMethodRepo, $businessUserRepo, $userRepo),
             PaymentMethodsController::class => new PaymentMethodsController($paymentMethodRepo, $businessUserRepo, $userRepo),
+            AdminBusinessBillingController::class => new AdminBusinessBillingController($businessRepo, $userRepo, $billingConfigRepo, $billingSubscriptionRepo),
+            BusinessBillingController::class => new BusinessBillingController($businessRepo, $businessUserRepo, $userRepo, $billingConfigRepo, $billingSubscriptionRepo, $billingProviderFactory),
+            StripeWebhookController::class => new StripeWebhookController($billingProviderFactory, $billingSubscriptionRepo, $billingEventRepo),
             BookingNotificationsController::class => new BookingNotificationsController($notificationRepo, $businessUserRepo, $userRepo),
             ClientsController::class => new ClientsController($clientRepo, $businessUserRepo, $userRepo, $bookingRepo),
             AppointmentsController::class => new AppointmentsController($bookingRepo, $createBooking, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $bookingAuditRepo, $notificationRepo, $this->db),

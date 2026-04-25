@@ -184,6 +184,11 @@ final class AppointmentsController
             'suppress_audit_event',
             false
         );
+        $suppressAppointmentUpdateAudit = $this->readBoolFromBody(
+            $body,
+            'suppress_appointment_update_audit',
+            false
+        );
         $requestedLocale = isset($body['locale']) ? (string) $body['locale'] : null;
         $oldBookingFirstStart = $this->extractFirstStartTime($booking);
 
@@ -269,14 +274,16 @@ final class AppointmentsController
         
         $auditableChangedFields = $this->extractAuditableAppointmentChanges($actuallyChangedFields);
         if (!empty($auditableChangedFields) && !$suppressAuditEvent) {
-            $this->createAppointmentUpdatedEvent(
-                $bookingId,
-                $appointmentId,
-                $beforeState,
-                $afterState,
-                $userId,
-                $auditableChangedFields
-            );
+            if (!$suppressAppointmentUpdateAudit) {
+                $this->createAppointmentUpdatedEvent(
+                    $bookingId,
+                    $appointmentId,
+                    $beforeState,
+                    $afterState,
+                    $userId,
+                    $auditableChangedFields
+                );
+            }
             
             // Refresh reminder if time or service fields changed
             $reminderRelevantFields = ['start_time', 'end_time', 'service_id', 'service_variant_id'];
@@ -309,7 +316,8 @@ final class AppointmentsController
                             $userId,
                             $oldBookingFirstStart,
                             $newBookingFirstStart,
-                            $notifyClientDecisionByOperator
+                            $notifyClientDecisionByOperator,
+                            $booking
                         );
                     }
 
@@ -570,7 +578,8 @@ final class AppointmentsController
             'source' => $appointment['source'] ?? null,
             'client_id' => isset($appointment['client_id']) ? (int) $appointment['client_id'] : null,
             'client_name' => $clientName,
-            'service_name' => $appointment['service_name'] ?? null,
+            'service_name' => $appointment['service_name'] ?? $appointment['service_name_snapshot'] ?? null,
+            'service_color_hex' => $appointment['service_color_hex'] ?? null,
             'staff_name' => $appointment['staff_name'] ?? null,
             // Recurrence info
             'recurrence_rule_id' => isset($appointment['recurrence_rule_id']) ? (int) $appointment['recurrence_rule_id'] : null,
@@ -699,13 +708,28 @@ final class AppointmentsController
         ?int $userId,
         ?string $oldFirstStartTime,
         ?string $newFirstStartTime,
-        bool $notifyClientDecisionByOperator
+        bool $notifyClientDecisionByOperator,
+        ?array $oldBooking = null
     ): void {
         if ($this->auditRepo === null) {
             return;
         }
 
         try {
+            $oldLastEndTime = $this->extractLastEndTime($oldBooking);
+            $newLastEndTime = $this->shiftTimeByFirstStartOffset(
+                $oldLastEndTime,
+                $oldFirstStartTime,
+                $newFirstStartTime
+            );
+            $totalDurationMinutes = $this->calculateMinutesBetween(
+                $oldFirstStartTime,
+                $oldLastEndTime
+            );
+            $itemCount = is_array($oldBooking['items'] ?? null)
+                ? count($oldBooking['items'])
+                : null;
+
             $payload = [
                 'appointment_id' => $appointmentId,
                 'channel' => 'booking_rescheduled',
@@ -713,6 +737,10 @@ final class AppointmentsController
                 'notify_client_decision_by_operator' => $notifyClientDecisionByOperator,
                 'old_first_start_time' => $oldFirstStartTime,
                 'new_first_start_time' => $newFirstStartTime,
+                'old_last_end_time' => $oldLastEndTime,
+                'new_last_end_time' => $newLastEndTime,
+                'total_duration_minutes' => $totalDurationMinutes,
+                'item_count' => $itemCount,
             ];
 
             $actorName = $this->auditRepo->resolveActorName('staff', $userId);
@@ -903,6 +931,62 @@ final class AppointmentsController
         }
 
         return $first;
+    }
+
+    private function extractLastEndTime(?array $booking): ?string
+    {
+        if ($booking === null || !isset($booking['items']) || !is_array($booking['items'])) {
+            return null;
+        }
+
+        $last = null;
+        foreach ($booking['items'] as $item) {
+            $end = $item['end_time'] ?? null;
+            if (!is_string($end) || $end === '') {
+                continue;
+            }
+            if ($last === null || strcmp($end, $last) > 0) {
+                $last = $end;
+            }
+        }
+
+        return $last;
+    }
+
+    private function calculateMinutesBetween(?string $startTime, ?string $endTime): ?int
+    {
+        if ($startTime === null || $endTime === null) {
+            return null;
+        }
+
+        try {
+            $start = new \DateTimeImmutable($startTime);
+            $end = new \DateTimeImmutable($endTime);
+            return max(0, (int) (($end->getTimestamp() - $start->getTimestamp()) / 60));
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    private function shiftTimeByFirstStartOffset(
+        ?string $time,
+        ?string $oldFirstStartTime,
+        ?string $newFirstStartTime
+    ): ?string {
+        if ($time === null || $oldFirstStartTime === null || $newFirstStartTime === null) {
+            return null;
+        }
+
+        try {
+            $oldFirst = new \DateTimeImmutable($oldFirstStartTime);
+            $newFirst = new \DateTimeImmutable($newFirstStartTime);
+            $target = new \DateTimeImmutable($time);
+            $offsetSeconds = $newFirst->getTimestamp() - $oldFirst->getTimestamp();
+            return $target->modify(($offsetSeconds >= 0 ? '+' : '') . $offsetSeconds . ' seconds')
+                ->format('Y-m-d H:i:s');
+        } catch (\Throwable) {
+            return null;
+        }
     }
 
     private function clearPendingBookingReminder(int $bookingId): void

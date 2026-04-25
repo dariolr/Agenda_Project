@@ -1299,6 +1299,7 @@ final class ClassEventsController
             'business_id' => (int) $row['business_id'],
             'class_type_id' => (int) $row['class_type_id'],
             'class_type_name' => $row['class_type_name'] ?? null,
+            'class_type_color_hex' => $row['class_type_color_hex'] ?? null,
             'starts_at' => $row['starts_at'],
             'starts_at_local' => $this->formatUtcSqlToLocationLocal(
                 (string) $row['starts_at'],

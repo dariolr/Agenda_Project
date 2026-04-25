@@ -168,6 +168,7 @@ class _ScaffoldWithNavigationState
     final isMoreResources = currentPath == '/altro/risorse';
     final isMoreLocations = currentPath == '/altro/sedi';
     final isMorePaymentMethods = currentPath == '/altro/metodi-pagamento';
+    final isMoreBilling = currentPath == '/altro/abbonamento';
     final isMoreWhatsappBusiness = currentPath == '/altro/whatsapp-business';
     final hasAltroBack =
         !isAltroRoot &&
@@ -351,6 +352,8 @@ class _ScaffoldWithNavigationState
                       ? Text(context.l10n.teamLocationsLabel)
                       : isMorePaymentMethods
                       ? Text(context.l10n.paymentMethodsTitle)
+                      : isMoreBilling
+                      ? Text(context.l10n.billingTitle)
                       : isMoreWhatsappBusiness
                       ? Text(context.l10n.moreWhatsappBusinessTitle)
                       : isBookingNotifications
@@ -444,6 +447,8 @@ class _ScaffoldWithNavigationState
                                 ? Text(context.l10n.teamLocationsLabel)
                                 : isMorePaymentMethods
                                 ? Text(context.l10n.paymentMethodsTitle)
+                                : isMoreBilling
+                                ? Text(context.l10n.billingTitle)
                                 : isMoreWhatsappBusiness
                                 ? Text(context.l10n.moreWhatsappBusinessTitle)
                                 : isBookingNotifications
@@ -560,6 +565,8 @@ class _ScaffoldWithNavigationState
                     ? Text(context.l10n.teamLocationsLabel)
                     : isMorePaymentMethods
                     ? Text(context.l10n.paymentMethodsTitle)
+                    : isMoreBilling
+                    ? Text(context.l10n.billingTitle)
                     : isMoreWhatsappBusiness
                     ? Text(context.l10n.moreWhatsappBusinessTitle)
                     : isBookingNotifications
@@ -872,7 +879,16 @@ class _AgendaAddAction extends ConsumerWidget {
     final l10n = context.l10n;
     final agendaDate = ref.watch(agendaDateProvider);
     final currentLocation = ref.watch(currentLocationProvider);
-    final classTypes = ref.watch(classTypesProvider).value ?? const <ClassType>[];
+    final services = ref.watch(servicesProvider).value ?? const [];
+    final hasActiveServiceForLocation = services.any((service) {
+      if (!service.isActive) return false;
+      final serviceLocationId = service.locationId;
+      return serviceLocationId == null ||
+          currentLocation.id <= 0 ||
+          serviceLocationId == currentLocation.id;
+    });
+    final classTypes =
+        ref.watch(classTypesProvider).value ?? const <ClassType>[];
     final hasActiveClassTypeForLocation = classTypes.any((classType) {
       if (!classType.isActive) return false;
       final enabledEverywhere = classType.locationIds.isEmpty;
@@ -900,71 +916,78 @@ class _AgendaAddAction extends ConsumerWidget {
         formFactor == AppFormFactor.desktop;
     const iconOnlyWidth = 46.0;
     final bool isIconOnly = !showLabelEffective;
+    final items = <AdaptiveDropdownItem<String>>[
+      if (hasActiveServiceForLocation)
+        AdaptiveDropdownItem(
+          value: 'appointment',
+          child: Text(l10n.agendaAddAppointment),
+        ),
+      if (hasActiveClassTypeForLocation)
+        AdaptiveDropdownItem(
+          value: 'class_schedule',
+          child: Text(l10n.classEventsNewScheduleButton),
+        ),
+      AdaptiveDropdownItem(value: 'block', child: Text(l10n.agendaAddBlock)),
+    ];
+    void activateAction(String value) {
+      if (value == 'appointment') {
+        showBookingDialog(
+          context,
+          ref,
+          date: agendaDate,
+          autoOpenDatePicker: true,
+          initialStaffId: initialStaffIdForNewBooking,
+        );
+      } else if (value == 'class_schedule') {
+        showCreateClassEventDialog(context, ref);
+      } else if (value == 'block') {
+        showAddBlockDialog(
+          context,
+          ref,
+          date: agendaDate,
+          initialStaffId: initialStaffIdForNewBooking,
+        );
+      }
+    }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: AdaptiveDropdown<String>(
-        modalTitle: l10n.agendaAddTitle,
-        alignment: AdaptiveDropdownAlignment.right,
-        verticalPosition: AdaptiveDropdownVerticalPosition.above,
-        forcePopup: true,
-        hideTriggerWhenOpen: true,
-        popupWidth: 200,
-        items: [
-          AdaptiveDropdownItem(
-            value: 'appointment',
-            child: Text(l10n.agendaAddAppointment),
-          ),
-          if (hasActiveClassTypeForLocation)
-            AdaptiveDropdownItem(
-              value: 'class_schedule',
-              child: Text(l10n.classEventsNewScheduleButton),
-            ),
-          AdaptiveDropdownItem(
-            value: 'block',
-            child: Text(l10n.agendaAddBlock),
-          ),
-        ],
-        onSelected: (value) {
-          if (value == 'appointment') {
-            showBookingDialog(
-              context,
-              ref,
-              date: agendaDate,
-              autoOpenDatePicker: true,
-              initialStaffId: initialStaffIdForNewBooking,
-            );
-          } else if (value == 'class_schedule') {
-            showCreateClassEventDialog(context, ref);
-          } else if (value == 'block') {
-            showAddBlockDialog(
-              context,
-              ref,
-              date: agendaDate,
-              initialStaffId: initialStaffIdForNewBooking,
-            );
-          }
-        },
-        child: Material(
-          elevation: 0,
-          color: scheme.secondaryContainer,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-          clipBehavior: Clip.antiAlias,
-          child: SizedBox(
-            height: _actionButtonHeight,
-            width: isIconOnly ? iconOnlyWidth : null,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              child: _buildAddButtonContent(
-                showLabelEffective: showLabelEffective,
-                compact: compact,
-                label: l10n.agendaAdd,
-                onContainer: onContainer,
-              ),
-            ),
+    final button = Material(
+      elevation: 0,
+      color: scheme.secondaryContainer,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      clipBehavior: Clip.antiAlias,
+      child: SizedBox(
+        height: _actionButtonHeight,
+        width: isIconOnly ? iconOnlyWidth : null,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: _buildAddButtonContent(
+            showLabelEffective: showLabelEffective,
+            compact: compact,
+            label: l10n.agendaAdd,
+            onContainer: onContainer,
           ),
         ),
       ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: items.length == 1
+          ? InkWell(
+              onTap: () => activateAction(items.first.value),
+              child: button,
+            )
+          : AdaptiveDropdown<String>(
+              modalTitle: l10n.agendaAddTitle,
+              alignment: AdaptiveDropdownAlignment.right,
+              verticalPosition: AdaptiveDropdownVerticalPosition.above,
+              forcePopup: true,
+              hideTriggerWhenOpen: true,
+              popupWidth: 200,
+              items: items,
+              onSelected: activateAction,
+              child: button,
+            ),
     );
   }
 }
@@ -1384,6 +1407,7 @@ class _ServicesAddAction extends ConsumerWidget {
             .setMode(ServicesReorderMode.classTypes);
       }
     }
+
     const iconOnlyWidth = 46.0;
     final bool isIconOnly = !showLabelEffective;
     Widget buildActionLabel(IconData icon, String label) {

@@ -1,0 +1,66 @@
+class BillingConfigViewModel {
+  const BillingConfigViewModel({
+    required this.billingEnabled,
+    required this.billingMode,
+    required this.billingIntervalUnit,
+    required this.billingIntervalCount,
+    required this.amountCents,
+    required this.currency,
+    required this.providerCode,
+    required this.status,
+    required this.currentPeriodStart,
+    required this.currentPeriodEnd,
+    required this.cancelAtPeriodEnd,
+    required this.canceledAt,
+    required this.canStartCheckout,
+    required this.canOpenPortal,
+    this.providerPriceReference,
+    this.notes,
+  });
+
+  final bool billingEnabled;
+  final String billingMode;
+  final String? billingIntervalUnit;
+  final int? billingIntervalCount;
+  final int? amountCents;
+  final String currency;
+  final String? providerCode;
+  final String status;
+  final DateTime? currentPeriodStart;
+  final DateTime? currentPeriodEnd;
+  final bool cancelAtPeriodEnd;
+  final DateTime? canceledAt;
+  final bool canStartCheckout;
+  final bool canOpenPortal;
+  final String? providerPriceReference;
+  final String? notes;
+
+  factory BillingConfigViewModel.fromJson(Map<String, dynamic> json) {
+    return BillingConfigViewModel(
+      billingEnabled: json['billing_enabled'] as bool? ?? false,
+      billingMode: json['billing_mode'] as String? ?? 'free',
+      billingIntervalUnit: json['billing_interval_unit'] as String?,
+      billingIntervalCount: json['billing_interval_count'] as int?,
+      amountCents: json['amount_cents'] as int?,
+      currency: json['currency'] as String? ?? 'EUR',
+      providerCode: json['provider_code'] as String?,
+      status:
+          json['status'] as String? ??
+          json['subscription_status'] as String? ??
+          'not_required',
+      currentPeriodStart: _parseDate(json['current_period_start']),
+      currentPeriodEnd: _parseDate(json['current_period_end']),
+      cancelAtPeriodEnd: json['cancel_at_period_end'] as bool? ?? false,
+      canceledAt: _parseDate(json['canceled_at']),
+      canStartCheckout: json['can_start_checkout'] as bool? ?? false,
+      canOpenPortal: json['can_open_portal'] as bool? ?? false,
+      providerPriceReference: json['provider_price_reference'] as String?,
+      notes: json['notes'] as String?,
+    );
+  }
+
+  static DateTime? _parseDate(Object? value) {
+    if (value == null) return null;
+    return DateTime.tryParse(value.toString());
+  }
+}

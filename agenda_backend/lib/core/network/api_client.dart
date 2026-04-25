@@ -930,6 +930,7 @@ class ApiClient {
     bool notifyClient = true,
     bool notifyClientDecisionByOperator = false,
     bool suppressAuditEvent = false,
+    bool suppressAppointmentUpdateAudit = false,
   }) async {
     final data = <String, dynamic>{};
     if (startTime != null) data['start_time'] = startTime;
@@ -957,6 +958,7 @@ class ApiClient {
     data['notify_client'] = notifyClient;
     data['notify_client_decision_by_operator'] = notifyClientDecisionByOperator;
     data['suppress_audit_event'] = suppressAuditEvent;
+    data['suppress_appointment_update_audit'] = suppressAppointmentUpdateAudit;
 
     try {
       final response = await _dio.patch(
@@ -1652,6 +1654,42 @@ class ApiClient {
   /// Superadmin only: reinvia email di invito all'admin.
   Future<void> resendAdminInvite(int businessId) async {
     await post('/v1/admin/businesses/$businessId/resend-invite');
+  }
+
+  Future<Map<String, dynamic>> getBillingSubscription({
+    required int businessId,
+  }) async {
+    return get(
+      ApiConfig.billingSubscription,
+      queryParameters: {'business_id': businessId},
+    );
+  }
+
+  Future<String> createBillingCheckoutSession({required int businessId}) async {
+    final response = await post(
+      '${ApiConfig.billingCheckoutSession}?business_id=$businessId',
+    );
+    return response['url'] as String? ?? '';
+  }
+
+  Future<String> createBillingPortalSession({required int businessId}) async {
+    final response = await post(
+      '${ApiConfig.billingPortalSession}?business_id=$businessId',
+    );
+    return response['url'] as String? ?? '';
+  }
+
+  Future<Map<String, dynamic>> getAdminBusinessBillingConfig(
+    int businessId,
+  ) async {
+    return get(ApiConfig.adminBusinessBillingConfig(businessId));
+  }
+
+  Future<void> updateAdminBusinessBillingConfig(
+    int businessId,
+    Map<String, dynamic> payload,
+  ) async {
+    await put(ApiConfig.adminBusinessBillingConfig(businessId), data: payload);
   }
 
   /// PUT /v1/admin/businesses/{id}/suspend

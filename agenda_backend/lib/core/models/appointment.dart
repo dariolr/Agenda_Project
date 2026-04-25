@@ -42,6 +42,7 @@ class Appointment {
   final int? clientId; // opzionale: collegamento al Client
   final String clientName;
   final String serviceName;
+  final String? serviceColorHex;
   final DateTime startTime;
   final DateTime endTime;
   final double? listPrice; // prezzo di listino snapshot (se presente)
@@ -72,6 +73,7 @@ class Appointment {
     this.clientId,
     required this.clientName,
     required this.serviceName,
+    this.serviceColorHex,
     required this.startTime,
     required this.endTime,
     this.listPrice,
@@ -109,6 +111,8 @@ class Appointment {
     clientId: json['client_id'] as int?,
     clientName: json['client_name'] as String? ?? '',
     serviceName: json['service_name'] as String? ?? '',
+    serviceColorHex:
+        (json['service_color_hex'] ?? json['service_color']) as String?,
     startTime: DateTime.parse(json['start_time'] as String),
     endTime: DateTime.parse(json['end_time'] as String),
     listPrice: json['list_price'] != null
@@ -141,6 +145,7 @@ class Appointment {
     int? clientId,
     String? clientName,
     String? serviceName,
+    String? serviceColorHex,
     DateTime? startTime,
     DateTime? endTime,
     double? listPrice,
@@ -168,6 +173,7 @@ class Appointment {
       clientId: clientId ?? this.clientId,
       clientName: clientName ?? this.clientName,
       serviceName: serviceName ?? this.serviceName,
+      serviceColorHex: serviceColorHex ?? this.serviceColorHex,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       listPrice: listPrice ?? this.listPrice,
@@ -207,6 +213,7 @@ class Appointment {
       if (clientId != null) 'client_id': clientId,
       'client_name': clientName,
       'service_name': serviceName,
+      if (serviceColorHex != null) 'service_color_hex': serviceColorHex,
       'start_time': startTime.toIso8601String(),
       'end_time': endTime.toIso8601String(),
       if (listPrice != null) 'list_price': listPrice,

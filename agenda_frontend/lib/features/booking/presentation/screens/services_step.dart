@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
@@ -11,7 +12,10 @@ import '../../../../core/network/api_client.dart';
 import '../../../../core/widgets/centered_error_view.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/booking_nomenclature_provider.dart';
+import '../../providers/business_provider.dart';
 import '../../providers/class_events_provider.dart';
+import '../../providers/my_bookings_provider.dart';
+import '../../../auth/providers/auth_provider.dart';
 
 class ServicesStep extends ConsumerStatefulWidget {
   const ServicesStep({super.key});
@@ -23,6 +27,7 @@ class ServicesStep extends ConsumerStatefulWidget {
 class _ServicesStepState extends ConsumerState<ServicesStep>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
+  bool _hasRequestedBookingsLoad = false;
 
   @override
   void initState() {
@@ -49,10 +54,21 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     );
     final servicesDataAsync = ref.watch(servicesDataProvider);
     final packagesAsync = ref.watch(servicePackagesProvider);
-    final classEventsAsync = ref.watch(classEventsProvider);
+    final classEventsAsync = ref.watch(filteredClassEventsProvider);
     final bookingState = ref.watch(bookingFlowProvider);
     final selectedServices = bookingState.request.services;
     final isLoading = servicesDataAsync.isLoading || classEventsAsync.isLoading;
+
+    // Carica le prenotazioni esistenti dell'utente (se autenticato) per
+    // impedire di prenotare due volte lo stesso evento.
+    final isAuthenticated = ref.watch(authProvider).isAuthenticated;
+    if (isAuthenticated && !_hasRequestedBookingsLoad) {
+      _hasRequestedBookingsLoad = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) ref.read(myBookingsProvider.notifier).loadBookings();
+      });
+    }
+    final bookedEventStatus = ref.watch(bookedClassEventStatusProvider);
 
     if (servicesDataAsync.hasError) {
       return _buildErrorWidget(
@@ -81,6 +97,19 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     }
 
     Widget buildServicesContent() {
+      if (bookingState.request.isClassEventBooking) {
+        return _ConflictView(
+          title: bookingTabConflictServicesTitle(
+            context,
+            phraseOverrides: phraseOverrides,
+          ),
+          subtitle: bookingTabConflictServicesSubtitle(
+            context,
+            bookingState.request.selectedClassEvent!.classTypeName,
+            phraseOverrides: phraseOverrides,
+          ),
+        );
+      }
       if (servicesData == null) return const SizedBox.shrink();
       if (servicesData.bookableServices.isEmpty && packages.isEmpty) {
         return _EmptyView(
@@ -122,6 +151,8 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
             ref,
             classEventsAsync,
             bookingState.request.selectedClassEvent,
+            hasSelectedServices: selectedServices.isNotEmpty,
+            bookedEventStatus: bookedEventStatus,
           ),
         ],
       );
@@ -131,6 +162,8 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
         ref,
         classEventsAsync,
         bookingState.request.selectedClassEvent,
+        hasSelectedServices: selectedServices.isNotEmpty,
+        bookedEventStatus: bookedEventStatus,
       );
     } else {
       content = buildServicesContent();
@@ -147,22 +180,42 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    bookingServicesTitle(
-                      context,
-                      customServiceLabel,
-                      phraseOverrides: phraseOverrides,
-                    ),
+                    showBothTabs
+                        ? bookingServicesAndEventsTitle(
+                            context,
+                            phraseOverrides: phraseOverrides,
+                          )
+                        : hasClassEvents
+                        ? bookingEventsTitle(
+                            context,
+                            phraseOverrides: phraseOverrides,
+                          )
+                        : bookingServicesTitle(
+                            context,
+                            customServiceLabel,
+                            phraseOverrides: phraseOverrides,
+                          ),
                     style: theme.textTheme.titleMedium?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    bookingServicesSubtitle(
-                      context,
-                      customServiceLabel,
-                      phraseOverrides: phraseOverrides,
-                    ),
+                    showBothTabs
+                        ? bookingServicesAndEventsSubtitle(
+                            context,
+                            phraseOverrides: phraseOverrides,
+                          )
+                        : hasClassEvents
+                        ? bookingEventsSubtitle(
+                            context,
+                            phraseOverrides: phraseOverrides,
+                          )
+                        : bookingServicesSubtitle(
+                            context,
+                            customServiceLabel,
+                            phraseOverrides: phraseOverrides,
+                          ),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurface.withOpacity(0.7),
                     ),
@@ -176,16 +229,31 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
             if (showBothTabs)
               TabBar(
                 controller: _tabController,
-                tabs: const [
-                  Tab(text: 'Servizi'),
-                  Tab(text: 'Classi'),
+                tabs: [
+                  Tab(
+                    text: bookingTabServicesLabel(
+                      context,
+                      phraseOverrides: phraseOverrides,
+                    ),
+                  ),
+                  Tab(
+                    text: bookingTabEventsLabel(
+                      context,
+                      phraseOverrides: phraseOverrides,
+                    ),
+                  ),
                 ],
               ),
 
             Expanded(child: content),
 
             // Footer con selezione e bottone
-            _buildFooter(context, ref, selectedServices, isClassTab: isClassTab),
+            _buildFooter(
+              context,
+              ref,
+              selectedServices,
+              isClassTab: isClassTab,
+            ),
           ],
         ),
         if (isLoading)
@@ -419,60 +487,133 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     BuildContext context,
     WidgetRef ref,
     AsyncValue<List<ClassEvent>> eventsAsync,
-    ClassEvent? selectedEvent,
-  ) {
+    ClassEvent? selectedEvent, {
+    required bool hasSelectedServices,
+    required Map<int, String> bookedEventStatus,
+  }) {
+    if (hasSelectedServices) {
+      final phraseOverrides = ref.watch(
+        bookingTextOverridesForLocaleProvider(Localizations.localeOf(context)),
+      );
+      return _ConflictView(
+        title: bookingTabConflictEventsTitle(
+          context,
+          phraseOverrides: phraseOverrides,
+        ),
+        subtitle: bookingTabConflictEventsSubtitle(
+          context,
+          phraseOverrides: phraseOverrides,
+        ),
+      );
+    }
+
+    final phraseOverrides = ref.watch(
+      bookingTextOverridesForLocaleProvider(Localizations.localeOf(context)),
+    );
+
     return eventsAsync.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (e, _) => _ErrorView(
-        title: 'Errore nel caricamento delle lezioni',
+        title: bookingEventsEmptyTitle(
+          context,
+          phraseOverrides: phraseOverrides,
+        ),
         onRetry: () => ref.read(classEventsProvider.notifier).refresh(),
       ),
       data: (events) {
         if (events.isEmpty) {
-          return const _EmptyView(
-            title: 'Nessuna lezione disponibile',
-            subtitle: 'Non ci sono lezioni di gruppo programmate al momento.',
+          return _EmptyView(
+            title: bookingEventsEmptyTitle(
+              context,
+              phraseOverrides: phraseOverrides,
+            ),
+            subtitle: bookingEventsEmptySubtitle(
+              context,
+              phraseOverrides: phraseOverrides,
+            ),
           );
         }
 
-        // Raggruppa per data
-        final byDate = <String, List<ClassEvent>>{};
+        // Raggruppa per categoria
+        final servicesData = ref.watch(servicesDataProvider).value;
+        final categoryById = <int, ServiceCategory>{
+          if (servicesData != null)
+            for (final c in servicesData.categories) c.id: c,
+        };
+
+        final byCategory = <int?, List<ClassEvent>>{};
         for (final e in events) {
-          final dateKey = e.displayStartsAt.substring(0, 10);
-          byDate.putIfAbsent(dateKey, () => []).add(e);
+          byCategory.putIfAbsent(e.classTypeServiceCategoryId, () => []).add(e);
+        }
+
+        final sortedCategoryIds = byCategory.keys.toList()
+          ..sort((a, b) {
+            if (a == null && b == null) return 0;
+            if (a == null) return 1;
+            if (b == null) return -1;
+            final catA = categoryById[a];
+            final catB = categoryById[b];
+            if (catA == null && catB == null) return a.compareTo(b);
+            if (catA == null) return 1;
+            if (catB == null) return -1;
+            return catA.sortOrder.compareTo(catB.sortOrder);
+          });
+
+        final showCategories =
+            sortedCategoryIds.length > 1 ||
+            (sortedCategoryIds.length == 1 &&
+                sortedCategoryIds.first != null &&
+                categoryById.containsKey(sortedCategoryIds.first));
+
+        final isCollapsible =
+            showCategories &&
+            events.length > 30 &&
+            sortedCategoryIds.length >= 3;
+
+        void onEventTap(ClassEvent event) {
+          final notifier = ref.read(bookingFlowProvider.notifier);
+          if (selectedEvent?.id == event.id) {
+            notifier.selectClassEvent(null);
+          } else {
+            notifier.selectClassEvent(event);
+          }
+        }
+
+        if (!showCategories) {
+          // Singola categoria o nessuna: mostra eventi raggruppati per data
+          return ListView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: _buildEventsByDate(
+              context,
+              byCategory.values.expand((e) => e).toList(),
+              selectedEvent,
+              bookedEventStatus,
+              phraseOverrides,
+              onEventTap,
+            ),
+          );
         }
 
         final items = <Widget>[];
-        for (final entry in byDate.entries) {
-          final date = DateTime.parse(entry.key);
+        for (final catId in sortedCategoryIds) {
+          final catEvents = byCategory[catId]!;
+          final catName =
+              catId != null && categoryById.containsKey(catId)
+              ? categoryById[catId]!.name
+              : context.l10n.tabEvents;
           items.add(
-            Padding(
-              padding: const EdgeInsets.fromLTRB(0, 12, 0, 6),
-              child: Text(
-                DateFormat('EEEE d MMMM', 'it').format(date),
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
-                ),
-              ),
+            _EventCategorySection(
+              key: ValueKey(catId),
+              categoryName: catName,
+              events: catEvents,
+              selectedEvent: selectedEvent,
+              bookedEventStatus: bookedEventStatus,
+              phraseOverrides: phraseOverrides,
+              isCollapsible: isCollapsible,
+              hasSelectedEvent: catEvents.any((e) => e.id == selectedEvent?.id),
+              onEventTap: onEventTap,
             ),
           );
-          for (final event in entry.value) {
-            items.add(
-              _ClassEventTile(
-                event: event,
-                isSelected: selectedEvent?.id == event.id,
-                onTap: () {
-                  final notifier = ref.read(bookingFlowProvider.notifier);
-                  if (selectedEvent?.id == event.id) {
-                    notifier.selectClassEvent(null);
-                  } else {
-                    notifier.selectClassEvent(event);
-                  }
-                },
-              ),
-            );
-          }
         }
 
         return ListView(
@@ -525,7 +666,10 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
         );
       } else {
         selectionInfo = Text(
-          'Seleziona una lezione',
+          bookingEventsSelectedNoneLabel(
+            context,
+            phraseOverrides: phraseOverrides,
+          ),
           style: theme.textTheme.bodyMedium?.copyWith(
             color: theme.colorScheme.onSurface.withOpacity(0.5),
           ),
@@ -594,34 +738,101 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     if (totalPrice == 0) return l10n.servicesFree;
     return '€${totalPrice.toStringAsFixed(2).replaceAll('.', ',')}';
   }
+
+  static List<Widget> _buildEventsByDate(
+    BuildContext context,
+    List<ClassEvent> events,
+    ClassEvent? selectedEvent,
+    Map<int, String> bookedEventStatus,
+    Map<String, String>? phraseOverrides,
+    void Function(ClassEvent) onEventTap,
+  ) {
+    final byDate = <String, List<ClassEvent>>{};
+    for (final e in events) {
+      final dateKey = e.displayStartsAt.substring(0, 10);
+      byDate.putIfAbsent(dateKey, () => []).add(e);
+    }
+    final locale = Localizations.localeOf(context).languageCode;
+    final widgets = <Widget>[];
+    for (final entry in byDate.entries) {
+      final date = DateTime.parse(entry.key);
+      widgets.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(0, 12, 0, 6),
+          child: Text(
+            DateFormat('EEEE d MMMM', locale).format(date),
+            style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+            ),
+          ),
+        ),
+      );
+      for (final event in entry.value) {
+        final existingStatus = bookedEventStatus[event.id];
+        widgets.add(
+          _ClassEventTile(
+            event: event,
+            isSelected: selectedEvent?.id == event.id,
+            existingStatus: existingStatus,
+            phraseOverrides: phraseOverrides,
+            onTap: existingStatus != null
+                ? () {}
+                : () => onEventTap(event),
+          ),
+        );
+      }
+    }
+    return widgets;
+  }
 }
 
-class _ClassEventTile extends StatelessWidget {
+class _ClassEventTile extends ConsumerWidget {
   final ClassEvent event;
   final bool isSelected;
+
+  /// 'confirmed' | 'waitlisted' | null
+  final String? existingStatus;
+  final Map<String, String>? phraseOverrides;
   final VoidCallback onTap;
 
   const _ClassEventTile({
     required this.event,
     required this.isSelected,
     required this.onTap,
+    this.existingStatus,
+    this.phraseOverrides,
   });
 
   Future<void> _confirmWaitlist(BuildContext context) async {
-    final l10n = context.l10n;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(l10n.classEventWaitlistDialogTitle),
-        content: Text(l10n.classEventWaitlistDialogMessage),
+        title: Text(
+          bookingClassEventWaitlistDialogTitle(
+            context,
+            phraseOverrides: phraseOverrides,
+          ),
+        ),
+        content: Text(
+          bookingClassEventWaitlistDialogMessage(
+            context,
+            phraseOverrides: phraseOverrides,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(false),
-            child: Text(l10n.actionCancel),
+            child: Text(context.l10n.actionCancel),
           ),
           FilledButton(
             onPressed: () => Navigator.of(ctx).pop(true),
-            child: Text(l10n.classEventWaitlistDialogConfirm),
+            child: Text(
+              bookingClassEventWaitlistDialogConfirm(
+                context,
+                phraseOverrides: phraseOverrides,
+              ),
+            ),
           ),
         ],
       ),
@@ -630,8 +841,9 @@ class _ClassEventTile extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final slug = ref.watch(businessSlugProvider);
     final startTime = DateTime.tryParse(event.displayStartsAt);
     final endTime = DateTime.tryParse(event.displayEndsAt);
     final timeLabel = (startTime != null && endTime != null)
@@ -646,119 +858,220 @@ class _ClassEventTile extends StatelessWidget {
       }
     }
 
+    final isAlreadyBooked = existingStatus == 'confirmed';
+    final isAlreadyWaitlisted = existingStatus == 'waitlisted';
+    final hasExistingBooking = existingStatus != null;
+
+    final effectiveOnTap = hasExistingBooking
+        ? null
+        : (event.isFull && !event.waitlistEnabled)
+        ? null
+        : (event.isFull && event.waitlistEnabled)
+        ? () => _confirmWaitlist(context)
+        : onTap;
+
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
-          color: isSelected ? theme.colorScheme.primary : theme.dividerColor,
-          width: isSelected ? 2 : 1,
+          color: isAlreadyBooked
+              ? theme.colorScheme.primary.withOpacity(0.4)
+              : isAlreadyWaitlisted
+              ? Colors.orange.withOpacity(0.4)
+              : isSelected
+              ? theme.colorScheme.primary
+              : theme.dividerColor,
+          width: (isSelected || hasExistingBooking) ? 2 : 1,
         ),
       ),
       child: InkWell(
-        onTap: (event.isFull && !event.waitlistEnabled)
-            ? null
-            : (event.isFull && event.waitlistEnabled)
-                ? () => _confirmWaitlist(context)
-                : onTap,
+        onTap: effectiveOnTap,
         borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(14),
-          child: Row(
-            children: [
-              // Indicatore selezione
-              Container(
-                width: 24,
-                height: 24,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: isSelected
-                      ? theme.colorScheme.primary
-                      : Colors.transparent,
-                  border: Border.all(
-                    color: isSelected
-                        ? theme.colorScheme.primary
-                        : theme.colorScheme.onSurface.withOpacity(0.3),
-                    width: 2,
-                  ),
-                ),
-                child: isSelected
-                    ? const Icon(Icons.check, size: 16, color: Colors.white)
-                    : null,
-              ),
-              const SizedBox(width: 14),
-              // Pallino colore tipo classe
-              if (dotColor != null) ...[
+        child: Opacity(
+          opacity: hasExistingBooking ? 0.65 : 1.0,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: [
+                // Indicatore selezione / stato prenotazione
                 Container(
-                  width: 10,
-                  height: 10,
+                  width: 24,
+                  height: 24,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: dotColor,
+                    color: isAlreadyBooked
+                        ? theme.colorScheme.primary.withOpacity(0.15)
+                        : isAlreadyWaitlisted
+                        ? Colors.orange.withOpacity(0.15)
+                        : isSelected
+                        ? theme.colorScheme.primary
+                        : Colors.transparent,
+                    border: Border.all(
+                      color: isAlreadyBooked
+                          ? theme.colorScheme.primary.withOpacity(0.5)
+                          : isAlreadyWaitlisted
+                          ? Colors.orange.withOpacity(0.5)
+                          : isSelected
+                          ? theme.colorScheme.primary
+                          : theme.colorScheme.onSurface.withOpacity(0.3),
+                      width: 2,
+                    ),
+                  ),
+                  child: hasExistingBooking
+                      ? Icon(
+                          isAlreadyBooked
+                              ? Icons.check_circle_outline
+                              : Icons.hourglass_top_rounded,
+                          size: 14,
+                          color: isAlreadyBooked
+                              ? theme.colorScheme.primary
+                              : Colors.orange.shade700,
+                        )
+                      : isSelected
+                      ? const Icon(Icons.check, size: 16, color: Colors.white)
+                      : null,
+                ),
+                const SizedBox(width: 14),
+                // Pallino colore tipo classe
+                if (dotColor != null) ...[
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: dotColor,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                ],
+                // Info evento
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        event.classTypeName,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        timeLabel,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
+                      if (hasExistingBooking) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          event.formattedPrice,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurface.withOpacity(0.6),
+                          ),
+                        ),
+                      ],
+                    ],
                   ),
                 ),
-                const SizedBox(width: 10),
-              ],
-              // Info evento
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                const SizedBox(width: 8),
+                // Posti / prezzo / stato prenotazione
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text(
-                      event.classTypeName,
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w600,
+                    if (!hasExistingBooking)
+                      Text(
+                        event.formattedPrice,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 2),
-                    Text(
-                      timeLabel,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                    if (isAlreadyBooked) ...[
+                      Text(
+                        bookingClassEventAlreadyBookedLabel(
+                          context,
+                          phraseOverrides: phraseOverrides,
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                    ),
+                      if (slug != null) ...[
+                        const SizedBox(height: 6),
+                        _ManageBookingLink(
+                          slug: slug,
+                          color: theme.colorScheme.primary,
+                          label: bookingClassEventManageBookingLabel(
+                            context,
+                            phraseOverrides: phraseOverrides,
+                          ),
+                          textTheme: theme.textTheme,
+                        ),
+                      ],
+                    ] else if (isAlreadyWaitlisted) ...[
+                      Text(
+                        bookingClassEventAlreadyWaitlistedLabel(
+                          context,
+                          phraseOverrides: phraseOverrides,
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.orange.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (slug != null) ...[
+                        const SizedBox(height: 6),
+                        _ManageBookingLink(
+                          slug: slug,
+                          color: Colors.orange.shade700,
+                          label: bookingClassEventManageBookingLabel(
+                            context,
+                            phraseOverrides: phraseOverrides,
+                          ),
+                          textTheme: theme.textTheme,
+                        ),
+                      ],
+                    ] else if (event.isFull && event.waitlistEnabled)
+                      Text(
+                        bookingClassEventJoinWaitlistLabel(
+                          context,
+                          phraseOverrides: phraseOverrides,
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: Colors.orange.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )
+                    else if (event.isFull)
+                      Text(
+                        bookingClassEventFullLabel(
+                          context,
+                          phraseOverrides: phraseOverrides,
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.error,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      )
+                    else
+                      Text(
+                        bookingClassEventSpotsLeftLabel(
+                          context,
+                          event.spotsLeft,
+                          phraseOverrides: phraseOverrides,
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        ),
+                      ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              // Posti / prezzo
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    event.formattedPrice,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  if (event.isFull && event.waitlistEnabled)
-                    Text(
-                      context.l10n.classEventJoinWaitlistLabel,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: Colors.orange.shade700,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    )
-                  else if (event.isFull)
-                    Text(
-                      context.l10n.classEventFull,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.error,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    )
-                  else
-                    Text(
-                      context.l10n.classEventSpotsLeft(event.spotsLeft),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                    ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -935,6 +1248,174 @@ class _CategorySectionState extends State<_CategorySection> {
                     ),
                 if (!widget.isCollapsible) const SizedBox(height: 8),
               ],
+            ),
+          )
+        : const SizedBox.shrink();
+
+    if (!widget.isCollapsible) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [header, body],
+      );
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        border: Border.all(color: borderColor),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [header, body],
+      ),
+    );
+  }
+}
+
+class _EventCategorySection extends StatefulWidget {
+  final String categoryName;
+  final List<ClassEvent> events;
+  final ClassEvent? selectedEvent;
+  final Map<int, String> bookedEventStatus;
+  final Map<String, String>? phraseOverrides;
+  final bool isCollapsible;
+  final bool hasSelectedEvent;
+  final void Function(ClassEvent) onEventTap;
+
+  const _EventCategorySection({
+    super.key,
+    required this.categoryName,
+    required this.events,
+    required this.selectedEvent,
+    required this.bookedEventStatus,
+    required this.phraseOverrides,
+    required this.hasSelectedEvent,
+    required this.onEventTap,
+    this.isCollapsible = false,
+  });
+
+  @override
+  State<_EventCategorySection> createState() => _EventCategorySectionState();
+}
+
+class _EventCategorySectionState extends State<_EventCategorySection> {
+  late bool _isExpanded;
+
+  @override
+  void initState() {
+    super.initState();
+    _isExpanded = !widget.isCollapsible;
+  }
+
+  @override
+  void didUpdateWidget(_EventCategorySection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.isCollapsible != widget.isCollapsible) {
+      _isExpanded = !widget.isCollapsible;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final borderColor = theme.colorScheme.outlineVariant.withOpacity(0.18);
+
+    final header = GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: widget.isCollapsible
+          ? () => setState(() => _isExpanded = !_isExpanded)
+          : null,
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          widget.isCollapsible ? 14 : 0,
+          12,
+          widget.isCollapsible ? 8 : 0,
+          12,
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: Text(
+                      widget.categoryName,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (widget.isCollapsible) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurface.withOpacity(0.06),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${widget.events.length}',
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.45),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (widget.hasSelectedEvent) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primary.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '1',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+            if (widget.isCollapsible) ...[
+              const SizedBox(width: 4),
+              AnimatedRotation(
+                turns: _isExpanded ? 0.25 : 0,
+                duration: const Duration(milliseconds: 250),
+                child: const Icon(Icons.chevron_right),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+
+    final body = _isExpanded
+        ? Padding(
+            padding: widget.isCollapsible
+                ? const EdgeInsets.fromLTRB(10, 0, 10, 10)
+                : EdgeInsets.zero,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: _ServicesStepState._buildEventsByDate(
+                context,
+                widget.events,
+                widget.selectedEvent,
+                widget.bookedEventStatus,
+                widget.phraseOverrides,
+                widget.onEventTap,
+              ),
             ),
           )
         : const SizedBox.shrink();
@@ -1202,6 +1683,49 @@ class _ErrorView extends StatelessWidget {
 }
 
 /// Widget per mostrare stato vuoto
+class _ConflictView extends StatelessWidget {
+  final String title;
+  final String subtitle;
+
+  const _ConflictView({required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.info_outline,
+              size: 56,
+              color: theme.colorScheme.primary.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              title,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.6),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _EmptyView extends StatelessWidget {
   final String title;
   final String subtitle;
@@ -1241,6 +1765,42 @@ class _EmptyView extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ManageBookingLink extends StatelessWidget {
+  final String slug;
+  final Color color;
+  final String label;
+  final TextTheme textTheme;
+
+  const _ManageBookingLink({
+    required this.slug,
+    required this.color,
+    required this.label,
+    required this.textTheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6),
+      child: OutlinedButton(
+        onPressed: () => context.go('/$slug/my-bookings'),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: color,
+          side: BorderSide(color: color),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          minimumSize: const Size(0, 32),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          textStyle: textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: Text(label),
       ),
     );
   }

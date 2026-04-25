@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../core/models/class_event.dart';
 import 'booking_provider.dart';
+import 'locations_provider.dart';
+import 'my_bookings_provider.dart';
 
 /// Notifier per gli eventi di classe pubblici della location corrente.
 /// Carica una volta per location e si aggiorna se la location cambia.
@@ -49,3 +51,58 @@ final classEventsProvider =
     StateNotifierProvider<ClassEventsNotifier, AsyncValue<List<ClassEvent>>>(
       (ref) => ClassEventsNotifier(ref),
     );
+
+/// Filtra gli eventi applicando i vincoli di prenotazione della location:
+/// - bookingOpenAt / bookingCloseAt
+/// - maxBookingAdvanceDays
+/// Usa locationNowProvider per coerenza con il fuso orario della sede.
+final filteredClassEventsProvider =
+    Provider<AsyncValue<List<ClassEvent>>>((ref) {
+  final eventsAsync = ref.watch(classEventsProvider);
+  final now = ref.watch(locationNowProvider);
+  final maxDays = ref.watch(maxBookingAdvanceDaysProvider);
+  return eventsAsync.whenData(
+    (events) => events
+        .where(
+          (e) =>
+              e.isBookingOpenAt(now) &&
+              e.isWithinAdvanceBookingWindow(now, maxDays),
+        )
+        .toList(),
+  );
+});
+
+/// Mappa eventId → status ('confirmed' | 'waitlisted') per le prenotazioni
+/// attive dell'utente. Usato per impedire doppie prenotazioni e mostrare
+/// lo stato corrente sul tile dell'evento.
+final bookedClassEventStatusProvider = Provider<Map<int, String>>((ref) {
+  final bookings = ref.watch(myBookingsProvider);
+  return {
+    for (final b in bookings.upcomingClass)
+      if (b.isConfirmed || b.isWaitlisted) b.classEventId: b.status,
+  };
+});
+
+/// True quando esistono solo eventi prenotabili (nessun servizio/pacchetto).
+final isEventOnlyModeProvider = Provider<bool>((ref) {
+  final classEvents = ref.watch(filteredClassEventsProvider).value ?? [];
+  final servicesData = ref.watch(servicesDataProvider).value;
+  final packages = ref.watch(servicePackagesProvider).value ?? [];
+  final hasClassEvents = classEvents.isNotEmpty;
+  final hasServices =
+      (servicesData?.bookableServices.isNotEmpty ?? false) ||
+      packages.isNotEmpty;
+  return hasClassEvents && !hasServices;
+});
+
+/// True quando esistono sia servizi che eventi prenotabili.
+final hasBothServicesAndEventsProvider = Provider<bool>((ref) {
+  final classEvents = ref.watch(filteredClassEventsProvider).value ?? [];
+  final servicesData = ref.watch(servicesDataProvider).value;
+  final packages = ref.watch(servicePackagesProvider).value ?? [];
+  final hasClassEvents = classEvents.isNotEmpty;
+  final hasServices =
+      (servicesData?.bookableServices.isNotEmpty ?? false) ||
+      packages.isNotEmpty;
+  return hasClassEvents && hasServices;
+});

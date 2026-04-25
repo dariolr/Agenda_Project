@@ -10,6 +10,7 @@ import '../../../../core/network/network_providers.dart';
 import '../../../../core/widgets/app_loading_screen.dart';
 import '../../../../core/widgets/booking_app_bar.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/class_events_provider.dart';
 import '../../providers/locations_provider.dart';
 import '../widgets/booking_step_indicator.dart';
 import 'confirmation_step.dart';
@@ -148,6 +149,9 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     // Normal booking flow
     final bookingState = ref.watch(bookingFlowProvider);
     final hasMultipleLocations = ref.watch(hasMultipleLocationsProvider);
+    final hideStaffAndDateTime =
+        ref.watch(isEventOnlyModeProvider) ||
+        bookingState.request.isClassEventBooking;
     final isMobile =
         _formFactorForWidth(MediaQuery.of(context).size.width) ==
         AppFormFactor.mobile;
@@ -205,6 +209,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                           currentStep: bookingState.currentStep,
                           allowStaffSelection: config.allowStaffSelection,
                           showLocationStep: hasMultipleLocations,
+                          hideStaffAndDateTime: hideStaffAndDateTime,
                           onStepTap: (step) {
                             ref
                                 .read(bookingFlowProvider.notifier)

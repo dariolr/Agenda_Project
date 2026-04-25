@@ -127,7 +127,10 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m46(label) => "${label} selezionati";
 
-  static String m47(businessName) =>
+  static String m47(eventName) =>
+      "Hai già selezionato l\'evento \"${eventName}\". Una prenotazione può includere servizi oppure un evento di gruppo, non entrambi. Deseleziona l\'evento per scegliere i servizi.";
+
+  static String m48(businessName) =>
       "Per prenotare su ${businessName}, devi accedere con un account registrato qui.";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -457,6 +460,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingStepDateTime": MessageLookupByLibrary.simpleMessage("Data e ora"),
     "bookingStepLocation": MessageLookupByLibrary.simpleMessage("Sede"),
     "bookingStepServices": MessageLookupByLibrary.simpleMessage("Servizi"),
+    "bookingStepServicesAndEvents": MessageLookupByLibrary.simpleMessage(
+      "Servizi / eventi",
+    ),
     "bookingStepStaff": MessageLookupByLibrary.simpleMessage("Operatore"),
     "bookingStepSummary": MessageLookupByLibrary.simpleMessage("Riepilogo"),
     "bookingTitle": MessageLookupByLibrary.simpleMessage(
@@ -483,12 +489,21 @@ class MessageLookup extends MessageLookupByLibrary {
     "classBookingWaitlistedBadge": MessageLookupByLibrary.simpleMessage(
       "Lista d\'attesa",
     ),
+    "classEventAlreadyBooked": MessageLookupByLibrary.simpleMessage(
+      "Già prenotato",
+    ),
+    "classEventAlreadyWaitlisted": MessageLookupByLibrary.simpleMessage(
+      "Già in lista d\'attesa",
+    ),
     "classEventFull": MessageLookupByLibrary.simpleMessage("Completo"),
     "classEventGroupLesson": MessageLookupByLibrary.simpleMessage(
-      "Lezione di gruppo",
+      "Evento di gruppo",
     ),
     "classEventJoinWaitlistLabel": MessageLookupByLibrary.simpleMessage(
       "Iscriviti in lista d\'attesa",
+    ),
+    "classEventManageBooking": MessageLookupByLibrary.simpleMessage(
+      "Gestisci prenotazione",
     ),
     "classEventSpotsAvailable": m11,
     "classEventSpotsLeft": m12,
@@ -496,10 +511,10 @@ class MessageLookup extends MessageLookupByLibrary {
       "Iscriviti",
     ),
     "classEventWaitlistDialogMessage": MessageLookupByLibrary.simpleMessage(
-      "Questa lezione è al completo. Vuoi iscriverti alla lista d\'attesa?",
+      "Questo evento è al completo. Vuoi iscriverti alla lista d\'attesa?",
     ),
     "classEventWaitlistDialogTitle": MessageLookupByLibrary.simpleMessage(
-      "Lezione al completo",
+      "Evento al completo",
     ),
     "classEventWaitlistLabel": MessageLookupByLibrary.simpleMessage(
       "Lista d\'attesa",
@@ -614,6 +629,10 @@ class MessageLookup extends MessageLookupByLibrary {
       "Stiamo lavorando per risolvere il problema. Riprova tra qualche minuto.",
     ),
     "errorTitle": MessageLookupByLibrary.simpleMessage("Errore"),
+    "eventsSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Seleziona l\'evento a cui vuoi partecipare",
+    ),
+    "eventsTitle": MessageLookupByLibrary.simpleMessage("Scegli un evento"),
     "loadingAvailability": MessageLookupByLibrary.simpleMessage(
       "Caricamento disponibilità...",
     ),
@@ -694,6 +713,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Oppure scegli un pacchetto pronto",
     ),
     "servicePackagesTitle": MessageLookupByLibrary.simpleMessage("Pacchetti"),
+    "servicesAndEventsSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Seleziona un servizio o iscriviti a un evento di gruppo",
+    ),
+    "servicesAndEventsTitle": MessageLookupByLibrary.simpleMessage(
+      "Scegli un servizio o un evento",
+    ),
     "servicesCategoryFallbackName": m29,
     "servicesDuration": m30,
     "servicesEmpty": MessageLookupByLibrary.simpleMessage(
@@ -776,6 +801,18 @@ class MessageLookup extends MessageLookupByLibrary {
     "summaryTitle": MessageLookupByLibrary.simpleMessage(
       "Riepilogo prenotazione",
     ),
+    "tabConflictEventsSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Hai già selezionato uno o più servizi. Una prenotazione può includere servizi oppure un evento di gruppo, non entrambi. Deseleziona i servizi per scegliere un evento.",
+    ),
+    "tabConflictEventsTitle": MessageLookupByLibrary.simpleMessage(
+      "Evento non selezionabile",
+    ),
+    "tabConflictServicesSubtitle": m47,
+    "tabConflictServicesTitle": MessageLookupByLibrary.simpleMessage(
+      "Servizi non selezionabili",
+    ),
+    "tabEvents": MessageLookupByLibrary.simpleMessage("Eventi"),
+    "tabServices": MessageLookupByLibrary.simpleMessage("Servizi"),
     "upcomingBookings": MessageLookupByLibrary.simpleMessage("Prossime"),
     "validationInvalidEmail": MessageLookupByLibrary.simpleMessage(
       "Email non valida",
@@ -796,7 +833,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "wrongBusinessAuthAction": MessageLookupByLibrary.simpleMessage(
       "Esci e accedi qui",
     ),
-    "wrongBusinessAuthMessage": m47,
+    "wrongBusinessAuthMessage": m48,
     "wrongBusinessAuthTitle": MessageLookupByLibrary.simpleMessage(
       "Account associato ad un\'altra attività",
     ),

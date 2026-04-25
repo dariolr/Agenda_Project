@@ -99,4 +99,33 @@ class ClassEvent {
   /// Orario da mostrare al cliente: preferisce local, fallback a UTC
   String get displayStartsAt => startsAtLocal ?? startsAt;
   String get displayEndsAt => endsAtLocal ?? endsAt;
+
+  /// True se la finestra di prenotazione è attualmente aperta.
+  /// Rispetta bookingOpenAt, bookingCloseAt e — se bookingCloseAt è null —
+  /// considera l'evento non prenotabile una volta iniziato.
+  bool isBookingOpenAt(DateTime now) {
+    final nowUtc = now.toUtc();
+    if (bookingOpenAt != null) {
+      if (nowUtc.isBefore(DateTime.parse(bookingOpenAt!).toUtc())) {
+        return false;
+      }
+    }
+    if (bookingCloseAt != null) {
+      if (nowUtc.isAfter(DateTime.parse(bookingCloseAt!).toUtc())) {
+        return false;
+      }
+    } else {
+      if (!nowUtc.isBefore(DateTime.parse(startsAt).toUtc())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /// True se l'evento rientra nella finestra massima di prenotazione anticipata.
+  bool isWithinAdvanceBookingWindow(DateTime now, int maxDays) {
+    final start = DateTime.parse(startsAt).toUtc();
+    final limit = now.toUtc().add(Duration(days: maxDays));
+    return !start.isAfter(limit);
+  }
 }

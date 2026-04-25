@@ -534,9 +534,31 @@
     }
   },
 
+  "tabServices": "Servizi",
+  "tabEvents": "Eventi",
+
+  "bookingStepServicesAndEvents": "Servizi / eventi",
+
+  "tabConflictEventsTitle": "Evento non selezionabile",
+  "tabConflictEventsSubtitle": "Hai già selezionato uno o più servizi. Una prenotazione può includere servizi oppure un evento di gruppo, non entrambi. Deseleziona i servizi per scegliere un evento.",
+  "tabConflictServicesTitle": "Servizi non selezionabili",
+  "tabConflictServicesSubtitle": "Hai già selezionato l'evento \"{eventName}\". Una prenotazione può includere servizi oppure un evento di gruppo, non entrambi. Deseleziona l'evento per scegliere i servizi.",
+  "@tabConflictServicesSubtitle": {
+    "placeholders": {
+      "eventName": { "type": "String" }
+    }
+  },
+  "servicesAndEventsTitle": "Scegli un servizio o un evento",
+  "servicesAndEventsSubtitle": "Seleziona un servizio o iscriviti a un evento di gruppo",
+  "eventsTitle": "Scegli un evento",
+  "eventsSubtitle": "Seleziona l'evento a cui vuoi partecipare",
+
   "cancelledBadge": "ANNULLATA",
   "classBookingWaitlistedBadge": "Lista d'attesa",
 
+  "classEventAlreadyBooked": "Già prenotato",
+  "classEventAlreadyWaitlisted": "Già in lista d'attesa",
+  "classEventManageBooking": "Gestisci prenotazione",
   "classEventFull": "Completo",
   "classEventSpotsLeft": "{count} posti",
   "@classEventSpotsLeft": {
@@ -552,11 +574,11 @@
   },
   "classEventWaitlistLabel": "Lista d'attesa",
   "classEventJoinWaitlistLabel": "Iscriviti in lista d'attesa",
-  "classEventWaitlistDialogTitle": "Lezione al completo",
-  "classEventWaitlistDialogMessage": "Questa lezione è al completo. Vuoi iscriverti alla lista d'attesa?",
+  "classEventWaitlistDialogTitle": "Evento al completo",
+  "classEventWaitlistDialogMessage": "Questo evento è al completo. Vuoi iscriverti alla lista d'attesa?",
   "classEventWaitlistDialogConfirm": "Iscriviti",
   "classEventWaitlistNotice": "Sarai aggiunto alla lista d'attesa",
-  "classEventGroupLesson": "Lezione di gruppo",
+  "classEventGroupLesson": "Evento di gruppo",
 
   "confirmationWaitlistTitle": "Sei in lista d'attesa!",
   "confirmationWaitlistSubtitle": "Verrai confermato non appena si libera un posto",

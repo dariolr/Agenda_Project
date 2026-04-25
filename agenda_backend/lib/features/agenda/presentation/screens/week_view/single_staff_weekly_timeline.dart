@@ -805,8 +805,11 @@ class _SingleStaffWeekTimelineColumnState
     }
 
     for (final appointment in appointments) {
+      final snapshotColor = _parseClassTypeColor(appointment.serviceColorHex);
       colors[appointment.id] =
-          serviceColorMap[appointment.serviceId] ?? fallbackColor;
+          serviceColorMap[appointment.serviceId] ??
+          snapshotColor ??
+          fallbackColor;
     }
     return colors;
   }
@@ -924,7 +927,9 @@ class _SingleStaffWeekTimelineColumnState
     final effectiveLeft = isExpanded ? padding : cardLeft;
     final effectiveWidth = isExpanded ? fullWidth : cardWidth;
     final classType = classTypeById[event.classTypeId];
-    final parsedColor = _parseClassTypeColor(classType?.colorHex);
+    final parsedColor =
+        _parseClassTypeColor(classType?.colorHex) ??
+        _parseClassTypeColor(event.classTypeColorHex);
     final color = parsedColor ?? theme.colorScheme.tertiaryContainer;
     final isDarkBackground =
         ThemeData.estimateBrightnessForColor(color) == Brightness.dark;
@@ -934,6 +939,8 @@ class _SingleStaffWeekTimelineColumnState
         : Colors.black54;
     final classTitle = (classType?.name.trim().isNotEmpty ?? false)
         ? classType!.name.trim()
+        : (event.classTypeName?.trim().isNotEmpty ?? false)
+        ? event.classTypeName!.trim()
         : context.l10n.classEventsUntitled;
     final showPriceInCard = ref.watch(
       effectiveShowAppointmentPriceInCardProvider,

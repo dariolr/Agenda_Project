@@ -77,6 +77,13 @@ class ApiConfig {
   static String businessPaymentMethods(int businessId) =>
       '/v1/businesses/$businessId/payment-methods';
 
+  static const String billingSubscription = '/v1/billing/subscription';
+  static const String billingCheckoutSession = '/v1/billing/checkout-session';
+  static const String billingPortalSession = '/v1/billing/portal-session';
+
+  static String adminBusinessBillingConfig(int businessId) =>
+      '/v1/admin/businesses/$businessId/billing-config';
+
   /// Singolo metodo di pagamento business-scoped
   static String businessPaymentMethod(int businessId, int methodId) =>
       '/v1/businesses/$businessId/payment-methods/$methodId';

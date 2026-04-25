@@ -1042,7 +1042,12 @@ class _WeeklyAppointmentTileState
       serviceColorMap[variant.serviceId] = ColorUtils.fromHex(colorHex);
     }
 
-    return serviceColorMap[currentAppointment.serviceId] ?? neutralServiceColor;
+    final snapshotColor = _parseClassTypeColor(
+      currentAppointment.serviceColorHex,
+    );
+    return serviceColorMap[currentAppointment.serviceId] ??
+        snapshotColor ??
+        neutralServiceColor;
   }
 
   String _resolveStaffDisplayName(WidgetRef ref, int staffId) {
@@ -1103,9 +1108,12 @@ class _WeeklyClassEventTile extends ConsumerWidget {
     );
     final color =
         _parseClassTypeColor(classType?.colorHex) ??
+        _parseClassTypeColor(classEvent.classTypeColorHex) ??
         theme.colorScheme.tertiaryContainer;
     final title = (classType?.name.trim().isNotEmpty ?? false)
         ? classType!.name.trim()
+        : (classEvent.classTypeName?.trim().isNotEmpty ?? false)
+        ? classEvent.classTypeName!.trim()
         : context.l10n.classEventsUntitled;
     final cardTextScale = ref.watch(agendaCardTextScaleProvider);
     final useRoundedCardCorners = ref.watch(

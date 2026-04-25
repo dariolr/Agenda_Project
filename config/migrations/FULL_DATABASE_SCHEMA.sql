@@ -2252,6 +2252,103 @@ CREATE TABLE `booking_payment_lines` (
     FOREIGN KEY (`booking_payment_id`) REFERENCES `booking_payments`(`id`)
     ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Struttura della tabella `business_billing_config`
+--
+CREATE TABLE `business_billing_config` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `business_id` int UNSIGNED NOT NULL,
+  `billing_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `billing_mode` enum('free','recurring','one_time','manual') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'free',
+  `billing_interval_unit` enum('month','year') COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `billing_interval_count` int UNSIGNED DEFAULT NULL,
+  `amount_cents` int UNSIGNED DEFAULT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'EUR',
+  `provider_code` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider_price_reference` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_business_billing_config_business` (`business_id`),
+  CONSTRAINT `fk_business_billing_config_business`
+    FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Struttura della tabella `business_billing_subscription`
+--
+CREATE TABLE `business_billing_subscription` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `business_id` int UNSIGNED NOT NULL,
+  `provider_code` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider_customer_id` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider_subscription_id` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider_price_reference` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` enum('not_required','inactive','pending_checkout','active','past_due','unpaid','canceled','error') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'not_required',
+  `current_period_start` timestamp NULL DEFAULT NULL,
+  `current_period_end` timestamp NULL DEFAULT NULL,
+  `cancel_at_period_end` tinyint(1) NOT NULL DEFAULT '0',
+  `canceled_at` timestamp NULL DEFAULT NULL,
+  `last_payment_at` timestamp NULL DEFAULT NULL,
+  `last_payment_failed_at` timestamp NULL DEFAULT NULL,
+  `last_checkout_session_id` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_business_billing_subscription_business` (`business_id`),
+  KEY `idx_business_billing_subscription_provider_subscription` (`provider_code`,`provider_subscription_id`),
+  CONSTRAINT `fk_business_billing_subscription_business`
+    FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Struttura della tabella `billing_provider_events`
+--
+CREATE TABLE `billing_provider_events` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `provider_code` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `provider_event_id` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `event_type` varchar(120) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `business_id` int UNSIGNED DEFAULT NULL,
+  `payload_json` json NOT NULL,
+  `processed_at` datetime NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_billing_provider_event` (`provider_code`,`provider_event_id`),
+  KEY `idx_billing_provider_events_business` (`business_id`),
+  KEY `idx_billing_provider_events_type` (`event_type`),
+  KEY `idx_billing_provider_events_processed_at` (`processed_at`),
+  CONSTRAINT `fk_billing_provider_events_business`
+    FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Struttura della tabella `business_billing_payments`
+--
+CREATE TABLE `business_billing_payments` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `business_id` int UNSIGNED NOT NULL,
+  `provider_code` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider_payment_id` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `payment_type` enum('one_time','recurring_invoice','manual') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'one_time',
+  `status` enum('pending','paid','failed','canceled','refunded') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `amount_cents` int UNSIGNED NOT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'EUR',
+  `paid_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_business_billing_payments_business` (`business_id`),
+  KEY `idx_business_billing_payments_provider_payment` (`provider_code`,`provider_payment_id`),
+  CONSTRAINT `fk_business_billing_payments_business`
+    FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;

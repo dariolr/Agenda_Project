@@ -107,9 +107,11 @@ final class BookingRepository
                     bi.extra_blocked_minutes, bi.extra_processing_minutes,
                     bi.service_name_snapshot, bi.client_name_snapshot,
                     s.name AS service_name,
+                    sv.color_hex AS service_color_hex,
                     st.name AS staff_name, st.surname AS staff_surname,
                     b.business_id, b.client_name AS booking_client_name
              FROM booking_items bi
+             LEFT JOIN service_variants sv ON bi.service_variant_id = sv.id
              JOIN services s ON bi.service_id = s.id
              JOIN staff st ON bi.staff_id = st.id
              JOIN bookings b ON bi.booking_id = b.id
@@ -754,21 +756,29 @@ final class BookingRepository
             "SELECT bi.id, bi.booking_id, bi.location_id, bi.staff_id, bi.service_id, bi.service_variant_id,
                     bi.start_time, bi.end_time, bi.price, bi.list_price_cents, bi.applied_price_cents, bi.package_id, bi.pricing_source,
                     bi.extra_blocked_minutes, bi.extra_processing_minutes,
+                    bi.service_name_snapshot,
                     bi.created_at, bi.updated_at,
                     b.status AS booking_status, b.client_name, b.notes AS booking_notes, b.client_id, b.business_id, b.source,
                     b.replaces_booking_id, b.replaced_by_booking_id,
                     b.recurrence_rule_id, b.recurrence_index,
-                    (SELECT COUNT(*) FROM bookings b2 WHERE b2.recurrence_rule_id = b.recurrence_rule_id) AS recurrence_total,
+                    rc.recurrence_total AS recurrence_total,
                     c.first_name AS client_first_name, c.last_name AS client_last_name,
                     NULLIF(TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, ''))), '') AS client_full_name,
                     s.name AS service_name,
+                    sv.color_hex AS service_color_hex,
                     st.name AS staff_name, st.surname AS staff_surname,
                     CONCAT(st.name, ' ', st.surname) AS staff_full_name
              FROM booking_items bi
              JOIN bookings b ON bi.booking_id = b.id
+             LEFT JOIN (
+                 SELECT recurrence_rule_id, COUNT(*) AS recurrence_total
+                 FROM bookings
+                 WHERE recurrence_rule_id IS NOT NULL
+                 GROUP BY recurrence_rule_id
+             ) rc ON rc.recurrence_rule_id = b.recurrence_rule_id
              LEFT JOIN clients c ON b.client_id = c.id
              LEFT JOIN service_variants sv ON bi.service_variant_id = sv.id
-             LEFT JOIN services s ON sv.service_id = s.id
+             LEFT JOIN services s ON bi.service_id = s.id
              LEFT JOIN staff st ON bi.staff_id = st.id
              WHERE bi.location_id = ?
                AND bi.start_time >= ?
@@ -795,6 +805,7 @@ final class BookingRepository
             "SELECT bi.id, bi.booking_id, bi.location_id, bi.staff_id, bi.service_id, bi.service_variant_id,
                     bi.start_time, bi.end_time, bi.price, bi.list_price_cents, bi.applied_price_cents, bi.package_id, bi.pricing_source,
                     bi.extra_blocked_minutes, bi.extra_processing_minutes,
+                    bi.service_name_snapshot,
                     bi.created_at, bi.updated_at,
                     b.status AS booking_status, b.client_name, b.notes AS booking_notes, b.client_id, b.business_id, b.source,
                     b.recurrence_rule_id, b.recurrence_index,
@@ -802,6 +813,7 @@ final class BookingRepository
                     c.first_name AS client_first_name, c.last_name AS client_last_name,
                     NULLIF(TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, ''))), '') AS client_full_name,
                     s.name AS service_name,
+                    sv.color_hex AS service_color_hex,
                     CONCAT(st.name, ' ', st.surname) AS staff_name
              FROM booking_items bi
              JOIN bookings b ON bi.booking_id = b.id

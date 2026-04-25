@@ -80,14 +80,29 @@ class BookingsNotifier extends Notifier<Map<int, Booking>> {
     };
   }
 
+  /// Inserisce in un'unica emissione di stato i booking mancanti.
+  /// Utile nei bootstrap agenda per evitare N rebuild consecutivi.
+  void ensureBookingsBulk(Iterable<Booking> bookings) {
+    final current = state;
+    Map<int, Booking>? next;
+    for (final booking in bookings) {
+      if (current.containsKey(booking.id)) {
+        continue;
+      }
+      next ??= {...current};
+      next[booking.id] = booking;
+    }
+    if (next != null) {
+      state = next;
+    }
+  }
+
   void setNotes(int bookingId, String? notes) {
     final bk = state[bookingId];
     if (bk == null) return;
     state = {
       for (final e in state.entries)
-        e.key: e.key == bookingId
-            ? bk.copyWith(notes: notes)
-            : e.value,
+        e.key: e.key == bookingId ? bk.copyWith(notes: notes) : e.value,
     };
   }
 
@@ -96,9 +111,7 @@ class BookingsNotifier extends Notifier<Map<int, Booking>> {
     if (bk == null) return;
     state = {
       for (final e in state.entries)
-        e.key: e.key == bookingId
-            ? bk.copyWith(status: status)
-            : e.value,
+        e.key: e.key == bookingId ? bk.copyWith(status: status) : e.value,
     };
   }
 
@@ -165,7 +178,10 @@ final bookingSummaryProvider = Provider.family<BookingSummary?, int>((ref, id) {
 
 /// ID dell'ultima card temporale del booking:
 /// priorita a endTime, poi startTime, poi id.
-final lastAppointmentIdForBookingProvider = Provider.family<int?, int>((ref, id) {
+final lastAppointmentIdForBookingProvider = Provider.family<int?, int>((
+  ref,
+  id,
+) {
   final appts = (ref.watch(appointmentsProvider).value ?? [])
       .where((a) => a.bookingId == id)
       .toList();

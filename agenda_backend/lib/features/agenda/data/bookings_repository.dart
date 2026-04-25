@@ -228,6 +228,7 @@ class BookingsRepository {
     bool notifyClient = true,
     bool notifyClientDecisionByOperator = false,
     bool suppressAuditEvent = false,
+    bool suppressAppointmentUpdateAudit = false,
   }) async {
     return _api.updateAppointment(
       locationId: locationId,
@@ -248,6 +249,7 @@ class BookingsRepository {
       notifyClient: notifyClient,
       notifyClientDecisionByOperator: notifyClientDecisionByOperator,
       suppressAuditEvent: suppressAuditEvent,
+      suppressAppointmentUpdateAudit: suppressAppointmentUpdateAudit,
     );
   }
 
@@ -319,9 +321,12 @@ class BookingsRepository {
       clientId: json['client_id'] as int?,
       clientName: json['client_name'] as String? ?? '',
       serviceName: json['service_name'] as String? ?? 'Servizio',
+      serviceColorHex:
+          (json['service_color_hex'] ?? json['service_color']) as String?,
       startTime: DateTime.parse(json['start_time'] as String),
       endTime: DateTime.parse(json['end_time'] as String),
-      listPrice: (json['list_price'] as num?)?.toDouble() ??
+      listPrice:
+          (json['list_price'] as num?)?.toDouble() ??
           ((json['list_price_cents'] as num?) != null
               ? (json['list_price_cents'] as num).toDouble() / 100.0
               : null),

@@ -257,7 +257,8 @@ class _EventTile extends StatelessWidget {
         ],
       ),
       isThreeLine:
-          description != null || (isNotificationSent && recipientEmail.isNotEmpty),
+          description != null ||
+          (isNotificationSent && recipientEmail.isNotEmpty),
     );
   }
 
@@ -520,14 +521,30 @@ class _EventTile extends StatelessWidget {
     final newRaw = payload['new_first_start_time'];
     final oldStart = _parseTime(oldRaw);
     final newStart = _parseTime(newRaw);
+    final totalDurationMinutes = (payload['total_duration_minutes'] as num?)
+        ?.toInt();
 
     final isEn = locale.toLowerCase().startsWith('en');
     if (oldStart != null && newStart != null) {
-      final oldLabel = _formatTimeWithOptionalDate(oldStart, locale, reference: newStart);
-      final newLabel = _formatTimeWithOptionalDate(newStart, locale, reference: oldStart);
+      final oldLabel = _formatTimeWithOptionalDate(
+        oldStart,
+        locale,
+        reference: newStart,
+      );
+      final newLabel = _formatTimeWithOptionalDate(
+        newStart,
+        locale,
+        reference: oldStart,
+      );
+      final durationSuffix =
+          totalDurationMinutes != null && totalDurationMinutes > 0
+          ? (isEn
+                ? ' Total duration: ${_formatDuration(totalDurationMinutes)}.'
+                : ' Durata totale: ${_formatDuration(totalDurationMinutes)}.')
+          : '';
       return isEn
-          ? 'Client notification skipped by operator: booking moved from $oldLabel to $newLabel.'
-          : 'Notifica cliente non inviata su scelta operatore: prenotazione spostata da $oldLabel a $newLabel.';
+          ? 'Client notification skipped by operator: booking moved from $oldLabel to $newLabel.$durationSuffix'
+          : 'Notifica cliente non inviata su scelta operatore: prenotazione spostata da $oldLabel a $newLabel.$durationSuffix';
     }
 
     return isEn

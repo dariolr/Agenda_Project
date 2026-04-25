@@ -4,11 +4,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/booking_nomenclature_provider.dart';
+import '../../providers/class_events_provider.dart';
 
 class BookingStepIndicator extends ConsumerWidget {
   final BookingStep currentStep;
   final bool allowStaffSelection;
   final bool showLocationStep;
+  final bool hideStaffAndDateTime;
   final void Function(BookingStep) onStepTap;
 
   const BookingStepIndicator({
@@ -16,6 +18,7 @@ class BookingStepIndicator extends ConsumerWidget {
     required this.currentStep,
     required this.allowStaffSelection,
     this.showLocationStep = false,
+    this.hideStaffAndDateTime = false,
     required this.onStepTap,
   });
 
@@ -31,6 +34,21 @@ class BookingStepIndicator extends ConsumerWidget {
       bookingTextOverridesForLocaleProvider(Localizations.localeOf(context)),
     );
 
+    final isEventOnly = ref.watch(isEventOnlyModeProvider);
+    final hasBoth = ref.watch(hasBothServicesAndEventsProvider);
+    final servicesStepLabel = isEventOnly
+        ? bookingEventsStepLabel(context, phraseOverrides: phraseOverrides)
+        : hasBoth
+        ? bookingServicesAndEventsStepLabel(
+            context,
+            phraseOverrides: phraseOverrides,
+          )
+        : bookingServicesStepLabel(
+            context,
+            customServiceLabel,
+            phraseOverrides: phraseOverrides,
+          );
+
     final steps = [
       if (showLocationStep)
         (
@@ -42,16 +60,8 @@ class BookingStepIndicator extends ConsumerWidget {
           ),
           Icons.location_on,
         ),
-      (
-        BookingStep.services,
-        bookingServicesStepLabel(
-          context,
-          customServiceLabel,
-          phraseOverrides: phraseOverrides,
-        ),
-        Icons.list_alt,
-      ),
-      if (allowStaffSelection)
+      (BookingStep.services, servicesStepLabel, Icons.list_alt),
+      if (allowStaffSelection && !hideStaffAndDateTime)
         (
           BookingStep.staff,
           bookingStaffStepLabel(
@@ -61,7 +71,8 @@ class BookingStepIndicator extends ConsumerWidget {
           ),
           staffIcon,
         ),
-      (BookingStep.dateTime, l10n.bookingStepDateTime, Icons.calendar_today),
+      if (!hideStaffAndDateTime)
+        (BookingStep.dateTime, l10n.bookingStepDateTime, Icons.calendar_today),
       (
         BookingStep.summary,
         l10n.bookingStepSummary,

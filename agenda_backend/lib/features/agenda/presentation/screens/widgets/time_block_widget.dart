@@ -22,6 +22,7 @@ class TimeBlockWidget extends ConsumerStatefulWidget {
   final double width;
   final String resizeSessionKey;
   final int staffId;
+  final Future<void> Function(DateTime startTime)? onSecondaryCreate;
 
   const TimeBlockWidget({
     super.key,
@@ -30,6 +31,7 @@ class TimeBlockWidget extends ConsumerStatefulWidget {
     required this.width,
     required this.resizeSessionKey,
     required this.staffId,
+    this.onSecondaryCreate,
   });
 
   @override
@@ -253,6 +255,11 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
               blockStart: widget.block.startTime,
               blockEnd: effectiveBlock.endTime,
             );
+            final onSecondaryCreate = widget.onSecondaryCreate;
+            if (onSecondaryCreate != null) {
+              onSecondaryCreate(secondaryTapTime);
+              return;
+            }
             showBookingDialog(
               context,
               ref,

@@ -51,6 +51,7 @@ final class Response
             'success' => false,
             'error' => [
                 'code' => $code,
+                'message' => $message,
                 'message_key' => $resolvedMessageKey,
                 'params' => (object) $resolvedParams,
             ],
@@ -113,6 +114,7 @@ final class Response
             'success' => false,
             'error' => [
                 'code' => 'demo_blocked',
+                'message' => $message,
                 'message_key' => 'errors.demo_blocked',
                 'params' => (object) $resolvedParams,
                 'demo_blocked' => true,

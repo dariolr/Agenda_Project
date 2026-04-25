@@ -205,6 +205,7 @@ String? _overrideText(
   Map<String, String>? phraseOverrides,
   String key, {
   int? count,
+  Map<String, String>? placeholders,
 }) {
   final raw = phraseOverrides?[key]?.trim();
   if (raw == null || raw.isEmpty) {
@@ -230,6 +231,16 @@ String? _overrideText(
       return normalized;
     }
     return '$count $normalized';
+  }
+  if (placeholders != null && placeholders.isNotEmpty) {
+    var withPlaceholders = normalized;
+    for (final entry in placeholders.entries) {
+      withPlaceholders = withPlaceholders.replaceAll(
+        '{${entry.key}}',
+        entry.value,
+      );
+    }
+    return withPlaceholders;
   }
   return normalized;
 }
@@ -308,6 +319,50 @@ String bookingServicesStepLabel(
     return override;
   }
   return _serviceTerm(context, customLabel).plural;
+}
+
+String bookingTabServicesLabel(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'tab_services');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.tabServices;
+}
+
+String bookingTabEventsLabel(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'tab_events');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.tabEvents;
+}
+
+String bookingEventsStepLabel(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'events_step_label');
+  if (override != null) {
+    return override;
+  }
+  return bookingTabEventsLabel(context, phraseOverrides: phraseOverrides);
+}
+
+String bookingServicesAndEventsStepLabel(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'services_events_step_label');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.bookingStepServicesAndEvents;
 }
 
 String bookingServicesTitle(
@@ -429,6 +484,300 @@ String bookingSummaryServicesLabel(
   return customLabel == null
       ? context.l10n.summaryServices
       : context.l10n.summaryServicesCustom(term.plural);
+}
+
+String bookingServicesAndEventsTitle(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'services_events_title');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.servicesAndEventsTitle;
+}
+
+String bookingServicesAndEventsSubtitle(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'services_events_subtitle');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.servicesAndEventsSubtitle;
+}
+
+String bookingEventsTitle(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'events_title');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.eventsTitle;
+}
+
+String bookingEventsSubtitle(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'events_subtitle');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.eventsSubtitle;
+}
+
+String bookingEventsEmptyTitle(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'events_empty_title');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.eventsTitle;
+}
+
+String bookingEventsEmptySubtitle(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'events_empty_subtitle');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.eventsSubtitle;
+}
+
+String bookingEventsSelectedNoneLabel(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'events_selected_none');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.eventsTitle;
+}
+
+String bookingSummaryEventLabel(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'summary_event_label');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.classEventGroupLesson;
+}
+
+String bookingClassEventGroupLabel(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'event_group_label');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.classEventGroupLesson;
+}
+
+String bookingClassEventFullLabel(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'event_full');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.classEventFull;
+}
+
+String bookingClassEventSpotsLeftLabel(
+  BuildContext context,
+  int count, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(
+    phraseOverrides,
+    'event_spots_left',
+    count: count,
+  );
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.classEventSpotsLeft(count);
+}
+
+String bookingClassEventSpotsAvailableLabel(
+  BuildContext context,
+  int count, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(
+    phraseOverrides,
+    'event_spots_available',
+    count: count,
+  );
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.classEventSpotsAvailable(count);
+}
+
+String bookingClassEventJoinWaitlistLabel(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'event_join_waitlist_label');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.classEventJoinWaitlistLabel;
+}
+
+String bookingClassEventWaitlistDialogTitle(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(
+    phraseOverrides,
+    'event_waitlist_dialog_title',
+  );
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.classEventWaitlistDialogTitle;
+}
+
+String bookingClassEventWaitlistDialogMessage(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(
+    phraseOverrides,
+    'event_waitlist_dialog_message',
+  );
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.classEventWaitlistDialogMessage;
+}
+
+String bookingClassEventWaitlistDialogConfirm(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(
+    phraseOverrides,
+    'event_waitlist_dialog_confirm',
+  );
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.classEventWaitlistDialogConfirm;
+}
+
+String bookingClassEventWaitlistNotice(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'event_waitlist_notice');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.classEventWaitlistNotice;
+}
+
+String bookingClassEventAlreadyBookedLabel(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'event_already_booked');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.classEventAlreadyBooked;
+}
+
+String bookingClassEventAlreadyWaitlistedLabel(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'event_already_waitlisted');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.classEventAlreadyWaitlisted;
+}
+
+String bookingClassEventManageBookingLabel(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'event_manage_booking');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.classEventManageBooking;
+}
+
+String bookingTabConflictEventsTitle(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(phraseOverrides, 'tab_conflict_events_title');
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.tabConflictEventsTitle;
+}
+
+String bookingTabConflictEventsSubtitle(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(
+    phraseOverrides,
+    'tab_conflict_events_subtitle',
+  );
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.tabConflictEventsSubtitle;
+}
+
+String bookingTabConflictServicesTitle(
+  BuildContext context, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(
+    phraseOverrides,
+    'tab_conflict_services_title',
+  );
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.tabConflictServicesTitle;
+}
+
+String bookingTabConflictServicesSubtitle(
+  BuildContext context,
+  String eventName, {
+  Map<String, String>? phraseOverrides,
+}) {
+  final override = _overrideText(
+    phraseOverrides,
+    'tab_conflict_services_subtitle',
+    placeholders: {'eventName': eventName},
+  );
+  if (override != null) {
+    return override;
+  }
+  return context.l10n.tabConflictServicesSubtitle(eventName);
 }
 
 String bookingStaffTitle(
