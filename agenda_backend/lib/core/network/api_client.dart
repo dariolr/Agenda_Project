@@ -8,10 +8,10 @@ import '/core/models/class_booking.dart';
 import '/core/models/class_event.dart';
 import '/core/models/class_type.dart';
 import '/core/models/location_closure.dart';
-import '/core/models/whatsapp_location_mapping.dart';
 import '/core/models/whatsapp_config.dart';
 import '/core/models/whatsapp_embedded_signup_result.dart';
 import '/core/models/whatsapp_go_live_check.dart';
+import '/core/models/whatsapp_location_mapping.dart';
 import '/core/models/whatsapp_outbox_item.dart';
 import 'api_config.dart';
 import 'token_storage.dart';
@@ -906,7 +906,10 @@ class ApiClient {
   }) async {
     return get(
       ApiConfig.appointments(locationId),
-      queryParameters: {'date': date},
+      queryParameters: {
+        'date': date,
+        '_t': DateTime.now().millisecondsSinceEpoch.toString(),
+      },
     );
   }
 
@@ -1047,7 +1050,10 @@ class ApiClient {
     required String date,
     int? staffId,
   }) async {
-    final params = <String, dynamic>{'date': date};
+    final params = <String, dynamic>{
+      'date': date,
+      '_t': DateTime.now().millisecondsSinceEpoch.toString(),
+    };
     if (staffId != null) {
       params['staff_id'] = staffId;
     }

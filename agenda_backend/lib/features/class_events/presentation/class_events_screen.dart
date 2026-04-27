@@ -704,7 +704,10 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     );
   }
 
-  Future<bool?> _askNotifyParticipantsForScheduleDelete() {
+  Future<bool?> _askNotifyParticipantsForScheduleDelete(ClassEvent schedule) {
+    if (schedule.confirmedCount <= 0 && schedule.waitlistCount <= 0) {
+      return Future.value(false);
+    }
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -746,7 +749,9 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    final notifyParticipants = await _askNotifyParticipantsForScheduleDelete();
+    final notifyParticipants = await _askNotifyParticipantsForScheduleDelete(
+      schedule,
+    );
     if (!mounted || notifyParticipants == null) return;
 
     try {
@@ -1265,7 +1270,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       _applyEventToForm(_editingEvent!);
     } else if (_prefillEvent != null) {
       _applyEventToForm(_prefillEvent!, includeDate: false);
-    } else {
+    } else if (widget.initialStartTime == null) {
       _initializeDefaultTimesForCreate();
     }
   }
@@ -1859,6 +1864,10 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         if (stagedMap[participant.customerId] == participant.status)
           participant.customerId,
     ];
+  }
+
+  bool get _hasAnyStagedParticipant {
+    return (_stagedParticipants ?? const <_StagedParticipant>[]).isNotEmpty;
   }
 
   bool get _hasUnsavedChanges {
@@ -2643,6 +2652,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   }
 
   Future<bool?> _askNotifyParticipantsIfNeeded() async {
+    if (!_hasAnyStagedParticipant) return false;
     if (!_participantsNotificationRelevantDirty &&
         !_eventNotificationRelevantDirty) {
       return false;
@@ -2667,6 +2677,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   }
 
   Future<bool?> _askNotifyParticipantsForScheduleDelete() {
+    if (!_hasAnyStagedParticipant) {
+      return Future.value(false);
+    }
     return showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
