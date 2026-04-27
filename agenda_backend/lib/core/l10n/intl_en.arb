@@ -1549,6 +1549,8 @@
   "classEventsValidationCapacityBelowConfirmed": "Capacity cannot be reduced below the number of confirmed participants",
   "classEventsPromoteWaitlistTitle": "Promote from waitlist",
   "classEventsPromoteWaitlistMessage": "Do you want to automatically promote participants from the waitlist to fill the available spots?",
+  "classEventsNotifyParticipantsTitle": "Send email to participants?",
+  "classEventsNotifyParticipantsMessage": "Do you want to send notification emails to the people affected by these changes?",
   "classEventsNoLocationsForClassType": "No enabled location for this event type",
   "classEventsValidationRequired": "Fill all required fields",
   "classEventsValidationEndAfterStart": "End time must be after start time",

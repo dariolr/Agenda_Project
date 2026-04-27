@@ -500,6 +500,10 @@ function renderTemplate(string $channel, array $payload): array
             $template = EmailTemplateRenderer::classBookingCancelled($locale);
             break;
 
+        case 'class_booking_updated':
+            $template = EmailTemplateRenderer::classBookingUpdated($locale);
+            break;
+
         case 'class_booking_reminder':
             $template = EmailTemplateRenderer::classBookingReminder($locale);
             break;

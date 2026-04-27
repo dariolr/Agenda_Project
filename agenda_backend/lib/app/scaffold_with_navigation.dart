@@ -891,11 +891,10 @@ class _AgendaAddAction extends ConsumerWidget {
         ref.watch(classTypesProvider).value ?? const <ClassType>[];
     final hasActiveClassTypeForLocation = classTypes.any((classType) {
       if (!classType.isActive) return false;
-      final enabledEverywhere = classType.locationIds.isEmpty;
       final enabledForLocation = classType.locationIds.contains(
         currentLocation.id,
       );
-      return enabledEverywhere || enabledForLocation;
+      return enabledForLocation;
     });
     final currentUserRole = ref.watch(currentUserRoleProvider);
     final currentUserStaffId = ref.watch(currentUserStaffIdProvider);

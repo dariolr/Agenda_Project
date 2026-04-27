@@ -1040,6 +1040,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "classEventsNoStaffForLocation": MessageLookupByLibrary.simpleMessage(
       "Nessuno staff disponibile per la sede selezionata",
     ),
+    "classEventsNotifyParticipantsMessage": MessageLookupByLibrary.simpleMessage(
+      "Vuoi inviare le email di notifica alle persone interessate da queste modifiche?",
+    ),
+    "classEventsNotifyParticipantsTitle": MessageLookupByLibrary.simpleMessage(
+      "Inviare email ai partecipanti?",
+    ),
     "classEventsParticipantCustomer": m15,
     "classEventsParticipantsAddConfirmed": MessageLookupByLibrary.simpleMessage(
       "Aggiungi partecipante",

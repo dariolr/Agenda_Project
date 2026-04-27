@@ -24,6 +24,7 @@ final class NotificationRepository
         'class_booking_waitlisted',
         'class_booking_promoted',
         'class_booking_cancelled',
+        'class_booking_updated',
         'class_booking_reminder',
     ];
 

@@ -128,9 +128,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     });
     final hasClassesForLocation = classTypes.any((classType) {
       final hasCategory = (classType.serviceCategoryId ?? 0) > 0;
-      final isEnabledForLocation =
-          classType.locationIds.isEmpty ||
-          classType.locationIds.contains(location.id);
+      final isEnabledForLocation = classType.locationIds.contains(location.id);
       return classType.isActive && hasCategory && isEnabledForLocation;
     });
     final availableFilterOptions = _resolveAvailableFilterOptions(

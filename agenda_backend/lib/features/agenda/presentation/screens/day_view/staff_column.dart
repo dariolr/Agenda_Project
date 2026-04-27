@@ -1295,7 +1295,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           opaque: true,
           cursor: _resizeHoveredClassEventId == classEvent.id
               ? SystemMouseCursors.resizeUpDown
-              : (canManageBookings && endsAt.isAfter(DateTime.now())
+              : (canManageBookings
                     ? SystemMouseCursors.click
                     : SystemMouseCursors.basic),
           onEnter: (_) {
@@ -1345,7 +1345,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
               cardHeight: visualHeight,
               dayStart: dayStart,
             ),
-            onTap: canManageBookings && endsAt.isAfter(DateTime.now())
+            onTap: canManageBookings
                 ? () => showCreateClassEventDialog(
                     context,
                     ref,
@@ -2252,9 +2252,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     }).length;
     final classTypeCount = classTypes.where((classType) {
       return classType.isActive &&
-          (location.id <= 0 ||
-              classType.locationIds.isEmpty ||
-              classType.locationIds.contains(location.id));
+          location.id > 0 &&
+          classType.locationIds.contains(location.id);
     }).length;
 
     return classTypeCount > serviceCount;

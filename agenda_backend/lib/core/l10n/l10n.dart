@@ -9674,6 +9674,26 @@ class L10n {
     );
   }
 
+  /// `Send email to participants?`
+  String get classEventsNotifyParticipantsTitle {
+    return Intl.message(
+      'Send email to participants?',
+      name: 'classEventsNotifyParticipantsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Do you want to send notification emails to the people affected by these changes?`
+  String get classEventsNotifyParticipantsMessage {
+    return Intl.message(
+      'Do you want to send notification emails to the people affected by these changes?',
+      name: 'classEventsNotifyParticipantsMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `No enabled location for this event type`
   String get classEventsNoLocationsForClassType {
     return Intl.message(

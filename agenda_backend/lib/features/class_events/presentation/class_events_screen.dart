@@ -704,6 +704,26 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     );
   }
 
+  Future<bool?> _askNotifyParticipantsForScheduleDelete() {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.l10n.classEventsNotifyParticipantsTitle),
+        content: Text(context.l10n.classEventsNotifyParticipantsMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(context.l10n.actionNo),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(context.l10n.actionYes),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _deleteSchedule(ClassEvent schedule) async {
     if (!mounted || widget.initial == null) return;
     final l10n = context.l10n;
@@ -726,12 +746,18 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
       ),
     );
     if (confirmed != true || !mounted) return;
+    final notifyParticipants = await _askNotifyParticipantsForScheduleDelete();
+    if (!mounted || notifyParticipants == null) return;
 
     try {
       if (mounted) setState(() => _isScheduleActionLoading = true);
       final businessId = ref.read(currentBusinessIdProvider);
       final repo = ref.read(classEventsRepositoryProvider);
-      await repo.deleteEvent(businessId: businessId, classEventId: schedule.id);
+      await repo.deleteEvent(
+        businessId: businessId,
+        classEventId: schedule.id,
+        notifyCustomer: notifyParticipants,
+      );
       _invalidateScheduleProviders(widget.initial!.id);
     } catch (error) {
       if (!mounted) return;
@@ -1278,12 +1304,32 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final classTypesForLocation = !isEditMode
         ? _classTypesForLocation(classTypes, widget.initialLocationId)
         : classTypes;
+    if (!isEditMode &&
+        _classTypeId != null &&
+        !classTypesForLocation.any((type) => type.id == _classTypeId)) {
+      _classTypeId = null;
+    }
+    if (classTypesForLocation.isNotEmpty && _classTypeId == null) {
+      _classTypeId = classTypesForLocation.first.id;
+    }
     final allStaff = staffAsync.value ?? const <Staff>[];
     final filteredLocations = _locationsForSelectedClassType(
       locations: locations,
       classTypes: classTypes,
       selectedClassTypeId: _classTypeId,
     );
+    if (filteredLocations.isEmpty) {
+      _locationId = null;
+    } else if (_locationId == null ||
+        !filteredLocations.any((loc) => loc.id == _locationId)) {
+      final initialLocationId = widget.initialLocationId;
+      final hasInitialLocation = filteredLocations.any(
+        (loc) => loc.id == initialLocationId,
+      );
+      _locationId = hasInitialLocation
+          ? initialLocationId
+          : filteredLocations.first.id;
+    }
     final staff = _staffForSelectedLocation(
       staffAsync.value ?? const <Staff>[],
     );
@@ -1302,16 +1348,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final selectableStaffIds = <int>{...activeStaffIdSet};
     if (inactiveAssignedStaffId != null) {
       selectableStaffIds.add(inactiveAssignedStaffId);
-    }
-
-    if (classTypesForLocation.isNotEmpty && _classTypeId == null) {
-      _classTypeId = classTypesForLocation.first.id;
-    }
-    if (filteredLocations.isEmpty) {
-      _locationId = null;
-    } else if (_locationId == null ||
-        !filteredLocations.any((loc) => loc.id == _locationId)) {
-      _locationId = filteredLocations.first.id;
     }
     _staffId = _resolveSelectedStaffId(
       staff: staff,
@@ -1405,17 +1441,6 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                     style: TextStyle(color: colorScheme.error),
                   ),
                 ),
-
-              // ── etichetta modifica ──
-              if (isEditMode) ...[
-                Text(
-                  l10n.classEventsEditModeLabel,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: gap),
-              ],
 
               // ── tipo lezione (solo creazione, se multiplo) ──
               if (!isEditMode && classTypesForLocation.length > 1) ...[
@@ -1792,6 +1817,48 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       if (orig[i].status != staged[i].status) return true;
     }
     return false;
+  }
+
+  bool get _participantsNotificationRelevantDirty {
+    final orig = _originalParticipants;
+    final staged = _stagedParticipants;
+    if (orig == null || staged == null) return false;
+    final origMap = {for (final p in orig) p.customerId: p.status};
+    final stagedMap = {for (final p in staged) p.customerId: p.status};
+    if (origMap.length != stagedMap.length) return true;
+    for (final entry in stagedMap.entries) {
+      if (origMap[entry.key] != entry.value) return true;
+    }
+    return false;
+  }
+
+  bool get _eventNotificationRelevantDirty {
+    final event = _editingEvent;
+    if (event == null) return false;
+    final startLocal = event.startsAtLocal ?? event.startsAtUtc.toLocal();
+    final endLocal = event.endsAtLocal ?? event.endsAtUtc.toLocal();
+    final startChanged =
+        !DateUtils.isSameDay(startLocal, _date) ||
+        startLocal.hour != _startTime.hour ||
+        startLocal.minute != _startTime.minute;
+    final endChanged =
+        !DateUtils.isSameDay(endLocal, _date) ||
+        endLocal.hour != _endTime.hour ||
+        endLocal.minute != _endTime.minute;
+    final priceChanged = event.priceCents != _parsePriceCents();
+    return startChanged || endChanged || priceChanged;
+  }
+
+  List<int>? _eventUpdateNotificationCustomerIds() {
+    if (!_participantsNotificationRelevantDirty) return null;
+    final orig = _originalParticipants ?? const <_StagedParticipant>[];
+    final staged = _stagedParticipants ?? const <_StagedParticipant>[];
+    final stagedMap = {for (final p in staged) p.customerId: p.status};
+    return [
+      for (final participant in orig)
+        if (stagedMap[participant.customerId] == participant.status)
+          participant.customerId,
+    ];
   }
 
   bool get _hasUnsavedChanges {
@@ -2341,6 +2408,12 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     if (selected != null && selectableStaffIds.contains(selected)) {
       return selected;
     }
+    final initialStaffId = widget.initialStaffId;
+    if (!isEditMode &&
+        initialStaffId != null &&
+        selectableStaffIds.contains(initialStaffId)) {
+      return initialStaffId;
+    }
     if (!isEditMode && staff.length == 1) {
       return staff.first.id;
     }
@@ -2357,9 +2430,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     int locationId,
   ) {
     return classTypes
-        .where(
-          (ct) => ct.locationIds.isEmpty || ct.locationIds.contains(locationId),
-        )
+        .where((ct) => ct.isActive && ct.locationIds.contains(locationId))
         .toList();
   }
 
@@ -2377,7 +2448,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     }
     final locationIds = selected.first.locationIds;
     if (locationIds.isEmpty) {
-      return locations;
+      return const [];
     }
     final allowed = locationIds.toSet();
     return locations
@@ -2539,11 +2610,17 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       ),
     );
     if (confirmed != true || !mounted) return;
+    final notifyParticipants = await _askNotifyParticipantsForScheduleDelete();
+    if (!mounted || notifyParticipants == null) return;
 
     try {
       final businessId = ref.read(currentBusinessIdProvider);
       final repo = ref.read(classEventsRepositoryProvider);
-      await repo.deleteEvent(businessId: businessId, classEventId: event.id);
+      await repo.deleteEvent(
+        businessId: businessId,
+        classEventId: event.id,
+        notifyCustomer: notifyParticipants,
+      );
       ref.invalidate(classEventsProvider);
       ref.invalidate(classEventsForRangeProvider);
       ref.invalidate(classEventsForCurrentLocationDayProvider);
@@ -2563,6 +2640,50 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         message: message,
       );
     }
+  }
+
+  Future<bool?> _askNotifyParticipantsIfNeeded() async {
+    if (!_participantsNotificationRelevantDirty &&
+        !_eventNotificationRelevantDirty) {
+      return false;
+    }
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.l10n.classEventsNotifyParticipantsTitle),
+        content: Text(context.l10n.classEventsNotifyParticipantsMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(context.l10n.actionNo),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(context.l10n.actionYes),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<bool?> _askNotifyParticipantsForScheduleDelete() {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.l10n.classEventsNotifyParticipantsTitle),
+        content: Text(context.l10n.classEventsNotifyParticipantsMessage),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(context.l10n.actionNo),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(context.l10n.actionYes),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _submit() async {
@@ -2653,6 +2774,11 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       }
     }
 
+    final notifyParticipants = _editingEvent != null
+        ? await _askNotifyParticipantsIfNeeded()
+        : false;
+    if (!mounted || notifyParticipants == null) return;
+
     final priceCents = _parsePriceCents();
     final currency = ref.read(effectiveCurrencyProvider);
 
@@ -2665,6 +2791,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         await repo.update(
           businessId: businessId,
           classEventId: eventId,
+          notifyCustomer: notifyParticipants && _eventNotificationRelevantDirty,
+          notificationCustomerIds: _eventUpdateNotificationCustomerIds(),
           payload: {
             'starts_at': _toApiLocalDateTime(startLocal),
             'ends_at': _toApiLocalDateTime(endLocal),
@@ -2689,6 +2817,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
               businessId: businessId,
               classEventId: eventId,
               customerId: p.customerId,
+              notifyCustomer: notifyParticipants,
             );
           }
         }
@@ -2701,6 +2830,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
               classEventId: eventId,
               customerId: p.customerId,
               targetStatus: p.status,
+              notifyCustomer: notifyParticipants,
             );
           }
         }

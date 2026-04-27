@@ -509,6 +509,10 @@ final class ClassEventsController
         }
 
         $body = $request->getBody() ?? [];
+        $notifyCustomer = $this->readBoolFromBody($body, 'notify_customer', false);
+        $notificationCustomerIds = $this->normalizeOptionalCustomerIds(
+            $body['notification_customer_ids'] ?? null
+        );
         $validationError = $this->validateCreateOrUpdate($body, false);
         if ($validationError !== null) {
             return Response::error($validationError, 'validation_error', 400, $request->traceId);
@@ -623,6 +627,14 @@ final class ClassEventsController
         if ($event === null) {
             return Response::notFound('Class event not found', $request->traceId);
         }
+        if ($notifyCustomer) {
+            $this->queueClassEventNotifications(
+                $businessId,
+                $classEventId,
+                'class_booking_updated',
+                $notificationCustomerIds
+            );
+        }
         $updatedResourceRequirements = $this->classEventRepo->findResourceRequirementsForEvents($businessId, [$classEventId]);
         return Response::success($this->formatClassEvent($event, $updatedResourceRequirements[$classEventId] ?? []));
     }
@@ -639,6 +651,15 @@ final class ClassEventsController
             return Response::forbidden('Access denied', $request->traceId);
         }
 
+        $body = $request->getBody() ?? [];
+        $notifyCustomer = $this->readBoolFromBody($body, 'notify_customer', false);
+        if ($notifyCustomer) {
+            $this->queueClassEventNotifications(
+                $businessId,
+                $classEventId,
+                'class_booking_cancelled'
+            );
+        }
         $ok = $this->classEventRepo->cancelEvent($businessId, $classEventId);
         if (!$ok) {
             return Response::notFound('Class event not found', $request->traceId);
@@ -691,6 +712,7 @@ final class ClassEventsController
             ? (int) $body['customer_id']
             : $this->resolveCustomerId($businessId, $userId);
         $targetStatus = isset($body['target_status']) ? strtolower((string) $body['target_status']) : null;
+        $notifyCustomer = $this->readBoolFromBody($body, 'notify_customer', true);
         if ($customerId === null || $customerId <= 0) {
             return Response::error('customer_id is required', 'validation_error', 400, $request->traceId);
         }
@@ -704,6 +726,11 @@ final class ClassEventsController
         }
 
         try {
+            $existingBooking = $this->classEventRepo->findBookingByCustomer(
+                $businessId,
+                $classEventId,
+                $customerId
+            );
             $booking = $this->classEventRepo->book(
                 $businessId,
                 $classEventId,
@@ -765,6 +792,25 @@ final class ClassEventsController
             return Response::serverError('Unable to create class booking', $request->traceId);
         }
 
+        if ($notifyCustomer && $this->queueClassBookingNotification !== null && !empty($booking['id'])) {
+            $previousStatus = strtoupper((string) ($existingBooking['status'] ?? ''));
+            $status = strtoupper((string) ($booking['status'] ?? ''));
+            $channel = match (true) {
+                $previousStatus === 'WAITLISTED' && $status === 'CONFIRMED' => 'class_booking_promoted',
+                $status === 'WAITLISTED' => 'class_booking_waitlisted',
+                default => 'class_booking_confirmed',
+            };
+            try {
+                $this->queueClassBookingNotification->execute(
+                    (int) $booking['id'],
+                    $businessId,
+                    $channel
+                );
+            } catch (\Throwable) {
+                // notification failure must not block booking response
+            }
+        }
+
         return Response::success($this->formatClassBooking($booking));
     }
 
@@ -784,9 +830,16 @@ final class ClassEventsController
         $customerId = isset($body['customer_id'])
             ? (int) $body['customer_id']
             : $this->resolveCustomerId($businessId, $userId);
+        $notifyCustomer = $this->readBoolFromBody($body, 'notify_customer', true);
         if ($customerId === null || $customerId <= 0) {
             return Response::error('customer_id is required', 'validation_error', 400, $request->traceId);
         }
+
+        $existingBooking = $this->classEventRepo->findBookingByCustomer(
+            $businessId,
+            $classEventId,
+            $customerId
+        );
 
         try {
             $result = $this->classEventRepo->cancelBooking($businessId, $classEventId, $customerId);
@@ -796,6 +849,30 @@ final class ClassEventsController
 
         if (!$result['ok']) {
             return Response::notFound('Class booking not found', $request->traceId);
+        }
+        if ($notifyCustomer && $this->queueClassBookingNotification !== null) {
+            if ($existingBooking !== null && !empty($existingBooking['id'])) {
+                try {
+                    $this->queueClassBookingNotification->execute(
+                        (int) $existingBooking['id'],
+                        $businessId,
+                        'class_booking_cancelled'
+                    );
+                } catch (\Throwable) {
+                    // notification failure must not block booking response
+                }
+            }
+            if ($result['promotedClassBookingId'] !== null) {
+                try {
+                    $this->queueClassBookingNotification->execute(
+                        $result['promotedClassBookingId'],
+                        $businessId,
+                        'class_booking_promoted'
+                    );
+                } catch (\Throwable) {
+                    // notification failure must not block booking response
+                }
+            }
         }
         return Response::success(['cancelled' => true]);
     }
@@ -1514,6 +1591,97 @@ final class ClassEventsController
         }
         $message = strtolower((string) $e->getMessage());
         return str_contains($message, 'foreign key constraint fails');
+    }
+
+    private function readBoolFromBody(array $body, string $key, bool $default): bool
+    {
+        if (!array_key_exists($key, $body)) {
+            return $default;
+        }
+
+        $value = $body[$key];
+        if (is_bool($value)) {
+            return $value;
+        }
+        if (is_int($value) || is_float($value)) {
+            return ((int) $value) !== 0;
+        }
+        if (is_string($value)) {
+            $normalized = strtolower(trim($value));
+            if (in_array($normalized, ['1', 'true', 'yes', 'on'], true)) {
+                return true;
+            }
+            if (in_array($normalized, ['0', 'false', 'no', 'off'], true)) {
+                return false;
+            }
+        }
+
+        return $default;
+    }
+
+    /**
+     * @return int[]|null
+     */
+    private function normalizeOptionalCustomerIds(mixed $raw): ?array
+    {
+        if ($raw === null) {
+            return null;
+        }
+        if (!is_array($raw)) {
+            return null;
+        }
+        $ids = array_values(array_unique(array_map(
+            static fn ($id): int => (int) $id,
+            $raw
+        )));
+        return array_values(array_filter($ids, static fn (int $id): bool => $id > 0));
+    }
+
+    /**
+     * @param int[]|null $customerIds
+     */
+    private function queueClassEventNotifications(
+        int $businessId,
+        int $classEventId,
+        string $channel,
+        ?array $customerIds = null
+    ): void {
+        if ($this->queueClassBookingNotification === null) {
+            return;
+        }
+
+        $customerSet = null;
+        if ($customerIds !== null) {
+            $customerSet = array_fill_keys($customerIds, true);
+            if (empty($customerSet)) {
+                return;
+            }
+        }
+
+        $participants = $this->classEventRepo->findParticipants($businessId, $classEventId);
+        foreach ($participants as $participant) {
+            $status = strtoupper((string) ($participant['status'] ?? ''));
+            if (!in_array($status, ['CONFIRMED', 'WAITLISTED'], true)) {
+                continue;
+            }
+            $customerId = (int) ($participant['customer_id'] ?? 0);
+            if ($customerSet !== null && !isset($customerSet[$customerId])) {
+                continue;
+            }
+            $classBookingId = (int) ($participant['id'] ?? 0);
+            if ($classBookingId <= 0) {
+                continue;
+            }
+            try {
+                $this->queueClassBookingNotification->execute(
+                    $classBookingId,
+                    $businessId,
+                    $channel
+                );
+            } catch (\Throwable) {
+                // notification failure must not block class event mutations
+            }
+        }
     }
 
     private function resolveClassTypeLocationIdsForMutation(

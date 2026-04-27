@@ -1181,7 +1181,7 @@ class _WeeklyClassEventTile extends ConsumerWidget {
     final staffName = _resolveStaffDisplayName(ref, classEvent.staffId);
 
     return GestureDetector(
-      onTap: canManageBookings && endsAt.isAfter(DateTime.now())
+      onTap: canManageBookings
           ? () => showCreateClassEventDialog(
               context,
               ref,

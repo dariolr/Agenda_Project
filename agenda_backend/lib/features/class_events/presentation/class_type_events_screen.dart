@@ -388,12 +388,10 @@ class _ClassTypeEventsSummaryFormState
     final allStaff = ref.watch(allStaffProvider).value ?? const <Staff>[];
 
     final locationNameById = {for (final l in locations) l.id: l.name};
-    final enabledLocationNames = widget.classType.locationIds.isEmpty
-        ? locations.map((location) => location.name).toList()
-        : widget.classType.locationIds
-              .map((id) => locationNameById[id])
-              .whereType<String>()
-              .toList();
+    final enabledLocationNames = widget.classType.locationIds
+        .map((id) => locationNameById[id])
+        .whereType<String>()
+        .toList();
     final staffNameById = {for (final s in allStaff) s.id: s.displayName};
     final upcoming = upcomingAsync.value ?? const <ClassEvent>[];
     final all = allAsync.value ?? const <ClassEvent>[];
@@ -453,9 +451,7 @@ class _ClassTypeEventsSummaryFormState
               const SizedBox(height: 16),
             ],
             Text(
-              widget.classType.locationIds.isEmpty
-                  ? '${l10n.classTypesLocationsSelectionTitle} • ${l10n.allLocations}'
-                  : l10n.classTypesLocationsSelectionTitle,
+              l10n.classTypesLocationsSelectionTitle,
               style: Theme.of(context).textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: colorScheme.onSurfaceVariant,
@@ -464,7 +460,7 @@ class _ClassTypeEventsSummaryFormState
             const SizedBox(height: 8),
             if (enabledLocationNames.isEmpty)
               Text(
-                l10n.allLocations,
+                l10n.classEventsNoLocationsForClassType,
                 style: Theme.of(context).textTheme.bodySmall,
               )
             else

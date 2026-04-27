@@ -18,6 +18,7 @@ use DateTimeZone;
  *   class_booking_waitlisted — added to waitlist
  *   class_booking_promoted   — moved from waitlist to confirmed
  *   class_booking_cancelled  — booking cancelled by customer or staff
+ *   class_booking_updated    — class event date/time/price changed
  *   class_booking_reminder   — 24h reminder before class start
  */
 final class QueueClassBookingNotification
@@ -95,6 +96,7 @@ final class QueueClassBookingNotification
             'class_booking_confirmed' => 1,
             'class_booking_waitlisted'=> 2,
             'class_booking_cancelled' => 2,
+            'class_booking_updated'   => 2,
             default                   => 5,
         };
 
@@ -289,6 +291,7 @@ final class QueueClassBookingNotification
             'class_booking_waitlisted' => EmailTemplateRenderer::classBookingWaitlisted($locale),
             'class_booking_promoted'   => EmailTemplateRenderer::classBookingPromoted($locale),
             'class_booking_cancelled'  => EmailTemplateRenderer::classBookingCancelled($locale),
+            'class_booking_updated'    => EmailTemplateRenderer::classBookingUpdated($locale),
             'class_booking_reminder'   => EmailTemplateRenderer::classBookingReminder($locale),
             default => throw new \InvalidArgumentException("Unknown class booking channel: {$channel}"),
         };
@@ -301,6 +304,7 @@ final class QueueClassBookingNotification
             'class_booking_waitlisted' => 'email_class_booking_waitlisted',
             'class_booking_promoted'   => 'email_class_booking_promoted',
             'class_booking_cancelled'  => 'email_class_booking_cancelled',
+            'class_booking_updated'    => 'email_class_booking_confirmed',
             'class_booking_reminder'   => 'email_class_booking_reminder',
             default => null,
         };

@@ -1549,6 +1549,8 @@
   "classEventsValidationCapacityBelowConfirmed": "La capienza non può essere ridotta al di sotto del numero di partecipanti confermati",
   "classEventsPromoteWaitlistTitle": "Promuovi dalla lista d'attesa",
   "classEventsPromoteWaitlistMessage": "Vuoi promuovere automaticamente i partecipanti dalla lista d'attesa per occupare i posti disponibili?",
+  "classEventsNotifyParticipantsTitle": "Inviare email ai partecipanti?",
+  "classEventsNotifyParticipantsMessage": "Vuoi inviare le email di notifica alle persone interessate da queste modifiche?",
   "classEventsNoLocationsForClassType": "Nessuna sede abilitata per questo tipo evento",
   "classEventsValidationRequired": "Compila tutti i campi obbligatori",
   "classEventsValidationEndAfterStart": "L'ora di fine deve essere successiva all'ora di inizio",

@@ -49,12 +49,14 @@ class ClassEventsRepository {
     required int classEventId,
     int? customerId,
     String? targetStatus,
+    bool notifyCustomer = true,
   }) {
     return _apiClient.bookClassEvent(
       businessId: businessId,
       classEventId: classEventId,
       customerId: customerId,
       targetStatus: targetStatus,
+      notifyCustomer: notifyCustomer,
     );
   }
 
@@ -62,11 +64,13 @@ class ClassEventsRepository {
     required int businessId,
     required int classEventId,
     int? customerId,
+    bool notifyCustomer = true,
   }) {
     return _apiClient.cancelClassEventBooking(
       businessId: businessId,
       classEventId: classEventId,
       customerId: customerId,
+      notifyCustomer: notifyCustomer,
     );
   }
 
@@ -93,21 +97,27 @@ class ClassEventsRepository {
     required int businessId,
     required int classEventId,
     required Map<String, dynamic> payload,
+    bool notifyCustomer = false,
+    List<int>? notificationCustomerIds,
   }) {
     return _apiClient.updateClassEvent(
       businessId: businessId,
       classEventId: classEventId,
       data: payload,
+      notifyCustomer: notifyCustomer,
+      notificationCustomerIds: notificationCustomerIds,
     );
   }
 
   Future<void> deleteEvent({
     required int businessId,
     required int classEventId,
+    bool notifyCustomer = false,
   }) {
     return _apiClient.cancelClassEvent(
       businessId: businessId,
       classEventId: classEventId,
+      notifyCustomer: notifyCustomer,
     );
   }
 

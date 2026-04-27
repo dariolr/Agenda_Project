@@ -44,6 +44,7 @@ import 'package:agenda_backend/features/agenda/presentation/widgets/booking_dial
 import 'package:agenda_backend/features/agenda/utils/week_range.dart';
 import 'package:agenda_backend/features/agenda/utils/client_color_utils.dart';
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
+import 'package:agenda_backend/features/class_events/presentation/class_events_screen.dart';
 import 'package:agenda_backend/features/class_events/providers/class_events_providers.dart';
 import 'package:agenda_backend/features/clients/providers/clients_providers.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
@@ -942,6 +943,7 @@ class _SingleStaffWeekTimelineColumnState
         : (event.classTypeName?.trim().isNotEmpty ?? false)
         ? event.classTypeName!.trim()
         : context.l10n.classEventsUntitled;
+    final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
     final showPriceInCard = ref.watch(
       effectiveShowAppointmentPriceInCardProvider,
     );
@@ -977,7 +979,9 @@ class _SingleStaffWeekTimelineColumnState
       height: visualHeight,
       child: MouseRegion(
         opaque: true,
-        cursor: SystemMouseCursors.click,
+        cursor: canManageBookings
+            ? SystemMouseCursors.click
+            : SystemMouseCursors.basic,
         onEnter: (_) {
           ref.read(selectedAppointmentProvider.notifier).clear();
           if (_hoveredClassEventId != event.id) {
@@ -989,86 +993,96 @@ class _SingleStaffWeekTimelineColumnState
             setState(() => _hoveredClassEventId = null);
           }
         },
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: theme.colorScheme.tertiary),
-          ),
-          child: DefaultTextStyle(
-            style:
-                theme.textTheme.bodySmall?.copyWith(
-                  color: secondaryTextColor,
-                  fontWeight: FontWeight.w400,
-                ) ??
-                TextStyle(
-                  color: secondaryTextColor,
-                  fontWeight: FontWeight.w400,
-                ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  classTitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: primaryTextColor,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  unitPriceLabel == null
-                      ? '${DtFmt.hm(context, start.hour, start.minute)} - ${DtFmt.hm(context, end.hour, end.minute)}'
-                      : '${DtFmt.hm(context, start.hour, start.minute)} - ${DtFmt.hm(context, end.hour, end.minute)} • $unitPriceLabel',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.bodySmall?.copyWith(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: canManageBookings
+              ? () => showCreateClassEventDialog(
+                  context,
+                  ref,
+                  initialEvent: event,
+                )
+              : null,
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: theme.colorScheme.tertiary),
+            ),
+            child: DefaultTextStyle(
+              style:
+                  theme.textTheme.bodySmall?.copyWith(
+                    color: secondaryTextColor,
+                    fontWeight: FontWeight.w400,
+                  ) ??
+                  TextStyle(
                     color: secondaryTextColor,
                     fontWeight: FontWeight.w400,
                   ),
-                ),
-                if (event.waitlistCount > 0 ||
-                    event.confirmedCount >= event.capacityTotal) ...[
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    classTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: primaryTextColor,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
                   const SizedBox(height: 2),
                   Text(
-                    (event.waitlistEnabled || event.waitlistCount > 0)
-                        ? context.l10n.classEventsCapacitySummary(
-                            event.confirmedCount,
-                            event.capacityTotal,
-                            event.waitlistCount,
-                          )
-                        : context.l10n.classEventsCapacitySummaryNoWaitlist(
-                            event.confirmedCount,
-                            event.capacityTotal,
-                          ),
-                    maxLines: 2,
+                    unitPriceLabel == null
+                        ? '${DtFmt.hm(context, start.hour, start.minute)} - ${DtFmt.hm(context, end.hour, end.minute)}'
+                        : '${DtFmt.hm(context, start.hour, start.minute)} - ${DtFmt.hm(context, end.hour, end.minute)} • $unitPriceLabel',
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: secondaryTextColor,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
-                ],
-                if (totalPriceLabel != null) ...[
-                  const SizedBox(height: 2),
-                  Align(
-                    alignment: Alignment.bottomRight,
-                    child: Text(
-                      totalPriceLabel,
-                      maxLines: 1,
+                  if (event.waitlistCount > 0 ||
+                      event.confirmedCount >= event.capacityTotal) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      (event.waitlistEnabled || event.waitlistCount > 0)
+                          ? context.l10n.classEventsCapacitySummary(
+                              event.confirmedCount,
+                              event.capacityTotal,
+                              event.waitlistCount,
+                            )
+                          : context.l10n.classEventsCapacitySummaryNoWaitlist(
+                              event.confirmedCount,
+                              event.capacityTotal,
+                            ),
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: primaryTextColor,
-                        fontWeight: FontWeight.w700,
+                        color: secondaryTextColor,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
-                  ),
+                  ],
+                  if (totalPriceLabel != null) ...[
+                    const SizedBox(height: 2),
+                    Align(
+                      alignment: Alignment.bottomRight,
+                      child: Text(
+                        totalPriceLabel,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: primaryTextColor,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),

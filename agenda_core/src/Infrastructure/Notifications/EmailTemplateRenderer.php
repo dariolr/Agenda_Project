@@ -2128,6 +2128,125 @@ TEXT,
         return $templates[$locale];
     }
 
+    public static function classBookingUpdated(string $locale = 'it'): array
+    {
+        $locale = self::normalizeLocale($locale);
+        $templates = [
+            'it' => [
+                'subject' => 'Programmazione aggiornata – {{class_type_name}}',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="it">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+    <tr><td style="padding:40px 30px;text-align:center;background-color:#1976D2;">
+        <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">Programmazione Aggiornata</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+        <p style="margin:0 0 20px;font-size:16px;color:#333;">Ciao <strong>{{client_name}}</strong>,</p>
+        <p style="margin:0 0 25px;font-size:16px;color:#333;">La programmazione di <strong>{{class_type_name}}</strong> presso <strong>{{business_name}}</strong> è stata aggiornata.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
+            <tr><td style="padding:20px;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    {{location_block_html}}
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <strong style="color:#666;font-size:13px;">Quando</strong><br>
+                        <span style="color:#333;font-size:13px;">{{date}} alle {{time}} – {{end_time}}</span>
+                    </td></tr>
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <strong style="color:#666;font-size:13px;">Evento</strong><br>
+                        <span style="color:#333;font-size:13px;">{{class_type_name}}</span>
+                    </td></tr>
+                    {{price_row_html}}
+                </table>
+            </td></tr>
+        </table>
+        <p style="margin:0;font-size:14px;color:#666;">Per informazioni contatta <strong>{{business_name}}</strong>.</p>
+    </td></tr>
+    <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#999;">Il team di {{business_name}}<br>{{location_address_line}}<br>{{location_phone}}</p>
+    </td></tr>
+</table>
+</body></html>
+HTML,
+                'text' => <<<TEXT
+PROGRAMMAZIONE AGGIORNATA
+
+Ciao {{client_name}},
+
+La programmazione di {{class_type_name}} presso {{business_name}} è stata aggiornata.
+
+{{location_block_text}}• Quando: {{date}} alle {{time}} – {{end_time}}
+• Evento: {{class_type_name}}
+{{price_row_text}}
+Per informazioni contatta {{business_name}}.
+
+---
+Il team di {{business_name}}
+{{location_address_line}} {{location_phone}}
+TEXT,
+            ],
+            'en' => [
+                'subject' => 'Event updated – {{class_type_name}}',
+                'html' => <<<HTML
+<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background-color:#f5f5f5;">
+<table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:0 auto;background-color:#ffffff;">
+    <tr><td style="padding:40px 30px;text-align:center;background-color:#1976D2;">
+        <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:600;">Event Updated</h1>
+    </td></tr>
+    <tr><td style="padding:30px;">
+        <p style="margin:0 0 20px;font-size:16px;color:#333;">Hi <strong>{{client_name}}</strong>,</p>
+        <p style="margin:0 0 25px;font-size:16px;color:#333;">The schedule for <strong>{{class_type_name}}</strong> at <strong>{{business_name}}</strong> has been updated.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f8f9fa;border-radius:8px;margin-bottom:25px;">
+            <tr><td style="padding:20px;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    {{location_block_html}}
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <strong style="color:#666;font-size:13px;">When</strong><br>
+                        <span style="color:#333;font-size:13px;">{{date}} at {{time}} – {{end_time}}</span>
+                    </td></tr>
+                    <tr><td style="padding:8px 0;border-bottom:1px solid #e0e0e0;">
+                        <strong style="color:#666;font-size:13px;">Event</strong><br>
+                        <span style="color:#333;font-size:13px;">{{class_type_name}}</span>
+                    </td></tr>
+                    {{price_row_html}}
+                </table>
+            </td></tr>
+        </table>
+        <p style="margin:0;font-size:14px;color:#666;">For information, please contact <strong>{{business_name}}</strong>.</p>
+    </td></tr>
+    <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
+        <p style="margin:0;font-size:12px;color:#999;">The {{business_name}} team<br>{{location_address_line}}<br>{{location_phone}}</p>
+    </td></tr>
+</table>
+</body></html>
+HTML,
+                'text' => <<<TEXT
+EVENT UPDATED
+
+Hi {{client_name}},
+
+The schedule for {{class_type_name}} at {{business_name}} has been updated.
+
+{{location_block_text}}• When: {{date}} at {{time}} – {{end_time}}
+• Event: {{class_type_name}}
+{{price_row_text}}
+For information, please contact {{business_name}}.
+
+---
+The {{business_name}} team
+{{location_address_line}} {{location_phone}}
+TEXT,
+            ],
+        ];
+
+        return $templates[$locale];
+    }
+
     public static function classBookingCancelled(string $locale = 'it'): array
     {
         $locale = self::normalizeLocale($locale);

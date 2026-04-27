@@ -1414,6 +1414,7 @@ class ApiClient {
     required int classEventId,
     int? customerId,
     String? targetStatus,
+    bool notifyCustomer = true,
   }) async {
     final response = await post(
       ApiConfig.classEventBook(businessId, classEventId),
@@ -1421,6 +1422,7 @@ class ApiClient {
         if (customerId != null) 'customer_id': customerId,
         if (targetStatus != null && targetStatus.isNotEmpty)
           'target_status': targetStatus,
+        'notify_customer': notifyCustomer,
       },
     );
     final data = response['data'];
@@ -1433,10 +1435,14 @@ class ApiClient {
     required int businessId,
     required int classEventId,
     int? customerId,
+    bool notifyCustomer = true,
   }) async {
     await post(
       ApiConfig.classEventCancelBooking(businessId, classEventId),
-      data: {if (customerId != null) 'customer_id': customerId},
+      data: {
+        if (customerId != null) 'customer_id': customerId,
+        'notify_customer': notifyCustomer,
+      },
     );
   }
 
@@ -1469,10 +1475,17 @@ class ApiClient {
     required int businessId,
     required int classEventId,
     required Map<String, dynamic> data,
+    bool notifyCustomer = false,
+    List<int>? notificationCustomerIds,
   }) async {
+    final requestPayload = Map<String, dynamic>.from(data)
+      ..['notify_customer'] = notifyCustomer;
+    if (notificationCustomerIds != null) {
+      requestPayload['notification_customer_ids'] = notificationCustomerIds;
+    }
     final response = await put(
       ApiConfig.classEvent(businessId, classEventId),
-      data: data,
+      data: requestPayload,
     );
     final payload = response['data'];
     return ClassEvent.fromJson(
@@ -1484,8 +1497,12 @@ class ApiClient {
   Future<void> cancelClassEvent({
     required int businessId,
     required int classEventId,
+    bool notifyCustomer = false,
   }) async {
-    await post('${ApiConfig.classEvent(businessId, classEventId)}/cancel');
+    await post(
+      '${ApiConfig.classEvent(businessId, classEventId)}/cancel',
+      data: {'notify_customer': notifyCustomer},
+    );
   }
 
   /// DELETE /v1/businesses/{business_id}/class-events/{id}
