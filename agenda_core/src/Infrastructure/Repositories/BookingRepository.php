@@ -753,7 +753,7 @@ final class BookingRepository
         }
 
         $stmt = $this->db->getPdo()->prepare(
-            "SELECT bi.id, bi.booking_id, bi.location_id, bi.staff_id, bi.service_id, bi.service_variant_id,
+            "SELECT bi.id, bi.booking_id, COALESCE(bi.location_id, b.location_id) AS location_id, bi.staff_id, bi.service_id, bi.service_variant_id,
                     bi.start_time, bi.end_time, bi.price, bi.list_price_cents, bi.applied_price_cents, bi.package_id, bi.pricing_source,
                     bi.extra_blocked_minutes, bi.extra_processing_minutes,
                     bi.service_name_snapshot,
@@ -780,19 +780,18 @@ final class BookingRepository
              LEFT JOIN service_variants sv ON bi.service_variant_id = sv.id
              LEFT JOIN services s ON bi.service_id = s.id
              LEFT JOIN staff st ON bi.staff_id = st.id
-             WHERE bi.location_id = ?
+             WHERE b.location_id = ?
                AND bi.start_time >= ?
                AND bi.start_time <= ?
                $statusFilter
              ORDER BY bi.start_time ASC, bi.id ASC"
         );
-        
+
         $params = [$locationId, $startOfDay, $endOfDay];
         if (!empty($excludedStatuses)) {
             $params = array_merge($params, $excludedStatuses);
         }
         $stmt->execute($params);
-
         return $stmt->fetchAll();
     }
 
@@ -802,7 +801,7 @@ final class BookingRepository
     public function getAppointmentById(int $appointmentId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            "SELECT bi.id, bi.booking_id, bi.location_id, bi.staff_id, bi.service_id, bi.service_variant_id,
+            "SELECT bi.id, bi.booking_id, COALESCE(bi.location_id, b.location_id) AS location_id, bi.staff_id, bi.service_id, bi.service_variant_id,
                     bi.start_time, bi.end_time, bi.price, bi.list_price_cents, bi.applied_price_cents, bi.package_id, bi.pricing_source,
                     bi.extra_blocked_minutes, bi.extra_processing_minutes,
                     bi.service_name_snapshot,

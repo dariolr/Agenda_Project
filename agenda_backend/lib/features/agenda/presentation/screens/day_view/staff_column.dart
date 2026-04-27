@@ -505,8 +505,10 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final staffAppointments = allAppointments
         .where((a) => a.staffId == widget.staff.id)
         .toList();
-    final allClassEvents =
-        ref.watch(classEventsForCurrentLocationDayProvider).value ?? const [];
+    final classEventsAsync = ref.watch(classEventsForCurrentLocationDayProvider);
+    final allClassEvents = (classEventsAsync.isLoading && !classEventsAsync.hasValue)
+        ? const <ClassEvent>[]
+        : (classEventsAsync.value ?? const <ClassEvent>[]);
     final classTypes = ref.watch(classTypesProvider).value ?? const [];
     final classTypeById = <int, ClassType>{
       for (final classType in classTypes) classType.id: classType,

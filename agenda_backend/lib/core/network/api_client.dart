@@ -231,8 +231,6 @@ class ApiClient {
   }) async {
     try {
       final response = await _dio.get(path, queryParameters: queryParameters);
-      // ignore: avoid_print
-      //print('DEBUG GET $path response.data: ${response.data}');
       return _handleResponse(response);
     } on DioException catch (e) {
       // ignore: avoid_print
@@ -1296,6 +1294,7 @@ class ApiClient {
         'to': toUtc.toIso8601String(),
         if (locationId != null) 'location_id': locationId.toString(),
         if (classTypeId != null) 'class_type_id': classTypeId.toString(),
+        '_t': DateTime.now().millisecondsSinceEpoch.toString(),
       },
     );
     final data = response['_list'] ?? response['data'] ?? response;

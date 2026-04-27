@@ -141,6 +141,44 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     return result.appointments;
   }
 
+  /// Aggiorna gli appuntamenti in background senza passare per AsyncLoading.
+  /// Usato dal polling per evitare il flicker dell'UI.
+  Future<void> silentRefresh() async {
+    final authState = ref.read(authProvider);
+    if (!authState.isAuthenticated) return;
+
+    final repository = ref.read(bookingsRepositoryProvider);
+    final location = ref.read(currentLocationProvider);
+    final business = ref.read(currentBusinessProvider);
+    final date = ref.read(agendaDateProvider);
+
+    if (location.id <= 0) return;
+
+    try {
+      final result = await repository.getAppointmentsWithMetadata(
+        locationId: location.id,
+        businessId: business.id,
+        date: date,
+      );
+
+      ref.read(bookingsProvider.notifier).ensureBookingsBulk(
+        result.bookingMetadata.values.map(
+          (metadata) => Booking(
+            id: metadata.id,
+            businessId: metadata.businessId,
+            locationId: metadata.locationId,
+            clientId: metadata.clientId,
+            clientName: metadata.clientName ?? '',
+            notes: metadata.notes,
+            status: metadata.status ?? 'confirmed',
+          ),
+        ),
+      );
+
+      state = AsyncData(result.appointments);
+    } catch (_) {}
+  }
+
   /// Restituisce gli appointments associati a un booking specifico,
   /// ordinati per orario di inizio.
   List<Appointment> getByBookingId(int bookingId) {

@@ -25,6 +25,7 @@ import 'package:agenda_backend/features/agenda/utils/week_range.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
 import 'package:agenda_backend/features/staff/providers/availability_exceptions_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
+import 'package:agenda_backend/features/class_events/providers/class_events_providers.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -68,8 +69,6 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   // 🔹 offset verticale "master" della giornata (usato anche dalla CurrentTimeLine)
   double _verticalOffset = 0;
 
-  // 🔹 Flag per distinguere polling automatico da altre operazioni
-  bool _isPolling = false;
   bool _agendaViewportReady = false;
   int _weekAutoScrollRequestId = 0;
   DateTime? _weekAutoScrollTargetDate;
@@ -154,8 +153,8 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     _pollingTimer = Timer.periodic(interval, (_) {
       if (!mounted) return;
       // Ricarica solo gli appuntamenti (dati che cambiano più frequentemente)
-      _isPolling = true;
-      ref.invalidate(appointmentsProvider);
+      ref.read(appointmentsProvider.notifier).silentRefresh();
+      ref.invalidate(classEventsForRangeProvider);
       _invalidateCurrentWeekAppointments();
     });
   }
@@ -355,12 +354,12 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     // (se l'utente cambia data durante il polling, deve mostrare loading)
     ref.listen(agendaDateProvider, (prev, next) {
       if (prev != null && !DateUtils.isSameDay(prev, next)) {
-        _isPolling = false;
         if (_agendaViewportReady) {
           setState(() {
             _agendaViewportReady = false;
           });
         }
+        ref.invalidate(classEventsForCurrentLocationDayProvider);
 
         final calendarMode = ref.read(calendarViewModeProvider);
         if (calendarMode == CalendarViewMode.week) {
@@ -387,11 +386,6 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       ref.read(bookingRescheduleSessionProvider.notifier).clear();
     });
 
-    // Resetta il flag polling quando il caricamento finisce
-    if (!appointmentsAsync.isLoading) {
-      _isPolling = false;
-    }
-
     // Stato "waiting" base (prerequisiti pagina)
     final hasLocations = locations.isNotEmpty;
     final isWaitingForBusiness = currentBusinessId <= 0;
@@ -403,7 +397,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
         (staffAsync.isLoading && !staffAsync.hasValue) ||
         isWaitingForLocations ||
         isWaitingForLocationSelection ||
-        (appointmentsAsync.isLoading && !_isPolling && !staffAsync.hasValue);
+        (appointmentsAsync.isLoading && !staffAsync.hasValue);
 
     // Dati usati dalle condizioni di bootstrap iniziale
     final staffData = staffAsync.asData?.value;
@@ -459,9 +453,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     final isInitialStaffLoad =
         staffAsync.isLoading && (staffData?.isEmpty ?? true);
     final isInitialAppointmentsLoad =
-        appointmentsAsync.isLoading &&
-        !_isPolling &&
-        !appointmentsAsync.hasValue;
+        appointmentsAsync.isLoading && !appointmentsAsync.hasValue;
     final isPlanningBootstrapLoading =
         staffFilterMode == StaffFilterMode.onDutyTeam &&
         staffInCurrentLocation.isNotEmpty &&

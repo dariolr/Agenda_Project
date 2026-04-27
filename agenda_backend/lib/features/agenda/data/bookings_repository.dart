@@ -108,7 +108,7 @@ class BookingsRepository {
         appointments: appointments,
         bookingMetadata: bookingMetadata,
       );
-    } catch (e) {
+    } catch (_) {
       // Fallback: usa bookings API se appointments non disponibile
       final bookings = await _api.fetchBookings(
         locationId: locationId,
