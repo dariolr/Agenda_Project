@@ -125,6 +125,7 @@ final class DeleteBooking
                 l.address as location_address,
                 l.email as location_email,
                 l.timezone as location_timezone,
+                l.booking_default_locale as location_locale,
                 b.name as business_name,
                 b.email as business_email,
                 b.slug as business_slug

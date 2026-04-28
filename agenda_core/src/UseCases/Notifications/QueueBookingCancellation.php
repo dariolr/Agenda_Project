@@ -180,8 +180,9 @@ final class QueueBookingCancellation
 
     private function resolveLocale(array $booking): string
     {
+        $defaultLocale = getenv('DEFAULT_LOCALE') ?: 'it';
         return EmailTemplateRenderer::normalizeLocale(
-            $booking['locale'] ?? $booking['business_locale'] ?? null
+            $booking['location_locale'] ?? $booking['locale'] ?? $booking['business_locale'] ?? $defaultLocale
         );
     }
 

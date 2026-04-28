@@ -223,6 +223,7 @@ final class QueueBookingReminder
                 b.status,
                 l.business_id,
                 l.timezone as location_timezone,
+                l.booking_default_locale as location_locale,
                 bus.name as business_name,
                 bus.email as business_email,
                 bus.slug as business_slug,
@@ -323,8 +324,9 @@ final class QueueBookingReminder
 
     private function resolveLocale(array $booking): string
     {
+        $defaultLocale = getenv('DEFAULT_LOCALE') ?: 'it';
         return EmailTemplateRenderer::normalizeLocale(
-            $booking['locale'] ?? $booking['business_locale'] ?? null
+            $booking['location_locale'] ?? $booking['locale'] ?? $booking['business_locale'] ?? $defaultLocale
         );
     }
 
@@ -399,6 +401,7 @@ final class QueueBookingReminder
                 b.status,
                 l.business_id,
                 l.timezone as location_timezone,
+                l.booking_default_locale as location_locale,
                 bus.name as business_name,
                 bus.email as business_email,
                 bus.slug as business_slug,

@@ -86,7 +86,7 @@ final class QueueClassBookingNotification
             return 0;
         }
 
-        $locale = $this->resolveLocale($businessId);
+        $locale = $this->resolveLocale($data);
 
         $variables = $this->buildVariables($data, $locale);
         $template  = $this->resolveTemplate($channel, $locale);
@@ -145,9 +145,9 @@ final class QueueClassBookingNotification
                  l.city                 AS location_city,
                  l.phone                AS location_phone,
                  l.timezone             AS location_timezone,
+                 l.booking_default_locale AS location_locale,
                  bus.name               AS business_name,
-                 bus.email              AS business_email,
-                 bus.locale             AS business_locale
+                 bus.email              AS business_email
              FROM class_bookings cb
              INNER JOIN class_events ce
                  ON ce.id = cb.class_event_id AND ce.business_id = cb.business_id
@@ -174,14 +174,12 @@ final class QueueClassBookingNotification
         return $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
     }
 
-    private function resolveLocale(int $businessId): string
+    private function resolveLocale(array $data): string
     {
-        $stmt = $this->db->getPdo()->prepare(
-            'SELECT locale FROM businesses WHERE id = :id LIMIT 1'
+        $defaultLocale = getenv('DEFAULT_LOCALE') ?: 'it';
+        return EmailTemplateRenderer::normalizeLocale(
+            $data['location_locale'] ?? $data['business_locale'] ?? $defaultLocale
         );
-        $stmt->execute(['id' => $businessId]);
-        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-        return EmailTemplateRenderer::normalizeLocale($row['locale'] ?? null);
     }
 
     private function buildVariables(array $data, string $locale): array
