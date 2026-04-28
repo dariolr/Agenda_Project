@@ -227,21 +227,16 @@ final class QueueBookingRescheduled
             return ['attachments' => null];
         }
 
-        $eventData = CalendarICSGenerator::prepareEventFromBooking(
+        $icsContent = CalendarICSGenerator::generateUpdateIcsFromBooking(
             [
-                'start_time' => $booking['new_start_time'] ?? $booking['start_time'],
-                'end_time' => $newEndTime,
-                'services' => $booking['services'] ?? '',
-                'location_name' => $locationName,
-                'location_address' => $locationAddress,
-                'location_city' => $booking['location_city'] ?? '',
-                'location_timezone' => $booking['location_timezone'] ?? 'Europe/Rome',
-                'booking_id' => $booking['booking_id'] ?? 0,
+                'start_time'       => $booking['new_start_time'] ?? $booking['start_time'],
+                'end_time'         => $newEndTime,
+                'location_timezone'=> $booking['location_timezone'] ?? 'Europe/Rome',
+                'booking_id'       => $booking['booking_id'] ?? 0,
             ],
             $booking['business_name'] ?? '',
             $locale
         );
-        $icsContent = CalendarICSGenerator::generateIcsContent($eventData);
         return [
             'attachments' => [CalendarICSGenerator::createIcsAttachment($icsContent)],
         ];

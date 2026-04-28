@@ -260,6 +260,178 @@ final class CalendarICSGenerator
     }
 
     /**
+     * Generate a METHOD:REQUEST ICS for an appointment reschedule.
+     * The UID matches the confirmation so calendar clients update the existing event.
+     *
+     * @param array $booking Must contain booking_id, start_time (new), end_time (new), location_timezone
+     * @param string $businessName
+     * @param string $locale
+     */
+    public static function generateUpdateIcsFromBooking(array $booking, string $businessName, string $locale = 'it'): string
+    {
+        $timezone = self::normalizeTimezone($booking['location_timezone'] ?? null);
+        $tz = new DateTimeZone($timezone);
+        $utcTz = new DateTimeZone('UTC');
+        $now = (new DateTimeImmutable('now', $utcTz))->format('Ymd\THis\Z');
+
+        $startTime = new DateTimeImmutable($booking['start_time'], $tz);
+        $endTime   = new DateTimeImmutable($booking['end_time'], $tz);
+
+        $labels = ['it' => ['appointment_at' => 'Appuntamento presso'], 'en' => ['appointment_at' => 'Appointment at']];
+        $l = $labels[$locale] ?? $labels['it'];
+        $title = self::escapeIcsText("{$l['appointment_at']} {$businessName}");
+
+        $bookingId = (int) ($booking['booking_id'] ?? 0);
+        // UID must match the confirmation ICS: booking-{id}-{originalDate}@romeolab.it
+        // We use the NEW start date since UID stability per RFC 5545 is on the booking ID;
+        // using the new date keeps it deterministic if rescheduled multiple times.
+        $uid = sprintf('booking-%d-%s@romeolab.it', $bookingId, $startTime->format('Ymd'));
+
+        return implode("\r\n", [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//RomeoLab Agenda//IT',
+            'CALSCALE:GREGORIAN',
+            'METHOD:REQUEST',
+            'X-WR-TIMEZONE:' . $timezone,
+            'BEGIN:VEVENT',
+            'UID:' . $uid,
+            'DTSTAMP:' . $now,
+            'DTSTART;TZID=' . $timezone . ':' . $startTime->format('Ymd\THis'),
+            'DTEND;TZID=' . $timezone . ':' . $endTime->format('Ymd\THis'),
+            'SUMMARY:' . $title,
+            'STATUS:CONFIRMED',
+            'SEQUENCE:1',
+            'END:VEVENT',
+            'END:VCALENDAR',
+        ]);
+    }
+
+    /**
+     * Generate a METHOD:REQUEST ICS for a class booking date/time update.
+     * The UID matches the confirmation so calendar clients update the existing event.
+     *
+     * @param array $data From QueueClassBookingNotification::loadClassBookingData()
+     */
+    public static function generateUpdateIcsFromClassBooking(array $data): string
+    {
+        $timezone = self::normalizeTimezone($data['location_timezone'] ?? null);
+        $tz = new DateTimeZone($timezone);
+        $utcTz = new DateTimeZone('UTC');
+        $now = (new DateTimeImmutable('now', $utcTz))->format('Ymd\THis\Z');
+
+        $startsLocal = (new DateTimeImmutable((string) $data['starts_at'], new DateTimeZone('UTC')))->setTimezone($tz);
+        $endsLocal   = (new DateTimeImmutable((string) $data['ends_at'],   new DateTimeZone('UTC')))->setTimezone($tz);
+
+        $bookingId = (int) ($data['class_booking_id'] ?? 0);
+        $uid = sprintf('booking-%d-%s@romeolab.it', $bookingId, $startsLocal->format('Ymd'));
+
+        return implode("\r\n", [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//RomeoLab Agenda//IT',
+            'CALSCALE:GREGORIAN',
+            'METHOD:REQUEST',
+            'X-WR-TIMEZONE:' . $timezone,
+            'BEGIN:VEVENT',
+            'UID:' . $uid,
+            'DTSTAMP:' . $now,
+            'DTSTART;TZID=' . $timezone . ':' . $startsLocal->format('Ymd\THis'),
+            'DTEND;TZID=' . $timezone . ':' . $endsLocal->format('Ymd\THis'),
+            'SUMMARY:' . self::escapeIcsText(($data['class_type_name'] ?? '') . ' - ' . ($data['business_name'] ?? '')),
+            'STATUS:CONFIRMED',
+            'SEQUENCE:1',
+            'END:VEVENT',
+            'END:VCALENDAR',
+        ]);
+    }
+
+    /**
+     * Generate a METHOD:CANCEL ICS for an appointment booking.
+     * The UID must match the one sent in the confirmation ICS.
+     *
+     * @param array $booking Must contain booking_id, start_time, end_time, location_timezone
+     * @param string $businessName
+     * @param string $locale
+     */
+    public static function generateCancelIcsFromBooking(array $booking, string $businessName, string $locale = 'it'): string
+    {
+        $timezone = self::normalizeTimezone($booking['location_timezone'] ?? null);
+        $tz = new DateTimeZone($timezone);
+        $utcTz = new DateTimeZone('UTC');
+        $now = (new DateTimeImmutable('now', $utcTz))->format('Ymd\THis\Z');
+
+        $startTime = new DateTimeImmutable($booking['start_time'], $tz);
+        $endTime   = new DateTimeImmutable($booking['end_time'], $tz);
+
+        $labels = ['it' => ['appointment_at' => 'Appuntamento presso'], 'en' => ['appointment_at' => 'Appointment at']];
+        $l = $labels[$locale] ?? $labels['it'];
+        $title = self::escapeIcsText("{$l['appointment_at']} {$businessName}");
+
+        // UID must match the confirmation ICS: booking-{id}-{date}@romeolab.it
+        $bookingId = (int) ($booking['booking_id'] ?? 0);
+        $uid = sprintf('booking-%d-%s@romeolab.it', $bookingId, $startTime->format('Ymd'));
+
+        return implode("\r\n", [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//RomeoLab Agenda//IT',
+            'CALSCALE:GREGORIAN',
+            'METHOD:CANCEL',
+            'X-WR-TIMEZONE:' . $timezone,
+            'BEGIN:VEVENT',
+            'UID:' . $uid,
+            'DTSTAMP:' . $now,
+            'DTSTART;TZID=' . $timezone . ':' . $startTime->format('Ymd\THis'),
+            'DTEND;TZID=' . $timezone . ':' . $endTime->format('Ymd\THis'),
+            'SUMMARY:' . $title,
+            'STATUS:CANCELLED',
+            'SEQUENCE:1',
+            'END:VEVENT',
+            'END:VCALENDAR',
+        ]);
+    }
+
+    /**
+     * Generate a METHOD:CANCEL ICS for a class booking cancellation.
+     * The UID must match the one sent in the confirmation ICS.
+     *
+     * @param array $data From QueueClassBookingNotification::loadClassBookingData()
+     */
+    public static function generateCancelIcsFromClassBooking(array $data): string
+    {
+        $timezone = self::normalizeTimezone($data['location_timezone'] ?? null);
+        $tz = new DateTimeZone($timezone);
+        $utcTz = new DateTimeZone('UTC');
+        $now = (new DateTimeImmutable('now', $utcTz))->format('Ymd\THis\Z');
+
+        $startsLocal = (new DateTimeImmutable((string) $data['starts_at'], new DateTimeZone('UTC')))->setTimezone($tz);
+        $endsLocal   = (new DateTimeImmutable((string) $data['ends_at'],   new DateTimeZone('UTC')))->setTimezone($tz);
+
+        $bookingId = (int) ($data['class_booking_id'] ?? 0);
+        $uid = sprintf('booking-%d-%s@romeolab.it', $bookingId, $startsLocal->format('Ymd'));
+
+        return implode("\r\n", [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//RomeoLab Agenda//IT',
+            'CALSCALE:GREGORIAN',
+            'METHOD:CANCEL',
+            'X-WR-TIMEZONE:' . $timezone,
+            'BEGIN:VEVENT',
+            'UID:' . $uid,
+            'DTSTAMP:' . $now,
+            'DTSTART;TZID=' . $timezone . ':' . $startsLocal->format('Ymd\THis'),
+            'DTEND;TZID=' . $timezone . ':' . $endsLocal->format('Ymd\THis'),
+            'SUMMARY:' . self::escapeIcsText(($data['class_type_name'] ?? '') . ' - ' . ($data['business_name'] ?? '')),
+            'STATUS:CANCELLED',
+            'SEQUENCE:1',
+            'END:VEVENT',
+            'END:VCALENDAR',
+        ]);
+    }
+
+    /**
      * Create an email attachment array for an ICS file.
      *
      * @return array{filename: string, content: string, content_type: string, encoding: string}

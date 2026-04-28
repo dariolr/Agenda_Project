@@ -1059,9 +1059,8 @@ final class AppointmentsController
             $locationEmail = trim((string) ($locationData['location_email'] ?? ''));
             $businessEmail = trim((string) ($locationData['business_email'] ?? ''));
             $senderEmail = $locationEmail !== '' ? $locationEmail : ($businessEmail !== '' ? $businessEmail : null);
-            $senderName = $locationEmail !== ''
-                ? ($locationData['location_name'] ?? null)
-                : ($businessEmail !== '' ? ($locationData['business_name'] ?? null) : null);
+            $businessName = trim((string) ($locationData['business_name'] ?? ''));
+            $senderName = $businessName !== '' ? $businessName : null;
 
             $services = [];
             $items = is_array($booking['items'] ?? null) ? $booking['items'] : [];
@@ -1119,6 +1118,7 @@ final class AppointmentsController
 
         $stmt = $this->db->getPdo()->prepare(
             'SELECT
+                l.business_id,
                 l.name as location_name,
                 l.email as location_email,
                 l.address as location_address,

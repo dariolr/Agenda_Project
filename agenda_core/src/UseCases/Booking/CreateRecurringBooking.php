@@ -421,9 +421,8 @@ final class CreateRecurringBooking
         $locationEmail = trim((string) ($location['email'] ?? ''));
         $businessEmail = trim((string) ($location['business_email'] ?? ''));
         $senderEmail = $locationEmail !== '' ? $locationEmail : ($businessEmail !== '' ? $businessEmail : null);
-        $locationName = trim((string) ($location['name'] ?? ''));
         $businessName = trim((string) ($location['business_name'] ?? ''));
-        $senderName = $locationName !== '' ? $locationName : ($businessName !== '' ? $businessName : null);
+        $senderName = $businessName !== '' ? $businessName : null;
         $serviceNames = array_values(array_unique(array_map(
             static fn (array $template): string => (string) ($template['service_name'] ?? ''),
             $itemTemplates
@@ -528,9 +527,8 @@ final class CreateRecurringBooking
         $locationEmail = trim((string) ($location['email'] ?? ''));
         $businessEmail = trim((string) ($location['business_email'] ?? ''));
         $senderEmail = $locationEmail !== '' ? $locationEmail : ($businessEmail !== '' ? $businessEmail : null);
-        $senderName = $locationEmail !== ''
-            ? ($location['name'] ?? null)
-            : ($businessEmail !== '' ? ($location['business_name'] ?? null) : null);
+        $businessName2 = trim((string) ($location['business_name'] ?? ''));
+        $senderName = $businessName2 !== '' ? $businessName2 : null;
         $serviceNames = array_values(array_unique(array_map(
             static fn (array $template): string => (string) ($template['service_name'] ?? ''),
             $itemTemplates

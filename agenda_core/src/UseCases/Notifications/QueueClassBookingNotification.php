@@ -102,13 +102,25 @@ final class QueueClassBookingNotification
         };
 
         $attachments = [];
-        if (in_array($channel, ['class_booking_confirmed', 'class_booking_promoted', 'class_booking_waitlisted'], true)) {
+        if (in_array($channel, ['class_booking_confirmed', 'class_booking_promoted'], true)) {
             try {
                 $eventData   = CalendarICSGenerator::prepareEventFromClassBooking($data, $locale);
                 $icsContent  = CalendarICSGenerator::generateIcsContent($eventData);
                 $attachments = [CalendarICSGenerator::createIcsAttachment($icsContent, 'lezione.ics')];
             } catch (\Throwable) {
                 // ICS failure must not block the notification
+            }
+        } elseif ($channel === 'class_booking_updated') {
+            try {
+                $icsContent  = CalendarICSGenerator::generateUpdateIcsFromClassBooking($data);
+                $attachments = [CalendarICSGenerator::createIcsAttachment($icsContent, 'aggiornamento.ics')];
+            } catch (\Throwable) {
+            }
+        } elseif ($channel === 'class_booking_cancelled') {
+            try {
+                $icsContent  = CalendarICSGenerator::generateCancelIcsFromClassBooking($data);
+                $attachments = [CalendarICSGenerator::createIcsAttachment($icsContent, 'cancellazione.ics')];
+            } catch (\Throwable) {
             }
         }
 

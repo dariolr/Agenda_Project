@@ -188,7 +188,7 @@ fi
 cd "$ROOT_DIR"
 
 echo "Eseguo build backend per env=$ENV_NAME usando $ENV_FILE"
-run_cmd "$FLUTTER_BIN" build web --no-pub --release --no-tree-shake-icons --pwa-strategy=none "${DART_DEFINES[@]}"
+run_cmd "$FLUTTER_BIN" build web --no-pub --release --no-tree-shake-icons --pwa-strategy=none "${DART_DEFINES[@]}" "--dart-define=APP_VERSION=${new_v}"
 
 ###############################################################################
 # 3) Copia .htaccess nel build (necessario per SPA routing)

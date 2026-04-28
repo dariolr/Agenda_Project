@@ -426,9 +426,8 @@ final class UpdateBooking
             $locationEmail = trim((string) ($locationData['location_email'] ?? ''));
             $businessEmail = trim((string) ($locationData['business_email'] ?? ''));
             $senderEmail = $locationEmail !== '' ? $locationEmail : ($businessEmail !== '' ? $businessEmail : null);
-            $locationName = trim((string) ($locationData['location_name'] ?? ''));
             $businessName = trim((string) ($locationData['business_name'] ?? ''));
-            $senderName = $locationName !== '' ? $locationName : ($businessName !== '' ? $businessName : null);
+            $senderName = $businessName !== '' ? $businessName : null;
 
             // Get new start time from booking items
             $newStartTime = $booking['items'][0]['start_time'] ?? null;
@@ -497,7 +496,8 @@ final class UpdateBooking
     private function getLocationAndBusinessData(int $locationId): array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT 
+            'SELECT
+                l.business_id,
                 l.name as location_name,
                 l.email as location_email,
                 l.address as location_address,

@@ -637,6 +637,7 @@ final class ClassEventsController
                 $notificationCustomerIds
             );
         }
+
         $updatedResourceRequirements = $this->classEventRepo->findResourceRequirementsForEvents($businessId, [$classEventId]);
         return Response::success($this->formatClassEvent($event, $updatedResourceRequirements[$classEventId] ?? []));
     }

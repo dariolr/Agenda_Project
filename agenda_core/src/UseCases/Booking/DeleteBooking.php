@@ -168,9 +168,8 @@ final class DeleteBooking
         $locationEmail = trim((string) ($details['location_email'] ?? ''));
         $businessEmail = trim((string) ($details['business_email'] ?? ''));
         $senderEmail = $locationEmail !== '' ? $locationEmail : ($businessEmail !== '' ? $businessEmail : null);
-        $locationName = trim((string) ($details['location_name'] ?? ''));
         $businessName = trim((string) ($details['business_name'] ?? ''));
-        $senderName = $locationName !== '' ? $locationName : ($businessName !== '' ? $businessName : null);
+        $senderName = $businessName !== '' ? $businessName : null;
         $locale = EmailTemplateRenderer::resolvePreferredLocale(
             $requestedLocale,
             $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? null,

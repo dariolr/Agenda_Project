@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Agenda\UseCases\Notifications;
 
 use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Notifications\CalendarICSGenerator;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use DateTimeImmutable;
@@ -138,7 +139,21 @@ final class QueueBookingCancellation
         }
         
         $template = EmailTemplateRenderer::bookingCancelled($locale);
-        
+
+        $attachments = [];
+        if (!empty($booking['start_time']) && !empty($booking['end_time'])) {
+            try {
+                $icsContent  = CalendarICSGenerator::generateCancelIcsFromBooking($booking, (string) ($booking['business_name'] ?? ''), $locale);
+                $attachments = [CalendarICSGenerator::createIcsAttachment($icsContent, 'cancellazione.ics')];
+            } catch (\Throwable) {
+            }
+        }
+
+        $payload = ['template' => 'booking_cancelled', 'variables' => $variables];
+        if (!empty($attachments)) {
+            $payload['attachments'] = $attachments;
+        }
+
         return $this->notificationRepo->queue([
             'type' => 'email',
             'channel' => 'booking_cancelled',
@@ -147,10 +162,7 @@ final class QueueBookingCancellation
             'recipient_email' => $recipientEmail['email'],
             'recipient_name' => $recipientEmail['name'],
             'subject' => EmailTemplateRenderer::render($template['subject'], $variables),
-            'payload' => [
-                'template' => 'booking_cancelled',
-                'variables' => $variables,
-            ],
+            'payload' => $payload,
             'priority' => 2,
             'business_id' => $booking['business_id'],
             'booking_id' => $booking['booking_id'],

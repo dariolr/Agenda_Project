@@ -635,9 +635,8 @@ final class ReplaceBooking
             $locationEmail = trim((string) ($location['email'] ?? ''));
             $businessEmail = trim((string) ($location['business_email'] ?? ''));
             $senderEmail = $locationEmail !== '' ? $locationEmail : ($businessEmail !== '' ? $businessEmail : null);
-            $locationName = trim((string) ($location['name'] ?? ''));
             $businessName = trim((string) ($location['business_name'] ?? ''));
-            $senderName = $locationName !== '' ? $locationName : ($businessName !== '' ? $businessName : null);
+            $senderName = $businessName !== '' ? $businessName : null;
 
             $serviceNames = array_values(array_unique(array_map(
                 static fn (array $item): string => (string) ($item['service_name'] ?? ''),

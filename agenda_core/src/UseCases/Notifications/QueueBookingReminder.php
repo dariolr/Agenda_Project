@@ -459,10 +459,6 @@ final class QueueBookingReminder
 
     private function resolveSenderName(array $booking): ?string
     {
-        $locationName = trim((string) ($booking['location_name'] ?? ''));
-        if ($locationName !== '') {
-            return $locationName;
-        }
         $businessName = trim((string) ($booking['business_name'] ?? ''));
         return $businessName !== '' ? $businessName : null;
     }
