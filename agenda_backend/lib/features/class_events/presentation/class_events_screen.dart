@@ -2667,7 +2667,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   }
 
   Future<bool?> _askNotifyParticipantsIfNeeded() async {
-    if (!_hasAnyStagedParticipant) return false;
+    final hasAnyParticipantInvolved = _hasAnyStagedParticipant ||
+        (_originalParticipants?.isNotEmpty ?? false);
+    if (!hasAnyParticipantInvolved) return false;
     if (!_participantsNotificationRelevantDirty &&
         !_eventNotificationRelevantDirty) {
       return false;

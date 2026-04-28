@@ -226,6 +226,40 @@ final class CalendarICSGenerator
     }
 
     /**
+     * Prepare event data for a class booking ICS.
+     * $data comes from QueueClassBookingNotification::loadClassBookingData().
+     */
+    public static function prepareEventFromClassBooking(array $data, string $locale = 'it'): array
+    {
+        $labels = [
+            'it' => ['at' => 'presso'],
+            'en' => ['at' => 'at'],
+        ];
+        $l = $labels[$locale] ?? $labels['it'];
+
+        $tz = new DateTimeZone(self::normalizeTimezone($data['location_timezone'] ?? null));
+        $startsLocal = (new \DateTimeImmutable((string) $data['starts_at'], new \DateTimeZone('UTC')))->setTimezone($tz);
+        $endsLocal   = (new \DateTimeImmutable((string) $data['ends_at'],   new \DateTimeZone('UTC')))->setTimezone($tz);
+
+        $title    = ($data['class_type_name'] ?? '') . ' ' . $l['at'] . ' ' . ($data['business_name'] ?? '');
+        $location = trim(implode(', ', array_filter([
+            $data['location_name']    ?? '',
+            $data['location_address'] ?? '',
+            $data['location_city']    ?? '',
+        ])));
+
+        return [
+            'title'       => $title,
+            'description' => '',
+            'start_time'  => $startsLocal->format('Y-m-d H:i:s'),
+            'end_time'    => $endsLocal->format('Y-m-d H:i:s'),
+            'location'    => $location,
+            'timezone'    => $tz->getName(),
+            'booking_id'  => (int) ($data['class_booking_id'] ?? 0),
+        ];
+    }
+
+    /**
      * Create an email attachment array for an ICS file.
      *
      * @return array{filename: string, content: string, content_type: string, encoding: string}

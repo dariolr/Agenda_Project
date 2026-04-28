@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Agenda\UseCases\Notifications;
 
 use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Notifications\CalendarICSGenerator;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use DateTimeImmutable;
@@ -100,6 +101,22 @@ final class QueueClassBookingNotification
             default                   => 5,
         };
 
+        $attachments = [];
+        if (in_array($channel, ['class_booking_confirmed', 'class_booking_promoted', 'class_booking_waitlisted'], true)) {
+            try {
+                $eventData   = CalendarICSGenerator::prepareEventFromClassBooking($data, $locale);
+                $icsContent  = CalendarICSGenerator::generateIcsContent($eventData);
+                $attachments = [CalendarICSGenerator::createIcsAttachment($icsContent, 'lezione.ics')];
+            } catch (\Throwable) {
+                // ICS failure must not block the notification
+            }
+        }
+
+        $payload = ['template' => $channel, 'variables' => $variables];
+        if (!empty($attachments)) {
+            $payload['attachments'] = $attachments;
+        }
+
         return $this->notificationRepo->queue([
             'type'              => 'email',
             'channel'           => $channel,
@@ -108,10 +125,7 @@ final class QueueClassBookingNotification
             'recipient_email'   => $clientEmail['email'],
             'recipient_name'    => $this->extractFirstName($clientEmail['name'] ?? null),
             'subject'           => EmailTemplateRenderer::render($template['subject'], $variables),
-            'payload'           => [
-                'template'  => $channel,
-                'variables' => $variables,
-            ],
+            'payload'           => $payload,
             'priority'          => $priority,
             'scheduled_at'      => $scheduledAt,
             'business_id'       => $businessId,
