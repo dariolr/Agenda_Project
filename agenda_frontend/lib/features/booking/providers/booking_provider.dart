@@ -72,6 +72,12 @@ final effectiveLocationIdProvider = Provider<int>((ref) {
   return ref.watch(bookingConfigProvider).locationId;
 });
 
+/// Provider per la selezione multipla di servizi/eventi online
+final allowMultiServiceBookingProvider = Provider<bool>((ref) {
+  final effectiveLocation = ref.watch(effectiveLocationProvider);
+  return effectiveLocation?.allowMultiServiceBooking ?? true;
+});
+
 /// Provider per il numero massimo di giorni prenotabili in anticipo
 final maxBookingAdvanceDaysProvider = Provider<int>((ref) {
   final effectiveLocation = ref.watch(effectiveLocationProvider);
@@ -539,8 +545,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     // Se è selezionato un evento, salta staff e dateTime
     if (state.request.isClassEventBooking) {
       while (prevIndex > 0 &&
-          (prevStep == BookingStep.staff ||
-              prevStep == BookingStep.dateTime)) {
+          (prevStep == BookingStep.staff || prevStep == BookingStep.dateTime)) {
         prevIndex--;
         prevStep = BookingStep.values[prevIndex];
       }
@@ -690,9 +695,16 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
 
   /// Toggle selezione servizio
   void toggleService(Service service) {
+    final allowMulti = ref.read(allowMultiServiceBookingProvider);
     final currentServices = List<Service>.from(state.request.services);
     final selectedServiceIds = Set<int>.from(state.request.selectedServiceIds);
-    final packageServiceIds = state.request.selectedPackageServiceIds;
+    final selectedPackageIds = Set<int>.from(state.request.selectedPackageIds);
+    final packageServicesByPackage = Map<int, List<int>>.from(
+      state.request.selectedPackageServiceIdsByPackage,
+    );
+    final packageServiceIds = packageServicesByPackage.values
+        .expand((ids) => ids)
+        .toSet();
 
     final isSelected = selectedServiceIds.contains(service.id);
     if (isSelected) {
@@ -701,6 +713,13 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         currentServices.removeWhere((s) => s.id == service.id);
       }
     } else {
+      if (!allowMulti) {
+        // Modalità selezione singola: sostituisce qualsiasi selezione precedente
+        selectedServiceIds.clear();
+        currentServices.clear();
+        selectedPackageIds.clear();
+        packageServicesByPackage.clear();
+      }
       selectedServiceIds.add(service.id);
       if (!currentServices.any((s) => s.id == service.id)) {
         currentServices.add(service);
@@ -719,6 +738,8 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       request: state.request.copyWith(
         services: currentServices,
         selectedServiceIds: selectedServiceIds,
+        selectedPackageIds: selectedPackageIds,
+        selectedPackageServiceIdsByPackage: packageServicesByPackage,
         selectedStaffByService: shouldClearStaff ? {} : updatedStaffByService,
         clearStaff: shouldClearStaff,
         clearAnyOperatorSelections: shouldClearStaff,
@@ -769,6 +790,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     final serviceIds = package.orderedServiceIds;
     if (serviceIds.isEmpty) return;
 
+    final allowMulti = ref.read(allowMultiServiceBookingProvider);
     final currentServices = List<Service>.from(state.request.services);
     final selectedPackageIds = Set<int>.from(state.request.selectedPackageIds);
     final packageServicesByPackage = Map<int, List<int>>.from(
@@ -787,6 +809,13 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       selectedPackageIds.remove(package.id);
       packageServicesByPackage.remove(package.id);
     } else {
+      if (!allowMulti) {
+        // Modalità selezione singola: rimuove qualsiasi selezione precedente
+        selectedServiceIds.clear();
+        currentServices.clear();
+        selectedPackageIds.clear();
+        packageServicesByPackage.clear();
+      }
       selectedPackageIds.add(package.id);
       packageServicesByPackage[package.id] = List<int>.from(serviceIds);
     }
@@ -820,6 +849,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     state = state.copyWith(
       request: state.request.copyWith(
         services: currentServices,
+        selectedServiceIds: selectedServiceIds,
         selectedPackageIds: selectedPackageIds,
         selectedPackageServiceIdsByPackage: packageServicesByPackage,
         selectedStaffByService: shouldClearStaff ? {} : updatedStaffByService,
@@ -1388,7 +1418,9 @@ final bookingTotalsProvider = Provider<BookingTotals>((ref) {
 
   var totalPrice = 0.0;
   var totalDuration = 0;
-  final selectedServiceById = {for (final service in services) service.id: service};
+  final selectedServiceById = {
+    for (final service in services) service.id: service,
+  };
   for (final pkg in selectedPackages) {
     totalPrice += pkg.effectivePrice;
     totalDuration += pkg.customerVisibleDurationMinutes(selectedServiceById);

@@ -1768,6 +1768,7 @@ class ApiClient {
     String? staffIconKey,
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
+    bool? allowMultiServiceBooking,
     bool? isActive,
   }) async {
     final response = await post(
@@ -1791,6 +1792,8 @@ class ApiClient {
         if (cancellationHours != null) 'cancellation_hours': cancellationHours,
         if (allowCustomerChooseStaff != null)
           'allow_customer_choose_staff': allowCustomerChooseStaff,
+        if (allowMultiServiceBooking != null)
+          'allow_multi_service_booking': allowMultiServiceBooking,
         if (isActive != null) 'is_active': isActive,
       },
     );
@@ -1820,6 +1823,7 @@ class ApiClient {
     String? staffIconKey,
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
+    bool? allowMultiServiceBooking,
     int? onlineBookingSlotIntervalMinutes,
     String? slotDisplayMode,
     int? minGapMinutes,
@@ -1846,6 +1850,8 @@ class ApiClient {
         if (cancellationHours != null) 'cancellation_hours': cancellationHours,
         if (allowCustomerChooseStaff != null)
           'allow_customer_choose_staff': allowCustomerChooseStaff,
+        if (allowMultiServiceBooking != null)
+          'allow_multi_service_booking': allowMultiServiceBooking,
         if (onlineBookingSlotIntervalMinutes != null)
           'online_booking_slot_interval_minutes':
               onlineBookingSlotIntervalMinutes,

@@ -142,6 +142,7 @@ final class LocationsController
             'min_booking_notice_hours' => (int) ($row['min_booking_notice_hours'] ?? 1),
             'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
             'allow_customer_choose_staff' => (bool) ($row['allow_customer_choose_staff'] ?? false),
+            'allow_multi_service_booking' => (bool) ($row['allow_multi_service_booking'] ?? true),
             'staff_icon_key' => $this->normalizeStaffIconKey($row['staff_icon_key'] ?? null),
             'booking_text_overrides' => $this->decodeBookingTextOverrides($row['booking_text_overrides_json'] ?? null),
             'cancellation_hours' => isset($row['cancellation_hours']) ? (int) $row['cancellation_hours'] : null,
@@ -174,6 +175,7 @@ final class LocationsController
             'min_booking_notice_hours' => (int) ($row['min_booking_notice_hours'] ?? 1),
             'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
             'allow_customer_choose_staff' => (bool) ($row['allow_customer_choose_staff'] ?? false),
+            'allow_multi_service_booking' => (bool) ($row['allow_multi_service_booking'] ?? true),
             'staff_icon_key' => $this->normalizeStaffIconKey($row['staff_icon_key'] ?? null),
             'booking_text_overrides' => $this->decodeBookingTextOverrides($row['booking_text_overrides_json'] ?? null),
             'cancellation_hours' => isset($row['cancellation_hours']) ? (int) $row['cancellation_hours'] : null,
@@ -262,6 +264,7 @@ final class LocationsController
             'min_booking_notice_hours' => $body['min_booking_notice_hours'] ?? 1,
             'max_booking_advance_days' => $body['max_booking_advance_days'] ?? 90,
             'allow_customer_choose_staff' => $body['allow_customer_choose_staff'] ?? false,
+            'allow_multi_service_booking' => $body['allow_multi_service_booking'] ?? true,
             'cancellation_hours' => $cancellationHours,
             'booking_text_overrides_json' => $bookingTextOverridesJson,
             'staff_icon_key' => $staffIconKey ?? 'person',
@@ -336,6 +339,9 @@ final class LocationsController
 
         if (array_key_exists('allow_customer_choose_staff', $body)) {
             $updateData['allow_customer_choose_staff'] = (bool) $body['allow_customer_choose_staff'];
+        }
+        if (array_key_exists('allow_multi_service_booking', $body)) {
+            $updateData['allow_multi_service_booking'] = (bool) $body['allow_multi_service_booking'];
         }
         if (array_key_exists('booking_text_overrides', $body)) {
             $bookingTextOverridesError = null;

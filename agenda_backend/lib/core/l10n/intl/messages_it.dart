@@ -2763,6 +2763,14 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage(
           "Consenti ai clienti di scegliere il fornitore dei servizi",
         ),
+    "teamLocationAllowMultiServiceBookingHint":
+        MessageLookupByLibrary.simpleMessage(
+          "Se disattivato, il cliente può selezionare un solo servizio, pacchetto o evento per prenotazione",
+        ),
+    "teamLocationAllowMultiServiceBookingLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Consenti selezione multipla di servizi/pacchetti/eventi online",
+        ),
     "teamLocationBookingDefaultLocaleAuto":
         MessageLookupByLibrary.simpleMessage("Automatico"),
     "teamLocationBookingDefaultLocaleEnglish":

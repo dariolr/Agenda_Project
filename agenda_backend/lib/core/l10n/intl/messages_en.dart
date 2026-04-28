@@ -2651,6 +2651,14 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage(
           "Allow customers to choose the service provider",
         ),
+    "teamLocationAllowMultiServiceBookingHint":
+        MessageLookupByLibrary.simpleMessage(
+          "If disabled, the customer can select only one service, package, or event per booking",
+        ),
+    "teamLocationAllowMultiServiceBookingLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Allow multiple service/package/event selection online",
+        ),
     "teamLocationBookingDefaultLocaleAuto":
         MessageLookupByLibrary.simpleMessage("Automatic"),
     "teamLocationBookingDefaultLocaleEnglish":

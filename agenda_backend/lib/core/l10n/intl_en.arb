@@ -273,6 +273,8 @@
   "teamLocationBookingLimitsSection": "Online booking limits",
   "teamLocationAllowCustomerChooseStaffLabel": "Allow customers to choose the service provider",
   "teamLocationAllowCustomerChooseStaffHint": "If disabled, the system assigns the service provider automatically",
+  "teamLocationAllowMultiServiceBookingLabel": "Allow multiple service/package/event selection online",
+  "teamLocationAllowMultiServiceBookingHint": "If disabled, the customer can select only one service, package, or event per booking",
   "teamLocationMinBookingNoticeLabel": "Minimum booking notice",
   "teamLocationMinBookingNoticeHint": "How far in advance customers must book",
   "teamLocationMaxBookingAdvanceLabel": "Maximum booking advance",

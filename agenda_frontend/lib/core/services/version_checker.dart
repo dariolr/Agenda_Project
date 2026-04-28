@@ -9,17 +9,17 @@ import 'version_checker_stub.dart'
 /// Service che controlla periodicamente se c'è una nuova versione dell'app.
 /// Se rileva un aggiornamento, forza il reload automatico della pagina.
 ///
-/// La versione corrente è compilata nell'app tramite --dart-define=APP_VERSION.
-/// Il polling confronta tale valore con app_version.txt sul server.
+/// Usa il file `app_version.txt` che contiene solo la stringa versione
+/// (es. "20260129-1.6"). Questo file deve essere generato/aggiornato
+/// manualmente durante il deploy.
 class VersionChecker {
   static VersionChecker? _instance;
   static VersionChecker get instance => _instance ??= VersionChecker._();
 
   VersionChecker._();
 
-  static const _compiledVersion = String.fromEnvironment('APP_VERSION');
-
   Timer? _timer;
+  String? _currentVersion;
   bool _isChecking = false;
 
   /// Intervallo di controllo (default: 60 secondi)
@@ -63,11 +63,16 @@ class VersionChecker {
       if (response.statusCode == 200) {
         final serverVersion = response.body.trim();
 
-        if (serverVersion.isNotEmpty && _compiledVersion.isNotEmpty) {
-          if (_compiledVersion != serverVersion) {
+        if (serverVersion.isNotEmpty) {
+          if (_currentVersion == null) {
+            // Prima esecuzione: salva la versione corrente
+            _currentVersion = serverVersion;
+            debugPrint('VersionChecker: Initial version: $_currentVersion');
+          } else if (_currentVersion != serverVersion) {
+            // Versione cambiata: forza reload
             debugPrint(
               'VersionChecker: New version detected! '
-              '$_compiledVersion -> $serverVersion. Reloading...',
+              '$_currentVersion -> $serverVersion. Reloading...',
             );
             forceReload();
           }

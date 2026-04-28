@@ -463,6 +463,7 @@ CREATE TABLE `locations` (
   `min_booking_notice_hours` int UNSIGNED NOT NULL DEFAULT '1' COMMENT 'Minimum hours before appointment for online booking. Default 1 hour.',
   `max_booking_advance_days` int UNSIGNED NOT NULL DEFAULT '90' COMMENT 'Maximum days in advance for online booking. Default 90 days (3 months).',
   `allow_customer_choose_staff` tinyint(1) NOT NULL DEFAULT '0',
+  `allow_multi_service_booking` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'Se 1, il cliente può selezionare più servizi/pacchetti/eventi per prenotazione online; se 0, solo uno alla volta',
   `booking_text_overrides_json` json DEFAULT NULL COMMENT 'Per-locale booking phrase overrides: {\"it\":{\"services_title\":\"...\"},\"en\":{\"services_title\":\"...\"}}',
   `staff_icon_key` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'person' COMMENT 'Semantic icon key for booking staff/resource step',
   `is_default` tinyint(1) NOT NULL DEFAULT '0',

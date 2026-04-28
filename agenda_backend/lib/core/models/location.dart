@@ -16,6 +16,7 @@ class Location {
   final int minBookingNoticeHours;
   final int maxBookingAdvanceDays;
   final bool allowCustomerChooseStaff;
+  final bool allowMultiServiceBooking;
   final String staffIconKey;
   final Map<String, Map<String, String>>? bookingTextOverrides;
   final int? cancellationHours;
@@ -44,6 +45,7 @@ class Location {
     this.minBookingNoticeHours = 1,
     this.maxBookingAdvanceDays = 90,
     this.allowCustomerChooseStaff = false,
+    this.allowMultiServiceBooking = true,
     this.staffIconKey = 'person',
     this.bookingTextOverrides,
     this.cancellationHours,
@@ -73,6 +75,7 @@ class Location {
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
     bool? allowCustomerChooseStaff,
+    bool? allowMultiServiceBooking,
     String? staffIconKey,
     Map<String, Map<String, String>>? bookingTextOverrides,
     int? cancellationHours,
@@ -104,6 +107,8 @@ class Location {
           maxBookingAdvanceDays ?? this.maxBookingAdvanceDays,
       allowCustomerChooseStaff:
           allowCustomerChooseStaff ?? this.allowCustomerChooseStaff,
+      allowMultiServiceBooking:
+          allowMultiServiceBooking ?? this.allowMultiServiceBooking,
       staffIconKey: staffIconKey ?? this.staffIconKey,
       bookingTextOverrides: bookingTextOverrides ?? this.bookingTextOverrides,
       cancellationHours: cancellationHours ?? this.cancellationHours,
@@ -138,6 +143,8 @@ class Location {
       maxBookingAdvanceDays: json['max_booking_advance_days'] as int? ?? 90,
       allowCustomerChooseStaff:
           json['allow_customer_choose_staff'] as bool? ?? false,
+      allowMultiServiceBooking:
+          json['allow_multi_service_booking'] as bool? ?? true,
       staffIconKey: (json['staff_icon_key'] as String?) ?? 'person',
       bookingTextOverrides: _parseBookingTextOverrides(
         json['booking_text_overrides'],
@@ -173,6 +180,7 @@ class Location {
       'min_booking_notice_hours': minBookingNoticeHours,
       'max_booking_advance_days': maxBookingAdvanceDays,
       'allow_customer_choose_staff': allowCustomerChooseStaff,
+      'allow_multi_service_booking': allowMultiServiceBooking,
       'staff_icon_key': staffIconKey,
       if (bookingTextOverrides != null)
         'booking_text_overrides': bookingTextOverrides,

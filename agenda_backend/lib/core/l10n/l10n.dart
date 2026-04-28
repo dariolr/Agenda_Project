@@ -2003,6 +2003,26 @@ class L10n {
     );
   }
 
+  /// `Allow multiple service/package/event selection online`
+  String get teamLocationAllowMultiServiceBookingLabel {
+    return Intl.message(
+      'Allow multiple service/package/event selection online',
+      name: 'teamLocationAllowMultiServiceBookingLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `If disabled, the customer can select only one service, package, or event per booking`
+  String get teamLocationAllowMultiServiceBookingHint {
+    return Intl.message(
+      'If disabled, the customer can select only one service, package, or event per booking',
+      name: 'teamLocationAllowMultiServiceBookingHint',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Minimum booking notice`
   String get teamLocationMinBookingNoticeLabel {
     return Intl.message(

@@ -129,6 +129,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
     String? staffIconKey,
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
+    bool? allowMultiServiceBooking,
     bool? isActive,
   }) async {
     final business = ref.read(currentBusinessProvider);
@@ -148,6 +149,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
       staffIconKey: staffIconKey,
       cancellationHours: cancellationHours,
       allowCustomerChooseStaff: allowCustomerChooseStaff,
+      allowMultiServiceBooking: allowMultiServiceBooking,
       isActive: isActive,
     );
     state = [...state, location];
@@ -170,6 +172,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
     String? staffIconKey,
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
+    bool? allowMultiServiceBooking,
     int? onlineBookingSlotIntervalMinutes,
     String? slotDisplayMode,
     int? minGapMinutes,
@@ -191,6 +194,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
       staffIconKey: staffIconKey,
       cancellationHours: cancellationHours,
       allowCustomerChooseStaff: allowCustomerChooseStaff,
+      allowMultiServiceBooking: allowMultiServiceBooking,
       onlineBookingSlotIntervalMinutes: onlineBookingSlotIntervalMinutes,
       slotDisplayMode: slotDisplayMode,
       minGapMinutes: minGapMinutes,

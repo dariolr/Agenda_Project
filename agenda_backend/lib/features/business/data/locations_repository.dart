@@ -26,6 +26,7 @@ class LocationsRepository {
     String? staffIconKey,
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
+    bool? allowMultiServiceBooking,
     bool? isActive,
   }) async {
     final data = await _apiClient.createLocation(
@@ -43,6 +44,7 @@ class LocationsRepository {
       staffIconKey: staffIconKey,
       cancellationHours: cancellationHours,
       allowCustomerChooseStaff: allowCustomerChooseStaff,
+      allowMultiServiceBooking: allowMultiServiceBooking,
       isActive: isActive,
     );
     return Location.fromJson(data);
@@ -63,6 +65,7 @@ class LocationsRepository {
     String? staffIconKey,
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
+    bool? allowMultiServiceBooking,
     int? onlineBookingSlotIntervalMinutes,
     String? slotDisplayMode,
     int? minGapMinutes,
@@ -83,6 +86,7 @@ class LocationsRepository {
       staffIconKey: staffIconKey,
       cancellationHours: cancellationHours,
       allowCustomerChooseStaff: allowCustomerChooseStaff,
+      allowMultiServiceBooking: allowMultiServiceBooking,
       onlineBookingSlotIntervalMinutes: onlineBookingSlotIntervalMinutes,
       slotDisplayMode: slotDisplayMode,
       minGapMinutes: minGapMinutes,

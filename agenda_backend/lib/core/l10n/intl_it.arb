@@ -273,6 +273,8 @@
   "teamLocationBookingLimitsSection": "Limiti prenotazione online",
   "teamLocationAllowCustomerChooseStaffLabel": "Consenti ai clienti di scegliere il fornitore dei servizi",
   "teamLocationAllowCustomerChooseStaffHint": "Se disattivato, il sistema assegna automaticamente il fornitore dei servizi",
+  "teamLocationAllowMultiServiceBookingLabel": "Consenti selezione multipla di servizi/pacchetti/eventi online",
+  "teamLocationAllowMultiServiceBookingHint": "Se disattivato, il cliente può selezionare un solo servizio, pacchetto o evento per prenotazione",
   "teamLocationMinBookingNoticeLabel": "Preavviso minimo prenotazione",
   "teamLocationMinBookingNoticeHint": "Quanto tempo prima devono prenotare i clienti",
   "teamLocationMaxBookingAdvanceLabel": "Prenotazione massima anticipata",
