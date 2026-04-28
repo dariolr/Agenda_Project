@@ -1059,22 +1059,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       }
       return appt;
     }).toList();
-    final appointmentHasOverlap = <int, bool>{
-      for (final appt in layoutAppointments) appt.id: false,
-    };
-    for (var i = 0; i < layoutAppointments.length; i++) {
-      final current = layoutAppointments[i];
-      for (var j = i + 1; j < layoutAppointments.length; j++) {
-        final other = layoutAppointments[j];
-        final overlaps =
-            current.startTime.isBefore(other.endTime) &&
-            current.endTime.isAfter(other.startTime);
-        if (overlaps) {
-          appointmentHasOverlap[current.id] = true;
-          appointmentHasOverlap[other.id] = true;
-        }
-      }
-    }
 
     final positionedEntries = <Widget>[];
     final expandedEntries = <Widget>[];
@@ -1122,10 +1106,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
 
       final padding = LayoutConfig.columnInnerPadding;
       final fullColumnWidth = math.max(columnWidth - padding * 2, 0.0);
-      final hasOverlapWithAppointments =
-          appointmentHasOverlap[originalAppt.id] ?? false;
       final shouldForceFullWidth =
-          !expandColumnsOnOverlap && !hasOverlapWithAppointments;
+          !expandColumnsOnOverlap && geometry.widthFraction >= 1.0 - 1e-9;
       final cardLeft = shouldForceFullWidth
           ? padding
           : columnWidth * geometry.leftFraction + padding;
