@@ -395,6 +395,10 @@ Future<void> showServiceDialog(
   final descController = TextEditingController(
     text: service?.description ?? '',
   );
+  final parallelCapacityController = TextEditingController(
+    text: (existingVariant?.parallelCapacity ?? service?.parallelCapacity ?? 1)
+        .toString(),
+  );
   final staffList = ref.read(staffForCurrentLocationProvider);
   final staffNotifier = ref.read(allStaffProvider.notifier);
   final eligibilityNotifier = ref.read(
@@ -489,6 +493,7 @@ Future<void> showServiceDialog(
 
   bool nameError = false;
   bool durationError = false;
+  bool parallelCapacityError = false;
   bool categoryError = false;
   bool isSaving = false;
 
@@ -511,6 +516,12 @@ Future<void> showServiceDialog(
     }
     if (selectedCategory == null) {
       categoryError = true;
+      return;
+    }
+    final parallelCapacity =
+        int.tryParse(parallelCapacityController.text.trim()) ?? 0;
+    if (parallelCapacity < 1 || parallelCapacity > 999) {
+      parallelCapacityError = true;
       return;
     }
 
@@ -550,6 +561,7 @@ Future<void> showServiceDialog(
             isPriceStartingFrom: finalIsPriceStartingFrom,
             processingTime: processingToSave > 0 ? processingToSave : null,
             blockedTime: blockedToSave > 0 ? blockedToSave : null,
+            parallelCapacity: parallelCapacity,
           );
         } else {
           // Single location - use standard API
@@ -566,6 +578,7 @@ Future<void> showServiceDialog(
             isPriceStartingFrom: finalIsPriceStartingFrom,
             processingTime: processingToSave > 0 ? processingToSave : null,
             blockedTime: blockedToSave > 0 ? blockedToSave : null,
+            parallelCapacity: parallelCapacity,
           );
         }
       } else {
@@ -588,6 +601,7 @@ Future<void> showServiceDialog(
           isPriceStartingFrom: finalIsPriceStartingFrom,
           processingTime: processingToSave,
           blockedTime: blockedToSave,
+          parallelCapacity: parallelCapacity,
         );
       }
 
@@ -612,6 +626,7 @@ Future<void> showServiceDialog(
         isBookableOnline: isBookableOnline,
         isFree: effectiveIsFree,
         isPriceStartingFrom: finalIsPriceStartingFrom,
+        parallelCapacity: parallelCapacity,
         resourceRequirements: existingVariant?.resourceRequirements ?? const [],
       );
 
@@ -1598,6 +1613,31 @@ Future<void> showServiceDialog(
             ),
           ],
         ],
+        const SizedBox(height: AppSpacing.formRowSpacing),
+        LabeledFormField(
+          label: context.l10n.parallelCapacityLabel,
+          child: TextField(
+            controller: parallelCapacityController,
+            keyboardType: TextInputType.number,
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            decoration: InputDecoration(
+              border: const OutlineInputBorder(),
+              isDense: true,
+              helperText: context.l10n.parallelCapacityHint,
+              errorText: parallelCapacityError
+                  ? context.l10n.parallelCapacityError
+                  : null,
+            ),
+            enabled: canEditDialog,
+            onChanged: canEditDialog
+                ? (_) {
+                    if (parallelCapacityError) {
+                      setState(() => parallelCapacityError = false);
+                    }
+                  }
+                : null,
+          ),
+        ),
         const SizedBox(height: AppSpacing.formRowSpacing),
         LabeledFormField(
           label: context.l10n.fieldPriceLabel,

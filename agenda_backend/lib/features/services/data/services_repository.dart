@@ -34,6 +34,7 @@ class ServicesRepository {
     bool isPriceStartingFrom = false,
     int? processingTime,
     int? blockedTime,
+    int parallelCapacity = 1,
   }) => _api.createServiceMultiLocation(
     businessId: businessId,
     locationIds: locationIds,
@@ -47,6 +48,7 @@ class ServicesRepository {
     isPriceStartingFrom: isPriceStartingFrom,
     processingTime: processingTime,
     blockedTime: blockedTime,
+    parallelCapacity: parallelCapacity,
   );
 
   /// Creates a new service (legacy, single location)
@@ -62,6 +64,7 @@ class ServicesRepository {
     bool isPriceStartingFrom = false,
     int? processingTime,
     int? blockedTime,
+    int parallelCapacity = 1,
   }) => _api.createService(
     locationId: locationId,
     name: name,
@@ -74,6 +77,7 @@ class ServicesRepository {
     isPriceStartingFrom: isPriceStartingFrom,
     processingTime: processingTime,
     blockedTime: blockedTime,
+    parallelCapacity: parallelCapacity,
   );
 
   /// Updates an existing service
@@ -93,6 +97,7 @@ class ServicesRepository {
     int? sortOrder,
     int? processingTime,
     int? blockedTime,
+    int? parallelCapacity,
   }) => _api.updateService(
     serviceId: serviceId,
     locationId: locationId,
@@ -109,6 +114,7 @@ class ServicesRepository {
     sortOrder: sortOrder,
     processingTime: processingTime,
     blockedTime: blockedTime,
+    parallelCapacity: parallelCapacity,
   );
 
   /// Deletes a service

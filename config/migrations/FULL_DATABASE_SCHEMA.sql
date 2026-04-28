@@ -831,6 +831,7 @@ CREATE TABLE `service_variants` (
   `is_bookable_online` tinyint(1) NOT NULL DEFAULT '1',
   `is_free` tinyint(1) NOT NULL DEFAULT '0',
   `is_price_starting_from` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Mostra "da €X"',
+  `parallel_capacity` int UNSIGNED NOT NULL DEFAULT '1' COMMENT 'Numero massimo di prenotazioni contemporanee consentite per questa variante servizio nella stessa location/staff/intervallo',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -1105,6 +1106,7 @@ ALTER TABLE `booking_items`
   ADD KEY `idx_booking_items_booking` (`booking_id`),
   ADD KEY `idx_booking_items_staff_time` (`staff_id`,`start_time`,`end_time`),
   ADD KEY `idx_booking_items_location_time` (`location_id`,`start_time`,`end_time`),
+  ADD KEY `idx_booking_items_capacity_check` (`location_id`,`staff_id`,`service_variant_id`,`start_time`,`end_time`),
   ADD KEY `idx_booking_items_service` (`service_id`),
   ADD KEY `idx_booking_items_variant` (`service_variant_id`),
   ADD KEY `idx_booking_items_package` (`package_id`);
@@ -1441,7 +1443,8 @@ ALTER TABLE `service_variants`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uk_service_variants_service_location` (`service_id`,`location_id`),
   ADD KEY `idx_service_variants_location` (`location_id`),
-  ADD KEY `idx_service_variants_bookable` (`location_id`,`is_bookable_online`,`is_active`);
+  ADD KEY `idx_service_variants_bookable` (`location_id`,`is_bookable_online`,`is_active`),
+  ADD KEY `idx_service_variants_parallel_capacity` (`location_id`,`service_id`,`parallel_capacity`);
 
 --
 -- Indici per le tabelle `service_variant_resource_requirements`

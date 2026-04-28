@@ -37,6 +37,9 @@ final class ComputeAvailability
     /** @var array|null Location slot settings for current request */
     private ?array $currentLocationSlotSettings = null;
 
+    /** @var array<int, array{service_variant_id:int,duration_minutes:int,parallel_capacity:int}> */
+    private array $currentServiceSegments = [];
+
     public function __construct(
         private readonly BookingRepository $bookingRepository,
         private readonly StaffRepository $staffRepository,
@@ -96,6 +99,7 @@ final class ComputeAvailability
         
         $timezoneStr = $location['timezone'] ?? 'Europe/Rome';
         $timezone = new DateTimeZone($timezoneStr);
+        $this->currentServiceSegments = $this->buildServiceSegments($serviceIds, $locationId, $businessId);
         
         // Get booking limits from location (with defaults)
         $maxDaysAhead = (int) ($location['max_booking_advance_days'] ?? self::DEFAULT_MAX_DAYS_AHEAD);
@@ -258,6 +262,12 @@ final class ComputeAvailability
         if (empty($slots) || $minGapMinutes <= 0) {
             return $slots;
         }
+
+        foreach ($this->currentServiceSegments as $segment) {
+            if ($segment['parallel_capacity'] > 1) {
+                return $slots;
+            }
+        }
         
         // Get the date from first slot
         $firstSlot = $slots[0];
@@ -401,6 +411,7 @@ final class ComputeAvailability
         $occupied = array_map(fn($slot) => [
             'start' => new DateTimeImmutable($slot['start_time'], $timezone),
             'end' => new DateTimeImmutable($slot['end_time'], $timezone),
+            'service_variant_id' => isset($slot['service_variant_id']) ? (int) $slot['service_variant_id'] : null,
         ], $occupiedSlots);
 
         // Convert time blocks to DateTimeImmutable and add to occupied
@@ -472,14 +483,7 @@ final class ComputeAvailability
                     continue;
                 }
 
-                // Check if slot conflicts with any occupied slot
-                $hasConflict = false;
-                foreach ($occupied as $occ) {
-                    if ($current < $occ['end'] && $slotEnd > $occ['start']) {
-                        $hasConflict = true;
-                        break;
-                    }
-                }
+                $hasConflict = !$this->serviceCapacityAllowsSlot($current, $slotEnd, $occupied);
 
                 if (!$hasConflict) {
                     $startTimeKey = $current->format('c');
@@ -527,14 +531,7 @@ final class ComputeAvailability
                 continue;
             }
             
-            // Verifica che non ci siano conflitti con altri slot occupati
-            $hasConflict = false;
-            foreach ($occupied as $otherOcc) {
-                if ($opportunisticStart < $otherOcc['end'] && $opportunisticEnd > $otherOcc['start']) {
-                    $hasConflict = true;
-                    break;
-                }
-            }
+            $hasConflict = !$this->serviceCapacityAllowsSlot($opportunisticStart, $opportunisticEnd, $occupied);
             
             if (!$hasConflict) {
                 $startTimeKey = $opportunisticStart->format('c');
@@ -577,14 +574,7 @@ final class ComputeAvailability
                 continue;
             }
             
-            // Verifica che non ci siano conflitti con altri slot occupati
-            $hasConflict = false;
-            foreach ($occupied as $otherOcc) {
-                if ($opportunisticStart < $otherOcc['end'] && $opportunisticEnd > $otherOcc['start']) {
-                    $hasConflict = true;
-                    break;
-                }
-            }
+            $hasConflict = !$this->serviceCapacityAllowsSlot($opportunisticStart, $opportunisticEnd, $occupied);
             
             if (!$hasConflict) {
                 $startTimeKey = $opportunisticStart->format('c');
@@ -729,6 +719,72 @@ final class ComputeAvailability
 
         $minutesFromMidnight = ((int) $time->format('H')) * 60 + ((int) $time->format('i'));
         return $minutesFromMidnight % $slotIntervalMinutes === 0;
+    }
+
+    private function buildServiceSegments(array $serviceIds, int $locationId, int $businessId): array
+    {
+        if ($this->serviceRepository === null || empty($serviceIds)) {
+            return [];
+        }
+
+        $services = $this->serviceRepository->findByIds(
+            array_values(array_map('intval', $serviceIds)),
+            $locationId,
+            $businessId
+        );
+
+        $segments = [];
+        foreach ($services as $service) {
+            $segments[] = [
+                'service_variant_id' => (int) $service['service_variant_id'],
+                'duration_minutes' => (int) $service['duration_minutes']
+                    + (int) ($service['processing_time'] ?? 0)
+                    + (int) ($service['blocked_time'] ?? 0),
+                'parallel_capacity' => max(1, (int) ($service['parallel_capacity'] ?? 1)),
+            ];
+        }
+
+        return $segments;
+    }
+
+    private function serviceCapacityAllowsSlot(
+        DateTimeImmutable $slotStart,
+        DateTimeImmutable $slotEnd,
+        array $occupied
+    ): bool {
+        if (empty($this->currentServiceSegments)) {
+            foreach ($occupied as $occ) {
+                if ($slotStart < $occ['end'] && $slotEnd > $occ['start']) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        $segmentStart = $slotStart;
+        foreach ($this->currentServiceSegments as $segment) {
+            $segmentEnd = $segmentStart->modify('+' . $segment['duration_minutes'] . ' minutes');
+            $sameServiceOverlaps = 0;
+
+            foreach ($occupied as $occ) {
+                if ($segmentStart >= $occ['end'] || $segmentEnd <= $occ['start']) {
+                    continue;
+                }
+
+                if (($occ['service_variant_id'] ?? null) !== $segment['service_variant_id']) {
+                    return false;
+                }
+
+                $sameServiceOverlaps++;
+                if ($sameServiceOverlaps >= $segment['parallel_capacity']) {
+                    return false;
+                }
+            }
+
+            $segmentStart = $segmentEnd;
+        }
+
+        return true;
     }
 
     /**

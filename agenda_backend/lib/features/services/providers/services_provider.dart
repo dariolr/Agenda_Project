@@ -202,6 +202,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     bool isPriceStartingFrom = false,
     int? processingTime,
     int? blockedTime,
+    int parallelCapacity = 1,
   }) async {
     final repository = ref.read(servicesRepositoryProvider);
     final businessId = ref.read(currentBusinessIdProvider);
@@ -222,6 +223,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
         isPriceStartingFrom: isPriceStartingFrom,
         processingTime: processingTime,
         blockedTime: blockedTime,
+        parallelCapacity: parallelCapacity,
       );
 
       // Add to local state only if current location is in the list
@@ -254,6 +256,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     bool isPriceStartingFrom = false,
     int? processingTime,
     int? blockedTime,
+    int parallelCapacity = 1,
   }) async {
     final repository = ref.read(servicesRepositoryProvider);
     final location = ref.read(currentLocationProvider);
@@ -273,6 +276,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
         isPriceStartingFrom: isPriceStartingFrom,
         processingTime: processingTime,
         blockedTime: blockedTime,
+        parallelCapacity: parallelCapacity,
       );
 
       // Add to local state
@@ -310,6 +314,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     int? sortOrder,
     int? processingTime,
     int? blockedTime,
+    int? parallelCapacity,
   }) async {
     final repository = ref.read(servicesRepositoryProvider);
     final location = ref.read(currentLocationProvider);
@@ -333,6 +338,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
         sortOrder: sortOrder,
         processingTime: processingTime,
         blockedTime: blockedTime,
+        parallelCapacity: parallelCapacity,
       );
 
       // Update local state
@@ -420,6 +426,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
       price: original.price ?? 0,
       colorHex: original.color,
       isPriceStartingFrom: original.isPriceStartingFrom,
+      parallelCapacity: original.parallelCapacity,
     );
   }
 
@@ -556,6 +563,7 @@ class ServiceVariantsNotifier extends AsyncNotifier<List<ServiceVariant>> {
             isBookableOnline: s.isBookableOnline,
             isFree: (s.price ?? 0) == 0,
             isPriceStartingFrom: s.isPriceStartingFrom,
+            parallelCapacity: s.parallelCapacity,
             resourceRequirements: s.resourceRequirements,
             processingTime: s.processingTime ?? 0,
             blockedTime: s.blockedTime ?? 0,

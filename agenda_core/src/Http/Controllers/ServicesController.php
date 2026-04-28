@@ -114,6 +114,7 @@ final class ServicesController
                 'is_active' => (bool) ($service['is_active'] ?? true),
                 'is_bookable_online' => (bool) ($service['is_bookable_online'] ?? true),
                 'is_price_starting_from' => (bool) ($service['is_price_from'] ?? false),
+                'parallel_capacity' => (int) ($service['parallel_capacity'] ?? 1),
                 'category_id' => $service['category_id'] ? (int) $service['category_id'] : null,
                 'category_name' => $service['category_name'] ?? null,
                 'service_variant_id' => $variantId,
@@ -178,6 +179,7 @@ final class ServicesController
                     'is_active' => (bool) ($s['is_active'] ?? true),
                     'is_bookable_online' => (bool) ($s['is_bookable_online'] ?? true),
                     'is_price_starting_from' => (bool) ($s['is_price_from'] ?? false),
+                    'parallel_capacity' => (int) ($s['parallel_capacity'] ?? 1),
                     'category_id' => $s['category_id'] ? (int) $s['category_id'] : null,
                     'service_variant_id' => $variantId,
                     'sort_order' => (int) ($s['sort_order'] ?? 0),
@@ -224,6 +226,10 @@ final class ServicesController
             return Response::error((string) $colorHexResult['error'], 'validation_error', 400, $request->traceId);
         }
         $colorHex = $colorHexResult['value'] ?? null;
+        $parallelCapacity = $this->validateParallelCapacity($body, true);
+        if (is_string($parallelCapacity)) {
+            return Response::error($parallelCapacity, 'validation_error', 400, $request->traceId);
+        }
 
         $service = $this->serviceRepository->create(
             businessId: $businessId,
@@ -237,7 +243,8 @@ final class ServicesController
             isBookableOnline: (bool) ($body['is_bookable_online'] ?? true),
             isPriceStartingFrom: (bool) ($body['is_price_starting_from'] ?? false),
             processingTime: isset($body['processing_time']) ? (int) $body['processing_time'] : null,
-            blockedTime: isset($body['blocked_time']) ? (int) $body['blocked_time'] : null
+            blockedTime: isset($body['blocked_time']) ? (int) $body['blocked_time'] : null,
+            parallelCapacity: $parallelCapacity
         );
 
         return Response::success(['service' => $this->formatService($service, $businessId)], 201);
@@ -267,6 +274,10 @@ final class ServicesController
             return Response::error((string) $colorHexResult['error'], 'validation_error', 400, $request->traceId);
         }
         $colorHex = $colorHexResult['value'] ?? null;
+        $parallelCapacity = $this->validateParallelCapacity($body, true);
+        if (is_string($parallelCapacity)) {
+            return Response::error($parallelCapacity, 'validation_error', 400, $request->traceId);
+        }
 
         $locationIds = $body['location_ids'] ?? [];
         if (empty($locationIds) || !is_array($locationIds)) {
@@ -293,7 +304,8 @@ final class ServicesController
             isBookableOnline: (bool) ($body['is_bookable_online'] ?? true),
             isPriceStartingFrom: (bool) ($body['is_price_starting_from'] ?? false),
             processingTime: isset($body['processing_time']) ? (int) $body['processing_time'] : null,
-            blockedTime: isset($body['blocked_time']) ? (int) $body['blocked_time'] : null
+            blockedTime: isset($body['blocked_time']) ? (int) $body['blocked_time'] : null,
+            parallelCapacity: $parallelCapacity
         );
 
         return Response::success(['service' => $this->formatService($service, $businessId)], 201);
@@ -360,6 +372,10 @@ final class ServicesController
 
         // Handle description null
         $setDescriptionNull = (bool) ($body['set_description_null'] ?? false);
+        $parallelCapacity = $this->validateParallelCapacity($body, false);
+        if (is_string($parallelCapacity)) {
+            return Response::error($parallelCapacity, 'validation_error', 400, $request->traceId);
+        }
 
         $service = $this->serviceRepository->update(
             serviceId: $serviceId,
@@ -375,6 +391,7 @@ final class ServicesController
             sortOrder: isset($body['sort_order']) ? (int) $body['sort_order'] : null,
             processingTime: $processingTime,
             blockedTime: $blockedTime,
+            parallelCapacity: $parallelCapacity,
             setProcessingTimeNull: $setProcessingTimeNull,
             setBlockedTimeNull: $setBlockedTimeNull,
             setDescriptionNull: $setDescriptionNull
@@ -730,12 +747,40 @@ final class ServicesController
             'blocked_time' => (int) ($service['blocked_time'] ?? 0),
             'price' => (float) ($service['price'] ?? 0),
             'color' => $service['color'],
+            'is_active' => (bool) ($service['is_active'] ?? true),
             'is_bookable_online' => (bool) ($service['is_bookable_online'] ?? true),
             'is_price_starting_from' => (bool) ($service['is_price_from'] ?? false),
+            'parallel_capacity' => (int) ($service['parallel_capacity'] ?? 1),
             'category_id' => $service['category_id'] ? (int) $service['category_id'] : null,
             'service_variant_id' => isset($service['service_variant_id']) ? (int) $service['service_variant_id'] : null,
             'sort_order' => (int) ($service['sort_order'] ?? 0),
         ];
+    }
+
+    private function validateParallelCapacity(array $body, bool $isCreate): int|string|null
+    {
+        if (!array_key_exists('parallel_capacity', $body)) {
+            return $isCreate ? 1 : null;
+        }
+
+        $value = $body['parallel_capacity'];
+        if (is_string($value)) {
+            $value = trim($value);
+        }
+
+        if ($value === null || $value === '' || filter_var($value, FILTER_VALIDATE_INT) === false) {
+            return 'parallel_capacity must be an integer';
+        }
+
+        $capacity = (int) $value;
+        if ($capacity < 1) {
+            return 'parallel_capacity must be >= 1';
+        }
+        if ($capacity > 999) {
+            return 'parallel_capacity must be <= 999';
+        }
+
+        return $capacity;
     }
 
     /**

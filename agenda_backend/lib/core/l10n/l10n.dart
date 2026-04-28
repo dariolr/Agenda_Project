@@ -2829,6 +2829,36 @@ class L10n {
     );
   }
 
+  /// `Concurrent bookings`
+  String get parallelCapacityLabel {
+    return Intl.message(
+      'Concurrent bookings',
+      name: 'parallelCapacityLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Maximum number of clients bookable at the same time.`
+  String get parallelCapacityHint {
+    return Intl.message(
+      'Maximum number of clients bookable at the same time.',
+      name: 'parallelCapacityHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter a number greater than or equal to 1.`
+  String get parallelCapacityError {
+    return Intl.message(
+      'Enter a number greater than or equal to 1.',
+      name: 'parallelCapacityError',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Bookable online`
   String get bookableOnlineSwitch {
     return Intl.message(
@@ -5616,6 +5646,16 @@ class L10n {
     return Intl.message(
       'An event type with this name already exists.',
       name: 'apiErrorClassTypeNameExists',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The selected slot has reached the maximum number of concurrent bookings.`
+  String get apiErrorServiceCapacityFull {
+    return Intl.message(
+      'The selected slot has reached the maximum number of concurrent bookings.',
+      name: 'apiErrorServiceCapacityFull',
       desc: '',
       args: [],
     );

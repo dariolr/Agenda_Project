@@ -279,6 +279,7 @@ final class ReplaceBooking
                     'duration_minutes' => $durationMinutes,
                     'price' => $item['price'] ?? (float) $service['price'],
                     'service_name' => $service['name'],
+                    'parallel_capacity' => max(1, (int) ($service['parallel_capacity'] ?? 1)),
                 ];
             }
         } elseif (isset($newBookingData['service_ids'])) {
@@ -345,6 +346,7 @@ final class ReplaceBooking
                     'duration_minutes' => $durationMinutes,
                     'price' => (float) $service['price'],
                     'service_name' => $service['name'],
+                    'parallel_capacity' => max(1, (int) ($service['parallel_capacity'] ?? 1)),
                 ];
 
                 $currentTime = $endTime;
@@ -365,16 +367,43 @@ final class ReplaceBooking
     private function checkAvailability(array $items, int $locationId, int $businessId, int $excludeBookingId): void
     {
         foreach ($items as $item) {
-            $conflicts = $this->bookingRepository->checkConflicts(
-                $item['staff_id'],
+            $serviceVariantId = (int) $item['service_variant_id'];
+            $variant = $this->serviceRepository->lockServiceVariantForCapacityCheck($serviceVariantId);
+            if ($variant === null) {
+                throw BookingException::invalidService([(int) $item['service_id']]);
+            }
+            $parallelCapacity = max(1, (int) ($variant['parallel_capacity'] ?? 1));
+
+            $otherServiceConflicts = $this->bookingRepository->findOtherServiceVariantConflictsForUpdate(
                 $locationId,
+                (int) $item['staff_id'],
+                $serviceVariantId,
                 $item['start_time'],
                 $item['end_time'],
                 $excludeBookingId
             );
 
-            if (!empty($conflicts)) {
-                throw BookingException::slotConflict($conflicts);
+            if (!empty($otherServiceConflicts)) {
+                throw BookingException::slotConflict($otherServiceConflicts);
+            }
+
+            $sameServiceOverlaps = $this->bookingRepository->findServiceVariantCapacityOverlapsForUpdate(
+                $locationId,
+                (int) $item['staff_id'],
+                $serviceVariantId,
+                $item['start_time'],
+                $item['end_time'],
+                $excludeBookingId
+            );
+
+            if (count($sameServiceOverlaps) >= $parallelCapacity) {
+                throw BookingException::serviceCapacityFull([
+                    'service_variant_id' => $serviceVariantId,
+                    'location_id' => $locationId,
+                    'staff_id' => (int) $item['staff_id'],
+                    'parallel_capacity' => $parallelCapacity,
+                    'overlap_count' => count($sameServiceOverlaps),
+                ]);
             }
 
             if ($this->classEventRepository !== null) {

@@ -797,6 +797,8 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
     }
 
     switch (state.errorCode) {
+      case 'service_capacity_full':
+        return l10n.apiErrorServiceCapacityFull;
       case 'slot_conflict':
         return l10n.bookingErrorSlotConflict;
       case 'invalid_service':

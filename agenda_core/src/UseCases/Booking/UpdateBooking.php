@@ -9,6 +9,7 @@ use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\BookingAuditRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Repositories\ClassEventRepository;
+use Agenda\Infrastructure\Repositories\ServiceRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\Infrastructure\Database\Connection;
@@ -31,6 +32,7 @@ final class UpdateBooking
         private readonly ?NotificationRepository $notificationRepo = null,
         private readonly ?BookingAuditRepository $auditRepo = null,
         private readonly ?ClassEventRepository $classEventRepo = null,
+        private readonly ?ServiceRepository $serviceRepo = null,
     ) {}
 
     /**
@@ -304,25 +306,51 @@ final class UpdateBooking
             $newItemStart = $oldItemStart->modify("+{$offsetSeconds} seconds");
             $newItemEnd = $oldItemEnd->modify("+{$offsetSeconds} seconds");
 
-            // Check conflicts usando repository (con FOR UPDATE per sicurezza transazionale)
-            $conflicts = $this->bookingRepo->checkConflicts(
-                (int) $item['staff_id'],
+            $serviceVariantId = (int) $item['service_variant_id'];
+            $variant = $this->serviceRepo?->lockServiceVariantForCapacityCheck($serviceVariantId);
+            if ($variant === null) {
+                throw BookingException::invalidService([(int) $item['service_id']]);
+            }
+            $parallelCapacity = max(1, (int) ($variant['parallel_capacity'] ?? 1));
+
+            $otherServiceConflicts = $this->bookingRepo->findOtherServiceVariantConflictsForUpdate(
                 (int) $item['location_id'],
+                (int) $item['staff_id'],
+                $serviceVariantId,
                 $newItemStart,
                 $newItemEnd,
                 (int) $booking['id'] // Escludi booking corrente
             );
 
-            if (!empty($conflicts)) {
+            if (!empty($otherServiceConflicts)) {
                 $conflictDetails = array_map(function($conflict) {
                     return [
                         'booking_id' => $conflict['booking_id'],
                         'start_time' => $conflict['start_time'],
                         'end_time' => $conflict['end_time'],
                     ];
-                }, $conflicts);
+                }, $otherServiceConflicts);
 
                 throw BookingException::slotConflict($conflictDetails);
+            }
+
+            $sameServiceOverlaps = $this->bookingRepo->findServiceVariantCapacityOverlapsForUpdate(
+                (int) $item['location_id'],
+                (int) $item['staff_id'],
+                $serviceVariantId,
+                $newItemStart,
+                $newItemEnd,
+                (int) $booking['id']
+            );
+
+            if (count($sameServiceOverlaps) >= $parallelCapacity) {
+                throw BookingException::serviceCapacityFull([
+                    'service_variant_id' => $serviceVariantId,
+                    'location_id' => (int) $item['location_id'],
+                    'staff_id' => (int) $item['staff_id'],
+                    'parallel_capacity' => $parallelCapacity,
+                    'overlap_count' => count($sameServiceOverlaps),
+                ]);
             }
 
             if ($this->classEventRepo !== null) {

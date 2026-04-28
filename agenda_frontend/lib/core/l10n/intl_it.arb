@@ -26,6 +26,7 @@
   "apiErrorNotFound": "La risorsa richiesta non è stata trovata.",
   "apiErrorValidation": "Controlla i dati inseriti.",
   "apiErrorClassTypeNameExists": "Esiste già un tipo classe con questo nome.",
+  "apiErrorServiceCapacityFull": "Lo slot selezionato ha raggiunto il numero massimo di prenotazioni contemporanee.",
   "apiErrorSlotConflict": "Lo slot orario selezionato non è più disponibile.",
   "apiErrorDemoBlocked": "Questa azione è bloccata in modalità demo.",
   "apiErrorDatabase": "Servizio temporaneamente non disponibile. Riprova più tardi.",

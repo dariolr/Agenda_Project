@@ -591,6 +591,7 @@ class ApiClient {
       'class_event_not_bookable' => l10n.apiErrorValidation,
       'booking_closed' => l10n.apiErrorValidation,
       'booking_not_open' => l10n.apiErrorValidation,
+      'service_capacity_full' => l10n.apiErrorServiceCapacityFull,
       'slot_conflict' => l10n.apiErrorSlotConflict,
       'invalid_service' => l10n.apiErrorValidation,
       'invalid_category' => l10n.apiErrorValidation,
@@ -1892,6 +1893,7 @@ class ApiClient {
     bool isPriceStartingFrom = false,
     int? processingTime,
     int? blockedTime,
+    int parallelCapacity = 1,
   }) async {
     final response = await post(
       '/v1/businesses/$businessId/services',
@@ -1906,6 +1908,7 @@ class ApiClient {
         if (colorHex != null && colorHex.isNotEmpty) 'color': colorHex,
         'is_bookable_online': isBookableOnline,
         'is_price_starting_from': isPriceStartingFrom,
+        'parallel_capacity': parallelCapacity,
         if (processingTime != null) 'processing_time': processingTime,
         if (blockedTime != null) 'blocked_time': blockedTime,
       },
@@ -1926,6 +1929,7 @@ class ApiClient {
     bool isPriceStartingFrom = false,
     int? processingTime,
     int? blockedTime,
+    int parallelCapacity = 1,
   }) async {
     final response = await post(
       '/v1/locations/$locationId/services',
@@ -1939,6 +1943,7 @@ class ApiClient {
         if (colorHex != null && colorHex.isNotEmpty) 'color': colorHex,
         'is_bookable_online': isBookableOnline,
         'is_price_starting_from': isPriceStartingFrom,
+        'parallel_capacity': parallelCapacity,
         if (processingTime != null) 'processing_time': processingTime,
         if (blockedTime != null) 'blocked_time': blockedTime,
       },
@@ -1963,6 +1968,7 @@ class ApiClient {
     int? sortOrder,
     int? processingTime,
     int? blockedTime,
+    int? parallelCapacity,
   }) async {
     final response = await put(
       '/v1/services/$serviceId',
@@ -1983,6 +1989,7 @@ class ApiClient {
         if (isBookableOnline != null) 'is_bookable_online': isBookableOnline,
         if (isPriceStartingFrom != null)
           'is_price_starting_from': isPriceStartingFrom,
+        if (parallelCapacity != null) 'parallel_capacity': parallelCapacity,
         if (sortOrder != null) 'sort_order': sortOrder,
         if (processingTime != null) 'processing_time': processingTime,
         if (blockedTime != null) 'blocked_time': blockedTime,

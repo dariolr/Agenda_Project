@@ -398,17 +398,13 @@ final class CreateBooking
                 // Check for conflicts using SELECT FOR UPDATE (skip for operators)
                 // Use blockedEndTime to ensure processing/blocked time is reserved
                 if (!$skipConflictCheck) {
-                    $conflicts = $this->bookingRepository->checkConflicts(
+                    $this->assertServiceCapacityAvailable(
                         $staffId,
                         $locationId,
+                        (int) $service['service_variant_id'],
                         $currentTime,
                         $blockedEndTime
                     );
-
-                    if (!empty($conflicts)) {
-                        $this->db->rollBack();
-                        throw BookingException::slotConflict($conflicts);
-                    }
                 }
 
                 $itemsToCreate[] = [
@@ -600,11 +596,13 @@ final class CreateBooking
                 $blockedEndTime = $startTime->modify("+{$totalBlockedDuration} minutes");
 
                 if (!$skipConflictCheck) {
-                    $conflicts = $this->bookingRepository->checkConflicts($staffId, $locationId, $startTime, $blockedEndTime);
-                    if (!empty($conflicts)) {
-                        $this->db->rollBack();
-                        throw BookingException::slotConflict($conflicts);
-                    }
+                    $this->assertServiceCapacityAvailable(
+                        $staffId,
+                        $locationId,
+                        $variantId,
+                        $startTime,
+                        $blockedEndTime
+                    );
                 }
 
                 $itemsToCreate[] = [
@@ -932,17 +930,13 @@ final class CreateBooking
 
                 // Check for conflicts (customers ALWAYS check conflicts)
                 // Use blockedEndTime to ensure processing/blocked time is reserved
-                $conflicts = $this->bookingRepository->checkConflicts(
+                $this->assertServiceCapacityAvailable(
                     $staffId,
                     $locationId,
+                    (int) $service['service_variant_id'],
                     $currentTime,
                     $blockedEndTime
                 );
-
-                if (!empty($conflicts)) {
-                    $this->db->rollBack();
-                    throw BookingException::slotConflict($conflicts);
-                }
 
                 $this->assertNoClassEventConflict(
                     $businessId,
@@ -1133,17 +1127,13 @@ final class CreateBooking
 
                 // Check for conflicts (customers ALWAYS check conflicts)
                 // Use blockedEndTime to ensure processing/blocked time is reserved
-                $conflicts = $this->bookingRepository->checkConflicts(
+                $this->assertServiceCapacityAvailable(
                     $staffId,
                     $locationId,
+                    (int) $service['service_variant_id'],
                     $startTime,
                     $blockedEndTime
                 );
-
-                if (!empty($conflicts)) {
-                    $this->db->rollBack();
-                    throw BookingException::slotConflict($conflicts);
-                }
 
                 $this->assertNoClassEventConflict(
                     $businessId,
@@ -1333,6 +1323,54 @@ final class CreateBooking
         );
 
         throw BookingException::slotConflict($details);
+    }
+
+    private function assertServiceCapacityAvailable(
+        int $staffId,
+        int $locationId,
+        int $serviceVariantId,
+        DateTimeImmutable $startTime,
+        DateTimeImmutable $endTime,
+        ?int $excludeBookingId = null
+    ): void {
+        $variant = $this->serviceRepository->lockServiceVariantForCapacityCheck($serviceVariantId);
+        if ($variant === null) {
+            throw BookingException::invalidService([]);
+        }
+
+        $parallelCapacity = max(1, (int) ($variant['parallel_capacity'] ?? 1));
+
+        $otherServiceConflicts = $this->bookingRepository->findOtherServiceVariantConflictsForUpdate(
+            $locationId,
+            $staffId,
+            $serviceVariantId,
+            $startTime,
+            $endTime,
+            $excludeBookingId
+        );
+
+        if (!empty($otherServiceConflicts)) {
+            throw BookingException::slotConflict($otherServiceConflicts);
+        }
+
+        $sameServiceOverlaps = $this->bookingRepository->findServiceVariantCapacityOverlapsForUpdate(
+            $locationId,
+            $staffId,
+            $serviceVariantId,
+            $startTime,
+            $endTime,
+            $excludeBookingId
+        );
+
+        if (count($sameServiceOverlaps) >= $parallelCapacity) {
+            throw BookingException::serviceCapacityFull([
+                'service_variant_id' => $serviceVariantId,
+                'location_id' => $locationId,
+                'staff_id' => $staffId,
+                'parallel_capacity' => $parallelCapacity,
+                'overlap_count' => count($sameServiceOverlaps),
+            ]);
+        }
     }
 
     /**

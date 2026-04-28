@@ -373,6 +373,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "apiErrorResetTokenExpired": MessageLookupByLibrary.simpleMessage(
       "The password reset link has expired.",
     ),
+    "apiErrorServiceCapacityFull": MessageLookupByLibrary.simpleMessage(
+      "The selected slot has reached the maximum number of concurrent bookings.",
+    ),
     "apiErrorSlotConflict": MessageLookupByLibrary.simpleMessage(
       "The selected time slot is no longer available.",
     ),
@@ -1889,6 +1892,15 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "operatorsTitle": MessageLookupByLibrary.simpleMessage("Operators"),
     "operatorsYou": MessageLookupByLibrary.simpleMessage("You"),
+    "parallelCapacityError": MessageLookupByLibrary.simpleMessage(
+      "Enter a number greater than or equal to 1.",
+    ),
+    "parallelCapacityHint": MessageLookupByLibrary.simpleMessage(
+      "Maximum number of clients bookable at the same time.",
+    ),
+    "parallelCapacityLabel": MessageLookupByLibrary.simpleMessage(
+      "Concurrent bookings",
+    ),
     "paymentAmountDue": MessageLookupByLibrary.simpleMessage("Amount due"),
     "paymentAppointmentsToCollect": MessageLookupByLibrary.simpleMessage(
       "Total appointments to collect",

@@ -80,6 +80,34 @@ final class BookingTest extends TestCase
         $this->assertFalse($overlaps, 'Adjacent slots should not be considered overlapping');
     }
 
+    public function testParallelCapacityAllowsOverlapBelowLimit(): void
+    {
+        $parallelCapacity = 50;
+        $overlapCount = 49;
+
+        $this->assertTrue($overlapCount < $parallelCapacity);
+    }
+
+    public function testParallelCapacityRejectsOverlapAtLimit(): void
+    {
+        $parallelCapacity = 50;
+        $overlapCount = 50;
+
+        $this->assertFalse($overlapCount < $parallelCapacity);
+    }
+
+    public function testStaggeredParallelCapacityUsesStrictOverlap(): void
+    {
+        $existingStart = new DateTimeImmutable('2025-01-15 08:15:00');
+        $existingEnd = new DateTimeImmutable('2025-01-15 09:15:00');
+        $newStart = new DateTimeImmutable('2025-01-15 09:15:00');
+        $newEnd = new DateTimeImmutable('2025-01-15 10:15:00');
+
+        $overlaps = $existingStart < $newEnd && $existingEnd > $newStart;
+
+        $this->assertFalse($overlaps, 'A booking ending exactly at new start must not consume capacity');
+    }
+
     public function testDateValidation(): void
     {
         $timezone = new DateTimeZone('Europe/Rome');

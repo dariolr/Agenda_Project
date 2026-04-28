@@ -41,10 +41,11 @@ final class ServiceRepository
     {
         $sql = 'SELECT s.id, s.business_id, s.category_id, s.name, s.description, 
                     s.is_active, s.sort_order,
-                    sv.id AS service_variant_id,
+                    sv.id AS variant_id, sv.id AS service_variant_id,
                     sv.duration_minutes, sv.processing_time, sv.blocked_time,
                     sv.price, sv.color_hex AS color,
-                    sv.is_bookable_online, sv.is_price_starting_from AS is_price_from
+                    sv.is_bookable_online, sv.is_price_starting_from AS is_price_from,
+                    COALESCE(sv.parallel_capacity, 1) AS parallel_capacity
              FROM services s
              LEFT JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
              WHERE s.id = ? AND s.is_active = 1';
@@ -72,6 +73,7 @@ final class ServiceRepository
                     sv.duration_minutes, sv.processing_time, sv.blocked_time,
                     sv.price, sv.color_hex AS color,
                     sv.is_bookable_online, sv.is_price_starting_from AS is_price_from,
+                    COALESCE(sv.parallel_capacity, 1) AS parallel_capacity,
                     sc.name AS category_name
              FROM services s
              JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
@@ -100,6 +102,7 @@ final class ServiceRepository
                     sv.id AS variant_id, sv.id AS service_variant_id,
                     sv.duration_minutes, sv.price, sv.color_hex AS color,
                     sv.is_price_starting_from AS is_price_from,
+                    COALESCE(sv.parallel_capacity, 1) AS parallel_capacity,
                     COALESCE(sv.processing_time, 0) AS processing_time,
                     COALESCE(sv.blocked_time, 0) AS blocked_time
              FROM services s
@@ -271,6 +274,24 @@ final class ServiceRepository
         return $result;
     }
 
+    /**
+     * Lock one service variant row before a capacity check.
+     * MUST be called inside a transaction.
+     */
+    public function lockServiceVariantForCapacityCheck(int $serviceVariantId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, parallel_capacity
+             FROM service_variants
+             WHERE id = ? AND is_active = 1
+             FOR UPDATE'
+        );
+        $stmt->execute([$serviceVariantId]);
+        $result = $stmt->fetch();
+
+        return $result ?: null;
+    }
+
     // ===== CRUD Methods =====
 
     /**
@@ -288,7 +309,8 @@ final class ServiceRepository
         bool $isBookableOnline = true,
         bool $isPriceStartingFrom = false,
         ?int $processingTime = null,
-        ?int $blockedTime = null
+        ?int $blockedTime = null,
+        int $parallelCapacity = 1
     ): array {
         $pdo = $this->db->getPdo();
         
@@ -309,8 +331,8 @@ final class ServiceRepository
 
             // Insert service_variant for the location
             $stmt = $pdo->prepare(
-                'INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, color_hex, is_bookable_online, is_price_starting_from, is_active, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
+                'INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, color_hex, is_bookable_online, is_price_starting_from, parallel_capacity, is_active, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
             );
             $stmt->execute([
                 $serviceId,
@@ -322,6 +344,7 @@ final class ServiceRepository
                 $colorHex ?? '#CCCCCC',
                 $isBookableOnline ? 1 : 0,
                 $isPriceStartingFrom ? 1 : 0,
+                $parallelCapacity,
             ]);
             $variantId = (int) $pdo->lastInsertId();
 
@@ -349,7 +372,8 @@ final class ServiceRepository
         bool $isBookableOnline = true,
         bool $isPriceStartingFrom = false,
         ?int $processingTime = null,
-        ?int $blockedTime = null
+        ?int $blockedTime = null,
+        int $parallelCapacity = 1
     ): array {
         if (empty($locationIds)) {
             throw new \InvalidArgumentException('At least one location_id is required');
@@ -374,8 +398,8 @@ final class ServiceRepository
 
             // Insert service_variant for each location
             $stmtVariant = $pdo->prepare(
-                'INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, color_hex, is_bookable_online, is_price_starting_from, is_active, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
+                'INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, color_hex, is_bookable_online, is_price_starting_from, parallel_capacity, is_active, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
             );
 
             $firstLocationId = $locationIds[0];
@@ -390,6 +414,7 @@ final class ServiceRepository
                     $colorHex ?? '#CCCCCC',
                     $isBookableOnline ? 1 : 0,
                     $isPriceStartingFrom ? 1 : 0,
+                    $parallelCapacity,
                 ]);
             }
 
@@ -420,6 +445,7 @@ final class ServiceRepository
         ?int $sortOrder = null,
         ?int $processingTime = null,
         ?int $blockedTime = null,
+        ?int $parallelCapacity = null,
         bool $setProcessingTimeNull = false,
         bool $setBlockedTimeNull = false,
         bool $setDescriptionNull = false
@@ -486,6 +512,10 @@ final class ServiceRepository
             if ($blockedTime !== null || $setBlockedTimeNull) {
                 $variantUpdates[] = 'blocked_time = ?';
                 $variantParams[] = $setBlockedTimeNull ? 0 : $blockedTime;
+            }
+            if ($parallelCapacity !== null) {
+                $variantUpdates[] = 'parallel_capacity = ?';
+                $variantParams[] = $parallelCapacity;
             }
 
             if (!empty($variantUpdates)) {
@@ -773,7 +803,7 @@ final class ServiceRepository
         // Get an existing variant to copy defaults from
         $stmt = $pdo->prepare(
             'SELECT duration_minutes, price, color_hex, is_bookable_online, 
-                    is_price_starting_from, processing_time, blocked_time
+                    is_price_starting_from, parallel_capacity, processing_time, blocked_time
              FROM service_variants WHERE service_id = ? LIMIT 1'
         );
         $stmt->execute([$serviceId]);
@@ -802,16 +832,21 @@ final class ServiceRepository
             if ($existingInactive) {
                 // Reactivate existing variant
                 $stmt = $pdo->prepare(
-                    'UPDATE service_variants SET is_active = 1, updated_at = NOW() WHERE id = ?'
+                    'UPDATE service_variants
+                     SET is_active = 1, parallel_capacity = ?, updated_at = NOW()
+                     WHERE id = ?'
                 );
-                $stmt->execute([$existingInactive['id']]);
+                $stmt->execute([
+                    $templateVariant['parallel_capacity'] ?? 1,
+                    $existingInactive['id'],
+                ]);
             } else {
                 // Create new variant with defaults from template
                 $stmt = $pdo->prepare(
                     'INSERT INTO service_variants 
                      (service_id, location_id, duration_minutes, price, color_hex, 
-                      is_bookable_online, is_price_starting_from, processing_time, blocked_time, is_active)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)'
+                      is_bookable_online, is_price_starting_from, parallel_capacity, processing_time, blocked_time, is_active)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)'
                 );
                 $stmt->execute([
                     $serviceId,
@@ -821,6 +856,7 @@ final class ServiceRepository
                     $templateVariant['color_hex'] ?? null,
                     $templateVariant['is_bookable_online'] ?? 1,
                     $templateVariant['is_price_starting_from'] ?? 0,
+                    $templateVariant['parallel_capacity'] ?? 1,
                     $templateVariant['processing_time'] ?? null,
                     $templateVariant['blocked_time'] ?? null,
                 ]);

@@ -13,6 +13,7 @@ class ServiceVariant {
   final bool isBookableOnline;
   final bool isFree;
   final bool isPriceStartingFrom;
+  final int parallelCapacity;
   final List<ServiceVariantResourceRequirement> resourceRequirements;
 
   const ServiceVariant({
@@ -28,6 +29,7 @@ class ServiceVariant {
     this.isBookableOnline = true,
     this.isFree = false,
     this.isPriceStartingFrom = false,
+    this.parallelCapacity = 1,
     this.resourceRequirements = const [],
   });
 
@@ -44,6 +46,7 @@ class ServiceVariant {
     bool? isBookableOnline,
     bool? isFree,
     bool? isPriceStartingFrom,
+    int? parallelCapacity,
     List<ServiceVariantResourceRequirement>? resourceRequirements,
   }) {
     return ServiceVariant(
@@ -59,8 +62,8 @@ class ServiceVariant {
       isBookableOnline: isBookableOnline ?? this.isBookableOnline,
       isFree: isFree ?? this.isFree,
       isPriceStartingFrom: isPriceStartingFrom ?? this.isPriceStartingFrom,
-      resourceRequirements:
-          resourceRequirements ?? this.resourceRequirements,
+      parallelCapacity: parallelCapacity ?? this.parallelCapacity,
+      resourceRequirements: resourceRequirements ?? this.resourceRequirements,
     );
   }
 
@@ -78,6 +81,7 @@ class ServiceVariant {
       isBookableOnline: json['is_bookable_online'] as bool? ?? true,
       isFree: json['is_free'] as bool? ?? false,
       isPriceStartingFrom: json['is_price_starting_from'] as bool? ?? false,
+      parallelCapacity: json['parallel_capacity'] as int? ?? 1,
     );
   }
 
@@ -95,6 +99,7 @@ class ServiceVariant {
       'is_bookable_online': isBookableOnline,
       'is_free': isFree,
       'is_price_starting_from': isPriceStartingFrom,
+      'parallel_capacity': parallelCapacity,
     };
   }
 }

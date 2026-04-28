@@ -17,6 +17,7 @@ class Service {
   final bool isActive;
   final bool isBookableOnline; // prenotabile online
   final bool isPriceStartingFrom; // "a partire da" flag
+  final int parallelCapacity; // prenotazioni contemporanee per variante
   final int? serviceVariantId; // ID della variante per location (da API)
   final List<ServiceVariantResourceRequirement>
   resourceRequirements; // risorse richieste
@@ -37,6 +38,7 @@ class Service {
     this.isActive = true,
     this.isBookableOnline = true,
     this.isPriceStartingFrom = false,
+    this.parallelCapacity = 1,
     this.serviceVariantId,
     this.resourceRequirements = const [],
   });
@@ -57,6 +59,7 @@ class Service {
     bool? isActive,
     bool? isBookableOnline,
     bool? isPriceStartingFrom,
+    int? parallelCapacity,
     int? serviceVariantId,
     List<ServiceVariantResourceRequirement>? resourceRequirements,
   }) => Service(
@@ -75,6 +78,7 @@ class Service {
     isActive: isActive ?? this.isActive,
     isBookableOnline: isBookableOnline ?? this.isBookableOnline,
     isPriceStartingFrom: isPriceStartingFrom ?? this.isPriceStartingFrom,
+    parallelCapacity: parallelCapacity ?? this.parallelCapacity,
     serviceVariantId: serviceVariantId ?? this.serviceVariantId,
     resourceRequirements: resourceRequirements ?? this.resourceRequirements,
   );
@@ -108,6 +112,7 @@ class Service {
           ((json['is_active'] as num?)?.toInt() == 1),
       isBookableOnline: json['is_bookable_online'] as bool? ?? true,
       isPriceStartingFrom: json['is_price_starting_from'] as bool? ?? false,
+      parallelCapacity: json['parallel_capacity'] as int? ?? 1,
       serviceVariantId: json['service_variant_id'] as int?,
       resourceRequirements: resourceRequirements,
     );
@@ -127,6 +132,7 @@ class Service {
     'is_active': isActive,
     'is_bookable_online': isBookableOnline,
     'is_price_starting_from': isPriceStartingFrom,
+    'parallel_capacity': parallelCapacity,
     if (serviceVariantId != null) 'service_variant_id': serviceVariantId,
   };
 }

@@ -173,6 +173,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "apiErrorResetTokenExpired": MessageLookupByLibrary.simpleMessage(
       "Il link di reset password è scaduto.",
     ),
+    "apiErrorServiceCapacityFull": MessageLookupByLibrary.simpleMessage(
+      "Lo slot selezionato ha raggiunto il numero massimo di prenotazioni contemporanee.",
+    ),
     "apiErrorSlotConflict": MessageLookupByLibrary.simpleMessage(
       "Lo slot orario selezionato non è più disponibile.",
     ),

@@ -210,7 +210,8 @@ class _RescheduleBookingDialogState
             serviceIds: serviceIds,
             startTime: newStartTime,
             idempotencyKey: idempotencyKey,
-            notes: widget.booking.isOnlineCustomerBooking &&
+            notes:
+                widget.booking.isOnlineCustomerBooking &&
                     _notesController.text.isNotEmpty
                 ? _notesController.text
                 : null,
@@ -223,7 +224,9 @@ class _RescheduleBookingDialogState
       } else {
         final bookingsState = ref.read(myBookingsProvider);
         // Messaggio specifico per conflitto slot (spec C6)
-        final errorMessage = bookingsState.errorCode == 'slot_conflict'
+        final errorMessage = bookingsState.errorCode == 'service_capacity_full'
+            ? context.l10n.apiErrorServiceCapacityFull
+            : bookingsState.errorCode == 'slot_conflict'
             ? context.l10n.slotNoLongerAvailable
             : bookingsState.errorCode == 'not_modifiable'
             ? context.l10n.bookingErrorNotModifiable

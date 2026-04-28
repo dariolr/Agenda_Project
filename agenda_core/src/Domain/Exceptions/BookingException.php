@@ -23,6 +23,7 @@ final class BookingException extends Exception
     public const ALREADY_REPLACED = 'already_replaced';
     public const NOT_MODIFIABLE = 'not_modifiable';
     public const BUSINESS_CLOSED = 'business_closed';
+    public const SERVICE_CAPACITY_FULL = 'service_capacity_full';
 
     private string $errorCode;
     private array $details;
@@ -41,6 +42,16 @@ final class BookingException extends Exception
             self::SLOT_CONFLICT,
             409,
             ['conflicts' => $conflictingSlots]
+        );
+    }
+
+    public static function serviceCapacityFull(array $details = []): self
+    {
+        return new self(
+            'La capienza massima per questo servizio è stata raggiunta nell\'orario selezionato.',
+            self::SERVICE_CAPACITY_FULL,
+            409,
+            $details
         );
     }
 

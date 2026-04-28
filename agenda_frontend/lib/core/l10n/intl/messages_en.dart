@@ -172,6 +172,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "apiErrorResetTokenExpired": MessageLookupByLibrary.simpleMessage(
       "The password reset link has expired.",
     ),
+    "apiErrorServiceCapacityFull": MessageLookupByLibrary.simpleMessage(
+      "The selected slot has reached the maximum number of concurrent bookings.",
+    ),
     "apiErrorSlotConflict": MessageLookupByLibrary.simpleMessage(
       "The selected time slot is no longer available.",
     ),

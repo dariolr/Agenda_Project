@@ -388,6 +388,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "apiErrorResetTokenExpired": MessageLookupByLibrary.simpleMessage(
       "Il link di reset password è scaduto.",
     ),
+    "apiErrorServiceCapacityFull": MessageLookupByLibrary.simpleMessage(
+      "Lo slot selezionato ha raggiunto il numero massimo di prenotazioni contemporanee.",
+    ),
     "apiErrorSlotConflict": MessageLookupByLibrary.simpleMessage(
       "Lo slot orario selezionato non è più disponibile.",
     ),
@@ -1963,6 +1966,15 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "operatorsTitle": MessageLookupByLibrary.simpleMessage("Operatori"),
     "operatorsYou": MessageLookupByLibrary.simpleMessage("Tu"),
+    "parallelCapacityError": MessageLookupByLibrary.simpleMessage(
+      "Inserisci un numero maggiore o uguale a 1.",
+    ),
+    "parallelCapacityHint": MessageLookupByLibrary.simpleMessage(
+      "Numero massimo di clienti prenotabili nello stesso momento.",
+    ),
+    "parallelCapacityLabel": MessageLookupByLibrary.simpleMessage(
+      "Prenotazioni contemporanee",
+    ),
     "paymentAmountDue": MessageLookupByLibrary.simpleMessage(
       "Importo da pagare",
     ),

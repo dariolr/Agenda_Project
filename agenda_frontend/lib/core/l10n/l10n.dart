@@ -234,6 +234,16 @@ class L10n {
     );
   }
 
+  /// `The selected slot has reached the maximum number of concurrent bookings.`
+  String get apiErrorServiceCapacityFull {
+    return Intl.message(
+      'The selected slot has reached the maximum number of concurrent bookings.',
+      name: 'apiErrorServiceCapacityFull',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `The selected time slot is no longer available.`
   String get apiErrorSlotConflict {
     return Intl.message(

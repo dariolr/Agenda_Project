@@ -107,6 +107,7 @@ final class BookingRepository
                     bi.extra_blocked_minutes, bi.extra_processing_minutes,
                     bi.service_name_snapshot, bi.client_name_snapshot,
                     s.name AS service_name,
+                    COALESCE(sv.parallel_capacity, 1) AS parallel_capacity,
                     sv.color_hex AS service_color_hex,
                     st.name AS staff_name, st.surname AS staff_surname,
                     b.business_id, b.client_name AS booking_client_name
@@ -541,7 +542,7 @@ final class BookingRepository
         DateTimeImmutable $endDate,
         ?int $excludeBookingId = null
     ): array {
-        $sql = "SELECT bi.start_time, bi.end_time
+        $sql = "SELECT bi.start_time, bi.end_time, bi.service_id, bi.service_variant_id
                 FROM booking_items bi
                 JOIN bookings b ON bi.booking_id = b.id
                 WHERE bi.staff_id = ?
@@ -654,6 +655,93 @@ final class BookingRepository
             $sql .= " AND b.id != ?";
             $params[] = $excludeBookingId;
         }
+
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Lock and return active booking_items overlapping the requested service variant item.
+     * MUST be called inside a transaction.
+     */
+    public function findServiceVariantCapacityOverlapsForUpdate(
+        int $locationId,
+        int $staffId,
+        int $serviceVariantId,
+        DateTimeImmutable $startTime,
+        DateTimeImmutable $endTime,
+        ?int $excludeBookingId = null
+    ): array {
+        $sql = "SELECT bi.id, bi.booking_id, bi.service_id, bi.service_variant_id, bi.start_time, bi.end_time, b.status
+                FROM booking_items bi
+                JOIN bookings b ON bi.booking_id = b.id
+                WHERE bi.location_id = ?
+                  AND bi.staff_id = ?
+                  AND bi.service_variant_id = ?
+                  AND b.status IN ('pending', 'confirmed')
+                  AND bi.start_time < ?
+                  AND bi.end_time > ?";
+
+        $params = [
+            $locationId,
+            $staffId,
+            $serviceVariantId,
+            $endTime->format('Y-m-d H:i:s'),
+            $startTime->format('Y-m-d H:i:s'),
+        ];
+
+        if ($excludeBookingId !== null) {
+            $sql .= ' AND b.id != ?';
+            $params[] = $excludeBookingId;
+        }
+
+        $sql .= ' FOR UPDATE';
+
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    }
+
+    /**
+     * Lock and return active booking_items for other service variants in the same staff/time range.
+     * Parallel capacity applies only to the same service variant.
+     * MUST be called inside a transaction.
+     */
+    public function findOtherServiceVariantConflictsForUpdate(
+        int $locationId,
+        int $staffId,
+        int $serviceVariantId,
+        DateTimeImmutable $startTime,
+        DateTimeImmutable $endTime,
+        ?int $excludeBookingId = null
+    ): array {
+        $sql = "SELECT bi.id, bi.booking_id, bi.service_id, bi.service_variant_id, bi.start_time, bi.end_time, b.status
+                FROM booking_items bi
+                JOIN bookings b ON bi.booking_id = b.id
+                WHERE bi.location_id = ?
+                  AND bi.staff_id = ?
+                  AND bi.service_variant_id <> ?
+                  AND b.status IN ('pending', 'confirmed')
+                  AND bi.start_time < ?
+                  AND bi.end_time > ?";
+
+        $params = [
+            $locationId,
+            $staffId,
+            $serviceVariantId,
+            $endTime->format('Y-m-d H:i:s'),
+            $startTime->format('Y-m-d H:i:s'),
+        ];
+
+        if ($excludeBookingId !== null) {
+            $sql .= ' AND b.id != ?';
+            $params[] = $excludeBookingId;
+        }
+
+        $sql .= ' FOR UPDATE';
 
         $stmt = $this->db->getPdo()->prepare($sql);
         $stmt->execute($params);

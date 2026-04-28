@@ -433,6 +433,7 @@ class ApiClient {
       'class_event_not_bookable' => l10n.apiErrorValidation,
       'booking_closed' => l10n.apiErrorValidation,
       'booking_not_open' => l10n.apiErrorValidation,
+      'service_capacity_full' => l10n.apiErrorServiceCapacityFull,
       'slot_conflict' => l10n.apiErrorSlotConflict,
       'invalid_service' => l10n.apiErrorValidation,
       'invalid_category' => l10n.apiErrorValidation,

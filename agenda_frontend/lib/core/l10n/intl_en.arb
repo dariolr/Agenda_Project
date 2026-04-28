@@ -26,6 +26,7 @@
   "apiErrorNotFound": "The requested resource was not found.",
   "apiErrorValidation": "Please check the entered data.",
   "apiErrorClassTypeNameExists": "A class type with this name already exists.",
+  "apiErrorServiceCapacityFull": "The selected slot has reached the maximum number of concurrent bookings.",
   "apiErrorSlotConflict": "The selected time slot is no longer available.",
   "apiErrorDemoBlocked": "This action is blocked in demo mode.",
   "apiErrorDatabase": "Service temporarily unavailable. Please try again later.",
