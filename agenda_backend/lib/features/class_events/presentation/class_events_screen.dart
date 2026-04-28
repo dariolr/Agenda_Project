@@ -430,13 +430,15 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                 final nowUtc = TenantTimeService.nowInTimezone(
                   timezone,
                 ).toUtc();
-                final futureSchedules = schedules
+                final sortedSchedules = [...schedules]
+                  ..sort((a, b) => a.startsAtUtc.compareTo(b.startsAtUtc));
+                final futureSchedules = sortedSchedules
                     .where((event) => event.endsAtUtc.isAfter(nowUtc))
                     .toList();
                 final hasExpiredSchedules =
                     futureSchedules.length != schedules.length;
                 final displayedSchedules = _showExpiredSchedules
-                    ? schedules
+                    ? sortedSchedules
                     : futureSchedules;
                 final colorScheme = Theme.of(context).colorScheme;
 
@@ -1152,6 +1154,7 @@ class _ClassEventFormSnapshot {
     required this.capacity,
     required this.price,
     required this.waitlistEnabled,
+    required this.isBookableOnline,
     required this.recurrenceFrequency,
     required this.recurrenceInterval,
     required this.recurrenceMaxOccurrences,
@@ -1168,6 +1171,7 @@ class _ClassEventFormSnapshot {
   final String capacity;
   final String price;
   final bool waitlistEnabled;
+  final bool isBookableOnline;
   final RecurrenceFrequency? recurrenceFrequency;
   final int? recurrenceInterval;
   final int? recurrenceMaxOccurrences;
@@ -1184,6 +1188,7 @@ class _ClassEventFormSnapshot {
         capacity == other.capacity &&
         price == other.price &&
         waitlistEnabled == other.waitlistEnabled &&
+        isBookableOnline == other.isBookableOnline &&
         recurrenceFrequency == other.recurrenceFrequency &&
         recurrenceInterval == other.recurrenceInterval &&
         recurrenceMaxOccurrences == other.recurrenceMaxOccurrences &&
@@ -1234,6 +1239,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 30);
   bool _waitlistEnabled = true;
+  bool _isBookableOnline = true;
 
   @override
   void initState() {
@@ -1678,6 +1684,14 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                     ? null
                     : (v) => setState(() => _waitlistEnabled = v),
               ),
+              SwitchListTile.adaptive(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                title: Text(l10n.bookableOnlineSwitch),
+                value: _isBookableOnline,
+                onChanged: isLoading
+                    ? null
+                    : (v) => setState(() => _isBookableOnline = v),
+              ),
 
               if (isEditMode && classEventId != null) ...[
                 const SizedBox(height: sectionGap),
@@ -1903,6 +1917,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       capacity: _capacityController.text.trim(),
       price: _priceController.text.trim(),
       waitlistEnabled: _waitlistEnabled,
+      isBookableOnline: _isBookableOnline,
       recurrenceFrequency: recurrence?.frequency,
       recurrenceInterval: recurrence?.intervalValue,
       recurrenceMaxOccurrences: recurrence?.maxOccurrences,
@@ -2812,6 +2827,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
             'staff_id': _staffId,
             'capacity_total': capacity,
             'waitlist_enabled': _waitlistEnabled,
+            'is_bookable_online': _isBookableOnline,
             'price_cents': priceCents,
             if (priceCents != null) 'currency': currency,
           },
@@ -2919,6 +2935,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
               staffId: _staffId!,
               capacityTotal: capacity,
               waitlistEnabled: _waitlistEnabled,
+              isBookableOnline: _isBookableOnline,
               priceCents: priceCents,
               currency: priceCents != null ? currency : null,
             );
@@ -3036,6 +3053,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                 'staff_id': _staffId!,
                 'capacity_total': capacity,
                 'waitlist_enabled': _waitlistEnabled,
+                'is_bookable_online': _isBookableOnline,
                 'price_cents': priceCents,
                 if (priceCents != null) 'currency': currency,
               },
@@ -3091,6 +3109,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         ? (event.priceCents! / 100).toStringAsFixed(2)
         : '';
     _waitlistEnabled = event.waitlistEnabled;
+    _isBookableOnline = event.isBookableOnline;
     if (includeDate) {
       _date = DateTime(
         startsAtLocal.year,

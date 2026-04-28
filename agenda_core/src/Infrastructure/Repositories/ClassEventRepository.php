@@ -425,7 +425,8 @@ final class ClassEventRepository
               AND ce.starts_at   >= :from_utc
               AND ce.starts_at    < :to_utc
               AND ce.status       = \'SCHEDULED\'
-              AND ce.visibility   = \'PUBLIC\'';
+              AND ce.visibility   = \'PUBLIC\'
+              AND ce.is_bookable_online = 1';
 
         $params = [
             'business_id' => $businessId,
@@ -593,7 +594,7 @@ final class ClassEventRepository
                     starts_at, ends_at,
                     location_id, staff_id,
                     capacity_total, capacity_reserved, confirmed_count, waitlist_count,
-                    waitlist_enabled, booking_open_at, booking_close_at,
+                    waitlist_enabled, is_bookable_online, booking_open_at, booking_close_at,
                     cancel_cutoff_minutes, status, visibility, price_cents, currency,
                     created_at, updated_at
                 ) VALUES (
@@ -601,7 +602,7 @@ final class ClassEventRepository
                     :starts_at, :ends_at,
                     :location_id, :staff_id,
                     :capacity_total, :capacity_reserved, :confirmed_count, :waitlist_count,
-                    :waitlist_enabled, :booking_open_at, :booking_close_at,
+                    :waitlist_enabled, :is_bookable_online, :booking_open_at, :booking_close_at,
                     :cancel_cutoff_minutes, :status, :visibility, :price_cents, :currency,
                     :created_at, :updated_at
                 )'
@@ -618,6 +619,7 @@ final class ClassEventRepository
                 'confirmed_count' => $data['confirmed_count'] ?? 0,
                 'waitlist_count' => $data['waitlist_count'] ?? 0,
                 'waitlist_enabled' => !empty($data['waitlist_enabled']) ? 1 : 0,
+                'is_bookable_online' => array_key_exists('is_bookable_online', $data) && empty($data['is_bookable_online']) ? 0 : 1,
                 'booking_open_at' => $data['booking_open_at'] ?? null,
                 'booking_close_at' => $data['booking_close_at'] ?? null,
                 'cancel_cutoff_minutes' => $data['cancel_cutoff_minutes'] ?? 0,
@@ -659,6 +661,7 @@ final class ClassEventRepository
             'capacity_total',
             'capacity_reserved',
             'waitlist_enabled',
+            'is_bookable_online',
             'booking_open_at',
             'booking_close_at',
             'cancel_cutoff_minutes',
@@ -677,7 +680,7 @@ final class ClassEventRepository
         foreach ($allowed as $field) {
             if (array_key_exists($field, $data)) {
                 $fields[] = "{$field} = :{$field}";
-                $params[$field] = $field === 'waitlist_enabled'
+                $params[$field] = in_array($field, ['waitlist_enabled', 'is_bookable_online'], true)
                     ? (!empty($data[$field]) ? 1 : 0)
                     : $data[$field];
             }

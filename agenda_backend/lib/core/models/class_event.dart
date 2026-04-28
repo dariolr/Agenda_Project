@@ -18,6 +18,7 @@ class ClassEvent {
   final int confirmedCount;
   final int waitlistCount;
   final bool waitlistEnabled;
+  final bool isBookableOnline;
   final DateTime? bookingOpenAtUtc;
   final DateTime? bookingCloseAtUtc;
   final int cancelCutoffMinutes;
@@ -43,6 +44,7 @@ class ClassEvent {
     required this.confirmedCount,
     required this.waitlistCount,
     required this.waitlistEnabled,
+    this.isBookableOnline = true,
     required this.cancelCutoffMinutes,
     required this.status,
     required this.visibility,
@@ -97,6 +99,9 @@ class ClassEvent {
       waitlistEnabled:
           (json['waitlist_enabled'] as bool?) ??
           ((json['waitlist_enabled'] as num?)?.toInt() == 1),
+      isBookableOnline:
+          (json['is_bookable_online'] as bool?) ??
+          ((json['is_bookable_online'] as num?)?.toInt() != 0),
       bookingOpenAtUtc:
           (json['booking_open_at'] ?? json['booking_open_at_utc']) != null
           ? _parseUtcDateTime(

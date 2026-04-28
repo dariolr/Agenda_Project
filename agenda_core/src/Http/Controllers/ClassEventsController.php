@@ -474,6 +474,7 @@ final class ClassEventsController
             'confirmed_count' => 0,
             'waitlist_count' => 0,
             'waitlist_enabled' => isset($body['waitlist_enabled']) ? (bool) $body['waitlist_enabled'] : true,
+            'is_bookable_online' => isset($body['is_bookable_online']) ? (bool) $body['is_bookable_online'] : true,
             'booking_open_at' => $bookingOpenAtInput !== null
                 ? $this->toSqlUtcForLocation((string) $bookingOpenAtInput, $locationId)
                 : null,
@@ -531,6 +532,7 @@ final class ClassEventsController
             'capacity_total',
             'capacity_reserved',
             'waitlist_enabled',
+            'is_bookable_online',
             'cancel_cutoff_minutes',
             'status',
             'visibility',
@@ -959,8 +961,12 @@ final class ClassEventsController
             return Response::notFound('Class event not found', $request->traceId);
         }
 
-        // Solo eventi schedulati e pubblici sono prenotabili online
-        if (($event['status'] ?? '') !== 'SCHEDULED' || ($event['visibility'] ?? '') !== 'PUBLIC') {
+        // Solo eventi schedulati, pubblici e abilitati online sono prenotabili online.
+        if (
+            ($event['status'] ?? '') !== 'SCHEDULED' ||
+            ($event['visibility'] ?? '') !== 'PUBLIC' ||
+            (int) ($event['is_bookable_online'] ?? 1) !== 1
+        ) {
             return Response::conflict('class_event_not_bookable', 'Class event is not bookable', $request->traceId);
         }
 
@@ -1396,6 +1402,7 @@ final class ClassEventsController
             'confirmed_count' => (int) ($row['confirmed_count'] ?? 0),
             'waitlist_count' => (int) ($row['waitlist_count'] ?? 0),
             'waitlist_enabled' => (int) ($row['waitlist_enabled'] ?? 0) === 1,
+            'is_bookable_online' => (int) ($row['is_bookable_online'] ?? 1) === 1,
             'booking_open_at' => $row['booking_open_at'] ?? null,
             'booking_open_at_local' => isset($row['booking_open_at']) && $row['booking_open_at'] !== null
                 ? $this->formatUtcSqlToLocationLocal(

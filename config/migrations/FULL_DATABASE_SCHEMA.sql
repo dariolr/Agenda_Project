@@ -305,6 +305,7 @@ CREATE TABLE `class_events` (
   `confirmed_count` int UNSIGNED NOT NULL DEFAULT '0',
   `waitlist_count` int UNSIGNED NOT NULL DEFAULT '0',
   `waitlist_enabled` tinyint(1) NOT NULL DEFAULT '1',
+  `is_bookable_online` tinyint(1) NOT NULL DEFAULT '1',
   `booking_open_at` timestamp NULL DEFAULT NULL,
   `booking_close_at` timestamp NULL DEFAULT NULL,
   `cancel_cutoff_minutes` int UNSIGNED NOT NULL DEFAULT '0',
