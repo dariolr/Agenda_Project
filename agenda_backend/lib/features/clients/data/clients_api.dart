@@ -7,8 +7,13 @@ import '../domain/clients.dart';
 class ClientAppointmentsData {
   final List<Appointment> upcoming;
   final List<Appointment> past;
+  final List<Appointment> cancelled;
 
-  ClientAppointmentsData({required this.upcoming, required this.past});
+  ClientAppointmentsData({
+    required this.upcoming,
+    required this.past,
+    required this.cancelled,
+  });
 }
 
 /// Risposta paginata per la lista clienti
@@ -69,10 +74,12 @@ class ClientsApi {
 
     final List<dynamic> upcomingJson = data['upcoming'] ?? [];
     final List<dynamic> pastJson = data['past'] ?? [];
+    final List<dynamic> cancelledJson = data['cancelled'] ?? [];
 
     return ClientAppointmentsData(
       upcoming: upcomingJson.map((json) => _appointmentFromJson(json)).toList(),
       past: pastJson.map((json) => _appointmentFromJson(json)).toList(),
+      cancelled: cancelledJson.map((json) => _appointmentFromJson(json)).toList(),
     );
   }
 
@@ -200,6 +207,8 @@ class ClientsApi {
       // `status` (booking-level), while other endpoints may use `booking_status`.
       bookingStatus:
           json['booking_status'] as String? ?? json['status'] as String?,
+      bookingNotes:
+          json['booking_notes'] as String? ?? json['notes'] as String?,
     );
   }
 }

@@ -465,6 +465,7 @@ final clientAppointmentsProvider =
       return ClientAppointmentsData(
         upcoming: data.upcoming.where((a) => !a.isReplaced).toList(),
         past: data.past.where((a) => !a.isReplaced).toList(),
+        cancelled: data.cancelled,
       );
     });
 

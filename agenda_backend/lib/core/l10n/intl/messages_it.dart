@@ -1286,6 +1286,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "classTypesUpdateSuccessTitle": MessageLookupByLibrary.simpleMessage(
       "Tipo evento aggiornato",
     ),
+    "clientAppointmentsAction": MessageLookupByLibrary.simpleMessage(
+      "Appuntamenti",
+    ),
+    "clientAppointmentsCancelled": MessageLookupByLibrary.simpleMessage(
+      "Annullati",
+    ),
     "clientAppointmentsCancelledBadge": MessageLookupByLibrary.simpleMessage(
       "ANNULLATA",
     ),
@@ -1298,6 +1304,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Prossimi",
     ),
     "clientColorLabel": MessageLookupByLibrary.simpleMessage("Colore cliente"),
+    "clientContactsActionGroup": MessageLookupByLibrary.simpleMessage(
+      "Contatti",
+    ),
     "clientLockedHint": MessageLookupByLibrary.simpleMessage(
       "Il cliente non può essere modificato per questo appuntamento",
     ),

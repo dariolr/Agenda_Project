@@ -3374,6 +3374,26 @@ class L10n {
     );
   }
 
+  /// `Appointments`
+  String get clientAppointmentsAction {
+    return Intl.message(
+      'Appointments',
+      name: 'clientAppointmentsAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Contacts`
+  String get clientContactsActionGroup {
+    return Intl.message(
+      'Contacts',
+      name: 'clientContactsActionGroup',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Upcoming`
   String get clientAppointmentsUpcoming {
     return Intl.message(
@@ -3389,6 +3409,16 @@ class L10n {
     return Intl.message(
       'Past',
       name: 'clientAppointmentsPast',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cancelled`
+  String get clientAppointmentsCancelled {
+    return Intl.message(
+      'Cancelled',
+      name: 'clientAppointmentsCancelled',
       desc: '',
       args: [],
     );

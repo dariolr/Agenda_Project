@@ -266,13 +266,17 @@ final class ClientsController
             $now = new \DateTimeImmutable();
             $upcoming = [];
             $past = [];
+            $cancelled = [];
 
             foreach ($bookings as $booking) {
+                $isCancelled = ($booking['status'] ?? '') === 'cancelled';
                 foreach ($booking['items'] ?? [] as $item) {
                     $startTime = new \DateTimeImmutable($item['start_time']);
                     $formatted = $this->formatAppointmentItem($item, $booking);
 
-                    if ($startTime > $now) {
+                    if ($isCancelled) {
+                        $cancelled[] = $formatted;
+                    } elseif ($startTime > $now) {
                         $upcoming[] = $formatted;
                     } else {
                         $past[] = $formatted;
@@ -280,13 +284,15 @@ final class ClientsController
                 }
             }
 
-            // Sort upcoming by start_time ascending, past by start_time descending
+            // Sort upcoming by start_time ascending, past and cancelled by start_time descending
             usort($upcoming, fn($a, $b) => $a['start_time'] <=> $b['start_time']);
             usort($past, fn($a, $b) => $b['start_time'] <=> $a['start_time']);
+            usort($cancelled, fn($a, $b) => $b['start_time'] <=> $a['start_time']);
 
             return Response::success([
                 'upcoming' => $upcoming,
                 'past' => $past,
+                'cancelled' => $cancelled,
             ]);
 
         } catch (\Exception $e) {
@@ -313,6 +319,7 @@ final class ClientsController
             'staff_name' => $item['staff_name'] ?? '',
             'price' => (float) ($item['price'] ?? 0),
             'status' => $booking['status'] ?? 'confirmed',
+            'booking_notes' => $booking['notes'] ?? null,
             'recurrence_rule_id' => $booking['recurrence_rule_id'] ? (int) $booking['recurrence_rule_id'] : null,
             'recurrence_index' => $booking['recurrence_index'] ? (int) $booking['recurrence_index'] : null,
         ];

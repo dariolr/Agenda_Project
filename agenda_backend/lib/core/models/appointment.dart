@@ -51,6 +51,7 @@ class Appointment {
   final String? pricingSource; // service/package/discount/custom
   final String? bookingSource;
   final String? bookingStatus; // pending, confirmed, replaced, cancelled
+  final String? bookingNotes;
   // Legacy single extra fields (kept for backward compatibility)
   final int? extraMinutes;
   final ExtraMinutesType? extraMinutesType;
@@ -82,6 +83,7 @@ class Appointment {
     this.pricingSource,
     this.bookingSource,
     this.bookingStatus,
+    this.bookingNotes,
     this.extraMinutes,
     this.extraMinutesType,
     this.extraBlockedMinutes,
@@ -125,6 +127,7 @@ class Appointment {
     pricingSource: json['pricing_source'] as String?,
     bookingSource: json['source'] as String?,
     bookingStatus: _bookingStatusFromJson(json),
+    bookingNotes: (json['booking_notes'] ?? json['notes']) as String?,
     extraMinutes: json['extra_minutes'] as int?,
     extraMinutesType: _extraMinutesTypeFromJson(json['extra_minutes_type']),
     extraBlockedMinutes: json['extra_blocked_minutes'] as int?,
@@ -154,6 +157,7 @@ class Appointment {
     String? pricingSource,
     String? bookingSource,
     String? bookingStatus,
+    String? bookingNotes,
     int? extraMinutes,
     ExtraMinutesType? extraMinutesType,
     int? extraBlockedMinutes,
@@ -182,6 +186,7 @@ class Appointment {
       pricingSource: pricingSource ?? this.pricingSource,
       bookingSource: bookingSource ?? this.bookingSource,
       bookingStatus: bookingStatus ?? this.bookingStatus,
+      bookingNotes: bookingNotes ?? this.bookingNotes,
       extraMinutes: extraMinutes ?? this.extraMinutes,
       extraMinutesType: extraMinutesType ?? this.extraMinutesType,
       extraBlockedMinutes: extraBlockedMinutes ?? this.extraBlockedMinutes,
@@ -221,6 +226,7 @@ class Appointment {
       if (packageId != null) 'package_id': packageId,
       if (pricingSource != null) 'pricing_source': pricingSource,
       if (bookingSource != null) 'source': bookingSource,
+      if (bookingNotes != null) 'booking_notes': bookingNotes,
       if (legacyMinutes != null) 'extra_minutes': legacyMinutes,
       if (legacyType != null)
         'extra_minutes_type': _extraMinutesTypeToJson(legacyType),

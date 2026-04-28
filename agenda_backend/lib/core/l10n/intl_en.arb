@@ -490,8 +490,11 @@
       }
     }
   },
+  "clientAppointmentsAction": "Appointments",
+  "clientContactsActionGroup": "Contacts",
   "clientAppointmentsUpcoming": "Upcoming",
   "clientAppointmentsPast": "Past",
+  "clientAppointmentsCancelled": "Cancelled",
   "clientAppointmentsEmpty": "No appointments",
   "staffFilterTooltip": "Filter team",
   "staffFilterTitle": "Filter team",

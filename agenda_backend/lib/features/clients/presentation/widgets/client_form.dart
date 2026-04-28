@@ -13,6 +13,7 @@ import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../../core/widgets/phone_input_field.dart';
 import '../../../agenda/providers/business_providers.dart';
 import '../../domain/clients.dart';
+import '../dialogs/client_appointments_dialog.dart';
 
 class ClientForm extends ConsumerStatefulWidget {
   const ClientForm({super.key, this.initial, this.onChanged});
@@ -272,8 +273,24 @@ class ClientFormState extends ConsumerState<ClientForm> {
     final showContactActionsInEditForm =
         isEditingClient && (canEmail || canCall || canWhatsApp);
 
+    final appointmentsActionField = LabeledFormField(
+      label: l10n.clientAppointmentsAction,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: OutlinedButton.icon(
+          onPressed: () => showClientAppointmentsDialog(
+            context,
+            ref,
+            client: widget.initial!,
+          ),
+          icon: const Icon(Icons.calendar_month_outlined, size: 18),
+          label: Text(l10n.clientAppointmentsAction),
+        ),
+      ),
+    );
+
     final contactActionsField = LabeledFormField(
-      label: l10n.formClient,
+      label: l10n.clientContactsActionGroup,
       child: Center(
         child: Wrap(
           alignment: WrapAlignment.center,
@@ -395,6 +412,10 @@ class ClientFormState extends ConsumerState<ClientForm> {
             emailField,
             const SizedBox(height: AppSpacing.formRowSpacing),
             phoneField,
+            if (isEditingClient) ...[
+              const SizedBox(height: AppSpacing.formRowSpacing),
+              appointmentsActionField,
+            ],
             if (showContactActionsInEditForm) ...[
               const SizedBox(height: AppSpacing.formRowSpacing),
               contactActionsField,
@@ -426,6 +447,10 @@ class ClientFormState extends ConsumerState<ClientForm> {
                 Expanded(child: phoneField),
               ],
             ),
+            if (isEditingClient) ...[
+              const SizedBox(height: AppSpacing.formRowSpacing),
+              appointmentsActionField,
+            ],
             if (showContactActionsInEditForm) ...[
               const SizedBox(height: AppSpacing.formRowSpacing),
               contactActionsField,

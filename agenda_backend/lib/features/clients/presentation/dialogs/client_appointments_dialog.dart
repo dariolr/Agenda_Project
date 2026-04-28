@@ -46,6 +46,7 @@ class ClientAppointmentsDialog extends ConsumerWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final asyncData = ref.watch(clientAppointmentsProvider(client.id));
+    final clientNote = client.notes?.trim();
 
     final screenWidth = MediaQuery.of(context).size.width;
     final dialogWidth = screenWidth < 600 ? screenWidth * 0.95 : 500.0;
@@ -66,9 +67,13 @@ class ClientAppointmentsDialog extends ConsumerWidget {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('Errore: $e')),
               data: (data) => DefaultTabController(
-                length: 2,
+                length: 3,
                 child: Column(
                   children: [
+                    if (clientNote != null && clientNote.isNotEmpty) ...[
+                      _ClientNote(note: clientNote),
+                      const SizedBox(height: 8),
+                    ],
                     TabBar(
                       tabs: [
                         Tab(
@@ -78,6 +83,10 @@ class ClientAppointmentsDialog extends ConsumerWidget {
                         Tab(
                           text:
                               '${l10n.clientAppointmentsPast} (${data.past.length})',
+                        ),
+                        Tab(
+                          text:
+                              '${l10n.clientAppointmentsCancelled} (${data.cancelled.length})',
                         ),
                       ],
                       labelColor: theme.colorScheme.primary,
@@ -94,6 +103,10 @@ class ClientAppointmentsDialog extends ConsumerWidget {
                           ),
                           _AppointmentList(
                             appointments: data.past,
+                            emptyMessage: l10n.clientAppointmentsEmpty,
+                          ),
+                          _AppointmentList(
+                            appointments: data.cancelled,
                             emptyMessage: l10n.clientAppointmentsEmpty,
                           ),
                         ],
@@ -163,6 +176,7 @@ class _AppointmentTile extends ConsumerWidget {
     final theme = Theme.of(context);
     final l10n = context.l10n;
     final locale = Localizations.localeOf(context).toLanguageTag();
+    final appointmentNote = appointment.bookingNotes?.trim();
 
     // Recupera staff
     final allStaff = ref.watch(sortedAllStaffProvider);
@@ -218,6 +232,11 @@ class _AppointmentTile extends ConsumerWidget {
                     style: theme.textTheme.bodySmall?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
+                  ),
+                if (appointmentNote != null && appointmentNote.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: _AppointmentNote(note: appointmentNote),
                   ),
               ],
             ),
@@ -278,6 +297,7 @@ class ClientAppointmentsBottomSheet extends ConsumerWidget {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final asyncData = ref.watch(clientAppointmentsProvider(client.id));
+    final clientNote = client.notes?.trim();
 
     return asyncData.when(
       loading: () => Scaffold(
@@ -307,7 +327,7 @@ class ClientAppointmentsBottomSheet extends ConsumerWidget {
         body: Center(child: Text('Errore: $e')),
       ),
       data: (data) => DefaultTabController(
-        length: 2,
+        length: 3,
         child: Scaffold(
           appBar: AppBar(
             title: Text(l10n.clientAppointmentsTitle(client.name)),
@@ -327,6 +347,10 @@ class ClientAppointmentsBottomSheet extends ConsumerWidget {
                 Tab(
                   text: '${l10n.clientAppointmentsPast} (${data.past.length})',
                 ),
+                Tab(
+                  text:
+                      '${l10n.clientAppointmentsCancelled} (${data.cancelled.length})',
+                ),
               ],
               labelColor: theme.colorScheme.primary,
               unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
@@ -337,19 +361,132 @@ class ClientAppointmentsBottomSheet extends ConsumerWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: TabBarView(
               children: [
-                _AppointmentList(
-                  appointments: data.upcoming,
-                  emptyMessage: l10n.clientAppointmentsEmpty,
+                Column(
+                  children: [
+                    if (clientNote != null && clientNote.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                        child: _ClientNote(note: clientNote),
+                      ),
+                    Expanded(
+                      child: _AppointmentList(
+                        appointments: data.upcoming,
+                        emptyMessage: l10n.clientAppointmentsEmpty,
+                      ),
+                    ),
+                  ],
                 ),
-                _AppointmentList(
-                  appointments: data.past,
-                  emptyMessage: l10n.clientAppointmentsEmpty,
+                Column(
+                  children: [
+                    if (clientNote != null && clientNote.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                        child: _ClientNote(note: clientNote),
+                      ),
+                    Expanded(
+                      child: _AppointmentList(
+                        appointments: data.past,
+                        emptyMessage: l10n.clientAppointmentsEmpty,
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  children: [
+                    if (clientNote != null && clientNote.isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(4, 8, 4, 0),
+                        child: _ClientNote(note: clientNote),
+                      ),
+                    Expanded(
+                      child: _AppointmentList(
+                        appointments: data.cancelled,
+                        emptyMessage: l10n.clientAppointmentsEmpty,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ClientNote extends StatelessWidget {
+  const _ClientNote({required this.note});
+
+  final String note;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.person_pin_outlined,
+          size: 16,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: '${context.l10n.clientNoteLabel}: ',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                TextSpan(text: note),
+              ],
+            ),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AppointmentNote extends StatelessWidget {
+  const _AppointmentNote({required this.note});
+
+  final String note;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(
+          Icons.sticky_note_2_outlined,
+          size: 14,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 4),
+        Expanded(
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: '${context.l10n.appointmentNoteLabel}: ',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+                TextSpan(text: note),
+              ],
+            ),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
