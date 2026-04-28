@@ -424,6 +424,7 @@
   "parallelCapacityHint": "Numero massimo di clienti prenotabili nello stesso momento.",
   "parallelCapacityError": "Inserisci un numero maggiore o uguale a 1.",
   "bookableOnlineSwitch": "Abilitato a prenotare online",
+  "classEventBookableOnlineSwitch": "Prenotabile online",
   "freeServiceSwitch": "Servizio gratuito",
   "priceStartingFromSwitch": "Prezzo \"a partire da\"",
   "setPriceToEnable": "Imposta un prezzo per abilitarlo",

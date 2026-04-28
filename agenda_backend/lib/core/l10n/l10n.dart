@@ -2889,6 +2889,16 @@ class L10n {
     );
   }
 
+  /// `Bookable online` (class event programming context)
+  String get classEventBookableOnlineSwitch {
+    return Intl.message(
+      'Bookable online',
+      name: 'classEventBookableOnlineSwitch',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Free service`
   String get freeServiceSwitch {
     return Intl.message(

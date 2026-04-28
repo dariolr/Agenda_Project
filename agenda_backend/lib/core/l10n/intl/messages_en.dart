@@ -565,6 +565,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookableOnlineSwitch": MessageLookupByLibrary.simpleMessage(
       "Bookable online",
     ),
+    "classEventBookableOnlineSwitch": MessageLookupByLibrary.simpleMessage(
+      "Bookable online",
+    ),
     "bookingDetails": MessageLookupByLibrary.simpleMessage("Booking details"),
     "bookingHistoryActorCustomer": MessageLookupByLibrary.simpleMessage(
       "Customer",

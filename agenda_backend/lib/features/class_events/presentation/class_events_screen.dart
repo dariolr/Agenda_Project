@@ -1686,7 +1686,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
               ),
               SwitchListTile.adaptive(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                title: Text(l10n.bookableOnlineSwitch),
+                title: Text(l10n.classEventBookableOnlineSwitch),
                 value: _isBookableOnline,
                 onChanged: isLoading
                     ? null
