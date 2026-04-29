@@ -586,9 +586,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookableOnlineSwitch": MessageLookupByLibrary.simpleMessage(
       "Abilitato a prenotare online",
     ),
-    "classEventBookableOnlineSwitch": MessageLookupByLibrary.simpleMessage(
-      "Prenotabile online",
-    ),
     "bookingDetails": MessageLookupByLibrary.simpleMessage(
       "Dettagli prenotazione",
     ),
@@ -975,6 +972,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "categoryDuplicateError": MessageLookupByLibrary.simpleMessage(
       "Esiste già una categoria con questo nome",
+    ),
+    "classEventBookableOnlineSwitch": MessageLookupByLibrary.simpleMessage(
+      "Prenotabile online",
     ),
     "classEventsActionBook": MessageLookupByLibrary.simpleMessage("Prenota"),
     "classEventsActionCancelBooking": MessageLookupByLibrary.simpleMessage(

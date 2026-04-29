@@ -2889,7 +2889,7 @@ class L10n {
     );
   }
 
-  /// `Bookable online` (class event programming context)
+  /// `Bookable online`
   String get classEventBookableOnlineSwitch {
     return Intl.message(
       'Bookable online',

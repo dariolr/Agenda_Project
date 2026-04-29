@@ -565,9 +565,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookableOnlineSwitch": MessageLookupByLibrary.simpleMessage(
       "Bookable online",
     ),
-    "classEventBookableOnlineSwitch": MessageLookupByLibrary.simpleMessage(
-      "Bookable online",
-    ),
     "bookingDetails": MessageLookupByLibrary.simpleMessage("Booking details"),
     "bookingHistoryActorCustomer": MessageLookupByLibrary.simpleMessage(
       "Customer",
@@ -934,6 +931,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "categoryDuplicateError": MessageLookupByLibrary.simpleMessage(
       "A category with this name already exists",
+    ),
+    "classEventBookableOnlineSwitch": MessageLookupByLibrary.simpleMessage(
+      "Bookable online",
     ),
     "classEventsActionBook": MessageLookupByLibrary.simpleMessage("Book"),
     "classEventsActionCancelBooking": MessageLookupByLibrary.simpleMessage(
