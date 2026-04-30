@@ -1,3 +1,4 @@
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/service_package.dart';
@@ -73,6 +74,7 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
     int? overrideDurationMinutes,
     bool isActive = true,
     bool isBookableOnline = true,
+    String? onlineVisibility,
   }) async {
     final location = ref.read(currentLocationProvider);
     if (location.id <= 0) return null;
@@ -89,6 +91,7 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
         overrideDurationMinutes: overrideDurationMinutes,
         isActive: isActive,
         isBookableOnline: isBookableOnline,
+        onlineVisibility: onlineVisibility,
       );
       if (created.categoryId == 0 && categoryId > 0) {
         created = created.copyWith(categoryId: categoryId);
@@ -114,6 +117,7 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
     bool setOverrideDurationNull = false,
     bool? isActive,
     bool? isBookableOnline,
+    String? onlineVisibility,
     List<int>? serviceIds,
   }) async {
     final location = ref.read(currentLocationProvider);
@@ -133,6 +137,7 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
         setOverrideDurationNull: setOverrideDurationNull,
         isActive: isActive,
         isBookableOnline: isBookableOnline,
+        onlineVisibility: onlineVisibility,
         serviceIds: serviceIds,
       );
       if (updated.categoryId == 0 && categoryId != null && categoryId > 0) {
@@ -183,3 +188,4 @@ final servicePackagesProvider =
     AsyncNotifierProvider<ServicePackagesNotifier, List<ServicePackage>>(
       ServicePackagesNotifier.new,
     );
+

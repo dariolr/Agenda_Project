@@ -1,3 +1,4 @@
+
 import '/core/environment/app_environment_config.dart';
 
 /// Configurazione API per agenda_backend (gestionale)
@@ -250,3 +251,4 @@ class ApiConfig {
   static String staffPlanningAvailability(int staffId) =>
       '/v1/staff/$staffId/planning-availability';
 }
+

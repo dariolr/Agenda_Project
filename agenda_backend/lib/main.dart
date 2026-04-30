@@ -22,9 +22,11 @@ void main() async {
     await BrowserContextMenu.disableContextMenu();
   }
 
-  // Avvia il controllo periodico della versione (solo web).
+  // Avvia il controllo periodico della versione solo su web non-debug.
   // Se rileva una nuova versione, forza il reload automatico.
-  VersionChecker.instance.startPeriodicCheck();
+  if (kIsWeb && !kDebugMode) {
+    VersionChecker.instance.startPeriodicCheck();
+  }
 
   // Inizializza SharedPreferences
   final prefs = await SharedPreferences.getInstance();

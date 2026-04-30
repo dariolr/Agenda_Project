@@ -1,3 +1,4 @@
+
 import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter/material.dart';
@@ -15,10 +16,12 @@ import '/core/models/class_booking.dart';
 import '/core/models/class_event.dart';
 import '/core/models/class_type.dart';
 import '/core/models/location.dart';
+import '/core/models/online_booking_visibility.dart';
 import '/core/models/service_category.dart';
 import '/core/models/staff.dart';
 import '/core/network/api_client.dart';
 import '/core/services/tenant_time_service.dart';
+import '/core/utils/booking_direct_link_utils.dart';
 import '/core/utils/color_utils.dart';
 import '/core/utils/service_color_palette.dart';
 import '/core/widgets/app_bottom_sheet.dart';
@@ -26,6 +29,8 @@ import '/core/widgets/app_buttons.dart';
 import '/core/widgets/app_dialogs.dart';
 import '/core/widgets/app_form.dart';
 import '/core/widgets/feedback_dialog.dart';
+import '/core/widgets/labeled_form_field.dart';
+import '/core/widgets/online_booking_visibility_selector.dart';
 import '/features/agenda/domain/config/layout_config.dart';
 import '/features/agenda/presentation/dialogs/recurrence_summary_dialog.dart';
 import '/features/agenda/presentation/utils/recurrence_flow_utils.dart';
@@ -605,6 +610,21 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                                                   schedule,
                                                 ),
                                         ),
+                                        if (schedule.onlineVisibility !=
+                                            'hidden')
+                                          IconButton(
+                                            tooltip: l10n
+                                                .closuresImportHolidaysCopyLinkAction,
+                                            icon: const Icon(
+                                              Icons.link_outlined,
+                                              size: 18,
+                                            ),
+                                            onPressed: isBusy
+                                                ? null
+                                                : () => _copyDirectBookingLink(
+                                                    schedule,
+                                                  ),
+                                          ),
                                         IconButton(
                                           tooltip: l10n.actionDelete,
                                           icon: Icon(
@@ -703,6 +723,15 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
       prefillEvent: schedule,
       useRootNavigator: false,
       closeParentOnSave: true,
+    );
+  }
+
+  Future<void> _copyDirectBookingLink(ClassEvent schedule) async {
+    await copyBookingDirectLink(
+      context,
+      ref,
+      targetType: 'class_event',
+      targetId: schedule.id,
     );
   }
 
@@ -1155,6 +1184,7 @@ class _ClassEventFormSnapshot {
     required this.price,
     required this.waitlistEnabled,
     required this.isBookableOnline,
+    required this.onlineBookingVisibility,
     required this.recurrenceFrequency,
     required this.recurrenceInterval,
     required this.recurrenceMaxOccurrences,
@@ -1172,6 +1202,7 @@ class _ClassEventFormSnapshot {
   final String price;
   final bool waitlistEnabled;
   final bool isBookableOnline;
+  final String onlineBookingVisibility;
   final RecurrenceFrequency? recurrenceFrequency;
   final int? recurrenceInterval;
   final int? recurrenceMaxOccurrences;
@@ -1189,6 +1220,7 @@ class _ClassEventFormSnapshot {
         price == other.price &&
         waitlistEnabled == other.waitlistEnabled &&
         isBookableOnline == other.isBookableOnline &&
+        onlineBookingVisibility == other.onlineBookingVisibility &&
         recurrenceFrequency == other.recurrenceFrequency &&
         recurrenceInterval == other.recurrenceInterval &&
         recurrenceMaxOccurrences == other.recurrenceMaxOccurrences &&
@@ -1239,7 +1271,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 30);
   bool _waitlistEnabled = true;
-  bool _isBookableOnline = true;
+  OnlineBookingVisibilityOption _onlineBookingVisibility =
+      OnlineBookingVisibilityOption.publicVisible;
 
   @override
   void initState() {
@@ -1684,14 +1717,37 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                     ? null
                     : (v) => setState(() => _waitlistEnabled = v),
               ),
-              SwitchListTile.adaptive(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-                title: Text(l10n.classEventBookableOnlineSwitch),
-                value: _isBookableOnline,
-                onChanged: isLoading
-                    ? null
-                    : (v) => setState(() => _isBookableOnline = v),
+              LabeledFormField(
+                label: l10n.onlineBookingVisibilityLabel,
+                child: OnlineBookingVisibilitySelector(
+                  value: _onlineBookingVisibility,
+                  onChanged: isLoading
+                      ? null
+                      : (value) => setState(
+                          () => _onlineBookingVisibility = value,
+                        ),
+                ),
               ),
+              if (isEditMode &&
+                  classEventId != null &&
+                  _onlineBookingVisibility !=
+                      OnlineBookingVisibilityOption.hidden) ...[
+                const SizedBox(height: gap),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: AppOutlinedActionButton(
+                    onPressed: isLoading
+                        ? null
+                        : () => copyBookingDirectLink(
+                            context,
+                            ref,
+                            targetType: 'class_event',
+                            targetId: classEventId,
+                          ),
+                    child: Text(l10n.closuresImportHolidaysCopyLinkAction),
+                  ),
+                ),
+              ],
 
               if (isEditMode && classEventId != null) ...[
                 const SizedBox(height: sectionGap),
@@ -1917,7 +1973,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       capacity: _capacityController.text.trim(),
       price: _priceController.text.trim(),
       waitlistEnabled: _waitlistEnabled,
-      isBookableOnline: _isBookableOnline,
+      isBookableOnline: _onlineBookingVisibility.isBookableOnline,
+      onlineBookingVisibility: _onlineBookingVisibility.apiValue,
       recurrenceFrequency: recurrence?.frequency,
       recurrenceInterval: recurrence?.intervalValue,
       recurrenceMaxOccurrences: recurrence?.maxOccurrences,
@@ -2667,7 +2724,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   }
 
   Future<bool?> _askNotifyParticipantsIfNeeded() async {
-    final hasAnyParticipantInvolved = _hasAnyStagedParticipant ||
+    final hasAnyParticipantInvolved =
+        _hasAnyStagedParticipant ||
         (_originalParticipants?.isNotEmpty ?? false);
     if (!hasAnyParticipantInvolved) return false;
     if (!_participantsNotificationRelevantDirty &&
@@ -2829,7 +2887,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
             'staff_id': _staffId,
             'capacity_total': capacity,
             'waitlist_enabled': _waitlistEnabled,
-            'is_bookable_online': _isBookableOnline,
+            'is_bookable_online': _onlineBookingVisibility.isBookableOnline,
+            'online_visibility': _onlineBookingVisibility.apiValue,
             'price_cents': priceCents,
             if (priceCents != null) 'currency': currency,
           },
@@ -2937,7 +2996,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
               staffId: _staffId!,
               capacityTotal: capacity,
               waitlistEnabled: _waitlistEnabled,
-              isBookableOnline: _isBookableOnline,
+              isBookableOnline: _onlineBookingVisibility.isBookableOnline,
+              onlineVisibility: _onlineBookingVisibility.apiValue,
               priceCents: priceCents,
               currency: priceCents != null ? currency : null,
             );
@@ -3055,7 +3115,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                 'staff_id': _staffId!,
                 'capacity_total': capacity,
                 'waitlist_enabled': _waitlistEnabled,
-                'is_bookable_online': _isBookableOnline,
+                'is_bookable_online': _onlineBookingVisibility.isBookableOnline,
+                'online_visibility': _onlineBookingVisibility.apiValue,
                 'price_cents': priceCents,
                 if (priceCents != null) 'currency': currency,
               },
@@ -3111,7 +3172,10 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         ? (event.priceCents! / 100).toStringAsFixed(2)
         : '';
     _waitlistEnabled = event.waitlistEnabled;
-    _isBookableOnline = event.isBookableOnline;
+    _onlineBookingVisibility = OnlineBookingVisibilityOption.fromValues(
+      onlineVisibility: event.onlineVisibility,
+      isBookableOnline: event.isBookableOnline,
+    );
     if (includeDate) {
       _date = DateTime(
         startsAtLocal.year,

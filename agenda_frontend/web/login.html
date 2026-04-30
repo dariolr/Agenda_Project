@@ -3,21 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Accedi al tuo account</title>
+  <title>Reindirizzamento accesso</title>
   <style>
     :root {
-      --surface: #fefefe;
-      --page: #fefefe;
-      --primary: #2196f3;
-      --primary-soft: rgba(33, 150, 243, 0.12);
-      --primary-border: rgba(33, 150, 243, 0.3);
-      --primary-ring: rgba(33, 150, 243, 0.16);
+      color-scheme: light;
       --text: #1f1f1f;
       --muted: #5f6368;
-      --danger: #d32f2f;
-      --danger-bg: rgba(211, 47, 47, 0.1);
+      --surface: #ffffff;
       --border: #d8dce2;
-      --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     }
 
     * {
@@ -26,676 +19,68 @@
 
     body {
       margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 24px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
-      background: var(--page);
       color: var(--text);
+      background: var(--surface);
     }
 
-    .appbar {
-      height: 56px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      position: sticky;
-      top: 0;
-      background: var(--surface);
-      box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
-      z-index: 2;
+    .panel {
+      width: min(100%, 420px);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
     }
 
     .title {
-      font-size: 20px;
+      margin: 0 0 8px;
+      font-size: 18px;
       font-weight: 600;
-      letter-spacing: -0.3px;
     }
 
-    .container {
-      max-width: 560px;
-      margin: 0 auto;
-      padding: 24px;
-    }
-
-    .top-space {
-      height: 32px;
-    }
-
-    .lock {
-      width: 64px;
-      height: 64px;
-      margin: 0 auto 32px;
-      display: grid;
-      place-items: center;
-      color: var(--primary);
-      background: var(--primary-soft);
-      border-radius: 50%;
-    }
-
-    .lock svg {
-      width: 34px;
-      height: 34px;
-      stroke: currentColor;
-      fill: none;
-      stroke-width: 1.9;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .info {
-      display: none;
-      padding: 16px;
-      background: var(--primary-soft);
-      border: 1px solid var(--primary-border);
-      border-radius: 12px;
-      margin-bottom: 24px;
-      color: #1f1f1f;
-      line-height: 1.4;
-    }
-
-    .field {
-      margin-bottom: 16px;
-    }
-
-    .label {
-      display: block;
-      margin-bottom: 6px;
+    .text {
+      margin: 0;
       font-size: 14px;
-      color: #4d5258;
-    }
-
-    .input-wrap {
-      position: relative;
-    }
-
-    .input {
-      width: 100%;
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      height: 52px;
-      padding: 0 44px 0 12px;
-      font-size: 16px;
-      color: var(--text);
-      background: #fff;
-    }
-
-    .input:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 2px var(--primary-ring);
-    }
-
-    .toggle-password {
-      position: absolute;
-      right: 8px;
-      top: 8px;
-      width: 36px;
-      height: 36px;
-      border: 0;
-      border-radius: 18px;
-      background: transparent;
-      cursor: pointer;
-      color: #6e747a;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .toggle-password svg {
-      width: 20px;
-      height: 20px;
-      stroke: currentColor;
-      fill: none;
-      stroke-width: 2;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    .toggle-password .icon-off {
-      display: none;
-    }
-
-    .toggle-password.is-visible .icon-on {
-      display: none;
-    }
-
-    .toggle-password.is-visible .icon-off {
-      display: block;
-    }
-
-    .actions-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 8px 0 24px;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .remember {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 14px;
-    }
-
-    .remember input[type="checkbox"] {
-      accent-color: var(--primary);
-    }
-
-    .link-btn {
-      border: 0;
-      background: transparent;
-      color: var(--primary);
-      font-size: 14px;
-      cursor: pointer;
-      padding: 0;
-    }
-
-    .link-btn[disabled] {
-      opacity: 0.6;
-      cursor: default;
-    }
-
-    .error {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      background: var(--danger-bg);
-      border-radius: 8px;
-      color: var(--danger);
-      padding: 12px;
-      margin-bottom: 16px;
-      font-size: 14px;
-    }
-
-    .submit {
-      width: 100%;
-      height: 48px;
-      border: 0;
-      border-radius: 12px;
-      background: var(--primary);
-      color: #fff;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .submit[disabled] {
-      opacity: 0.65;
-      cursor: default;
-    }
-
-    .register-row {
-      margin-top: 24px;
-      display: flex;
-      justify-content: center;
-      gap: 8px;
-      font-size: 14px;
+      line-height: 1.5;
       color: var(--muted);
-      flex-wrap: wrap;
     }
   </style>
 </head>
 <body>
-  <header class="appbar">
-    <div class="title">Accedi al tuo account</div>
-  </header>
-
-  <main class="container">
-    <div class="top-space"></div>
-    <div class="lock" aria-hidden="true">
-      <svg viewBox="0 0 24 24">
-        <rect x="5" y="10" width="14" height="10" rx="2"></rect>
-        <path d="M8 10V8a4 4 0 1 1 8 0v2"></path>
-      </svg>
-    </div>
-    <div id="info-box" class="info"></div>
-
-    <form id="login-form" novalidate>
-      <div class="field">
-        <label class="label" for="email">Email</label>
-        <div class="input-wrap">
-          <input id="email" class="input" name="email" type="email" inputmode="email"
-            autocomplete="username email" autocapitalize="none" required />
-        </div>
-      </div>
-
-      <div class="field">
-        <label class="label" for="password">Password</label>
-        <div class="input-wrap">
-          <input id="password" class="input" name="password" type="password"
-            autocomplete="current-password" required />
-          <button id="toggle-password" class="toggle-password" type="button" aria-label="Mostra password">
-            <svg class="icon-on" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6-10-6-10-6z"></path>
-              <circle cx="12" cy="12" r="3"></circle>
-            </svg>
-            <svg class="icon-off" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M3 3l18 18"></path>
-              <path d="M10.6 10.6a2 2 0 0 0 2.8 2.8"></path>
-              <path d="M9.9 5.1A11.7 11.7 0 0 1 12 5c6.5 0 10 7 10 7a17.3 17.3 0 0 1-4.2 5"></path>
-              <path d="M6.2 6.2A17.8 17.8 0 0 0 2 12s3.5 7 10 7c1.8 0 3.3-.5 4.6-1.2"></path>
-            </svg>
-          </button>
-        </div>
-      </div>
-
-      <div class="actions-row">
-        <label class="remember">
-          <input id="remember-me" type="checkbox" checked />
-          <span>Ricordami</span>
-        </label>
-        <button id="forgot-btn" class="link-btn" type="button">Password dimenticata?</button>
-      </div>
-
-      <div id="error-box" class="error" role="alert" aria-live="polite">
-        <span>⚠</span><span id="error-text"></span>
-      </div>
-
-      <button id="submit-btn" class="submit" type="submit">Accedi</button>
-
-      <div class="register-row">
-        <span>Non hai un account?</span>
-        <button id="register-btn" class="link-btn" type="button">Registrati</button>
-      </div>
-    </form>
+  <main class="panel">
+    <h1 class="title">Reindirizzamento in corso</h1>
+    <p class="text">Ti stiamo portando alla pagina di accesso.</p>
   </main>
 
   <script>
     (function () {
-      const form = document.getElementById("login-form");
-      const submitBtn = document.getElementById("submit-btn");
-      const forgotBtn = document.getElementById("forgot-btn");
-      const registerBtn = document.getElementById("register-btn");
-      const togglePasswordBtn = document.getElementById("toggle-password");
-      const infoBox = document.getElementById("info-box");
-      const errorBox = document.getElementById("error-box");
-      const errorText = document.getElementById("error-text");
-      const rememberMe = document.getElementById("remember-me");
-      const emailInput = document.getElementById("email");
-      const passwordInput = document.getElementById("password");
+      const currentUrl = new URL(window.location.href);
+      const params = new URLSearchParams(currentUrl.search);
+      const slug = (params.get('slug') || '').trim();
 
-      const params = new URLSearchParams(window.location.search);
-      const slug = (params.get("slug") || "").trim();
-      const from = (params.get("from") || "booking").trim();
-      const routeFrom = new Set(["booking", "my-bookings", "profile", "change-password"]).has(from) ? from : "booking";
-
-      // Applica subito il colore dalla cache (evita flash blu prima della risposta API)
-      if (slug) {
-        try {
-          const cached = localStorage.getItem(`agenda_primary_color_${slug}`);
-          if (cached) applyPrimaryColor(cached);
-        } catch (_) {}
+      if (!slug) {
+        window.location.replace('/login');
+        return;
       }
 
-      function resolveStorage() {
-        const candidates = [];
-        try { candidates.push(window.localStorage); } catch (_) { /* ignore */ }
-        try { candidates.push(window.sessionStorage); } catch (_) { /* ignore */ }
+      params.delete('slug');
 
-        for (const storage of candidates) {
-          if (!storage) continue;
-          try {
-            const key = "__agenda_storage_probe__";
-            storage.setItem(key, "1");
-            storage.removeItem(key);
-            return storage;
-          } catch (_) {
-            // blocked/unavailable (private mode, embedded webview restrictions, etc.)
-          }
-        }
-        return null;
-      }
+      const targetPath = '/' + encodeURIComponent(slug) + '/login';
+      const targetQuery = params.toString();
+      const targetUrl = targetQuery ? targetPath + '?' + targetQuery : targetPath;
 
-      const storage = resolveStorage();
-
-      function storageGet(key) {
-        if (!storage) return null;
-        try { return storage.getItem(key); } catch (_) { return null; }
-      }
-
-      function storageSet(key, value) {
-        if (!storage) return;
-        try { storage.setItem(key, value); } catch (_) { /* ignore */ }
-      }
-
-      function storageRemove(key) {
-        if (!storage) return;
-        try { storage.removeItem(key); } catch (_) { /* ignore */ }
-      }
-      const savedEmailKey = "agenda_frontend_saved_email";
-      const savedPasswordKey = "agenda_frontend_saved_password";
-      const savedBusinessIdKey = "agenda_business_id";
-      const savedRefreshTokenKey = "agenda_refresh_token";
-      let cachedBusinessId = null;
-      let isSubmitting = false;
-
-      function applyPrimaryColor(hex) {
-        if (!hex) return;
-        const cleaned = hex.startsWith('#') ? hex.slice(1) : hex;
-        const val = parseInt(cleaned, 16);
-        if (isNaN(val)) return;
-        const r = (val >> 16) & 255, g = (val >> 8) & 255, b = val & 255;
-        const root = document.documentElement;
-        root.style.setProperty('--primary', hex);
-        root.style.setProperty('--primary-soft', `rgba(${r},${g},${b},0.12)`);
-        root.style.setProperty('--primary-border', `rgba(${r},${g},${b},0.3)`);
-        root.style.setProperty('--primary-ring', `rgba(${r},${g},${b},0.16)`);
-      }
-
-      function showInfo(text) {
-        if (!text) {
-          infoBox.style.display = "none";
-          infoBox.textContent = "";
-          return;
-        }
-        infoBox.style.display = "block";
-        infoBox.textContent = text;
-      }
-
-      function showError(message) {
-        if (!message) {
-          errorBox.style.display = "none";
-          errorText.textContent = "";
-          return;
-        }
-        errorBox.style.display = "flex";
-        errorText.textContent = message;
-      }
-
-      function setLoading(loading) {
-        isSubmitting = loading;
-        submitBtn.disabled = loading;
-        submitBtn.textContent = loading ? "Accesso..." : "Accedi";
-      }
-
-      function resolveApiBase() {
-        const host = window.location.hostname;
-        const port = window.location.port;
-        if (host.includes("localhost") || host === "127.0.0.1") {
-          // Debug mapping:
-          // - localhost:8080 => production API
-          // - localhost:8081 => local API
-          if (port === "8080") return "https://api.romeolab.it";
-          return "http://localhost:8888";
-        }
-        return "https://api.romeolab.it";
-      }
-
-      const apiBase = resolveApiBase();
-
-      function safeDecodeBase64(value) {
-        try {
-          return decodeURIComponent(escape(window.atob(value)));
-        } catch (_) {
-          return null;
-        }
-      }
-
-      function safeEncodeBase64(value) {
-        return window.btoa(unescape(encodeURIComponent(value)));
-      }
-
-      function restoreSavedCredentials() {
-        const encodedEmail = storageGet(savedEmailKey);
-        const encodedPassword = storageGet(savedPasswordKey);
-        if (!encodedEmail || !encodedPassword) return;
-        const decodedEmail = safeDecodeBase64(encodedEmail);
-        const decodedPassword = safeDecodeBase64(encodedPassword);
-        if (decodedEmail) emailInput.value = decodedEmail;
-        if (decodedPassword) passwordInput.value = decodedPassword;
-        rememberMe.checked = true;
-      }
-
-      function persistCredentials(email, password) {
-        if (!rememberMe.checked) {
-          storageRemove(savedEmailKey);
-          storageRemove(savedPasswordKey);
-          return;
-        }
-        storageSet(savedEmailKey, safeEncodeBase64(email));
-        storageSet(savedPasswordKey, safeEncodeBase64(password));
-      }
-
-      function persistSessionContext(businessId) {
-        // Keep the same keys used by Flutter Web token storage.
-        storageSet(savedBusinessIdKey, String(businessId));
-      }
-
-      function persistRefreshTokenFallback(refreshToken) {
-        if (!refreshToken || typeof refreshToken !== "string") return;
-        // Compatibility fallback for embedded browsers/webviews that may not
-        // persist/set httpOnly cookies reliably during XHR-based auth flows.
-        storageSet(savedRefreshTokenKey, refreshToken);
-      }
-
-      async function getBusinessId() {
-        if (cachedBusinessId !== null) return cachedBusinessId;
-        const url = `${apiBase}/v1/businesses/by-slug/${encodeURIComponent(slug)}`;
-        const response = await fetch(url, {
-          method: "GET",
-          headers: { Accept: "application/json" },
-          credentials: "include",
-        });
-        const payload = await response.json().catch(() => null);
-        if (!response.ok || !payload || payload.success !== true || typeof payload.data?.id !== "number") {
-          throw new Error("Business non trovato");
-        }
-        cachedBusinessId = payload.data.id;
-        const primaryColor = payload.data.primary_color;
-        applyPrimaryColor(primaryColor);
-        // Salva in localStorage con la stessa chiave usata da Flutter
-        // così al ritorno dalla login Flutter non ha il flash
-        if (primaryColor && slug) {
-          try { localStorage.setItem(`agenda_primary_color_${slug}`, primaryColor); } catch (_) {}
-        }
-        return cachedBusinessId;
-      }
-
-      async function login(businessId, email, password) {
-        const url = `${apiBase}/v1/customer/${businessId}/auth/login`;
-        const response = await fetch(url, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ email, password }),
-        });
-
-        const payload = await response.json().catch(() => null);
-        if (!response.ok || !payload || payload.success !== true) {
-          const code = payload && payload.error && payload.error.code;
-          const rawMessage = payload && payload.error && payload.error.message;
-          const normalizedMessage = String(rawMessage || "").toLowerCase();
-          if (code === "invalid_credentials") throw new Error("Credenziali non valide");
-          if (
-            code === "account_disabled" ||
-            (code === "unauthorized" &&
-              (normalizedMessage.includes("account is disabled") ||
-                normalizedMessage.includes("account disabled") ||
-                normalizedMessage.includes("blocked")))
-          ) {
-            throw new Error("Per qualsiasi esigenza sugli appuntamenti ti invitiamo a contattarci. Grazie");
-          }
-          throw new Error("Accesso non riuscito. Riprova.");
-        }
-
-        return payload;
-      }
-
-      async function tryAutoRefreshSession() {
-        if (!slug) return false;
-        if (isSubmitting) return false;
-
-        setLoading(true);
-        showError("");
-
-        try {
-          const businessId = await getBusinessId();
-          const response = await fetch(`${apiBase}/v1/customer/${businessId}/auth/refresh`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Accept: "application/json" },
-            credentials: "include",
-            body: JSON.stringify({}),
-          });
-
-          const payload = await response.json().catch(() => null);
-          if (!response.ok || !payload || payload.success !== true) {
-            const code = payload && payload.error && payload.error.code;
-            const rawMessage = payload && payload.error && payload.error.message;
-            const normalizedMessage = String(rawMessage || "").toLowerCase();
-            if (
-              code === "account_disabled" ||
-              (code === "unauthorized" &&
-                (normalizedMessage.includes("account is disabled") ||
-                  normalizedMessage.includes("account disabled") ||
-                  normalizedMessage.includes("blocked")))
-            ) {
-              showError("Per qualsiasi esigenza sugli appuntamenti ti invitiamo a contattarci. Grazie");
-            }
-            return false;
-          }
-
-          // Session restored via httpOnly refresh cookie.
-          persistSessionContext(businessId);
-          const refreshTokenFromPayload = payload && payload.data && payload.data.refresh_token;
-          persistRefreshTokenFallback(refreshTokenFromPayload);
-          window.location.assign(`/${encodeURIComponent(slug)}/${routeFrom}`);
-          return true;
-        } catch (_) {
-          return false;
-        } finally {
-          // Keep button disabled only if we are navigating away.
-          setLoading(false);
-        }
-      }
-
-      async function requestPasswordReset(enteredEmail) {
-        const email = (enteredEmail || "").trim();
-        if (!email) {
-          throw new Error("Inserisci la tua email per recuperare la password.");
-        }
-        if (!email.includes("@")) {
-          throw new Error("Email non valida");
-        }
-        const businessId = await getBusinessId();
-        const response = await fetch(`${apiBase}/v1/customer/${businessId}/auth/forgot-password`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ email }),
-        });
-        const payload = await response.json().catch(() => null);
-        if (!response.ok || !payload || payload.success !== true) {
-          const code = payload && payload.error && payload.error.code;
-          if (code === "email_not_found") throw new Error("Email non trovata nel sistema. Verifica l'indirizzo o registrati.");
-          throw new Error("Errore durante l'invio. Riprova.");
-        }
-        showInfo("Email inviata! Controlla la tua casella di posta.");
-      }
-
-      togglePasswordBtn.addEventListener("click", function () {
-        const isPassword = passwordInput.type === "password";
-        passwordInput.type = isPassword ? "text" : "password";
-        togglePasswordBtn.classList.toggle("is-visible", isPassword);
-        togglePasswordBtn.setAttribute(
-          "aria-label",
-          isPassword ? "Nascondi password" : "Mostra password"
-        );
-      });
-
-      registerBtn.addEventListener("click", function () {
-        if (!slug) return;
-        const next = new URLSearchParams();
-        const email = emailInput.value.trim();
-        if (email) next.set("email", email);
-        if (routeFrom) next.set("from", routeFrom);
-        const query = next.toString();
-        window.location.assign(`/${encodeURIComponent(slug)}/register${query ? `?${query}` : ""}`);
-      });
-
-      forgotBtn.addEventListener("click", async function () {
-        if (isSubmitting) return;
-        const enteredEmail = emailInput.value.trim();
-        showError("");
-        if (!enteredEmail) {
-          showError("Inserisci la tua email nel campo Email.");
-          emailInput.focus();
-          return;
-        }
-        forgotBtn.disabled = true;
-        forgotBtn.textContent = "Invio in corso...";
-        try {
-          await requestPasswordReset(enteredEmail);
-        } catch (error) {
-          showError(error && error.message ? error.message : "Errore durante l'invio. Riprova.");
-        } finally {
-          forgotBtn.disabled = false;
-          forgotBtn.textContent = "Password dimenticata?";
-        }
-      });
-
-      form.addEventListener("submit", async function (event) {
-        event.preventDefault();
-        if (isSubmitting) return;
-        setLoading(true);
-        showError("");
-        const email = emailInput.value.trim();
-        const password = passwordInput.value;
-
-        if (!slug) {
-          showError("Link non valido: business mancante.");
-          setLoading(false);
-          return;
-        }
-        if (!email || !password) {
-          showError("Campo obbligatorio");
-          setLoading(false);
-          return;
-        }
-        if (!email.includes("@")) {
-          showError("Email non valida");
-          setLoading(false);
-          return;
-        }
-
-        let loginSucceeded = false;
-        try {
-          const businessId = await getBusinessId();
-          const loginPayload = await login(businessId, email, password);
-          loginSucceeded = true;
-          persistSessionContext(businessId);
-          const refreshTokenFromPayload = loginPayload && loginPayload.data && loginPayload.data.refresh_token;
-          persistRefreshTokenFallback(refreshTokenFromPayload);
-          persistCredentials(email, password);
-          window.location.assign(`/${encodeURIComponent(slug)}/${routeFrom}`);
-        } catch (error) {
-          showError(error && error.message ? error.message : "Accesso non riuscito. Riprova.");
-        } finally {
-          // Keep button disabled while browser navigates to the next page.
-          if (!loginSucceeded) {
-            setLoading(false);
-          }
-        }
-      });
-
-      if (from === "my-bookings") {
-        showInfo("Per visualizzare i tuoi appuntamenti, accedi con il tuo account o registrati se non ne hai ancora uno.");
-      } else if (from === "booking") {
-        showInfo("Per prenotare un appuntamento, accedi con il tuo account o registrati se non ne hai ancora uno.");
-      }
-
-      restoreSavedCredentials();
-
-      // Apply business color first, then start auto-refresh session.
-      // This ensures setLoading(true) inside tryAutoRefreshSession runs AFTER
-      // the color is applied, so the button never flashes with the default blue.
-      if (slug) {
-        getBusinessId()
-          .catch(() => {})
-          .finally(() => tryAutoRefreshSession());
-      } else {
-        tryAutoRefreshSession();
-      }
+      window.location.replace(targetUrl);
     })();
   </script>
+
+  <noscript>
+    <main class="panel">
+      <p class="text">Attiva JavaScript per continuare verso la pagina di accesso.</p>
+    </main>
+  </noscript>
 </body>
 </html>

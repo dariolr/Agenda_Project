@@ -1,3 +1,4 @@
+
 import '../../../core/models/service_package.dart';
 import '../../../core/network/api_client.dart';
 import 'service_packages_api.dart';
@@ -21,6 +22,7 @@ class ServicePackagesRepository {
     int? overrideDurationMinutes,
     bool isActive = true,
     bool isBookableOnline = true,
+    String? onlineVisibility,
   }) => _api.createPackage(
     locationId: locationId,
     name: name,
@@ -31,6 +33,7 @@ class ServicePackagesRepository {
     overrideDurationMinutes: overrideDurationMinutes,
     isActive: isActive,
     isBookableOnline: isBookableOnline,
+    onlineVisibility: onlineVisibility,
   );
 
   Future<ServicePackage> updatePackage({
@@ -45,6 +48,7 @@ class ServicePackagesRepository {
     bool setOverrideDurationNull = false,
     bool? isActive,
     bool? isBookableOnline,
+    String? onlineVisibility,
     List<int>? serviceIds,
   }) => _api.updatePackage(
     locationId: locationId,
@@ -58,6 +62,7 @@ class ServicePackagesRepository {
     setOverrideDurationNull: setOverrideDurationNull,
     isActive: isActive,
     isBookableOnline: isBookableOnline,
+    onlineVisibility: onlineVisibility,
     serviceIds: serviceIds,
   );
 
@@ -75,3 +80,4 @@ class ServicePackagesRepository {
     required int packageId,
   }) => _api.expandPackage(locationId: locationId, packageId: packageId);
 }
+

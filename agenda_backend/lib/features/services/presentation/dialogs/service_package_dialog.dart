@@ -1,3 +1,4 @@
+
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/core/utils/price_utils.dart';
 import 'package:flutter/material.dart';
@@ -5,15 +6,18 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/models/online_booking_visibility.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
 import '../../../../core/models/service_package.dart';
+import '../../../../core/utils/booking_direct_link_utils.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
+import '../../../../core/widgets/online_booking_visibility_selector.dart';
 import '../../providers/service_packages_provider.dart';
 import '../widgets/service_eligibility_selector.dart';
 
@@ -73,8 +77,8 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
   late final TextEditingController _overrideDurationController;
 
   bool _isActive = true;
-  bool _isBookableOnline = true;
   bool _isSaving = false;
+  late OnlineBookingVisibilityOption _onlineBookingVisibility;
   int? _selectedCategoryId;
   String? _servicesError;
   List<int> _orderedServiceIds = [];
@@ -96,7 +100,10 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
       text: pkg?.overrideDurationMinutes?.toString() ?? '',
     );
     _isActive = pkg?.isActive ?? true;
-    _isBookableOnline = pkg?.isBookableOnline ?? true;
+    _onlineBookingVisibility = OnlineBookingVisibilityOption.fromValues(
+      onlineVisibility: pkg?.onlineVisibility,
+      isBookableOnline: pkg?.isBookableOnline,
+    );
     _selectedCategoryId = pkg?.categoryId ?? widget.preselectedCategoryId;
     final validCategoryIds = widget.categories
         .map((category) => category.id)
@@ -262,11 +269,35 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
                 onChanged: (value) => setState(() => _isActive = value),
                 title: Text(l10n.servicePackageActiveLabel),
               ),
-              SwitchListTile.adaptive(
-                value: _isBookableOnline,
-                onChanged: (value) => setState(() => _isBookableOnline = value),
-                title: Text(l10n.bookableOnlineSwitch),
+              const SizedBox(height: 16),
+              LabeledFormField(
+                label: l10n.onlineBookingVisibilityLabel,
+                child: OnlineBookingVisibilitySelector(
+                  value: _onlineBookingVisibility,
+                  onChanged: (value) {
+                    setState(() => _onlineBookingVisibility = value);
+                  },
+                ),
               ),
+              if (isEditing &&
+                  _onlineBookingVisibility !=
+                      OnlineBookingVisibilityOption.hidden) ...[
+                const SizedBox(height: 12),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: AppOutlinedActionButton(
+                    onPressed: _isSaving
+                        ? null
+                        : () => copyBookingDirectLink(
+                            context,
+                            ref,
+                            targetType: 'service_package',
+                            targetId: widget.package!.id,
+                          ),
+                    child: Text(l10n.closuresImportHolidaysCopyLinkAction),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               Text(
                 l10n.servicePackageServicesLabel,
@@ -477,7 +508,8 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
           overridePrice: overridePrice,
           overrideDurationMinutes: overrideDuration,
           isActive: _isActive,
-          isBookableOnline: _isBookableOnline,
+          isBookableOnline: _onlineBookingVisibility.isBookableOnline,
+          onlineVisibility: _onlineBookingVisibility.apiValue,
         );
         if (mounted) {
           setState(() => _isSaving = false);
@@ -501,7 +533,8 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
           setOverridePriceNull: overridePriceText.isEmpty,
           setOverrideDurationNull: overrideDurationText.isEmpty,
           isActive: _isActive,
-          isBookableOnline: _isBookableOnline,
+          isBookableOnline: _onlineBookingVisibility.isBookableOnline,
+          onlineVisibility: _onlineBookingVisibility.apiValue,
         );
         if (mounted) {
           setState(() => _isSaving = false);

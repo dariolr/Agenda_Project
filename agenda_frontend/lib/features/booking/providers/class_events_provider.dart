@@ -1,7 +1,9 @@
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../core/models/class_event.dart';
+import 'booking_direct_link_provider.dart';
 import 'booking_provider.dart';
 import 'locations_provider.dart';
 import 'my_bookings_provider.dart';
@@ -12,6 +14,7 @@ class ClassEventsNotifier extends StateNotifier<AsyncValue<List<ClassEvent>>> {
   final Ref _ref;
   bool _hasFetched = false;
   int? _lastLocationId;
+  String? _lastLinkSlug;
 
   ClassEventsNotifier(this._ref) : super(const AsyncValue.loading()) {
     _ref.listen(effectiveLocationIdProvider, (previous, next) {
@@ -21,19 +24,31 @@ class ClassEventsNotifier extends StateNotifier<AsyncValue<List<ClassEvent>>> {
         _loadData();
       }
     }, fireImmediately: true);
+    _ref.listen(bookingDirectLinkSlugProvider, (previous, next) {
+      if (next != _lastLinkSlug) {
+        _hasFetched = false;
+        _lastLinkSlug = next;
+        state = const AsyncValue.loading();
+        _loadData();
+      }
+    }, fireImmediately: true);
   }
 
   Future<void> _loadData() async {
     if (_hasFetched) return;
 
     final locationId = _ref.read(effectiveLocationIdProvider);
+    final linkSlug = _ref.read(bookingDirectLinkSlugProvider);
     if (locationId <= 0) return;
 
     _hasFetched = true;
 
     try {
       final repository = _ref.read(bookingRepositoryProvider);
-      final events = await repository.getClassEvents(locationId);
+      final events = await repository.getClassEvents(
+        locationId,
+        linkSlug: linkSlug,
+      );
       state = AsyncValue.data(events);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -56,8 +71,9 @@ final classEventsProvider =
 /// - bookingOpenAt / bookingCloseAt
 /// - maxBookingAdvanceDays
 /// Usa locationNowProvider per coerenza con il fuso orario della sede.
-final filteredClassEventsProvider =
-    Provider<AsyncValue<List<ClassEvent>>>((ref) {
+final filteredClassEventsProvider = Provider<AsyncValue<List<ClassEvent>>>((
+  ref,
+) {
   final eventsAsync = ref.watch(classEventsProvider);
   final now = ref.watch(locationNowProvider);
   final maxDays = ref.watch(maxBookingAdvanceDaysProvider);
@@ -106,3 +122,4 @@ final hasBothServicesAndEventsProvider = Provider<bool>((ref) {
       packages.isNotEmpty;
   return hasClassEvents && hasServices;
 });
+

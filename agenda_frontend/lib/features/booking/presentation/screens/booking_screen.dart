@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import '../../../../core/network/network_providers.dart';
 import '../../../../core/widgets/app_loading_screen.dart';
 import '../../../../core/widgets/booking_app_bar.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/booking_direct_link_provider.dart';
 import '../../providers/class_events_provider.dart';
 import '../../providers/locations_provider.dart';
 import '../widgets/booking_step_indicator.dart';
@@ -29,6 +31,7 @@ class BookingScreen extends ConsumerStatefulWidget {
 
 class _BookingScreenState extends ConsumerState<BookingScreen> {
   bool _redirectingWrongBusiness = false;
+  String? _appliedDirectLinkLocationSlug;
 
   Future<void> _redirectToRegisterForBusiness({
     required int authenticatedBusinessId,
@@ -43,7 +46,13 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     if (!mounted || !context.mounted) return;
     final businessSlug = slug ?? '';
     if (businessSlug.isEmpty) return;
-    context.go('/$businessSlug/register?from=booking&force=1');
+    final params = <String, String>{'from': 'booking', 'force': '1'};
+    final linkSlug = ref.read(bookingDirectLinkSlugProvider);
+    if (linkSlug != null && linkSlug.isNotEmpty) {
+      params['link'] = linkSlug;
+    }
+    final query = Uri(queryParameters: params).query;
+    context.go('/$businessSlug/register?$query');
   }
 
   @override
@@ -52,8 +61,32 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     final config = ref.watch(bookingConfigProvider);
     final authState = ref.watch(authProvider);
     final businessSlug = ref.watch(businessSlugProvider);
-    final authenticatedBusinessIdAsync = ref.watch(authenticatedBusinessIdProvider);
+    final authenticatedBusinessIdAsync = ref.watch(
+      authenticatedBusinessIdProvider,
+    );
     final l10n = context.l10n;
+    final directLinkAsync = ref.watch(bookingDirectLinkProvider);
+    final locationsAsync = ref.watch(locationsProvider);
+
+    final directLink = directLinkAsync.value;
+    final targetLocationId = _intFromJson(directLink?.target['location_id']);
+    if (directLink != null &&
+        targetLocationId != null &&
+        _appliedDirectLinkLocationSlug != directLink.linkSlug) {
+      final locations = locationsAsync.value;
+      if (locations != null) {
+        for (final location in locations) {
+          if (location.id == targetLocationId) {
+            _appliedDirectLinkLocationSlug = directLink.linkSlug;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              ref.read(selectedLocationProvider.notifier).select(location);
+            });
+            break;
+          }
+        }
+      }
+    }
 
     final currentBusinessId = businessAsync.value?.id;
     final authenticatedBusinessId = authenticatedBusinessIdAsync.value;
@@ -141,6 +174,36 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
                 ),
               ),
             ],
+          ),
+        ),
+      );
+    }
+
+    if (directLinkAsync.isLoading) {
+      return const AppLoadingScreen();
+    }
+
+    if (directLinkAsync.hasError) {
+      final message = Localizations.localeOf(context).languageCode == 'it'
+          ? 'Questo link di prenotazione non è più disponibile.'
+          : 'This booking link is no longer available.';
+      return Scaffold(
+        appBar: const BookingAppBar(showUserMenu: false),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.link_off, size: 64),
+                const SizedBox(height: 16),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -257,4 +320,12 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
         return const ConfirmationStep();
     }
   }
+
+  int? _intFromJson(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
 }
+

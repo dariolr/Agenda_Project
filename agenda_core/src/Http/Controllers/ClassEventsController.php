@@ -8,6 +8,7 @@ use Agenda\Domain\Helpers\ColorHex;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
+use Agenda\Infrastructure\Repositories\BookingDirectLinkRepository;
 use Agenda\Infrastructure\Repositories\ClassEventRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
@@ -23,6 +24,7 @@ final class ClassEventsController
         private readonly UserRepository $userRepo,
         private readonly ?ClientRepository $clientRepo = null,
         private readonly ?QueueClassBookingNotification $queueClassBookingNotification = null,
+        private readonly ?BookingDirectLinkRepository $directLinkRepo = null,
     ) {}
 
     public function indexTypes(Request $request): Response
@@ -246,6 +248,10 @@ final class ClassEventsController
         if ($existing === null) {
             return Response::notFound('Class type not found', $request->traceId);
         }
+        if ($this->classEventRepo->hasFutureClassEvents($businessId, $classTypeId)) {
+            return Response::conflict('class_type_has_future_events', 'Cannot delete event type because there are future scheduled events', $request->traceId);
+        }
+
         try {
             $deleted = $this->classEventRepo->deleteClassType($businessId, $classTypeId);
         } catch (\Throwable $e) {
@@ -289,13 +295,15 @@ final class ClassEventsController
             : $now->modify('+90 days')->format('Y-m-d H:i:s');
 
         $classTypeId = $request->queryParam('class_type_id');
+        $directLinkScope = $this->directLinkScopeFromQuery($request, $businessId, $locationId);
 
         $items = $this->classEventRepo->findPublicByBusinessAndRange(
             $businessId,
             $fromUtc,
             $toUtc,
             $locationId,
-            $classTypeId !== null && $classTypeId !== '' ? (int) $classTypeId : null
+            $classTypeId !== null && $classTypeId !== '' ? (int) $classTypeId : null,
+            $directLinkScope
         );
 
         $eventIds = array_map(static fn (array $row): int => (int) $row['id'], $items);
@@ -423,6 +431,10 @@ final class ClassEventsController
         }
 
         $body = $request->getBody() ?? [];
+        $onlineVisibility = $this->validatedOnlineVisibility($body, $request);
+        if ($onlineVisibility instanceof Response) {
+            return $onlineVisibility;
+        }
         $validationError = $this->validateCreateOrUpdate($body, true);
         if ($validationError !== null) {
             return Response::error($validationError, 'validation_error', 400, $request->traceId);
@@ -475,6 +487,7 @@ final class ClassEventsController
             'waitlist_count' => 0,
             'waitlist_enabled' => isset($body['waitlist_enabled']) ? (bool) $body['waitlist_enabled'] : true,
             'is_bookable_online' => isset($body['is_bookable_online']) ? (bool) $body['is_bookable_online'] : true,
+            'online_visibility' => $onlineVisibility,
             'booking_open_at' => $bookingOpenAtInput !== null
                 ? $this->toSqlUtcForLocation((string) $bookingOpenAtInput, $locationId)
                 : null,
@@ -493,6 +506,14 @@ final class ClassEventsController
         if ($event === null) {
             return Response::created(['id' => $id]);
         }
+        if ($onlineVisibility === 'direct_link') {
+            $this->directLinkRepo?->createOrUpdateForTarget(
+                $businessId,
+                BookingDirectLinkRepository::TARGET_CLASS_EVENT,
+                $id,
+                (string) ($event['class_type_name'] ?? $event['name'] ?? 'class-event')
+            );
+        }
         $createdResourceRequirements = $this->classEventRepo->findResourceRequirementsForEvents($businessId, [$id]);
         return Response::created($this->formatClassEvent($event, $createdResourceRequirements[$id] ?? []));
     }
@@ -510,6 +531,10 @@ final class ClassEventsController
         }
 
         $body = $request->getBody() ?? [];
+        $onlineVisibility = $this->validatedOnlineVisibility($body, $request);
+        if ($onlineVisibility instanceof Response) {
+            return $onlineVisibility;
+        }
         $notifyCustomer = $this->readBoolFromBody($body, 'notify_customer', false);
         $notificationCustomerIds = $this->normalizeOptionalCustomerIds(
             $body['notification_customer_ids'] ?? null
@@ -533,6 +558,7 @@ final class ClassEventsController
             'capacity_reserved',
             'waitlist_enabled',
             'is_bookable_online',
+            'online_visibility',
             'cancel_cutoff_minutes',
             'status',
             'visibility',
@@ -543,6 +569,9 @@ final class ClassEventsController
             if (array_key_exists($field, $body)) {
                 $payload[$field] = $body[$field];
             }
+        }
+        if ($onlineVisibility !== null) {
+            $payload['online_visibility'] = $onlineVisibility;
         }
         if (array_key_exists('instructor_staff_id', $body)) {
             $payload['staff_id'] = $body['instructor_staff_id'];
@@ -628,6 +657,14 @@ final class ClassEventsController
         $event = $this->classEventRepo->findById($businessId, $classEventId, null);
         if ($event === null) {
             return Response::notFound('Class event not found', $request->traceId);
+        }
+        if ($onlineVisibility === 'direct_link') {
+            $this->directLinkRepo?->createOrUpdateForTarget(
+                $businessId,
+                BookingDirectLinkRepository::TARGET_CLASS_EVENT,
+                $classEventId,
+                (string) ($event['class_type_name'] ?? $event['name'] ?? 'class-event')
+            );
         }
         if ($notifyCustomer) {
             $this->queueClassEventNotifications(
@@ -962,13 +999,27 @@ final class ClassEventsController
             return Response::notFound('Class event not found', $request->traceId);
         }
 
+        $body = $request->getBody();
+        $body = is_array($body) ? $body : [];
+        $directLinkSlug = trim((string) ($body['booking_direct_link_slug'] ?? ''));
+
         // Solo eventi schedulati, pubblici e abilitati online sono prenotabili online.
         if (
             ($event['status'] ?? '') !== 'SCHEDULED' ||
             ($event['visibility'] ?? '') !== 'PUBLIC' ||
-            (int) ($event['is_bookable_online'] ?? 1) !== 1
+            (int) ($event['is_bookable_online'] ?? 1) !== 1 ||
+            (string) ($event['online_visibility'] ?? 'public') === 'hidden'
         ) {
             return Response::conflict('class_event_not_bookable', 'Class event is not bookable', $request->traceId);
+        }
+        if ((string) ($event['online_visibility'] ?? 'public') === 'direct_link') {
+            if (
+                $directLinkSlug === '' ||
+                $this->directLinkRepo === null ||
+                !$this->directLinkRepo->authorizesClassEvent($routeBusinessId, $directLinkSlug, $classEventId)
+            ) {
+                return Response::conflict('class_event_not_bookable', 'Class event is not bookable', $request->traceId);
+            }
         }
 
         // Controlla finestra di prenotazione
@@ -1292,6 +1343,42 @@ final class ClassEventsController
         return $utc->setTimezone(new \DateTimeZone($timezone))->format('Y-m-d H:i:s');
     }
 
+    private function validatedOnlineVisibility(array $body, Request $request): string|Response|null
+    {
+        if (!array_key_exists('online_visibility', $body)) {
+            return null;
+        }
+
+        $value = strtolower(trim((string) $body['online_visibility']));
+        if (!in_array($value, ['public', 'direct_link', 'hidden'], true)) {
+            return Response::error('Invalid online_visibility', 'validation_error', 400, $request->traceId);
+        }
+
+        return $value;
+    }
+
+    private function directLinkScopeFromQuery(Request $request, int $businessId, ?int $locationId = null): ?array
+    {
+        $link = trim((string) ($request->queryParam('link') ?? ''));
+        if ($link === '' || $this->directLinkRepo === null) {
+            return null;
+        }
+
+        $scope = $this->directLinkRepo->resolveAvailableScope($businessId, $link);
+        if (
+            $scope !== null
+            && ($scope['target_type'] ?? null) === BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY
+        ) {
+            $scope['child_visibility_scope'] = $this->directLinkRepo->resolveCategoryChildVisibilityScope(
+                $businessId,
+                (int) ($scope['target_id'] ?? 0),
+                $locationId
+            );
+        }
+
+        return $scope;
+    }
+
     private function validateCreateOrUpdate(array $body, bool $isCreate): ?string
     {
         $startsAt = $body['starts_at'] ?? $body['starts_at_utc'] ?? null;
@@ -1404,6 +1491,7 @@ final class ClassEventsController
             'waitlist_count' => (int) ($row['waitlist_count'] ?? 0),
             'waitlist_enabled' => (int) ($row['waitlist_enabled'] ?? 0) === 1,
             'is_bookable_online' => (int) ($row['is_bookable_online'] ?? 1) === 1,
+            'online_visibility' => (string) ($row['online_visibility'] ?? 'public'),
             'booking_open_at' => $row['booking_open_at'] ?? null,
             'booking_open_at_local' => isset($row['booking_open_at']) && $row['booking_open_at'] !== null
                 ? $this->formatUtcSqlToLocationLocal(

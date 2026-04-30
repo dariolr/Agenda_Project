@@ -17,6 +17,8 @@ class Location {
   final int maxBookingAdvanceDays;
   final bool allowCustomerChooseStaff;
   final bool allowMultiServiceBooking;
+  final bool showPriceToCustomer;
+  final bool showDurationToCustomer;
   final String staffIconKey;
   final Map<String, Map<String, String>>? bookingTextOverrides;
   final int? cancellationHours;
@@ -46,6 +48,8 @@ class Location {
     this.maxBookingAdvanceDays = 90,
     this.allowCustomerChooseStaff = false,
     this.allowMultiServiceBooking = true,
+    this.showPriceToCustomer = true,
+    this.showDurationToCustomer = true,
     this.staffIconKey = 'person',
     this.bookingTextOverrides,
     this.cancellationHours,
@@ -76,6 +80,8 @@ class Location {
     int? maxBookingAdvanceDays,
     bool? allowCustomerChooseStaff,
     bool? allowMultiServiceBooking,
+    bool? showPriceToCustomer,
+    bool? showDurationToCustomer,
     String? staffIconKey,
     Map<String, Map<String, String>>? bookingTextOverrides,
     int? cancellationHours,
@@ -109,6 +115,9 @@ class Location {
           allowCustomerChooseStaff ?? this.allowCustomerChooseStaff,
       allowMultiServiceBooking:
           allowMultiServiceBooking ?? this.allowMultiServiceBooking,
+      showPriceToCustomer: showPriceToCustomer ?? this.showPriceToCustomer,
+      showDurationToCustomer:
+          showDurationToCustomer ?? this.showDurationToCustomer,
       staffIconKey: staffIconKey ?? this.staffIconKey,
       bookingTextOverrides: bookingTextOverrides ?? this.bookingTextOverrides,
       cancellationHours: cancellationHours ?? this.cancellationHours,
@@ -145,6 +154,9 @@ class Location {
           json['allow_customer_choose_staff'] as bool? ?? false,
       allowMultiServiceBooking:
           json['allow_multi_service_booking'] as bool? ?? true,
+      showPriceToCustomer: json['show_price_to_customer'] as bool? ?? true,
+      showDurationToCustomer:
+          json['show_duration_to_customer'] as bool? ?? true,
       staffIconKey: (json['staff_icon_key'] as String?) ?? 'person',
       bookingTextOverrides: _parseBookingTextOverrides(
         json['booking_text_overrides'],
@@ -181,6 +193,8 @@ class Location {
       'max_booking_advance_days': maxBookingAdvanceDays,
       'allow_customer_choose_staff': allowCustomerChooseStaff,
       'allow_multi_service_booking': allowMultiServiceBooking,
+      'show_price_to_customer': showPriceToCustomer,
+      'show_duration_to_customer': showDurationToCustomer,
       'staff_icon_key': staffIconKey,
       if (bookingTextOverrides != null)
         'booking_text_overrides': bookingTextOverrides,
@@ -221,3 +235,4 @@ Map<String, Map<String, String>>? _parseBookingTextOverrides(dynamic raw) {
 
   return result.isEmpty ? null : result;
 }
+

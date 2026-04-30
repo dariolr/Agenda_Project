@@ -1,9 +1,11 @@
+
 import 'package:agenda_backend/app/theme/app_spacing.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service_category.dart';
+import '../../../../core/utils/booking_direct_link_utils.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_form.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
@@ -59,6 +61,23 @@ Future<void> showCategoryDialog(
             ),
           ),
         ),
+        if (category != null) ...[
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppOutlinedActionButton(
+              onPressed: isSaving
+                  ? null
+                  : () => copyBookingDirectLink(
+                      context,
+                      ref,
+                      targetType: 'service_category',
+                      targetId: category.id,
+                    ),
+              child: Text(context.l10n.closuresImportHolidaysCopyLinkAction),
+            ),
+          ),
+        ],
       ],
     );
   }

@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 import '../../../../app/providers/form_factor_provider.dart';
@@ -418,10 +419,12 @@ class _ServicePickerContentState extends State<_ServicePickerContent> {
         widget.preselectedStaffServiceIds != null &&
         widget.preselectedStaffServiceIds!.isNotEmpty;
 
-    // Mostra checkbox solo se lo staff non ha già tutti i servizi
+    // Mostra checkbox solo se lo staff non ha già tutti i servizi della lista
     final staffHasAllServices =
         hasStaffFilter &&
-        widget.preselectedStaffServiceIds!.length >= widget.services.length;
+        widget.services.every(
+          (s) => widget.preselectedStaffServiceIds!.contains(s.id),
+        );
     final showAllServicesCheckbox = hasStaffFilter && !staffHasAllServices;
 
     // Mostra il campo di ricerca solo se ci sono più di 10 servizi
@@ -1042,3 +1045,4 @@ class _CategorySection extends StatelessWidget {
     );
   }
 }
+

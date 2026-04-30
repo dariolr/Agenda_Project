@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -20,14 +21,17 @@ class CategoriesList extends ConsumerWidget {
   final ValueChanged<ServiceCategory> onAddPackage;
   final ValueChanged<ServiceCategory> onAddClassType;
   final ValueChanged<ServiceCategory> onEditCategory;
+  final ValueChanged<ServiceCategory> onCopyCategoryDirectLink;
   final ValueChanged<int> onDeleteCategory;
   final VoidCallback onDeleteCategoryBlocked;
   final ValueChanged<Service> onServiceOpen;
   final ValueChanged<Service> onServiceEdit;
   final ValueChanged<Service> onServiceDuplicate;
+  final ValueChanged<Service> onServiceCopyDirectLink;
   final ValueChanged<int> onServiceDelete;
   final ValueChanged<ServicePackage> onPackageOpen;
   final ValueChanged<ServicePackage> onPackageEdit;
+  final ValueChanged<ServicePackage> onPackageCopyDirectLink;
   final ValueChanged<int> onPackageDelete;
   final ValueChanged<ClassType> onClassTypeOpen;
   final ValueChanged<ClassType> onClassTypeEdit;
@@ -51,14 +55,17 @@ class CategoriesList extends ConsumerWidget {
     required this.onAddPackage,
     required this.onAddClassType,
     required this.onEditCategory,
+    required this.onCopyCategoryDirectLink,
     required this.onDeleteCategory,
     required this.onDeleteCategoryBlocked,
     required this.onServiceOpen,
     required this.onServiceEdit,
     required this.onServiceDuplicate,
+    required this.onServiceCopyDirectLink,
     required this.onServiceDelete,
     required this.onPackageOpen,
     required this.onPackageEdit,
+    required this.onPackageCopyDirectLink,
     required this.onPackageDelete,
     required this.onClassTypeOpen,
     required this.onClassTypeEdit,
@@ -166,14 +173,17 @@ class CategoriesList extends ConsumerWidget {
               onAddPackage: () => onAddPackage(category),
               onAddClassType: () => onAddClassType(category),
               onEditCategory: () => onEditCategory(category),
+              onCopyDirectLink: () => onCopyCategoryDirectLink(category),
               onDeleteCategory: () => onDeleteCategory(category.id),
               onDeleteBlocked: onDeleteCategoryBlocked,
               onServiceOpen: onServiceOpen,
               onServiceEdit: onServiceEdit,
               onServiceDuplicate: onServiceDuplicate,
+              onServiceCopyDirectLink: onServiceCopyDirectLink,
               onServiceDelete: onServiceDelete,
               onPackageOpen: onPackageOpen,
               onPackageEdit: onPackageEdit,
+              onPackageCopyDirectLink: onPackageCopyDirectLink,
               onPackageDelete: onPackageDelete,
               onClassTypeOpen: onClassTypeOpen,
               onClassTypeEdit: onClassTypeEdit,
@@ -191,3 +201,4 @@ class CategoriesList extends ConsumerWidget {
     );
   }
 }
+

@@ -1,8 +1,10 @@
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
 import '../../../core/models/location.dart';
 import '../../../core/services/tenant_time_service.dart';
+import 'booking_direct_link_provider.dart';
 import 'booking_provider.dart';
 import 'business_provider.dart';
 
@@ -122,15 +124,25 @@ final hasMultipleLocationsProvider = Provider<bool>((ref) {
 });
 
 /// Provider derivato: la location effettiva da usare per il booking
-/// Priorità: 1) URL param, 2) Selezione utente, 3) Location singola/default
+/// Priorità: 1) target direct link, 2) URL param, 3) location singola/default,
+/// 4) selezione utente.
 final effectiveLocationProvider = Provider<Location?>((ref) {
   final locationsAsync = ref.watch(locationsProvider);
+  final directLink = ref.watch(bookingDirectLinkProvider).value;
   final urlLocationId = ref.watch(urlLocationIdProvider);
   final selectedLocation = ref.watch(selectedLocationProvider);
 
   return locationsAsync.maybeWhen(
     data: (locations) {
       if (locations.isEmpty) return null;
+
+      final directLocationId = _intFromJson(directLink?.target['location_id']);
+      if (directLocationId != null) {
+        final directLocation = locations
+            .where((l) => l.id == directLocationId)
+            .firstOrNull;
+        if (directLocation != null) return directLocation;
+      }
 
       // 1) Se c'è location da URL, cerca quella
       if (urlLocationId != null) {
@@ -150,6 +162,13 @@ final effectiveLocationProvider = Provider<Location?>((ref) {
     orElse: () => null,
   );
 });
+
+int? _intFromJson(Object? value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) return int.tryParse(value);
+  return null;
+}
 
 /// Timezone effettivo del flow booking:
 /// 1) timezone della location effettiva
@@ -174,3 +193,4 @@ final locationTodayProvider = Provider<DateTime>((ref) {
   final timezone = ref.watch(locationTimezoneProvider);
   return TenantTimeService.todayInTimezone(timezone);
 });
+

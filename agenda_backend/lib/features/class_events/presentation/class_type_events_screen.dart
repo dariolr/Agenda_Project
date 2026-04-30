@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -8,6 +9,7 @@ import '/core/models/class_event.dart';
 import '/core/models/class_type.dart';
 import '/core/models/staff.dart';
 import '/core/services/tenant_time_service.dart';
+import '/core/utils/booking_direct_link_utils.dart';
 import '/core/utils/color_utils.dart';
 import '/core/widgets/app_buttons.dart';
 import '/core/widgets/app_dividers.dart';
@@ -266,6 +268,8 @@ class _ClassTypeEventsScreenState extends ConsumerState<ClassTypeEventsScreen> {
                         ref,
                         initialEvent: displayed[index],
                       ),
+                      onCopyDirectLink: () =>
+                          _copyDirectBookingLink(displayed[index]),
                     );
                   },
                 ),
@@ -273,6 +277,15 @@ class _ClassTypeEventsScreenState extends ConsumerState<ClassTypeEventsScreen> {
             ),
         ],
       ),
+    );
+  }
+
+  Future<void> _copyDirectBookingLink(ClassEvent event) async {
+    await copyBookingDirectLink(
+      context,
+      ref,
+      targetType: 'class_event',
+      targetId: event.id,
     );
   }
 
@@ -554,6 +567,8 @@ class _ClassTypeEventsSummaryFormState
                         ref,
                         initialEvent: displayed[index],
                       ),
+                      onCopyDirectLink: () =>
+                          _copyDirectBookingLink(displayed[index]),
                     ),
                   ),
                 ),
@@ -561,6 +576,15 @@ class _ClassTypeEventsSummaryFormState
           ],
         ),
       ),
+    );
+  }
+
+  Future<void> _copyDirectBookingLink(ClassEvent event) async {
+    await copyBookingDirectLink(
+      context,
+      ref,
+      targetType: 'class_event',
+      targetId: event.id,
     );
   }
 }
@@ -605,6 +629,7 @@ class _EventTile extends StatelessWidget {
     required this.staffNameById,
     required this.canManage,
     required this.onEdit,
+    required this.onCopyDirectLink,
   });
 
   final ClassEvent event;
@@ -613,6 +638,7 @@ class _EventTile extends StatelessWidget {
   final Map<int, String> staffNameById;
   final bool canManage;
   final VoidCallback onEdit;
+  final VoidCallback onCopyDirectLink;
 
   @override
   Widget build(BuildContext context) {
@@ -664,11 +690,24 @@ class _EventTile extends StatelessWidget {
           context,
         ).textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
       ),
-      trailing: canManage && !isPast
-          ? IconButton(
-              icon: const Icon(Icons.edit_outlined, size: 18),
-              visualDensity: VisualDensity.compact,
-              onPressed: onEdit,
+      trailing: canManage
+          ? Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (!isPast)
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: onEdit,
+                  ),
+                if (event.onlineVisibility != 'hidden')
+                  IconButton(
+                    tooltip: context.l10n.closuresImportHolidaysCopyLinkAction,
+                    icon: const Icon(Icons.link_outlined, size: 18),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: onCopyDirectLink,
+                  ),
+              ],
             )
           : null,
     );

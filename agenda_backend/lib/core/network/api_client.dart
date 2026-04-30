@@ -1,3 +1,4 @@
+
 import 'dart:async';
 
 import 'package:dio/dio.dart';
@@ -800,6 +801,7 @@ class ApiClient {
     int? overrideDurationMinutes,
     bool isActive = true,
     bool isBookableOnline = true,
+    String? onlineVisibility,
   }) async {
     return post(
       ApiConfig.servicePackages(locationId),
@@ -813,6 +815,7 @@ class ApiClient {
           'override_duration_minutes': overrideDurationMinutes,
         'is_active': isActive,
         'is_bookable_online': isBookableOnline,
+        if (onlineVisibility != null) 'online_visibility': onlineVisibility,
       },
     );
   }
@@ -830,6 +833,7 @@ class ApiClient {
     bool setOverrideDurationNull = false,
     bool? isActive,
     bool? isBookableOnline,
+    String? onlineVisibility,
     List<int>? serviceIds,
   }) async {
     final data = <String, dynamic>{};
@@ -844,6 +848,7 @@ class ApiClient {
     }
     if (isActive != null) data['is_active'] = isActive;
     if (isBookableOnline != null) data['is_bookable_online'] = isBookableOnline;
+    if (onlineVisibility != null) data['online_visibility'] = onlineVisibility;
     if (serviceIds != null) data['service_ids'] = serviceIds;
 
     return put(ApiConfig.servicePackage(locationId, packageId), data: data);
@@ -855,6 +860,18 @@ class ApiClient {
     required int packageId,
   }) async {
     await delete(ApiConfig.servicePackage(locationId, packageId));
+  }
+
+  /// POST /v1/businesses/{business_id}/booking-direct-links/create-or-get
+  Future<Map<String, dynamic>> createOrGetBookingDirectLink({
+    required int businessId,
+    required String targetType,
+    required int targetId,
+  }) async {
+    return post(
+      '/v1/businesses/$businessId/booking-direct-links/create-or-get',
+      data: {'target_type': targetType, 'target_id': targetId},
+    );
   }
 
   /// GET /v1/staff?location_id=X
@@ -1769,6 +1786,8 @@ class ApiClient {
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
     bool? allowMultiServiceBooking,
+    bool? showPriceToCustomer,
+    bool? showDurationToCustomer,
     bool? isActive,
   }) async {
     final response = await post(
@@ -1794,6 +1813,10 @@ class ApiClient {
           'allow_customer_choose_staff': allowCustomerChooseStaff,
         if (allowMultiServiceBooking != null)
           'allow_multi_service_booking': allowMultiServiceBooking,
+        if (showPriceToCustomer != null)
+          'show_price_to_customer': showPriceToCustomer,
+        if (showDurationToCustomer != null)
+          'show_duration_to_customer': showDurationToCustomer,
         if (isActive != null) 'is_active': isActive,
       },
     );
@@ -1824,6 +1847,8 @@ class ApiClient {
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
     bool? allowMultiServiceBooking,
+    bool? showPriceToCustomer,
+    bool? showDurationToCustomer,
     int? onlineBookingSlotIntervalMinutes,
     String? slotDisplayMode,
     int? minGapMinutes,
@@ -1852,6 +1877,10 @@ class ApiClient {
           'allow_customer_choose_staff': allowCustomerChooseStaff,
         if (allowMultiServiceBooking != null)
           'allow_multi_service_booking': allowMultiServiceBooking,
+        if (showPriceToCustomer != null)
+          'show_price_to_customer': showPriceToCustomer,
+        if (showDurationToCustomer != null)
+          'show_duration_to_customer': showDurationToCustomer,
         if (onlineBookingSlotIntervalMinutes != null)
           'online_booking_slot_interval_minutes':
               onlineBookingSlotIntervalMinutes,
@@ -1896,6 +1925,7 @@ class ApiClient {
     double price = 0,
     String? colorHex,
     bool isBookableOnline = true,
+    String? onlineVisibility,
     bool isPriceStartingFrom = false,
     int? processingTime,
     int? blockedTime,
@@ -1913,6 +1943,7 @@ class ApiClient {
         'price': price,
         if (colorHex != null && colorHex.isNotEmpty) 'color': colorHex,
         'is_bookable_online': isBookableOnline,
+        if (onlineVisibility != null) 'online_visibility': onlineVisibility,
         'is_price_starting_from': isPriceStartingFrom,
         'parallel_capacity': parallelCapacity,
         if (processingTime != null) 'processing_time': processingTime,
@@ -1932,6 +1963,7 @@ class ApiClient {
     double price = 0,
     String? colorHex,
     bool isBookableOnline = true,
+    String? onlineVisibility,
     bool isPriceStartingFrom = false,
     int? processingTime,
     int? blockedTime,
@@ -1948,6 +1980,7 @@ class ApiClient {
         'price': price,
         if (colorHex != null && colorHex.isNotEmpty) 'color': colorHex,
         'is_bookable_online': isBookableOnline,
+        if (onlineVisibility != null) 'online_visibility': onlineVisibility,
         'is_price_starting_from': isPriceStartingFrom,
         'parallel_capacity': parallelCapacity,
         if (processingTime != null) 'processing_time': processingTime,
@@ -1970,6 +2003,7 @@ class ApiClient {
     double? price,
     String? colorHex,
     bool? isBookableOnline,
+    String? onlineVisibility,
     bool? isPriceStartingFrom,
     int? sortOrder,
     int? processingTime,
@@ -1993,6 +2027,7 @@ class ApiClient {
         if (price != null) 'price': price,
         if (colorHex != null) 'color': colorHex,
         if (isBookableOnline != null) 'is_bookable_online': isBookableOnline,
+        if (onlineVisibility != null) 'online_visibility': onlineVisibility,
         if (isPriceStartingFrom != null)
           'is_price_starting_from': isPriceStartingFrom,
         if (parallelCapacity != null) 'parallel_capacity': parallelCapacity,

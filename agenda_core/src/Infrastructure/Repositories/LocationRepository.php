@@ -19,6 +19,7 @@ final class LocationRepository
                     l.phone, l.email, l.latitude, l.longitude, l.currency, l.timezone,
                     l.booking_default_locale,
                     l.allow_customer_choose_staff, l.allow_multi_service_booking,
+                    l.show_price_to_customer, l.show_duration_to_customer,
                     l.is_default, l.is_active, l.created_at, l.updated_at,
                     l.cancellation_hours,
                     l.online_booking_slot_interval_minutes, l.slot_display_mode, l.min_gap_minutes,
@@ -48,6 +49,7 @@ final class LocationRepository
                     l.phone, l.email, l.latitude, l.longitude, l.currency, l.timezone,
                     l.booking_default_locale,
                     l.allow_customer_choose_staff, l.allow_multi_service_booking,
+                    l.show_price_to_customer, l.show_duration_to_customer,
                     l.cancellation_hours,
                     l.online_booking_slot_interval_minutes, l.slot_display_mode, l.min_gap_minutes,
                     l.min_booking_notice_hours, l.max_booking_advance_days,
@@ -135,6 +137,7 @@ final class LocationRepository
                     l.phone, l.email, l.latitude, l.longitude, l.currency, l.timezone,
                     l.booking_default_locale,
                     l.allow_customer_choose_staff, l.allow_multi_service_booking,
+                    l.show_price_to_customer, l.show_duration_to_customer,
                     l.booking_text_overrides_json,
                     l.staff_icon_key,
                     l.is_default, l.is_active, l.created_at, l.updated_at
@@ -155,6 +158,7 @@ final class LocationRepository
                     l.phone, l.email, l.latitude, l.longitude, l.currency, l.timezone,
                     l.booking_default_locale,
                     l.allow_customer_choose_staff, l.allow_multi_service_booking,
+                    l.show_price_to_customer, l.show_duration_to_customer,
                     l.booking_text_overrides_json,
                     l.staff_icon_key,
                     l.is_default, l.is_active, l.created_at, l.updated_at
@@ -179,8 +183,9 @@ final class LocationRepository
                 allow_customer_choose_staff, allow_multi_service_booking, cancellation_hours,
                 booking_text_overrides_json,
                 staff_icon_key,
+                show_price_to_customer, show_duration_to_customer,
                 is_active
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $businessId,
@@ -198,6 +203,8 @@ final class LocationRepository
             $data['cancellation_hours'] ?? null,
             $data['booking_text_overrides_json'] ?? null,
             $data['staff_icon_key'] ?? 'person',
+            isset($data['show_price_to_customer']) ? ($data['show_price_to_customer'] ? 1 : 0) : 1,
+            isset($data['show_duration_to_customer']) ? ($data['show_duration_to_customer'] ? 1 : 0) : 1,
             $isActive ? 1 : 0,
         ]);
 
@@ -246,6 +253,15 @@ final class LocationRepository
         if (array_key_exists('allow_multi_service_booking', $data)) {
             $fields[] = 'allow_multi_service_booking = ?';
             $values[] = $data['allow_multi_service_booking'] ? 1 : 0;
+        }
+
+        if (array_key_exists('show_price_to_customer', $data)) {
+            $fields[] = 'show_price_to_customer = ?';
+            $values[] = $data['show_price_to_customer'] ? 1 : 0;
+        }
+        if (array_key_exists('show_duration_to_customer', $data)) {
+            $fields[] = 'show_duration_to_customer = ?';
+            $values[] = $data['show_duration_to_customer'] ? 1 : 0;
         }
 
         if (empty($fields)) {

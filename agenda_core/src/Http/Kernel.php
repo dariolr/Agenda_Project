@@ -25,6 +25,7 @@ use Agenda\Http\Controllers\ServiceVariantResourceController;
 use Agenda\Http\Controllers\TimeBlocksController;
 use Agenda\Http\Controllers\AppointmentsController;
 use Agenda\Http\Controllers\BookingNotificationsController;
+use Agenda\Http\Controllers\BookingDirectLinksController;
 use Agenda\Http\Controllers\BookingPaymentsController;
 use Agenda\Http\Controllers\BusinessSyncController;
 use Agenda\Http\Controllers\LocationClosuresController;
@@ -47,6 +48,7 @@ use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Logger\Logger;
 use Agenda\Infrastructure\Repositories\AuthSessionRepository;
 use Agenda\Infrastructure\Repositories\BookingRepository;
+use Agenda\Infrastructure\Repositories\BookingDirectLinkRepository;
 use Agenda\Infrastructure\Repositories\BookingPaymentRepository;
 use Agenda\Infrastructure\Repositories\BusinessPaymentMethodRepository;
 use Agenda\Infrastructure\Repositories\BusinessRepository;
@@ -175,6 +177,7 @@ final class Kernel
         $this->router->get('/v1/businesses/by-slug/{slug}', BusinessController::class, 'showBySlug');
         // Public locations for a business (for booking flow)
         $this->router->get('/v1/businesses/{business_id}/locations/public', LocationsController::class, 'indexPublic');
+        $this->router->get('/v1/public/booking-direct-links/resolve', BookingDirectLinksController::class, 'resolve');
         // Public Meta webhook endpoint (verification + events)
         $this->router->get('/v1/whatsapp/webhook', WhatsappController::class, 'webhookPublicVerify');
         $this->router->post('/v1/whatsapp/webhook', WhatsappController::class, 'webhookPublicIngest');
@@ -302,6 +305,11 @@ final class Kernel
         $this->router->put('/v1/categories/{id}', ServicesController::class, 'updateCategory', ['auth']);
         $this->router->delete('/v1/categories/{id}', ServicesController::class, 'destroyCategory', ['auth']);
         $this->router->post('/v1/categories/reorder', ServicesController::class, 'reorderCategories', ['auth']);
+
+        // Booking Direct Links (auth required)
+        $this->router->get('/v1/businesses/{business_id}/booking-direct-links', BookingDirectLinksController::class, 'index', ['auth', 'business_access_route']);
+        $this->router->post('/v1/businesses/{business_id}/booking-direct-links/create-or-get', BookingDirectLinksController::class, 'createOrGet', ['auth', 'business_access_route']);
+        $this->router->patch('/v1/businesses/{business_id}/booking-direct-links/{id}', BookingDirectLinksController::class, 'update', ['auth', 'business_access_route']);
 
         // Clients (auth required)
         $this->router->get('/v1/clients', ClientsController::class, 'index', ['auth']);
@@ -448,6 +456,7 @@ final class Kernel
         $locationRepo = new LocationRepository($this->db);
         $serviceRepo = new ServiceRepository($this->db);
         $servicePackageRepo = new ServicePackageRepository($this->db);
+        $bookingDirectLinkRepo = new BookingDirectLinkRepository($this->db);
         $staffRepo = new StaffRepository($this->db);
         $staffExceptionRepo = new StaffAvailabilityExceptionRepository($this->db);
         $staffPlanningRepo = new StaffPlanningRepository($this->db);
@@ -509,7 +518,7 @@ final class Kernel
         $paymentMethodRepo = new BusinessPaymentMethodRepository($this->db);
         $recurrenceRuleRepo = new RecurrenceRuleRepository($this->db);
         $computeAvailability = new ComputeAvailability($bookingRepo, $staffRepo, $locationRepo, $staffPlanningRepo, $timeBlockRepo, $staffExceptionRepo, $variantResourceRepo, $serviceRepo, $locationClosureRepo, $classEventRepo);
-        $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $notificationRepo, $computeAvailability, $bookingAuditRepo, $locationClosureRepo, $classEventRepo);
+        $createBooking = new CreateBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $notificationRepo, $computeAvailability, $bookingAuditRepo, $locationClosureRepo, $classEventRepo, $bookingDirectLinkRepo);
         $createRecurringBooking = new CreateRecurringBooking($this->db, $bookingRepo, $recurrenceRuleRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo, $userRepo, $computeAvailability, $notificationRepo, $bookingAuditRepo);
         $previewRecurringBooking = new PreviewRecurringBooking($this->db, $bookingRepo, $serviceRepo, $staffRepo, $clientRepo, $locationRepo);
         $modifyRecurringSeries = new ModifyRecurringSeries($this->db, $bookingRepo, $recurrenceRuleRepo, $staffRepo, $bookingAuditRepo, $notificationRepo);
@@ -525,8 +534,9 @@ final class Kernel
             CustomerAuthController::class => new CustomerAuthController($loginCustomer, $refreshCustomerToken, $logoutCustomer, $getCustomerMe, $registerCustomer, $requestCustomerPasswordReset, $resetCustomerPassword, $updateCustomerProfile, $changeCustomerPassword, $businessRepo),
             BusinessController::class => new BusinessController($businessRepo, $locationRepo, $businessUserRepo, $userRepo),
             LocationsController::class => new LocationsController($locationRepo, $businessUserRepo, $userRepo),
-            ServicesController::class => new ServicesController($serviceRepo, $variantResourceRepo, $locationRepo, $businessUserRepo, $userRepo, $servicePackageRepo, $popularServiceRepo, $staffRepo),
-            ServicePackagesController::class => new ServicePackagesController($servicePackageRepo, $businessUserRepo, $userRepo),
+            ServicesController::class => new ServicesController($serviceRepo, $variantResourceRepo, $locationRepo, $businessUserRepo, $userRepo, $servicePackageRepo, $popularServiceRepo, $staffRepo, $bookingDirectLinkRepo),
+            ServicePackagesController::class => new ServicePackagesController($servicePackageRepo, $businessUserRepo, $userRepo, $bookingDirectLinkRepo),
+            BookingDirectLinksController::class => new BookingDirectLinksController($bookingDirectLinkRepo, $businessRepo, $businessUserRepo, $userRepo),
             StaffController::class => new StaffController($staffRepo, $businessUserRepo, $locationRepo, $userRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
             BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo, $createRecurringBooking, $previewRecurringBooking, $recurrenceRuleRepo, $modifyRecurringSeries, $notificationRepo),
@@ -560,6 +570,7 @@ final class Kernel
                 $userRepo,
                 $clientRepo,
                 new QueueClassBookingNotification($this->db, $notificationRepo),
+                $bookingDirectLinkRepo,
             ),
             WhatsappController::class => new WhatsappController(
                 $whatsappRepo,

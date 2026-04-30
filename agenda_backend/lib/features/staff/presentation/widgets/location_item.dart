@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
@@ -144,12 +145,11 @@ class LocationItem extends StatelessWidget {
                       icon: const Icon(Icons.edit_outlined),
                       onPressed: onEditLocation,
                     ),
-                    if (isEmptyLocation)
-                      IconButton(
-                        tooltip: context.l10n.actionDelete,
-                        icon: const Icon(Icons.delete_outline, color: Colors.red),
-                        onPressed: onDeleteLocation,
-                      ),
+                    IconButton(
+                      tooltip: context.l10n.actionDelete,
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      onPressed: onDeleteLocation,
+                    ),
                   ],
                   if (headerTrailing != null) headerTrailing!,
                 ],
@@ -216,3 +216,4 @@ class LocationItem extends StatelessWidget {
     );
   }
 }
+

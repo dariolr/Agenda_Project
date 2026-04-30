@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
@@ -23,14 +24,17 @@ class CategoryItem extends StatefulWidget {
   final VoidCallback onAddPackage;
   final VoidCallback onAddClassType;
   final VoidCallback onEditCategory;
+  final VoidCallback onCopyDirectLink;
   final VoidCallback onDeleteCategory;
   final VoidCallback onDeleteBlocked;
   final ValueChanged<Service> onServiceOpen;
   final ValueChanged<Service> onServiceEdit;
   final ValueChanged<Service> onServiceDuplicate;
+  final ValueChanged<Service> onServiceCopyDirectLink;
   final ValueChanged<int> onServiceDelete;
   final ValueChanged<ServicePackage> onPackageOpen;
   final ValueChanged<ServicePackage> onPackageEdit;
+  final ValueChanged<ServicePackage> onPackageCopyDirectLink;
   final ValueChanged<int> onPackageDelete;
   final ValueChanged<ClassType> onClassTypeOpen;
   final ValueChanged<ClassType> onClassTypeEdit;
@@ -54,14 +58,17 @@ class CategoryItem extends StatefulWidget {
     required this.onAddPackage,
     required this.onAddClassType,
     required this.onEditCategory,
+    required this.onCopyDirectLink,
     required this.onDeleteCategory,
     required this.onDeleteBlocked,
     required this.onServiceOpen,
     required this.onServiceEdit,
     required this.onServiceDuplicate,
+    required this.onServiceCopyDirectLink,
     required this.onServiceDelete,
     required this.onPackageOpen,
     required this.onPackageEdit,
+    required this.onPackageCopyDirectLink,
     required this.onPackageDelete,
     required this.onClassTypeOpen,
     required this.onClassTypeEdit,
@@ -122,9 +129,11 @@ class _CategoryItemState extends State<CategoryItem> {
           // Header categoria
           GestureDetector(
             behavior: HitTestBehavior.opaque,
-            onTap: widget.isCollapsible
-                ? () => setState(() => _isExpanded = !_isExpanded)
-                : null,
+            onTap: widget.readOnly
+                ? (widget.isCollapsible
+                      ? () => setState(() => _isExpanded = !_isExpanded)
+                      : null)
+                : widget.onEditCategory,
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
@@ -220,6 +229,13 @@ class _CategoryItemState extends State<CategoryItem> {
                           icon: const Icon(Icons.edit_outlined),
                           onPressed: widget.onEditCategory,
                         ),
+                        IconButton(
+                          tooltip: context
+                              .l10n
+                              .closuresImportHolidaysCopyLinkAction,
+                          icon: const Icon(Icons.link_outlined),
+                          onPressed: widget.onCopyDirectLink,
+                        ),
                         if (isEmptyCategory)
                           IconButton(
                             tooltip: context.l10n.actionDelete,
@@ -231,10 +247,17 @@ class _CategoryItemState extends State<CategoryItem> {
                           ),
                       ],
                       if (widget.isCollapsible)
-                        AnimatedRotation(
-                          turns: _isExpanded ? 0.25 : 0,
-                          duration: const Duration(milliseconds: 250),
-                          child: const Icon(Icons.chevron_right),
+                        GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => setState(() => _isExpanded = !_isExpanded),
+                          child: Padding(
+                            padding: const EdgeInsets.all(4),
+                            child: AnimatedRotation(
+                              turns: _isExpanded ? 0.25 : 0,
+                              duration: const Duration(milliseconds: 250),
+                              child: const Icon(Icons.chevron_right),
+                            ),
+                          ),
                         ),
                     ],
                   ),
@@ -266,9 +289,12 @@ class _CategoryItemState extends State<CategoryItem> {
                             onOpen: widget.onServiceOpen,
                             onEdit: widget.onServiceEdit,
                             onDuplicate: widget.onServiceDuplicate,
+                            onCopyDirectLink: widget.onServiceCopyDirectLink,
                             onDelete: widget.onServiceDelete,
                             onPackageOpen: widget.onPackageOpen,
                             onPackageEdit: widget.onPackageEdit,
+                            onPackageCopyDirectLink:
+                                widget.onPackageCopyDirectLink,
                             onPackageDelete: widget.onPackageDelete,
                             onClassTypeOpen: widget.onClassTypeOpen,
                             onClassTypeEdit: widget.onClassTypeEdit,

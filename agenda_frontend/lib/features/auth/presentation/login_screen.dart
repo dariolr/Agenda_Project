@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,10 +16,15 @@ import '../domain/auth_state.dart';
 import '../providers/auth_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key, this.redirectFrom});
+  const LoginScreen({
+    super.key,
+    this.redirectFrom,
+    this.redirectQueryParameters = const {},
+  });
 
   /// Route da cui l'utente è stato reindirizzato (es. 'my-bookings')
   final String? redirectFrom;
+  final Map<String, String> redirectQueryParameters;
 
   @override
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
@@ -31,6 +37,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _obscurePassword = true;
   bool _rememberMe = true;
   bool _autoLoginAttempted = false;
+
+  String _bookingPath(String? slug) {
+    final query = Uri(queryParameters: widget.redirectQueryParameters).query;
+    return '/$slug/booking${query.isNotEmpty ? '?$query' : ''}';
+  }
 
   @override
   void initState() {
@@ -114,7 +125,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           .restorePendingBooking();
       if (restored && mounted) {
         debugPrint('AUTO-LOGIN: pending booking restored - going to booking');
-        context.go('/$slug/booking');
+        context.go(_bookingPath(slug));
         return;
       }
     }
@@ -127,7 +138,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     // Altrimenti vai al booking
     if (mounted) {
-      context.go('/$slug/booking');
+      context.go(_bookingPath(slug));
     }
   }
 
@@ -224,7 +235,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           debugPrint(
             'LOGIN pending booking restored - going to booking (summary step)',
           );
-          context.go('/$slug/booking');
+          context.go(_bookingPath(slug));
           return;
         }
       }
@@ -237,7 +248,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       // Altrimenti vai al booking (default o se veniva da booking)
       if (mounted) {
-        context.go('/$slug/booking');
+        context.go(_bookingPath(slug));
       }
     }
   }
@@ -526,6 +537,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           if (widget.redirectFrom != null) {
                             params['from'] = widget.redirectFrom!;
                           }
+                          params.addAll(widget.redirectQueryParameters);
                           final query = params.entries
                               .map(
                                 (e) =>
@@ -651,3 +663,4 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 }
+

@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -866,6 +867,13 @@ class _ClassBookingCardState extends ConsumerState<_ClassBookingCard> {
       } catch (_) {}
     }
 
+    final locationsAsync = ref.watch(locationsProvider);
+    final bookingLocation = locationsAsync.maybeWhen(
+      data: (locations) =>
+          locations.where((l) => l.id == booking.locationId).firstOrNull,
+      orElse: () => null,
+    );
+
     final isFutureNotStarted = widget.isUpcoming && !booking.isCancelled;
     final cancelButtonStyle = OutlinedButton.styleFrom(
       minimumSize: const Size(0, 40),
@@ -979,7 +987,8 @@ class _ClassBookingCardState extends ConsumerState<_ClassBookingCard> {
             ),
 
             // Prezzo (se > 0)
-            if ((booking.priceCents ?? 0) > 0) ...[
+            if ((booking.priceCents ?? 0) > 0 &&
+                (bookingLocation?.showPriceToCustomer ?? true)) ...[
               const SizedBox(height: 8),
               Row(
                 children: [
@@ -1070,3 +1079,4 @@ class _ClassBookingCardState extends ConsumerState<_ClassBookingCard> {
     }
   }
 }
+

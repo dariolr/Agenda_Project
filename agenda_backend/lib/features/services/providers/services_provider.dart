@@ -1,3 +1,4 @@
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/service.dart';
@@ -199,6 +200,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     double price = 0,
     String? colorHex,
     bool isBookableOnline = true,
+    String? onlineVisibility,
     bool isPriceStartingFrom = false,
     int? processingTime,
     int? blockedTime,
@@ -220,6 +222,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
         price: price,
         colorHex: colorHex,
         isBookableOnline: isBookableOnline,
+        onlineVisibility: onlineVisibility,
         isPriceStartingFrom: isPriceStartingFrom,
         processingTime: processingTime,
         blockedTime: blockedTime,
@@ -253,6 +256,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     double price = 0,
     String? colorHex,
     bool isBookableOnline = true,
+    String? onlineVisibility,
     bool isPriceStartingFrom = false,
     int? processingTime,
     int? blockedTime,
@@ -273,6 +277,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
         price: price,
         colorHex: colorHex,
         isBookableOnline: isBookableOnline,
+        onlineVisibility: onlineVisibility,
         isPriceStartingFrom: isPriceStartingFrom,
         processingTime: processingTime,
         blockedTime: blockedTime,
@@ -310,6 +315,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     double? price,
     String? colorHex,
     bool? isBookableOnline,
+    String? onlineVisibility,
     bool? isPriceStartingFrom,
     int? sortOrder,
     int? processingTime,
@@ -334,6 +340,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
         price: price,
         colorHex: colorHex,
         isBookableOnline: isBookableOnline,
+        onlineVisibility: onlineVisibility,
         isPriceStartingFrom: isPriceStartingFrom,
         sortOrder: sortOrder,
         processingTime: processingTime,
@@ -755,3 +762,4 @@ final servicesByCategoryProvider = Provider.family<List<Service>, int>((
       if (service.categoryId == categoryId) service,
   ];
 });
+

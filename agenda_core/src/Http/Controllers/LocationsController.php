@@ -143,6 +143,8 @@ final class LocationsController
             'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
             'allow_customer_choose_staff' => (bool) ($row['allow_customer_choose_staff'] ?? false),
             'allow_multi_service_booking' => (bool) ($row['allow_multi_service_booking'] ?? true),
+            'show_price_to_customer' => (bool) ($row['show_price_to_customer'] ?? true),
+            'show_duration_to_customer' => (bool) ($row['show_duration_to_customer'] ?? true),
             'staff_icon_key' => $this->normalizeStaffIconKey($row['staff_icon_key'] ?? null),
             'booking_text_overrides' => $this->decodeBookingTextOverrides($row['booking_text_overrides_json'] ?? null),
             'cancellation_hours' => isset($row['cancellation_hours']) ? (int) $row['cancellation_hours'] : null,
@@ -176,6 +178,8 @@ final class LocationsController
             'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
             'allow_customer_choose_staff' => (bool) ($row['allow_customer_choose_staff'] ?? false),
             'allow_multi_service_booking' => (bool) ($row['allow_multi_service_booking'] ?? true),
+            'show_price_to_customer' => (bool) ($row['show_price_to_customer'] ?? true),
+            'show_duration_to_customer' => (bool) ($row['show_duration_to_customer'] ?? true),
             'staff_icon_key' => $this->normalizeStaffIconKey($row['staff_icon_key'] ?? null),
             'booking_text_overrides' => $this->decodeBookingTextOverrides($row['booking_text_overrides_json'] ?? null),
             'cancellation_hours' => isset($row['cancellation_hours']) ? (int) $row['cancellation_hours'] : null,
@@ -265,6 +269,8 @@ final class LocationsController
             'max_booking_advance_days' => $body['max_booking_advance_days'] ?? 90,
             'allow_customer_choose_staff' => $body['allow_customer_choose_staff'] ?? false,
             'allow_multi_service_booking' => $body['allow_multi_service_booking'] ?? true,
+            'show_price_to_customer' => $body['show_price_to_customer'] ?? true,
+            'show_duration_to_customer' => $body['show_duration_to_customer'] ?? true,
             'cancellation_hours' => $cancellationHours,
             'booking_text_overrides_json' => $bookingTextOverridesJson,
             'staff_icon_key' => $staffIconKey ?? 'person',
@@ -342,6 +348,12 @@ final class LocationsController
         }
         if (array_key_exists('allow_multi_service_booking', $body)) {
             $updateData['allow_multi_service_booking'] = (bool) $body['allow_multi_service_booking'];
+        }
+        if (array_key_exists('show_price_to_customer', $body)) {
+            $updateData['show_price_to_customer'] = (bool) $body['show_price_to_customer'];
+        }
+        if (array_key_exists('show_duration_to_customer', $body)) {
+            $updateData['show_duration_to_customer'] = (bool) $body['show_duration_to_customer'];
         }
         if (array_key_exists('booking_text_overrides', $body)) {
             $bookingTextOverridesError = null;

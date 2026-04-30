@@ -184,16 +184,6 @@ class L10n {
     return Intl.message('Confirm', name: 'actionConfirm', desc: '', args: []);
   }
 
-  /// `Yes`
-  String get actionYes {
-    return Intl.message('Yes', name: 'actionYes', desc: '', args: []);
-  }
-
-  /// `No`
-  String get actionNo {
-    return Intl.message('No', name: 'actionNo', desc: '', args: []);
-  }
-
   /// `Close`
   String get actionClose {
     return Intl.message('Close', name: 'actionClose', desc: '', args: []);
@@ -823,10 +813,10 @@ class L10n {
     );
   }
 
-  /// `Events`
+  /// `Classes`
   String get servicesTypeFilterClasses {
     return Intl.message(
-      'Events',
+      'Classes',
       name: 'servicesTypeFilterClasses',
       desc: '',
       args: [],
@@ -2003,26 +1993,6 @@ class L10n {
     );
   }
 
-  /// `Allow multiple service/package/event selection online`
-  String get teamLocationAllowMultiServiceBookingLabel {
-    return Intl.message(
-      'Allow multiple service/package/event selection online',
-      name: 'teamLocationAllowMultiServiceBookingLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `If disabled, the customer can select only one service, package, or event per booking`
-  String get teamLocationAllowMultiServiceBookingHint {
-    return Intl.message(
-      'If disabled, the customer can select only one service, package, or event per booking',
-      name: 'teamLocationAllowMultiServiceBookingHint',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Minimum booking notice`
   String get teamLocationMinBookingNoticeLabel {
     return Intl.message(
@@ -2849,51 +2819,11 @@ class L10n {
     );
   }
 
-  /// `Concurrent bookings`
-  String get parallelCapacityLabel {
-    return Intl.message(
-      'Concurrent bookings',
-      name: 'parallelCapacityLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Maximum number of clients bookable at the same time.`
-  String get parallelCapacityHint {
-    return Intl.message(
-      'Maximum number of clients bookable at the same time.',
-      name: 'parallelCapacityHint',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Enter a number greater than or equal to 1.`
-  String get parallelCapacityError {
-    return Intl.message(
-      'Enter a number greater than or equal to 1.',
-      name: 'parallelCapacityError',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Bookable online`
   String get bookableOnlineSwitch {
     return Intl.message(
       'Bookable online',
       name: 'bookableOnlineSwitch',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Bookable online`
-  String get classEventBookableOnlineSwitch {
-    return Intl.message(
-      'Bookable online',
-      name: 'classEventBookableOnlineSwitch',
       desc: '',
       args: [],
     );
@@ -2979,10 +2909,10 @@ class L10n {
     );
   }
 
-  /// `Events`
+  /// `Classes`
   String get reorderClassesLabel {
     return Intl.message(
-      'Events',
+      'Classes',
       name: 'reorderClassesLabel',
       desc: '',
       args: [],
@@ -3404,26 +3334,6 @@ class L10n {
     );
   }
 
-  /// `Appointments`
-  String get clientAppointmentsAction {
-    return Intl.message(
-      'Appointments',
-      name: 'clientAppointmentsAction',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Contacts`
-  String get clientContactsActionGroup {
-    return Intl.message(
-      'Contacts',
-      name: 'clientContactsActionGroup',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Upcoming`
   String get clientAppointmentsUpcoming {
     return Intl.message(
@@ -3439,16 +3349,6 @@ class L10n {
     return Intl.message(
       'Past',
       name: 'clientAppointmentsPast',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Cancelled`
-  String get clientAppointmentsCancelled {
-    return Intl.message(
-      'Cancelled',
-      name: 'clientAppointmentsCancelled',
       desc: '',
       args: [],
     );
@@ -5611,146 +5511,6 @@ class L10n {
     );
   }
 
-  /// `Invalid email or password.`
-  String get apiErrorInvalidCredentials {
-    return Intl.message(
-      'Invalid email or password.',
-      name: 'apiErrorInvalidCredentials',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Your session is no longer valid. Please sign in again.`
-  String get apiErrorInvalidRefreshToken {
-    return Intl.message(
-      'Your session is no longer valid. Please sign in again.',
-      name: 'apiErrorInvalidRefreshToken',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `The password reset link is not valid.`
-  String get apiErrorInvalidResetToken {
-    return Intl.message(
-      'The password reset link is not valid.',
-      name: 'apiErrorInvalidResetToken',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `The password reset link has expired.`
-  String get apiErrorResetTokenExpired {
-    return Intl.message(
-      'The password reset link has expired.',
-      name: 'apiErrorResetTokenExpired',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Your session has expired. Please sign in again.`
-  String get apiErrorTokenExpired {
-    return Intl.message(
-      'Your session has expired. Please sign in again.',
-      name: 'apiErrorTokenExpired',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Authentication required.`
-  String get apiErrorUnauthorized {
-    return Intl.message(
-      'Authentication required.',
-      name: 'apiErrorUnauthorized',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `You do not have permission to perform this action.`
-  String get apiErrorForbidden {
-    return Intl.message(
-      'You do not have permission to perform this action.',
-      name: 'apiErrorForbidden',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `The requested resource was not found.`
-  String get apiErrorNotFound {
-    return Intl.message(
-      'The requested resource was not found.',
-      name: 'apiErrorNotFound',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Please check the entered data.`
-  String get apiErrorValidation {
-    return Intl.message(
-      'Please check the entered data.',
-      name: 'apiErrorValidation',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `An event type with this name already exists.`
-  String get apiErrorClassTypeNameExists {
-    return Intl.message(
-      'An event type with this name already exists.',
-      name: 'apiErrorClassTypeNameExists',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `The selected slot has reached the maximum number of concurrent bookings.`
-  String get apiErrorServiceCapacityFull {
-    return Intl.message(
-      'The selected slot has reached the maximum number of concurrent bookings.',
-      name: 'apiErrorServiceCapacityFull',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `The selected time slot is no longer available.`
-  String get apiErrorSlotConflict {
-    return Intl.message(
-      'The selected time slot is no longer available.',
-      name: 'apiErrorSlotConflict',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `This action is blocked in demo mode.`
-  String get apiErrorDemoBlocked {
-    return Intl.message(
-      'This action is blocked in demo mode.',
-      name: 'apiErrorDemoBlocked',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Service temporarily unavailable. Please try again later.`
-  String get apiErrorDatabase {
-    return Intl.message(
-      'Service temporarily unavailable. Please try again later.',
-      name: 'apiErrorDatabase',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Access reserved for authorized operators`
   String get authLoginFooter {
     return Intl.message(
@@ -6650,10 +6410,10 @@ class L10n {
     );
   }
 
-  /// `Preview`
+  /// `Appointment preview`
   String get recurrencePreviewTitle {
     return Intl.message(
-      'Preview',
+      'Appointment preview',
       name: 'recurrencePreviewTitle',
       desc: '',
       args: [],
@@ -6962,56 +6722,6 @@ class L10n {
       name: 'bookingTotalPrice',
       desc: '',
       args: [price],
-    );
-  }
-
-  /// `Delete recurring block`
-  String get blockRecurringDeleteTitle {
-    return Intl.message(
-      'Delete recurring block',
-      name: 'blockRecurringDeleteTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Which blocks do you want to delete?`
-  String get blockRecurringDeleteChooseScope {
-    return Intl.message(
-      'Which blocks do you want to delete?',
-      name: 'blockRecurringDeleteChooseScope',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Edit recurring block`
-  String get blockRecurringEditTitle {
-    return Intl.message(
-      'Edit recurring block',
-      name: 'blockRecurringEditTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Which blocks do you want to edit?`
-  String get blockRecurringEditChooseScope {
-    return Intl.message(
-      'Which blocks do you want to edit?',
-      name: 'blockRecurringEditChooseScope',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Recurring block`
-  String get blockRecurringIndicator {
-    return Intl.message(
-      'Recurring block',
-      name: 'blockRecurringIndicator',
-      desc: '',
-      args: [],
     );
   }
 
@@ -8450,26 +8160,6 @@ class L10n {
     );
   }
 
-  /// `Appointment types`
-  String get moreAppointmentTypesTitle {
-    return Intl.message(
-      'Appointment types',
-      name: 'moreAppointmentTypesTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Manage services, events, categories and pricing`
-  String get moreAppointmentTypesDescription {
-    return Intl.message(
-      'Manage services, events, categories and pricing',
-      name: 'moreAppointmentTypesDescription',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Manage business locations`
   String get moreLocationsDescription {
     return Intl.message(
@@ -9377,10 +9067,10 @@ class L10n {
     );
   }
 
-  /// `Copy link`
+  /// `Copy booking link`
   String get closuresImportHolidaysCopyLinkAction {
     return Intl.message(
-      'Copy link',
+      'Copy booking link',
       name: 'closuresImportHolidaysCopyLinkAction',
       desc: '',
       args: [],
@@ -9394,6 +9084,46 @@ class L10n {
       name: 'closuresImportHolidaysLinkCopied',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `The customer will only be able to book this service.\n\n{url}`
+  String bookingDirectLinkCopiedServiceMessage(Object url) {
+    return Intl.message(
+      'The customer will only be able to book this service.\n\n$url',
+      name: 'bookingDirectLinkCopiedServiceMessage',
+      desc: '',
+      args: [url],
+    );
+  }
+
+  /// `The customer will only be able to book this package.\n\n{url}`
+  String bookingDirectLinkCopiedPackageMessage(Object url) {
+    return Intl.message(
+      'The customer will only be able to book this package.\n\n$url',
+      name: 'bookingDirectLinkCopiedPackageMessage',
+      desc: '',
+      args: [url],
+    );
+  }
+
+  /// `The customer will only be able to book this event.\n\n{url}`
+  String bookingDirectLinkCopiedEventMessage(Object url) {
+    return Intl.message(
+      'The customer will only be able to book this event.\n\n$url',
+      name: 'bookingDirectLinkCopiedEventMessage',
+      desc: '',
+      args: [url],
+    );
+  }
+
+  /// `The customer will only be able to book items available in this category. If the category contains public items, only those will be shown. If it contains no public items, items available only by link will be shown.\n\n{url}`
+  String bookingDirectLinkCopiedCategoryMessage(Object url) {
+    return Intl.message(
+      'The customer will only be able to book items available in this category. If the category contains public items, only those will be shown. If it contains no public items, items available only by link will be shown.\n\n$url',
+      name: 'bookingDirectLinkCopiedCategoryMessage',
+      desc: '',
+      args: [url],
     );
   }
 
@@ -9469,25 +9199,30 @@ class L10n {
     );
   }
 
-  /// `No events in the selected day.`
+  /// `No classes in the selected day.`
   String get classEventsEmpty {
     return Intl.message(
-      'No events in the selected day.',
+      'No classes in the selected day.',
       name: 'classEventsEmpty',
       desc: '',
       args: [],
     );
   }
 
-  /// `Events`
+  /// `Classes`
   String get classEventsTitle {
-    return Intl.message('Events', name: 'classEventsTitle', desc: '', args: []);
+    return Intl.message(
+      'Classes',
+      name: 'classEventsTitle',
+      desc: '',
+      args: [],
+    );
   }
 
-  /// `Event`
+  /// `Class`
   String get classEventsUntitled {
     return Intl.message(
-      'Event',
+      'Class',
       name: 'classEventsUntitled',
       desc: '',
       args: [],
@@ -9534,10 +9269,10 @@ class L10n {
     );
   }
 
-  /// `New event schedule`
+  /// `New class schedule`
   String get classEventsNewScheduleButton {
     return Intl.message(
-      'New event schedule',
+      'New class schedule',
       name: 'classEventsNewScheduleButton',
       desc: '',
       args: [],
@@ -9574,10 +9309,10 @@ class L10n {
     );
   }
 
-  /// `Event type`
+  /// `Class type`
   String get classEventsFieldClassType {
     return Intl.message(
-      'Event type',
+      'Class type',
       name: 'classEventsFieldClassType',
       desc: '',
       args: [],
@@ -9744,60 +9479,10 @@ class L10n {
     );
   }
 
-  /// `Capacity cannot be reduced below the number of confirmed participants`
-  String get classEventsValidationCapacityBelowConfirmed {
-    return Intl.message(
-      'Capacity cannot be reduced below the number of confirmed participants',
-      name: 'classEventsValidationCapacityBelowConfirmed',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Promote from waitlist`
-  String get classEventsPromoteWaitlistTitle {
-    return Intl.message(
-      'Promote from waitlist',
-      name: 'classEventsPromoteWaitlistTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Do you want to automatically promote participants from the waitlist to fill the available spots?`
-  String get classEventsPromoteWaitlistMessage {
-    return Intl.message(
-      'Do you want to automatically promote participants from the waitlist to fill the available spots?',
-      name: 'classEventsPromoteWaitlistMessage',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Send email to participants?`
-  String get classEventsNotifyParticipantsTitle {
-    return Intl.message(
-      'Send email to participants?',
-      name: 'classEventsNotifyParticipantsTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Do you want to send notification emails to the people affected by these changes?`
-  String get classEventsNotifyParticipantsMessage {
-    return Intl.message(
-      'Do you want to send notification emails to the people affected by these changes?',
-      name: 'classEventsNotifyParticipantsMessage',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No enabled location for this event type`
+  /// `No enabled location for this class type`
   String get classEventsNoLocationsForClassType {
     return Intl.message(
-      'No enabled location for this event type',
+      'No enabled location for this class type',
       name: 'classEventsNoLocationsForClassType',
       desc: '',
       args: [],
@@ -9824,10 +9509,10 @@ class L10n {
     );
   }
 
-  /// `No event types available`
+  /// `No class types available`
   String get classEventsNoClassTypes {
     return Intl.message(
-      'No event types available',
+      'No class types available',
       name: 'classEventsNoClassTypes',
       desc: '',
       args: [],
@@ -10007,50 +9692,50 @@ class L10n {
     );
   }
 
-  /// `Event created`
+  /// `Class created`
   String get classEventsCreateSuccessTitle {
     return Intl.message(
-      'Event created',
+      'Class created',
       name: 'classEventsCreateSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `The event was created successfully`
+  /// `The class was created successfully`
   String get classEventsCreateSuccessMessage {
     return Intl.message(
-      'The event was created successfully',
+      'The class was created successfully',
       name: 'classEventsCreateSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Unable to create event`
+  /// `Unable to create class`
   String get classEventsCreateErrorMessage {
     return Intl.message(
-      'Unable to create event',
+      'Unable to create class',
       name: 'classEventsCreateErrorMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Event types`
+  /// `Class types`
   String get classTypesManageButton {
     return Intl.message(
-      'Event types',
+      'Class types',
       name: 'classTypesManageButton',
       desc: '',
       args: [],
     );
   }
 
-  /// `Event types`
+  /// `Class types`
   String get classTypesManageTitle {
     return Intl.message(
-      'Event types',
+      'Class types',
       name: 'classTypesManageTitle',
       desc: '',
       args: [],
@@ -10067,10 +9752,10 @@ class L10n {
     );
   }
 
-  /// `No event types configured`
+  /// `No class types configured`
   String get classTypesEmpty {
     return Intl.message(
-      'No event types configured',
+      'No class types configured',
       name: 'classTypesEmpty',
       desc: '',
       args: [],
@@ -10097,30 +9782,30 @@ class L10n {
     );
   }
 
-  /// `New event type`
+  /// `New class type`
   String get classTypesCreateTitle {
     return Intl.message(
-      'New event type',
+      'New class type',
       name: 'classTypesCreateTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Creating an event type is allowed only for superadmin users.`
+  /// `Creating a class type is allowed only for superadmin users.`
   String get classTypesCreateSuperadminOnlyMessage {
     return Intl.message(
-      'Creating an event type is allowed only for superadmin users.',
+      'Creating a class type is allowed only for superadmin users.',
       name: 'classTypesCreateSuperadminOnlyMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Edit event type`
+  /// `Edit class type`
   String get classTypesEditTitle {
     return Intl.message(
-      'Edit event type',
+      'Edit class type',
       name: 'classTypesEditTitle',
       desc: '',
       args: [],
@@ -10187,50 +9872,50 @@ class L10n {
     );
   }
 
-  /// `Select the locations where this event type can be scheduled. You can change this at any time.`
+  /// `Select the locations where this class type can be scheduled. You can change this at any time.`
   String get classTypesLocationsSelectionHelper {
     return Intl.message(
-      'Select the locations where this event type can be scheduled. You can change this at any time.',
+      'Select the locations where this class type can be scheduled. You can change this at any time.',
       name: 'classTypesLocationsSelectionHelper',
       desc: '',
       args: [],
     );
   }
 
-  /// `Event type created`
+  /// `Class type created`
   String get classTypesCreateSuccessTitle {
     return Intl.message(
-      'Event type created',
+      'Class type created',
       name: 'classTypesCreateSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Event type created successfully`
+  /// `Class type created successfully`
   String get classTypesCreateSuccessMessage {
     return Intl.message(
-      'Event type created successfully',
+      'Class type created successfully',
       name: 'classTypesCreateSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Event type updated`
+  /// `Class type updated`
   String get classTypesUpdateSuccessTitle {
     return Intl.message(
-      'Event type updated',
+      'Class type updated',
       name: 'classTypesUpdateSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Event type updated successfully`
+  /// `Class type updated successfully`
   String get classTypesUpdateSuccessMessage {
     return Intl.message(
-      'Event type updated successfully',
+      'Class type updated successfully',
       name: 'classTypesUpdateSuccessMessage',
       desc: '',
       args: [],
@@ -10297,160 +9982,160 @@ class L10n {
     );
   }
 
-  /// `Event type duplicated`
+  /// `Class type duplicated`
   String get classTypesCloneSuccessTitle {
     return Intl.message(
-      'Event type duplicated',
+      'Class type duplicated',
       name: 'classTypesCloneSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Event type duplicated successfully`
+  /// `Class type duplicated successfully`
   String get classTypesCloneSuccessMessage {
     return Intl.message(
-      'Event type duplicated successfully',
+      'Class type duplicated successfully',
       name: 'classTypesCloneSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Delete event type?`
+  /// `Delete class type?`
   String get classTypesDeleteConfirmTitle {
     return Intl.message(
-      'Delete event type?',
+      'Delete class type?',
       name: 'classTypesDeleteConfirmTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `This action permanently deletes the event type.`
+  /// `This action permanently deletes the class type.`
   String get classTypesDeleteConfirmMessage {
     return Intl.message(
-      'This action permanently deletes the event type.',
+      'This action permanently deletes the class type.',
       name: 'classTypesDeleteConfirmMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Event type deleted`
+  /// `Class type deleted`
   String get classTypesDeleteSuccessTitle {
     return Intl.message(
-      'Event type deleted',
+      'Class type deleted',
       name: 'classTypesDeleteSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Event type has been deleted`
+  /// `Class type has been deleted`
   String get classTypesDeleteSuccessMessage {
     return Intl.message(
-      'Event type has been deleted',
+      'Class type has been deleted',
       name: 'classTypesDeleteSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Cannot delete event type because there are associated schedules`
+  /// `Cannot delete class type because there are associated schedules`
   String get classTypesDeleteInUseErrorMessage {
     return Intl.message(
-      'Cannot delete event type because there are associated schedules',
+      'Cannot delete class type because there are associated schedules',
       name: 'classTypesDeleteInUseErrorMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Delete event type?`
+  /// `Delete class type?`
   String get classTypesDeactivateConfirmTitle {
     return Intl.message(
-      'Delete event type?',
+      'Delete class type?',
       name: 'classTypesDeactivateConfirmTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `The event type will be deactivated and unavailable for new schedules.`
+  /// `The class type will be deactivated and unavailable for new schedules.`
   String get classTypesDeactivateConfirmMessage {
     return Intl.message(
-      'The event type will be deactivated and unavailable for new schedules.',
+      'The class type will be deactivated and unavailable for new schedules.',
       name: 'classTypesDeactivateConfirmMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Reactivate event type?`
+  /// `Reactivate class type?`
   String get classTypesReactivateConfirmTitle {
     return Intl.message(
-      'Reactivate event type?',
+      'Reactivate class type?',
       name: 'classTypesReactivateConfirmTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `The event type will be available again for new schedules.`
+  /// `The class type will be available again for new schedules.`
   String get classTypesReactivateConfirmMessage {
     return Intl.message(
-      'The event type will be available again for new schedules.',
+      'The class type will be available again for new schedules.',
       name: 'classTypesReactivateConfirmMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Event type deleted`
+  /// `Class type deleted`
   String get classTypesDeactivateSuccessTitle {
     return Intl.message(
-      'Event type deleted',
+      'Class type deleted',
       name: 'classTypesDeactivateSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Event type has been deactivated`
+  /// `Class type has been deactivated`
   String get classTypesDeactivateSuccessMessage {
     return Intl.message(
-      'Event type has been deactivated',
+      'Class type has been deactivated',
       name: 'classTypesDeactivateSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Event type reactivated`
+  /// `Class type reactivated`
   String get classTypesReactivateSuccessTitle {
     return Intl.message(
-      'Event type reactivated',
+      'Class type reactivated',
       name: 'classTypesReactivateSuccessTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Event type has been reactivated`
+  /// `Class type has been reactivated`
   String get classTypesReactivateSuccessMessage {
     return Intl.message(
-      'Event type has been reactivated',
+      'Class type has been reactivated',
       name: 'classTypesReactivateSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Unable to save event type`
+  /// `Unable to save class type`
   String get classTypesMutationErrorMessage {
     return Intl.message(
-      'Unable to save event type',
+      'Unable to save class type',
       name: 'classTypesMutationErrorMessage',
       desc: '',
       args: [],
@@ -10462,176 +10147,6 @@ class L10n {
     return Intl.message(
       'Participants',
       name: 'classEventsParticipantsTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Confirmed`
-  String get classEventsParticipantsConfirmedTitle {
-    return Intl.message(
-      'Confirmed',
-      name: 'classEventsParticipantsConfirmedTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Waitlist`
-  String get classEventsParticipantsWaitlistTitle {
-    return Intl.message(
-      'Waitlist',
-      name: 'classEventsParticipantsWaitlistTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Add participant`
-  String get classEventsParticipantsAddConfirmed {
-    return Intl.message(
-      'Add participant',
-      name: 'classEventsParticipantsAddConfirmed',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Add to waitlist`
-  String get classEventsParticipantsAddWaitlist {
-    return Intl.message(
-      'Add to waitlist',
-      name: 'classEventsParticipantsAddWaitlist',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Move up`
-  String get classEventsParticipantsPriorityUp {
-    return Intl.message(
-      'Move up',
-      name: 'classEventsParticipantsPriorityUp',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Move down`
-  String get classEventsParticipantsPriorityDown {
-    return Intl.message(
-      'Move down',
-      name: 'classEventsParticipantsPriorityDown',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Promote to participant`
-  String get classEventsParticipantsPromoteAction {
-    return Intl.message(
-      'Promote to participant',
-      name: 'classEventsParticipantsPromoteAction',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Move to waitlist`
-  String get classEventsParticipantsDemoteAction {
-    return Intl.message(
-      'Move to waitlist',
-      name: 'classEventsParticipantsDemoteAction',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Remove`
-  String get classEventsParticipantsRemoveAction {
-    return Intl.message(
-      'Remove',
-      name: 'classEventsParticipantsRemoveAction',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No confirmed participants`
-  String get classEventsParticipantsEmptyConfirmed {
-    return Intl.message(
-      'No confirmed participants',
-      name: 'classEventsParticipantsEmptyConfirmed',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Nobody in waitlist`
-  String get classEventsParticipantsEmptyWaitlist {
-    return Intl.message(
-      'Nobody in waitlist',
-      name: 'classEventsParticipantsEmptyWaitlist',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Waitlist disabled — enable it if needed`
-  String get classEventsWaitlistDisabledHint {
-    return Intl.message(
-      'Waitlist disabled — enable it if needed',
-      name: 'classEventsWaitlistDisabledHint',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Select customer`
-  String get classEventsParticipantsSelectClientTitle {
-    return Intl.message(
-      'Select customer',
-      name: 'classEventsParticipantsSelectClientTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Search customer`
-  String get classEventsParticipantsSearchClientHint {
-    return Intl.message(
-      'Search customer',
-      name: 'classEventsParticipantsSearchClientHint',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `No customers found`
-  String get classEventsParticipantsNoClientsFound {
-    return Intl.message(
-      'No customers found',
-      name: 'classEventsParticipantsNoClientsFound',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Unable to load participants`
-  String get classEventsParticipantsLoadError {
-    return Intl.message(
-      'Unable to load participants',
-      name: 'classEventsParticipantsLoadError',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Unable to update participants`
-  String get classEventsParticipantsMutationError {
-    return Intl.message(
-      'Unable to update participants',
-      name: 'classEventsParticipantsMutationError',
       desc: '',
       args: [],
     );
@@ -11097,10 +10612,10 @@ class L10n {
     );
   }
 
-  /// `Manage events and group schedules`
+  /// `Manage classes and group schedules`
   String get moreClassEventsDescription {
     return Intl.message(
-      'Manage events and group schedules',
+      'Manage classes and group schedules',
       name: 'moreClassEventsDescription',
       desc: '',
       args: [],
@@ -11955,16 +11470,6 @@ class L10n {
     );
   }
 
-  /// `Agenda slot height`
-  String get agendaDisplaySettingsSlotHeightLabel {
-    return Intl.message(
-      'Agenda slot height',
-      name: 'agendaDisplaySettingsSlotHeightLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Color intensity`
   String get agendaDisplaySettingsCardColorOpacityLabel {
     return Intl.message(
@@ -12275,6 +11780,166 @@ class L10n {
     );
   }
 
+  /// `Yes`
+  String get actionYes {
+    return Intl.message('Yes', name: 'actionYes', desc: '', args: []);
+  }
+
+  /// `No`
+  String get actionNo {
+    return Intl.message('No', name: 'actionNo', desc: '', args: []);
+  }
+
+  /// `Agenda slot height`
+  String get agendaDisplaySettingsSlotHeightLabel {
+    return Intl.message(
+      'Agenda slot height',
+      name: 'agendaDisplaySettingsSlotHeightLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Invalid email or password.`
+  String get apiErrorInvalidCredentials {
+    return Intl.message(
+      'Invalid email or password.',
+      name: 'apiErrorInvalidCredentials',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your session is no longer valid. Please sign in again.`
+  String get apiErrorInvalidRefreshToken {
+    return Intl.message(
+      'Your session is no longer valid. Please sign in again.',
+      name: 'apiErrorInvalidRefreshToken',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The password reset link is not valid.`
+  String get apiErrorInvalidResetToken {
+    return Intl.message(
+      'The password reset link is not valid.',
+      name: 'apiErrorInvalidResetToken',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The password reset link has expired.`
+  String get apiErrorResetTokenExpired {
+    return Intl.message(
+      'The password reset link has expired.',
+      name: 'apiErrorResetTokenExpired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Your session has expired. Please sign in again.`
+  String get apiErrorTokenExpired {
+    return Intl.message(
+      'Your session has expired. Please sign in again.',
+      name: 'apiErrorTokenExpired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Authentication required.`
+  String get apiErrorUnauthorized {
+    return Intl.message(
+      'Authentication required.',
+      name: 'apiErrorUnauthorized',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You do not have permission to perform this action.`
+  String get apiErrorForbidden {
+    return Intl.message(
+      'You do not have permission to perform this action.',
+      name: 'apiErrorForbidden',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Please check the entered data.`
+  String get apiErrorValidation {
+    return Intl.message(
+      'Please check the entered data.',
+      name: 'apiErrorValidation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The requested resource was not found.`
+  String get apiErrorNotFound {
+    return Intl.message(
+      'The requested resource was not found.',
+      name: 'apiErrorNotFound',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `An event type with this name already exists.`
+  String get apiErrorClassTypeNameExists {
+    return Intl.message(
+      'An event type with this name already exists.',
+      name: 'apiErrorClassTypeNameExists',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The selected time slot is no longer available.`
+  String get apiErrorSlotConflict {
+    return Intl.message(
+      'The selected time slot is no longer available.',
+      name: 'apiErrorSlotConflict',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The selected slot has reached the maximum number of concurrent bookings.`
+  String get apiErrorServiceCapacityFull {
+    return Intl.message(
+      'The selected slot has reached the maximum number of concurrent bookings.',
+      name: 'apiErrorServiceCapacityFull',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This action is blocked in demo mode.`
+  String get apiErrorDemoBlocked {
+    return Intl.message(
+      'This action is blocked in demo mode.',
+      name: 'apiErrorDemoBlocked',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Service temporarily unavailable. Please try again later.`
+  String get apiErrorDatabase {
+    return Intl.message(
+      'Service temporarily unavailable. Please try again later.',
+      name: 'apiErrorDatabase',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Subscription`
   String get billingTitle {
     return Intl.message(
@@ -12285,61 +11950,21 @@ class L10n {
     );
   }
 
-  /// `Billing status and subscription management.`
-  String get billingDescription {
+  /// `Billing ${businessName}`
+  String billingAdminDialogTitle(Object businessName) {
     return Intl.message(
-      'Billing status and subscription management.',
-      name: 'billingDescription',
+      'Billing \$$businessName',
+      name: 'billingAdminDialogTitle',
       desc: '',
-      args: [],
+      args: [businessName],
     );
   }
 
-  /// `No billing required`
-  String get billingNotRequiredTitle {
+  /// `Subject to billing`
+  String get billingAdminEnabledLabel {
     return Intl.message(
-      'No billing required',
-      name: 'billingNotRequiredTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `This business is not subject to billing.`
-  String get billingNotRequiredMessage {
-    return Intl.message(
-      'This business is not subject to billing.',
-      name: 'billingNotRequiredMessage',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Subscription required`
-  String get billingRequiredTitle {
-    return Intl.message(
-      'Subscription required',
-      name: 'billingRequiredTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Subscription active`
-  String get billingActiveTitle {
-    return Intl.message(
-      'Subscription active',
-      name: 'billingActiveTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Payment failed`
-  String get billingPaymentFailedTitle {
-    return Intl.message(
-      'Payment failed',
-      name: 'billingPaymentFailedTitle',
+      'Subject to billing',
+      name: 'billingAdminEnabledLabel',
       desc: '',
       args: [],
     );
@@ -12380,6 +12005,36 @@ class L10n {
     );
   }
 
+  /// `Enter a valid monthly amount.`
+  String get billingAmountRequired {
+    return Intl.message(
+      'Enter a valid monthly amount.',
+      name: 'billingAmountRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Billing status and subscription management.`
+  String get billingDescription {
+    return Intl.message(
+      'Billing status and subscription management.',
+      name: 'billingDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This business is not subject to billing.`
+  String get billingNotRequiredMessage {
+    return Intl.message(
+      'This business is not subject to billing.',
+      name: 'billingNotRequiredMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Next renewal`
   String get billingCurrentPeriodEndLabel {
     return Intl.message(
@@ -12405,6 +12060,46 @@ class L10n {
     return Intl.message(
       'Manage subscription',
       name: 'billingManageAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No billing required`
+  String get billingNotRequiredTitle {
+    return Intl.message(
+      'No billing required',
+      name: 'billingNotRequiredTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Subscription active`
+  String get billingActiveTitle {
+    return Intl.message(
+      'Subscription active',
+      name: 'billingActiveTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Payment failed`
+  String get billingPaymentFailedTitle {
+    return Intl.message(
+      'Payment failed',
+      name: 'billingPaymentFailedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Subscription required`
+  String get billingRequiredTitle {
+    return Intl.message(
+      'Subscription required',
+      name: 'billingRequiredTitle',
       desc: '',
       args: [],
     );
@@ -12490,31 +12185,431 @@ class L10n {
     );
   }
 
-  /// `Billing {businessName}`
-  String billingAdminDialogTitle(String businessName) {
+  /// `Delete recurring block`
+  String get blockRecurringDeleteTitle {
     return Intl.message(
-      'Billing $businessName',
-      name: 'billingAdminDialogTitle',
-      desc: '',
-      args: [businessName],
-    );
-  }
-
-  /// `Subject to billing`
-  String get billingAdminEnabledLabel {
-    return Intl.message(
-      'Subject to billing',
-      name: 'billingAdminEnabledLabel',
+      'Delete recurring block',
+      name: 'blockRecurringDeleteTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Enter a valid monthly amount.`
-  String get billingAmountRequired {
+  /// `Edit recurring block`
+  String get blockRecurringEditTitle {
     return Intl.message(
-      'Enter a valid monthly amount.',
-      name: 'billingAmountRequired',
+      'Edit recurring block',
+      name: 'blockRecurringEditTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Which blocks do you want to delete?`
+  String get blockRecurringDeleteChooseScope {
+    return Intl.message(
+      'Which blocks do you want to delete?',
+      name: 'blockRecurringDeleteChooseScope',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Which blocks do you want to edit?`
+  String get blockRecurringEditChooseScope {
+    return Intl.message(
+      'Which blocks do you want to edit?',
+      name: 'blockRecurringEditChooseScope',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Recurring block`
+  String get blockRecurringIndicator {
+    return Intl.message(
+      'Recurring block',
+      name: 'blockRecurringIndicator',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Send email to participants?`
+  String get classEventsNotifyParticipantsTitle {
+    return Intl.message(
+      'Send email to participants?',
+      name: 'classEventsNotifyParticipantsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Do you want to send notification emails to the people affected by these changes?`
+  String get classEventsNotifyParticipantsMessage {
+    return Intl.message(
+      'Do you want to send notification emails to the people affected by these changes?',
+      name: 'classEventsNotifyParticipantsMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Confirmed`
+  String get classEventsParticipantsConfirmedTitle {
+    return Intl.message(
+      'Confirmed',
+      name: 'classEventsParticipantsConfirmedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Waitlist`
+  String get classEventsParticipantsWaitlistTitle {
+    return Intl.message(
+      'Waitlist',
+      name: 'classEventsParticipantsWaitlistTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add participant`
+  String get classEventsParticipantsAddConfirmed {
+    return Intl.message(
+      'Add participant',
+      name: 'classEventsParticipantsAddConfirmed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add to waitlist`
+  String get classEventsParticipantsAddWaitlist {
+    return Intl.message(
+      'Add to waitlist',
+      name: 'classEventsParticipantsAddWaitlist',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move up`
+  String get classEventsParticipantsPriorityUp {
+    return Intl.message(
+      'Move up',
+      name: 'classEventsParticipantsPriorityUp',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move down`
+  String get classEventsParticipantsPriorityDown {
+    return Intl.message(
+      'Move down',
+      name: 'classEventsParticipantsPriorityDown',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Promote to participant`
+  String get classEventsParticipantsPromoteAction {
+    return Intl.message(
+      'Promote to participant',
+      name: 'classEventsParticipantsPromoteAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Move to waitlist`
+  String get classEventsParticipantsDemoteAction {
+    return Intl.message(
+      'Move to waitlist',
+      name: 'classEventsParticipantsDemoteAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Remove`
+  String get classEventsParticipantsRemoveAction {
+    return Intl.message(
+      'Remove',
+      name: 'classEventsParticipantsRemoveAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No confirmed participants`
+  String get classEventsParticipantsEmptyConfirmed {
+    return Intl.message(
+      'No confirmed participants',
+      name: 'classEventsParticipantsEmptyConfirmed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Nobody in waitlist`
+  String get classEventsParticipantsEmptyWaitlist {
+    return Intl.message(
+      'Nobody in waitlist',
+      name: 'classEventsParticipantsEmptyWaitlist',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unable to load participants`
+  String get classEventsParticipantsLoadError {
+    return Intl.message(
+      'Unable to load participants',
+      name: 'classEventsParticipantsLoadError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Waitlist disabled — enable it if needed`
+  String get classEventsWaitlistDisabledHint {
+    return Intl.message(
+      'Waitlist disabled — enable it if needed',
+      name: 'classEventsWaitlistDisabledHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Promote from waitlist`
+  String get classEventsPromoteWaitlistTitle {
+    return Intl.message(
+      'Promote from waitlist',
+      name: 'classEventsPromoteWaitlistTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Do you want to automatically promote participants from the waitlist to fill the available spots?`
+  String get classEventsPromoteWaitlistMessage {
+    return Intl.message(
+      'Do you want to automatically promote participants from the waitlist to fill the available spots?',
+      name: 'classEventsPromoteWaitlistMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Capacity cannot be reduced below the number of confirmed participants`
+  String get classEventsValidationCapacityBelowConfirmed {
+    return Intl.message(
+      'Capacity cannot be reduced below the number of confirmed participants',
+      name: 'classEventsValidationCapacityBelowConfirmed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cannot delete`
+  String get classTypesDeleteHasFutureEventsTitle {
+    return Intl.message(
+      'Cannot delete',
+      name: 'classTypesDeleteHasFutureEventsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `There are future scheduled events linked to this event type. Delete or cancel those events before proceeding.`
+  String get classTypesDeleteHasFutureEventsMessage {
+    return Intl.message(
+      'There are future scheduled events linked to this event type. Delete or cancel those events before proceeding.',
+      name: 'classTypesDeleteHasFutureEventsMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Appointments`
+  String get clientAppointmentsAction {
+    return Intl.message(
+      'Appointments',
+      name: 'clientAppointmentsAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cancelled`
+  String get clientAppointmentsCancelled {
+    return Intl.message(
+      'Cancelled',
+      name: 'clientAppointmentsCancelled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Contacts`
+  String get clientContactsActionGroup {
+    return Intl.message(
+      'Contacts',
+      name: 'clientContactsActionGroup',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Appointment types`
+  String get moreAppointmentTypesTitle {
+    return Intl.message(
+      'Appointment types',
+      name: 'moreAppointmentTypesTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manage services, events, categories and pricing`
+  String get moreAppointmentTypesDescription {
+    return Intl.message(
+      'Manage services, events, categories and pricing',
+      name: 'moreAppointmentTypesDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Online booking visibility`
+  String get onlineBookingVisibilityLabel {
+    return Intl.message(
+      'Online booking visibility',
+      name: 'onlineBookingVisibilityLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Visible on the public booking page`
+  String get onlineBookingVisibilityPublicOption {
+    return Intl.message(
+      'Visible on the public booking page',
+      name: 'onlineBookingVisibilityPublicOption',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Direct link only`
+  String get onlineBookingVisibilityDirectLinkOption {
+    return Intl.message(
+      'Direct link only',
+      name: 'onlineBookingVisibilityDirectLinkOption',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Not bookable online`
+  String get onlineBookingVisibilityHiddenOption {
+    return Intl.message(
+      'Not bookable online',
+      name: 'onlineBookingVisibilityHiddenOption',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Concurrent bookings`
+  String get parallelCapacityLabel {
+    return Intl.message(
+      'Concurrent bookings',
+      name: 'parallelCapacityLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Maximum number of clients bookable at the same time.`
+  String get parallelCapacityHint {
+    return Intl.message(
+      'Maximum number of clients bookable at the same time.',
+      name: 'parallelCapacityHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enter a number greater than or equal to 1.`
+  String get parallelCapacityError {
+    return Intl.message(
+      'Enter a number greater than or equal to 1.',
+      name: 'parallelCapacityError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Allow multiple service/package/event selection online`
+  String get teamLocationAllowMultiServiceBookingLabel {
+    return Intl.message(
+      'Allow multiple service/package/event selection online',
+      name: 'teamLocationAllowMultiServiceBookingLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `If disabled, the customer can select only one service, package, or event per booking`
+  String get teamLocationAllowMultiServiceBookingHint {
+    return Intl.message(
+      'If disabled, the customer can select only one service, package, or event per booking',
+      name: 'teamLocationAllowMultiServiceBookingHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Show price to customer`
+  String get locationShowPriceToCustomerLabel {
+    return Intl.message(
+      'Show price to customer',
+      name: 'locationShowPriceToCustomerLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `If enabled, the price is shown during online booking and in the booking list`
+  String get locationShowPriceToCustomerHint {
+    return Intl.message(
+      'If enabled, the price is shown during online booking and in the booking list',
+      name: 'locationShowPriceToCustomerHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Show duration to customer`
+  String get locationShowDurationToCustomerLabel {
+    return Intl.message(
+      'Show duration to customer',
+      name: 'locationShowDurationToCustomerLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `If enabled, the duration is shown during online booking and in the booking list`
+  String get locationShowDurationToCustomerHint {
+    return Intl.message(
+      'If enabled, the duration is shown during online booking and in the booking list',
+      name: 'locationShowDurationToCustomerHint',
       desc: '',
       args: [],
     );

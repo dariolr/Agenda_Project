@@ -1,3 +1,4 @@
+
 /// Evento di classe prenotabile online (lezione di gruppo)
 class ClassEvent {
   final int id;
@@ -22,6 +23,7 @@ class ClassEvent {
   final int cancelCutoffMinutes;
   final String status;
   final String visibility;
+  final String onlineVisibility;
   final int? priceCents;
   final String? currency;
   final int spotsLeft;
@@ -50,6 +52,7 @@ class ClassEvent {
     this.cancelCutoffMinutes = 0,
     this.status = 'SCHEDULED',
     this.visibility = 'PUBLIC',
+    this.onlineVisibility = 'public',
     this.priceCents,
     this.currency,
     required this.spotsLeft,
@@ -62,17 +65,14 @@ class ClassEvent {
     classTypeId: json['class_type_id'] as int,
     classTypeName: json['class_type_name'] as String? ?? '',
     classTypeColorHex: json['class_type_color_hex'] as String?,
-    classTypeServiceCategoryId:
-        json['class_type_service_category_id'] as int?,
+    classTypeServiceCategoryId: json['class_type_service_category_id'] as int?,
     startsAt: json['starts_at'] as String,
     startsAtLocal: json['starts_at_local'] as String?,
     endsAt: json['ends_at'] as String,
     endsAtLocal: json['ends_at_local'] as String?,
     locationId: json['location_id'] as int,
     staffId:
-        json['staff_id'] as int? ??
-        json['instructor_staff_id'] as int? ??
-        0,
+        json['staff_id'] as int? ?? json['instructor_staff_id'] as int? ?? 0,
     capacityTotal: json['capacity_total'] as int? ?? 1,
     capacityReserved: json['capacity_reserved'] as int? ?? 0,
     confirmedCount: json['confirmed_count'] as int? ?? 0,
@@ -83,6 +83,7 @@ class ClassEvent {
     cancelCutoffMinutes: json['cancel_cutoff_minutes'] as int? ?? 0,
     status: json['status'] as String? ?? 'SCHEDULED',
     visibility: json['visibility'] as String? ?? 'PUBLIC',
+    onlineVisibility: json['online_visibility'] as String? ?? 'public',
     priceCents: json['price_cents'] as int?,
     currency: json['currency'] as String?,
     spotsLeft: json['spots_left'] as int? ?? 0,
@@ -129,3 +130,4 @@ class ClassEvent {
     return !start.isAfter(limit);
   }
 }
+

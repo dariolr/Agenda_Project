@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,7 +9,9 @@ import '../../../../core/models/class_event.dart';
 import '../../../../app/providers/route_slug_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/services/pending_booking_storage.dart';
 import '../../../auth/providers/auth_provider.dart';
+import '../../providers/booking_direct_link_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/booking_nomenclature_provider.dart';
 import '../../providers/business_provider.dart';
@@ -28,6 +31,36 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
   final _scrollController = ScrollController();
   bool _cancellationPolicyAccepted = false;
   bool _showCancellationPolicyWarning = false;
+
+  Future<void> _savePendingBookingForAuth() async {
+    final bookingState = ref.read(bookingFlowProvider);
+    final locationId = ref.read(effectiveLocationIdProvider);
+    final business = ref.read(currentBusinessProvider).value;
+    if (locationId <= 0 || business == null) return;
+
+    await PendingBookingStorage.save(
+      PendingBookingData.fromBookingRequest(
+        businessId: business.id,
+        locationId: locationId,
+        selectedLocation: ref.read(selectedLocationProvider),
+        request: bookingState.request,
+      ),
+    );
+  }
+
+  String _authPathWithBookingQuery(String slug) {
+    final params = <String, String>{'from': 'booking'};
+    final linkSlug = ref.read(bookingDirectLinkSlugProvider);
+    if (linkSlug != null && linkSlug.isNotEmpty) {
+      params['link'] = linkSlug;
+    }
+    final location = ref.read(effectiveLocationProvider);
+    if (location != null) {
+      params['location'] = location.id.toString();
+    }
+    final query = Uri(queryParameters: params).query;
+    return '/$slug/login?$query';
+  }
 
   void _scrollToBottom() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -110,6 +143,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                     theme,
                     request.selectedClassEvent!,
                     phraseOverrides,
+                    showPriceToCustomer: location?.showPriceToCustomer ?? true,
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -276,7 +310,8 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                       ),
                                     ),
                                     if (totals.selectedItemCount > 1 &&
-                                        !isCovered)
+                                        !isCovered &&
+                                        (location?.showPriceToCustomer ?? true))
                                       Text(
                                         service.formattedPrice,
                                         style: theme.textTheme.bodySmall
@@ -311,70 +346,82 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                           },
                         ),
                         const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              l10n.summaryDuration,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            Row(
-                              children: [
+                        if ((location?.showDurationToCustomer ?? true) ||
+                            (location?.showPriceToCustomer ?? true))
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              if (location?.showDurationToCustomer ?? true)
                                 Text(
-                                  l10n.summaryPrice,
+                                  l10n.summaryDuration,
                                   style: theme.textTheme.bodyMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.schedule,
-                                  size: 16,
-                                  color: theme.colorScheme.onSurface
-                                      .withOpacity(0.7),
+                              if (location?.showPriceToCustomer ?? true)
+                                Row(
+                                  children: [
+                                    Text(
+                                      l10n.summaryPrice,
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  context.localizedDurationLabel(
-                                    totals.totalDurationMinutes,
-                                  ),
-                                  style: theme.textTheme.bodyMedium,
+                            ],
+                          ),
+                        if ((location?.showDurationToCustomer ?? true) ||
+                            (location?.showPriceToCustomer ?? true))
+                          const SizedBox(height: 6),
+                        if ((location?.showDurationToCustomer ?? true) ||
+                            (location?.showPriceToCustomer ?? true))
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              if (location?.showDurationToCustomer ?? true)
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.schedule,
+                                      size: 16,
+                                      color: theme.colorScheme.onSurface
+                                          .withOpacity(0.7),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      context.localizedDurationLabel(
+                                        totals.totalDurationMinutes,
+                                      ),
+                                      style: theme.textTheme.bodyMedium,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.euro,
-                                  size: 16,
-                                  color: theme.colorScheme.primary,
+                              if (location?.showPriceToCustomer ?? true)
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.euro,
+                                      size: 16,
+                                      color: theme.colorScheme.primary,
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      _formatTotalPrice(
+                                        context,
+                                        totals.totalPrice,
+                                      ).replaceFirst('€', '').trim(),
+                                      style: theme.textTheme.bodyMedium
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.w700,
+                                            color: theme.colorScheme.primary,
+                                          ),
+                                    ),
+                                  ],
                                 ),
-                                const SizedBox(width: 6),
-                                Text(
-                                  _formatTotalPrice(
-                                    context,
-                                    totals.totalPrice,
-                                  ).replaceFirst('€', '').trim(),
-                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: theme.colorScheme.primary,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
                       ],
                     ),
                   ),
@@ -496,8 +543,9 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
     BuildContext context,
     ThemeData theme,
     ClassEvent event,
-    Map<String, String>? phraseOverrides,
-  ) {
+    Map<String, String>? phraseOverrides, {
+    bool showPriceToCustomer = true,
+  }) {
     final startTime = DateTime.tryParse(event.displayStartsAt);
     final endTime = DateTime.tryParse(event.displayEndsAt);
     final dateLabel = startTime != null
@@ -545,13 +593,14 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                   ),
                 ),
               ),
-              Text(
-                event.formattedPrice,
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: theme.colorScheme.primary,
+              if (showPriceToCustomer)
+                Text(
+                  event.formattedPrice,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
-              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -725,7 +774,9 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                   ? null
                   : () async {
                       if (!isAuthenticated && slug != null) {
-                        context.go('/$slug/login');
+                        await _savePendingBookingForAuth();
+                        if (!context.mounted) return;
+                        context.go(_authPathWithBookingQuery(slug));
                         return;
                       }
                       if (!_cancellationPolicyAccepted) {
@@ -748,7 +799,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                         // Sessione scaduta - reindirizza al login
                         // Lo stato della prenotazione è già salvato in localStorage
                         if (context.mounted && slug != null) {
-                          context.go('/$slug/login');
+                          context.go(_authPathWithBookingQuery(slug));
                         }
                       }
                     },
@@ -902,3 +953,4 @@ class _SummarySection extends StatelessWidget {
     );
   }
 }
+

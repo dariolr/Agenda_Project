@@ -15,6 +15,7 @@ use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\ServicePackageRepository;
 use Agenda\Infrastructure\Repositories\PopularServiceRepository;
 use Agenda\Infrastructure\Repositories\StaffRepository;
+use Agenda\Infrastructure\Repositories\BookingDirectLinkRepository;
 
 final class ServicesController
 {
@@ -27,6 +28,7 @@ final class ServicesController
         private readonly ServicePackageRepository $packageRepo,
         private readonly PopularServiceRepository $popularServiceRepo,
         private readonly StaffRepository $staffRepo,
+        private readonly ?BookingDirectLinkRepository $directLinkRepo = null,
     ) {}
 
     /**
@@ -79,8 +81,9 @@ final class ServicesController
             return Response::error('Location context required', 'missing_location', 400);
         }
 
-        $services = $this->serviceRepository->findByLocationId($locationId, $businessId);
-        $categories = $this->serviceRepository->getCategories($businessId);
+        $directLinkScope = $this->directLinkScopeFromQuery($request, (int) $businessId, (int) $locationId);
+        $services = $this->serviceRepository->findByLocationId($locationId, $businessId, $directLinkScope);
+        $categories = $this->serviceRepository->getCategories($businessId, $directLinkScope);
 
         // Collect all variant IDs to load resource requirements in batch
         $variantIds = [];
@@ -96,6 +99,10 @@ final class ServicesController
         // Group services by category
         $grouped = [];
         $uncategorized = [];
+        $categoriesById = [];
+        foreach ($categories as $category) {
+            $categoriesById[(int) $category['id']] = $category;
+        }
 
         foreach ($services as $service) {
             $variantId = isset($service['service_variant_id']) ? (int) $service['service_variant_id'] : null;
@@ -113,6 +120,7 @@ final class ServicesController
                 'color' => $service['color'],
                 'is_active' => (bool) ($service['is_active'] ?? true),
                 'is_bookable_online' => (bool) ($service['is_bookable_online'] ?? true),
+                'online_visibility' => (string) ($service['online_visibility'] ?? 'public'),
                 'is_price_starting_from' => (bool) ($service['is_price_from'] ?? false),
                 'parallel_capacity' => (int) ($service['parallel_capacity'] ?? 1),
                 'category_id' => $service['category_id'] ? (int) $service['category_id'] : null,
@@ -130,9 +138,13 @@ final class ServicesController
             if ($service['category_id'] !== null) {
                 $categoryId = (int) $service['category_id'];
                 if (!isset($grouped[$categoryId])) {
+                    $category = $categoriesById[$categoryId] ?? [];
                     $grouped[$categoryId] = [
                         'id' => $categoryId,
-                        'name' => $service['category_name'],
+                        'business_id' => (int) ($category['business_id'] ?? $businessId),
+                        'name' => $category['name'] ?? $service['category_name'],
+                        'description' => $category['description'] ?? null,
+                        'sort_order' => (int) ($category['sort_order'] ?? 0),
                         'services' => [],
                     ];
                 }
@@ -144,10 +156,21 @@ final class ServicesController
 
         // Format categories with their services
         $categoriesFormatted = [];
+        $directCategoryId = $directLinkScope !== null
+            && ($directLinkScope['target_type'] ?? null) === BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY
+            ? (int) ($directLinkScope['target_id'] ?? 0)
+            : null;
         foreach ($categories as $category) {
             $categoryId = (int) $category['id'];
-            if (isset($grouped[$categoryId])) {
-                $categoriesFormatted[] = $grouped[$categoryId];
+            if (isset($grouped[$categoryId]) || $categoryId === $directCategoryId) {
+                $categoriesFormatted[] = [
+                    'id' => $categoryId,
+                    'business_id' => (int) ($category['business_id'] ?? $businessId),
+                    'name' => (string) ($category['name'] ?? ''),
+                    'description' => $category['description'] ?? null,
+                    'sort_order' => (int) ($category['sort_order'] ?? 0),
+                    'services' => $grouped[$categoryId]['services'] ?? [],
+                ];
             }
         }
 
@@ -178,6 +201,7 @@ final class ServicesController
                     'color' => $s['color'],
                     'is_active' => (bool) ($s['is_active'] ?? true),
                     'is_bookable_online' => (bool) ($s['is_bookable_online'] ?? true),
+                    'online_visibility' => (string) ($s['online_visibility'] ?? 'public'),
                     'is_price_starting_from' => (bool) ($s['is_price_from'] ?? false),
                     'parallel_capacity' => (int) ($s['parallel_capacity'] ?? 1),
                     'category_id' => $s['category_id'] ? (int) $s['category_id'] : null,
@@ -216,6 +240,10 @@ final class ServicesController
         }
 
         $body = $request->getBody();
+        $onlineVisibility = $this->validatedOnlineVisibility($body, $request);
+        if ($onlineVisibility instanceof Response) {
+            return $onlineVisibility;
+        }
         $name = trim($body['name'] ?? '');
         if (empty($name)) {
             return Response::error('Name is required', 'validation_error', 400);
@@ -241,11 +269,13 @@ final class ServicesController
             price: (float) ($body['price'] ?? 0),
             colorHex: $colorHex,
             isBookableOnline: (bool) ($body['is_bookable_online'] ?? true),
+            onlineVisibility: $onlineVisibility,
             isPriceStartingFrom: (bool) ($body['is_price_starting_from'] ?? false),
             processingTime: isset($body['processing_time']) ? (int) $body['processing_time'] : null,
             blockedTime: isset($body['blocked_time']) ? (int) $body['blocked_time'] : null,
             parallelCapacity: $parallelCapacity
         );
+        $this->createDirectLinkIfNeeded((int) $businessId, $service, $onlineVisibility);
 
         return Response::success(['service' => $this->formatService($service, $businessId)], 201);
     }
@@ -264,6 +294,10 @@ final class ServicesController
         }
 
         $body = $request->getBody();
+        $onlineVisibility = $this->validatedOnlineVisibility($body, $request);
+        if ($onlineVisibility instanceof Response) {
+            return $onlineVisibility;
+        }
         $name = trim($body['name'] ?? '');
         if (empty($name)) {
             return Response::error('Name is required', 'validation_error', 400);
@@ -302,11 +336,13 @@ final class ServicesController
             price: (float) ($body['price'] ?? 0),
             colorHex: $colorHex,
             isBookableOnline: (bool) ($body['is_bookable_online'] ?? true),
+            onlineVisibility: $onlineVisibility,
             isPriceStartingFrom: (bool) ($body['is_price_starting_from'] ?? false),
             processingTime: isset($body['processing_time']) ? (int) $body['processing_time'] : null,
             blockedTime: isset($body['blocked_time']) ? (int) $body['blocked_time'] : null,
             parallelCapacity: $parallelCapacity
         );
+        $this->createDirectLinkIfNeeded((int) $businessId, $service, $onlineVisibility);
 
         return Response::success(['service' => $this->formatService($service, $businessId)], 201);
     }
@@ -333,6 +369,10 @@ final class ServicesController
         }
 
         $body = $request->getBody();
+        $onlineVisibility = $this->validatedOnlineVisibility($body, $request);
+        if ($onlineVisibility instanceof Response) {
+            return $onlineVisibility;
+        }
         $locationId = isset($body['location_id']) ? (int) $body['location_id'] : null;
 
         if (!$locationId) {
@@ -387,6 +427,7 @@ final class ServicesController
             price: isset($body['price']) ? (float) $body['price'] : null,
             colorHex: $colorHex,
             isBookableOnline: isset($body['is_bookable_online']) ? (bool) $body['is_bookable_online'] : null,
+            onlineVisibility: $onlineVisibility,
             isPriceStartingFrom: isset($body['is_price_starting_from']) ? (bool) $body['is_price_starting_from'] : null,
             sortOrder: isset($body['sort_order']) ? (int) $body['sort_order'] : null,
             processingTime: $processingTime,
@@ -400,6 +441,7 @@ final class ServicesController
         if (!$service) {
             return Response::error('Service not found or unauthorized', 'not_found', 404);
         }
+        $this->createDirectLinkIfNeeded((int) $businessId, $service, $onlineVisibility);
 
         return Response::success(['service' => $this->formatService($service, $businessId)]);
     }
@@ -446,7 +488,7 @@ final class ServicesController
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
 
-        $categories = $this->serviceRepository->getCategories($businessId);
+        $categories = $this->serviceRepository->getCategories($businessId, null, true);
 
         return Response::success([
             'categories' => array_map(fn($c) => [
@@ -481,7 +523,7 @@ final class ServicesController
         $category = $this->serviceRepository->createCategory(
             businessId: $businessId,
             name: $name,
-            description: $body['description'] ?? null
+            description: $body['description'] ?? null,
         );
 
         return Response::success(['category' => $category], 201);
@@ -514,13 +556,12 @@ final class ServicesController
             categoryId: $categoryId,
             name: $body['name'] ?? null,
             description: $body['description'] ?? null,
-            sortOrder: isset($body['sort_order']) ? (int) $body['sort_order'] : null
+            sortOrder: isset($body['sort_order']) ? (int) $body['sort_order'] : null,
         );
 
         if (!$category) {
             return Response::error('Category not found', 'not_found', 404);
         }
-
         return Response::success(['category' => [
             'id' => (int) $category['id'],
             'business_id' => (int) $category['business_id'],
@@ -749,6 +790,7 @@ final class ServicesController
             'color' => $service['color'],
             'is_active' => (bool) ($service['is_active'] ?? true),
             'is_bookable_online' => (bool) ($service['is_bookable_online'] ?? true),
+            'online_visibility' => (string) ($service['online_visibility'] ?? 'public'),
             'is_price_starting_from' => (bool) ($service['is_price_from'] ?? false),
             'parallel_capacity' => (int) ($service['parallel_capacity'] ?? 1),
             'category_id' => $service['category_id'] ? (int) $service['category_id'] : null,
@@ -781,6 +823,56 @@ final class ServicesController
         }
 
         return $capacity;
+    }
+
+    private function validatedOnlineVisibility(array $body, Request $request): string|Response|null
+    {
+        if (!array_key_exists('online_visibility', $body)) {
+            return null;
+        }
+
+        $value = strtolower(trim((string) $body['online_visibility']));
+        if (!in_array($value, ['public', 'direct_link', 'hidden'], true)) {
+            return Response::error('Invalid online_visibility', 'validation_error', 400, $request->traceId);
+        }
+
+        return $value;
+    }
+
+    private function directLinkScopeFromQuery(Request $request, int $businessId, ?int $locationId = null): ?array
+    {
+        $link = trim((string) ($request->queryParam('link') ?? ''));
+        if ($link === '') {
+            return null;
+        }
+
+        $scope = $this->directLinkRepo?->resolveAvailableScope($businessId, $link);
+        if (
+            $scope !== null
+            && ($scope['target_type'] ?? null) === BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY
+        ) {
+            $scope['child_visibility_scope'] = $this->directLinkRepo?->resolveCategoryChildVisibilityScope(
+                $businessId,
+                (int) ($scope['target_id'] ?? 0),
+                $locationId
+            ) ?? 'empty';
+        }
+
+        return $scope;
+    }
+
+    private function createDirectLinkIfNeeded(int $businessId, ?array $service, ?string $onlineVisibility): void
+    {
+        if ($onlineVisibility !== 'direct_link' || $service === null || empty($service['service_variant_id'])) {
+            return;
+        }
+
+        $this->directLinkRepo?->createOrUpdateForTarget(
+            $businessId,
+            BookingDirectLinkRepository::TARGET_SERVICE_VARIANT,
+            (int) $service['service_variant_id'],
+            (string) ($service['name'] ?? 'booking-link')
+        );
     }
 
     /**

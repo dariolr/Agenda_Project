@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,7 +11,10 @@ import '../../../../core/models/service_category.dart';
 import '../../../../core/models/service_package.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/widgets/centered_error_view.dart';
+import '../../domain/booking_direct_link.dart';
+import '../../providers/booking_direct_link_provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/locations_provider.dart';
 import '../../providers/booking_nomenclature_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../providers/class_events_provider.dart';
@@ -28,6 +32,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
   bool _hasRequestedBookingsLoad = false;
+  String? _appliedDirectLinkSlug;
 
   @override
   void initState() {
@@ -55,6 +60,8 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     final servicesDataAsync = ref.watch(servicesDataProvider);
     final packagesAsync = ref.watch(servicePackagesProvider);
     final classEventsAsync = ref.watch(filteredClassEventsProvider);
+    final directLink = ref.watch(bookingDirectLinkProvider).value;
+    final bookingConstraint = _BookingLinkConstraint.fromDirectLink(directLink);
     final bookingState = ref.watch(bookingFlowProvider);
     final selectedServices = bookingState.request.services;
     final isLoading = servicesDataAsync.isLoading || classEventsAsync.isLoading;
@@ -69,6 +76,9 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
       });
     }
     final bookedEventStatus = ref.watch(bookedClassEventStatusProvider);
+    final location = ref.watch(effectiveLocationProvider);
+    final showPriceToCustomer = location?.showPriceToCustomer ?? true;
+    final showDurationToCustomer = location?.showDurationToCustomer ?? true;
 
     if (servicesDataAsync.hasError) {
       return _buildErrorWidget(
@@ -82,12 +92,32 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
 
     final packages = packagesAsync.value ?? const <ServicePackage>[];
     final servicesData = servicesDataAsync.value;
+    final visibleServicesData = servicesData == null
+        ? null
+        : ServicesData(
+            categories: servicesData.categories,
+            services: servicesData.services
+                .where(bookingConstraint.allowsService)
+                .toList(),
+          );
+    final visiblePackages = packages.where(bookingConstraint.allowsPackage).toList();
+    final visibleClassEvents = (classEventsAsync.value ?? const <ClassEvent>[])
+        .where(bookingConstraint.allowsEvent)
+        .toList();
     final hasServices =
-        (servicesData?.bookableServices.isNotEmpty ?? false) ||
-        packages.isNotEmpty;
-    final hasClassEvents = classEventsAsync.value?.isNotEmpty ?? false;
+        (visibleServicesData?.bookableServices.isNotEmpty ?? false) ||
+        visiblePackages.isNotEmpty;
+    final hasClassEvents = visibleClassEvents.isNotEmpty;
     final showBothTabs = hasServices && hasClassEvents;
     final isClassTab = showBothTabs && _tabController.index == 1;
+
+    _applyDirectLinkSelectionIfReady(
+      directLink: directLink,
+      servicesData: visibleServicesData,
+      packages: visiblePackages,
+      classEvents: visibleClassEvents,
+      showBothTabs: showBothTabs,
+    );
 
     // Se non ci sono entrambi i tipi, torna al tab 0
     if (!showBothTabs && _tabController.index != 0) {
@@ -110,8 +140,9 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
           ),
         );
       }
-      if (servicesData == null) return const SizedBox.shrink();
-      if (servicesData.bookableServices.isEmpty && packages.isEmpty) {
+      if (visibleServicesData == null) return const SizedBox.shrink();
+      if (visibleServicesData.bookableServices.isEmpty &&
+          visiblePackages.isEmpty) {
         return _EmptyView(
           title: bookingServicesEmptyTitle(
             context,
@@ -128,15 +159,18 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
       return _buildServicesList(
         context,
         ref,
-        servicesData.categories,
-        servicesData.bookableServices,
-        servicesData.serviceIdsWithEligibleStaff,
-        servicesData.services,
+        visibleServicesData.categories,
+        visibleServicesData.bookableServices,
+        visibleServicesData.serviceIdsWithEligibleStaff,
+        servicesData!.services,
         bookingState.request.selectedServiceIds,
         bookingState.request.selectedPackageIds,
         selectedServices,
-        packagesAsync,
+        AsyncValue.data(visiblePackages),
         phraseOverrides,
+        bookingConstraint: bookingConstraint,
+        showPriceToCustomer: showPriceToCustomer,
+        showDurationToCustomer: showDurationToCustomer,
       );
     }
 
@@ -148,20 +182,22 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
           buildServicesContent(),
           _buildClassEventsTab(
             context,
-            ref,
-            classEventsAsync,
-            bookingState.request.selectedClassEvent,
-            hasSelectedServices: selectedServices.isNotEmpty,
-            bookedEventStatus: bookedEventStatus,
-          ),
+        ref,
+        AsyncValue.data(visibleClassEvents),
+        bookingState.request.selectedClassEvent,
+        bookingConstraint: bookingConstraint,
+        hasSelectedServices: selectedServices.isNotEmpty,
+        bookedEventStatus: bookedEventStatus,
+      ),
         ],
       );
     } else if (hasClassEvents) {
       content = _buildClassEventsTab(
         context,
         ref,
-        classEventsAsync,
+        AsyncValue.data(visibleClassEvents),
         bookingState.request.selectedClassEvent,
+        bookingConstraint: bookingConstraint,
         hasSelectedServices: selectedServices.isNotEmpty,
         bookedEventStatus: bookedEventStatus,
       );
@@ -267,6 +303,116 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     );
   }
 
+  void _applyDirectLinkSelectionIfReady({
+    required BookingDirectLink? directLink,
+    required ServicesData? servicesData,
+    required List<ServicePackage>? packages,
+    required List<ClassEvent>? classEvents,
+    required bool showBothTabs,
+  }) {
+    if (directLink == null || _appliedDirectLinkSlug == directLink.linkSlug) {
+      return;
+    }
+
+    switch (directLink.targetType) {
+      case 'service_variant':
+        if (servicesData == null) return;
+        _appliedDirectLinkSlug = directLink.linkSlug;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final service = _findDirectService(directLink, servicesData.services);
+          if (service == null) return;
+          final current = ref.read(bookingFlowProvider).request;
+          if (current.selectedServiceIds.length != 1 ||
+              !current.selectedServiceIds.contains(service.id) ||
+              current.selectedPackageIds.isNotEmpty ||
+              current.selectedClassEvent != null) {
+            ref
+                .read(bookingFlowProvider.notifier)
+                .applyLockedServiceSelection(service);
+          }
+        });
+        return;
+      case 'service_package':
+        if (servicesData == null || packages == null) return;
+        _appliedDirectLinkSlug = directLink.linkSlug;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final package = _findDirectPackage(directLink.targetId, packages);
+          if (package == null) return;
+          final current = ref.read(bookingFlowProvider).request;
+          if (current.selectedPackageIds.length != 1 ||
+              !current.selectedPackageIds.contains(package.id) ||
+              current.selectedClassEvent != null) {
+            ref
+                .read(bookingFlowProvider.notifier)
+                .applyLockedPackageSelection(package, servicesData.services);
+          }
+        });
+        return;
+      case 'class_event':
+        if (classEvents == null) return;
+        _appliedDirectLinkSlug = directLink.linkSlug;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          final event = _findDirectClassEvent(directLink.targetId, classEvents);
+          if (event == null) return;
+          final current = ref.read(bookingFlowProvider).request;
+          if (current.selectedClassEvent?.id != event.id) {
+            ref
+                .read(bookingFlowProvider.notifier)
+                .applyLockedClassEventSelection(event);
+          }
+          if (showBothTabs && _tabController.index != 1) {
+            _tabController.animateTo(1);
+          }
+        });
+        return;
+      case 'service_category':
+        _appliedDirectLinkSlug = directLink.linkSlug;
+        return;
+      default:
+        _appliedDirectLinkSlug = directLink.linkSlug;
+        return;
+    }
+  }
+
+  Service? _findDirectService(
+    BookingDirectLink directLink,
+    List<Service> services,
+  ) {
+    final serviceId = _intFromJson(directLink.target['service_id']);
+    for (final service in services) {
+      if (service.serviceVariantId == directLink.targetId) return service;
+      if (serviceId != null && service.id == serviceId) return service;
+    }
+    return null;
+  }
+
+  ServicePackage? _findDirectPackage(
+    int packageId,
+    List<ServicePackage> packages,
+  ) {
+    for (final package in packages) {
+      if (package.id == packageId) return package;
+    }
+    return null;
+  }
+
+  ClassEvent? _findDirectClassEvent(int eventId, List<ClassEvent> classEvents) {
+    for (final event in classEvents) {
+      if (event.id == eventId) return event;
+    }
+    return null;
+  }
+
+  int? _intFromJson(Object? value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
   /// Costruisce il widget di errore appropriato in base al tipo di errore
   Widget _buildErrorWidget(
     BuildContext context,
@@ -337,8 +483,11 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     Set<int> selectedPackageIds,
     List<Service> selectedServices,
     AsyncValue<List<ServicePackage>> packagesAsync,
-    Map<String, String>? phraseOverrides,
-  ) {
+    Map<String, String>? phraseOverrides, {
+    required _BookingLinkConstraint bookingConstraint,
+    bool showPriceToCustomer = true,
+    bool showDurationToCustomer = true,
+  }) {
     final widgets = <Widget>[];
     final packages = packagesAsync.value ?? [];
     // Per i pacchetti usiamo tutti i servizi con staff eligible (non solo quelli
@@ -349,6 +498,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
       if (!package.isActive || !package.isBookableOnline || package.isBroken) {
         return false;
       }
+      if (package.onlineVisibility == 'hidden') return false;
       final packageServiceIds = package.orderedServiceIds;
       if (packageServiceIds.isEmpty) return false;
       return packageServiceIds.every(
@@ -465,14 +615,26 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
           selectedServices: selectedServices,
           serviceById: serviceById,
           isCollapsible: isCollapsible,
+          showPriceToCustomer: showPriceToCustomer,
+          showDurationToCustomer: showDurationToCustomer,
           onServiceTap: (service) {
+            if (bookingConstraint.locksSingleServiceSelection &&
+                selectedServiceIds.contains(service.id)) {
+              return;
+            }
             ref.read(bookingFlowProvider.notifier).toggleService(service);
           },
           onPackageTap: (package) {
+            if (bookingConstraint.locksSinglePackageSelection &&
+                selectedPackageIds.contains(package.id)) {
+              return;
+            }
             ref
                 .read(bookingFlowProvider.notifier)
                 .togglePackageSelection(package, services);
           },
+          disableServiceTap: bookingConstraint.locksSingleServiceSelection,
+          disablePackageTap: bookingConstraint.locksSinglePackageSelection,
         ),
       );
     }
@@ -488,6 +650,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     WidgetRef ref,
     AsyncValue<List<ClassEvent>> eventsAsync,
     ClassEvent? selectedEvent, {
+    required _BookingLinkConstraint bookingConstraint,
     required bool hasSelectedServices,
     required Map<int, String> bookedEventStatus,
   }) {
@@ -571,6 +734,10 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
             sortedCategoryIds.length >= 3;
 
         void onEventTap(ClassEvent event) {
+          if (bookingConstraint.locksSingleEventSelection &&
+              selectedEvent?.id == event.id) {
+            return;
+          }
           final notifier = ref.read(bookingFlowProvider.notifier);
           if (selectedEvent?.id == event.id) {
             notifier.selectClassEvent(null);
@@ -597,8 +764,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
         final items = <Widget>[];
         for (final catId in sortedCategoryIds) {
           final catEvents = byCategory[catId]!;
-          final catName =
-              catId != null && categoryById.containsKey(catId)
+          final catName = catId != null && categoryById.containsKey(catId)
               ? categoryById[catId]!.name
               : context.l10n.tabEvents;
           items.add(
@@ -639,6 +805,8 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     final bookingState = ref.watch(bookingFlowProvider);
     final totals = ref.watch(bookingTotalsProvider);
     final selectedClassEvent = bookingState.request.selectedClassEvent;
+    final footerLocation = ref.watch(effectiveLocationProvider);
+    final showPriceToCustomer = footerLocation?.showPriceToCustomer ?? true;
 
     // Testo info selezione
     Widget selectionInfo;
@@ -655,13 +823,14 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
               ),
             ),
             const SizedBox(width: 8),
-            Text(
-              selectedClassEvent.formattedPrice,
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: theme.colorScheme.primary,
+            if (showPriceToCustomer)
+              Text(
+                selectedClassEvent.formattedPrice,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.primary,
+                ),
               ),
-            ),
           ],
         );
       } else {
@@ -688,7 +857,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
             ),
             style: theme.textTheme.bodyMedium,
           ),
-          if (selectedServices.isNotEmpty)
+          if (selectedServices.isNotEmpty && showPriceToCustomer)
             Text(
               _formatTotalPrice(context, totals.totalPrice),
               style: theme.textTheme.titleMedium?.copyWith(
@@ -776,9 +945,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
             isSelected: selectedEvent?.id == event.id,
             existingStatus: existingStatus,
             phraseOverrides: phraseOverrides,
-            onTap: existingStatus != null
-                ? () {}
-                : () => onEventTap(event),
+            onTap: existingStatus != null ? () {} : () => onEventTap(event),
           ),
         );
       }
@@ -861,6 +1028,8 @@ class _ClassEventTile extends ConsumerWidget {
     final isAlreadyBooked = existingStatus == 'confirmed';
     final isAlreadyWaitlisted = existingStatus == 'waitlisted';
     final hasExistingBooking = existingStatus != null;
+    final showPriceToCustomer =
+        ref.watch(effectiveLocationProvider)?.showPriceToCustomer ?? true;
 
     final effectiveOnTap = hasExistingBooking
         ? null
@@ -963,7 +1132,7 @@ class _ClassEventTile extends ConsumerWidget {
                           color: theme.colorScheme.onSurface.withOpacity(0.6),
                         ),
                       ),
-                      if (hasExistingBooking) ...[
+                      if (hasExistingBooking && showPriceToCustomer) ...[
                         const SizedBox(height: 2),
                         Text(
                           event.formattedPrice,
@@ -980,7 +1149,7 @@ class _ClassEventTile extends ConsumerWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    if (!hasExistingBooking)
+                    if (!hasExistingBooking && showPriceToCustomer)
                       Text(
                         event.formattedPrice,
                         style: theme.textTheme.titleSmall?.copyWith(
@@ -1088,7 +1257,11 @@ class _CategorySection extends StatefulWidget {
   final Map<int, Service> serviceById;
   final void Function(Service) onServiceTap;
   final void Function(ServicePackage) onPackageTap;
+  final bool disableServiceTap;
+  final bool disablePackageTap;
   final bool isCollapsible;
+  final bool showPriceToCustomer;
+  final bool showDurationToCustomer;
 
   const _CategorySection({
     super.key,
@@ -1100,7 +1273,11 @@ class _CategorySection extends StatefulWidget {
     required this.serviceById,
     required this.onServiceTap,
     required this.onPackageTap,
+    this.disableServiceTap = false,
+    this.disablePackageTap = false,
     this.isCollapsible = false,
+    this.showPriceToCustomer = true,
+    this.showDurationToCustomer = true,
   });
 
   @override
@@ -1236,7 +1413,10 @@ class _CategorySectionState extends State<_CategorySection> {
                       onTap:
                           (!entry.package!.isActive || entry.package!.isBroken)
                           ? null
+                          : widget.disablePackageTap
+                          ? null
                           : () => widget.onPackageTap(entry.package!),
+                      showPriceToCustomer: widget.showPriceToCustomer,
                     )
                   else
                     _ServiceTile(
@@ -1244,7 +1424,11 @@ class _CategorySectionState extends State<_CategorySection> {
                       isSelected: widget.selectedServiceIds.contains(
                         entry.service!.id,
                       ),
-                      onTap: () => widget.onServiceTap(entry.service!),
+                      onTap: widget.disableServiceTap
+                          ? () {}
+                          : () => widget.onServiceTap(entry.service!),
+                      showPriceToCustomer: widget.showPriceToCustomer,
+                      showDurationToCustomer: widget.showDurationToCustomer,
                     ),
                 if (!widget.isCollapsible) const SizedBox(height: 8),
               ],
@@ -1445,11 +1629,15 @@ class _ServiceTile extends StatelessWidget {
   final Service service;
   final bool isSelected;
   final VoidCallback onTap;
+  final bool showPriceToCustomer;
+  final bool showDurationToCustomer;
 
   const _ServiceTile({
     required this.service,
     required this.isSelected,
     required this.onTap,
+    this.showPriceToCustomer = true,
+    this.showDurationToCustomer = true,
   });
 
   @override
@@ -1504,26 +1692,29 @@ class _ServiceTile extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      context.localizedDurationLabel(
-                        service.customerVisibleDurationMinutes,
+                    if (showDurationToCustomer) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        context.localizedDurationLabel(
+                          service.customerVisibleDurationMinutes,
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.6),
+                        ),
                       ),
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withOpacity(0.6),
-                      ),
-                    ),
+                    ],
                   ],
                 ),
               ),
               // Prezzo
-              Text(
-                service.formattedPrice,
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.primary,
+              if (showPriceToCustomer)
+                Text(
+                  service.formattedPrice,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -1556,6 +1747,7 @@ class _PackageTile extends StatelessWidget {
   final bool isSelected;
   final bool isDisabled;
   final VoidCallback? onTap;
+  final bool showPriceToCustomer;
 
   const _PackageTile({
     required this.package,
@@ -1563,6 +1755,7 @@ class _PackageTile extends StatelessWidget {
     required this.isSelected,
     required this.isDisabled,
     required this.onTap,
+    this.showPriceToCustomer = true,
   });
 
   @override
@@ -1640,19 +1833,110 @@ class _PackageTile extends StatelessWidget {
                     ],
                   ),
                 ),
-                Text(
-                  priceLabel,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.primary,
+                if (showPriceToCustomer)
+                  Text(
+                    priceLabel,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
-                ),
               ],
             ),
           ),
         ),
       ),
     );
+  }
+}
+
+class _BookingLinkConstraint {
+  final String? targetType;
+  final int? targetId;
+  final String? childVisibilityScope;
+
+  const _BookingLinkConstraint({
+    this.targetType,
+    this.targetId,
+    this.childVisibilityScope,
+  });
+
+  factory _BookingLinkConstraint.fromDirectLink(BookingDirectLink? directLink) {
+    if (directLink == null) {
+      return const _BookingLinkConstraint();
+    }
+    return _BookingLinkConstraint(
+      targetType: directLink.targetType,
+      targetId: directLink.targetId,
+      childVisibilityScope: directLink.childVisibilityScope,
+    );
+  }
+
+  bool get locksSingleServiceSelection => targetType == 'service_variant';
+  bool get locksSinglePackageSelection => targetType == 'service_package';
+  bool get locksSingleEventSelection => targetType == 'class_event';
+
+  bool get isScopedToServicesOnly =>
+      targetType == 'service_variant' || targetType == 'service_package';
+
+  bool get isScopedToEventsOnly => targetType == 'class_event';
+
+  bool _matchesCategoryVisibility(String onlineVisibility) {
+    if (targetType != 'service_category') {
+      return true;
+    }
+
+    return switch (childVisibilityScope) {
+      'public_only' => onlineVisibility == 'public',
+      'direct_link_only' => onlineVisibility == 'direct_link',
+      'empty' => false,
+      _ => onlineVisibility != 'hidden',
+    };
+  }
+
+  bool allowsService(Service service) {
+    switch (targetType) {
+      case 'service_variant':
+        return service.serviceVariantId == targetId;
+      case 'service_package':
+      case 'class_event':
+        return false;
+      case 'service_category':
+        return service.categoryId == targetId &&
+            _matchesCategoryVisibility(service.onlineVisibility);
+      default:
+        return true;
+    }
+  }
+
+  bool allowsPackage(ServicePackage package) {
+    switch (targetType) {
+      case 'service_variant':
+      case 'class_event':
+        return false;
+      case 'service_package':
+        return package.id == targetId;
+      case 'service_category':
+        return package.categoryId == targetId &&
+            _matchesCategoryVisibility(package.onlineVisibility);
+      default:
+        return true;
+    }
+  }
+
+  bool allowsEvent(ClassEvent event) {
+    switch (targetType) {
+      case 'service_variant':
+      case 'service_package':
+        return false;
+      case 'class_event':
+        return event.id == targetId;
+      case 'service_category':
+        return event.classTypeServiceCategoryId == targetId &&
+            _matchesCategoryVisibility(event.onlineVisibility);
+      default:
+        return true;
+    }
   }
 }
 
@@ -1796,9 +2080,7 @@ class _ManageBookingLink extends StatelessWidget {
           minimumSize: const Size(0, 32),
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           textStyle: textTheme.bodySmall?.copyWith(fontWeight: FontWeight.w600),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: Text(label),
       ),

@@ -1,3 +1,4 @@
+
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/network/api_client.dart';
@@ -31,6 +32,7 @@ class ServicesRepository {
     double price = 0,
     String? colorHex,
     bool isBookableOnline = true,
+    String? onlineVisibility,
     bool isPriceStartingFrom = false,
     int? processingTime,
     int? blockedTime,
@@ -45,6 +47,7 @@ class ServicesRepository {
     price: price,
     colorHex: colorHex,
     isBookableOnline: isBookableOnline,
+    onlineVisibility: onlineVisibility,
     isPriceStartingFrom: isPriceStartingFrom,
     processingTime: processingTime,
     blockedTime: blockedTime,
@@ -61,6 +64,7 @@ class ServicesRepository {
     double price = 0,
     String? colorHex,
     bool isBookableOnline = true,
+    String? onlineVisibility,
     bool isPriceStartingFrom = false,
     int? processingTime,
     int? blockedTime,
@@ -74,6 +78,7 @@ class ServicesRepository {
     price: price,
     colorHex: colorHex,
     isBookableOnline: isBookableOnline,
+    onlineVisibility: onlineVisibility,
     isPriceStartingFrom: isPriceStartingFrom,
     processingTime: processingTime,
     blockedTime: blockedTime,
@@ -93,6 +98,7 @@ class ServicesRepository {
     double? price,
     String? colorHex,
     bool? isBookableOnline,
+    String? onlineVisibility,
     bool? isPriceStartingFrom,
     int? sortOrder,
     int? processingTime,
@@ -110,6 +116,7 @@ class ServicesRepository {
     price: price,
     colorHex: colorHex,
     isBookableOnline: isBookableOnline,
+    onlineVisibility: onlineVisibility,
     isPriceStartingFrom: isPriceStartingFrom,
     sortOrder: sortOrder,
     processingTime: processingTime,

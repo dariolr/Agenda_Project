@@ -1,3 +1,4 @@
+
 import 'dart:async';
 
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
@@ -10,6 +11,7 @@ import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/models/service_package.dart';
 import '../../../core/models/service_variant.dart';
+import '../../../core/utils/booking_direct_link_utils.dart';
 import '../../../core/utils/color_utils.dart';
 import '../../../core/utils/price_utils.dart';
 import '../../../core/widgets/app_dialogs.dart';
@@ -1172,6 +1174,12 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
           _openPackageDialog(context, ref, preselectedCategoryId: category.id),
       onEditCategory: (category) =>
           showCategoryDialog(context, ref, category: category),
+      onCopyCategoryDirectLink: (category) => _copyDirectBookingLink(
+        context,
+        ref,
+        targetType: 'service_category',
+        targetId: category.id,
+      ),
       onDeleteCategory: (categoryId) =>
           _confirmDeleteCategory(context, ref, categoryId),
       onDeleteCategoryBlocked: () => _showCannotDeleteCategoryDialog(context),
@@ -1185,6 +1193,27 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         service: service,
         duplicateFrom: true,
       ),
+      onServiceCopyDirectLink: (service) {
+        final variant = ref.read(serviceVariantByServiceIdProvider(service.id));
+        if (variant == null) {
+          unawaited(
+            FeedbackDialog.showError(
+              context,
+              title: context.l10n.errorTitle,
+              message: context.l10n.networkUnknownError,
+            ),
+          );
+          return;
+        }
+        unawaited(
+          _copyDirectBookingLink(
+            context,
+            ref,
+            targetType: 'service_variant',
+            targetId: variant.id,
+          ),
+        );
+      },
       onServiceDelete: (id) => _confirmDelete(
         context,
         ref,
@@ -1194,6 +1223,12 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
           _openPackageDialog(context, ref, package: package),
       onPackageEdit: (package) =>
           _openPackageDialog(context, ref, package: package),
+      onPackageCopyDirectLink: (package) => _copyDirectBookingLink(
+        context,
+        ref,
+        targetType: 'service_package',
+        targetId: package.id,
+      ),
       onPackageDelete: (id) => _confirmDeletePackage(context, ref, id),
       onAddClassType: (category) => _openClassTypeDialog(
         context,
@@ -1244,6 +1279,18 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     );
   }
 
+  Future<void> _copyDirectBookingLink(
+    BuildContext context,
+    WidgetRef ref, {
+    required String targetType,
+    required int targetId,
+  }) => copyBookingDirectLink(
+    context,
+    ref,
+    targetType: targetType,
+    targetId: targetId,
+  );
+
   Future<void> _duplicateClassType(
     BuildContext context,
     WidgetRef ref,
@@ -1292,6 +1339,19 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
   Future<void> _confirmDeleteClassType(WidgetRef ref, int classTypeId) async {
     if (!mounted) return;
     final l10n = context.l10n;
+
+    final upcomingCount = await ref
+        .read(upcomingClassEventsCountByTypeProvider(classTypeId).future)
+        .catchError((_) => 0);
+    if (!mounted) return;
+    if (upcomingCount > 0) {
+      await showAppInfoDialog(
+        context,
+        title: Text(l10n.classTypesDeleteHasFutureEventsTitle),
+        content: Text(l10n.classTypesDeleteHasFutureEventsMessage),
+      );
+      return;
+    }
 
     final confirmed = await showDialog<bool>(
       context: context,

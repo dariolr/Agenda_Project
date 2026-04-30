@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -21,6 +22,7 @@ class ServiceItem extends ConsumerWidget {
   final VoidCallback onExit;
   final VoidCallback onEdit;
   final VoidCallback onDuplicate;
+  final VoidCallback onCopyDirectLink;
   final VoidCallback onDelete;
   final bool readOnly;
 
@@ -38,6 +40,7 @@ class ServiceItem extends ConsumerWidget {
     required this.onExit,
     required this.onEdit,
     required this.onDuplicate,
+    required this.onCopyDirectLink,
     required this.onDelete,
     this.readOnly = false,
   });
@@ -227,6 +230,12 @@ class ServiceItem extends ConsumerWidget {
           icon: const Icon(Icons.copy_outlined),
           onPressed: onDuplicate,
         ),
+        if (service.onlineVisibility != 'hidden')
+          IconButton(
+            tooltip: context.l10n.closuresImportHolidaysCopyLinkAction,
+            icon: const Icon(Icons.link_outlined),
+            onPressed: onCopyDirectLink,
+          ),
         IconButton(
           tooltip: context.l10n.actionDelete,
           icon: const Icon(Icons.delete_outline, color: Colors.red),
@@ -247,6 +256,9 @@ class ServiceItem extends ConsumerWidget {
           case 'duplicate':
             onDuplicate();
             break;
+          case 'copy_direct_link':
+            onCopyDirectLink();
+            break;
           case 'delete':
             onDelete();
             break;
@@ -258,6 +270,11 @@ class ServiceItem extends ConsumerWidget {
           value: 'duplicate',
           child: Text(context.l10n.duplicateAction),
         ),
+        if (service.onlineVisibility != 'hidden')
+          PopupMenuItem(
+            value: 'copy_direct_link',
+            child: Text(context.l10n.closuresImportHolidaysCopyLinkAction),
+          ),
         PopupMenuItem(value: 'delete', child: Text(context.l10n.actionDelete)),
       ],
     );

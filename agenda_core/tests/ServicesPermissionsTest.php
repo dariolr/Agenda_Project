@@ -50,4 +50,3 @@ final class ServicesPermissionsTest extends TestCase
         $this->assertStringContainsString("return Response::notFound('Staff not found'", $source);
     }
 }
-

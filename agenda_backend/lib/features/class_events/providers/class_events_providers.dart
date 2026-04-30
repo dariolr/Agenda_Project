@@ -1,3 +1,4 @@
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/models/class_booking.dart';
@@ -432,6 +433,7 @@ class ClassEventCreateController extends AsyncNotifier<void> {
     required int capacityTotal,
     required bool waitlistEnabled,
     bool isBookableOnline = true,
+    String? onlineVisibility,
     int? priceCents,
     String? currency,
   }) async {
@@ -451,6 +453,7 @@ class ClassEventCreateController extends AsyncNotifier<void> {
           'capacity_total': capacityTotal,
           'waitlist_enabled': waitlistEnabled,
           'is_bookable_online': isBookableOnline,
+          if (onlineVisibility != null) 'online_visibility': onlineVisibility,
           'price_cents': priceCents,
           if (currency != null) 'currency': currency,
         },
@@ -580,3 +583,4 @@ final classTypeMutationControllerProvider =
     AsyncNotifierProvider<ClassTypeMutationController, void>(
       ClassTypeMutationController.new,
     );
+

@@ -271,6 +271,24 @@ final class ClassEventRepository
         return $stmt->rowCount() > 0;
     }
 
+    public function hasFutureClassEvents(int $businessId, int $classTypeId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT 1
+             FROM class_events
+             WHERE business_id = :business_id
+               AND class_type_id = :class_type_id
+               AND status != "CANCELLED"
+               AND starts_at > UTC_TIMESTAMP()
+             LIMIT 1'
+        );
+        $stmt->execute([
+            'business_id' => $businessId,
+            'class_type_id' => $classTypeId,
+        ]);
+        return $stmt->fetchColumn() !== false;
+    }
+
     public function serviceCategoryExistsInBusiness(int $businessId, int $serviceCategoryId): bool
     {
         $stmt = $this->db->getPdo()->prepare(
@@ -406,8 +424,32 @@ final class ClassEventRepository
         string $fromUtc,
         string $toUtc,
         ?int $locationId = null,
-        ?int $classTypeId = null
+        ?int $classTypeId = null,
+        ?array $directLinkScope = null
     ): array {
+        $visibilitySql = "ce.visibility = 'PUBLIC' AND ce.online_visibility = 'public'";
+        $scopeParams = [];
+
+        if ($directLinkScope !== null) {
+            $targetType = (string) ($directLinkScope['target_type'] ?? '');
+            $targetId = (int) ($directLinkScope['target_id'] ?? 0);
+            if ($targetType === BookingDirectLinkRepository::TARGET_CLASS_EVENT) {
+                $visibilitySql = "ce.visibility = 'PUBLIC' AND (ce.online_visibility = 'public' OR (ce.id = :direct_class_event_id AND ce.online_visibility = 'direct_link'))";
+                $scopeParams['direct_class_event_id'] = $targetId;
+            } elseif ($targetType === BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY) {
+                $scope = (string) ($directLinkScope['child_visibility_scope'] ?? 'empty');
+                $allowed = match ($scope) {
+                    'public_only' => "'public'",
+                    'direct_link_only' => "'direct_link'",
+                    default => null,
+                };
+                $visibilitySql = $allowed === null
+                    ? "1 = 0"
+                    : "ce.visibility = 'PUBLIC' AND ct.service_category_id = :direct_category_id AND ce.online_visibility IN ({$allowed})";
+                $scopeParams['direct_category_id'] = $targetId;
+            }
+        }
+
         $sql = '
             SELECT
                 ce.*,
@@ -425,14 +467,14 @@ final class ClassEventRepository
               AND ce.starts_at   >= :from_utc
               AND ce.starts_at    < :to_utc
               AND ce.status       = \'SCHEDULED\'
-              AND ce.visibility   = \'PUBLIC\'
-              AND ce.is_bookable_online = 1';
+              AND ce.is_bookable_online = 1
+              AND ' . $visibilitySql;
 
         $params = [
             'business_id' => $businessId,
             'from_utc'    => $fromUtc,
             'to_utc'      => $toUtc,
-        ];
+        ] + $scopeParams;
 
         if ($locationId !== null) {
             $sql .= ' AND ce.location_id = :location_id';
@@ -594,7 +636,7 @@ final class ClassEventRepository
                     starts_at, ends_at,
                     location_id, staff_id,
                     capacity_total, capacity_reserved, confirmed_count, waitlist_count,
-                    waitlist_enabled, is_bookable_online, booking_open_at, booking_close_at,
+                    waitlist_enabled, is_bookable_online, online_visibility, booking_open_at, booking_close_at,
                     cancel_cutoff_minutes, status, visibility, price_cents, currency,
                     created_at, updated_at
                 ) VALUES (
@@ -602,7 +644,7 @@ final class ClassEventRepository
                     :starts_at, :ends_at,
                     :location_id, :staff_id,
                     :capacity_total, :capacity_reserved, :confirmed_count, :waitlist_count,
-                    :waitlist_enabled, :is_bookable_online, :booking_open_at, :booking_close_at,
+                    :waitlist_enabled, :is_bookable_online, :online_visibility, :booking_open_at, :booking_close_at,
                     :cancel_cutoff_minutes, :status, :visibility, :price_cents, :currency,
                     :created_at, :updated_at
                 )'
@@ -619,7 +661,8 @@ final class ClassEventRepository
                 'confirmed_count' => $data['confirmed_count'] ?? 0,
                 'waitlist_count' => $data['waitlist_count'] ?? 0,
                 'waitlist_enabled' => !empty($data['waitlist_enabled']) ? 1 : 0,
-                'is_bookable_online' => array_key_exists('is_bookable_online', $data) && empty($data['is_bookable_online']) ? 0 : 1,
+                'is_bookable_online' => $this->normalizeOnlineVisibility($data['online_visibility'] ?? null, !array_key_exists('is_bookable_online', $data) || !empty($data['is_bookable_online'])) === 'hidden' ? 0 : 1,
+                'online_visibility' => $this->normalizeOnlineVisibility($data['online_visibility'] ?? null, !array_key_exists('is_bookable_online', $data) || !empty($data['is_bookable_online'])),
                 'booking_open_at' => $data['booking_open_at'] ?? null,
                 'booking_close_at' => $data['booking_close_at'] ?? null,
                 'cancel_cutoff_minutes' => $data['cancel_cutoff_minutes'] ?? 0,
@@ -662,6 +705,7 @@ final class ClassEventRepository
             'capacity_reserved',
             'waitlist_enabled',
             'is_bookable_online',
+            'online_visibility',
             'booking_open_at',
             'booking_close_at',
             'cancel_cutoff_minutes',
@@ -679,6 +723,14 @@ final class ClassEventRepository
 
         foreach ($allowed as $field) {
             if (array_key_exists($field, $data)) {
+                if ($field === 'online_visibility') {
+                    $data[$field] = $this->normalizeOnlineVisibility((string) $data[$field], true);
+                    $data['is_bookable_online'] = $data[$field] === 'hidden' ? 0 : 1;
+                    if (!array_key_exists('is_bookable_online', $params)) {
+                        $fields[] = 'is_bookable_online = :is_bookable_online';
+                        $params['is_bookable_online'] = $data['is_bookable_online'];
+                    }
+                }
                 $fields[] = "{$field} = :{$field}";
                 $params[$field] = in_array($field, ['waitlist_enabled', 'is_bookable_online'], true)
                     ? (!empty($data[$field]) ? 1 : 0)
@@ -724,6 +776,20 @@ final class ClassEventRepository
             }
             throw $e;
         }
+    }
+
+    private function normalizeOnlineVisibility(?string $onlineVisibility, bool $fallbackBookable): string
+    {
+        if ($onlineVisibility === null || trim($onlineVisibility) === '') {
+            return $fallbackBookable ? 'public' : 'hidden';
+        }
+
+        $normalized = strtolower(trim($onlineVisibility));
+        if (!in_array($normalized, ['public', 'direct_link', 'hidden'], true)) {
+            throw new \InvalidArgumentException('Invalid online_visibility');
+        }
+
+        return $normalized;
     }
 
     public function findResourceRequirementsForEvents(int $businessId, array $classEventIds): array

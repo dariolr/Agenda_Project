@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -60,6 +61,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
   int? _cancellationHours;
   bool _allowCustomerChooseStaff = true;
   bool _allowMultiServiceBooking = true;
+  bool _showPriceToCustomer = true;
+  bool _showDurationToCustomer = true;
   String _staffIconKey = 'person';
 
   // Smart Slot Display Settings
@@ -409,6 +412,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       _cancellationHours = widget.initial!.cancellationHours;
       _allowCustomerChooseStaff = widget.initial!.allowCustomerChooseStaff;
       _allowMultiServiceBooking = widget.initial!.allowMultiServiceBooking;
+      _showPriceToCustomer = widget.initial!.showPriceToCustomer;
+      _showDurationToCustomer = widget.initial!.showDurationToCustomer;
       _staffIconKey = widget.initial!.staffIconKey;
       _onlineBookingSlotIntervalMinutes =
           widget.initial!.onlineBookingSlotIntervalMinutes;
@@ -461,6 +466,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
         _cancellationHours = lastLocation.cancellationHours;
         _allowCustomerChooseStaff = lastLocation.allowCustomerChooseStaff;
         _allowMultiServiceBooking = lastLocation.allowMultiServiceBooking;
+        _showPriceToCustomer = lastLocation.showPriceToCustomer;
+        _showDurationToCustomer = lastLocation.showDurationToCustomer;
         _staffIconKey = lastLocation.staffIconKey;
         _onlineBookingSlotIntervalMinutes =
             lastLocation.onlineBookingSlotIntervalMinutes;
@@ -731,6 +738,28 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
               ),
               value: _allowMultiServiceBooking,
               onChanged: (v) => setState(() => _allowMultiServiceBooking = v),
+              contentPadding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: 4),
+            SwitchListTile.adaptive(
+              title: Text(l10n.locationShowPriceToCustomerLabel),
+              subtitle: Text(
+                l10n.locationShowPriceToCustomerHint,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              value: _showPriceToCustomer,
+              onChanged: (v) => setState(() => _showPriceToCustomer = v),
+              contentPadding: EdgeInsets.zero,
+            ),
+            const SizedBox(height: 4),
+            SwitchListTile.adaptive(
+              title: Text(l10n.locationShowDurationToCustomerLabel),
+              subtitle: Text(
+                l10n.locationShowDurationToCustomerHint,
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+              value: _showDurationToCustomer,
+              onChanged: (v) => setState(() => _showDurationToCustomer = v),
               contentPadding: EdgeInsets.zero,
             ),
             if (_allowCustomerChooseStaff) ...[
@@ -1203,6 +1232,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           cancellationHours: _cancellationHours,
           allowCustomerChooseStaff: _allowCustomerChooseStaff,
           allowMultiServiceBooking: _allowMultiServiceBooking,
+          showPriceToCustomer: _showPriceToCustomer,
+          showDurationToCustomer: _showDurationToCustomer,
           onlineBookingSlotIntervalMinutes: _onlineBookingSlotIntervalMinutes,
           slotDisplayMode: _slotDisplayMode,
           minGapMinutes: _minGapMinutes,
@@ -1224,6 +1255,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           cancellationHours: _cancellationHours,
           allowCustomerChooseStaff: _allowCustomerChooseStaff,
           allowMultiServiceBooking: _allowMultiServiceBooking,
+          showPriceToCustomer: _showPriceToCustomer,
+          showDurationToCustomer: _showDurationToCustomer,
         );
       }
       if (mounted) Navigator.of(context).pop();
@@ -1429,3 +1462,4 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     return L10n.delegate.supportedLocales.first.languageCode.toLowerCase();
   }
 }
+

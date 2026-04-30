@@ -1,3 +1,4 @@
+
 /// Modello Servizio prenotabile online
 class Service {
   final int id;
@@ -14,7 +15,9 @@ class Service {
   final bool isFree;
   final bool isPriceStartingFrom;
   final bool isBookableOnline;
+  final String onlineVisibility;
   final bool isActive;
+  final int? serviceVariantId;
 
   const Service({
     required this.id,
@@ -31,7 +34,9 @@ class Service {
     this.isFree = false,
     this.isPriceStartingFrom = false,
     this.isBookableOnline = true,
+    this.onlineVisibility = 'public',
     this.isActive = true,
+    this.serviceVariantId,
   });
 
   /// Durata totale incluso tempo aggiuntivo (processing + blocked)
@@ -57,7 +62,9 @@ class Service {
     bool? isFree,
     bool? isPriceStartingFrom,
     bool? isBookableOnline,
+    String? onlineVisibility,
     bool? isActive,
+    int? serviceVariantId,
   }) => Service(
     id: id ?? this.id,
     businessId: businessId ?? this.businessId,
@@ -73,7 +80,9 @@ class Service {
     isFree: isFree ?? this.isFree,
     isPriceStartingFrom: isPriceStartingFrom ?? this.isPriceStartingFrom,
     isBookableOnline: isBookableOnline ?? this.isBookableOnline,
+    onlineVisibility: onlineVisibility ?? this.onlineVisibility,
     isActive: isActive ?? this.isActive,
+    serviceVariantId: serviceVariantId ?? this.serviceVariantId,
   );
 
   factory Service.fromJson(Map<String, dynamic> json) => Service(
@@ -101,7 +110,9 @@ class Service {
     isFree: json['is_free'] as bool? ?? false,
     isPriceStartingFrom: json['is_price_starting_from'] as bool? ?? false,
     isBookableOnline: _parseBookableOnline(json['is_bookable_online']),
+    onlineVisibility: json['online_visibility'] as String? ?? 'public',
     isActive: _parseIsActive(json['is_active']),
+    serviceVariantId: json['service_variant_id'] as int?,
   );
 
   static bool _parseBookableOnline(dynamic value) {
@@ -131,7 +142,9 @@ class Service {
     'is_free': isFree,
     'is_price_starting_from': isPriceStartingFrom,
     'is_bookable_online': isBookableOnline,
+    'online_visibility': onlineVisibility,
     'is_active': isActive,
+    if (serviceVariantId != null) 'service_variant_id': serviceVariantId,
   };
 
   String get formattedPrice {
@@ -140,3 +153,4 @@ class Service {
     return isPriceStartingFrom ? 'da €$priceStr' : '€$priceStr';
   }
 }
+

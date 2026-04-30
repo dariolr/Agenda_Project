@@ -1,3 +1,4 @@
+
 import 'package:uuid/uuid.dart';
 
 import '../../../core/models/class_event.dart';
@@ -30,8 +31,8 @@ class BookingRepository {
   /// GET /v1/services?location_id=X
   /// Recupera categorie e servizi in un'unica chiamata
   Future<({List<ServiceCategory> categories, List<Service> services})>
-  getCategoriesWithServices(int locationId) async {
-    final data = await _apiClient.getServices(locationId);
+  getCategoriesWithServices(int locationId, {String? linkSlug}) async {
+    final data = await _apiClient.getServices(locationId, linkSlug: linkSlug);
     final categoriesJson = data['categories'] as List<dynamic>? ?? [];
 
     final categories = <ServiceCategory>[];
@@ -62,21 +63,36 @@ class BookingRepository {
 
   /// GET /v1/services?location_id=X
   /// Recupera categorie con servizi annidati (legacy)
-  Future<List<ServiceCategory>> getCategories(int locationId) async {
-    final result = await getCategoriesWithServices(locationId);
+  Future<List<ServiceCategory>> getCategories(
+    int locationId, {
+    String? linkSlug,
+  }) async {
+    final result = await getCategoriesWithServices(
+      locationId,
+      linkSlug: linkSlug,
+    );
     return result.categories;
   }
 
   /// GET /v1/services?location_id=X
   /// Recupera tutti i servizi (flat list) (legacy)
-  Future<List<Service>> getServices(int locationId) async {
-    final result = await getCategoriesWithServices(locationId);
+  Future<List<Service>> getServices(int locationId, {String? linkSlug}) async {
+    final result = await getCategoriesWithServices(
+      locationId,
+      linkSlug: linkSlug,
+    );
     return result.services;
   }
 
   /// GET /v1/locations/{location_id}/service-packages
-  Future<List<ServicePackage>> getServicePackages(int locationId) async {
-    final data = await _apiClient.getServicePackages(locationId);
+  Future<List<ServicePackage>> getServicePackages(
+    int locationId, {
+    String? linkSlug,
+  }) async {
+    final data = await _apiClient.getServicePackages(
+      locationId,
+      linkSlug: linkSlug,
+    );
     final packagesJson = data['packages'] as List<dynamic>? ?? [];
     return packagesJson
         .map((json) => ServicePackage.fromJson(json as Map<String, dynamic>))
@@ -87,10 +103,12 @@ class BookingRepository {
   Future<ServicePackageExpansion> expandServicePackage({
     required int locationId,
     required int packageId,
+    String? linkSlug,
   }) async {
     final data = await _apiClient.expandServicePackage(
       locationId: locationId,
       packageId: packageId,
+      linkSlug: linkSlug,
     );
     return ServicePackageExpansion.fromJson(data);
   }
@@ -102,12 +120,14 @@ class BookingRepository {
     String? from,
     String? to,
     int? classTypeId,
+    String? linkSlug,
   }) async {
     final data = await _apiClient.getClassEvents(
       locationId,
       from: from,
       to: to,
       classTypeId: classTypeId,
+      linkSlug: linkSlug,
     );
     final itemsJson = data['items'] as List<dynamic>? ?? [];
     return itemsJson
@@ -260,11 +280,13 @@ class BookingRepository {
     required int businessId,
     required int classEventId,
     String? notes,
+    String? bookingDirectLinkSlug,
   }) async {
     return _apiClient.bookClassEvent(
       businessId: businessId,
       classEventId: classEventId,
       notes: notes,
+      bookingDirectLinkSlug: bookingDirectLinkSlug,
     );
   }
 
@@ -283,6 +305,7 @@ class BookingRepository {
     String? idempotencyKey,
     List<Map<String, dynamic>>? items,
     List<Map<String, dynamic>>? pricingOverrides,
+    String? bookingDirectLinkSlug,
   }) async {
     // Genera idempotency key se non fornita
     final key = idempotencyKey ?? _uuid.v4();
@@ -298,9 +321,11 @@ class BookingRepository {
       notes: notes,
       items: items,
       pricingOverrides: pricingOverrides,
+      bookingDirectLinkSlug: bookingDirectLinkSlug,
     );
   }
 
   /// Genera un nuovo idempotency key (UUID v4)
   String generateIdempotencyKey() => _uuid.v4();
 }
+

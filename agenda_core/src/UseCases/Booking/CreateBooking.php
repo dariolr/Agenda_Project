@@ -14,6 +14,7 @@ use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\LocationClosureRepository;
 use Agenda\Infrastructure\Repositories\ClassEventRepository;
+use Agenda\Infrastructure\Repositories\BookingDirectLinkRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\UseCases\Notifications\QueueBookingConfirmation;
@@ -44,6 +45,7 @@ final class CreateBooking
         private readonly ?BookingAuditRepository $auditRepository = null,
         private readonly ?LocationClosureRepository $locationClosureRepository = null,
         private readonly ?ClassEventRepository $classEventRepository = null,
+        private readonly ?BookingDirectLinkRepository $bookingDirectLinkRepository = null,
     ) {}
 
     private function priceToCents(mixed $value): ?int
@@ -109,6 +111,51 @@ final class CreateBooking
             'package_id' => $packageId,
             'pricing_source' => $pricingSource,
         ];
+    }
+
+    private function assertCustomerServicesAreBookableOnline(
+        int $businessId,
+        int $locationId,
+        array $services,
+        array $requestedServiceIds,
+        ?string $directLinkSlug
+    ): void {
+        $directServiceIds = [];
+
+        foreach ($services as $service) {
+            $serviceId = (int) ($service['id'] ?? 0);
+            $visibility = (string) ($service['online_visibility'] ?? 'public');
+            $variantActive = (int) ($service['variant_is_active'] ?? 0) === 1;
+            $bookableOnline = (int) ($service['is_bookable_online'] ?? 0) === 1;
+
+            if (!$variantActive || !$bookableOnline || $visibility === 'hidden') {
+                throw BookingException::invalidService([$serviceId]);
+            }
+
+            if ($visibility === 'direct_link') {
+                $directServiceIds[] = $serviceId;
+            } elseif ($visibility !== 'public') {
+                throw BookingException::invalidService([$serviceId]);
+            }
+        }
+
+        $slug = trim((string) ($directLinkSlug ?? ''));
+        if ($slug !== '' && $this->bookingDirectLinkRepository !== null) {
+            if (!$this->bookingDirectLinkRepository->authorizesRequestedServiceIds(
+                $businessId,
+                $locationId,
+                $slug,
+                $requestedServiceIds
+            )) {
+                throw BookingException::invalidService($requestedServiceIds);
+            }
+
+            return;
+        }
+
+        if (!empty($directServiceIds)) {
+            throw BookingException::invalidService($directServiceIds);
+        }
     }
 
     /**
@@ -752,12 +799,15 @@ final class CreateBooking
 
         $notes = $data['notes'] ?? null;
         $requestedLocale = $data['locale'] ?? null;
+        $directLinkSlug = isset($data['booking_direct_link_slug'])
+            ? (string) $data['booking_direct_link_slug']
+            : null;
 
         // Check if using new "items" format or legacy "service_ids" format
         if (isset($data['items']) && is_array($data['items']) && !empty($data['items'])) {
             return $this->executeForCustomerWithItems(
                 $clientId, $locationId, $businessId, $data['items'],
-                $notes, $idempotencyKey, $requestedLocale
+                $notes, $idempotencyKey, $requestedLocale, $directLinkSlug
             );
         }
 
@@ -831,6 +881,13 @@ final class CreateBooking
         if (count($services) !== count($serviceIds)) {
             throw BookingException::invalidService($serviceIds);
         }
+        $this->assertCustomerServicesAreBookableOnline(
+            $businessId,
+            $locationId,
+            $services,
+            array_map('intval', $serviceIds),
+            $directLinkSlug
+        );
 
         // Calculate total duration (including processing_time and blocked_time)
         $totalDuration = 0;
@@ -1023,7 +1080,8 @@ final class CreateBooking
         array $items,
         ?string $notes,
         ?string $idempotencyKey,
-        ?string $requestedLocale = null
+        ?string $requestedLocale = null,
+        ?string $directLinkSlug = null
     ): array {
         // Validate location
         $location = $this->locationRepository->findById($locationId);
@@ -1083,6 +1141,18 @@ final class CreateBooking
         if (!$this->serviceRepository->allBelongToBusiness($serviceIds, $locationId, $businessId)) {
             throw BookingException::invalidService($serviceIds);
         }
+
+        $servicesForValidation = $this->serviceRepository->findByIds($serviceIds, $locationId, $businessId);
+        if (count($servicesForValidation) !== count($serviceIds)) {
+            throw BookingException::invalidService($serviceIds);
+        }
+        $this->assertCustomerServicesAreBookableOnline(
+            $businessId,
+            $locationId,
+            $servicesForValidation,
+            $serviceIds,
+            $directLinkSlug
+        );
 
         // Start transaction for conflict detection
         $this->db->beginTransaction();
@@ -1268,6 +1338,7 @@ final class CreateBooking
                 'end_time' => $booking['items'][count($booking['items']) - 1]['end_time'] ?? null,
                 'services' => implode(', ', array_column($booking['items'] ?? [], 'service_name')),
                 'total_price' => $booking['total_price'] ?? 0,
+                'location_show_price_to_customer' => (bool) ($location['show_price_to_customer'] ?? true),
                 'cancellation_hours' => $location['cancellation_hours'] ?? 24,
                 'manage_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($location['business_slug'] ?? '') . '/my-bookings',
                 'booking_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($location['business_slug'] ?? '') . '/booking',

@@ -1,3 +1,4 @@
+
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/network/api_client.dart';
@@ -70,6 +71,7 @@ class ServicesApi {
     double price = 0,
     String? colorHex,
     bool isBookableOnline = true,
+    String? onlineVisibility,
     bool isPriceStartingFrom = false,
     int? processingTime,
     int? blockedTime,
@@ -85,6 +87,7 @@ class ServicesApi {
       price: price,
       colorHex: colorHex,
       isBookableOnline: isBookableOnline,
+      onlineVisibility: onlineVisibility,
       isPriceStartingFrom: isPriceStartingFrom,
       processingTime: processingTime,
       blockedTime: blockedTime,
@@ -104,6 +107,7 @@ class ServicesApi {
     double price = 0,
     String? colorHex,
     bool isBookableOnline = true,
+    String? onlineVisibility,
     bool isPriceStartingFrom = false,
     int? processingTime,
     int? blockedTime,
@@ -118,6 +122,7 @@ class ServicesApi {
       price: price,
       colorHex: colorHex,
       isBookableOnline: isBookableOnline,
+      onlineVisibility: onlineVisibility,
       isPriceStartingFrom: isPriceStartingFrom,
       processingTime: processingTime,
       blockedTime: blockedTime,
@@ -140,6 +145,7 @@ class ServicesApi {
     double? price,
     String? colorHex,
     bool? isBookableOnline,
+    String? onlineVisibility,
     bool? isPriceStartingFrom,
     int? sortOrder,
     int? processingTime,
@@ -158,6 +164,7 @@ class ServicesApi {
       price: price,
       colorHex: colorHex,
       isBookableOnline: isBookableOnline,
+      onlineVisibility: onlineVisibility,
       isPriceStartingFrom: isPriceStartingFrom,
       sortOrder: sortOrder,
       processingTime: processingTime,

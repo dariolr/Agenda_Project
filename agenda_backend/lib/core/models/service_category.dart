@@ -1,3 +1,4 @@
+
 class ServiceCategory {
   final int id;
   final int businessId;

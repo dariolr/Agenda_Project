@@ -1,4 +1,6 @@
+
 import 'service_variant_resource_requirement.dart';
+import 'online_booking_visibility.dart';
 
 class ServiceVariant {
   final int id;
@@ -11,6 +13,7 @@ class ServiceVariant {
   final String? colorHex;
   final String? currency; // 🔹 Valuta specifica (es. "EUR", "USD")
   final bool isBookableOnline;
+  final String onlineVisibility;
   final bool isFree;
   final bool isPriceStartingFrom;
   final int parallelCapacity;
@@ -27,6 +30,7 @@ class ServiceVariant {
     this.colorHex,
     this.currency,
     this.isBookableOnline = true,
+    this.onlineVisibility = 'public',
     this.isFree = false,
     this.isPriceStartingFrom = false,
     this.parallelCapacity = 1,
@@ -44,6 +48,7 @@ class ServiceVariant {
     String? colorHex,
     String? currency,
     bool? isBookableOnline,
+    String? onlineVisibility,
     bool? isFree,
     bool? isPriceStartingFrom,
     int? parallelCapacity,
@@ -60,6 +65,7 @@ class ServiceVariant {
       colorHex: colorHex ?? this.colorHex,
       currency: currency ?? this.currency,
       isBookableOnline: isBookableOnline ?? this.isBookableOnline,
+      onlineVisibility: onlineVisibility ?? this.onlineVisibility,
       isFree: isFree ?? this.isFree,
       isPriceStartingFrom: isPriceStartingFrom ?? this.isPriceStartingFrom,
       parallelCapacity: parallelCapacity ?? this.parallelCapacity,
@@ -68,6 +74,9 @@ class ServiceVariant {
   }
 
   factory ServiceVariant.fromJson(Map<String, dynamic> json) {
+    final isBookableOnline =
+        (json['is_bookable_online'] as bool?) ??
+        ((json['is_bookable_online'] as num?)?.toInt() != 0);
     return ServiceVariant(
       id: json['id'] as int,
       serviceId: json['service_id'] as int,
@@ -78,7 +87,11 @@ class ServiceVariant {
       price: (json['price'] as num).toDouble(),
       colorHex: json['color_hex'] as String?,
       currency: json['currency'] as String?,
-      isBookableOnline: json['is_bookable_online'] as bool? ?? true,
+      isBookableOnline: isBookableOnline,
+      onlineVisibility: OnlineBookingVisibilityOption.fromValues(
+        onlineVisibility: json['online_visibility'] as String?,
+        isBookableOnline: isBookableOnline,
+      ).apiValue,
       isFree: json['is_free'] as bool? ?? false,
       isPriceStartingFrom: json['is_price_starting_from'] as bool? ?? false,
       parallelCapacity: json['parallel_capacity'] as int? ?? 1,
@@ -97,9 +110,11 @@ class ServiceVariant {
       if (colorHex != null) 'color_hex': colorHex,
       if (currency != null) 'currency': currency,
       'is_bookable_online': isBookableOnline,
+      'online_visibility': onlineVisibility,
       'is_free': isFree,
       'is_price_starting_from': isPriceStartingFrom,
       'parallel_capacity': parallelCapacity,
     };
   }
 }
+

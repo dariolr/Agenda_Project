@@ -1,4 +1,5 @@
 import 'service_variant_resource_requirement.dart';
+import 'online_booking_visibility.dart';
 
 class Service {
   final int id;
@@ -16,6 +17,7 @@ class Service {
   final String? color; // da API
   final bool isActive;
   final bool isBookableOnline; // prenotabile online
+  final String onlineVisibility;
   final bool isPriceStartingFrom; // "a partire da" flag
   final int parallelCapacity; // prenotazioni contemporanee per variante
   final int? serviceVariantId; // ID della variante per location (da API)
@@ -37,6 +39,7 @@ class Service {
     this.color,
     this.isActive = true,
     this.isBookableOnline = true,
+    this.onlineVisibility = 'public',
     this.isPriceStartingFrom = false,
     this.parallelCapacity = 1,
     this.serviceVariantId,
@@ -58,6 +61,7 @@ class Service {
     String? color,
     bool? isActive,
     bool? isBookableOnline,
+    String? onlineVisibility,
     bool? isPriceStartingFrom,
     int? parallelCapacity,
     int? serviceVariantId,
@@ -77,6 +81,7 @@ class Service {
     color: color ?? this.color,
     isActive: isActive ?? this.isActive,
     isBookableOnline: isBookableOnline ?? this.isBookableOnline,
+    onlineVisibility: onlineVisibility ?? this.onlineVisibility,
     isPriceStartingFrom: isPriceStartingFrom ?? this.isPriceStartingFrom,
     parallelCapacity: parallelCapacity ?? this.parallelCapacity,
     serviceVariantId: serviceVariantId ?? this.serviceVariantId,
@@ -84,6 +89,9 @@ class Service {
   );
 
   factory Service.fromJson(Map<String, dynamic> json) {
+    final isBookableOnline =
+        (json['is_bookable_online'] as bool?) ??
+        ((json['is_bookable_online'] as num?)?.toInt() != 0);
     final resourceRequirementsJson =
         json['resource_requirements'] as List<dynamic>? ?? [];
     final resourceRequirements = resourceRequirementsJson
@@ -110,7 +118,11 @@ class Service {
       isActive:
           (json['is_active'] as bool?) ??
           ((json['is_active'] as num?)?.toInt() == 1),
-      isBookableOnline: json['is_bookable_online'] as bool? ?? true,
+      isBookableOnline: isBookableOnline,
+      onlineVisibility: OnlineBookingVisibilityOption.fromValues(
+        onlineVisibility: json['online_visibility'] as String?,
+        isBookableOnline: isBookableOnline,
+      ).apiValue,
       isPriceStartingFrom: json['is_price_starting_from'] as bool? ?? false,
       parallelCapacity: json['parallel_capacity'] as int? ?? 1,
       serviceVariantId: json['service_variant_id'] as int?,
@@ -131,8 +143,10 @@ class Service {
     if (color != null) 'color': color,
     'is_active': isActive,
     'is_bookable_online': isBookableOnline,
+    'online_visibility': onlineVisibility,
     'is_price_starting_from': isPriceStartingFrom,
     'parallel_capacity': parallelCapacity,
     if (serviceVariantId != null) 'service_variant_id': serviceVariantId,
   };
 }
+

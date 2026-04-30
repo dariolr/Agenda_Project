@@ -1,3 +1,4 @@
+
 import 'package:flutter/foundation.dart';
 
 /// Modello Location (sede)
@@ -19,6 +20,8 @@ class Location {
   final String? bookingDefaultLocale;
   final bool allowCustomerChooseStaff;
   final bool allowMultiServiceBooking;
+  final bool showPriceToCustomer;
+  final bool showDurationToCustomer;
   final String staffIconKey;
   final int? cancellationHours;
   final bool isDefault;
@@ -43,6 +46,8 @@ class Location {
     this.bookingDefaultLocale,
     this.allowCustomerChooseStaff = false,
     this.allowMultiServiceBooking = true,
+    this.showPriceToCustomer = true,
+    this.showDurationToCustomer = true,
     this.staffIconKey = 'person',
     this.cancellationHours,
     this.isDefault = false,
@@ -75,6 +80,9 @@ class Location {
           json['allow_customer_choose_staff'] as bool? ?? false,
       allowMultiServiceBooking:
           json['allow_multi_service_booking'] as bool? ?? true,
+      showPriceToCustomer: json['show_price_to_customer'] as bool? ?? true,
+      showDurationToCustomer:
+          json['show_duration_to_customer'] as bool? ?? true,
       staffIconKey: (json['staff_icon_key'] as String?) ?? 'person',
       cancellationHours: json['cancellation_hours'] as int?,
       isDefault: json['is_default'] as bool? ?? false,
@@ -104,6 +112,9 @@ class Location {
       'timezone': timezone,
       'booking_default_locale': bookingDefaultLocale,
       'allow_customer_choose_staff': allowCustomerChooseStaff,
+      'allow_multi_service_booking': allowMultiServiceBooking,
+      'show_price_to_customer': showPriceToCustomer,
+      'show_duration_to_customer': showDurationToCustomer,
       'staff_icon_key': staffIconKey,
       if (cancellationHours != null) 'cancellation_hours': cancellationHours,
       'is_default': isDefault,
@@ -161,3 +172,4 @@ Map<String, Map<String, String>>? _parseBookingTextOverrides(dynamic raw) {
 
   return result.isEmpty ? null : result;
 }
+

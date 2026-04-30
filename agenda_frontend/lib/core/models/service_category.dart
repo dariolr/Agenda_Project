@@ -1,3 +1,4 @@
+
 /// Categoria di servizi
 class ServiceCategory {
   final int id;

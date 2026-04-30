@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -151,7 +152,7 @@ class _LocationActions extends ConsumerWidget {
             icon: const Icon(Icons.edit_outlined),
             onPressed: () => showLocationDialog(context, ref, initial: location),
           ),
-        if (canManageSettings && !hasStaff)
+        if (canManageSettings)
           IconButton(
             tooltip: context.l10n.actionDelete,
             icon: const Icon(Icons.delete_outline, color: Colors.red),
@@ -186,3 +187,4 @@ class _LocationActions extends ConsumerWidget {
         .deleteLocation(location.id, currentLocationId: currentId);
   }
 }
+

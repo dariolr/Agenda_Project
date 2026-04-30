@@ -1,3 +1,4 @@
+
 import 'service.dart';
 
 class ServicePackageItem {
@@ -45,6 +46,7 @@ class ServicePackage {
   final int? overrideDurationMinutes;
   final bool isActive;
   final bool isBookableOnline;
+  final String onlineVisibility;
   final bool isBroken;
   final double effectivePrice;
   final int effectiveDurationMinutes;
@@ -63,6 +65,7 @@ class ServicePackage {
     this.overrideDurationMinutes,
     this.isActive = true,
     this.isBookableOnline = true,
+    this.onlineVisibility = 'public',
     this.isBroken = false,
     required this.effectivePrice,
     required this.effectiveDurationMinutes,
@@ -70,7 +73,8 @@ class ServicePackage {
   });
 
   List<int> get orderedServiceIds {
-    final ordered = [...items]..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    final ordered = [...items]
+      ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
     return ordered.map((item) => item.serviceId).toList();
   }
 
@@ -108,14 +112,13 @@ class ServicePackage {
       overrideDurationMinutes: json['override_duration_minutes'] as int?,
       isActive: json['is_active'] as bool? ?? true,
       isBookableOnline: json['is_bookable_online'] as bool? ?? true,
+      onlineVisibility: json['online_visibility'] as String? ?? 'public',
       isBroken: json['is_broken'] as bool? ?? false,
       effectivePrice: (json['effective_price'] as num?)?.toDouble() ?? 0,
-      effectiveDurationMinutes:
-          json['effective_duration_minutes'] as int? ?? 0,
+      effectiveDurationMinutes: json['effective_duration_minutes'] as int? ?? 0,
       items: itemsJson
           .map(
-            (item) =>
-                ServicePackageItem.fromJson(item as Map<String, dynamic>),
+            (item) => ServicePackageItem.fromJson(item as Map<String, dynamic>),
           )
           .toList(),
     );
@@ -141,13 +144,12 @@ class ServicePackageExpansion {
     return ServicePackageExpansion(
       packageId: json['package_id'] as int,
       locationId: json['location_id'] as int,
-      serviceIds:
-          (json['service_ids'] as List<dynamic>? ?? const [])
-              .map((id) => id as int)
-              .toList(),
+      serviceIds: (json['service_ids'] as List<dynamic>? ?? const [])
+          .map((id) => id as int)
+          .toList(),
       effectivePrice: (json['effective_price'] as num?)?.toDouble() ?? 0,
-      effectiveDurationMinutes:
-          json['effective_duration_minutes'] as int? ?? 0,
+      effectiveDurationMinutes: json['effective_duration_minutes'] as int? ?? 0,
     );
   }
 }
+

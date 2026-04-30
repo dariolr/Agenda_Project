@@ -1,9 +1,11 @@
+
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/booking_request.dart';
+import '../models/class_event.dart';
 import '../models/location.dart';
 import '../models/service.dart';
 import '../models/staff.dart';
@@ -15,11 +17,15 @@ class PendingBookingData {
   final int locationId;
   final Location? selectedLocation;
   final List<Service> services;
+  final Set<int> selectedServiceIds;
+  final Set<int> selectedPackageIds;
+  final Map<int, List<int>> selectedPackageServiceIdsByPackage;
   final Map<int, Staff?> staffByService;
   final Staff? selectedStaff;
   final bool anyOperatorSelected;
   final TimeSlot? selectedSlot;
   final String? notes;
+  final ClassEvent? selectedClassEvent;
   final DateTime savedAt;
 
   const PendingBookingData({
@@ -27,11 +33,15 @@ class PendingBookingData {
     required this.locationId,
     this.selectedLocation,
     required this.services,
+    this.selectedServiceIds = const {},
+    this.selectedPackageIds = const {},
+    this.selectedPackageServiceIdsByPackage = const {},
     required this.staffByService,
     this.selectedStaff,
     required this.anyOperatorSelected,
     this.selectedSlot,
     this.notes,
+    this.selectedClassEvent,
     required this.savedAt,
   });
 
@@ -47,6 +57,10 @@ class PendingBookingData {
     'locationId': locationId,
     'selectedLocation': selectedLocation?.toJson(),
     'services': services.map((s) => s.toJson()).toList(),
+    'selectedServiceIds': selectedServiceIds.toList(),
+    'selectedPackageIds': selectedPackageIds.toList(),
+    'selectedPackageServiceIdsByPackage': selectedPackageServiceIdsByPackage
+        .map((k, v) => MapEntry(k.toString(), v)),
     'staffByService': staffByService.map(
       (k, v) => MapEntry(k.toString(), v?.toJson()),
     ),
@@ -54,6 +68,9 @@ class PendingBookingData {
     'anyOperatorSelected': anyOperatorSelected,
     'selectedSlot': selectedSlot?.toJson(),
     'notes': notes,
+    'selectedClassEvent': selectedClassEvent != null
+        ? _classEventToJson(selectedClassEvent!)
+        : null,
     'savedAt': savedAt.toIso8601String(),
   };
 
@@ -67,6 +84,22 @@ class PendingBookingData {
       services: (json['services'] as List)
           .map((s) => Service.fromJson(s as Map<String, dynamic>))
           .toList(),
+      selectedServiceIds: ((json['selectedServiceIds'] as List?) ?? const [])
+          .map((id) => (id as num).toInt())
+          .toSet(),
+      selectedPackageIds: ((json['selectedPackageIds'] as List?) ?? const [])
+          .map((id) => (id as num).toInt())
+          .toSet(),
+      selectedPackageServiceIdsByPackage:
+          ((json['selectedPackageServiceIdsByPackage']
+                      as Map<String, dynamic>?) ??
+                  const {})
+              .map(
+                (k, v) => MapEntry(
+                  int.parse(k),
+                  (v as List).map((id) => (id as num).toInt()).toList(),
+                ),
+              ),
       staffByService: (json['staffByService'] as Map<String, dynamic>).map(
         (k, v) => MapEntry(
           int.parse(k),
@@ -81,6 +114,11 @@ class PendingBookingData {
           ? TimeSlot.fromJson(json['selectedSlot'] as Map<String, dynamic>)
           : null,
       notes: json['notes'] as String?,
+      selectedClassEvent: json['selectedClassEvent'] != null
+          ? ClassEvent.fromJson(
+              json['selectedClassEvent'] as Map<String, dynamic>,
+            )
+          : null,
       savedAt: DateTime.parse(json['savedAt'] as String),
     );
   }
@@ -97,11 +135,16 @@ class PendingBookingData {
       locationId: locationId,
       selectedLocation: selectedLocation,
       services: request.services,
+      selectedServiceIds: request.selectedServiceIds,
+      selectedPackageIds: request.selectedPackageIds,
+      selectedPackageServiceIdsByPackage:
+          request.selectedPackageServiceIdsByPackage,
       staffByService: request.selectedStaffByService,
       selectedStaff: request.selectedStaff,
       anyOperatorSelected: request.anyOperatorSelected,
       selectedSlot: request.selectedSlot,
       notes: request.notes,
+      selectedClassEvent: request.selectedClassEvent,
       savedAt: DateTime.now(),
     );
   }
@@ -110,14 +153,48 @@ class PendingBookingData {
   BookingRequest toBookingRequest() {
     return BookingRequest(
       services: services,
+      selectedServiceIds: selectedServiceIds,
+      selectedPackageIds: selectedPackageIds,
+      selectedPackageServiceIdsByPackage: selectedPackageServiceIdsByPackage,
       selectedStaffByService: staffByService,
       selectedStaff: selectedStaff,
       anyOperatorSelected: anyOperatorSelected,
       selectedSlot: selectedSlot,
       notes: notes,
+      selectedClassEvent: selectedClassEvent,
     );
   }
 }
+
+Map<String, dynamic> _classEventToJson(ClassEvent event) => {
+  'id': event.id,
+  'business_id': event.businessId,
+  'class_type_id': event.classTypeId,
+  'class_type_name': event.classTypeName,
+  'class_type_color_hex': event.classTypeColorHex,
+  'class_type_service_category_id': event.classTypeServiceCategoryId,
+  'starts_at': event.startsAt,
+  'starts_at_local': event.startsAtLocal,
+  'ends_at': event.endsAt,
+  'ends_at_local': event.endsAtLocal,
+  'location_id': event.locationId,
+  'staff_id': event.staffId,
+  'capacity_total': event.capacityTotal,
+  'capacity_reserved': event.capacityReserved,
+  'confirmed_count': event.confirmedCount,
+  'waitlist_count': event.waitlistCount,
+  'waitlist_enabled': event.waitlistEnabled,
+  'booking_open_at': event.bookingOpenAt,
+  'booking_close_at': event.bookingCloseAt,
+  'cancel_cutoff_minutes': event.cancelCutoffMinutes,
+  'status': event.status,
+  'visibility': event.visibility,
+  'online_visibility': event.onlineVisibility,
+  'price_cents': event.priceCents,
+  'currency': event.currency,
+  'spots_left': event.spotsLeft,
+  'is_full': event.isFull,
+};
 
 /// Servizio per salvare/ripristinare lo stato della prenotazione.
 /// Usato quando il token scade durante la conferma.
@@ -188,3 +265,4 @@ class PendingBookingStorage {
     }
   }
 }
+

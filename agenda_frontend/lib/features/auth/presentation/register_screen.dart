@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,8 +15,14 @@ class RegisterScreen extends ConsumerStatefulWidget {
 
   /// Route da cui l'utente è stato reindirizzato (es. 'my-bookings')
   final String? redirectFrom;
+  final Map<String, String> redirectQueryParameters;
 
-  const RegisterScreen({super.key, this.initialEmail, this.redirectFrom});
+  const RegisterScreen({
+    super.key,
+    this.initialEmail,
+    this.redirectFrom,
+    this.redirectQueryParameters = const {},
+  });
 
   @override
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
@@ -34,6 +41,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _hasAttemptedRegister = false;
   bool _isInitialized = false;
   bool _isRegistering = false;
+
+  String _bookingPath(String? slug) {
+    final query = Uri(queryParameters: widget.redirectQueryParameters).query;
+    return '/$slug/booking${query.isNotEmpty ? '?$query' : ''}';
+  }
 
   @override
   void initState() {
@@ -152,7 +164,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           return;
         }
 
-        context.go('/$slug/booking');
+        context.go(_bookingPath(slug));
       }
     } finally {
       if (mounted) {
@@ -184,7 +196,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
           ),
           onPressed: () {
             final slug = ref.read(routeSlugProvider);
-            context.go('/$slug/booking');
+            context.go(_bookingPath(slug));
           },
         ),
         title: Text(
@@ -412,7 +424,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                       TextButton(
                         onPressed: () {
                           final slug = ref.read(routeSlugProvider);
-                          context.go('/$slug/login');
+                          final params = <String, String>{};
+                          if (widget.redirectFrom != null) {
+                            params['from'] = widget.redirectFrom!;
+                          }
+                          params.addAll(widget.redirectQueryParameters);
+                          final query = Uri(queryParameters: params).query;
+                          context.go(
+                            '/$slug/login${query.isNotEmpty ? '?$query' : ''}',
+                          );
                         },
                         child: Text(l10n.actionLogin),
                       ),
@@ -427,3 +447,4 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 }
+

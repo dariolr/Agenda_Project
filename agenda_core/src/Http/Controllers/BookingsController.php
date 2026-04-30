@@ -519,6 +519,9 @@ final class BookingsController
             $request->header('accept-language'),
             $_ENV['DEFAULT_LOCALE'] ?? 'it'
         );
+        $directLinkSlug = isset($body['booking_direct_link_slug'])
+            ? trim((string) $body['booking_direct_link_slug'])
+            : null;
 
         // Support both new "items" format and legacy "service_ids" format
         $items = null;
@@ -1351,6 +1354,9 @@ final class BookingsController
             $request->header('accept-language'),
             $_ENV['DEFAULT_LOCALE'] ?? 'it'
         );
+        $directLinkSlug = isset($body['booking_direct_link_slug'])
+            ? trim((string) $body['booking_direct_link_slug'])
+            : null;
 
         // DEBUG: Log request body
         file_put_contents(
@@ -1443,6 +1449,7 @@ final class BookingsController
                         'items' => $items,
                         'notes' => $body['notes'] ?? null,
                         'locale' => $requestLocale,
+                        'booking_direct_link_slug' => $directLinkSlug,
                     ],
                     $idempotencyKey
                 );
@@ -1461,6 +1468,7 @@ final class BookingsController
                             : [],
                         'notes' => $body['notes'] ?? null,
                         'locale' => $requestLocale,
+                        'booking_direct_link_slug' => $directLinkSlug,
                     ],
                     $idempotencyKey
                 );

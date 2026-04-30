@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,9 +19,11 @@ class ServicesList extends ConsumerWidget {
   final void Function(Service) onOpen;
   final void Function(Service) onEdit;
   final void Function(Service) onDuplicate;
+  final void Function(Service) onCopyDirectLink;
   final void Function(int id) onDelete;
   final void Function(ServicePackage) onPackageOpen;
   final void Function(ServicePackage) onPackageEdit;
+  final void Function(ServicePackage) onPackageCopyDirectLink;
   final void Function(int id) onPackageDelete;
   final void Function(ClassType) onClassTypeOpen;
   final void Function(ClassType) onClassTypeEdit;
@@ -39,9 +42,11 @@ class ServicesList extends ConsumerWidget {
     required this.onOpen,
     required this.onEdit,
     required this.onDuplicate,
+    required this.onCopyDirectLink,
     required this.onDelete,
     required this.onPackageOpen,
     required this.onPackageEdit,
+    required this.onPackageCopyDirectLink,
     required this.onPackageDelete,
     required this.onClassTypeOpen,
     required this.onClassTypeEdit,
@@ -80,6 +85,8 @@ class ServicesList extends ConsumerWidget {
                       onExit: () => hoveredService.value = null,
                       onEdit: () => onEdit(entries[i].service!),
                       onDuplicate: () => onDuplicate(entries[i].service!),
+                      onCopyDirectLink: () =>
+                          onCopyDirectLink(entries[i].service!),
                       onDelete: () => onDelete(entries[i].service!.id),
                       readOnly: readOnly,
                     )
@@ -111,6 +118,8 @@ class ServicesList extends ConsumerWidget {
                         onPackageOpen(entries[i].package!);
                       },
                       onEdit: () => onPackageEdit(entries[i].package!),
+                      onCopyDirectLink: () =>
+                          onPackageCopyDirectLink(entries[i].package!),
                       onDelete: () => onPackageDelete(entries[i].package!.id),
                       readOnly: readOnly,
                     ),
@@ -128,3 +137,4 @@ class ServicesList extends ConsumerWidget {
     );
   }
 }
+

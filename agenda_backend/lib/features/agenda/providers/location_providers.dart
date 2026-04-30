@@ -1,3 +1,4 @@
+
 import 'package:agenda_backend/core/services/preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -130,6 +131,8 @@ class LocationsNotifier extends Notifier<List<Location>> {
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
     bool? allowMultiServiceBooking,
+    bool? showPriceToCustomer,
+    bool? showDurationToCustomer,
     bool? isActive,
   }) async {
     final business = ref.read(currentBusinessProvider);
@@ -150,6 +153,8 @@ class LocationsNotifier extends Notifier<List<Location>> {
       cancellationHours: cancellationHours,
       allowCustomerChooseStaff: allowCustomerChooseStaff,
       allowMultiServiceBooking: allowMultiServiceBooking,
+      showPriceToCustomer: showPriceToCustomer,
+      showDurationToCustomer: showDurationToCustomer,
       isActive: isActive,
     );
     state = [...state, location];
@@ -173,6 +178,8 @@ class LocationsNotifier extends Notifier<List<Location>> {
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
     bool? allowMultiServiceBooking,
+    bool? showPriceToCustomer,
+    bool? showDurationToCustomer,
     int? onlineBookingSlotIntervalMinutes,
     String? slotDisplayMode,
     int? minGapMinutes,
@@ -195,6 +202,8 @@ class LocationsNotifier extends Notifier<List<Location>> {
       cancellationHours: cancellationHours,
       allowCustomerChooseStaff: allowCustomerChooseStaff,
       allowMultiServiceBooking: allowMultiServiceBooking,
+      showPriceToCustomer: showPriceToCustomer,
+      showDurationToCustomer: showDurationToCustomer,
       onlineBookingSlotIntervalMinutes: onlineBookingSlotIntervalMinutes,
       slotDisplayMode: slotDisplayMode,
       minGapMinutes: minGapMinutes,
@@ -386,3 +395,4 @@ final effectiveCurrencyProvider = Provider<String>((ref) {
   final business = ref.watch(currentBusinessProvider);
   return location.currency ?? business.currency;
 });
+

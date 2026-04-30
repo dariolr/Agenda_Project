@@ -1,3 +1,4 @@
+
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -86,6 +87,7 @@ class LazyHoverSlot extends StatefulWidget {
   final Color colorPrimary1;
   final void Function(DateTime)? onTap;
   final void Function(DateTime, TapDownDetails)? onSecondaryTapDown;
+  final void Function(DateTime, LongPressStartDetails)? onLongPressStart;
   final ValueChanged<bool>? onVisibilityChanged;
 
   const LazyHoverSlot({
@@ -95,6 +97,7 @@ class LazyHoverSlot extends StatefulWidget {
     required this.colorPrimary1,
     this.onTap,
     this.onSecondaryTapDown,
+    this.onLongPressStart,
     this.onVisibilityChanged,
   });
 
@@ -179,6 +182,8 @@ class _LazyHoverSlotState extends State<LazyHoverSlot> {
           onTapDown: _onTapDown,
           onTapUp: _onTapUp,
           onTapCancel: _onTapCancel,
+          onLongPressStart: (details) =>
+              widget.onLongPressStart?.call(widget.slotTime, details),
           child: SizedBox(
             height: widget.height,
             width: double.infinity,
@@ -195,3 +200,4 @@ class _LazyHoverSlotState extends State<LazyHoverSlot> {
     );
   }
 }
+

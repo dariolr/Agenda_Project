@@ -1,3 +1,4 @@
+
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -688,6 +689,14 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                   rescheduleSession: rescheduleSession,
                 ),
                 onSecondaryTapDown: (dt, details) => _handleSlotSecondaryTap(
+                  dt: dt,
+                  details: details,
+                  appointments: staffAppointments,
+                  classEvents: staffClassEvents,
+                  blocks: staffBlocks,
+                  minutesPerSlot: layoutConfig.minutesPerSlot,
+                ),
+                onLongPressStart: (dt, details) => _handleSlotLongPress(
                   dt: dt,
                   details: details,
                   appointments: staffAppointments,
@@ -2139,6 +2148,109 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     );
   }
 
+  Future<void> _handleSlotLongPress({
+    required DateTime dt,
+    required LongPressStartDetails details,
+    required List<Appointment> appointments,
+    required List<ClassEvent> classEvents,
+    required List<TimeBlock> blocks,
+    required int minutesPerSlot,
+  }) async {
+    final slotEnd = dt.add(Duration(minutes: minutesPerSlot));
+    final isSlotOccupied =
+        appointments.any(
+          (a) =>
+              !a.isCancelled &&
+              !a.isReplaced &&
+              a.startTime.isBefore(slotEnd) &&
+              a.endTime.isAfter(dt),
+        ) ||
+        classEvents.any((e) {
+          final startsAt = e.startsAtLocal ?? e.startsAtUtc.toLocal();
+          final endsAt = e.endsAtLocal ?? e.endsAtUtc.toLocal();
+          return startsAt.isBefore(slotEnd) && endsAt.isAfter(dt);
+        }) ||
+        blocks.any(
+          (b) => b.startTime.isBefore(slotEnd) && b.endTime.isAfter(dt),
+        );
+
+    if (isSlotOccupied) return;
+
+    final location = ref.read(currentLocationProvider);
+    final services = ref.read(servicesProvider).value ?? const [];
+    final classTypes = ref.read(classTypesProvider).value ?? const [];
+    final hasService = services.any((s) {
+      if (!s.isActive) return false;
+      return s.locationId == null ||
+          location.id <= 0 ||
+          s.locationId == location.id;
+    });
+    final hasClassType = classTypes.any((ct) {
+      return ct.isActive && ct.locationIds.contains(location.id);
+    });
+
+    final l10n = context.l10n;
+    final position = details.globalPosition;
+    final screenSize = MediaQuery.of(context).size;
+
+    final selected = await showMenu<String>(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        position.dx,
+        position.dy,
+        screenSize.width - position.dx,
+        screenSize.height - position.dy,
+      ),
+      items: [
+        if (hasService)
+          PopupMenuItem(
+            value: 'appointment',
+            child: Text(l10n.agendaAddAppointment),
+          ),
+        if (hasClassType)
+          PopupMenuItem(
+            value: 'class_schedule',
+            child: Text(l10n.classEventsNewScheduleButton),
+          ),
+        PopupMenuItem(
+          value: 'block',
+          child: Text(l10n.agendaAddBlock),
+        ),
+      ],
+    );
+
+    if (!mounted || selected == null) return;
+
+    final date = DateUtils.dateOnly(dt);
+    final time = TimeOfDay(hour: dt.hour, minute: dt.minute);
+
+    if (selected == 'appointment') {
+      await showBookingDialog(
+        context,
+        ref,
+        date: date,
+        time: time,
+        initialStaffId: widget.staff.id,
+      );
+    } else if (selected == 'class_schedule') {
+      await showCreateClassEventDialog(
+        context,
+        ref,
+        initialDate: date,
+        initialStartTime: time,
+        initialStaffId: widget.staff.id,
+      );
+    } else if (selected == 'block') {
+      await showAddBlockDialog(
+        context,
+        ref,
+        date: date,
+        time: time,
+        initialStaffId: widget.staff.id,
+      );
+    }
+  }
+
   Future<void> _handleAppointmentSecondaryTap({
     required Appointment appointment,
     required TapDownDetails details,
@@ -2563,3 +2675,4 @@ class _ClassEventCard extends ConsumerWidget {
     );
   }
 }
+

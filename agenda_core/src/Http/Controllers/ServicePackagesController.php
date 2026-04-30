@@ -9,6 +9,7 @@ use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\ServicePackageRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Repositories\BookingDirectLinkRepository;
 
 final class ServicePackagesController
 {
@@ -16,6 +17,7 @@ final class ServicePackagesController
         private readonly ServicePackageRepository $packageRepo,
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
+        private readonly ?BookingDirectLinkRepository $directLinkRepo = null,
     ) {}
 
     /**
@@ -42,7 +44,11 @@ final class ServicePackagesController
     public function index(Request $request): Response
     {
         $locationId = (int) $request->getRouteParam('location_id');
-        $packages = $this->packageRepo->findByLocationId($locationId);
+        $businessId = (int) $request->getAttribute('business_id');
+        $packages = $this->packageRepo->findByLocationId(
+            $locationId,
+            $businessId > 0 ? $this->directLinkScopeFromQuery($request, $businessId, $locationId) : null
+        );
 
         return Response::success([
             'location_id' => $locationId,
@@ -58,8 +64,21 @@ final class ServicePackagesController
     {
         $locationId = (int) $request->getRouteParam('location_id');
         $packageId = (int) $request->getRouteParam('id');
+        $businessId = (int) $request->getAttribute('business_id');
+        $scope = $businessId > 0 ? $this->directLinkScopeFromQuery($request, $businessId, $locationId) : null;
+        $allowDirectPackage = $scope !== null
+            && (
+                (
+                    ($scope['target_type'] ?? null) === BookingDirectLinkRepository::TARGET_SERVICE_PACKAGE
+                    && (int) ($scope['target_id'] ?? 0) === $packageId
+                ) || (
+                    ($scope['target_type'] ?? null) === BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY
+                    && ($scope['child_visibility_scope'] ?? null) === 'direct_link_only'
+                    && $this->packageBelongsToDirectCategory($packageId, $locationId, (int) ($scope['target_id'] ?? 0))
+                )
+            );
 
-        $expanded = $this->packageRepo->getExpanded($packageId, $locationId);
+        $expanded = $this->packageRepo->getExpanded($packageId, $locationId, $allowDirectPackage);
         if ($expanded === null) {
             return Response::notFound('Package not found', $request->traceId);
         }
@@ -93,6 +112,10 @@ final class ServicePackagesController
         }
 
         $body = $request->getBody();
+        $onlineVisibility = $this->validatedOnlineVisibility($body, $request);
+        if ($onlineVisibility instanceof Response) {
+            return $onlineVisibility;
+        }
         $name = trim((string) ($body['name'] ?? ''));
         $categoryId = (int) ($body['category_id'] ?? 0);
         $serviceIds = $this->normalizeServiceIds($body['service_ids'] ?? null);
@@ -129,10 +152,19 @@ final class ServicePackagesController
                 : null,
             'is_active' => isset($body['is_active']) ? (int) (bool) $body['is_active'] : 1,
             'is_bookable_online' => isset($body['is_bookable_online']) ? (int) (bool) $body['is_bookable_online'] : 1,
+            'online_visibility' => $onlineVisibility,
             'is_broken' => 0,
         ], $serviceIds);
 
         $created = $this->packageRepo->getDetailedById($packageId, $locationId);
+        if ($onlineVisibility === 'direct_link' && $created !== null) {
+            $this->directLinkRepo?->createOrUpdateForTarget(
+                (int) $businessId,
+                BookingDirectLinkRepository::TARGET_SERVICE_PACKAGE,
+                $packageId,
+                (string) $created['name']
+            );
+        }
 
         return Response::created([
             'package' => $created,
@@ -163,6 +195,10 @@ final class ServicePackagesController
         }
 
         $body = $request->getBody();
+        $onlineVisibility = $this->validatedOnlineVisibility($body, $request);
+        if ($onlineVisibility instanceof Response) {
+            return $onlineVisibility;
+        }
         $updateData = [];
 
         if (array_key_exists('name', $body)) {
@@ -204,6 +240,10 @@ final class ServicePackagesController
             $updateData['is_bookable_online'] = (int) (bool) $body['is_bookable_online'];
         }
 
+        if ($onlineVisibility !== null) {
+            $updateData['online_visibility'] = $onlineVisibility;
+        }
+
         $serviceIds = null;
         if (array_key_exists('service_ids', $body)) {
             $serviceIds = $this->normalizeServiceIds($body['service_ids'] ?? null);
@@ -225,6 +265,14 @@ final class ServicePackagesController
         $this->packageRepo->update($packageId, $updateData, $serviceIds);
 
         $updated = $this->packageRepo->getDetailedById($packageId, $locationId);
+        if ($onlineVisibility === 'direct_link' && $updated !== null) {
+            $this->directLinkRepo?->createOrUpdateForTarget(
+                (int) $existing['business_id'],
+                BookingDirectLinkRepository::TARGET_SERVICE_PACKAGE,
+                $packageId,
+                (string) $updated['name']
+            );
+        }
 
         return Response::success([
             'package' => $updated,
@@ -319,5 +367,57 @@ final class ServicePackagesController
         }
 
         return $normalized;
+    }
+
+    private function validatedOnlineVisibility(array $body, Request $request): string|Response|null
+    {
+        if (!array_key_exists('online_visibility', $body)) {
+            return null;
+        }
+
+        $value = strtolower(trim((string) $body['online_visibility']));
+        if (!in_array($value, ['public', 'direct_link', 'hidden'], true)) {
+            return Response::error('Invalid online_visibility', 'validation_error', 400, $request->traceId);
+        }
+
+        return $value;
+    }
+
+    private function directLinkScopeFromQuery(Request $request, int $businessId, ?int $locationId = null): ?array
+    {
+        $link = trim((string) ($request->queryParam('link') ?? ''));
+        if ($link === '') {
+            return null;
+        }
+
+        $scope = $this->directLinkRepo?->resolveAvailableScope($businessId, $link);
+        if (
+            $scope !== null
+            && ($scope['target_type'] ?? null) === BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY
+        ) {
+            $scope['child_visibility_scope'] = $this->directLinkRepo?->resolveCategoryChildVisibilityScope(
+                $businessId,
+                (int) ($scope['target_id'] ?? 0),
+                $locationId
+            ) ?? 'empty';
+        }
+
+        return $scope;
+    }
+
+    private function packageBelongsToDirectCategory(int $packageId, int $locationId, int $categoryId): bool
+    {
+        if ($categoryId <= 0) {
+            return false;
+        }
+
+        $package = $this->packageRepo->findById($packageId);
+        if (!$package) {
+            return false;
+        }
+
+        return (int) ($package['location_id'] ?? 0) === $locationId
+            && (int) ($package['category_id'] ?? 0) === $categoryId
+            && (string) ($package['online_visibility'] ?? 'public') === 'direct_link';
     }
 }

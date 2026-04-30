@@ -2359,3 +2359,189 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+-- ========================================================
+-- TABELLE AGGIUNTE DA DB LIVE
+-- ========================================================
+
+-- --------------------------------------------------------
+-- Struttura tabella `booking_direct_links`
+-- --------------------------------------------------------
+
+CREATE TABLE `booking_direct_links` (
+  `id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `slug` varchar(160) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `target_type` enum('service_variant','service_package','class_event','service_category') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `target_id` int UNSIGNED NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `booking_direct_links`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_booking_direct_links_business_slug` (`business_id`,`slug`),
+  ADD KEY `idx_booking_direct_links_business_active` (`business_id`,`is_active`),
+  ADD KEY `idx_booking_direct_links_target` (`target_type`,`target_id`);
+
+-- --------------------------------------------------------
+-- Struttura tabella `class_bookings`
+-- --------------------------------------------------------
+
+CREATE TABLE `class_bookings` (
+  `id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `class_event_id` int UNSIGNED NOT NULL,
+  `customer_id` int UNSIGNED NOT NULL COMMENT 'FK clients.id',
+  `status` enum('CONFIRMED','WAITLISTED','CANCELLED_BY_CUSTOMER','CANCELLED_BY_STAFF','NO_SHOW','ATTENDED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `waitlist_position` int UNSIGNED DEFAULT NULL,
+  `booked_at` timestamp NOT NULL COMMENT 'UTC',
+  `cancelled_at` timestamp NULL DEFAULT NULL,
+  `checked_in_at` timestamp NULL DEFAULT NULL,
+  `payment_status` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+ALTER TABLE `class_bookings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_class_bookings_business_event_customer` (`business_id`,`class_event_id`,`customer_id`),
+  ADD KEY `idx_class_bookings_business_event_status` (`business_id`,`class_event_id`,`status`),
+  ADD KEY `idx_class_bookings_business_customer_status` (`business_id`,`customer_id`,`status`),
+  ADD KEY `idx_class_bookings_business_event_waitlist` (`business_id`,`class_event_id`,`waitlist_position`),
+  ADD KEY `fk_class_bookings_event` (`class_event_id`),
+  ADD KEY `fk_class_bookings_customer` (`customer_id`);
+
+-- --------------------------------------------------------
+-- Struttura tabella `class_events`
+-- --------------------------------------------------------
+
+CREATE TABLE `class_events` (
+  `id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `class_type_id` int UNSIGNED NOT NULL COMMENT 'FK class_types.id',
+  `starts_at` timestamp NOT NULL COMMENT 'UTC',
+  `ends_at` timestamp NOT NULL COMMENT 'UTC',
+  `location_id` int UNSIGNED NOT NULL,
+  `staff_id` int UNSIGNED NOT NULL,
+  `capacity_total` int UNSIGNED NOT NULL DEFAULT '1',
+  `capacity_reserved` int UNSIGNED NOT NULL DEFAULT '0',
+  `confirmed_count` int UNSIGNED NOT NULL DEFAULT '0',
+  `waitlist_count` int UNSIGNED NOT NULL DEFAULT '0',
+  `waitlist_enabled` tinyint(1) NOT NULL DEFAULT '1',
+  `is_bookable_online` tinyint(1) NOT NULL DEFAULT '1',
+  `online_visibility` enum('public','direct_link','hidden') NOT NULL DEFAULT 'public',
+  `booking_open_at` timestamp NULL DEFAULT NULL,
+  `booking_close_at` timestamp NULL DEFAULT NULL,
+  `cancel_cutoff_minutes` int UNSIGNED NOT NULL DEFAULT '0',
+  `status` enum('SCHEDULED','CANCELLED','COMPLETED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'SCHEDULED',
+  `visibility` enum('PUBLIC','PRIVATE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PUBLIC',
+  `price_cents` int UNSIGNED DEFAULT NULL,
+  `currency` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+ALTER TABLE `class_events`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_class_events_business_starts` (`business_id`,`starts_at`),
+  ADD KEY `idx_class_events_business_staff_starts` (`business_id`,`staff_id`,`starts_at`),
+  ADD KEY `idx_class_events_business_type_starts` (`business_id`,`class_type_id`,`starts_at`),
+  ADD KEY `idx_class_events_business_status_starts` (`business_id`,`status`,`starts_at`),
+  ADD KEY `fk_class_events_type` (`class_type_id`,`business_id`),
+  ADD KEY `fk_class_events_location` (`location_id`),
+  ADD KEY `fk_class_events_staff` (`staff_id`);
+
+-- --------------------------------------------------------
+-- Struttura tabella `forgot_password_rate_limits`
+-- --------------------------------------------------------
+
+CREATE TABLE `forgot_password_rate_limits` (
+  `id` bigint UNSIGNED NOT NULL,
+  `scope` enum('operator','customer') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `business_id` bigint UNSIGNED DEFAULT NULL,
+  `email_hash` char(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `ip_hash` char(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+ALTER TABLE `forgot_password_rate_limits`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_forgot_rate_lookup` (`scope`,`business_id`,`email_hash`,`ip_hash`,`created_at`),
+  ADD KEY `idx_forgot_rate_created_at` (`created_at`);
+
+-- --------------------------------------------------------
+-- Struttura tabella `location_schedules`
+-- --------------------------------------------------------
+
+CREATE TABLE `location_schedules` (
+  `id` int UNSIGNED NOT NULL,
+  `location_id` int UNSIGNED NOT NULL,
+  `day_of_week` tinyint UNSIGNED NOT NULL COMMENT '0=Sunday, 1=Monday, ..., 6=Saturday',
+  `open_time` time NOT NULL COMMENT 'Opening time (e.g., 09:00:00)',
+  `close_time` time NOT NULL COMMENT 'Closing time (e.g., 18:00:00)',
+  `is_closed` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Day is closed for business',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+ALTER TABLE `location_schedules`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_location_schedules` (`location_id`,`day_of_week`);
+
+-- --------------------------------------------------------
+-- Struttura tabella `popular_services`
+-- --------------------------------------------------------
+
+CREATE TABLE `popular_services` (
+  `id` int UNSIGNED NOT NULL,
+  `staff_id` int UNSIGNED NOT NULL,
+  `service_id` int UNSIGNED NOT NULL,
+  `rank` tinyint UNSIGNED NOT NULL COMMENT '1 = più prenotato, 5 = quinto',
+  `booking_count` int UNSIGNED NOT NULL DEFAULT '0' COMMENT 'Numero prenotazioni negli ultimi 90 giorni',
+  `computed_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+ALTER TABLE `popular_services`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_popular_services_staff_rank` (`staff_id`,`rank`),
+  ADD UNIQUE KEY `uk_popular_services_staff_service` (`staff_id`,`service_id`),
+  ADD KEY `idx_popular_services_staff` (`staff_id`),
+  ADD KEY `idx_popular_services_service` (`service_id`);
+
+-- --------------------------------------------------------
+-- Struttura tabella `staff_planning_week_template`
+-- --------------------------------------------------------
+
+CREATE TABLE `staff_planning_week_template` (
+  `id` int UNSIGNED NOT NULL,
+  `staff_planning_id` int UNSIGNED NOT NULL,
+  `week_label` enum('A','B') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'A',
+  `day_of_week` tinyint UNSIGNED NOT NULL,
+  `slots` json NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+ALTER TABLE `staff_planning_week_template`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_planning_week_day` (`staff_planning_id`,`week_label`,`day_of_week`),
+  ADD KEY `idx_week_template_planning_id` (`staff_planning_id`);
+
+
+-- ========================================================
+-- COLONNE AGGIUNTE DA DB LIVE
+-- ========================================================
+
+-- [businesses]
+ALTER TABLE `businesses` ADD COLUMN `locale` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'it';
+
+-- [locations]
+ALTER TABLE `locations` ADD COLUMN `show_price_to_customer` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'Se 1, mostra il prezzo al cliente durante la prenotazione online';
+ALTER TABLE `locations` ADD COLUMN `show_duration_to_customer` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'Se 1, mostra la durata al cliente durante la prenotazione online';
+
+-- [service_packages]
+ALTER TABLE `service_packages` ADD COLUMN `online_visibility` enum('public','direct_link','hidden') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'public';
+
+-- [service_variants]
+ALTER TABLE `service_variants` ADD COLUMN `online_visibility` enum('public','direct_link','hidden') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'public';

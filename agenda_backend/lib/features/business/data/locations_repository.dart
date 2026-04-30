@@ -1,3 +1,4 @@
+
 import '../../../core/models/location.dart';
 import '../../../core/network/api_client.dart';
 
@@ -27,6 +28,8 @@ class LocationsRepository {
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
     bool? allowMultiServiceBooking,
+    bool? showPriceToCustomer,
+    bool? showDurationToCustomer,
     bool? isActive,
   }) async {
     final data = await _apiClient.createLocation(
@@ -45,6 +48,8 @@ class LocationsRepository {
       cancellationHours: cancellationHours,
       allowCustomerChooseStaff: allowCustomerChooseStaff,
       allowMultiServiceBooking: allowMultiServiceBooking,
+      showPriceToCustomer: showPriceToCustomer,
+      showDurationToCustomer: showDurationToCustomer,
       isActive: isActive,
     );
     return Location.fromJson(data);
@@ -66,6 +71,8 @@ class LocationsRepository {
     int? cancellationHours,
     bool? allowCustomerChooseStaff,
     bool? allowMultiServiceBooking,
+    bool? showPriceToCustomer,
+    bool? showDurationToCustomer,
     int? onlineBookingSlotIntervalMinutes,
     String? slotDisplayMode,
     int? minGapMinutes,
@@ -87,6 +94,8 @@ class LocationsRepository {
       cancellationHours: cancellationHours,
       allowCustomerChooseStaff: allowCustomerChooseStaff,
       allowMultiServiceBooking: allowMultiServiceBooking,
+      showPriceToCustomer: showPriceToCustomer,
+      showDurationToCustomer: showDurationToCustomer,
       onlineBookingSlotIntervalMinutes: onlineBookingSlotIntervalMinutes,
       slotDisplayMode: slotDisplayMode,
       minGapMinutes: minGapMinutes,
@@ -99,3 +108,4 @@ class LocationsRepository {
     await _apiClient.deleteLocation(locationId);
   }
 }
+

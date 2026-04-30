@@ -25,16 +25,43 @@ final class ServicePackageRepository
         return $result ?: null;
     }
 
-    public function findByLocationId(int $locationId): array
+    public function findByLocationId(int $locationId, ?array $directLinkScope = null): array
     {
+        $visibilitySql = "sp.online_visibility = 'public'";
+        $params = [$locationId];
+
+        if ($directLinkScope !== null) {
+            $targetType = (string) ($directLinkScope['target_type'] ?? '');
+            $targetId = (int) ($directLinkScope['target_id'] ?? 0);
+            if ($targetType === BookingDirectLinkRepository::TARGET_SERVICE_PACKAGE) {
+                $visibilitySql = "(sp.online_visibility = 'public' OR sp.id = ?)";
+                $params[] = $targetId;
+            } elseif ($targetType === BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY) {
+                $scope = (string) ($directLinkScope['child_visibility_scope'] ?? 'empty');
+                $allowed = match ($scope) {
+                    'public_only' => "'public'",
+                    'direct_link_only' => "'direct_link'",
+                    default => null,
+                };
+                $visibilitySql = $allowed === null
+                    ? '1 = 0'
+                    : "sp.category_id = ? AND sp.online_visibility IN ({$allowed})";
+                $params[] = $targetId;
+            }
+        }
+
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT sp.*, sc.name AS category_name
+            "SELECT sp.*, sc.name AS category_name
              FROM service_packages sp
              LEFT JOIN service_categories sc ON sc.id = sp.category_id
              WHERE sp.location_id = ?
-             ORDER BY sp.sort_order ASC, sp.name ASC, sp.id ASC'
+               AND sp.is_active = 1
+               AND sp.is_bookable_online = 1
+               AND {$visibilitySql}
+               AND sp.is_broken = 0
+             ORDER BY sp.sort_order ASC, sp.name ASC, sp.id ASC"
         );
-        $stmt->execute([$locationId]);
+        $stmt->execute($params);
         $packages = $stmt->fetchAll();
 
         if (empty($packages)) {
@@ -88,8 +115,12 @@ final class ServicePackageRepository
             );
             $stmt = $pdo->prepare(
                 'INSERT INTO service_packages
-                    (business_id, location_id, category_id, sort_order, name, description, override_price, override_duration_minutes, is_active, is_bookable_online, is_broken)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                    (business_id, location_id, category_id, sort_order, name, description, override_price, override_duration_minutes, is_active, is_bookable_online, online_visibility, is_broken)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            $onlineVisibility = $this->normalizeOnlineVisibility(
+                $data['online_visibility'] ?? null,
+                (int) ($data['is_bookable_online'] ?? 1) === 1
             );
             $stmt->execute([
                 $data['business_id'],
@@ -101,7 +132,8 @@ final class ServicePackageRepository
                 $data['override_price'],
                 $data['override_duration_minutes'],
                 $data['is_active'],
-                $data['is_bookable_online'] ?? 1,
+                $onlineVisibility === 'hidden' ? 0 : 1,
+                $onlineVisibility,
                 $data['is_broken'],
             ]);
 
@@ -123,6 +155,14 @@ final class ServicePackageRepository
         $pdo->beginTransaction();
 
         try {
+            if (array_key_exists('online_visibility', $data)) {
+                $data['online_visibility'] = $this->normalizeOnlineVisibility(
+                    $data['online_visibility'] !== null ? (string) $data['online_visibility'] : null,
+                    (int) ($data['is_bookable_online'] ?? 1) === 1
+                );
+                $data['is_bookable_online'] = $data['online_visibility'] === 'hidden' ? 0 : 1;
+            }
+
             if (!empty($data)) {
                 $fields = [];
                 $params = [];
@@ -205,10 +245,16 @@ final class ServicePackageRepository
         return (int) $stmt->fetchColumn() === count($packageIds);
     }
 
-    public function getExpanded(int $packageId, int $locationId): ?array
+    public function getExpanded(int $packageId, int $locationId, bool $allowDirectLink = false): ?array
     {
         $package = $this->findById($packageId);
-        if (!$package || (int) $package['location_id'] !== $locationId) {
+        if (
+            !$package
+            || (int) $package['location_id'] !== $locationId
+            || (int) ($package['is_bookable_online'] ?? 0) !== 1
+            || (!$allowDirectLink && (string) ($package['online_visibility'] ?? 'public') !== 'public')
+            || ($allowDirectLink && !in_array((string) ($package['online_visibility'] ?? 'public'), ['public', 'direct_link'], true))
+        ) {
             return null;
         }
 
@@ -353,16 +399,32 @@ final class ServicePackageRepository
             "SELECT spi.package_id,
                     COUNT(*) AS total_items,
                     SUM(CASE
-                        WHEN s.id IS NULL OR s.is_active = 0 OR sv.id IS NULL OR sv.is_active = 0 THEN 1
+                        WHEN s.id IS NULL
+                            OR s.is_active = 0
+                            OR sv.id IS NULL
+                            OR sv.is_active = 0
+                            OR sv.is_bookable_online = 0
+                            OR sv.online_visibility = 'hidden'
+                            THEN 1
                         ELSE 0
                     END) AS missing_count,
                     SUM(CASE
-                        WHEN s.id IS NOT NULL AND s.is_active = 1 AND sv.id IS NOT NULL AND sv.is_active = 1
+                        WHEN s.id IS NOT NULL
+                            AND s.is_active = 1
+                            AND sv.id IS NOT NULL
+                            AND sv.is_active = 1
+                            AND sv.is_bookable_online = 1
+                            AND sv.online_visibility <> 'hidden'
                             THEN sv.duration_minutes + COALESCE(sv.processing_time, 0) + COALESCE(sv.blocked_time, 0)
                         ELSE 0
                     END) AS total_duration,
                     SUM(CASE
-                        WHEN s.id IS NOT NULL AND s.is_active = 1 AND sv.id IS NOT NULL AND sv.is_active = 1
+                        WHEN s.id IS NOT NULL
+                            AND s.is_active = 1
+                            AND sv.id IS NOT NULL
+                            AND sv.is_active = 1
+                            AND sv.is_bookable_online = 1
+                            AND sv.online_visibility <> 'hidden'
                             THEN sv.price
                         ELSE 0
                     END) AS total_price
@@ -422,6 +484,7 @@ final class ServicePackageRepository
                 : null,
             'is_active' => (bool) $package['is_active'],
             'is_bookable_online' => (bool) ($package['is_bookable_online'] ?? true),
+            'online_visibility' => (string) ($package['online_visibility'] ?? 'public'),
             'is_broken' => $package['is_broken'] || $totals['missing_count'] > 0,
             'effective_price' => $effectivePrice,
             'effective_duration_minutes' => $effectiveDuration,
@@ -442,5 +505,19 @@ final class ServicePackageRepository
         $stmt->execute([$categoryId, $categoryId, $locationId]);
 
         return (int) $stmt->fetchColumn();
+    }
+
+    private function normalizeOnlineVisibility(?string $onlineVisibility, bool $fallbackBookable): string
+    {
+        if ($onlineVisibility === null || trim($onlineVisibility) === '') {
+            return $fallbackBookable ? 'public' : 'hidden';
+        }
+
+        $normalized = strtolower(trim($onlineVisibility));
+        if (!in_array($normalized, ['public', 'direct_link', 'hidden'], true)) {
+            throw new \InvalidArgumentException('Invalid online_visibility');
+        }
+
+        return $normalized;
     }
 }

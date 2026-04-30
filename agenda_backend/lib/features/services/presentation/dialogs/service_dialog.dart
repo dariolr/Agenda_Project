@@ -1,3 +1,4 @@
+
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
@@ -9,10 +10,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/models/online_booking_visibility.dart';
 import '../../../../core/models/resource.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_variant.dart';
 import '../../../../core/network/network_providers.dart';
+import '../../../../core/utils/booking_direct_link_utils.dart';
 import '../../../../core/utils/color_utils.dart';
 import '../../../../core/utils/price_utils.dart';
 import '../../../../core/utils/service_color_palette.dart';
@@ -24,6 +27,7 @@ import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/app_switch.dart';
 import '../../../../core/widgets/labeled_form_field.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
+import '../../../../core/widgets/online_booking_visibility_selector.dart';
 import '../../../agenda/providers/business_providers.dart';
 import '../../../auth/providers/current_business_user_provider.dart';
 import '../../../staff/providers/staff_providers.dart';
@@ -487,7 +491,13 @@ Future<void> showServiceDialog(
       ? selectedProcessingTime
       : selectedBlockedTime;
 
-  bool isBookableOnline = existingVariant?.isBookableOnline ?? true;
+  OnlineBookingVisibilityOption onlineBookingVisibility =
+      OnlineBookingVisibilityOption.fromValues(
+        onlineVisibility:
+            existingVariant?.onlineVisibility ?? service?.onlineVisibility,
+        isBookableOnline:
+            existingVariant?.isBookableOnline ?? service?.isBookableOnline,
+      );
   bool isFree = existingVariant?.isFree ?? false;
   bool isPriceStartingFrom = existingVariant?.isPriceStartingFrom ?? false;
 
@@ -557,7 +567,8 @@ Future<void> showServiceDialog(
             durationMinutes: selectedDuration!,
             price: finalPrice ?? 0,
             colorHex: ColorUtils.toHex(selectedColor),
-            isBookableOnline: isBookableOnline,
+            isBookableOnline: onlineBookingVisibility.isBookableOnline,
+            onlineVisibility: onlineBookingVisibility.apiValue,
             isPriceStartingFrom: finalIsPriceStartingFrom,
             processingTime: processingToSave > 0 ? processingToSave : null,
             blockedTime: blockedToSave > 0 ? blockedToSave : null,
@@ -574,7 +585,8 @@ Future<void> showServiceDialog(
             durationMinutes: selectedDuration!,
             price: finalPrice ?? 0,
             colorHex: ColorUtils.toHex(selectedColor),
-            isBookableOnline: isBookableOnline,
+            isBookableOnline: onlineBookingVisibility.isBookableOnline,
+            onlineVisibility: onlineBookingVisibility.apiValue,
             isPriceStartingFrom: finalIsPriceStartingFrom,
             processingTime: processingToSave > 0 ? processingToSave : null,
             blockedTime: blockedToSave > 0 ? blockedToSave : null,
@@ -597,7 +609,8 @@ Future<void> showServiceDialog(
           durationMinutes: selectedDuration!,
           price: finalPrice ?? 0,
           colorHex: ColorUtils.toHex(selectedColor),
-          isBookableOnline: isBookableOnline,
+          isBookableOnline: onlineBookingVisibility.isBookableOnline,
+          onlineVisibility: onlineBookingVisibility.apiValue,
           isPriceStartingFrom: finalIsPriceStartingFrom,
           processingTime: processingToSave,
           blockedTime: blockedToSave,
@@ -623,7 +636,8 @@ Future<void> showServiceDialog(
         price: finalPrice ?? 0,
         colorHex: ColorUtils.toHex(selectedColor),
         currency: currencyCode,
-        isBookableOnline: isBookableOnline,
+        isBookableOnline: onlineBookingVisibility.isBookableOnline,
+        onlineVisibility: onlineBookingVisibility.apiValue,
         isFree: effectiveIsFree,
         isPriceStartingFrom: finalIsPriceStartingFrom,
         parallelCapacity: parallelCapacity,
@@ -1696,13 +1710,35 @@ Future<void> showServiceDialog(
               (!isFree && priceController.text.trim().isNotEmpty),
         ),
         const SizedBox(height: 40),
-        _SwitchTile(
-          title: context.l10n.bookableOnlineSwitch,
-          value: isBookableOnline,
-          onChanged: canEditDialog
-              ? (v) => setState(() => isBookableOnline = v)
-              : null,
+        LabeledFormField(
+          label: context.l10n.onlineBookingVisibilityLabel,
+          child: OnlineBookingVisibilitySelector(
+            value: onlineBookingVisibility,
+            onChanged: canEditDialog
+                ? (value) => setState(() => onlineBookingVisibility = value)
+                : null,
+          ),
         ),
+        if (isEditing &&
+            onlineBookingVisibility !=
+                OnlineBookingVisibilityOption.hidden &&
+            (existingVariant?.id ?? service.serviceVariantId) != null) ...[
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: AppOutlinedActionButton(
+              onPressed: canEditDialog
+                  ? () => copyBookingDirectLink(
+                      context,
+                      ref,
+                      targetType: 'service_variant',
+                      targetId: existingVariant?.id ?? service.serviceVariantId!,
+                    )
+                  : null,
+              child: Text(context.l10n.closuresImportHolidaysCopyLinkAction),
+            ),
+          ),
+        ],
       ],
     );
   }

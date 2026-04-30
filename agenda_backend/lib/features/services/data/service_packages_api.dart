@@ -1,3 +1,4 @@
+
 import '../../../core/models/service_package.dart';
 import '../../../core/network/api_client.dart';
 
@@ -24,6 +25,7 @@ class ServicePackagesApi {
     int? overrideDurationMinutes,
     bool isActive = true,
     bool isBookableOnline = true,
+    String? onlineVisibility,
   }) async {
     final data = await _apiClient.createServicePackage(
       locationId: locationId,
@@ -35,6 +37,7 @@ class ServicePackagesApi {
       overrideDurationMinutes: overrideDurationMinutes,
       isActive: isActive,
       isBookableOnline: isBookableOnline,
+      onlineVisibility: onlineVisibility,
     );
     return ServicePackage.fromJson(data['package'] as Map<String, dynamic>);
   }
@@ -51,6 +54,7 @@ class ServicePackagesApi {
     bool setOverrideDurationNull = false,
     bool? isActive,
     bool? isBookableOnline,
+    String? onlineVisibility,
     List<int>? serviceIds,
   }) async {
     final data = await _apiClient.updateServicePackage(
@@ -65,6 +69,7 @@ class ServicePackagesApi {
       setOverrideDurationNull: setOverrideDurationNull,
       isActive: isActive,
       isBookableOnline: isBookableOnline,
+      onlineVisibility: onlineVisibility,
       serviceIds: serviceIds,
     );
     return ServicePackage.fromJson(data['package'] as Map<String, dynamic>);
@@ -97,3 +102,4 @@ class ServicePackagesApi {
     return ServicePackageExpansion.fromJson(data);
   }
 }
+

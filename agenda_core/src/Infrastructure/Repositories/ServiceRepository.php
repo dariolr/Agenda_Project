@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Agenda\Infrastructure\Repositories;
 
 use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Repositories\BookingDirectLinkRepository;
 
 /**
  * Repository for services and service_variants.
@@ -44,7 +45,7 @@ final class ServiceRepository
                     sv.id AS variant_id, sv.id AS service_variant_id,
                     sv.duration_minutes, sv.processing_time, sv.blocked_time,
                     sv.price, sv.color_hex AS color,
-                    sv.is_bookable_online, sv.is_price_starting_from AS is_price_from,
+                    sv.is_bookable_online, sv.online_visibility, sv.is_price_starting_from AS is_price_from,
                     COALESCE(sv.parallel_capacity, 1) AS parallel_capacity
              FROM services s
              LEFT JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
@@ -64,24 +65,48 @@ final class ServiceRepository
         return $result ?: null;
     }
 
-    public function findByLocationId(int $locationId, int $businessId): array
+    public function findByLocationId(int $locationId, int $businessId, ?array $directLinkScope = null): array
     {
+        $visibilitySql = "sv.is_bookable_online = 1 AND sv.online_visibility = 'public'";
+        $params = [$locationId, $businessId];
+
+        if ($directLinkScope !== null) {
+            $targetType = (string) ($directLinkScope['target_type'] ?? '');
+            $targetId = (int) ($directLinkScope['target_id'] ?? 0);
+            if ($targetType === BookingDirectLinkRepository::TARGET_SERVICE_VARIANT) {
+                $visibilitySql = "sv.is_bookable_online = 1 AND (sv.online_visibility = 'public' OR sv.id = ?)";
+                $params[] = $targetId;
+            } elseif ($targetType === BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY) {
+                $scope = (string) ($directLinkScope['child_visibility_scope'] ?? 'empty');
+                $allowed = match ($scope) {
+                    'public_only' => "'public'",
+                    'direct_link_only' => "'direct_link'",
+                    default => null,
+                };
+                $visibilitySql = $allowed === null
+                    ? '1 = 0'
+                    : "s.category_id = ? AND sv.is_bookable_online = 1 AND sv.online_visibility IN ({$allowed})";
+                $params[] = $targetId;
+            }
+        }
+
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT s.id, s.business_id, s.category_id, s.name, s.description, 
+            "SELECT s.id, s.business_id, s.category_id, s.name, s.description, 
                     s.is_active, s.sort_order,
                     sv.id AS service_variant_id,
                     sv.duration_minutes, sv.processing_time, sv.blocked_time,
                     sv.price, sv.color_hex AS color,
-                    sv.is_bookable_online, sv.is_price_starting_from AS is_price_from,
+                    sv.is_bookable_online, sv.online_visibility, sv.is_price_starting_from AS is_price_from,
                     COALESCE(sv.parallel_capacity, 1) AS parallel_capacity,
                     sc.name AS category_name
              FROM services s
              JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
              LEFT JOIN service_categories sc ON s.category_id = sc.id
              WHERE s.business_id = ? AND s.is_active = 1 AND sv.is_active = 1
-             ORDER BY s.sort_order ASC, s.name ASC'
+               AND {$visibilitySql}
+             ORDER BY s.sort_order ASC, s.name ASC"
         );
-        $stmt->execute([$locationId, $businessId]);
+        $stmt->execute($params);
 
         return $stmt->fetchAll();
     }
@@ -101,6 +126,8 @@ final class ServiceRepository
             "SELECT s.id, s.business_id, s.category_id, s.name, s.description,
                     sv.id AS variant_id, sv.id AS service_variant_id,
                     sv.duration_minutes, sv.price, sv.color_hex AS color,
+                    sv.is_active AS variant_is_active,
+                    sv.is_bookable_online, sv.online_visibility,
                     sv.is_price_starting_from AS is_price_from,
                     COALESCE(sv.parallel_capacity, 1) AS parallel_capacity,
                     COALESCE(sv.processing_time, 0) AS processing_time,
@@ -130,15 +157,34 @@ final class ServiceRepository
         return $orderedResults;
     }
 
-    public function getCategories(int $businessId): array
+    public function getCategories(
+        int $businessId,
+        ?array $directLinkScope = null,
+        bool $includeAllForAdmin = false
+    ): array
     {
+        $params = [$businessId];
+        $visibilitySql = '1 = 1';
+
+        if (!$includeAllForAdmin) {
+            if ($directLinkScope !== null) {
+                $targetType = (string) ($directLinkScope['target_type'] ?? '');
+                $targetId = (int) ($directLinkScope['target_id'] ?? 0);
+                if ($targetType === BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY) {
+                    $visibilitySql = "id = ?";
+                    $params[] = $targetId;
+                }
+            }
+        }
+
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT id, business_id, name, description, sort_order
+            "SELECT id, business_id, name, description, sort_order
              FROM service_categories
              WHERE business_id = ?
-             ORDER BY sort_order ASC, name ASC'
+               AND {$visibilitySql}
+             ORDER BY sort_order ASC, name ASC"
         );
-        $stmt->execute([$businessId]);
+        $stmt->execute($params);
 
         return $stmt->fetchAll();
     }
@@ -307,6 +353,7 @@ final class ServiceRepository
         float $price = 0.0,
         ?string $colorHex = null,
         bool $isBookableOnline = true,
+        ?string $onlineVisibility = null,
         bool $isPriceStartingFrom = false,
         ?int $processingTime = null,
         ?int $blockedTime = null,
@@ -330,9 +377,12 @@ final class ServiceRepository
             $serviceId = (int) $pdo->lastInsertId();
 
             // Insert service_variant for the location
+            $onlineVisibility = $this->normalizeOnlineVisibility($onlineVisibility, $isBookableOnline);
+            $isBookableOnline = $onlineVisibility === 'hidden' ? false : true;
+
             $stmt = $pdo->prepare(
-                'INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, color_hex, is_bookable_online, is_price_starting_from, parallel_capacity, is_active, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
+                'INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, color_hex, is_bookable_online, online_visibility, is_price_starting_from, parallel_capacity, is_active, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
             );
             $stmt->execute([
                 $serviceId,
@@ -343,6 +393,7 @@ final class ServiceRepository
                 $price,
                 $colorHex ?? '#CCCCCC',
                 $isBookableOnline ? 1 : 0,
+                $onlineVisibility,
                 $isPriceStartingFrom ? 1 : 0,
                 $parallelCapacity,
             ]);
@@ -370,6 +421,7 @@ final class ServiceRepository
         float $price = 0.0,
         ?string $colorHex = null,
         bool $isBookableOnline = true,
+        ?string $onlineVisibility = null,
         bool $isPriceStartingFrom = false,
         ?int $processingTime = null,
         ?int $blockedTime = null,
@@ -397,9 +449,12 @@ final class ServiceRepository
             $serviceId = (int) $pdo->lastInsertId();
 
             // Insert service_variant for each location
+            $onlineVisibility = $this->normalizeOnlineVisibility($onlineVisibility, $isBookableOnline);
+            $isBookableOnline = $onlineVisibility === 'hidden' ? false : true;
+
             $stmtVariant = $pdo->prepare(
-                'INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, color_hex, is_bookable_online, is_price_starting_from, parallel_capacity, is_active, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
+                'INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, color_hex, is_bookable_online, online_visibility, is_price_starting_from, parallel_capacity, is_active, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
             );
 
             $firstLocationId = $locationIds[0];
@@ -413,6 +468,7 @@ final class ServiceRepository
                     $price,
                     $colorHex ?? '#CCCCCC',
                     $isBookableOnline ? 1 : 0,
+                    $onlineVisibility,
                     $isPriceStartingFrom ? 1 : 0,
                     $parallelCapacity,
                 ]);
@@ -441,6 +497,7 @@ final class ServiceRepository
         ?float $price = null,
         ?string $colorHex = null,
         ?bool $isBookableOnline = null,
+        ?string $onlineVisibility = null,
         ?bool $isPriceStartingFrom = null,
         ?int $sortOrder = null,
         ?int $processingTime = null,
@@ -497,9 +554,16 @@ final class ServiceRepository
                 $variantUpdates[] = 'color_hex = ?';
                 $variantParams[] = $colorHex;
             }
-            if ($isBookableOnline !== null) {
+            if ($isBookableOnline !== null && $onlineVisibility === null) {
                 $variantUpdates[] = 'is_bookable_online = ?';
                 $variantParams[] = $isBookableOnline ? 1 : 0;
+            }
+            if ($onlineVisibility !== null) {
+                $onlineVisibility = $this->normalizeOnlineVisibility($onlineVisibility, $isBookableOnline ?? true);
+                $variantUpdates[] = 'online_visibility = ?';
+                $variantParams[] = $onlineVisibility;
+                $variantUpdates[] = 'is_bookable_online = ?';
+                $variantParams[] = $onlineVisibility === 'hidden' ? 0 : 1;
             }
             if ($isPriceStartingFrom !== null) {
                 $variantUpdates[] = 'is_price_starting_from = ?';
@@ -605,7 +669,6 @@ final class ServiceRepository
             $updates[] = 'sort_order = ?';
             $params[] = $sortOrder;
         }
-
         if (empty($updates)) {
             // Nothing to update, just return current
             $stmt = $pdo->prepare('SELECT * FROM service_categories WHERE id = ?');
@@ -717,6 +780,20 @@ final class ServiceRepository
         return $stmt->fetchColumn() !== false;
     }
 
+    private function normalizeOnlineVisibility(?string $onlineVisibility, bool $fallbackBookable): string
+    {
+        if ($onlineVisibility === null || trim($onlineVisibility) === '') {
+            return $fallbackBookable ? 'public' : 'hidden';
+        }
+
+        $normalized = strtolower(trim($onlineVisibility));
+        if (!in_array($normalized, ['public', 'direct_link', 'hidden'], true)) {
+            throw new \InvalidArgumentException('Invalid online_visibility');
+        }
+
+        return $normalized;
+    }
+
     /**
      * Get a single category by ID.
      */
@@ -802,7 +879,7 @@ final class ServiceRepository
         
         // Get an existing variant to copy defaults from
         $stmt = $pdo->prepare(
-            'SELECT duration_minutes, price, color_hex, is_bookable_online, 
+            'SELECT duration_minutes, price, color_hex, is_bookable_online, online_visibility,
                     is_price_starting_from, parallel_capacity, processing_time, blocked_time
              FROM service_variants WHERE service_id = ? LIMIT 1'
         );
@@ -845,8 +922,8 @@ final class ServiceRepository
                 $stmt = $pdo->prepare(
                     'INSERT INTO service_variants 
                      (service_id, location_id, duration_minutes, price, color_hex, 
-                      is_bookable_online, is_price_starting_from, parallel_capacity, processing_time, blocked_time, is_active)
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)'
+                      is_bookable_online, online_visibility, is_price_starting_from, parallel_capacity, processing_time, blocked_time, is_active)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)'
                 );
                 $stmt->execute([
                     $serviceId,
@@ -855,6 +932,7 @@ final class ServiceRepository
                     $templateVariant['price'] ?? 0,
                     $templateVariant['color_hex'] ?? null,
                     $templateVariant['is_bookable_online'] ?? 1,
+                    $templateVariant['online_visibility'] ?? 'public',
                     $templateVariant['is_price_starting_from'] ?? 0,
                     $templateVariant['parallel_capacity'] ?? 1,
                     $templateVariant['processing_time'] ?? null,

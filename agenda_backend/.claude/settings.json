@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -E \"\\\\.\\(php|html|dart|json\\)$\")",
+      "Bash(awk 'NR>=450 && NR<=470' /Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_frontend/lib/features/booking/presentation/screens/services_step.dart)"
+    ]
+  }
+}

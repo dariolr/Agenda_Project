@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -6,6 +7,7 @@ import '../../../../core/models/staff.dart';
 import '../../../../core/widgets/centered_error_view.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/booking_nomenclature_provider.dart';
+import '../../providers/locations_provider.dart';
 
 class StaffStep extends ConsumerStatefulWidget {
   const StaffStep({super.key});
@@ -309,6 +311,8 @@ class _StaffStepState extends ConsumerState<StaffStep> {
     final bookingState = ref.watch(bookingFlowProvider);
     final staffAsync = ref.watch(staffProvider);
     final totals = ref.watch(bookingTotalsProvider);
+    final showPriceToCustomer =
+        ref.watch(effectiveLocationProvider)?.showPriceToCustomer ?? true;
 
     // Logica semplificata: il pulsante è abilitato se:
     // 1. "Qualsiasi operatore" è selezionato (selectedStaff == null e anyOperatorSelected == true)
@@ -368,7 +372,8 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                   ),
                   style: theme.textTheme.bodyMedium,
                 ),
-                if (bookingState.request.services.isNotEmpty)
+                if (bookingState.request.services.isNotEmpty &&
+                    showPriceToCustomer)
                   Text(
                     _formatTotalPrice(context, totals.totalPrice),
                     style: theme.textTheme.titleMedium?.copyWith(
@@ -511,3 +516,4 @@ class _StaffTile extends StatelessWidget {
     );
   }
 }
+

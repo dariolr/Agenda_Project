@@ -1,4 +1,6 @@
+
 import 'class_booking.dart';
+import 'online_booking_visibility.dart';
 
 class ClassEvent {
   final int id;
@@ -19,6 +21,7 @@ class ClassEvent {
   final int waitlistCount;
   final bool waitlistEnabled;
   final bool isBookableOnline;
+  final String onlineVisibility;
   final DateTime? bookingOpenAtUtc;
   final DateTime? bookingCloseAtUtc;
   final int cancelCutoffMinutes;
@@ -45,6 +48,7 @@ class ClassEvent {
     required this.waitlistCount,
     required this.waitlistEnabled,
     this.isBookableOnline = true,
+    this.onlineVisibility = 'public',
     required this.cancelCutoffMinutes,
     required this.status,
     required this.visibility,
@@ -63,6 +67,9 @@ class ClassEvent {
   bool get isFull => spotsLeft <= 0;
 
   factory ClassEvent.fromJson(Map<String, dynamic> json) {
+    final isBookableOnline =
+        (json['is_bookable_online'] as bool?) ??
+        ((json['is_bookable_online'] as num?)?.toInt() != 0);
     return ClassEvent(
       id: (json['id'] as num).toInt(),
       businessId:
@@ -99,9 +106,11 @@ class ClassEvent {
       waitlistEnabled:
           (json['waitlist_enabled'] as bool?) ??
           ((json['waitlist_enabled'] as num?)?.toInt() == 1),
-      isBookableOnline:
-          (json['is_bookable_online'] as bool?) ??
-          ((json['is_bookable_online'] as num?)?.toInt() != 0),
+      isBookableOnline: isBookableOnline,
+      onlineVisibility: OnlineBookingVisibilityOption.fromValues(
+        onlineVisibility: json['online_visibility'] as String?,
+        isBookableOnline: isBookableOnline,
+      ).apiValue,
       bookingOpenAtUtc:
           (json['booking_open_at'] ?? json['booking_open_at_utc']) != null
           ? _parseUtcDateTime(
@@ -156,3 +165,4 @@ class ClassEvent {
     return DateTime.parse(raw.trim().replaceFirst(' ', 'T'));
   }
 }
+

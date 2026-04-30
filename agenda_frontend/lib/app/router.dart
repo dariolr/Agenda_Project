@@ -1,5 +1,5 @@
+
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -10,10 +10,10 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/profile_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
-import '../features/auth/presentation/web_login_redirect_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/booking/presentation/screens/booking_screen.dart';
 import '../features/booking/presentation/screens/my_bookings_screen.dart';
+import '../features/booking/providers/booking_direct_link_provider.dart';
 import '../features/booking/providers/booking_locale_provider.dart';
 import '../features/booking/providers/locations_provider.dart';
 import 'providers/route_slug_provider.dart';
@@ -69,6 +69,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           ? int.tryParse(locationParam)
           : null;
       final urlLang = state.uri.queryParameters['lang'];
+      final directLinkSlug = state.uri.queryParameters['link'];
 
       // Aggiorna i provider con slug e location correnti
       // Usiamo Future.microtask per evitare modifiche durante il build
@@ -76,6 +77,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         ref.read(routeSlugProvider.notifier).state = slug;
         ref.read(urlLocationIdProvider.notifier).state = urlLocationId;
         ref.read(bookingUrlLangProvider.notifier).setFromQueryParam(urlLang);
+        ref
+            .read(bookingDirectLinkSlugProvider.notifier)
+            .setFromQueryParam(directLinkSlug);
       });
 
       // Se siamo su /:slug senza sotto-path, redirect a /:slug/booking (mantieni query params)
@@ -101,7 +105,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (authReady &&
             !isAuthenticated &&
             protectedRoutes.contains(subPath)) {
-          return '/$slug/login?from=$subPath';
+          final params = Map<String, String>.from(state.uri.queryParameters)
+            ..['from'] = subPath;
+          final query = Uri(queryParameters: params).query;
+          return '/$slug/login?$query';
         }
 
         // Se autenticato e cerca di accedere a login/register, redirect a booking
@@ -111,7 +118,12 @@ final routerProvider = Provider<GoRouter>((ref) {
             isAuthenticated &&
             (subPath == 'login' || subPath == 'register') &&
             !isForcedAuthRoute) {
-          return '/$slug/booking';
+          final params = Map<String, String>.from(state.uri.queryParameters)
+            ..remove('from')
+            ..remove('email')
+            ..remove('force');
+          final query = Uri(queryParameters: params).query;
+          return '/$slug/booking${query.isNotEmpty ? '?$query' : ''}';
         }
       }
 
@@ -157,11 +169,13 @@ final routerProvider = Provider<GoRouter>((ref) {
         name: 'business-login',
         builder: (context, state) {
           final from = state.uri.queryParameters['from'];
-          final slug = state.pathParameters['slug'] ?? '';
-          if (kIsWeb && !kDebugMode) {
-            return WebLoginRedirectScreen(slug: slug, from: from);
-          }
-          return LoginScreen(redirectFrom: from);
+          final redirectQueryParameters = Map<String, String>.from(
+            state.uri.queryParameters,
+          )..remove('from');
+          return LoginScreen(
+            redirectFrom: from,
+            redirectQueryParameters: redirectQueryParameters,
+          );
         },
       ),
 
@@ -172,7 +186,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) {
           final email = state.uri.queryParameters['email'];
           final from = state.uri.queryParameters['from'];
-          return RegisterScreen(initialEmail: email, redirectFrom: from);
+          final redirectQueryParameters =
+              Map<String, String>.from(state.uri.queryParameters)
+                ..remove('from')
+                ..remove('email')
+                ..remove('force');
+          return RegisterScreen(
+            initialEmail: email,
+            redirectFrom: from,
+            redirectQueryParameters: redirectQueryParameters,
+          );
         },
       ),
 

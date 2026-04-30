@@ -175,7 +175,7 @@ final class QueueBookingConfirmation
         $formattedTotalPrice = number_format($totalPriceValue, 2, ',', '.');
         $totalRowHtml = '';
         $totalRowText = '';
-        if ($totalPriceValue > 0) {
+        if ($totalPriceValue > 0 && ($booking['location_show_price_to_customer'] ?? true)) {
             $label = $isEnglish ? 'Total' : 'Totale';
             $totalRowHtml = sprintf(
                 '<tr>

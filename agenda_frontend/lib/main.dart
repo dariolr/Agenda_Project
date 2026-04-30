@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:timezone/data/latest.dart' as tz_data;
@@ -36,9 +37,11 @@ void main() {
   // Es: /vamps/booking invece di /#/vamps/booking
   usePathUrlStrategy();
 
-  // Avvia il controllo periodico della versione (solo web).
+  // Avvia il controllo periodico della versione solo su web non-debug.
   // Se rileva una nuova versione, forza il reload automatico.
-  VersionChecker.instance.startPeriodicCheck();
+  if (kIsWeb && !kDebugMode) {
+    VersionChecker.instance.startPeriodicCheck();
+  }
 
   // Inizializza routeSlugProvider dal URL corrente prima del primo build,
   // evitando il flash "business non trovato" causato dal microtask del router.

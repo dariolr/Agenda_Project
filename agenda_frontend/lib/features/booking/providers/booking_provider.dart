@@ -1,3 +1,4 @@
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -15,6 +16,7 @@ import '../../../core/network/network_providers.dart';
 import '../../../core/services/pending_booking_storage.dart';
 import '../data/booking_repository.dart';
 import '../domain/booking_config.dart';
+import 'booking_direct_link_provider.dart';
 import 'business_provider.dart';
 import 'locations_provider.dart';
 
@@ -751,6 +753,25 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     );
   }
 
+  void applyLockedServiceSelection(Service service) {
+    final shouldClearStaff = !_config.allowStaffSelection;
+    state = state.copyWith(
+      request: state.request.copyWith(
+        services: [service],
+        selectedServiceIds: {service.id},
+        selectedPackageIds: const {},
+        selectedPackageServiceIdsByPackage: const {},
+        selectedStaffByService: shouldClearStaff ? {} : const {},
+        clearStaff: shouldClearStaff,
+        clearAnyOperatorSelections: shouldClearStaff,
+        clearSlot: true,
+        clearClassEvent: true,
+      ),
+      clearError: true,
+      isStaffAutoSelected: false,
+    );
+  }
+
   /// Aggiunge servizi in ordine (usato per pacchetti)
   void addServicesFromPackage(List<Service> servicesInOrder) {
     if (servicesInOrder.isEmpty) return;
@@ -859,6 +880,49 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       ),
       clearError: true,
       isStaffAutoSelected: shouldClearStaff ? false : state.isStaffAutoSelected,
+    );
+  }
+
+  void applyLockedPackageSelection(
+    ServicePackage package,
+    List<Service> availableServices,
+  ) {
+    final serviceIds = package.orderedServiceIds;
+    if (serviceIds.isEmpty) return;
+
+    final servicesById = {for (final s in availableServices) s.id: s};
+    for (final item in package.items) {
+      servicesById.putIfAbsent(
+        item.serviceId,
+        () => _serviceFromPackageItem(package, item),
+      );
+    }
+
+    final lockedServices = <Service>[];
+    for (final serviceId in serviceIds) {
+      final service = servicesById[serviceId];
+      if (service != null && !lockedServices.any((s) => s.id == service.id)) {
+        lockedServices.add(service);
+      }
+    }
+
+    final shouldClearStaff = !_config.allowStaffSelection;
+    state = state.copyWith(
+      request: state.request.copyWith(
+        services: lockedServices,
+        selectedServiceIds: const {},
+        selectedPackageIds: {package.id},
+        selectedPackageServiceIdsByPackage: {
+          package.id: List<int>.from(serviceIds),
+        },
+        selectedStaffByService: shouldClearStaff ? {} : const {},
+        clearStaff: shouldClearStaff,
+        clearAnyOperatorSelections: shouldClearStaff,
+        clearSlot: true,
+        clearClassEvent: true,
+      ),
+      clearError: true,
+      isStaffAutoSelected: false,
     );
   }
 
@@ -1010,6 +1074,24 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     );
   }
 
+  void applyLockedClassEventSelection(ClassEvent event) {
+    state = state.copyWith(
+      request: state.request.copyWith(
+        selectedClassEvent: event,
+        services: const [],
+        selectedServiceIds: const {},
+        selectedPackageIds: const {},
+        selectedPackageServiceIdsByPackage: const {},
+        clearStaff: true,
+        clearStaffSelections: true,
+        clearAnyOperatorSelections: true,
+        clearSlot: true,
+      ),
+      clearError: true,
+      isStaffAutoSelected: false,
+    );
+  }
+
   /// Aggiorna note
   void updateNotes(String notes) {
     state = state.copyWith(request: state.request.copyWith(notes: notes));
@@ -1099,6 +1181,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
 
       final staffId = state.request.singleStaffId;
       final pricingOverrides = _buildLegacyPricingOverrides(services);
+      final bookingDirectLinkSlug = ref.read(bookingDirectLinkSlugProvider);
       // Se ci sono più servizi senza selezione staff specifica,
       // trattiamo come "qualsiasi operatore" (staffId = null)
       // Questo è valido quando:
@@ -1118,6 +1201,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         notes: state.request.notes,
         items: items,
         pricingOverrides: pricingOverrides.isEmpty ? null : pricingOverrides,
+        bookingDirectLinkSlug: bookingDirectLinkSlug,
       );
 
       // Prenotazione confermata - elimina lo stato salvato
@@ -1179,6 +1263,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         businessId: businessId,
         classEventId: classEvent.id,
         notes: state.request.notes,
+        bookingDirectLinkSlug: ref.read(bookingDirectLinkSlugProvider),
       );
 
       final bookingId =
@@ -1261,8 +1346,12 @@ class ServicesData {
   const ServicesData({required this.categories, required this.services});
 
   /// Servizi prenotabili online
-  List<Service> get bookableServices =>
-      services.where((s) => s.isBookableOnline && s.isActive).toList();
+  List<Service> get bookableServices => services
+      .where(
+        (s) =>
+            s.isBookableOnline && s.isActive && s.onlineVisibility != 'hidden',
+      )
+      .toList();
 
   /// Compat getter usato dalla UI servizi.
   /// In assenza di un calcolo separato di eleggibilità staff, considera eleggibili
@@ -1287,6 +1376,7 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
   final Ref _ref;
   bool _hasFetched = false;
   int? _lastLocationId;
+  String? _lastLinkSlug;
 
   ServicesDataNotifier(this._ref) : super(const AsyncValue.loading()) {
     // Ascolta cambiamenti della location effettiva
@@ -1297,12 +1387,21 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
         _loadData();
       }
     }, fireImmediately: true);
+    _ref.listen(bookingDirectLinkSlugProvider, (previous, next) {
+      if (next != _lastLinkSlug) {
+        _hasFetched = false;
+        _lastLinkSlug = next;
+        state = const AsyncValue.loading();
+        _loadData();
+      }
+    }, fireImmediately: true);
   }
 
   Future<void> _loadData() async {
     if (_hasFetched) return;
 
     final locationId = _ref.read(effectiveLocationIdProvider);
+    final linkSlug = _ref.read(bookingDirectLinkSlugProvider);
     if (locationId <= 0) return;
 
     _hasFetched = true;
@@ -1310,7 +1409,10 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
     try {
       final repository = _ref.read(bookingRepositoryProvider);
 
-      final result = await repository.getCategoriesWithServices(locationId);
+      final result = await repository.getCategoriesWithServices(
+        locationId,
+        linkSlug: linkSlug,
+      );
       final staff = await repository.getStaff(locationId);
       final eligibleServiceIds = _eligibleServiceIdsFromActiveStaff(staff);
 
@@ -1348,6 +1450,7 @@ class ServicePackagesNotifier
   final Ref _ref;
   bool _hasFetched = false;
   int? _lastLocationId;
+  String? _lastLinkSlug;
 
   ServicePackagesNotifier(this._ref) : super(const AsyncValue.loading()) {
     _ref.listen(effectiveLocationIdProvider, (previous, next) {
@@ -1357,19 +1460,31 @@ class ServicePackagesNotifier
         _loadData();
       }
     }, fireImmediately: true);
+    _ref.listen(bookingDirectLinkSlugProvider, (previous, next) {
+      if (next != _lastLinkSlug) {
+        _hasFetched = false;
+        _lastLinkSlug = next;
+        state = const AsyncValue.loading();
+        _loadData();
+      }
+    }, fireImmediately: true);
   }
 
   Future<void> _loadData() async {
     if (_hasFetched) return;
 
     final locationId = _ref.read(effectiveLocationIdProvider);
+    final linkSlug = _ref.read(bookingDirectLinkSlugProvider);
     if (locationId <= 0) return;
 
     _hasFetched = true;
 
     try {
       final repository = _ref.read(bookingRepositoryProvider);
-      final packages = await repository.getServicePackages(locationId);
+      final packages = await repository.getServicePackages(
+        locationId,
+        linkSlug: linkSlug,
+      );
       final staff = await repository.getStaff(locationId);
       final eligibleServiceIds = _eligibleServiceIdsFromActiveStaff(staff);
       final filteredPackages = packages.where((package) {

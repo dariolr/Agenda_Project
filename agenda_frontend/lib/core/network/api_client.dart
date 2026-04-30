@@ -1,3 +1,4 @@
+
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
@@ -696,6 +697,7 @@ class ApiClient {
     String? notes,
     List<Map<String, dynamic>>? items,
     List<Map<String, dynamic>>? pricingOverrides,
+    String? bookingDirectLinkSlug,
   }) async {
     final data = <String, dynamic>{'location_id': locationId};
     if (items != null) {
@@ -713,6 +715,9 @@ class ApiClient {
     if (notes != null && notes.isNotEmpty) {
       data['notes'] = notes;
     }
+    if (bookingDirectLinkSlug != null && bookingDirectLinkSlug.isNotEmpty) {
+      data['booking_direct_link_slug'] = bookingDirectLinkSlug;
+    }
 
     return post(
       ApiConfig.customerCreateBooking(businessId),
@@ -726,10 +731,14 @@ class ApiClient {
     required int businessId,
     required int classEventId,
     String? notes,
+    String? bookingDirectLinkSlug,
   }) async {
     final data = <String, dynamic>{};
     if (notes != null && notes.isNotEmpty) {
       data['notes'] = notes;
+    }
+    if (bookingDirectLinkSlug != null && bookingDirectLinkSlug.isNotEmpty) {
+      data['booking_direct_link_slug'] = bookingDirectLinkSlug;
     }
     return post(
       ApiConfig.customerBookClassEvent(businessId, classEventId),
@@ -867,24 +876,55 @@ class ApiClient {
   }
 
   /// GET /v1/services?location_id=X
-  Future<Map<String, dynamic>> getServices(int locationId) async {
+  Future<Map<String, dynamic>> getServices(
+    int locationId, {
+    String? linkSlug,
+  }) async {
     return get(
       ApiConfig.services,
-      queryParameters: {'location_id': locationId},
+      queryParameters: {
+        'location_id': locationId,
+        if (linkSlug != null && linkSlug.isNotEmpty) 'link': linkSlug,
+      },
+    );
+  }
+
+  /// GET /v1/public/booking-direct-links/resolve
+  Future<Map<String, dynamic>> resolveBookingDirectLink({
+    required String businessSlug,
+    required String linkSlug,
+  }) async {
+    return get(
+      '/v1/public/booking-direct-links/resolve',
+      queryParameters: {'business_slug': businessSlug, 'link': linkSlug},
     );
   }
 
   /// GET /v1/locations/{location_id}/service-packages
-  Future<Map<String, dynamic>> getServicePackages(int locationId) async {
-    return get(ApiConfig.servicePackages(locationId));
+  Future<Map<String, dynamic>> getServicePackages(
+    int locationId, {
+    String? linkSlug,
+  }) async {
+    return get(
+      ApiConfig.servicePackages(locationId),
+      queryParameters: {
+        if (linkSlug != null && linkSlug.isNotEmpty) 'link': linkSlug,
+      },
+    );
   }
 
   /// GET /v1/locations/{location_id}/service-packages/{id}/expand
   Future<Map<String, dynamic>> expandServicePackage({
     required int locationId,
     required int packageId,
+    String? linkSlug,
   }) async {
-    return get(ApiConfig.servicePackageExpand(locationId, packageId));
+    return get(
+      ApiConfig.servicePackageExpand(locationId, packageId),
+      queryParameters: {
+        if (linkSlug != null && linkSlug.isNotEmpty) 'link': linkSlug,
+      },
+    );
   }
 
   /// GET /v1/staff?location_id=X
@@ -898,11 +938,13 @@ class ApiClient {
     String? from,
     String? to,
     int? classTypeId,
+    String? linkSlug,
   }) async {
     final params = <String, dynamic>{'location_id': locationId};
     if (from != null) params['from'] = from;
     if (to != null) params['to'] = to;
     if (classTypeId != null) params['class_type_id'] = classTypeId;
+    if (linkSlug != null && linkSlug.isNotEmpty) params['link'] = linkSlug;
     return get(ApiConfig.classEvents, queryParameters: params);
   }
 
@@ -1013,3 +1055,4 @@ class ApiClient {
         .catchError((e) => throw _handleError(e as DioException));
   }
 }
+
