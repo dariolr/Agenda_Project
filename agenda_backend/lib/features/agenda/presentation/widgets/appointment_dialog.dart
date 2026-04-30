@@ -2434,25 +2434,33 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         );
       }
 
-      // Aggiorna stato prenotazione solo se selezionato e diverso dall'attuale.
-      if (_selectedBookingStatus != null &&
-          _selectedBookingStatus != _currentBookingStatus) {
+      final normalizedInitialNotes =
+          _initialNotes.trim().isEmpty ? null : _initialNotes.trim();
+      final notesChanged = notes != normalizedInitialNotes;
+      final statusChanged =
+          _selectedBookingStatus != null &&
+          _selectedBookingStatus != _currentBookingStatus;
+
+      if (notesChanged || statusChanged) {
         final location = ref.read(currentLocationProvider);
         final repository = ref.read(bookingsRepositoryProvider);
         await repository.updateBooking(
           locationId: location.id,
           bookingId: bookingId,
-          status: _selectedBookingStatus,
+          notes: notesChanged ? notes : null,
+          status: statusChanged ? _selectedBookingStatus : null,
         );
-        ref
-            .read(bookingsProvider.notifier)
-            .setStatus(bookingId, _selectedBookingStatus!);
-        ref
-            .read(appointmentsProvider.notifier)
-            .setBookingStatusForBooking(
-              bookingId: bookingId,
-              status: _selectedBookingStatus!,
-            );
+        if (statusChanged) {
+          ref
+              .read(bookingsProvider.notifier)
+              .setStatus(bookingId, _selectedBookingStatus!);
+          ref
+              .read(appointmentsProvider.notifier)
+              .setBookingStatusForBooking(
+                bookingId: bookingId,
+                status: _selectedBookingStatus!,
+              );
+        }
       }
 
       // Rimuovi la booking se vuota
