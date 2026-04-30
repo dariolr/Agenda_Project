@@ -9117,10 +9117,10 @@ class L10n {
     );
   }
 
-  /// `The customer will only be able to book items available in this category. If the category contains public items, only those will be shown. If it contains no public items, items available only by link will be shown.\n\n{url}`
+  /// `The customer will only be able to book items available in this category. If the category contains public items, only those will be shown. If it contains no public items, items available only by direct link will be shown.\n\n{url}`
   String bookingDirectLinkCopiedCategoryMessage(Object url) {
     return Intl.message(
-      'The customer will only be able to book items available in this category. If the category contains public items, only those will be shown. If it contains no public items, items available only by link will be shown.\n\n$url',
+      'The customer will only be able to book items available in this category. If the category contains public items, only those will be shown. If it contains no public items, items available only by direct link will be shown.\n\n$url',
       name: 'bookingDirectLinkCopiedCategoryMessage',
       desc: '',
       args: [url],

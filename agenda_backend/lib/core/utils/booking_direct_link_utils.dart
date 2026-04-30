@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../features/agenda/providers/business_providers.dart';
+import '../../features/agenda/providers/location_providers.dart';
 import '../l10n/l10_extension.dart';
 import '../network/network_providers.dart';
 import '../widgets/feedback_dialog.dart';
@@ -32,9 +33,11 @@ Future<void> copyBookingDirectLink(
 }) async {
   try {
     final businessId = ref.read(currentBusinessIdProvider);
-    if (businessId <= 0) return;
+    final locationId = ref.read(currentLocationIdProvider);
+    if (businessId <= 0 || locationId <= 0) return;
     final link = await ref.read(apiClientProvider).createOrGetBookingDirectLink(
       businessId: businessId,
+      locationId: locationId,
       targetType: targetType,
       targetId: targetId,
     );

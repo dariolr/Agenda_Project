@@ -25,7 +25,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m1(businessName) => "Billing \$${businessName}";
 
   static String m2(url) =>
-      "The customer will only be able to book items available in this category. If the category contains public items, only those will be shown. If it contains no public items, items available only by link will be shown.\n\n${url}";
+      "The customer will only be able to book items available in this category. If the category contains public items, only those will be shown. If it contains no public items, items available only by direct link will be shown.\n\n${url}";
 
   static String m3(url) =>
       "The customer will only be able to book this event.\n\n${url}";

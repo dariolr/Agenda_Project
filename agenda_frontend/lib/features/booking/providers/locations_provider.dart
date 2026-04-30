@@ -136,8 +136,8 @@ final effectiveLocationProvider = Provider<Location?>((ref) {
     data: (locations) {
       if (locations.isEmpty) return null;
 
-      final directLocationId = _intFromJson(directLink?.target['location_id']);
-      if (directLocationId != null) {
+      final directLocationId = directLink?.locationId ?? 0;
+      if (directLocationId > 0) {
         final directLocation = locations
             .where((l) => l.id == directLocationId)
             .firstOrNull;
@@ -163,13 +163,6 @@ final effectiveLocationProvider = Provider<Location?>((ref) {
   );
 });
 
-int? _intFromJson(Object? value) {
-  if (value is int) return value;
-  if (value is num) return value.toInt();
-  if (value is String) return int.tryParse(value);
-  return null;
-}
-
 /// Timezone effettivo del flow booking:
 /// 1) timezone della location effettiva
 /// 2) fallback timezone del business
@@ -193,4 +186,3 @@ final locationTodayProvider = Provider<DateTime>((ref) {
   final timezone = ref.watch(locationTimezoneProvider);
   return TenantTimeService.todayInTimezone(timezone);
 });
-

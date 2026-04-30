@@ -10,7 +10,6 @@ import '../../../../core/models/online_booking_visibility.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_category.dart';
 import '../../../../core/models/service_package.dart';
-import '../../../../core/utils/booking_direct_link_utils.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
@@ -277,27 +276,12 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
                   onChanged: (value) {
                     setState(() => _onlineBookingVisibility = value);
                   },
+                  isEditing: isEditing,
+                  targetType: 'service_package',
+                  targetId: widget.package?.id,
+                  enabled: !_isSaving,
                 ),
               ),
-              if (isEditing &&
-                  _onlineBookingVisibility !=
-                      OnlineBookingVisibilityOption.hidden) ...[
-                const SizedBox(height: 12),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: AppOutlinedActionButton(
-                    onPressed: _isSaving
-                        ? null
-                        : () => copyBookingDirectLink(
-                            context,
-                            ref,
-                            targetType: 'service_package',
-                            targetId: widget.package!.id,
-                          ),
-                    child: Text(l10n.closuresImportHolidaysCopyLinkAction),
-                  ),
-                ),
-              ],
               const SizedBox(height: 12),
               Text(
                 l10n.servicePackageServicesLabel,

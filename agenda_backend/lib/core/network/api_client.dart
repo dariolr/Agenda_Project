@@ -865,12 +865,17 @@ class ApiClient {
   /// POST /v1/businesses/{business_id}/booking-direct-links/create-or-get
   Future<Map<String, dynamic>> createOrGetBookingDirectLink({
     required int businessId,
+    required int locationId,
     required String targetType,
     required int targetId,
   }) async {
     return post(
       '/v1/businesses/$businessId/booking-direct-links/create-or-get',
-      data: {'target_type': targetType, 'target_id': targetId},
+      data: {
+        'location_id': locationId,
+        'target_type': targetType,
+        'target_id': targetId,
+      },
     );
   }
 

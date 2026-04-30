@@ -7,15 +7,15 @@ class AppDivider extends StatelessWidget {
     this.height = 1,
     this.thickness = 0.5,
     this.color = const Color(0x1F000000),
-    this.indent,
-    this.endIndent,
+    this.indent = 0,
+    this.endIndent = 0,
   });
 
   final double height;
   final double thickness;
   final Color color;
-  final double? indent;
-  final double? endIndent;
+  final double indent;
+  final double endIndent;
 
   @override
   Widget build(BuildContext context) {

@@ -10,6 +10,7 @@ use Agenda\Infrastructure\Environment\EnvironmentConfig;
 use Agenda\Infrastructure\Repositories\BookingDirectLinkRepository;
 use Agenda\Infrastructure\Repositories\BusinessRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
+use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use DateTimeImmutable;
 use DateTimeZone;
@@ -21,6 +22,7 @@ final class BookingDirectLinksController
         private readonly BookingDirectLinkRepository $directLinkRepo,
         private readonly BusinessRepository $businessRepo,
         private readonly BusinessUserRepository $businessUserRepo,
+        private readonly LocationRepository $locationRepo,
         private readonly UserRepository $userRepo,
     ) {}
 
@@ -51,7 +53,12 @@ final class BookingDirectLinksController
             $targetType,
             $targetId
         );
-        if ($target === null || !$this->targetIsAvailable((string) $link['target_type'], $target)) {
+        $linkLocationId = (int) ($link['location_id'] ?? 0);
+        if (
+            $target === null
+            || !$this->targetIsAvailable((string) $link['target_type'], $target)
+            || !$this->locationBelongsToBusiness($businessId, $linkLocationId)
+        ) {
             return $this->notAvailable(409, $request);
         }
 
@@ -59,6 +66,7 @@ final class BookingDirectLinksController
             'business_id' => $businessId,
             'business_slug' => (string) $business['slug'],
             'link_slug' => (string) $link['slug'],
+            'location_id' => $linkLocationId,
             'target_type' => $targetType,
             'target_id' => $targetId,
             'target' => $this->formatTarget($targetType, $target),
@@ -83,13 +91,19 @@ final class BookingDirectLinksController
 
         $targetType = trim((string) ($request->queryParam('target_type') ?? ''));
         $targetId = (int) ($request->queryParam('target_id') ?? 0);
+        $locationId = (int) ($request->queryParam('location_id') ?? 0);
 
         if ($targetType === '' || $targetId <= 0) {
             return Response::error('target_type and target_id are required', 'validation_error', 400, $request->traceId);
         }
 
         try {
-            $link = $this->directLinkRepo->findByTarget($businessId, $targetType, $targetId);
+            $link = $this->directLinkRepo->findByTarget(
+                $businessId,
+                $targetType,
+                $targetId,
+                $locationId > 0 ? $locationId : null
+            );
         } catch (InvalidArgumentException) {
             return Response::error('Invalid target_type', 'validation_error', 400, $request->traceId);
         }
@@ -109,18 +123,33 @@ final class BookingDirectLinksController
         $body = $request->getBody() ?? [];
         $targetType = trim((string) ($body['target_type'] ?? ''));
         $targetId = (int) ($body['target_id'] ?? 0);
+        $locationId = (int) ($body['location_id'] ?? 0);
 
-        if ($targetType === '' || $targetId <= 0) {
-            return Response::error('target_type and target_id are required', 'validation_error', 400, $request->traceId);
+        if ($targetType === '' || $targetId <= 0 || $locationId <= 0) {
+            return Response::error('target_type, target_id and location_id are required', 'validation_error', 400, $request->traceId);
         }
 
         try {
+            if (!$this->locationBelongsToBusiness($businessId, $locationId)) {
+                return Response::error('Invalid location for this business', 'validation_error', 400, $request->traceId);
+            }
+
             $baseName = $this->directLinkRepo->targetBaseName($businessId, $targetType, $targetId);
             if ($baseName === null || $baseName === '') {
                 return Response::notFound('Target not found', $request->traceId);
             }
 
-            $link = $this->directLinkRepo->createOrUpdateForTarget($businessId, $targetType, $targetId, $baseName);
+            if (!$this->targetMatchesLocation($businessId, $targetType, $targetId, $locationId)) {
+                return Response::error('Target does not belong to location_id', 'validation_error', 400, $request->traceId);
+            }
+
+            $link = $this->directLinkRepo->createOrUpdateForTarget(
+                $businessId,
+                $targetType,
+                $targetId,
+                $locationId,
+                $baseName
+            );
         } catch (InvalidArgumentException) {
             return Response::error('Invalid target_type', 'validation_error', 400, $request->traceId);
         }
@@ -163,6 +192,32 @@ final class BookingDirectLinksController
                 && (int) ($target['location_is_active'] ?? 0) === 1
                 && (int) ($target['is_bookable_online'] ?? 0) === 1
                 && $this->classEventWindowIsOpen($target),
+            BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY => true,
+            default => false,
+        };
+    }
+
+    private function locationBelongsToBusiness(int $businessId, int $locationId): bool
+    {
+        $location = $this->locationRepo->findById($locationId);
+        return $location !== null && (int) ($location['business_id'] ?? 0) === $businessId;
+    }
+
+    private function targetMatchesLocation(
+        int $businessId,
+        string $targetType,
+        int $targetId,
+        int $locationId
+    ): bool {
+        $target = $this->directLinkRepo->loadTarget($businessId, $targetType, $targetId);
+        if ($target === null) {
+            return false;
+        }
+
+        return match ($targetType) {
+            BookingDirectLinkRepository::TARGET_SERVICE_VARIANT,
+            BookingDirectLinkRepository::TARGET_SERVICE_PACKAGE,
+            BookingDirectLinkRepository::TARGET_CLASS_EVENT => (int) ($target['location_id'] ?? 0) === $locationId,
             BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY => true,
             default => false,
         };
@@ -218,11 +273,12 @@ final class BookingDirectLinksController
 
         return [
             'id' => (int) $link['id'],
+            'location_id' => (int) ($link['location_id'] ?? 0),
             'slug' => $linkSlug,
             'target_type' => (string) $link['target_type'],
             'target_id' => (int) $link['target_id'],
             'is_active' => (bool) ($link['is_active'] ?? true),
-            'url' => rtrim(EnvironmentConfig::current()->webBaseUrl, '/') . '/' . $slug . '/booking?link=' . rawurlencode($linkSlug),
+            'url' => rtrim(EnvironmentConfig::current()->webBaseUrl, '/') . '/' . $slug . '/booking?location=' . (int) ($link['location_id'] ?? 0) . '&link=' . rawurlencode($linkSlug),
         ];
     }
 

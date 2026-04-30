@@ -29,6 +29,9 @@ class ServiceCategoryEntry {
   bool get isPackage => package != null;
   bool get isClassType => classType != null;
 
+  bool get isActive =>
+      service?.isActive ?? package?.isActive ?? classType?.isActive ?? true;
+
   int get id => service?.id ?? package?.id ?? classType!.id;
 
   int get categoryId =>

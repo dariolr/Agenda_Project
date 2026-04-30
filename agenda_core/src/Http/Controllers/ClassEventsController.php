@@ -511,6 +511,7 @@ final class ClassEventsController
                 $businessId,
                 BookingDirectLinkRepository::TARGET_CLASS_EVENT,
                 $id,
+                $locationId,
                 (string) ($event['class_type_name'] ?? $event['name'] ?? 'class-event')
             );
         }
@@ -663,6 +664,7 @@ final class ClassEventsController
                 $businessId,
                 BookingDirectLinkRepository::TARGET_CLASS_EVENT,
                 $classEventId,
+                (int) ($event['location_id'] ?? 0),
                 (string) ($event['class_type_name'] ?? $event['name'] ?? 'class-event')
             );
         }

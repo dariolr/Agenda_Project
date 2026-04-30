@@ -1726,28 +1726,12 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                       : (value) => setState(
                           () => _onlineBookingVisibility = value,
                         ),
+                  isEditing: isEditMode,
+                  targetType: 'class_event',
+                  targetId: classEventId,
+                  enabled: !isLoading,
                 ),
               ),
-              if (isEditMode &&
-                  classEventId != null &&
-                  _onlineBookingVisibility !=
-                      OnlineBookingVisibilityOption.hidden) ...[
-                const SizedBox(height: gap),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: AppOutlinedActionButton(
-                    onPressed: isLoading
-                        ? null
-                        : () => copyBookingDirectLink(
-                            context,
-                            ref,
-                            targetType: 'class_event',
-                            targetId: classEventId,
-                          ),
-                    child: Text(l10n.closuresImportHolidaysCopyLinkAction),
-                  ),
-                ),
-              ],
 
               if (isEditMode && classEventId != null) ...[
                 const SizedBox(height: sectionGap),

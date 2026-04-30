@@ -87,6 +87,7 @@ class CategoryItem extends StatefulWidget {
 
 class _CategoryItemState extends State<CategoryItem> {
   late bool _isExpanded;
+  bool _isHeaderHovered = false;
 
   @override
   void initState() {
@@ -104,7 +105,9 @@ class _CategoryItemState extends State<CategoryItem> {
 
   @override
   Widget build(BuildContext context) {
-    final isEmptyCategory = widget.entries.isEmpty;
+    final isEmptyCategory =
+        widget.entries.isEmpty ||
+        widget.entries.every((e) => !e.isActive);
     final categoryBorderColor = widget.colorScheme.outlineVariant.withOpacity(
       0.16,
     );
@@ -127,7 +130,11 @@ class _CategoryItemState extends State<CategoryItem> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header categoria
-          GestureDetector(
+          MouseRegion(
+            cursor: SystemMouseCursors.click,
+            onEnter: (_) => setState(() => _isHeaderHovered = true),
+            onExit: (_) => setState(() => _isHeaderHovered = false),
+            child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: widget.readOnly
                 ? (widget.isCollapsible
@@ -137,7 +144,9 @@ class _CategoryItemState extends State<CategoryItem> {
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: widget.colorScheme.surface,
+                color: _isHeaderHovered
+                    ? widget.colorScheme.primaryContainer.withOpacity(0.1)
+                    : widget.colorScheme.surface,
                 border: _isExpanded
                     ? Border(bottom: BorderSide(color: categoryBorderColor))
                     : null,
@@ -264,6 +273,7 @@ class _CategoryItemState extends State<CategoryItem> {
                 ],
               ),
             ),
+          ),
           ),
 
           // Body: lista servizi o stato vuoto (animato)

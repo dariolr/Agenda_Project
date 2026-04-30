@@ -2371,6 +2371,7 @@ COMMIT;
 CREATE TABLE `booking_direct_links` (
   `id` int UNSIGNED NOT NULL,
   `business_id` int UNSIGNED NOT NULL,
+  `location_id` int UNSIGNED NOT NULL,
   `slug` varchar(160) COLLATE utf8mb4_unicode_ci NOT NULL,
   `target_type` enum('service_variant','service_package','class_event','service_category') COLLATE utf8mb4_unicode_ci NOT NULL,
   `target_id` int UNSIGNED NOT NULL,
@@ -2382,8 +2383,9 @@ CREATE TABLE `booking_direct_links` (
 ALTER TABLE `booking_direct_links`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uniq_booking_direct_links_business_slug` (`business_id`,`slug`),
+  ADD UNIQUE KEY `uniq_booking_direct_links_business_target_location` (`business_id`,`target_type`,`target_id`,`location_id`),
   ADD KEY `idx_booking_direct_links_business_active` (`business_id`,`is_active`),
-  ADD KEY `idx_booking_direct_links_target` (`target_type`,`target_id`);
+  ADD KEY `idx_booking_direct_links_location` (`location_id`);
 
 -- --------------------------------------------------------
 -- Struttura tabella `class_bookings`

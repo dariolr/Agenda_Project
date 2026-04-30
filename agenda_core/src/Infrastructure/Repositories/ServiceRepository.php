@@ -693,37 +693,10 @@ final class ServiceRepository
      */
     public function deleteCategory(int $categoryId): bool
     {
-        $pdo = $this->db->getPdo();
-        $pdo->beginTransaction();
-
-        try {
-            // Detach inactive services from the category.
-            $stmt = $pdo->prepare(
-                'UPDATE services
-                 SET category_id = NULL, updated_at = NOW()
-                 WHERE category_id = ? AND is_active = 0'
-            );
-            $stmt->execute([$categoryId]);
-
-            // Detach inactive packages from the category when table is available.
-            if ($this->tableExists('service_packages')) {
-                $stmt = $pdo->prepare(
-                    'UPDATE service_packages
-                     SET category_id = NULL, updated_at = NOW()
-                     WHERE category_id = ? AND is_active = 0'
-                );
-                $stmt->execute([$categoryId]);
-            }
-
-            $stmt = $pdo->prepare('DELETE FROM service_categories WHERE id = ?');
-            $ok = $stmt->execute([$categoryId]);
-
-            $pdo->commit();
-            return $ok;
-        } catch (\Throwable $e) {
-            $pdo->rollBack();
-            throw $e;
-        }
+        $stmt = $this->db->getPdo()->prepare(
+            'DELETE FROM service_categories WHERE id = ?'
+        );
+        return $stmt->execute([$categoryId]);
     }
 
     /**
@@ -750,34 +723,19 @@ final class ServiceRepository
             return true;
         }
 
-        if ($this->tableExists('service_packages')) {
-            $packagesStmt = $pdo->prepare(
-                'SELECT 1
-                 FROM service_packages
-                 WHERE category_id = ?
-                   AND is_active = 1
-                 LIMIT 1'
-            );
-            $packagesStmt->execute([$categoryId]);
-            if ($packagesStmt->fetchColumn() !== false) {
-                return true;
-            }
+        $packagesStmt = $pdo->prepare(
+            'SELECT 1
+             FROM service_packages
+             WHERE category_id = ?
+               AND is_active = 1
+             LIMIT 1'
+        );
+        $packagesStmt->execute([$categoryId]);
+        if ($packagesStmt->fetchColumn() !== false) {
+            return true;
         }
 
         return false;
-    }
-
-    private function tableExists(string $tableName): bool
-    {
-        $stmt = $this->db->getPdo()->prepare(
-            'SELECT 1
-             FROM information_schema.tables
-             WHERE table_schema = DATABASE()
-               AND table_name = ?
-             LIMIT 1'
-        );
-        $stmt->execute([$tableName]);
-        return $stmt->fetchColumn() !== false;
     }
 
     private function normalizeOnlineVisibility(?string $onlineVisibility, bool $fallbackBookable): string

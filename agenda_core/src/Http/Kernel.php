@@ -536,7 +536,7 @@ final class Kernel
             LocationsController::class => new LocationsController($locationRepo, $businessUserRepo, $userRepo),
             ServicesController::class => new ServicesController($serviceRepo, $variantResourceRepo, $locationRepo, $businessUserRepo, $userRepo, $servicePackageRepo, $popularServiceRepo, $staffRepo, $bookingDirectLinkRepo),
             ServicePackagesController::class => new ServicePackagesController($servicePackageRepo, $businessUserRepo, $userRepo, $bookingDirectLinkRepo),
-            BookingDirectLinksController::class => new BookingDirectLinksController($bookingDirectLinkRepo, $businessRepo, $businessUserRepo, $userRepo),
+            BookingDirectLinksController::class => new BookingDirectLinksController($bookingDirectLinkRepo, $businessRepo, $businessUserRepo, $locationRepo, $userRepo),
             StaffController::class => new StaffController($staffRepo, $businessUserRepo, $locationRepo, $userRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
             BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo, $createRecurringBooking, $previewRecurringBooking, $recurrenceRuleRepo, $modifyRecurringSeries, $notificationRepo),

@@ -871,6 +871,7 @@ final class ServicesController
             $businessId,
             BookingDirectLinkRepository::TARGET_SERVICE_VARIANT,
             (int) $service['service_variant_id'],
+            (int) ($service['location_id'] ?? 0),
             (string) ($service['name'] ?? 'booking-link')
         );
     }

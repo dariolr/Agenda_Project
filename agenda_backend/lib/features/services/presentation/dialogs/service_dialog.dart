@@ -15,7 +15,6 @@ import '../../../../core/models/resource.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_variant.dart';
 import '../../../../core/network/network_providers.dart';
-import '../../../../core/utils/booking_direct_link_utils.dart';
 import '../../../../core/utils/color_utils.dart';
 import '../../../../core/utils/price_utils.dart';
 import '../../../../core/utils/service_color_palette.dart';
@@ -1717,28 +1716,12 @@ Future<void> showServiceDialog(
             onChanged: canEditDialog
                 ? (value) => setState(() => onlineBookingVisibility = value)
                 : null,
+            isEditing: isEditing,
+            targetType: 'service_variant',
+            targetId: existingVariant?.id ?? service?.serviceVariantId,
+            enabled: canEditDialog,
           ),
         ),
-        if (isEditing &&
-            onlineBookingVisibility !=
-                OnlineBookingVisibilityOption.hidden &&
-            (existingVariant?.id ?? service.serviceVariantId) != null) ...[
-          const SizedBox(height: AppSpacing.formRowSpacing),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: AppOutlinedActionButton(
-              onPressed: canEditDialog
-                  ? () => copyBookingDirectLink(
-                      context,
-                      ref,
-                      targetType: 'service_variant',
-                      targetId: existingVariant?.id ?? service.serviceVariantId!,
-                    )
-                  : null,
-              child: Text(context.l10n.closuresImportHolidaysCopyLinkAction),
-            ),
-          ),
-        ],
       ],
     );
   }

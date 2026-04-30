@@ -162,6 +162,7 @@ final class ServicePackagesController
                 (int) $businessId,
                 BookingDirectLinkRepository::TARGET_SERVICE_PACKAGE,
                 $packageId,
+                $locationId,
                 (string) $created['name']
             );
         }
@@ -270,6 +271,7 @@ final class ServicePackagesController
                 (int) $existing['business_id'],
                 BookingDirectLinkRepository::TARGET_SERVICE_PACKAGE,
                 $packageId,
+                $locationId,
                 (string) $updated['name']
             );
         }

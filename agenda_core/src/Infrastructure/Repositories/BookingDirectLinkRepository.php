@@ -40,20 +40,30 @@ final class BookingDirectLinkRepository
         return $row ?: null;
     }
 
-    public function findByTarget(int $businessId, string $targetType, int $targetId): ?array
+    public function findByTarget(
+        int $businessId,
+        string $targetType,
+        int $targetId,
+        ?int $locationId = null
+    ): ?array
     {
         $this->assertTargetType($targetType);
 
-        $stmt = $this->db->getPdo()->prepare(
-            'SELECT *
+        $sql = 'SELECT *
              FROM booking_direct_links
              WHERE business_id = ?
                AND target_type = ?
-               AND target_id = ?
-             ORDER BY is_active DESC, id ASC
-             LIMIT 1'
-        );
-        $stmt->execute([$businessId, $targetType, $targetId]);
+               AND target_id = ?';
+        $params = [$businessId, $targetType, $targetId];
+        if ($locationId !== null) {
+            $sql .= ' AND location_id = ?';
+            $params[] = $locationId;
+        }
+        $sql .= ' ORDER BY is_active DESC, id ASC
+             LIMIT 1';
+
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
         $row = $stmt->fetch();
         return $row ?: null;
     }
@@ -62,11 +72,12 @@ final class BookingDirectLinkRepository
         int $businessId,
         string $targetType,
         int $targetId,
+        int $locationId,
         string $baseName
     ): array {
         $this->assertTargetType($targetType);
 
-        $existing = $this->findByTarget($businessId, $targetType, $targetId);
+        $existing = $this->findByTarget($businessId, $targetType, $targetId, $locationId);
         if ($existing !== null) {
             if ((int) $existing['is_active'] !== 1) {
                 $stmt = $this->db->getPdo()->prepare(
@@ -80,14 +91,15 @@ final class BookingDirectLinkRepository
 
         $slug = $this->generateUniqueSlug($businessId, $baseName);
         $stmt = $this->db->getPdo()->prepare(
-            'INSERT INTO booking_direct_links (business_id, slug, target_type, target_id, is_active)
-             VALUES (?, ?, ?, ?, 1)'
+            'INSERT INTO booking_direct_links (business_id, location_id, slug, target_type, target_id, is_active)
+             VALUES (?, ?, ?, ?, ?, 1)'
         );
-        $stmt->execute([$businessId, $slug, $targetType, $targetId]);
+        $stmt->execute([$businessId, $locationId, $slug, $targetType, $targetId]);
 
         return [
             'id' => (int) $this->db->getPdo()->lastInsertId(),
             'business_id' => $businessId,
+            'location_id' => $locationId,
             'slug' => $slug,
             'target_type' => $targetType,
             'target_id' => $targetId,
@@ -95,18 +107,27 @@ final class BookingDirectLinkRepository
         ];
     }
 
-    public function deactivateForTarget(int $businessId, string $targetType, int $targetId): void
+    public function deactivateForTarget(
+        int $businessId,
+        string $targetType,
+        int $targetId,
+        ?int $locationId = null
+    ): void
     {
         $this->assertTargetType($targetType);
 
-        $stmt = $this->db->getPdo()->prepare(
-            'UPDATE booking_direct_links
+        $sql = 'UPDATE booking_direct_links
              SET is_active = 0, updated_at = NOW()
              WHERE business_id = ?
                AND target_type = ?
-               AND target_id = ?'
-        );
-        $stmt->execute([$businessId, $targetType, $targetId]);
+               AND target_id = ?';
+        $params = [$businessId, $targetType, $targetId];
+        if ($locationId !== null) {
+            $sql .= ' AND location_id = ?';
+            $params[] = $locationId;
+        }
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
     }
 
     public function generateUniqueSlug(int $businessId, string $baseName): string
@@ -170,7 +191,15 @@ final class BookingDirectLinkRepository
     public function targetBaseName(int $businessId, string $targetType, int $targetId): ?string
     {
         $target = $this->loadTarget($businessId, $targetType, $targetId);
-        return is_array($target) ? (string) ($target['name'] ?? '') : null;
+        if (!is_array($target)) {
+            return null;
+        }
+
+        if ($targetType === self::TARGET_CLASS_EVENT) {
+            return $this->buildClassEventBaseName($target);
+        }
+
+        return (string) ($target['name'] ?? '');
     }
 
     public function authorizesDirectServiceIds(
@@ -604,7 +633,7 @@ final class BookingDirectLinkRepository
     private function loadClassEvent(int $businessId, int $targetId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT ce.*, ct.name AS name, l.is_active AS location_is_active
+            'SELECT ce.*, ct.name AS name, l.is_active AS location_is_active, l.timezone AS location_timezone
              FROM class_events ce
              LEFT JOIN class_types ct ON ct.id = ce.class_type_id AND ct.business_id = ce.business_id
              INNER JOIN locations l ON l.id = ce.location_id
@@ -615,6 +644,31 @@ final class BookingDirectLinkRepository
         $stmt->execute([$targetId, $businessId]);
         $row = $stmt->fetch();
         return $row ?: null;
+    }
+
+    private function buildClassEventBaseName(array $target): string
+    {
+        $name = trim((string) ($target['name'] ?? 'class-event'));
+        $startsAt = trim((string) ($target['starts_at'] ?? ''));
+        if ($startsAt === '') {
+            return $name;
+        }
+
+        try {
+            $startsAtUtc = new \DateTimeImmutable($startsAt, new \DateTimeZone('UTC'));
+            $timezoneName = trim((string) ($target['location_timezone'] ?? ''));
+            if ($timezoneName !== '') {
+                $startsAtUtc = $startsAtUtc->setTimezone(new \DateTimeZone($timezoneName));
+            }
+
+            return sprintf(
+                '%s-%s',
+                $name,
+                $startsAtUtc->format('Ymd-Hi')
+            );
+        } catch (\Throwable) {
+            return $name;
+        }
     }
 
     private function loadServiceCategory(int $businessId, int $targetId): ?array
