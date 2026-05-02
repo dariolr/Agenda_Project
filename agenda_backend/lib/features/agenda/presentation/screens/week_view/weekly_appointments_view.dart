@@ -771,6 +771,8 @@ class _WeeklyCompactAddAction extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
+    if (!canManageBookings) return const SizedBox.shrink();
     final l10n = context.l10n;
     final scheme = Theme.of(context).colorScheme;
     final onContainer = scheme.onSecondaryContainer;

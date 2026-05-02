@@ -12,6 +12,7 @@ import '../../../providers/block_resizing_provider.dart';
 import '../../../providers/is_resizing_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../../../providers/time_blocks_provider.dart';
+import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import '../../dialogs/add_block_dialog.dart';
 import '../../widgets/booking_dialog.dart';
 
@@ -218,7 +219,8 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
         : colorScheme.error;
     final blockColor = accentColor.withOpacity(0.15);
     final borderColor = accentColor.withOpacity(0.5);
-    final canResize = !widget.block.isAllDay;
+    final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
+    final canResize = !widget.block.isAllDay && canManageBookings;
 
     return Listener(
       onPointerDown: (event) {
@@ -249,35 +251,39 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
       child: MouseRegion(
         cursor: canResize ? SystemMouseCursors.resizeUpDown : MouseCursor.defer,
         child: GestureDetector(
-          onSecondaryTapDown: (details) {
-            final secondaryTapTime = _resolveSecondaryTapStartTime(
-              details: details,
-              blockStart: widget.block.startTime,
-              blockEnd: effectiveBlock.endTime,
-            );
-            final onSecondaryCreate = widget.onSecondaryCreate;
-            if (onSecondaryCreate != null) {
-              onSecondaryCreate(secondaryTapTime);
-              return;
-            }
-            showBookingDialog(
-              context,
-              ref,
-              date: DateUtils.dateOnly(secondaryTapTime),
-              time: TimeOfDay(
-                hour: secondaryTapTime.hour,
-                minute: secondaryTapTime.minute,
-              ),
-              initialStaffId: widget.staffId,
-            );
-          },
-          onTap: () {
-            if (_suppressTapAfterResize) {
-              _suppressTapAfterResize = false;
-              return;
-            }
-            showAddBlockDialog(context, ref, initial: widget.block);
-          },
+          onSecondaryTapDown: canManageBookings
+              ? (details) {
+                  final secondaryTapTime = _resolveSecondaryTapStartTime(
+                    details: details,
+                    blockStart: widget.block.startTime,
+                    blockEnd: effectiveBlock.endTime,
+                  );
+                  final onSecondaryCreate = widget.onSecondaryCreate;
+                  if (onSecondaryCreate != null) {
+                    onSecondaryCreate(secondaryTapTime);
+                    return;
+                  }
+                  showBookingDialog(
+                    context,
+                    ref,
+                    date: DateUtils.dateOnly(secondaryTapTime),
+                    time: TimeOfDay(
+                      hour: secondaryTapTime.hour,
+                      minute: secondaryTapTime.minute,
+                    ),
+                    initialStaffId: widget.staffId,
+                  );
+                }
+              : null,
+          onTap: canManageBookings
+              ? () {
+                  if (_suppressTapAfterResize) {
+                    _suppressTapAfterResize = false;
+                    return;
+                  }
+                  showAddBlockDialog(context, ref, initial: widget.block);
+                }
+              : null,
           child: Container(
             width: widget.width,
             height: widget.height,

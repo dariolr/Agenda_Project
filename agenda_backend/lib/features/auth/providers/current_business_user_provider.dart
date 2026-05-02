@@ -414,6 +414,11 @@ final currentUserCanViewReportsProvider = Provider<bool>((ref) {
   );
 });
 
+/// Verifica se l'utente corrente ha il ruolo viewer (sola lettura).
+final isViewerProvider = Provider<bool>((ref) {
+  return ref.watch(currentUserRoleProvider) == 'viewer';
+});
+
 /// Ritorna il BusinessUser con ruolo 'owner' (o 'admin' come fallback)
 /// del business corrente, solo se l'utente loggato è superadmin.
 /// Ritorna null se: non è superadmin, nessun business selezionato,

@@ -165,6 +165,7 @@ class _ScaffoldWithNavigationState
         isBookingNotifications ||
         isClosures ||
         isPermessi;
+    final isViewer = ref.watch(isViewerProvider);
     final isMoreResources = currentPath == '/altro/risorse';
     final isMoreLocations = currentPath == '/altro/sedi';
     final isMorePaymentMethods = currentPath == '/altro/metodi-pagamento';
@@ -179,7 +180,7 @@ class _ScaffoldWithNavigationState
             isBookingsList ||
             isBookingNotifications ||
             isClosures ||
-            isProfile ||
+            (!isViewer && isProfile) ||
             isPermessi ||
             isMoreResources ||
             isMoreLocations ||
@@ -218,12 +219,13 @@ class _ScaffoldWithNavigationState
       fromAltroEntry: fromAltroEntry,
     );
 
-    // Per mobile e desktop usiamo destinazioni compatte con "Altro"
+    // Per mobile e desktop usiamo destinazioni compatte con "Altro" (o "Profilo" per viewer)
     final mobileDestinations =
         _ScaffoldWithNavigationHelpers.getMobileDestinations(
           context,
           showSwitchBusiness: showSwitchBusiness,
           includeClients: showClientsNav,
+          isViewer: isViewer,
         );
 
     // Quando non siamo su oggi, mostra freccia per tornare a oggi
@@ -759,6 +761,10 @@ class _ScaffoldWithNavigationState
     }
     final moreIndex = includeClients ? 2 : 1;
     if (desktopIndex == moreIndex) {
+      if (ref.read(isViewerProvider)) {
+        _goBranch(8, ref, forceInitialLocation: true);
+        return;
+      }
       final currentPath = GoRouterState.of(context).uri.path;
       final fromAltroEntry =
           GoRouterState.of(context).uri.queryParameters['from_altro'] == '1';
@@ -815,6 +821,10 @@ class _ScaffoldWithNavigationState
     }
     final moreIndex = includeClients ? 2 : 1;
     if (mobileIndex == moreIndex) {
+      if (ref.read(isViewerProvider)) {
+        _goBranch(8, ref, forceInitialLocation: true);
+        return;
+      }
       final currentPath = GoRouterState.of(context).uri.path;
       final fromAltroEntry =
           GoRouterState.of(context).uri.queryParameters['from_altro'] == '1';
@@ -1891,6 +1901,7 @@ class _ScaffoldWithNavigationHelpers {
     BuildContext context, {
     bool showSwitchBusiness = false,
     bool includeClients = true,
+    bool isViewer = false,
   }) {
     final l10n = context.l10n;
     return [
@@ -1905,11 +1916,18 @@ class _ScaffoldWithNavigationHelpers {
           selectedIconData: Icons.people,
           label: l10n.navClients,
         ),
-      NavigationDestination(
-        iconData: Icons.more_horiz_outlined,
-        selectedIconData: Icons.more_horiz,
-        label: l10n.navMore,
-      ),
+      if (isViewer)
+        NavigationDestination(
+          iconData: Icons.person_outline,
+          selectedIconData: Icons.person,
+          label: l10n.navProfile,
+        )
+      else
+        NavigationDestination(
+          iconData: Icons.more_horiz_outlined,
+          selectedIconData: Icons.more_horiz,
+          label: l10n.navMore,
+        ),
       // Cambia Business
       if (showSwitchBusiness)
         NavigationDestination(

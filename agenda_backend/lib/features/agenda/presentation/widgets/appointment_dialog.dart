@@ -824,13 +824,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       padding: AppButtonStyles.dialogButtonPadding,
       child: Text(l10n.actionPayment),
     );
-    final actions = [
-      deleteAction,
-      cancelAction,
-      rescheduleAction,
-      paymentAction,
-      saveAction,
-    ];
+    final actions = canManageBookings
+        ? [deleteAction, cancelAction, rescheduleAction, paymentAction, saveAction]
+        : [cancelAction];
 
     if (isDialog) {
       return CallbackShortcuts(

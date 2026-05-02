@@ -1191,12 +1191,14 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         child: Opacity(
           opacity: opacity,
           child: GestureDetector(
-            onSecondaryTapDown: (details) => _handleAppointmentSecondaryTap(
-              appointment: originalAppt,
-              details: details,
-              cardTop: visualTop,
-              cardHeight: visualHeight,
-            ),
+            onSecondaryTapDown: canManageBookings
+                ? (details) => _handleAppointmentSecondaryTap(
+                    appointment: originalAppt,
+                    details: details,
+                    cardTop: visualTop,
+                    cardHeight: visualHeight,
+                  )
+                : null,
             child: AppointmentCard(
               appointment: originalAppt,
               color: cardColor,
@@ -1332,12 +1334,14 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                     _classResizeSession?.eventId == classEvent.id
                 ? _cancelClassResize
                 : null,
-            onSecondaryTapDown: (details) => _handleCardSecondaryTap(
-              details: details,
-              cardTop: visualTop,
-              cardHeight: visualHeight,
-              dayStart: dayStart,
-            ),
+            onSecondaryTapDown: canManageBookings
+                ? (details) => _handleCardSecondaryTap(
+                    details: details,
+                    cardTop: visualTop,
+                    cardHeight: visualHeight,
+                    dayStart: dayStart,
+                  )
+                : null,
             onTap: canManageBookings
                 ? () => showCreateClassEventDialog(
                     context,
