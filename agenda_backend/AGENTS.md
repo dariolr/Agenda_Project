@@ -89,7 +89,8 @@ Route non-shell:
 - Non inventare regole oltre quel documento.
 
 ## Documentazione Progetto Centralizzata
-- Cartella: `../config/instructions/agenda_backend/`
+- Cartella regole agenti: `../config/agents/agenda_backend/`
+- Cartella documentazione canonica: `../config/docs/`
 
 ## Checklist Rapida
 1. Drag & drop invariato

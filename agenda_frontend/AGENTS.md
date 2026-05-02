@@ -45,7 +45,8 @@ flutter test
 - Documento canonico: `../config/docs/STAFF_PLANNING_MODEL.md`
 
 ## Documentazione Progetto Centralizzata
-- Cartella: `../config/instructions/agenda_frontend/`
+- Cartella regole agenti: `../config/agents/agenda_frontend/`
+- Cartella documentazione canonica: `../config/docs/`
 
 ## Checklist
 1. `context.l10n` per i testi
