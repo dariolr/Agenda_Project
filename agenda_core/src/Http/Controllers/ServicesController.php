@@ -83,7 +83,7 @@ final class ServicesController
 
         $directLinkScope = $this->directLinkScopeFromQuery($request, (int) $businessId, (int) $locationId);
         if ($directLinkScope === false) {
-            return Response::success(['categories' => [], 'services' => []]);
+            return Response::error('Link di prenotazione non valido', 'direct_link_location_mismatch', 409);
         }
         $services = $this->serviceRepository->findPublicByLocationId($locationId, $businessId, $directLinkScope);
         $categories = $this->serviceRepository->getCategories($businessId, $directLinkScope);

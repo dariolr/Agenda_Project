@@ -44,7 +44,7 @@ class ClassEventsNotifier extends StateNotifier<AsyncValue<List<ClassEvent>>> {
 
     if (linkSlug != null) {
       final directLinkAsync = _ref.read(bookingDirectLinkProvider);
-      if (!directLinkAsync.hasValue) {
+      if (directLinkAsync.value == null) {
         return;
       }
     }

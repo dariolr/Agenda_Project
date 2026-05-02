@@ -56,6 +56,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Always-needed watches — must come before any conditional return
     final businessAsync = ref.watch(currentBusinessProvider);
     final config = ref.watch(bookingConfigProvider);
     final authState = ref.watch(authProvider);
@@ -64,29 +65,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       authenticatedBusinessIdProvider,
     );
     final l10n = context.l10n;
-    final directLinkAsync = ref.watch(bookingDirectLinkProvider);
-    final locationsAsync = ref.watch(locationsProvider);
+    final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
+    final urlLocationId = ref.watch(urlLocationIdProvider);
 
-    final directLink = directLinkAsync.value;
-    final targetLocationId = _intFromJson(directLink?.target['location_id']);
-    if (directLink != null &&
-        targetLocationId != null &&
-        _appliedDirectLinkLocationSlug != directLink.linkSlug) {
-      final locations = locationsAsync.value;
-      if (locations != null) {
-        for (final location in locations) {
-          if (location.id == targetLocationId) {
-            _appliedDirectLinkLocationSlug = directLink.linkSlug;
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted) return;
-              ref.read(selectedLocationProvider.notifier).select(location);
-            });
-            break;
-          }
-        }
-      }
-    }
-
+    // Auth redirect
     final currentBusinessId = businessAsync.value?.id;
     final authenticatedBusinessId = authenticatedBusinessIdAsync.value;
     final isWrongBusinessAuthenticated =
@@ -105,13 +87,10 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       return const AppLoadingScreen();
     }
 
-    // Se il business è in caricamento, mostra loading identico a index.html
-    // per transizione seamless
     if (businessAsync.isLoading) {
       return const AppLoadingScreen();
     }
 
-    // Se c'è un errore nel caricamento del business
     if (businessAsync.hasError) {
       return Scaffold(
         appBar: const BookingAppBar(showUserMenu: false),
@@ -138,9 +117,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       );
     }
 
-    // Se la config non è valida (business o location mancanti)
     if (!config.isValid) {
-      // Distingui tra "business non trovato" e "business non attivo"
       final isNotActive = config.businessExistsButNotActive;
       final title = isNotActive
           ? l10n.errorBusinessNotActive
@@ -178,70 +155,107 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       );
     }
 
-    final isDirectLinkBlockingError = ref.watch(
-      bookingDirectLinkBlockingErrorProvider,
-    );
-    final isDirectLinkResolving = ref.watch(
-      bookingDirectLinkIsResolvingProvider,
-    );
-
-    if (isDirectLinkBlockingError) {
-      return Scaffold(
-        appBar: const BookingAppBar(showUserMenu: false),
-        body: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.link_off,
-                  size: 64,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withAlpha((0.4 * 255).round()),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  l10n.errorDirectLinkInvalidTitle,
+    // Direct link error screen (shared by missing-location and mismatch cases)
+    Widget buildDirectLinkErrorScreen() => Scaffold(
+      appBar: const BookingAppBar(showUserMenu: false),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(32),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.link_off,
+                size: 64,
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withAlpha((0.4 * 255).round()),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                l10n.errorDirectLinkInvalidTitle,
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: 8),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  l10n.errorDirectLinkInvalidMessage,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-                const SizedBox(height: 8),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Text(
-                    l10n.errorDirectLinkInvalidMessage,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withAlpha((0.6 * 255).round()),
-                    ),
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withAlpha((0.6 * 255).round()),
                   ),
                 ),
-                const SizedBox(height: 24),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    final slug = businessSlug ?? '';
-                    if (slug.isEmpty) return;
-                    context.go('/$slug/booking');
-                  },
-                  icon: const Icon(Icons.arrow_back),
-                  label: Text(l10n.actionBackToBooking),
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: () {
+                  final slug = businessSlug ?? '';
+                  if (slug.isEmpty) return;
+                  context.go('/$slug/booking');
+                },
+                icon: const Icon(Icons.arrow_back),
+                label: Text(l10n.actionBackToBooking),
+              ),
+            ],
           ),
         ),
-      );
+      ),
+    );
+
+    // link presente ma location assente → errore immediato, zero chiamate a /resolve
+    if (linkSlug != null && (urlLocationId == null || urlLocationId <= 0)) {
+      return buildDirectLinkErrorScreen();
     }
 
-    if (isDirectLinkResolving) {
-      return const Scaffold(
-        appBar: BookingAppBar(showUserMenu: false),
-        body: Center(child: CircularProgressIndicator()),
+    // link presente con location → controlla stato resolve PRIMA di watchare
+    // bookingDirectLinkProvider direttamente, così in caso di errore/mismatch
+    // BookingScreen non è un watcher diretto del provider
+    if (linkSlug != null) {
+      final isDirectLinkBlockingError = ref.watch(
+        bookingDirectLinkBlockingErrorProvider,
       );
+      if (isDirectLinkBlockingError) {
+        return buildDirectLinkErrorScreen();
+      }
+
+      final isDirectLinkResolving = ref.watch(
+        bookingDirectLinkIsResolvingProvider,
+      );
+      if (isDirectLinkResolving) {
+        return const Scaffold(
+          appBar: BookingAppBar(showUserMenu: false),
+          body: Center(child: CircularProgressIndicator()),
+        );
+      }
+    }
+
+    // Qui il direct link è assente o risolto correttamente.
+    // È sicuro watchare bookingDirectLinkProvider (una sola volta, solo in questo path).
+    final directLinkAsync = ref.watch(bookingDirectLinkProvider);
+    final locationsAsync = ref.watch(locationsProvider);
+
+    final directLink = directLinkAsync.value;
+    final targetLocationId = _intFromJson(directLink?.target['location_id']);
+    if (directLink != null &&
+        targetLocationId != null &&
+        _appliedDirectLinkLocationSlug != directLink.linkSlug) {
+      final locations = locationsAsync.value;
+      if (locations != null) {
+        for (final location in locations) {
+          if (location.id == targetLocationId) {
+            _appliedDirectLinkLocationSlug = directLink.linkSlug;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              ref.read(selectedLocationProvider.notifier).select(location);
+            });
+            break;
+          }
+        }
+      }
     }
 
     // Normal booking flow

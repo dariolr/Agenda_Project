@@ -5,6 +5,10 @@ import '../../../core/network/network_providers.dart';
 import '../domain/booking_direct_link.dart';
 import 'locations_provider.dart';
 
+class DirectLinkMissingLocationException implements Exception {
+  const DirectLinkMissingLocationException();
+}
+
 final bookingDirectLinkSlugProvider =
     NotifierProvider<BookingDirectLinkSlugNotifier, String?>(
       BookingDirectLinkSlugNotifier.new,
@@ -31,6 +35,10 @@ final bookingDirectLinkProvider = FutureProvider<BookingDirectLink?>((
   }
 
   final urlLocationId = ref.watch(urlLocationIdProvider);
+  if (urlLocationId == null || urlLocationId <= 0) {
+    throw const DirectLinkMissingLocationException();
+  }
+
   final apiClient = ref.watch(apiClientProvider);
   final data = await apiClient.resolveBookingDirectLink(
     businessSlug: businessSlug,
@@ -39,7 +47,7 @@ final bookingDirectLinkProvider = FutureProvider<BookingDirectLink?>((
   );
 
   return BookingDirectLink.fromJson(data);
-}, retry: null);
+}, retry: (_, __) => null);
 
 /// Provider che indica se c'è un errore bloccante per il direct link
 final bookingDirectLinkBlockingErrorProvider = Provider<bool>((ref) {
@@ -68,6 +76,9 @@ final bookingDirectLinkBlockingErrorProvider = Provider<bool>((ref) {
 final bookingDirectLinkIsResolvingProvider = Provider<bool>((ref) {
   final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
   if (linkSlug == null) return false;
+
+  final urlLocationId = ref.watch(urlLocationIdProvider);
+  if (urlLocationId == null || urlLocationId <= 0) return false;
 
   final directLinkAsync = ref.watch(bookingDirectLinkProvider);
   return directLinkAsync.isLoading;

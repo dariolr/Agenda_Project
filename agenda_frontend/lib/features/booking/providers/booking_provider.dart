@@ -1412,7 +1412,7 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
 
     if (linkSlug != null) {
       final directLinkAsync = _ref.read(bookingDirectLinkProvider);
-      if (!directLinkAsync.hasValue) {
+      if (directLinkAsync.value == null) {
         return;
       }
     }
@@ -1494,7 +1494,7 @@ class ServicePackagesNotifier
 
     if (linkSlug != null) {
       final directLinkAsync = _ref.read(bookingDirectLinkProvider);
-      if (!directLinkAsync.hasValue) {
+      if (directLinkAsync.value == null) {
         return;
       }
     }
@@ -1720,7 +1720,7 @@ class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
     final linkSlug = _ref.read(bookingDirectLinkSlugProvider);
     if (linkSlug != null) {
       final directLinkAsync = _ref.read(bookingDirectLinkProvider);
-      if (!directLinkAsync.hasValue) {
+      if (directLinkAsync.value == null) {
         _isLoadingMore = false;
         return;
       }
@@ -2002,7 +2002,7 @@ class AvailableStaffNotifier extends StateNotifier<AsyncValue<List<Staff>>> {
 
     if (linkSlug != null) {
       final directLinkAsync = _ref.read(bookingDirectLinkProvider);
-      if (!directLinkAsync.hasValue) {
+      if (directLinkAsync.value == null) {
         return;
       }
     }

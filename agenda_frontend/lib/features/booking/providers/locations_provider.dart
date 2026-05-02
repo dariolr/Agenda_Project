@@ -89,7 +89,10 @@ final selectedLocationProvider =
 final hasMultipleLocationsProvider = Provider<bool>((ref) {
   final locationsAsync = ref.watch(locationsProvider);
   final urlLocationId = ref.watch(urlLocationIdProvider);
-  final directLink = ref.watch(bookingDirectLinkProvider).value;
+  final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
+  final directLink = (linkSlug != null && urlLocationId != null && urlLocationId > 0)
+      ? ref.watch(bookingDirectLinkProvider).value
+      : null;
 
   return locationsAsync.maybeWhen(
     data: (locations) {
@@ -118,7 +121,7 @@ final hasMultipleLocationsProvider = Provider<bool>((ref) {
 final effectiveLocationProvider = Provider<Location?>((ref) {
   final locationsAsync = ref.watch(locationsProvider);
   final isDirectLinkBlocked = ref.watch(bookingDirectLinkBlockingErrorProvider);
-  final directLink = ref.watch(bookingDirectLinkProvider).value;
+  final directLink = isDirectLinkBlocked ? null : ref.watch(bookingDirectLinkProvider).value;
   final urlLocationId = ref.watch(urlLocationIdProvider);
   final selectedLocation = ref.watch(selectedLocationProvider);
 
