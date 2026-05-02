@@ -267,6 +267,7 @@ final class Kernel
         // Services CRUD (auth required)
         $this->router->post('/v1/businesses/{business_id}/services', ServicesController::class, 'storeMultiLocation', ['auth', 'business_access_route']);
         $this->router->post('/v1/locations/{location_id}/services', ServicesController::class, 'store', ['auth', 'location_path', 'location_access']);
+        $this->router->delete('/v1/locations/{location_id}/services/{service_id}', ServicesController::class, 'removeFromLocation', ['auth', 'location_path', 'location_access']);
         $this->router->put('/v1/services/{id}', ServicesController::class, 'update', ['auth']);
         $this->router->delete('/v1/services/{id}', ServicesController::class, 'destroy', ['auth']);
         $this->router->post('/v1/services/reorder', ServicesController::class, 'reorderServices', ['auth']);

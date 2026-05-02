@@ -1455,6 +1455,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "dayTuesdayFull": MessageLookupByLibrary.simpleMessage("martedì"),
     "dayWednesday": MessageLookupByLibrary.simpleMessage("Mercoledì"),
     "dayWednesdayFull": MessageLookupByLibrary.simpleMessage("mercoledì"),
+    "deactivateServiceGloballyAction": MessageLookupByLibrary.simpleMessage(
+      "Disattiva da tutte le sedi",
+    ),
     "deleteAppointmentConfirmMessage": MessageLookupByLibrary.simpleMessage(
       "L\'appuntamento verrà rimosso. L\'operazione non può essere annullata.",
     ),
@@ -2305,6 +2308,15 @@ class MessageLookup extends MessageLookupByLibrary {
       "Questo e futuri",
     ),
     "removeClient": MessageLookupByLibrary.simpleMessage("Rimuovi cliente"),
+    "removeServiceFromLocationAction": MessageLookupByLibrary.simpleMessage(
+      "Rimuovi da questa sede",
+    ),
+    "removeServiceFromLocationMessage": MessageLookupByLibrary.simpleMessage(
+      "Il servizio non sarà più disponibile in questa sede. Se è attivo anche in altre sedi, resterà disponibile lì.",
+    ),
+    "removeServiceFromLocationTitle": MessageLookupByLibrary.simpleMessage(
+      "Rimuovere il servizio da questa sede?",
+    ),
     "reorderCategoriesLabel": MessageLookupByLibrary.simpleMessage("Categorie"),
     "reorderClassesLabel": MessageLookupByLibrary.simpleMessage("Lezioni"),
     "reorderDoneButtonLabel": MessageLookupByLibrary.simpleMessage(

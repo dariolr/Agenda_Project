@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -237,7 +236,7 @@ class ServiceItem extends ConsumerWidget {
             onPressed: onCopyDirectLink,
           ),
         IconButton(
-          tooltip: context.l10n.actionDelete,
+          tooltip: context.l10n.removeServiceFromLocationAction,
           icon: const Icon(Icons.delete_outline, color: Colors.red),
           onPressed: onDelete,
         ),
@@ -275,7 +274,10 @@ class ServiceItem extends ConsumerWidget {
             value: 'copy_direct_link',
             child: Text(context.l10n.closuresImportHolidaysCopyLinkAction),
           ),
-        PopupMenuItem(value: 'delete', child: Text(context.l10n.actionDelete)),
+        PopupMenuItem(
+          value: 'delete',
+          child: Text(context.l10n.removeServiceFromLocationAction),
+        ),
       ],
     );
   }

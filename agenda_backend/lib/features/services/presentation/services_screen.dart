@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
@@ -11,6 +10,7 @@ import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/models/service_package.dart';
 import '../../../core/models/service_variant.dart';
+import '../../../core/network/api_client.dart';
 import '../../../core/utils/booking_direct_link_utils.dart';
 import '../../../core/utils/color_utils.dart';
 import '../../../core/utils/price_utils.dart';
@@ -1114,7 +1114,6 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     AppointmentTypeFilterOption filterOption,
   ) {
     final canManageServices = ref.watch(currentUserCanManageServicesProvider);
-    final servicesNotifier = ref.read(servicesProvider.notifier);
     if (cats.isEmpty) {
       return Center(
         child: Text(
@@ -1214,10 +1213,12 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
           ),
         );
       },
-      onServiceDelete: (id) => _confirmDelete(
+      onServiceDelete: (id) => _confirmRemoveServiceFromLocation(
         context,
         ref,
-        onConfirm: () async => servicesNotifier.deleteServiceApi(id),
+        onConfirm: () {
+          unawaited(_removeServiceFromCurrentLocation(context, ref, id));
+        },
       ),
       onPackageOpen: (package) =>
           _openPackageDialog(context, ref, package: package),
@@ -1514,7 +1515,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     );
   }
 
-  void _confirmDelete(
+  void _confirmRemoveServiceFromLocation(
     BuildContext context,
     WidgetRef ref, {
     required VoidCallback onConfirm,
@@ -1524,13 +1525,35 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
 
     showAppConfirmDialog(
       context,
-      title: Text(context.l10n.deleteServiceQuestion),
-      content: Text(context.l10n.cannotUndoWarning),
-      confirmLabel: context.l10n.actionDelete,
+      title: Text(context.l10n.removeServiceFromLocationTitle),
+      content: Text(context.l10n.removeServiceFromLocationMessage),
+      confirmLabel: context.l10n.removeServiceFromLocationAction,
       cancelLabel: context.l10n.actionCancel,
       danger: true,
       onConfirm: onConfirm,
     );
+  }
+
+  Future<void> _removeServiceFromCurrentLocation(
+    BuildContext context,
+    WidgetRef ref,
+    int serviceId,
+  ) async {
+    try {
+      await ref
+          .read(servicesProvider.notifier)
+          .removeServiceFromCurrentLocationApi(serviceId);
+    } catch (e) {
+      if (!context.mounted) return;
+      final message = e is ApiException
+          ? e.message
+          : context.l10n.networkUnknownError;
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.errorTitle,
+        message: message,
+      );
+    }
   }
 
   Future<void> _openPackageDetailsDialog(

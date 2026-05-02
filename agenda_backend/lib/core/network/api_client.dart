@@ -1,4 +1,3 @@
-
 import 'dart:async';
 
 import 'package:dio/dio.dart';
@@ -2047,6 +2046,14 @@ class ApiClient {
   /// DELETE /v1/services/{id}
   Future<void> deleteService(int serviceId) async {
     await delete('/v1/services/$serviceId');
+  }
+
+  /// DELETE /v1/locations/{locationId}/services/{serviceId}
+  Future<Map<String, dynamic>> removeServiceFromLocation({
+    required int locationId,
+    required int serviceId,
+  }) async {
+    return delete('/v1/locations/$locationId/services/$serviceId');
   }
 
   /// GET /v1/services/{id}/locations

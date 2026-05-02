@@ -2634,6 +2634,46 @@ class L10n {
     );
   }
 
+  /// `Remove from this location`
+  String get removeServiceFromLocationAction {
+    return Intl.message(
+      'Remove from this location',
+      name: 'removeServiceFromLocationAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Remove service from this location?`
+  String get removeServiceFromLocationTitle {
+    return Intl.message(
+      'Remove service from this location?',
+      name: 'removeServiceFromLocationTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The service will no longer be available in this location. If it is active in other locations, it will stay available there.`
+  String get removeServiceFromLocationMessage {
+    return Intl.message(
+      'The service will no longer be available in this location. If it is active in other locations, it will stay available there.',
+      name: 'removeServiceFromLocationMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Deactivate from all locations`
+  String get deactivateServiceGloballyAction {
+    return Intl.message(
+      'Deactivate from all locations',
+      name: 'deactivateServiceGloballyAction',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `This action cannot be undone.`
   String get cannotUndoWarning {
     return Intl.message(

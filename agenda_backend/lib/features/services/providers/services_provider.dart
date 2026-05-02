@@ -1,4 +1,3 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/service.dart';
@@ -395,6 +394,31 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     }
   }
 
+  /// Removes a service from the current location via API and updates local state.
+  Future<Map<String, dynamic>> removeServiceFromCurrentLocationApi(
+    int serviceId,
+  ) async {
+    final repository = ref.read(servicesRepositoryProvider);
+    final location = ref.read(currentLocationProvider);
+    final result = await repository.removeServiceFromLocation(
+      locationId: location.id,
+      serviceId: serviceId,
+    );
+
+    final current = state.value ?? [];
+    final newList = current.where((s) => s.id != serviceId).toList();
+    state = AsyncData(newList);
+
+    ref.read(serviceVariantsProvider.notifier).removeByServiceId(serviceId);
+    ref.read(servicesForLocationsRefreshProvider.notifier).trigger();
+
+    ref
+        .read(serviceCategoriesProvider.notifier)
+        .bumpEmptyCategoriesToEnd(servicesOverride: newList);
+
+    return result;
+  }
+
   /// Gets the location IDs where a service has active variants
   Future<List<int>> getServiceLocationsApi(int serviceId) async {
     final repository = ref.read(servicesRepositoryProvider);
@@ -762,4 +786,3 @@ final servicesByCategoryProvider = Provider.family<List<Service>, int>((
       if (service.categoryId == categoryId) service,
   ];
 });
-

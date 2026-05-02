@@ -473,6 +473,45 @@ final class ServicesController
         return Response::success(['message' => 'Service deleted successfully']);
     }
 
+    /**
+     * DELETE /v1/locations/{location_id}/services/{service_id}
+     * Remove a service from the current location only. Auth required.
+     */
+    public function removeFromLocation(Request $request): Response
+    {
+        $locationId = (int) $request->getRouteParam('location_id');
+        $serviceId = (int) $request->getRouteParam('service_id');
+
+        $location = $this->locationRepo->findById($locationId);
+        if (!$location) {
+            return Response::notFound('Location not found', $request->traceId);
+        }
+
+        $businessId = (int) $location['business_id'];
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::notFound('Service not found', $request->traceId);
+        }
+
+        $existingService = $this->serviceRepository->findServiceById($serviceId);
+        if (!$existingService || (int) $existingService['business_id'] !== $businessId) {
+            return Response::notFound('Service not found', $request->traceId);
+        }
+
+        try {
+            $result = $this->serviceRepository->removeFromLocation($serviceId, $locationId);
+        } catch (\DomainException $e) {
+            return Response::conflict(
+                'service_used_by_active_packages',
+                $e->getMessage(),
+                $request->traceId
+            );
+        } catch (\InvalidArgumentException) {
+            return Response::notFound('Service not found', $request->traceId);
+        }
+
+        return Response::success($result);
+    }
+
     // ===== Categories =====
 
     /**

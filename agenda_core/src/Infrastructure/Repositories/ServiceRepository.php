@@ -605,10 +605,112 @@ final class ServiceRepository
      */
     public function delete(int $serviceId): bool
     {
-        $stmt = $this->db->getPdo()->prepare(
-            'UPDATE services SET is_active = 0, updated_at = NOW() WHERE id = ?'
-        );
-        return $stmt->execute([$serviceId]);
+        $pdo = $this->db->getPdo();
+        $pdo->beginTransaction();
+
+        try {
+            $stmt = $pdo->prepare(
+                'UPDATE services SET is_active = 0, updated_at = NOW() WHERE id = ?'
+            );
+            $result = $stmt->execute([$serviceId]);
+
+            $stmt = $pdo->prepare(
+                'UPDATE service_variants SET is_active = 0, updated_at = NOW() WHERE service_id = ?'
+            );
+            $stmt->execute([$serviceId]);
+
+            $pdo->commit();
+
+            return $result;
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Remove a service only from one location by soft-deleting its variant.
+     *
+     * @throws \DomainException when active packages in the same location use the service
+     */
+    public function removeFromLocation(int $serviceId, int $locationId): array
+    {
+        $pdo = $this->db->getPdo();
+        $pdo->beginTransaction();
+
+        try {
+            $stmt = $pdo->prepare(
+                'SELECT id, business_id FROM locations WHERE id = ? AND is_active = 1'
+            );
+            $stmt->execute([$locationId]);
+            $location = $stmt->fetch();
+            if (!$location) {
+                throw new \InvalidArgumentException('Location not found');
+            }
+
+            $stmt = $pdo->prepare(
+                'SELECT id, business_id FROM services WHERE id = ? AND is_active = 1'
+            );
+            $stmt->execute([$serviceId]);
+            $service = $stmt->fetch();
+            if (!$service || (int) $service['business_id'] !== (int) $location['business_id']) {
+                throw new \InvalidArgumentException('Service not found');
+            }
+
+            $stmt = $pdo->prepare(
+                'SELECT 1
+                 FROM service_packages sp
+                 JOIN service_package_items spi ON spi.package_id = sp.id
+                 WHERE sp.location_id = ?
+                   AND sp.is_active = 1
+                   AND spi.service_id = ?
+                 LIMIT 1'
+            );
+            $stmt->execute([$locationId, $serviceId]);
+            if ($stmt->fetchColumn() !== false) {
+                throw new \DomainException('impossibile rimuovere il servizio perché usato da pacchetti attivi nella sede');
+            }
+
+            $stmt = $pdo->prepare(
+                'UPDATE service_variants
+                 SET is_active = 0, updated_at = NOW()
+                 WHERE service_id = ?
+                   AND location_id = ?
+                   AND is_active = 1'
+            );
+            $stmt->execute([$serviceId, $locationId]);
+            $removedFromLocation = $stmt->rowCount() > 0;
+
+            $stmt = $pdo->prepare(
+                'SELECT COUNT(*)
+                 FROM service_variants
+                 WHERE service_id = ?
+                   AND is_active = 1'
+            );
+            $stmt->execute([$serviceId]);
+            $activeVariantCount = (int) $stmt->fetchColumn();
+
+            $globallyDeactivated = false;
+            if ($activeVariantCount === 0) {
+                $stmt = $pdo->prepare(
+                    'UPDATE services
+                     SET is_active = 0, updated_at = NOW()
+                     WHERE id = ?'
+                );
+                $stmt->execute([$serviceId]);
+                $globallyDeactivated = true;
+            }
+
+            $pdo->commit();
+
+            return [
+                'removed_from_location' => $removedFromLocation,
+                'globally_deactivated' => $globallyDeactivated,
+            ];
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
     }
 
     // ===== Category CRUD =====

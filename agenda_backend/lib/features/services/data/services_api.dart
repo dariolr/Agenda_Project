@@ -1,4 +1,3 @@
-
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/network/api_client.dart';
@@ -178,6 +177,18 @@ class ServicesApi {
   /// Soft deletes a service
   Future<void> deleteService(int serviceId) async {
     await _apiClient.deleteService(serviceId);
+  }
+
+  /// DELETE /v1/locations/{locationId}/services/{serviceId}
+  /// Removes a service from one location only.
+  Future<Map<String, dynamic>> removeServiceFromLocation({
+    required int locationId,
+    required int serviceId,
+  }) {
+    return _apiClient.removeServiceFromLocation(
+      locationId: locationId,
+      serviceId: serviceId,
+    );
   }
 
   /// GET /v1/services/{id}/locations
