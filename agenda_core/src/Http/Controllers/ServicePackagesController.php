@@ -61,7 +61,7 @@ final class ServicePackagesController
         $businessId = (int) $request->getAttribute('business_id');
         $directLinkScope = $businessId > 0 ? $this->directLinkScopeFromQuery($request, $businessId, $locationId) : null;
         if ($directLinkScope === false) {
-            return Response::success(['location_id' => $locationId, 'packages' => []]);
+            return Response::notFound('Booking direct link not available', $request->traceId);
         }
         $packages = $this->packageRepo->findByLocationId($locationId, $directLinkScope);
 
