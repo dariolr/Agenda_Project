@@ -37,6 +37,20 @@ final class ServicePackagesController
         return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_services', false);
     }
 
+    private function hasBusinessReadAccess(Request $request, int $businessId): bool
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null) {
+            return false;
+        }
+
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return true;
+        }
+
+        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+    }
+
     /**
      * GET /v1/locations/{location_id}/service-packages
      * Public endpoint - returns packages for a location.
@@ -53,6 +67,29 @@ final class ServicePackagesController
         return Response::success([
             'location_id' => $locationId,
             'packages' => $packages,
+        ]);
+    }
+
+    /**
+     * GET /v1/locations/{location_id}/admin/service-packages
+     * Admin endpoint - returns all active packages for a location.
+     */
+    public function indexAdmin(Request $request): Response
+    {
+        $locationId = (int) $request->getRouteParam('location_id');
+        $businessId = $request->getAttribute('business_id');
+
+        if ($businessId === null) {
+            return Response::error('Location context required', 'missing_location', 400);
+        }
+
+        if (!$this->hasBusinessReadAccess($request, (int) $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        return Response::success([
+            'location_id' => $locationId,
+            'packages' => $this->packageRepo->findAdminByLocationId($locationId),
         ]);
     }
 
@@ -79,6 +116,40 @@ final class ServicePackagesController
             );
 
         $expanded = $this->packageRepo->getExpanded($packageId, $locationId, $allowDirectPackage);
+        if ($expanded === null) {
+            return Response::notFound('Package not found', $request->traceId);
+        }
+
+        if (!$expanded['is_active']) {
+            return Response::error('Package is not active', 'package_inactive', 409, $request->traceId);
+        }
+
+        if ($expanded['is_broken']) {
+            return Response::conflict('package_broken', 'Package contains unavailable services', $request->traceId);
+        }
+
+        return Response::success($expanded);
+    }
+
+    /**
+     * GET /v1/locations/{location_id}/admin/service-packages/{id}/expand
+     * Admin endpoint - expands a package without online visibility filters.
+     */
+    public function expandAdmin(Request $request): Response
+    {
+        $locationId = (int) $request->getRouteParam('location_id');
+        $packageId = (int) $request->getRouteParam('id');
+        $businessId = $request->getAttribute('business_id');
+
+        if ($businessId === null) {
+            return Response::error('Location context required', 'missing_location', 400);
+        }
+
+        if (!$this->hasBusinessReadAccess($request, (int) $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        $expanded = $this->packageRepo->getExpandedAdmin($packageId, $locationId);
         if ($expanded === null) {
             return Response::notFound('Package not found', $request->traceId);
         }

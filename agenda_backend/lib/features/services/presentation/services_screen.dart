@@ -1213,13 +1213,8 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
           ),
         );
       },
-      onServiceDelete: (id) => _confirmRemoveServiceFromLocation(
-        context,
-        ref,
-        onConfirm: () {
-          unawaited(_removeServiceFromCurrentLocation(context, ref, id));
-        },
-      ),
+      onServiceDelete: (id) =>
+          _confirmRemoveServiceFromLocation(context, ref, serviceId: id),
       onPackageOpen: (package) =>
           _openPackageDialog(context, ref, package: package),
       onPackageEdit: (package) =>
@@ -1515,22 +1510,53 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     );
   }
 
-  void _confirmRemoveServiceFromLocation(
+  Future<void> _confirmRemoveServiceFromLocation(
     BuildContext context,
     WidgetRef ref, {
-    required VoidCallback onConfirm,
-  }) {
+    required int serviceId,
+  }) async {
     final canManageServices = ref.read(currentUserCanManageServicesProvider);
     if (!canManageServices) return;
 
+    late final List<int> serviceLocationIds;
+    try {
+      serviceLocationIds = await ref
+          .read(servicesProvider.notifier)
+          .getServiceLocationsApi(serviceId);
+    } catch (e) {
+      if (!context.mounted) return;
+      final message = e is ApiException
+          ? e.message
+          : context.l10n.networkUnknownError;
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.errorTitle,
+        message: message,
+      );
+      return;
+    }
+    if (!context.mounted) return;
+
+    final isLastActiveLocation = serviceLocationIds.length <= 1;
+    final title = isLastActiveLocation
+        ? context.l10n.deactivateServiceTitle
+        : context.l10n.removeServiceFromLocationTitle;
+    final message = isLastActiveLocation
+        ? context.l10n.deactivateServiceMessage
+        : context.l10n.removeServiceFromLocationMessage;
+    final confirmLabel = isLastActiveLocation
+        ? context.l10n.deactivateServiceAction
+        : context.l10n.removeServiceFromLocationAction;
+
     showAppConfirmDialog(
       context,
-      title: Text(context.l10n.removeServiceFromLocationTitle),
-      content: Text(context.l10n.removeServiceFromLocationMessage),
-      confirmLabel: context.l10n.removeServiceFromLocationAction,
+      title: Text(title),
+      content: Text(message),
+      confirmLabel: confirmLabel,
       cancelLabel: context.l10n.actionCancel,
       danger: true,
-      onConfirm: onConfirm,
+      onConfirm: () =>
+          _removeServiceFromCurrentLocation(context, ref, serviceId),
     );
   }
 

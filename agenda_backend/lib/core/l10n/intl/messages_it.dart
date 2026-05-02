@@ -1455,8 +1455,17 @@ class MessageLookup extends MessageLookupByLibrary {
     "dayTuesdayFull": MessageLookupByLibrary.simpleMessage("martedì"),
     "dayWednesday": MessageLookupByLibrary.simpleMessage("Mercoledì"),
     "dayWednesdayFull": MessageLookupByLibrary.simpleMessage("mercoledì"),
+    "deactivateServiceAction": MessageLookupByLibrary.simpleMessage(
+      "Disattiva servizio",
+    ),
     "deactivateServiceGloballyAction": MessageLookupByLibrary.simpleMessage(
       "Disattiva da tutte le sedi",
+    ),
+    "deactivateServiceMessage": MessageLookupByLibrary.simpleMessage(
+      "Il servizio verrà disattivato e non sarà più visibile negli elenchi del gestionale.",
+    ),
+    "deactivateServiceTitle": MessageLookupByLibrary.simpleMessage(
+      "Disattivare il servizio?",
     ),
     "deleteAppointmentConfirmMessage": MessageLookupByLibrary.simpleMessage(
       "L\'appuntamento verrà rimosso. L\'operazione non può essere annullata.",

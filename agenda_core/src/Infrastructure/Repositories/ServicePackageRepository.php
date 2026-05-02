@@ -82,6 +82,37 @@ final class ServicePackageRepository
         );
     }
 
+    public function findAdminByLocationId(int $locationId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            "SELECT sp.*, sc.name AS category_name
+             FROM service_packages sp
+             LEFT JOIN service_categories sc ON sc.id = sp.category_id
+             WHERE sp.location_id = ?
+               AND sp.is_active = 1
+             ORDER BY sp.sort_order ASC, sp.name ASC, sp.id ASC"
+        );
+        $stmt->execute([$locationId]);
+        $packages = $stmt->fetchAll();
+
+        if (empty($packages)) {
+            return [];
+        }
+
+        $packageIds = array_map(fn($p) => (int) $p['id'], $packages);
+        $itemsByPackage = $this->getItemsForPackages($packageIds, $locationId);
+        $totalsByPackage = $this->getTotalsForPackages($packageIds, $locationId, true);
+
+        return array_map(
+            fn(array $package) => $this->formatPackageRow(
+                $package,
+                $itemsByPackage,
+                $totalsByPackage,
+            ),
+            $packages,
+        );
+    }
+
     public function getDetailedById(int $packageId, int $locationId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
@@ -284,6 +315,42 @@ final class ServicePackageRepository
         ];
     }
 
+    public function getExpandedAdmin(int $packageId, int $locationId): ?array
+    {
+        $package = $this->findById($packageId);
+        if (
+            !$package
+            || (int) $package['location_id'] !== $locationId
+        ) {
+            return null;
+        }
+
+        $serviceIds = $this->getOrderedServiceIds($packageId);
+        $totals = $this->getTotalsForPackages([$packageId], $locationId, true);
+        $summary = $totals[$packageId] ?? [
+            'total_duration' => 0,
+            'total_price' => 0.0,
+            'missing_count' => 0,
+        ];
+
+        $effectiveDuration = $package['override_duration_minutes'] !== null
+            ? (int) $package['override_duration_minutes']
+            : (int) $summary['total_duration'];
+        $effectivePrice = $package['override_price'] !== null
+            ? (float) $package['override_price']
+            : (float) $summary['total_price'];
+
+        return [
+            'package_id' => (int) $package['id'],
+            'location_id' => (int) $package['location_id'],
+            'service_ids' => $serviceIds,
+            'effective_price' => $effectivePrice,
+            'effective_duration_minutes' => $effectiveDuration,
+            'is_active' => (bool) $package['is_active'],
+            'is_broken' => (bool) $package['is_broken'] || $summary['missing_count'] > 0,
+        ];
+    }
+
     public function markBrokenByServiceId(int $serviceId): void
     {
         $stmt = $this->db->getPdo()->prepare(
@@ -386,7 +453,7 @@ final class ServicePackageRepository
         return $itemsByPackage;
     }
 
-    private function getTotalsForPackages(array $packageIds, int $locationId): array
+    private function getTotalsForPackages(array $packageIds, int $locationId, bool $includeHiddenForAdmin = false): array
     {
         if (empty($packageIds)) {
             return [];
@@ -395,36 +462,38 @@ final class ServicePackageRepository
         $placeholders = implode(',', array_fill(0, count($packageIds), '?'));
         $params = array_merge([$locationId], $packageIds);
 
-        $stmt = $this->db->getPdo()->prepare(
-            "SELECT spi.package_id,
-                    COUNT(*) AS total_items,
-                    SUM(CASE
-                        WHEN s.id IS NULL
+        $missingCondition = $includeHiddenForAdmin
+            ? 's.id IS NULL OR s.is_active = 0 OR sv.id IS NULL OR sv.is_active = 0'
+            : "s.id IS NULL
                             OR s.is_active = 0
                             OR sv.id IS NULL
                             OR sv.is_active = 0
                             OR sv.is_bookable_online = 0
-                            OR sv.online_visibility = 'hidden'
+                            OR sv.online_visibility = 'hidden'";
+        $availableCondition = $includeHiddenForAdmin
+            ? 's.id IS NOT NULL AND s.is_active = 1 AND sv.id IS NOT NULL AND sv.is_active = 1'
+            : "s.id IS NOT NULL
+                            AND s.is_active = 1
+                            AND sv.id IS NOT NULL
+                            AND sv.is_active = 1
+                            AND sv.is_bookable_online = 1
+                            AND sv.online_visibility <> 'hidden'";
+
+        $stmt = $this->db->getPdo()->prepare(
+            "SELECT spi.package_id,
+                    COUNT(*) AS total_items,
+                    SUM(CASE
+                        WHEN {$missingCondition}
                             THEN 1
                         ELSE 0
                     END) AS missing_count,
                     SUM(CASE
-                        WHEN s.id IS NOT NULL
-                            AND s.is_active = 1
-                            AND sv.id IS NOT NULL
-                            AND sv.is_active = 1
-                            AND sv.is_bookable_online = 1
-                            AND sv.online_visibility <> 'hidden'
+                        WHEN {$availableCondition}
                             THEN sv.duration_minutes + COALESCE(sv.processing_time, 0) + COALESCE(sv.blocked_time, 0)
                         ELSE 0
                     END) AS total_duration,
                     SUM(CASE
-                        WHEN s.id IS NOT NULL
-                            AND s.is_active = 1
-                            AND sv.id IS NOT NULL
-                            AND sv.is_active = 1
-                            AND sv.is_bookable_online = 1
-                            AND sv.online_visibility <> 'hidden'
+                        WHEN {$availableCondition}
                             THEN sv.price
                         ELSE 0
                     END) AS total_price

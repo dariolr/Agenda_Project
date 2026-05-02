@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -60,14 +62,20 @@ Future<void> showAppConfirmDialog(
   required Widget title,
   Widget? content,
   required String confirmLabel,
-  required VoidCallback onConfirm,
+  required FutureOr<void> Function() onConfirm,
   String? cancelLabel,
   bool danger = false,
 }) async {
   final colorScheme = Theme.of(context).colorScheme;
+  Future<void> closeAndConfirm(BuildContext dialogContext) async {
+    if (!dialogContext.mounted) return;
+    Navigator.of(dialogContext, rootNavigator: true).pop();
+    await onConfirm();
+  }
+
   return showDialog(
     context: context,
-    builder: (_) {
+    builder: (dialogContext) {
       final base = Theme.of(context);
       final dialogTheme = base.copyWith(
         splashColor: Colors.transparent,
@@ -97,10 +105,9 @@ Future<void> showAppConfirmDialog(
         child: CallbackShortcuts(
           bindings: <ShortcutActivator, VoidCallback>{
             SingleActivator(LogicalKeyboardKey.escape): () =>
-                Navigator.of(context, rootNavigator: true).pop(),
+                Navigator.of(dialogContext, rootNavigator: true).pop(),
             SingleActivator(LogicalKeyboardKey.enter): () {
-              onConfirm();
-              Navigator.of(context, rootNavigator: true).pop();
+              unawaited(closeAndConfirm(dialogContext));
             },
           },
           child: Focus(
@@ -116,8 +123,7 @@ Future<void> showAppConfirmDialog(
                 ),
                 ElevatedButton(
                   onPressed: () {
-                    onConfirm();
-                    Navigator.of(context, rootNavigator: true).pop();
+                    unawaited(closeAndConfirm(dialogContext));
                   },
                   style: danger
                       ? ElevatedButton.styleFrom(

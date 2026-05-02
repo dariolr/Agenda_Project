@@ -265,6 +265,7 @@ final class Kernel
         $this->router->get('/v1/availability', AvailabilityController::class, 'index', ['location_query']);
 
         // Services CRUD (auth required)
+        $this->router->get('/v1/locations/{location_id}/services', ServicesController::class, 'indexByLocation', ['auth', 'location_path', 'location_access']);
         $this->router->post('/v1/businesses/{business_id}/services', ServicesController::class, 'storeMultiLocation', ['auth', 'business_access_route']);
         $this->router->post('/v1/locations/{location_id}/services', ServicesController::class, 'store', ['auth', 'location_path', 'location_access']);
         $this->router->delete('/v1/locations/{location_id}/services/{service_id}', ServicesController::class, 'removeFromLocation', ['auth', 'location_path', 'location_access']);
@@ -295,6 +296,8 @@ final class Kernel
         $this->router->get('/v1/locations/{location_id}/service-packages/{id}/expand', ServicePackagesController::class, 'expand', ['location_path']);
 
         // Service Packages CRUD (auth required)
+        $this->router->get('/v1/locations/{location_id}/admin/service-packages', ServicePackagesController::class, 'indexAdmin', ['auth', 'location_path', 'location_access']);
+        $this->router->get('/v1/locations/{location_id}/admin/service-packages/{id}/expand', ServicePackagesController::class, 'expandAdmin', ['auth', 'location_path', 'location_access']);
         $this->router->post('/v1/locations/{location_id}/service-packages', ServicePackagesController::class, 'store', ['auth', 'location_path', 'location_access']);
         $this->router->put('/v1/locations/{location_id}/service-packages/{id}', ServicePackagesController::class, 'update', ['auth', 'location_path', 'location_access']);
         $this->router->delete('/v1/locations/{location_id}/service-packages/{id}', ServicePackagesController::class, 'destroy', ['auth', 'location_path', 'location_access']);

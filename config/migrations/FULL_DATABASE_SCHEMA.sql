@@ -306,6 +306,7 @@ CREATE TABLE `class_events` (
   `waitlist_count` int UNSIGNED NOT NULL DEFAULT '0',
   `waitlist_enabled` tinyint(1) NOT NULL DEFAULT '1',
   `is_bookable_online` tinyint(1) NOT NULL DEFAULT '1',
+  `online_visibility` enum('public','direct_link','hidden') NOT NULL DEFAULT 'public',
   `booking_open_at` timestamp NULL DEFAULT NULL,
   `booking_close_at` timestamp NULL DEFAULT NULL,
   `cancel_cutoff_minutes` int UNSIGNED NOT NULL DEFAULT '0',
@@ -775,6 +776,7 @@ CREATE TABLE `service_categories` (
   `name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `sort_order` int NOT NULL DEFAULT '0',
+  `online_visibility` enum('public','direct_link','hidden') NOT NULL DEFAULT 'public',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -797,6 +799,7 @@ CREATE TABLE `service_packages` (
   `override_duration_minutes` int UNSIGNED DEFAULT NULL,
   `is_active` tinyint(1) DEFAULT '1',
   `is_bookable_online` tinyint(1) NOT NULL DEFAULT '1',
+  `online_visibility` enum('public','direct_link','hidden') NOT NULL DEFAULT 'public',
   `is_broken` tinyint(1) DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
@@ -831,6 +834,7 @@ CREATE TABLE `service_variants` (
   `currency` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Override location currency',
   `color_hex` varchar(7) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Es. #FF5733',
   `is_bookable_online` tinyint(1) NOT NULL DEFAULT '1',
+  `online_visibility` enum('public','direct_link','hidden') NOT NULL DEFAULT 'public',
   `is_free` tinyint(1) NOT NULL DEFAULT '0',
   `is_price_starting_from` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Mostra "da €X"',
   `parallel_capacity` int UNSIGNED NOT NULL DEFAULT '1' COMMENT 'Numero massimo di prenotazioni contemporanee consentite per questa variante servizio nella stessa location/staff/intervallo',
@@ -2541,9 +2545,3 @@ ALTER TABLE `businesses` ADD COLUMN `locale` varchar(10) COLLATE utf8mb4_unicode
 -- [locations]
 ALTER TABLE `locations` ADD COLUMN `show_price_to_customer` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'Se 1, mostra il prezzo al cliente durante la prenotazione online';
 ALTER TABLE `locations` ADD COLUMN `show_duration_to_customer` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'Se 1, mostra la durata al cliente durante la prenotazione online';
-
--- [service_packages]
-ALTER TABLE `service_packages` ADD COLUMN `online_visibility` enum('public','direct_link','hidden') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'public';
-
--- [service_variants]
-ALTER TABLE `service_variants` ADD COLUMN `online_visibility` enum('public','direct_link','hidden') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'public';

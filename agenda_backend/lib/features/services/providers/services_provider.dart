@@ -379,8 +379,6 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
       final newList = current.where((s) => s.id != serviceId).toList();
       state = AsyncData(newList);
 
-      ref.read(serviceVariantsProvider.notifier).removeByServiceId(serviceId);
-
       // Trigger refresh of servicesForLocationsProvider
       ref.read(servicesForLocationsRefreshProvider.notifier).trigger();
 
@@ -409,7 +407,6 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     final newList = current.where((s) => s.id != serviceId).toList();
     state = AsyncData(newList);
 
-    ref.read(serviceVariantsProvider.notifier).removeByServiceId(serviceId);
     ref.read(servicesForLocationsRefreshProvider.notifier).trigger();
 
     ref
@@ -489,7 +486,6 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     final current = state.value ?? [];
     final newList = current.where((s) => s.id != id).toList();
     state = AsyncData(newList);
-    ref.read(serviceVariantsProvider.notifier).removeByServiceId(id);
     ref
         .read(serviceCategoriesProvider.notifier)
         .bumpEmptyCategoriesToEnd(servicesOverride: newList);
@@ -610,11 +606,6 @@ class ServiceVariantsNotifier extends AsyncNotifier<List<ServiceVariant>> {
         if (v.id == variant.id) variant else v,
       if (!current.any((v) => v.id == variant.id)) variant,
     ]);
-  }
-
-  void removeByServiceId(int serviceId) {
-    final current = state.value ?? [];
-    state = AsyncData(current.where((v) => v.serviceId != serviceId).toList());
   }
 }
 

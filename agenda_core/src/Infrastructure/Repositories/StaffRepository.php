@@ -170,7 +170,7 @@ final class StaffRepository
                 'SELECT s.id, s.name, sv.duration_minutes, sv.price
                  FROM services s
                  JOIN service_variants sv ON s.id = sv.service_id
-                 WHERE s.business_id = ? AND sv.location_id = ? AND s.is_active = 1 AND sv.is_bookable_online = 1
+                 WHERE s.business_id = ? AND sv.location_id = ? AND s.is_active = 1 AND sv.is_active = 1
                  ORDER BY s.sort_order ASC, s.name ASC'
             );
             $stmt->execute([$businessId, $locationId]);

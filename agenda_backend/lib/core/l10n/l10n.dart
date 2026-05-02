@@ -2664,6 +2664,36 @@ class L10n {
     );
   }
 
+  /// `Deactivate this service?`
+  String get deactivateServiceTitle {
+    return Intl.message(
+      'Deactivate this service?',
+      name: 'deactivateServiceTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The service will be deactivated and hidden from the management lists.`
+  String get deactivateServiceMessage {
+    return Intl.message(
+      'The service will be deactivated and hidden from the management lists.',
+      name: 'deactivateServiceMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Deactivate service`
+  String get deactivateServiceAction {
+    return Intl.message(
+      'Deactivate service',
+      name: 'deactivateServiceAction',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Deactivate from all locations`
   String get deactivateServiceGloballyAction {
     return Intl.message(

@@ -1,4 +1,3 @@
-
 import '/core/environment/app_environment_config.dart';
 
 /// Configurazione API per agenda_backend (gestionale)
@@ -27,10 +26,14 @@ class ApiConfig {
   static const String authChangePassword = '/v1/me/change-password';
   static const String authMe = '/v1/me';
 
-  // ========== PUBLIC BROWSE ENDPOINTS ==========
+  // ========== BROWSE ENDPOINTS ==========
   static const String services = '/v1/services';
   static const String staff = '/v1/staff';
   static const String availability = '/v1/availability';
+
+  /// Servizi gestionali per location: include hidden/direct_link/non online.
+  static String adminServices(int locationId) =>
+      '/v1/locations/$locationId/services';
 
   /// Servizi più prenotati per staff (gestionale)
   static String popularServices(int staffId) =>
@@ -187,6 +190,10 @@ class ApiConfig {
   static String servicePackages(int locationId) =>
       '/v1/locations/$locationId/service-packages';
 
+  /// Pacchetti gestionali per location: include hidden/direct_link/non online.
+  static String adminServicePackages(int locationId) =>
+      '/v1/locations/$locationId/admin/service-packages';
+
   /// Singolo pacchetto servizi
   static String servicePackage(int locationId, int packageId) =>
       '/v1/locations/$locationId/service-packages/$packageId';
@@ -194,6 +201,10 @@ class ApiConfig {
   /// Espansione pacchetto servizi
   static String servicePackageExpand(int locationId, int packageId) =>
       '/v1/locations/$locationId/service-packages/$packageId/expand';
+
+  /// Espansione gestionale pacchetto servizi.
+  static String adminServicePackageExpand(int locationId, int packageId) =>
+      '/v1/locations/$locationId/admin/service-packages/$packageId/expand';
 
   // ========== BUSINESS USERS (OPERATORS) ENDPOINTS ==========
 
@@ -251,4 +262,3 @@ class ApiConfig {
   static String staffPlanningAvailability(int staffId) =>
       '/v1/staff/$staffId/planning-availability';
 }
-

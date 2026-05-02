@@ -759,14 +759,11 @@ class ApiClient {
     return patch('/v1/admin/users/$userId', data: data);
   }
 
-  // ========== PUBLIC BROWSE ENDPOINTS ==========
+  // ========== GESTIONALE BROWSE ENDPOINTS ==========
 
-  /// GET /v1/services?location_id=X
+  /// GET /v1/locations/{location_id}/services
   Future<Map<String, dynamic>> getServices(int locationId) async {
-    return get(
-      ApiConfig.services,
-      queryParameters: {'location_id': locationId},
-    );
+    return get(ApiConfig.adminServices(locationId));
   }
 
   /// GET /v1/staff/{staff_id}/services/popular
@@ -776,17 +773,17 @@ class ApiClient {
     return get(ApiConfig.popularServices(staffId));
   }
 
-  /// GET /v1/locations/{location_id}/service-packages
+  /// GET /v1/locations/{location_id}/admin/service-packages
   Future<Map<String, dynamic>> getServicePackages(int locationId) async {
-    return get(ApiConfig.servicePackages(locationId));
+    return get(ApiConfig.adminServicePackages(locationId));
   }
 
-  /// GET /v1/locations/{location_id}/service-packages/{id}/expand
+  /// GET /v1/locations/{location_id}/admin/service-packages/{id}/expand
   Future<Map<String, dynamic>> expandServicePackage({
     required int locationId,
     required int packageId,
   }) async {
-    return get(ApiConfig.servicePackageExpand(locationId, packageId));
+    return get(ApiConfig.adminServicePackageExpand(locationId, packageId));
   }
 
   /// POST /v1/locations/{location_id}/service-packages

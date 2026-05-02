@@ -82,7 +82,7 @@ final class ServicesController
         }
 
         $directLinkScope = $this->directLinkScopeFromQuery($request, (int) $businessId, (int) $locationId);
-        $services = $this->serviceRepository->findByLocationId($locationId, $businessId, $directLinkScope);
+        $services = $this->serviceRepository->findPublicByLocationId($locationId, $businessId, $directLinkScope);
         $categories = $this->serviceRepository->getCategories($businessId, $directLinkScope);
 
         // Collect all variant IDs to load resource requirements in batch
@@ -207,6 +207,78 @@ final class ServicesController
                     'category_id' => $s['category_id'] ? (int) $s['category_id'] : null,
                     'service_variant_id' => $variantId,
                     'sort_order' => (int) ($s['sort_order'] ?? 0),
+                    'resource_requirements' => array_map(fn($req) => [
+                        'id' => (int) $req['id'],
+                        'resource_id' => (int) $req['resource_id'],
+                        'resource_name' => $req['resource_name'],
+                        'quantity' => (int) $req['quantity'],
+                    ], $requirements),
+                ];
+            }, $services),
+        ], 200);
+    }
+
+    /**
+     * GET /v1/locations/{location_id}/services
+     * Admin endpoint - returns all active services for the location.
+     */
+    public function indexByLocation(Request $request): Response
+    {
+        $locationId = (int) $request->getRouteParam('location_id');
+
+        $location = $this->locationRepo->findById($locationId);
+        if (!$location) {
+            return Response::notFound('Location not found', $request->traceId);
+        }
+
+        $businessId = (int) $location['business_id'];
+        if (!$this->hasBusinessReadAccess($request, $businessId)) {
+            return Response::notFound('Location not found', $request->traceId);
+        }
+
+        $services = $this->serviceRepository->findAdminByLocationId($locationId, $businessId);
+        $categories = $this->serviceRepository->getCategories($businessId, null, true);
+
+        $variantIds = [];
+        foreach ($services as $service) {
+            if (isset($service['service_variant_id']) && $service['service_variant_id']) {
+                $variantIds[] = (int) $service['service_variant_id'];
+            }
+        }
+
+        $resourceRequirementsByVariant = $this->variantResourceRepo->findByVariantIds($variantIds);
+
+        return Response::success([
+            'categories' => array_map(fn($category) => [
+                'id' => (int) $category['id'],
+                'business_id' => (int) ($category['business_id'] ?? $businessId),
+                'name' => (string) ($category['name'] ?? ''),
+                'description' => $category['description'] ?? null,
+                'sort_order' => (int) ($category['sort_order'] ?? 0),
+                'services' => [],
+            ], $categories),
+            'services' => array_map(function ($service) use ($businessId, $resourceRequirementsByVariant) {
+                $variantId = isset($service['service_variant_id']) ? (int) $service['service_variant_id'] : null;
+                $requirements = $variantId ? ($resourceRequirementsByVariant[$variantId] ?? []) : [];
+
+                return [
+                    'id' => (int) $service['id'],
+                    'business_id' => (int) $businessId,
+                    'name' => $service['name'],
+                    'description' => $service['description'],
+                    'duration_minutes' => (int) ($service['duration_minutes'] ?? 0),
+                    'processing_time' => (int) ($service['processing_time'] ?? 0),
+                    'blocked_time' => (int) ($service['blocked_time'] ?? 0),
+                    'price' => (float) ($service['price'] ?? 0),
+                    'color' => $service['color'],
+                    'is_active' => (bool) ($service['is_active'] ?? true),
+                    'is_bookable_online' => (bool) ($service['is_bookable_online'] ?? true),
+                    'online_visibility' => (string) ($service['online_visibility'] ?? 'public'),
+                    'is_price_starting_from' => (bool) ($service['is_price_from'] ?? false),
+                    'parallel_capacity' => (int) ($service['parallel_capacity'] ?? 1),
+                    'category_id' => $service['category_id'] ? (int) $service['category_id'] : null,
+                    'service_variant_id' => $variantId,
+                    'sort_order' => (int) ($service['sort_order'] ?? 0),
                     'resource_requirements' => array_map(fn($req) => [
                         'id' => (int) $req['id'],
                         'resource_id' => (int) $req['resource_id'],

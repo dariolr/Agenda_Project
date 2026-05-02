@@ -65,7 +65,29 @@ final class ServiceRepository
         return $result ?: null;
     }
 
-    public function findByLocationId(int $locationId, int $businessId, ?array $directLinkScope = null): array
+    public function findAdminByLocationId(int $locationId, int $businessId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            "SELECT s.id, s.business_id, s.category_id, s.name, s.description,
+                    s.is_active, s.sort_order,
+                    sv.id AS service_variant_id,
+                    sv.duration_minutes, sv.processing_time, sv.blocked_time,
+                    sv.price, sv.color_hex AS color,
+                    sv.is_bookable_online, sv.online_visibility, sv.is_price_starting_from AS is_price_from,
+                    COALESCE(sv.parallel_capacity, 1) AS parallel_capacity,
+                    sc.name AS category_name
+             FROM services s
+             JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
+             LEFT JOIN service_categories sc ON s.category_id = sc.id
+             WHERE s.business_id = ? AND s.is_active = 1 AND sv.is_active = 1
+             ORDER BY s.sort_order ASC, s.name ASC"
+        );
+        $stmt->execute([$locationId, $businessId]);
+
+        return $stmt->fetchAll();
+    }
+
+    public function findPublicByLocationId(int $locationId, int $businessId, ?array $directLinkScope = null): array
     {
         $visibilitySql = "sv.is_bookable_online = 1 AND sv.online_visibility = 'public'";
         $params = [$locationId, $businessId];
@@ -109,6 +131,11 @@ final class ServiceRepository
         $stmt->execute($params);
 
         return $stmt->fetchAll();
+    }
+
+    public function findByLocationId(int $locationId, int $businessId, ?array $directLinkScope = null): array
+    {
+        return $this->findPublicByLocationId($locationId, $businessId, $directLinkScope);
     }
 
     public function findByIds(array $serviceIds, int $locationId, int $businessId): array
