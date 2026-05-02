@@ -1404,6 +1404,8 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
   Future<void> _loadData() async {
     if (_hasFetched) return;
 
+    if (_ref.read(bookingDirectLinkBlockingErrorProvider)) return;
+
     final locationId = _ref.read(effectiveLocationIdProvider);
     final linkSlug = _ref.read(bookingDirectLinkSlugProvider);
     if (locationId <= 0) return;
@@ -1483,6 +1485,8 @@ class ServicePackagesNotifier
 
   Future<void> _loadData() async {
     if (_hasFetched) return;
+
+    if (_ref.read(bookingDirectLinkBlockingErrorProvider)) return;
 
     final locationId = _ref.read(effectiveLocationIdProvider);
     final linkSlug = _ref.read(bookingDirectLinkSlugProvider);
@@ -1708,6 +1712,11 @@ class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
     if (_isLoadingMore) return;
     _isLoadingMore = true;
 
+    if (_ref.read(bookingDirectLinkBlockingErrorProvider)) {
+      _isLoadingMore = false;
+      return;
+    }
+
     final linkSlug = _ref.read(bookingDirectLinkSlugProvider);
     if (linkSlug != null) {
       final directLinkAsync = _ref.read(bookingDirectLinkProvider);
@@ -1791,6 +1800,8 @@ final availableDatesProvider =
 
 /// Provider per gli slot disponibili
 final availableSlotsProvider = FutureProvider<List<TimeSlot>>((ref) async {
+  if (ref.watch(bookingDirectLinkBlockingErrorProvider)) return [];
+
   final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
   if (linkSlug != null) {
     final directLinkAsync = ref.read(bookingDirectLinkProvider);
@@ -1980,6 +1991,8 @@ class AvailableStaffNotifier extends StateNotifier<AsyncValue<List<Staff>>> {
     if (currentStep != BookingStep.staff) {
       return;
     }
+
+    if (_ref.read(bookingDirectLinkBlockingErrorProvider)) return;
 
     final locationId = _ref.read(effectiveLocationIdProvider);
     final linkSlug = _ref.read(bookingDirectLinkSlugProvider);

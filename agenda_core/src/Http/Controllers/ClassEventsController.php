@@ -296,6 +296,9 @@ final class ClassEventsController
 
         $classTypeId = $request->queryParam('class_type_id');
         $directLinkScope = $this->directLinkScopeFromQuery($request, $businessId, $locationId);
+        if ($directLinkScope === false) {
+            return Response::success(['items' => []]);
+        }
 
         $items = $this->classEventRepo->findPublicByBusinessAndRange(
             $businessId,
@@ -1359,18 +1362,22 @@ final class ClassEventsController
         return $value;
     }
 
-    private function directLinkScopeFromQuery(Request $request, int $businessId, ?int $locationId = null): ?array
+    /**
+     * @return array|false|null  null = no `link` param; false = link present but invalid; array = valid scope
+     */
+    private function directLinkScopeFromQuery(Request $request, int $businessId, ?int $locationId = null): array|false|null
     {
         $link = trim((string) ($request->queryParam('link') ?? ''));
         if ($link === '' || $this->directLinkRepo === null) {
             return null;
         }
 
-        $scope = $this->directLinkRepo->resolveAvailableScope($businessId, $link);
-        if (
-            $scope !== null
-            && ($scope['target_type'] ?? null) === BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY
-        ) {
+        $scope = $this->directLinkRepo->resolveAvailableScope($businessId, $link, $locationId);
+        if ($scope === null) {
+            return false;
+        }
+
+        if (($scope['target_type'] ?? null) === BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY) {
             $scope['child_visibility_scope'] = $this->directLinkRepo->resolveCategoryChildVisibilityScope(
                 $businessId,
                 (int) ($scope['target_id'] ?? 0),

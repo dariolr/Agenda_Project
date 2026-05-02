@@ -53,11 +53,13 @@ final class BookingDirectLinksController
             $targetType,
             $targetId
         );
+        $urlLocationId = (int) ($request->queryParam('location_id') ?? 0);
         $linkLocationId = (int) ($link['location_id'] ?? 0);
         if (
             $target === null
             || !$this->targetIsAvailable((string) $link['target_type'], $target)
             || !$this->locationBelongsToBusiness($businessId, $linkLocationId)
+            || ($linkLocationId > 0 && ($urlLocationId <= 0 || $urlLocationId !== $linkLocationId))
         ) {
             return $this->notAvailable(409, $request);
         }
@@ -75,7 +77,8 @@ final class BookingDirectLinksController
         if ($targetType === BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY) {
             $payload['child_visibility_scope'] = $this->directLinkRepo->resolveCategoryChildVisibilityScope(
                 $businessId,
-                $targetId
+                $targetId,
+                $linkLocationId > 0 ? $linkLocationId : null
             );
         }
 

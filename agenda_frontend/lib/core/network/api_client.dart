@@ -893,10 +893,15 @@ class ApiClient {
   Future<Map<String, dynamic>> resolveBookingDirectLink({
     required String businessSlug,
     required String linkSlug,
+    int? locationId,
   }) async {
     return get(
       '/v1/public/booking-direct-links/resolve',
-      queryParameters: {'business_slug': businessSlug, 'link': linkSlug},
+      queryParameters: {
+        'business_slug': businessSlug,
+        'link': linkSlug,
+        if (locationId != null && locationId > 0) 'location_id': locationId,
+      },
     );
   }
 

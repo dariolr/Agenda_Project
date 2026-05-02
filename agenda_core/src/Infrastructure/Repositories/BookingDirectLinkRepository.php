@@ -157,7 +157,7 @@ final class BookingDirectLinkRepository
         };
     }
 
-    public function resolveAvailableScope(int $businessId, string $slug): ?array
+    public function resolveAvailableScope(int $businessId, string $slug, ?int $enforceLocationId = null): ?array
     {
         if (!$this->isValidSlug($slug)) {
             return null;
@@ -165,6 +165,11 @@ final class BookingDirectLinkRepository
 
         $link = $this->findByBusinessAndSlug($businessId, $slug);
         if ($link === null) {
+            return null;
+        }
+
+        $linkLocationId = (int) ($link['location_id'] ?? 0);
+        if ($linkLocationId > 0 && ($enforceLocationId === null || $enforceLocationId <= 0 || $enforceLocationId !== $linkLocationId)) {
             return null;
         }
 
@@ -215,7 +220,7 @@ final class BookingDirectLinkRepository
             return true;
         }
 
-        $scope = $this->resolveAvailableScope($businessId, $slug);
+        $scope = $this->resolveAvailableScope($businessId, $slug, $locationId);
         if ($scope === null) {
             return false;
         }
@@ -265,7 +270,7 @@ final class BookingDirectLinkRepository
             return false;
         }
 
-        $scope = $this->resolveAvailableScope($businessId, $slug);
+        $scope = $this->resolveAvailableScope($businessId, $slug, $locationId);
         if ($scope === null) {
             return false;
         }
@@ -293,7 +298,12 @@ final class BookingDirectLinkRepository
 
     public function authorizesClassEvent(int $businessId, string $slug, int $classEventId): bool
     {
-        $scope = $this->resolveAvailableScope($businessId, $slug);
+        $eventLocationId = $this->loadClassEventLocationId($businessId, $classEventId);
+        if ($eventLocationId === null) {
+            return false;
+        }
+
+        $scope = $this->resolveAvailableScope($businessId, $slug, $eventLocationId);
         if ($scope === null) {
             return false;
         }
@@ -305,10 +315,6 @@ final class BookingDirectLinkRepository
         }
 
         if ($targetType === self::TARGET_SERVICE_CATEGORY) {
-            $eventLocationId = $this->loadClassEventLocationId($businessId, $classEventId);
-            if ($eventLocationId === null) {
-                return false;
-            }
             $visibilityScope = $this->resolveCategoryChildVisibilityScope($businessId, $targetId, $eventLocationId);
             if ($visibilityScope === 'empty') {
                 return false;

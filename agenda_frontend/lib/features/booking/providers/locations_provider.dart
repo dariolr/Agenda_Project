@@ -117,6 +117,7 @@ final hasMultipleLocationsProvider = Provider<bool>((ref) {
 /// 4) selezione utente.
 final effectiveLocationProvider = Provider<Location?>((ref) {
   final locationsAsync = ref.watch(locationsProvider);
+  final isDirectLinkBlocked = ref.watch(bookingDirectLinkBlockingErrorProvider);
   final directLink = ref.watch(bookingDirectLinkProvider).value;
   final urlLocationId = ref.watch(urlLocationIdProvider);
   final selectedLocation = ref.watch(selectedLocationProvider);
@@ -125,12 +126,14 @@ final effectiveLocationProvider = Provider<Location?>((ref) {
     data: (locations) {
       if (locations.isEmpty) return null;
 
-      final directLocationId = directLink?.locationId ?? 0;
-      if (directLocationId > 0) {
-        final directLocation = locations
-            .where((l) => l.id == directLocationId)
-            .firstOrNull;
-        if (directLocation != null) return directLocation;
+      if (!isDirectLinkBlocked) {
+        final directLocationId = directLink?.locationId ?? 0;
+        if (directLocationId > 0) {
+          final directLocation = locations
+              .where((l) => l.id == directLocationId)
+              .firstOrNull;
+          if (directLocation != null) return directLocation;
+        }
       }
 
       // 1) Se c'è location da URL, cerca quella

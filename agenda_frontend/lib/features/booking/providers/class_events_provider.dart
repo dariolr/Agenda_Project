@@ -36,6 +36,8 @@ class ClassEventsNotifier extends StateNotifier<AsyncValue<List<ClassEvent>>> {
   Future<void> _loadData() async {
     if (_hasFetched) return;
 
+    if (_ref.read(bookingDirectLinkBlockingErrorProvider)) return;
+
     final locationId = _ref.read(effectiveLocationIdProvider);
     final linkSlug = _ref.read(bookingDirectLinkSlugProvider);
     if (locationId <= 0) return;

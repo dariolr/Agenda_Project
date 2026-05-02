@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../app/providers/route_slug_provider.dart';
 import '../../../core/network/network_providers.dart';
 import '../domain/booking_direct_link.dart';
+import 'locations_provider.dart';
 
 final bookingDirectLinkSlugProvider =
     NotifierProvider<BookingDirectLinkSlugNotifier, String?>(
@@ -29,10 +30,12 @@ final bookingDirectLinkProvider = FutureProvider<BookingDirectLink?>((
     return null;
   }
 
+  final urlLocationId = ref.watch(urlLocationIdProvider);
   final apiClient = ref.watch(apiClientProvider);
   final data = await apiClient.resolveBookingDirectLink(
     businessSlug: businessSlug,
     linkSlug: linkSlug,
+    locationId: urlLocationId,
   );
 
   return BookingDirectLink.fromJson(data);
@@ -43,8 +46,22 @@ final bookingDirectLinkBlockingErrorProvider = Provider<bool>((ref) {
   final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
   if (linkSlug == null) return false;
 
+  // Un direct link valido richiede sempre il parametro location nell'URL
+  final urlLocationId = ref.watch(urlLocationIdProvider);
+  if (urlLocationId == null || urlLocationId <= 0) return true;
+
   final directLinkAsync = ref.watch(bookingDirectLinkProvider);
-  return directLinkAsync.hasError;
+  if (directLinkAsync.hasError) return true;
+
+  final directLink = directLinkAsync.value;
+  if (directLink == null) return false;
+
+  // Controlla se la location nell'URL è diversa da quella del direct link
+  if (directLink.locationId > 0 && urlLocationId != directLink.locationId) {
+    return true;
+  }
+
+  return false;
 });
 
 /// Provider che indica se il direct link è in risoluzione

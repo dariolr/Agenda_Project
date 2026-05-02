@@ -59,10 +59,11 @@ final class ServicePackagesController
     {
         $locationId = (int) $request->getRouteParam('location_id');
         $businessId = (int) $request->getAttribute('business_id');
-        $packages = $this->packageRepo->findByLocationId(
-            $locationId,
-            $businessId > 0 ? $this->directLinkScopeFromQuery($request, $businessId, $locationId) : null
-        );
+        $directLinkScope = $businessId > 0 ? $this->directLinkScopeFromQuery($request, $businessId, $locationId) : null;
+        if ($directLinkScope === false) {
+            return Response::success(['location_id' => $locationId, 'packages' => []]);
+        }
+        $packages = $this->packageRepo->findByLocationId($locationId, $directLinkScope);
 
         return Response::success([
             'location_id' => $locationId,
@@ -102,7 +103,11 @@ final class ServicePackagesController
         $locationId = (int) $request->getRouteParam('location_id');
         $packageId = (int) $request->getRouteParam('id');
         $businessId = (int) $request->getAttribute('business_id');
-        $scope = $businessId > 0 ? $this->directLinkScopeFromQuery($request, $businessId, $locationId) : null;
+        $rawScope = $businessId > 0 ? $this->directLinkScopeFromQuery($request, $businessId, $locationId) : null;
+        if ($rawScope === false) {
+            return Response::notFound('Package not found', $request->traceId);
+        }
+        $scope = $rawScope;
         $allowDirectPackage = $scope !== null
             && (
                 (
@@ -456,18 +461,22 @@ final class ServicePackagesController
         return $value;
     }
 
-    private function directLinkScopeFromQuery(Request $request, int $businessId, ?int $locationId = null): ?array
+    /**
+     * @return array|false|null  null = no `link` param; false = link present but invalid; array = valid scope
+     */
+    private function directLinkScopeFromQuery(Request $request, int $businessId, ?int $locationId = null): array|false|null
     {
         $link = trim((string) ($request->queryParam('link') ?? ''));
         if ($link === '') {
             return null;
         }
 
-        $scope = $this->directLinkRepo?->resolveAvailableScope($businessId, $link);
-        if (
-            $scope !== null
-            && ($scope['target_type'] ?? null) === BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY
-        ) {
+        $scope = $this->directLinkRepo?->resolveAvailableScope($businessId, $link, $locationId);
+        if ($scope === null) {
+            return false;
+        }
+
+        if (($scope['target_type'] ?? null) === BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY) {
             $scope['child_visibility_scope'] = $this->directLinkRepo?->resolveCategoryChildVisibilityScope(
                 $businessId,
                 (int) ($scope['target_id'] ?? 0),
