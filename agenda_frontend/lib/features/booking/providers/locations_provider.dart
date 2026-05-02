@@ -82,45 +82,34 @@ final selectedLocationProvider =
       SelectedLocationNotifier.new,
     );
 
-/// Flag persistente che indica se il business ha multiple locations.
-/// Una volta settato a true, rimane true per tutta la sessione.
-/// Viene aggiornato solo quando locationsProvider ha dati.
-bool _hasMultipleLocationsFlag = false;
-
-/// Flag che indica se l'utente è arrivato con location pre-selezionata via URL.
-/// Viene controllato solo UNA VOLTA all'inizio, prima che le locations vengano caricate.
-bool? _initialUrlHadLocation;
-
-/// Provider derivato: true se ci sono multiple locations E nessuna location pre-selezionata via URL iniziale.
-/// IMPORTANTE:
-/// - Se l'utente arriva con ?location=X nell'URL iniziale, lo step è nascosto
-/// - Se l'utente seleziona una location durante il flow (che aggiorna l'URL), lo step rimane visibile
+/// Provider derivato: true se il business ha più location E nessuna è vincolata
+/// da Direct link o dal query param ?location=.
+/// Completamente reattivo: si ricalcola ogni volta che cambia locationsProvider,
+/// urlLocationIdProvider o bookingDirectLinkProvider.
 final hasMultipleLocationsProvider = Provider<bool>((ref) {
-  // Controlla se c'era una location nell'URL iniziale (solo la prima volta)
-  if (_initialUrlHadLocation == null) {
-    final urlLocationId = ref.read(urlLocationIdProvider);
-    _initialUrlHadLocation = urlLocationId != null;
-  }
-
-  // Se l'utente è arrivato con location già nell'URL, nascondi lo step
-  if (_initialUrlHadLocation == true) {
-    return false;
-  }
-
-  // Se già sappiamo che ci sono multiple locations, ritorna true
-  if (_hasMultipleLocationsFlag) {
-    return true;
-  }
-
-  // Altrimenti controlla i dati attuali
   final locationsAsync = ref.watch(locationsProvider);
-  locationsAsync.whenData((locations) {
-    if (locations.length > 1) {
-      _hasMultipleLocationsFlag = true;
-    }
-  });
+  final urlLocationId = ref.watch(urlLocationIdProvider);
+  final directLink = ref.watch(bookingDirectLinkProvider).value;
 
-  return _hasMultipleLocationsFlag;
+  return locationsAsync.maybeWhen(
+    data: (locations) {
+      if (locations.length <= 1) return false;
+
+      final directLocationId = directLink?.locationId ?? 0;
+      if (directLocationId > 0 &&
+          locations.any((l) => l.id == directLocationId)) {
+        return false;
+      }
+
+      if (urlLocationId != null &&
+          locations.any((l) => l.id == urlLocationId)) {
+        return false;
+      }
+
+      return true;
+    },
+    orElse: () => false,
+  );
 });
 
 /// Provider derivato: la location effettiva da usare per il booking

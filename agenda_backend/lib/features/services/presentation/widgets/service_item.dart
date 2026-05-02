@@ -201,8 +201,8 @@ class ServiceItem extends ConsumerWidget {
                         child: readOnly
                             ? null
                             : isWide
-                            ? _buildActionIcons(context)
-                            : _buildPopupMenu(),
+                            ? _buildActionIcons(context, ref)
+                            : _buildPopupMenu(ref),
                       ),
                     ),
                   ),
@@ -215,7 +215,10 @@ class ServiceItem extends ConsumerWidget {
     );
   }
 
-  Widget _buildActionIcons(BuildContext context) {
+  Widget _buildActionIcons(BuildContext context, WidgetRef ref) {
+    final variant = ref.watch(serviceVariantByServiceIdProvider(service.id));
+    final isBookableOnline = variant?.isBookableOnline ?? true;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -232,8 +235,11 @@ class ServiceItem extends ConsumerWidget {
         if (service.onlineVisibility != 'hidden')
           IconButton(
             tooltip: context.l10n.closuresImportHolidaysCopyLinkAction,
-            icon: const Icon(Icons.link_outlined),
-            onPressed: onCopyDirectLink,
+            icon: Icon(
+              Icons.link_outlined,
+              color: isBookableOnline ? null : Theme.of(context).disabledColor,
+            ),
+            onPressed: isBookableOnline ? onCopyDirectLink : null,
           ),
         IconButton(
           tooltip: context.l10n.removeServiceFromLocationAction,
@@ -244,7 +250,7 @@ class ServiceItem extends ConsumerWidget {
     );
   }
 
-  Widget _buildPopupMenu() {
+  Widget _buildPopupMenu(WidgetRef ref) {
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert),
       onSelected: (value) {
@@ -272,6 +278,11 @@ class ServiceItem extends ConsumerWidget {
         if (service.onlineVisibility != 'hidden')
           PopupMenuItem(
             value: 'copy_direct_link',
+            enabled:
+                ref
+                    .watch(serviceVariantByServiceIdProvider(service.id))
+                    ?.isBookableOnline ??
+                true,
             child: Text(context.l10n.closuresImportHolidaysCopyLinkAction),
           ),
         PopupMenuItem(

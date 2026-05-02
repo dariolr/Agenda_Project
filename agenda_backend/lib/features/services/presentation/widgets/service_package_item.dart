@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -172,6 +171,8 @@ class ServicePackageListItem extends ConsumerWidget {
   }
 
   Widget _buildActionIcons(BuildContext context) {
+    final isBookableOnline = package.isBookableOnline;
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -183,8 +184,11 @@ class ServicePackageListItem extends ConsumerWidget {
         if (package.onlineVisibility != 'hidden')
           IconButton(
             tooltip: context.l10n.closuresImportHolidaysCopyLinkAction,
-            icon: const Icon(Icons.link_outlined),
-            onPressed: onCopyDirectLink,
+            icon: Icon(
+              Icons.link_outlined,
+              color: isBookableOnline ? null : Theme.of(context).disabledColor,
+            ),
+            onPressed: isBookableOnline ? onCopyDirectLink : null,
           ),
         IconButton(
           tooltip: context.l10n.actionDelete,
@@ -216,6 +220,7 @@ class ServicePackageListItem extends ConsumerWidget {
         if (package.onlineVisibility != 'hidden')
           PopupMenuItem(
             value: 'copy_direct_link',
+            enabled: package.isBookableOnline,
             child: Text(context.l10n.closuresImportHolidaysCopyLinkAction),
           ),
         PopupMenuItem(value: 'delete', child: Text(context.l10n.actionDelete)),

@@ -631,6 +631,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "errorServiceUnavailableSubtitle": MessageLookupByLibrary.simpleMessage(
       "Stiamo lavorando per risolvere il problema. Riprova tra qualche minuto.",
     ),
+    "errorDirectLinkInvalidTitle": MessageLookupByLibrary.simpleMessage(
+      "Link di prenotazione non valido",
+    ),
+    "errorDirectLinkInvalidMessage": MessageLookupByLibrary.simpleMessage(
+      "Il link che hai aperto non è valido, è scaduto o non è più disponibile.",
+    ),
+    "actionBackToBooking": MessageLookupByLibrary.simpleMessage(
+      "Torna alla prenotazione",
+    ),
     "errorTitle": MessageLookupByLibrary.simpleMessage("Errore"),
     "eventsSubtitle": MessageLookupByLibrary.simpleMessage(
       "Seleziona l\'evento a cui vuoi partecipare",

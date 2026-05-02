@@ -1,4 +1,3 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
@@ -40,6 +39,13 @@ class ClassEventsNotifier extends StateNotifier<AsyncValue<List<ClassEvent>>> {
     final locationId = _ref.read(effectiveLocationIdProvider);
     final linkSlug = _ref.read(bookingDirectLinkSlugProvider);
     if (locationId <= 0) return;
+
+    if (linkSlug != null) {
+      final directLinkAsync = _ref.read(bookingDirectLinkProvider);
+      if (!directLinkAsync.hasValue) {
+        return;
+      }
+    }
 
     _hasFetched = true;
 
@@ -122,4 +128,3 @@ final hasBothServicesAndEventsProvider = Provider<bool>((ref) {
       packages.isNotEmpty;
   return hasClassEvents && hasServices;
 });
-

@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
@@ -194,29 +193,27 @@ final bookingFlowProvider =
     );
 
 class BookingFlowNotifier extends Notifier<BookingFlowState> {
-  bool? _initialHasMultipleLocations;
   bool _didAutoSelectService = false;
 
   @override
   BookingFlowState build() {
-    // Determina lo step iniziale in base al numero di locations
-    // Usa ref.read per non ricostruire quando cambia
     final hasMultipleLocations = ref.read(hasMultipleLocationsProvider);
 
-    // Memorizza il valore iniziale (quando i dati sono disponibili)
-    // per evitare reset quando il provider viene rivalutato
-    _initialHasMultipleLocations ??= hasMultipleLocations;
-
-    // Ascolta cambiamenti di hasMultipleLocations solo per aggiornare lo step iniziale
-    // se siamo ancora allo step iniziale e non abbiamo ancora dati
     ref.listen<bool>(hasMultipleLocationsProvider, (previous, next) {
-      // Se è la prima volta che riceviamo true (locations caricate)
-      // e siamo ancora allo step services (default loading), vai a location
+      // Locations caricate senza vincolo: spostati allo step sede se non abbiamo
+      // ancora scelto servizi
       if (previous == false &&
           next == true &&
           state.currentStep == BookingStep.services &&
           state.request.services.isEmpty) {
         state = state.copyWith(currentStep: BookingStep.location);
+      }
+      // Location vincolata da direct link o URL param arrivato in ritardo:
+      // salta lo step sede e vai ai servizi
+      if (previous == true &&
+          next == false &&
+          state.currentStep == BookingStep.location) {
+        state = state.copyWith(currentStep: BookingStep.services);
       }
     });
 
@@ -404,8 +401,15 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         ? BookingStep.location
         : BookingStep.services;
     state = BookingFlowState(currentStep: initialStep);
-    // Reset anche la location selezionata
-    ref.read(selectedLocationProvider.notifier).clear();
+
+    // Non cancellare la location utente se è già vincolata da direct link o URL
+    final urlLocationId = ref.read(urlLocationIdProvider);
+    final directLink = ref.read(bookingDirectLinkProvider).value;
+    final isLocationConstrained =
+        (directLink?.locationId ?? 0) > 0 || urlLocationId != null;
+    if (!isLocationConstrained) {
+      ref.read(selectedLocationProvider.notifier).clear();
+    }
     // Note: availableDatesProvider si resetta automaticamente via listeners
     // quando cambiano services/staff
   }
@@ -1404,6 +1408,13 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
     final linkSlug = _ref.read(bookingDirectLinkSlugProvider);
     if (locationId <= 0) return;
 
+    if (linkSlug != null) {
+      final directLinkAsync = _ref.read(bookingDirectLinkProvider);
+      if (!directLinkAsync.hasValue) {
+        return;
+      }
+    }
+
     _hasFetched = true;
 
     try {
@@ -1476,6 +1487,13 @@ class ServicePackagesNotifier
     final locationId = _ref.read(effectiveLocationIdProvider);
     final linkSlug = _ref.read(bookingDirectLinkSlugProvider);
     if (locationId <= 0) return;
+
+    if (linkSlug != null) {
+      final directLinkAsync = _ref.read(bookingDirectLinkProvider);
+      if (!directLinkAsync.hasValue) {
+        return;
+      }
+    }
 
     _hasFetched = true;
 
@@ -1690,6 +1708,15 @@ class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
     if (_isLoadingMore) return;
     _isLoadingMore = true;
 
+    final linkSlug = _ref.read(bookingDirectLinkSlugProvider);
+    if (linkSlug != null) {
+      final directLinkAsync = _ref.read(bookingDirectLinkProvider);
+      if (!directLinkAsync.hasValue) {
+        _isLoadingMore = false;
+        return;
+      }
+    }
+
     final locationId = _ref.read(effectiveLocationIdProvider);
     final maxDays = _ref.read(maxBookingAdvanceDaysProvider);
     final bookingState = _ref.read(bookingFlowProvider);
@@ -1764,6 +1791,14 @@ final availableDatesProvider =
 
 /// Provider per gli slot disponibili
 final availableSlotsProvider = FutureProvider<List<TimeSlot>>((ref) async {
+  final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
+  if (linkSlug != null) {
+    final directLinkAsync = ref.read(bookingDirectLinkProvider);
+    if (!directLinkAsync.hasValue) {
+      return [];
+    }
+  }
+
   final repository = ref.read(bookingRepositoryProvider);
   final locationId = ref.watch(effectiveLocationIdProvider);
   final bookingState = ref.watch(bookingFlowProvider);
@@ -1888,6 +1923,14 @@ final availableSlotsProvider = FutureProvider<List<TimeSlot>>((ref) async {
 
 /// Provider per la prima data disponibile
 final firstAvailableDateProvider = FutureProvider<DateTime>((ref) async {
+  final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
+  if (linkSlug != null) {
+    final directLinkAsync = ref.read(bookingDirectLinkProvider);
+    if (!directLinkAsync.hasValue) {
+      return ref.read(locationTodayProvider).add(const Duration(days: 1));
+    }
+  }
+
   final repository = ref.read(bookingRepositoryProvider);
   final locationId = ref.watch(effectiveLocationIdProvider);
   final bookingState = ref.watch(bookingFlowProvider);
@@ -1939,6 +1982,18 @@ class AvailableStaffNotifier extends StateNotifier<AsyncValue<List<Staff>>> {
     }
 
     final locationId = _ref.read(effectiveLocationIdProvider);
+    final linkSlug = _ref.read(bookingDirectLinkSlugProvider);
+    if (locationId <= 0) {
+      return;
+    }
+
+    if (linkSlug != null) {
+      final directLinkAsync = _ref.read(bookingDirectLinkProvider);
+      if (!directLinkAsync.hasValue) {
+        return;
+      }
+    }
+
     final bookingState = _ref.read(bookingFlowProvider);
     final serviceIds = bookingState.request.services.map((s) => s.id).toList();
 

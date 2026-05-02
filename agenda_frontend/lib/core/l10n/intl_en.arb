@@ -63,6 +63,9 @@
     }
   },
   "errorServiceUnavailableSubtitle": "We are working to fix the issue. Please try again in a few minutes.",
+  "errorDirectLinkInvalidTitle": "Invalid booking link",
+  "errorDirectLinkInvalidMessage": "The link you opened is not valid, has expired, or is no longer available.",
+  "actionBackToBooking": "Back to booking",
   
   "authWelcome": "Welcome",
   "authLoginTitle": "Login to your account",

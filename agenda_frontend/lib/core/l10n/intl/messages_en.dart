@@ -614,6 +614,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "errorServiceUnavailableSubtitle": MessageLookupByLibrary.simpleMessage(
       "We are working to fix the issue. Please try again in a few minutes.",
     ),
+    "errorDirectLinkInvalidTitle": MessageLookupByLibrary.simpleMessage(
+      "Invalid booking link",
+    ),
+    "errorDirectLinkInvalidMessage": MessageLookupByLibrary.simpleMessage(
+      "The link you opened is not valid, has expired, or is no longer available.",
+    ),
+    "actionBackToBooking": MessageLookupByLibrary.simpleMessage(
+      "Back to booking",
+    ),
     "errorTitle": MessageLookupByLibrary.simpleMessage("Error"),
     "eventsSubtitle": MessageLookupByLibrary.simpleMessage(
       "Select the event you want to attend",

@@ -63,6 +63,9 @@
     }
   },
   "errorServiceUnavailableSubtitle": "Stiamo lavorando per risolvere il problema. Riprova tra qualche minuto.",
+  "errorDirectLinkInvalidTitle": "Link di prenotazione non valido",
+  "errorDirectLinkInvalidMessage": "Il link che hai aperto non è valido, è scaduto o non è più disponibile.",
+  "actionBackToBooking": "Torna alla prenotazione",
   
   "authWelcome": "Benvenuto",
   "authLoginTitle": "Accedi al tuo account",

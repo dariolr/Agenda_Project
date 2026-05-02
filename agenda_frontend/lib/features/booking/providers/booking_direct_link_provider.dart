@@ -36,4 +36,22 @@ final bookingDirectLinkProvider = FutureProvider<BookingDirectLink?>((
   );
 
   return BookingDirectLink.fromJson(data);
+}, retry: null);
+
+/// Provider che indica se c'è un errore bloccante per il direct link
+final bookingDirectLinkBlockingErrorProvider = Provider<bool>((ref) {
+  final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
+  if (linkSlug == null) return false;
+
+  final directLinkAsync = ref.watch(bookingDirectLinkProvider);
+  return directLinkAsync.hasError;
+});
+
+/// Provider che indica se il direct link è in risoluzione
+final bookingDirectLinkIsResolvingProvider = Provider<bool>((ref) {
+  final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
+  if (linkSlug == null) return false;
+
+  final directLinkAsync = ref.watch(bookingDirectLinkProvider);
+  return directLinkAsync.isLoading;
 });

@@ -1,17 +1,16 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/providers/form_factor_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
-import '../../../auth/providers/auth_provider.dart';
-import '../../../booking/providers/business_provider.dart';
 import '../../../../core/network/network_providers.dart';
 import '../../../../core/widgets/app_loading_screen.dart';
 import '../../../../core/widgets/booking_app_bar.dart';
-import '../../providers/booking_provider.dart';
+import '../../../auth/providers/auth_provider.dart';
+import '../../../booking/providers/business_provider.dart';
 import '../../providers/booking_direct_link_provider.dart';
+import '../../providers/booking_provider.dart';
 import '../../providers/class_events_provider.dart';
 import '../../providers/locations_provider.dart';
 import '../widgets/booking_step_indicator.dart';
@@ -179,14 +178,14 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       );
     }
 
-    if (directLinkAsync.isLoading) {
-      return const AppLoadingScreen();
-    }
+    final isDirectLinkBlockingError = ref.watch(
+      bookingDirectLinkBlockingErrorProvider,
+    );
+    final isDirectLinkResolving = ref.watch(
+      bookingDirectLinkIsResolvingProvider,
+    );
 
-    if (directLinkAsync.hasError) {
-      final message = Localizations.localeOf(context).languageCode == 'it'
-          ? 'Questo link di prenotazione non è più disponibile.'
-          : 'This booking link is no longer available.';
+    if (isDirectLinkBlockingError) {
       return Scaffold(
         appBar: const BookingAppBar(showUserMenu: false),
         body: Center(
@@ -195,17 +194,53 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.link_off, size: 64),
+                Icon(
+                  Icons.link_off,
+                  size: 64,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withAlpha((0.4 * 255).round()),
+                ),
                 const SizedBox(height: 16),
                 Text(
-                  message,
+                  l10n.errorDirectLinkInvalidTitle,
                   textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    l10n.errorDirectLinkInvalidMessage,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withAlpha((0.6 * 255).round()),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    final slug = businessSlug ?? '';
+                    if (slug.isEmpty) return;
+                    context.go('/$slug/booking');
+                  },
+                  icon: const Icon(Icons.arrow_back),
+                  label: Text(l10n.actionBackToBooking),
                 ),
               ],
             ),
           ),
         ),
+      );
+    }
+
+    if (isDirectLinkResolving) {
+      return const Scaffold(
+        appBar: BookingAppBar(showUserMenu: false),
+        body: Center(child: CircularProgressIndicator()),
       );
     }
 
@@ -328,4 +363,3 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     return null;
   }
 }
-

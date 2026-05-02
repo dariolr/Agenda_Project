@@ -504,6 +504,36 @@ class L10n {
     );
   }
 
+  /// `Invalid booking link`
+  String get errorDirectLinkInvalidTitle {
+    return Intl.message(
+      'Invalid booking link',
+      name: 'errorDirectLinkInvalidTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The link you opened is not valid, has expired, or is no longer available.`
+  String get errorDirectLinkInvalidMessage {
+    return Intl.message(
+      'The link you opened is not valid, has expired, or is no longer available.',
+      name: 'errorDirectLinkInvalidMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Back to booking`
+  String get actionBackToBooking {
+    return Intl.message(
+      'Back to booking',
+      name: 'actionBackToBooking',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Welcome`
   String get authWelcome {
     return Intl.message('Welcome', name: 'authWelcome', desc: '', args: []);
