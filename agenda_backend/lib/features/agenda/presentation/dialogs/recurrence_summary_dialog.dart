@@ -527,7 +527,7 @@ class _RecurrencePreviewDialogState extends State<RecurrencePreviewDialog> {
   static const String _excludedForConflictText =
       'Esclusa per presenza altro appuntamento';
   static const String _excludedForUnavailableText =
-      "Esclusa in quanto l'appuntamento cade in fascia oraria impostata come non disponibile";
+      "Esclusa in quanto l'appuntamento cade in fascia oraria impostata come non disponibile/festività";
 
   late Set<int> _excludedIndices;
 

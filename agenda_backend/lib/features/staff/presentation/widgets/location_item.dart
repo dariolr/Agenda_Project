@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
@@ -51,112 +50,122 @@ class LocationItem extends StatelessWidget {
     final isEmptyLocation = staff.isEmpty;
     final locationBorderColor = colorScheme.outlineVariant.withOpacity(0.16);
 
+    final headerContent = Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: colorScheme.surface,
+        border: showBody
+            ? Border(bottom: BorderSide(color: locationBorderColor))
+            : null,
+        borderRadius: BorderRadius.vertical(
+          top: const Radius.circular(16),
+          bottom: showBody ? Radius.zero : const Radius.circular(16),
+        ),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        location.name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'ID: ${location.id}',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (location.address != null && location.address!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      location.address!,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodySmall?.copyWith(color: Colors.black54),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (showDefaultActions && !readOnly) ...[
+                IconButton(
+                  tooltip: context.l10n.teamAddStaff,
+                  icon: const Icon(Icons.person_add_alt_outlined),
+                  onPressed: onAddStaff,
+                ),
+                if (onManageResources != null)
+                  IconButton(
+                    tooltip: context.l10n.resourcesTitle,
+                    icon: const Icon(Icons.inventory_2_outlined),
+                    onPressed: onManageResources,
+                  ),
+                IconButton(
+                  tooltip: context.l10n.actionEdit,
+                  icon: const Icon(Icons.edit_outlined),
+                  onPressed: onEditLocation,
+                ),
+                IconButton(
+                  tooltip: context.l10n.actionDelete,
+                  icon: const Icon(Icons.delete_outline, color: Colors.red),
+                  onPressed: onDeleteLocation,
+                ),
+              ],
+              if (headerTrailing != null) headerTrailing!,
+            ],
+          ),
+        ],
+      ),
+    );
+
+    final header = onTap == null
+        ? headerContent
+        : Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: onTap,
+              borderRadius: BorderRadius.vertical(
+                top: const Radius.circular(16),
+              ),
+              child: headerContent,
+            ),
+          );
+
     final content = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Container(
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: colorScheme.surface,
-            border: showBody
-                ? Border(
-                    bottom: BorderSide(color: locationBorderColor),
-                  )
-                : null,
-            borderRadius: BorderRadius.vertical(
-              top: const Radius.circular(16),
-              bottom: showBody ? Radius.zero : const Radius.circular(16),
-            ),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            location.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w500,
-                                ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: colorScheme.surfaceContainerHighest,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            'ID: ${location.id}',
-                            style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(
-                                  color: colorScheme.onSurfaceVariant,
-                                  fontFamily: 'monospace',
-                                ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (location.address != null && location.address!.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          location.address!,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: Colors.black54,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 12),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                    if (showDefaultActions && !readOnly) ...[
-                      IconButton(
-                        tooltip: context.l10n.teamAddStaff,
-                        icon: const Icon(Icons.person_add_alt_outlined),
-                        onPressed: onAddStaff,
-                      ),
-                    if (onManageResources != null)
-                      IconButton(
-                        tooltip: context.l10n.resourcesTitle,
-                        icon: const Icon(Icons.inventory_2_outlined),
-                        onPressed: onManageResources,
-                      ),
-                    IconButton(
-                      tooltip: context.l10n.actionEdit,
-                      icon: const Icon(Icons.edit_outlined),
-                      onPressed: onEditLocation,
-                    ),
-                    IconButton(
-                      tooltip: context.l10n.actionDelete,
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: onDeleteLocation,
-                    ),
-                  ],
-                  if (headerTrailing != null) headerTrailing!,
-                ],
-              ),
-            ],
-          ),
-        ),
+        header,
         if (showBody)
           ClipRRect(
             borderRadius: const BorderRadius.vertical(
@@ -187,17 +196,6 @@ class LocationItem extends StatelessWidget {
       ],
     );
 
-    final decoratedChild = onTap == null
-        ? content
-        : Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: BorderRadius.circular(16),
-              child: content,
-            ),
-          );
-
     return Container(
       margin: const EdgeInsets.only(bottom: 24),
       decoration: BoxDecoration(
@@ -212,8 +210,7 @@ class LocationItem extends StatelessWidget {
           ),
         ],
       ),
-      child: decoratedChild,
+      child: content,
     );
   }
 }
-

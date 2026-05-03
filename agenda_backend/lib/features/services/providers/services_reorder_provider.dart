@@ -10,12 +10,7 @@ import 'service_packages_provider.dart';
 import 'services_provider.dart';
 import 'services_sorted_providers.dart';
 
-enum ServicesReorderMode {
-  none,
-  categories,
-  servicesAndPackages,
-  classTypes,
-}
+enum ServicesReorderMode { none, categories, servicesAndPackages, classTypes }
 
 /// Gestisce la modalità riordino e applica gli ordinamenti aggiornando sortOrder
 class ServicesReorderNotifier extends Notifier<bool> {
@@ -57,9 +52,13 @@ class ServicesReorderNotifier extends Notifier<bool> {
     final empty = <ServiceCategory>[];
     for (final c in allCats) {
       final hasServices = services.any((s) => s.categoryId == c.id);
-      final hasPackages =
-          ref.read(servicePackagesByCategoryProvider(c.id)).isNotEmpty;
-      if (hasServices || hasPackages) {
+      final hasPackages = ref
+          .read(servicePackagesByCategoryProvider(c.id))
+          .isNotEmpty;
+      final hasClassTypes = ref
+          .read(classTypesByCategoryProvider(c.id))
+          .isNotEmpty;
+      if (hasServices || hasPackages || hasClassTypes) {
         nonEmpty.add(c);
       } else {
         empty.add(c);
@@ -138,11 +137,11 @@ class ServicesReorderNotifier extends Notifier<bool> {
   ) async {
     final servicesNotifier = ref.read(servicesProvider.notifier);
     final packagesNotifier = ref.read(servicePackagesProvider.notifier);
-    final currentServices =
-        [...(ref.read(servicesProvider).value ?? const <Service>[])];
+    final currentServices = [
+      ...(ref.read(servicesProvider).value ?? const <Service>[]),
+    ];
     final currentPackages = [
-      ...(ref.read(servicePackagesProvider).value ??
-          const <ServicePackage>[]),
+      ...(ref.read(servicePackagesProvider).value ?? const <ServicePackage>[]),
     ];
 
     final updatedServicesById = <int, Service>{};
@@ -169,12 +168,10 @@ class ServicesReorderNotifier extends Notifier<bool> {
     });
 
     final updatedServices = [
-      for (final s in currentServices)
-        updatedServicesById[s.id] ?? s,
+      for (final s in currentServices) updatedServicesById[s.id] ?? s,
     ];
     final updatedPackages = [
-      for (final p in currentPackages)
-        updatedPackagesById[p.id] ?? p,
+      for (final p in currentPackages) updatedPackagesById[p.id] ?? p,
     ];
 
     servicesNotifier.setServices(updatedServices);

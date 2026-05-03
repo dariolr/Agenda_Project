@@ -16,10 +16,10 @@ import '../../../core/utils/color_utils.dart';
 import '../../../core/utils/price_utils.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/feedback_dialog.dart';
-import '../../auth/providers/current_business_user_provider.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../../agenda/providers/resource_providers.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import '../../class_events/presentation/class_events_screen.dart';
 import '../../class_events/providers/class_events_providers.dart';
 import '../domain/appointment_type_filter_option.dart';
@@ -108,26 +108,28 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final classTypes =
         ref.watch(classTypesProvider).value ?? const <ClassType>[];
     final location = ref.watch(currentLocationProvider);
+    final classTypesForLocation = classTypes.where((classType) {
+      final hasCategory = (classType.serviceCategoryId ?? 0) > 0;
+      return classType.isActive &&
+          hasCategory &&
+          classType.locationIds.contains(location.id);
+    }).toList();
     final serviceById = {for (final s in services) s.id: s};
-    final hasServiceOrPackageEntries =
-        services.any((s) => s.categoryId > 0) ||
-        packages.any((package) {
-          var categoryId = package.categoryId;
-          if (categoryId == 0 && package.items.isNotEmpty) {
-            categoryId =
-                serviceById[package.items.first.serviceId]?.categoryId ?? 0;
-          }
-          return categoryId > 0;
-        });
-    final hasServicesForLocation = services.any((s) => s.categoryId > 0);
-    final hasPackagesForLocation = packages.any((package) {
-      var categoryId = package.categoryId;
-      if (categoryId == 0 && package.items.isNotEmpty) {
-        categoryId =
-            serviceById[package.items.first.serviceId]?.categoryId ?? 0;
-      }
-      return categoryId > 0;
+    final hasServicesForLocation = services.any((service) {
+      if (!service.isActive) return false;
+      final serviceLocationId = service.locationId;
+      return serviceLocationId == null ||
+          location.id <= 0 ||
+          serviceLocationId == location.id;
     });
+    final hasPackagesForLocation = packages.any((package) {
+      if (!package.isActive) return false;
+      return package.locationId == 0 ||
+          location.id <= 0 ||
+          package.locationId == location.id;
+    });
+    final hasServiceOrPackageEntries =
+        hasServicesForLocation || hasPackagesForLocation;
     final hasClassesForLocation = classTypes.any((classType) {
       final hasCategory = (classType.serviceCategoryId ?? 0) > 0;
       final isEnabledForLocation = classType.locationIds.contains(location.id);
@@ -226,9 +228,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       }
       return !categoriesWithServicesElsewhere.contains(category.id);
     }).toList();
-    final canReorderClassTypes =
-        classTypes.isNotEmpty &&
-        (classTypes.length > 1 || categories.length > 1);
+    final canReorderClassTypes = classTypesForLocation.length > 1;
     final hasOnlyClassTypesForReorder =
         canReorderClassTypes && !hasServiceOrPackageEntries;
 
@@ -238,7 +238,12 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final canReorderCategories = categories.length >= 2;
     final canReorderServicesAndPackages = hasServiceOrPackageEntries;
     final canReorderClasses = canReorderClassTypes;
-    if (reorderMode == ServicesReorderMode.categories &&
+    final hasActiveAppointmentTypesForLocation =
+        hasServiceOrPackageEntries || classTypesForLocation.isNotEmpty;
+
+    if (!hasActiveAppointmentTypesForLocation) {
+      reorderMode = ServicesReorderMode.none;
+    } else if (reorderMode == ServicesReorderMode.categories &&
         !canReorderCategories) {
       reorderMode = ServicesReorderMode.none;
     } else if (reorderMode == ServicesReorderMode.servicesAndPackages &&
@@ -716,11 +721,20 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       for (final c in cats)
         c.id: ref.watch(servicePackagesByCategoryProvider(c.id)).length,
     };
+    final classTypesByCategory = <int, bool>{
+      for (final c in cats)
+        c.id: ref.watch(classTypesByCategoryProvider(c.id)).isNotEmpty,
+    };
     final isNonEmpty = <int, bool>{
       for (final c in cats) c.id: services.any((s) => s.categoryId == c.id),
     };
     for (final entry in packagesByCategory.entries) {
       if (entry.value > 0) {
+        isNonEmpty[entry.key] = true;
+      }
+    }
+    for (final entry in classTypesByCategory.entries) {
+      if (entry.value) {
         isNonEmpty[entry.key] = true;
       }
     }
@@ -1156,6 +1170,11 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       return topColor;
     }
 
+    final services = ref.watch(servicesProvider).value ?? const <Service>[];
+    final hasActiveServicesForLocation = services.any(
+      (s) => s.isActive && s.categoryId > 0,
+    );
+
     return CategoriesList(
       categories: cats,
       isWide: isWide,
@@ -1171,6 +1190,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       ),
       onAddPackage: (category) =>
           _openPackageDialog(context, ref, preselectedCategoryId: category.id),
+      showPackageAddOption: hasActiveServicesForLocation,
       onEditCategory: (category) =>
           showCategoryDialog(context, ref, category: category),
       onCopyCategoryDirectLink: (category) => _copyDirectBookingLink(
@@ -1316,12 +1336,6 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
             serviceCategoryId: source.serviceCategoryId,
             locationIds: source.locationIds,
           );
-      if (!context.mounted) return;
-      FeedbackDialog.showSuccess(
-        context,
-        title: l10n.classTypesCloneSuccessTitle,
-        message: l10n.classTypesCloneSuccessMessage,
-      );
     } catch (error) {
       if (!context.mounted) return;
       FeedbackDialog.showError(

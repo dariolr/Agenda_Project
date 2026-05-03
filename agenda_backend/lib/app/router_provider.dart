@@ -59,6 +59,7 @@ bool _isRestorableLocation(String location) {
 
   if (path == '/login') return false;
   if (path == '/change-password') return false;
+  if (path == '/staff-availability') return false;
   if (path == '/auth/meta-whatsapp-callback') return false;
   if (path.startsWith('/invitation')) return false;
   if (path.startsWith('/reset-password')) return false;

@@ -1,10 +1,9 @@
-
 import 'package:flutter/material.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/class_type.dart';
-import '../../../../core/models/service_category.dart';
 import '../../../../core/models/service.dart';
+import '../../../../core/models/service_category.dart';
 import '../../../../core/models/service_package.dart';
 import '../../providers/services_sorted_providers.dart';
 import 'empty_state.dart';
@@ -24,6 +23,7 @@ class CategoryItem extends StatefulWidget {
   final VoidCallback onAddPackage;
   final VoidCallback onAddClassType;
   final VoidCallback onEditCategory;
+  final bool showPackageAddOption;
   final VoidCallback onCopyDirectLink;
   final VoidCallback onDeleteCategory;
   final VoidCallback onDeleteBlocked;
@@ -58,6 +58,7 @@ class CategoryItem extends StatefulWidget {
     required this.onAddPackage,
     required this.onAddClassType,
     required this.onEditCategory,
+    this.showPackageAddOption = true,
     required this.onCopyDirectLink,
     required this.onDeleteCategory,
     required this.onDeleteBlocked,
@@ -106,8 +107,7 @@ class _CategoryItemState extends State<CategoryItem> {
   @override
   Widget build(BuildContext context) {
     final isEmptyCategory =
-        widget.entries.isEmpty ||
-        widget.entries.every((e) => !e.isActive);
+        widget.entries.isEmpty || widget.entries.every((e) => !e.isActive);
     final categoryBorderColor = widget.colorScheme.outlineVariant.withOpacity(
       0.16,
     );
@@ -135,145 +135,158 @@ class _CategoryItemState extends State<CategoryItem> {
             onEnter: (_) => setState(() => _isHeaderHovered = true),
             onExit: (_) => setState(() => _isHeaderHovered = false),
             child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: widget.readOnly
-                ? (widget.isCollapsible
-                      ? () => setState(() => _isExpanded = !_isExpanded)
-                      : null)
-                : widget.onEditCategory,
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                color: _isHeaderHovered
-                    ? widget.colorScheme.primaryContainer.withOpacity(0.1)
-                    : widget.colorScheme.surface,
-                border: _isExpanded
-                    ? Border(bottom: BorderSide(color: categoryBorderColor))
-                    : null,
-                borderRadius: BorderRadius.vertical(
-                  top: const Radius.circular(16),
-                  bottom: _isExpanded ? Radius.zero : const Radius.circular(16),
+              behavior: HitTestBehavior.opaque,
+              onTap: widget.readOnly
+                  ? (widget.isCollapsible
+                        ? () => setState(() => _isExpanded = !_isExpanded)
+                        : null)
+                  : widget.onEditCategory,
+              child: Container(
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: _isHeaderHovered
+                      ? widget.colorScheme.primaryContainer.withOpacity(0.1)
+                      : widget.colorScheme.surface,
+                  border: _isExpanded
+                      ? Border(bottom: BorderSide(color: categoryBorderColor))
+                      : null,
+                  borderRadius: BorderRadius.vertical(
+                    top: const Radius.circular(16),
+                    bottom: _isExpanded
+                        ? Radius.zero
+                        : const Radius.circular(16),
+                  ),
                 ),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-              child: Row(
-                children: [
-                  // Titolo + descrizione
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Flexible(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 18,
+                  vertical: 14,
+                ),
+                child: Row(
+                  children: [
+                    // Titolo + descrizione
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  widget.category.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                              if (widget.isCollapsible &&
+                                  widget.entries.isNotEmpty) ...[
+                                const SizedBox(width: 8),
+                                _CountChip(count: widget.entries.length),
+                              ],
+                            ],
+                          ),
+                          if (widget.category.description != null)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4),
                               child: Text(
-                                widget.category.name,
-                                maxLines: 1,
+                                widget.category.description!,
+                                maxLines: 2,
                                 overflow: TextOverflow.ellipsis,
-                                style: Theme.of(context).textTheme.titleMedium
-                                    ?.copyWith(fontWeight: FontWeight.w500),
+                                style: Theme.of(context).textTheme.bodySmall
+                                    ?.copyWith(color: Colors.black54),
                               ),
                             ),
-                            if (widget.isCollapsible &&
-                                widget.entries.isNotEmpty) ...[
-                              const SizedBox(width: 8),
-                              _CountChip(count: widget.entries.length),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Pulsanti azione + chevron
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (!widget.readOnly) ...[
+                          // Menu aggiungi: servizio / pacchetto / tipo classe
+                          PopupMenuButton<_AddMenuAction>(
+                            tooltip: context.l10n.addAppointmentTypeTooltip,
+                            icon: const Icon(Icons.add),
+                            borderRadius: BorderRadius.circular(10),
+                            onSelected: (action) {
+                              switch (action) {
+                                case _AddMenuAction.service:
+                                  widget.onAddService();
+                                case _AddMenuAction.package:
+                                  widget.onAddPackage();
+                                case _AddMenuAction.classType:
+                                  widget.onAddClassType();
+                              }
+                            },
+                            itemBuilder: (_) => [
+                              PopupMenuItem(
+                                value: _AddMenuAction.service,
+                                child: Text(
+                                  context.l10n.servicesNewServiceMenu,
+                                ),
+                              ),
+                              if (widget.showPackageAddOption)
+                                PopupMenuItem(
+                                  value: _AddMenuAction.package,
+                                  child: Text(
+                                    context.l10n.servicePackageNewMenu,
+                                  ),
+                                ),
+                              if (widget.showClassTypeAddOption)
+                                PopupMenuItem(
+                                  value: _AddMenuAction.classType,
+                                  child: Text(
+                                    context.l10n.classTypesCreateTitle,
+                                  ),
+                                ),
                             ],
-                          ],
-                        ),
-                        if (widget.category.description != null)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 4),
-                            child: Text(
-                              widget.category.description!,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(color: Colors.black54),
+                          ),
+                          IconButton(
+                            tooltip: context.l10n.actionEdit,
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: widget.onEditCategory,
+                          ),
+                          IconButton(
+                            tooltip: context
+                                .l10n
+                                .closuresImportHolidaysCopyLinkAction,
+                            icon: const Icon(Icons.link_outlined),
+                            onPressed: widget.onCopyDirectLink,
+                          ),
+                          if (isEmptyCategory)
+                            IconButton(
+                              tooltip: context.l10n.actionDelete,
+                              icon: const Icon(
+                                Icons.delete_outline,
+                                color: Colors.red,
+                              ),
+                              onPressed: widget.onDeleteCategory,
+                            ),
+                        ],
+                        if (widget.isCollapsible)
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () =>
+                                setState(() => _isExpanded = !_isExpanded),
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: AnimatedRotation(
+                                turns: _isExpanded ? 0.25 : 0,
+                                duration: const Duration(milliseconds: 250),
+                                child: const Icon(Icons.chevron_right),
+                              ),
                             ),
                           ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 12),
-
-                  // Pulsanti azione + chevron
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (!widget.readOnly) ...[
-                        // Menu aggiungi: servizio / pacchetto / tipo classe
-                        PopupMenuButton<_AddMenuAction>(
-                          tooltip: context.l10n.addAppointmentTypeTooltip,
-                          icon: const Icon(Icons.add),
-                          borderRadius: BorderRadius.circular(10),
-                          onSelected: (action) {
-                            switch (action) {
-                              case _AddMenuAction.service:
-                                widget.onAddService();
-                              case _AddMenuAction.package:
-                                widget.onAddPackage();
-                              case _AddMenuAction.classType:
-                                widget.onAddClassType();
-                            }
-                          },
-                          itemBuilder: (_) => [
-                            PopupMenuItem(
-                              value: _AddMenuAction.service,
-                              child: Text(context.l10n.servicesNewServiceMenu),
-                            ),
-                            PopupMenuItem(
-                              value: _AddMenuAction.package,
-                              child: Text(context.l10n.servicePackageNewMenu),
-                            ),
-                            if (widget.showClassTypeAddOption)
-                              PopupMenuItem(
-                                value: _AddMenuAction.classType,
-                                child: Text(context.l10n.classTypesCreateTitle),
-                              ),
-                          ],
-                        ),
-                        IconButton(
-                          tooltip: context.l10n.actionEdit,
-                          icon: const Icon(Icons.edit_outlined),
-                          onPressed: widget.onEditCategory,
-                        ),
-                        IconButton(
-                          tooltip: context
-                              .l10n
-                              .closuresImportHolidaysCopyLinkAction,
-                          icon: const Icon(Icons.link_outlined),
-                          onPressed: widget.onCopyDirectLink,
-                        ),
-                        if (isEmptyCategory)
-                          IconButton(
-                            tooltip: context.l10n.actionDelete,
-                            icon: const Icon(
-                              Icons.delete_outline,
-                              color: Colors.red,
-                            ),
-                            onPressed: widget.onDeleteCategory,
-                          ),
-                      ],
-                      if (widget.isCollapsible)
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () => setState(() => _isExpanded = !_isExpanded),
-                          child: Padding(
-                            padding: const EdgeInsets.all(4),
-                            child: AnimatedRotation(
-                              turns: _isExpanded ? 0.25 : 0,
-                              duration: const Duration(milliseconds: 250),
-                              child: const Icon(Icons.chevron_right),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
           ),
 
           // Body: lista servizi o stato vuoto (animato)

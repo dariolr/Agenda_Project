@@ -35,15 +35,21 @@ class ServiceCategoryEntry {
   int get id => service?.id ?? package?.id ?? classType!.id;
 
   int get categoryId =>
-      service?.categoryId ?? package?.categoryId ?? classType?.serviceCategoryId ?? 0;
+      service?.categoryId ??
+      package?.categoryId ??
+      classType?.serviceCategoryId ??
+      0;
 
   /// ClassType entries sort last (no backend sortOrder), then alphabetically.
   int get sortOrder => service?.sortOrder ?? package?.sortOrder ?? 99999;
 
   String get name => service?.name ?? package?.name ?? classType!.name;
 
-  String get key =>
-      isService ? 'service-$id' : isPackage ? 'package-$id' : 'classtype-$id';
+  String get key => isService
+      ? 'service-$id'
+      : isPackage
+      ? 'package-$id'
+      : 'classtype-$id';
 }
 
 /// ClassType filtrati per categoria (esclude quelli soft-deleted).
@@ -57,7 +63,7 @@ final classTypesByCategoryProvider = Provider.family<List<ClassType>, int>((
     ..sort((a, b) {
       final byOrder = a.sortOrder.compareTo(b.sortOrder);
       if (byOrder != 0) return byOrder;
-      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+      return a.id.compareTo(b.id);
     });
 });
 
@@ -71,7 +77,8 @@ final sortedCategoriesProvider = Provider<List<ServiceCategory>>((ref) {
   // Pre-calcolo: per ogni categoria verifichiamo se ha contenuto.
   final hasServicesMap = <int, bool>{
     for (final c in cats)
-      c.id: ref.watch(servicesByCategoryProvider(c.id)).isNotEmpty ||
+      c.id:
+          ref.watch(servicesByCategoryProvider(c.id)).isNotEmpty ||
           ref.watch(servicePackagesByCategoryProvider(c.id)).isNotEmpty ||
           ref.watch(classTypesByCategoryProvider(c.id)).isNotEmpty,
   };

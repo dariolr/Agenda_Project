@@ -1,22 +1,24 @@
 import 'dart:async';
-import 'package:agenda_backend/core/widgets/app_dividers.dart';
 
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/widgets/staff_circle_avatar.dart';
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/availability_exception.dart';
+import 'package:agenda_backend/core/models/location.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart' hide DateUtils;
 import 'package:agenda_backend/core/services/staff_planning_selector.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/agenda/domain/config/agenda_theme.dart';
 import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
-import 'package:agenda_backend/core/models/location.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
+import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import 'package:agenda_backend/features/staff/presentation/dialogs/add_exception_dialog.dart';
 import 'package:agenda_backend/features/staff/presentation/staff_planning_screen.dart';
 import 'package:agenda_backend/features/staff/providers/availability_exceptions_provider.dart';
@@ -24,10 +26,9 @@ import 'package:agenda_backend/features/staff/providers/staff_planning_provider.
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:agenda_backend/features/staff/providers/staff_weekly_availability_provider.dart';
 import 'package:agenda_backend/features/staff/widgets/staff_top_controls.dart';
-import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
-import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 const int _weeklyOverviewDefaultMinutesPerSlot = 15;
@@ -567,13 +568,17 @@ class _StaffWeekOverviewScreenState
     if (locations.isEmpty) return;
 
     final selectedLocation = ref.read(staffSectionLocationIdProvider);
-    if (selectedLocation != null) return; // l'utente ha già scelto una location specifica
+    if (selectedLocation != null) {
+      return; // l'utente ha già scelto una location specifica
+    }
 
     final currentLocationId = ref.read(currentLocationIdProvider);
     if (currentLocationId <= 0) return;
 
     final exists = locations.any((l) => l.id == currentLocationId);
-    if (!exists) return; // la location corrente non è disponibile → resta su "Tutte le sedi"
+    if (!exists) {
+      return; // la location corrente non è disponibile → resta su "Tutte le sedi"
+    }
 
     ref.read(staffSectionLocationIdProvider.notifier).set(currentLocationId);
   }
@@ -724,8 +729,6 @@ class _StaffWeekOverviewScreenState
     //final effectivePickerDate = isTodayInWeek ? todayDate : weekEnd;
 
     // Layout constants - responsive per mobile
-    final isMobileLayout = formFactor == AppFormFactor.mobile;
-    final staffColWidth = isMobileLayout ? 120.0 : 200.0;
     final headerHeight = 60.0;
     const chipColor = Color(0xFFECEBFF);
     const chipColorWithException = Color(
@@ -737,10 +740,11 @@ class _StaffWeekOverviewScreenState
     const double chipHeight = 40.0;
     const double chipVGap = 3.0;
     const double chipTopPadding = 4.0;
-    const double baseRowHeight = chipHeight * 2 + (chipVGap * 3) + 36.0;
-    const double staffRowGap = 24.0;
+    const double staffRowGap = 14.0;
     const double dayColumnWidth = 100.0;
     const double rightPadding = 5.0;
+    final daysRowWidth =
+        days.length * dayColumnWidth + (days.length - 1) * 8 + rightPadding;
     final dividerColor = Colors.transparent; // vertical separators
     final divider = Container(height: 0.5, color: dividerColor);
     // Controller già inizializzati in state
@@ -805,10 +809,9 @@ class _StaffWeekOverviewScreenState
         if (count == 0) count = 1;
         if (count > maxRanges) maxRanges = count;
       }
-      if (maxRanges <= 1) return baseRowHeight; // 0 o 1 chip: altezza base
-      final required =
-          chipTopPadding + maxRanges * chipHeight + (maxRanges - 1) * chipVGap;
-      return required > baseRowHeight ? required : baseRowHeight;
+      return chipTopPadding +
+          maxRanges * chipHeight +
+          (maxRanges > 1 ? (maxRanges - 1) * chipVGap : 0);
     }
 
     Widget buildStaffHeaderCell(int staffId) {
@@ -817,7 +820,6 @@ class _StaffWeekOverviewScreenState
         orElse: () => staffList.first,
       );
       final minutes = _totalMinutesForStaff(availability[staffId] ?? const {});
-      final isMobile = formFactor == AppFormFactor.mobile;
       void openStaffAvailability() {
         if (!canEditAvailability) return;
         if (currentUserRole == 'staff' &&
@@ -871,122 +873,54 @@ class _StaffWeekOverviewScreenState
         );
       }
 
-      if (isMobile) {
-        // Mobile: avatar, nome e totale ore raggruppati al centro
-        return GestureDetector(
-          onTap: canEditAvailability ? openStaffAvailability : null,
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Stack(
-                  children: [
-                    StaffCircleAvatar(
-                      height: 40,
-                      color: staff.color,
-                      isHighlighted: false,
-                      initials: staff.initials,
-                    ),
-                    if (canEditAvailability)
-                      Positioned(
-                        right: -4,
-                        bottom: -4,
-                        child: Container(
-                          padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.surface,
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.1),
-                                blurRadius: 2,
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            Icons.edit_outlined,
-                            size: 14,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  staff.displayName,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall,
-                  textAlign: TextAlign.center,
-                ),
-                if (minutes > 0)
-                  Text(
-                    _formatTotalHM(context, minutes),
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelSmall?.copyWith(color: Colors.black54),
-                  ),
-                if (weekLabelBadge != null) ...[
-                  const SizedBox(height: 4),
-                  weekLabelBadge,
-                ],
-              ],
-            ),
-          ),
-        );
-      }
-
-      // Desktop/Tablet: layout orizzontale
-      return GestureDetector(
-        onTap: canEditAvailability ? openStaffAvailability : null,
+      return Padding(
+        padding: const EdgeInsets.only(bottom: 2),
         child: Row(
           children: [
-            StaffCircleAvatar(
-              height: 42,
-              color: staff.color,
-              isHighlighted: false,
-              initials: staff.initials,
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Row(
-                    children: [
-                      Flexible(
-                        child: Text(
-                          staff.displayName,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (weekLabelBadge != null) ...[
-                        const SizedBox(width: 8),
-                        weekLabelBadge,
-                      ],
-                    ],
+            InkWell(
+              onTap: canEditAvailability ? openStaffAvailability : null,
+              borderRadius: BorderRadius.circular(6),
+              child: Container(
+                height: 28,
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.outline.withOpacity(0.5),
                   ),
-                  if (minutes > 0)
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.edit_outlined, size: 14),
+                    const SizedBox(width: 6),
                     Text(
-                      _formatTotalHM(context, minutes),
-                      style: Theme.of(
-                        context,
-                      ).textTheme.labelSmall?.copyWith(color: Colors.black54),
+                      staff.displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                ],
+                  ],
+                ),
               ),
             ),
-            if (canEditAvailability)
-              IconButton(
-                tooltip: context.l10n.staffEditHours,
-                iconSize: 20,
-                padding: const EdgeInsets.all(4),
-                onPressed: openStaffAvailability,
-                icon: const Icon(Icons.edit_outlined),
+            if (minutes > 0) ...[
+              const SizedBox(width: 8),
+              Text(
+                _formatTotalHM(context, minutes),
+                style: Theme.of(
+                  context,
+                ).textTheme.labelMedium?.copyWith(color: Colors.black54),
               ),
+            ],
+            if (weekLabelBadge != null) ...[
+              const SizedBox(width: 8),
+              weekLabelBadge,
+            ],
           ],
         ),
       );
@@ -1878,11 +1812,39 @@ class _StaffWeekOverviewScreenState
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.center,
-        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
           const SizedBox(height: chipTopPadding),
           if (displayRanges.isEmpty && hasException) ...[
             buildAllDayChip(),
+          ] else if (displayRanges.isEmpty && canEditAvailability) ...[
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(6),
+                onTap: () => showAddExceptionDialog(
+                  context,
+                  ref,
+                  staffId: staffId,
+                  date: date,
+                  initialType: AvailabilityExceptionType.available,
+                ),
+                child: Container(
+                  height: chipHeight,
+                  width: double.infinity,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: chipColor.withOpacity(0.4),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(
+                      color: AgendaTheme.appointmentBorder.withOpacity(0.4),
+                      width: 0.6,
+                    ),
+                  ),
+                  child: Icon(Icons.add, size: 16, color: Colors.black54),
+                ),
+              ),
+            ),
           ],
           for (int i = 0; i < displayRanges.length; i++) ...[
             buildChipForRange(displayRanges[i]),
@@ -1895,7 +1857,15 @@ class _StaffWeekOverviewScreenState
     return Scaffold(
       appBar: AppBar(
         centerTitle: formFactor != AppFormFactor.mobile,
-        leading: const BackButton(),
+        leading: BackButton(
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+              return;
+            }
+            context.go('/staff');
+          },
+        ),
         titleSpacing: formFactor == AppFormFactor.mobile ? 0 : null,
         title: StaffTopControls(
           todayLabel: context.l10n.currentWeek,
@@ -1905,156 +1875,103 @@ class _StaffWeekOverviewScreenState
       ),
       body: ScrollConfiguration(
         behavior: const NoScrollbarBehavior(),
-        child: Column(
-          children: [
-            const SizedBox(height: 24),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(width: staffColWidth),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: SingleChildScrollView(
-                    controller: _headerHController,
-                    physics: const NeverScrollableScrollPhysics(),
-                    scrollDirection: Axis.horizontal,
-                    child: Row(
-                      children: [
-                        for (final d in days) ...[
-                          SizedBox(
-                            width: dayColumnWidth,
-                            child: buildDayHeaderCell(d),
-                          ),
-                          if (d != days.last) const SizedBox(width: 8),
-                        ],
-                        const SizedBox(width: rightPadding),
+        child: Padding(
+          padding: const EdgeInsets.only(top: 24, left: 8),
+          child: SingleChildScrollView(
+            controller: _bodyHController,
+            physics: const ClampingScrollPhysics(),
+            scrollDirection: Axis.horizontal,
+            child: SizedBox(
+              width: daysRowWidth,
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      for (final d in days) ...[
+                        SizedBox(
+                          width: dayColumnWidth,
+                          child: buildDayHeaderCell(d),
+                        ),
+                        if (d != days.last) const SizedBox(width: 8),
                       ],
-                    ),
+                      const SizedBox(width: rightPadding),
+                    ],
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            // Body
-            Expanded(
-              child: SingleChildScrollView(
-                controller: _vScrollController,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Staff column
-                    SizedBox(
-                      width: staffColWidth,
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: _vScrollController,
                       child: Column(
                         children: [
                           for (int i = 0; i < staffList.length; i++) ...[
                             Container(
-                              height: rowHeightForStaff(staffList[i].id),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                              ),
-                              alignment: Alignment.centerLeft,
-                              child: buildStaffHeaderCell(staffList[i].id),
-                            ),
-                            divider,
-                            if (i < staffList.length - 1)
-                              const SizedBox(height: staffRowGap),
-                          ],
-                        ],
-                      ),
-                    ),
-                    // Gap column with matching row dividers
-                    SizedBox(
-                      width: 8,
-                      child: Column(
-                        children: [
-                          for (int i = 0; i < staffList.length; i++) ...[
-                            SizedBox(
-                              height: rowHeightForStaff(staffList[i].id),
-                            ),
-                            divider,
-                            if (i < staffList.length - 1)
-                              const SizedBox(height: staffRowGap),
-                          ],
-                        ],
-                      ),
-                    ),
-                    // Days grid (with vertical separators between columns)
-                    Expanded(
-                      child: SingleChildScrollView(
-                        controller: _bodyHController,
-                        physics: const ClampingScrollPhysics(),
-                        scrollDirection: Axis.horizontal,
-                        child: Column(
-                          children: [
-                            for (int i = 0; i < staffList.length; i++) ...[
-                              // Row of day cells + vertical gaps
-                              Row(
+                              color: i % 2 == 1
+                                  ? Theme.of(context).colorScheme.onSurface
+                                      .withOpacity(0.02)
+                                  : null,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  for (final d in days) ...[
-                                    SizedBox(
-                                      width: dayColumnWidth,
-                                      height: rowHeightForStaff(
-                                        staffList[i].id,
-                                      ),
-                                      child: buildDayCell(
-                                        (availability[staffList[i].id]?[d
-                                                .weekday]) ??
-                                            const <HourRange>[],
-                                        ref.watch(
-                                          exceptionsForStaffOnDateProvider((
-                                            staffId: staffList[i].id,
-                                            date: d,
-                                          )),
+                                  buildStaffHeaderCell(staffList[i].id),
+                                  Row(
+                                    children: [
+                                      for (final d in days) ...[
+                                        SizedBox(
+                                          width: dayColumnWidth,
+                                          height: rowHeightForStaff(
+                                            staffList[i].id,
+                                          ),
+                                          child: buildDayCell(
+                                            (availability[staffList[i].id]
+                                                    ?[d.weekday]) ??
+                                                const <HourRange>[],
+                                            ref.watch(
+                                              exceptionsForStaffOnDateProvider((
+                                                staffId: staffList[i].id,
+                                                date: d,
+                                              )),
+                                            ),
+                                            staffList[i].id,
+                                            d.weekday,
+                                            d,
+                                            hasException:
+                                                exceptionDays[staffList[i].id]
+                                                    ?.contains(d.weekday) ??
+                                                false,
+                                          ),
                                         ),
-                                        staffList[i].id,
-                                        d.weekday,
-                                        d,
-                                        hasException:
-                                            exceptionDays[staffList[i].id]
-                                                ?.contains(d.weekday) ??
-                                            false,
-                                      ),
-                                    ),
-                                    if (d != days.last)
+                                        if (d != days.last)
+                                          SizedBox(
+                                            width: 8,
+                                            height: rowHeightForStaff(
+                                              staffList[i].id,
+                                            ),
+                                          ),
+                                      ],
                                       SizedBox(
-                                        width: 8,
+                                        width: rightPadding,
                                         height: rowHeightForStaff(
                                           staffList[i].id,
                                         ),
                                       ),
-                                  ],
-                                  SizedBox(
-                                    width: rightPadding,
-                                    height: rowHeightForStaff(staffList[i].id),
+                                    ],
                                   ),
                                 ],
                               ),
-                              // Single full-width horizontal divider spanning day cells + gaps
-                              Builder(
-                                builder: (context) {
-                                  final daysRowWidth =
-                                      days.length * dayColumnWidth +
-                                      (days.length - 1) * 8 +
-                                      rightPadding;
-                                  return SizedBox(
-                                    width: daysRowWidth,
-                                    child: divider,
-                                  );
-                                },
-                              ),
-                              if (i < staffList.length - 1)
-                                const SizedBox(height: staffRowGap),
-                            ],
+                            ),
+                            SizedBox(width: daysRowWidth, child: divider),
+                            if (i < staffList.length - 1)
+                              const SizedBox(height: staffRowGap),
                           ],
-                        ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
       ),
       /*bottomNavigationBar: formFactor != AppFormFactor.mobile

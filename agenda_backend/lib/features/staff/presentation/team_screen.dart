@@ -366,6 +366,9 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
           staff: staff,
           isWide: isWide,
           readOnly: !canManageStaff,
+          onTap: canManageSettings
+              ? () => showLocationDialog(context, ref, initial: loc)
+              : null,
           onAddStaff: canManageStaff
               ? () => showStaffDialog(context, ref, initialLocationId: loc.id)
               : () {},

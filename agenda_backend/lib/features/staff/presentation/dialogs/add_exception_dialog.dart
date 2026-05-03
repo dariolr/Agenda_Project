@@ -10,12 +10,13 @@ import 'package:intl/intl.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/availability_exception.dart';
 import '../../../../core/models/staff_planning.dart' show StaffPlanning;
-import '../../../agenda/providers/tenant_time_provider.dart';
+import '../../../../core/services/staff_planning_selector.dart'
+    show PlanningFound;
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
-import '../../../../core/services/staff_planning_selector.dart' show PlanningFound;
+import '../../../agenda/providers/tenant_time_provider.dart';
 import '../../providers/availability_exceptions_provider.dart';
 import '../../providers/staff_planning_provider.dart';
 import '../../providers/staff_weekly_availability_provider.dart';
@@ -27,13 +28,16 @@ Future<void> showAddExceptionDialog(
   AvailabilityException? initial,
   DateTime? date,
   TimeOfDay? time,
+  AvailabilityExceptionType? initialType,
   required int staffId,
 }) async {
   // Le eccezioni devono usare sempre lo stesso passo del planning staff.
   // Se il planning non è disponibile, non apriamo il dialog.
   var plannings = ref.read(planningsForStaffProvider(staffId));
   if (plannings.isEmpty) {
-    await ref.read(staffPlanningsProvider.notifier).loadPlanningsForStaff(staffId);
+    await ref
+        .read(staffPlanningsProvider.notifier)
+        .loadPlanningsForStaff(staffId);
     if (!context.mounted) return;
     plannings = ref.read(planningsForStaffProvider(staffId));
   }
@@ -53,6 +57,7 @@ Future<void> showAddExceptionDialog(
     initial: initial,
     initialDate: date,
     initialTime: time,
+    initialType: initialType,
     staffId: staffId,
     presentation: isDesktop
         ? _ExceptionDialogPresentation.dialog
@@ -78,6 +83,7 @@ class _AddExceptionDialog extends ConsumerStatefulWidget {
     this.initial,
     this.initialDate,
     this.initialTime,
+    this.initialType,
     required this.staffId,
     required this.presentation,
   });
@@ -85,6 +91,7 @@ class _AddExceptionDialog extends ConsumerStatefulWidget {
   final AvailabilityException? initial;
   final DateTime? initialDate;
   final TimeOfDay? initialTime;
+  final AvailabilityExceptionType? initialType;
   final int staffId;
   final _ExceptionDialogPresentation presentation;
 
@@ -140,7 +147,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
         hour: _startTime.hour + 1,
         minute: _startTime.minute,
       );
-      _type = AvailabilityExceptionType.unavailable;
+      _type = widget.initialType ?? AvailabilityExceptionType.unavailable;
     }
   }
 
@@ -672,7 +679,8 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
   }
 
   Future<void> _pickTime({required bool isStart}) async {
-    final referenceDate = widget.initial != null || _periodMode == _PeriodMode.single
+    final referenceDate =
+        widget.initial != null || _periodMode == _PeriodMode.single
         ? _date
         : _startDate;
     final step = _planningSlotMinutesForDate(referenceDate);

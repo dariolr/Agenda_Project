@@ -37,6 +37,7 @@ import '../features/business/presentation/dialogs/invite_operator_dialog.dart';
 import '../features/business/presentation/dialogs/location_closure_dialog.dart';
 import '../features/business/providers/location_closures_provider.dart';
 import '../features/business/providers/superadmin_selected_business_provider.dart';
+import '../features/class_events/providers/class_events_providers.dart';
 import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
 import '../features/clients/providers/clients_providers.dart';
 import '../features/payments/presentation/dialogs/payment_method_dialog.dart';
@@ -47,7 +48,6 @@ import '../features/services/providers/service_categories_provider.dart';
 import '../features/services/providers/service_packages_provider.dart';
 import '../features/services/providers/services_provider.dart';
 import '../features/services/providers/services_reorder_provider.dart';
-import '../features/class_events/providers/class_events_providers.dart';
 import '../features/staff/presentation/dialogs/location_dialog.dart';
 import '../features/staff/presentation/dialogs/resource_dialog.dart';
 import '../features/staff/presentation/dialogs/staff_dialog.dart';
@@ -1367,21 +1367,44 @@ class _ServicesAddAction extends ConsumerWidget {
         showLabel ||
         formFactor == AppFormFactor.tablet ||
         formFactor == AppFormFactor.desktop;
+    final currentLocation = ref.watch(currentLocationProvider);
     final services = ref.watch(servicesProvider).value ?? [];
+    final hasActiveServicesForLocation = services.any((service) {
+      if (!service.isActive) return false;
+      final serviceLocationId = service.locationId;
+      return serviceLocationId == null ||
+          currentLocation.id <= 0 ||
+          serviceLocationId == currentLocation.id;
+    });
     final packages = ref.watch(servicePackagesProvider).value ?? [];
+    final hasActivePackagesForLocation = packages.any((package) {
+      if (!package.isActive) return false;
+      return package.locationId == 0 ||
+          currentLocation.id <= 0 ||
+          package.locationId == currentLocation.id;
+    });
     final classTypes =
         ref.watch(classTypesProvider).value ?? const <ClassType>[];
+    final classTypesForLocation = classTypes.where((classType) {
+      final hasCategory = (classType.serviceCategoryId ?? 0) > 0;
+      return classType.isActive &&
+          hasCategory &&
+          classType.locationIds.contains(currentLocation.id);
+    }).toList();
+    final hasActiveClassTypesForLocation = classTypesForLocation.isNotEmpty;
+    final hasActiveAppointmentTypesForLocation =
+        hasActiveServicesForLocation ||
+        hasActivePackagesForLocation ||
+        hasActiveClassTypesForLocation;
     final isSuperadmin = ref.watch(authProvider).user?.isSuperadmin ?? false;
     final categories = ref.watch(serviceCategoriesProvider);
     final hasCategories = categories.length >= 2;
-    final hasServices = services.isNotEmpty;
     final hasPackages = packages.isNotEmpty;
-    final canReorderClassTypes =
-        classTypes.isNotEmpty &&
-        (classTypes.length > 1 || categories.length > 1);
-    final hasServicesOrPackages = hasServices || hasPackages;
+    final canReorderClassTypes = classTypesForLocation.length > 1;
+    final hasServicesOrPackages =
+        hasActiveServicesForLocation || hasActivePackagesForLocation;
     final reorderItems = <AdaptiveDropdownItem<String>>[
-      if (hasCategories)
+      if (hasCategories && hasActiveAppointmentTypesForLocation)
         AdaptiveDropdownItem(
           value: 'reorder_categories',
           child: Text(l10n.reorderCategoriesLabel),
@@ -1437,29 +1460,64 @@ class _ServicesAddAction extends ConsumerWidget {
       children: [
         if (reorderItems.isNotEmpty) ...[
           if (reorderItems.length == 1)
-            Material(
-              elevation: 0,
-              color: Colors.transparent,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-                side: BorderSide(color: scheme.primary),
-              ),
-              clipBehavior: Clip.antiAlias,
-              child: InkWell(
-                onTap: () => activateReorderMode(reorderItems.first.value),
-                child: SizedBox(
-                  height: _actionButtonHeight,
-                  width: isIconOnly ? iconOnlyWidth : null,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+            (isIconOnly
+                ? Tooltip(
+                    message: l10n.reorderTitle,
+                    child: Material(
+                      elevation: 0,
+                      color: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: scheme.primary),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () =>
+                            activateReorderMode(reorderItems.first.value),
+                        child: SizedBox(
+                          height: _actionButtonHeight,
+                          width: iconOnlyWidth,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            child: buildActionLabel(
+                              Icons.sort,
+                              l10n.reorderTitle,
+                            ),
+                          ),
+                        ),
+                      ),
                     ),
-                    child: buildActionLabel(Icons.sort, l10n.reorderTitle),
-                  ),
-                ),
-              ),
-            )
+                  )
+                : Material(
+                    elevation: 0,
+                    color: Colors.transparent,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      side: BorderSide(color: scheme.primary),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: InkWell(
+                      onTap: () =>
+                          activateReorderMode(reorderItems.first.value),
+                      child: SizedBox(
+                        height: _actionButtonHeight,
+                        width: null,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          child: buildActionLabel(
+                            Icons.sort,
+                            l10n.reorderTitle,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ))
           else
             AdaptiveDropdown<String>(
               modalTitle: l10n.reorderTitle,
@@ -1470,26 +1528,56 @@ class _ServicesAddAction extends ConsumerWidget {
               popupWidth: 260,
               items: reorderItems,
               onSelected: activateReorderMode,
-              child: Material(
-                elevation: 0,
-                color: Colors.transparent,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: scheme.primary),
-                ),
-                clipBehavior: Clip.antiAlias,
-                child: SizedBox(
-                  height: _actionButtonHeight,
-                  width: isIconOnly ? iconOnlyWidth : null,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+              child: isIconOnly
+                  ? Tooltip(
+                      message: l10n.reorderTitle,
+                      child: Material(
+                        elevation: 0,
+                        color: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                          side: BorderSide(color: scheme.primary),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: SizedBox(
+                          height: _actionButtonHeight,
+                          width: iconOnlyWidth,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            child: buildActionLabel(
+                              Icons.sort,
+                              l10n.reorderTitle,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  : Material(
+                      elevation: 0,
+                      color: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: BorderSide(color: scheme.primary),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: SizedBox(
+                        height: _actionButtonHeight,
+                        width: null,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
+                          ),
+                          child: buildActionLabel(
+                            Icons.sort,
+                            l10n.reorderTitle,
+                          ),
+                        ),
+                      ),
                     ),
-                    child: buildActionLabel(Icons.sort, l10n.reorderTitle),
-                  ),
-                ),
-              ),
             ),
           const SizedBox(width: 8),
         ],
@@ -1509,10 +1597,11 @@ class _ServicesAddAction extends ConsumerWidget {
               value: 'service',
               child: Text(l10n.servicesNewServiceMenu),
             ),
-            AdaptiveDropdownItem(
-              value: 'package',
-              child: Text(l10n.servicePackageNewMenu),
-            ),
+            if (hasActiveServicesForLocation)
+              AdaptiveDropdownItem(
+                value: 'package',
+                child: Text(l10n.servicePackageNewMenu),
+              ),
             if (isSuperadmin)
               AdaptiveDropdownItem(
                 value: 'class_type',

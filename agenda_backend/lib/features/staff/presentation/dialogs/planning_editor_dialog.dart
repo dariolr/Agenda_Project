@@ -12,15 +12,15 @@ Dialog COMPLETO per creare/modificare un planning:
 */
 
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
-import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/staff_planning.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/core/widgets/app_form.dart';
 import 'package:agenda_backend/core/widgets/local_loading_overlay.dart';
-import 'package:agenda_backend/features/staff/presentation/widgets/weekly_schedule_editor.dart';
 import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
+import 'package:agenda_backend/features/staff/presentation/widgets/weekly_schedule_editor.dart';
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -191,7 +191,8 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
     return candidates.first;
   }
 
-  DateTime _dateOnly(DateTime date) => DateTime(date.year, date.month, date.day);
+  DateTime _dateOnly(DateTime date) =>
+      DateTime(date.year, date.month, date.day);
 
   void _setupTabController() {
     _tabController?.dispose();
@@ -280,7 +281,9 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
   }
 
   Future<void> _pickDate({required bool isStart}) async {
-    final initial = isStart ? _validFrom : (_validTo ?? ref.read(tenantTodayProvider));
+    final initial = isStart
+        ? _validFrom
+        : (_validTo ?? ref.read(tenantTodayProvider));
     final first = isStart ? DateTime(2020) : _validFrom;
     final last = DateTime(2030);
 
@@ -542,7 +545,7 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const SizedBox(height: AppSpacing.formFirstRowSpacing),
+                const SizedBox(height: 16),
 
                 // ── Tipo Planning ──
                 Text(
@@ -569,143 +572,161 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
                   onSelectionChanged: (set) => _onTypeChanged(set.first),
                 ),
 
-                const SizedBox(height: AppSpacing.formRowSpacing),
+                const SizedBox(height: 28),
 
-                // ── Date Validità ──
-                Text(
-                  l10n.planningValidFrom,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Data inizio
-                InkWell(
-                  onTap: () => _pickDate(isStart: true),
-                  borderRadius: BorderRadius.circular(8),
-                  child: InputDecorator(
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 12,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.calendar_today, size: 18),
-                        const SizedBox(width: 8),
-                        Text(dateFormat.format(_validFrom)),
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: AppSpacing.formRowSpacing),
-
-                // Data fine
-                Text(
-                  l10n.planningValidTo,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
+                // ── Date Validità (inizio + fine sulla stessa riga) ──
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Data inizio
                     Expanded(
-                      child: _isOpenEnded
-                          ? InputDecorator(
-                              decoration: InputDecoration(
-                                border: const OutlineInputBorder(),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.planningValidFrom,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          InkWell(
+                            onTap: () => _pickDate(isStart: true),
+                            borderRadius: BorderRadius.circular(8),
+                            child: InputDecorator(
+                              decoration: const InputDecoration(
+                                border: OutlineInputBorder(),
                                 isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(
+                                contentPadding: EdgeInsets.symmetric(
                                   horizontal: 12,
                                   vertical: 12,
                                 ),
-                                fillColor:
-                                    theme.colorScheme.surfaceContainerHighest,
-                                filled: true,
                               ),
                               child: Row(
                                 children: [
-                                  Icon(
-                                    Icons.all_inclusive,
-                                    size: 18,
-                                    color: theme.colorScheme.onSurfaceVariant,
-                                  ),
+                                  const Icon(Icons.calendar_today, size: 18),
                                   const SizedBox(width: 8),
-                                  Text(
-                                    l10n.planningOpenEnded,
-                                    style: TextStyle(
-                                      color: theme.colorScheme.onSurfaceVariant,
-                                    ),
-                                  ),
+                                  Text(dateFormat.format(_validFrom)),
                                 ],
                               ),
-                            )
-                          : InkWell(
-                              onTap: () => _pickDate(isStart: false),
-                              borderRadius: BorderRadius.circular(8),
-                              child: InputDecorator(
-                                decoration: const InputDecoration(
-                                  border: OutlineInputBorder(),
-                                  isDense: true,
-                                  contentPadding: EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    // Data fine
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            l10n.planningValidTo,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          _isOpenEnded
+                              ? InputDecorator(
+                                  decoration: InputDecoration(
+                                    border: const OutlineInputBorder(),
+                                    isDense: true,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 12,
+                                    ),
+                                    fillColor: theme
+                                        .colorScheme.surfaceContainerHighest,
+                                    filled: true,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.all_inclusive,
+                                        size: 18,
+                                        color:
+                                            theme.colorScheme.onSurfaceVariant,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        l10n.planningOpenEnded,
+                                        style: TextStyle(
+                                          color: theme
+                                              .colorScheme.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : InkWell(
+                                  onTap: () => _pickDate(isStart: false),
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: InputDecorator(
+                                    decoration: const InputDecoration(
+                                      border: OutlineInputBorder(),
+                                      isDense: true,
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 12,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        const Icon(
+                                          Icons.calendar_today,
+                                          size: 18,
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(dateFormat.format(_validTo!)),
+                                      ],
+                                    ),
                                   ),
                                 ),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.calendar_today, size: 18),
-                                    const SizedBox(width: 8),
-                                    Text(dateFormat.format(_validTo!)),
-                                  ],
+                          const SizedBox(height: 6),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: AppOutlinedActionButton(
+                            onPressed: () {
+                              setState(() {
+                                if (_isOpenEnded) {
+                                  _isOpenEnded = false;
+                                  _validTo = _validFrom
+                                      .add(const Duration(days: 30));
+                                } else {
+                                  _isOpenEnded = true;
+                                  _validTo = null;
+                                }
+                              });
+                            },
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  _isOpenEnded
+                                      ? Icons.event
+                                      : Icons.all_inclusive,
+                                  size: 16,
                                 ),
-                              ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  _isOpenEnded
+                                      ? l10n.planningSetEndDate
+                                      : l10n.planningOpenEnded,
+                                ),
+                              ],
                             ),
+                          ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 8),
-                // Pulsante senza scadenza a destra
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: AppOutlinedActionButton(
-                    onPressed: () {
-                      setState(() {
-                        if (_isOpenEnded) {
-                          _isOpenEnded = false;
-                          _validTo = _validFrom.add(const Duration(days: 30));
-                        } else {
-                          _isOpenEnded = true;
-                          _validTo = null;
-                        }
-                      });
-                    },
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _isOpenEnded ? Icons.event : Icons.all_inclusive,
-                          size: 18,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          _isOpenEnded
-                              ? l10n.planningSetEndDate
-                              : l10n.planningOpenEnded,
-                        ),
-                      ],
-                    ),
-                  ),
                 ),
 
                 // ── Tab per biweekly ──
                 if (_type == StaffPlanningType.biweekly) ...[
-                  const SizedBox(height: AppSpacing.formRowSpacing),
+                  const SizedBox(height: 28),
                   Text(
                     'Settimana',
                     style: theme.textTheme.titleSmall?.copyWith(
@@ -722,7 +743,7 @@ class _PlanningEditorContentState extends ConsumerState<_PlanningEditorContent>
                   ),
                 ],
 
-                const SizedBox(height: AppSpacing.formRowSpacing),
+                const SizedBox(height: 20),
 
                 // ── Griglia Orari ──
                 WeeklyScheduleEditor(

@@ -1,4 +1,3 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/models/class_booking.dart';
@@ -11,6 +10,7 @@ import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/date_range_provider.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../../agenda/providers/tenant_time_provider.dart';
+import '../../services/providers/service_categories_provider.dart';
 import '../../services/providers/services_repository_provider.dart';
 import '../data/class_events_repository.dart';
 
@@ -116,7 +116,17 @@ final classTypesWithInactiveProvider = FutureProvider<List<ClassType>>((
 final classTypeServiceCategoriesProvider =
     FutureProvider<List<ServiceCategory>>((ref) async {
       final businessId = ref.watch(currentBusinessIdProvider);
+      final sharedCategories = ref.watch(serviceCategoriesProvider);
       if (businessId <= 0) return const <ServiceCategory>[];
+      if (sharedCategories.isNotEmpty) {
+        final categories = [...sharedCategories];
+        categories.sort((a, b) {
+          final byOrder = a.sortOrder.compareTo(b.sortOrder);
+          if (byOrder != 0) return byOrder;
+          return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+        });
+        return categories;
+      }
       final repository = ref.watch(servicesRepositoryProvider);
       final categories = await repository.getCategories(businessId);
       categories.sort((a, b) {
@@ -583,4 +593,3 @@ final classTypeMutationControllerProvider =
     AsyncNotifierProvider<ClassTypeMutationController, void>(
       ClassTypeMutationController.new,
     );
-

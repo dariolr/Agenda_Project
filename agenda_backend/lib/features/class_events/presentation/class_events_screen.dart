@@ -1,14 +1,13 @@
-
 import 'package:agenda_backend/core/widgets/app_dividers.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import '/app/providers/form_factor_provider.dart';
 import '/app/widgets/client_circle_avatar.dart';
 import '/app/widgets/staff_circle_avatar.dart';
-import '/app/providers/form_factor_provider.dart';
 import '/core/l10n/date_time_formats.dart';
 import '/core/l10n/l10_extension.dart';
 import '/core/models/appointment.dart';
@@ -262,12 +261,14 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     final isBusy = isLoading || _isScheduleActionLoading;
     final locations = ref.watch(locationsProvider);
     final allStaff = ref.watch(allStaffProvider).value ?? const <Staff>[];
-    final serviceCategories = ref
-        .watch(classTypeServiceCategoriesProvider)
-        .maybeWhen(
-          data: (value) => value,
-          orElse: () => const <ServiceCategory>[],
-        );
+    final serviceCategoriesAsync = ref.watch(
+      classTypeServiceCategoriesProvider,
+    );
+    final serviceCategories = serviceCategoriesAsync.maybeWhen(
+      data: (value) => value,
+      orElse: () => const <ServiceCategory>[],
+    );
+    final serviceCategoriesLoaded = serviceCategoriesAsync.hasValue;
     final allSchedulesAsync = _isEdit
         ? ref.watch(allClassEventsByTypeProvider(widget.initial!.id))
         : const AsyncData<List<ClassEvent>>(<ClassEvent>[]);
@@ -293,7 +294,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
     final hasSelectedCategoryInList =
         _selectedServiceCategoryId == null ||
         serviceCategories.any((c) => c.id == _selectedServiceCategoryId);
-    if (!_isEdit) {
+    if (!_isEdit && serviceCategoriesLoaded) {
       final validCategoryIds = serviceCategories
           .map((category) => category.id)
           .toSet();
@@ -1723,9 +1724,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                   value: _onlineBookingVisibility,
                   onChanged: isLoading
                       ? null
-                      : (value) => setState(
-                          () => _onlineBookingVisibility = value,
-                        ),
+                      : (value) =>
+                            setState(() => _onlineBookingVisibility = value),
                   isEditing: isEditMode,
                   targetType: 'class_event',
                   targetId: classEventId,

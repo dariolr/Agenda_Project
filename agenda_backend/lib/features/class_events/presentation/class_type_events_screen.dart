@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -315,12 +314,6 @@ class _ClassTypeEventsScreenState extends ConsumerState<ClassTypeEventsScreen> {
             serviceCategoryId: widget.classType.serviceCategoryId,
             locationIds: widget.classType.locationIds,
           );
-      if (!context.mounted) return;
-      FeedbackDialog.showSuccess(
-        context,
-        title: l10n.classTypesCloneSuccessTitle,
-        message: l10n.classTypesCloneSuccessMessage,
-      );
     } catch (_) {
       if (!context.mounted) return;
       FeedbackDialog.showError(

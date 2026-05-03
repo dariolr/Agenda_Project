@@ -21,6 +21,7 @@ class CategoriesList extends ConsumerWidget {
   final ValueChanged<ServiceCategory> onAddPackage;
   final ValueChanged<ServiceCategory> onAddClassType;
   final ValueChanged<ServiceCategory> onEditCategory;
+  final bool showPackageAddOption;
   final ValueChanged<ServiceCategory> onCopyCategoryDirectLink;
   final ValueChanged<int> onDeleteCategory;
   final VoidCallback onDeleteCategoryBlocked;
@@ -56,6 +57,7 @@ class CategoriesList extends ConsumerWidget {
     required this.onAddClassType,
     required this.onEditCategory,
     required this.onCopyCategoryDirectLink,
+    this.showPackageAddOption = true,
     required this.onDeleteCategory,
     required this.onDeleteCategoryBlocked,
     required this.onServiceOpen,
@@ -172,6 +174,7 @@ class CategoriesList extends ConsumerWidget {
               onAddService: () => onAddService(category),
               onAddPackage: () => onAddPackage(category),
               onAddClassType: () => onAddClassType(category),
+              showPackageAddOption: showPackageAddOption,
               onEditCategory: () => onEditCategory(category),
               onCopyDirectLink: () => onCopyCategoryDirectLink(category),
               onDeleteCategory: () => onDeleteCategory(category.id),
