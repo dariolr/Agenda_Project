@@ -135,6 +135,9 @@ class MessageLookup extends MessageLookupByLibrary {
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
     "actionBack": MessageLookupByLibrary.simpleMessage("Back"),
+    "actionBackToBooking": MessageLookupByLibrary.simpleMessage(
+      "Back to booking",
+    ),
     "actionCancel": MessageLookupByLibrary.simpleMessage("Cancel"),
     "actionCancelBooking": MessageLookupByLibrary.simpleMessage("Cancel"),
     "actionClose": MessageLookupByLibrary.simpleMessage("Close"),
@@ -584,6 +587,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "errorConnectionTimeout": MessageLookupByLibrary.simpleMessage(
       "The connection is taking too long. Please try again.",
     ),
+    "errorDirectLinkInvalidMessage": MessageLookupByLibrary.simpleMessage(
+      "The link you opened is not valid, has expired, or is no longer available.",
+    ),
+    "errorDirectLinkInvalidTitle": MessageLookupByLibrary.simpleMessage(
+      "Invalid booking link",
+    ),
     "errorGeneric": MessageLookupByLibrary.simpleMessage("An error occurred"),
     "errorLoadingAvailability": MessageLookupByLibrary.simpleMessage(
       "Unable to load availability. Check your connection and try again.",
@@ -613,15 +622,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "errorServiceUnavailableCustom": m20,
     "errorServiceUnavailableSubtitle": MessageLookupByLibrary.simpleMessage(
       "We are working to fix the issue. Please try again in a few minutes.",
-    ),
-    "errorDirectLinkInvalidTitle": MessageLookupByLibrary.simpleMessage(
-      "Invalid booking link",
-    ),
-    "errorDirectLinkInvalidMessage": MessageLookupByLibrary.simpleMessage(
-      "The link you opened is not valid, has expired, or is no longer available.",
-    ),
-    "actionBackToBooking": MessageLookupByLibrary.simpleMessage(
-      "Back to booking",
     ),
     "errorTitle": MessageLookupByLibrary.simpleMessage("Error"),
     "eventsSubtitle": MessageLookupByLibrary.simpleMessage(

@@ -136,6 +136,9 @@ class MessageLookup extends MessageLookupByLibrary {
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
     "actionBack": MessageLookupByLibrary.simpleMessage("Indietro"),
+    "actionBackToBooking": MessageLookupByLibrary.simpleMessage(
+      "Torna alla prenotazione",
+    ),
     "actionCancel": MessageLookupByLibrary.simpleMessage("Annulla"),
     "actionCancelBooking": MessageLookupByLibrary.simpleMessage("Annulla"),
     "actionClose": MessageLookupByLibrary.simpleMessage("Chiudi"),
@@ -599,6 +602,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "errorConnectionTimeout": MessageLookupByLibrary.simpleMessage(
       "La connessione sta impiegando troppo tempo. Riprova.",
     ),
+    "errorDirectLinkInvalidMessage": MessageLookupByLibrary.simpleMessage(
+      "Il link che hai aperto non è valido, è scaduto o non è più disponibile.",
+    ),
+    "errorDirectLinkInvalidTitle": MessageLookupByLibrary.simpleMessage(
+      "Link di prenotazione non valido",
+    ),
     "errorGeneric": MessageLookupByLibrary.simpleMessage(
       "Si è verificato un errore",
     ),
@@ -630,15 +639,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "errorServiceUnavailableCustom": m20,
     "errorServiceUnavailableSubtitle": MessageLookupByLibrary.simpleMessage(
       "Stiamo lavorando per risolvere il problema. Riprova tra qualche minuto.",
-    ),
-    "errorDirectLinkInvalidTitle": MessageLookupByLibrary.simpleMessage(
-      "Link di prenotazione non valido",
-    ),
-    "errorDirectLinkInvalidMessage": MessageLookupByLibrary.simpleMessage(
-      "Il link che hai aperto non è valido, è scaduto o non è più disponibile.",
-    ),
-    "actionBackToBooking": MessageLookupByLibrary.simpleMessage(
-      "Torna alla prenotazione",
     ),
     "errorTitle": MessageLookupByLibrary.simpleMessage("Errore"),
     "eventsSubtitle": MessageLookupByLibrary.simpleMessage(
