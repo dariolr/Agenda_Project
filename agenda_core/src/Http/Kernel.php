@@ -44,6 +44,7 @@ use Agenda\Http\Middleware\CustomerAuthMiddleware;
 use Agenda\Http\Middleware\IdempotencyMiddleware;
 use Agenda\Http\Middleware\LocationAccessMiddleware;
 use Agenda\Http\Middleware\LocationContextMiddleware;
+use Agenda\Infrastructure\Authorization\LocationAuthorizationService;
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Logger\Logger;
 use Agenda\Infrastructure\Repositories\AuthSessionRepository;
@@ -492,6 +493,7 @@ final class Kernel
                 $billingConfigRepo
             ),
         ]);
+        $locationAuth = new LocationAuthorizationService($businessUserRepo, $locationRepo, $userRepo);
 
         // Operator Auth Use Cases
         $loginUser = new LoginUser($userRepo, $sessionRepo, $jwtService, $passwordHasher);
@@ -538,13 +540,13 @@ final class Kernel
             CustomerAuthController::class => new CustomerAuthController($loginCustomer, $refreshCustomerToken, $logoutCustomer, $getCustomerMe, $registerCustomer, $requestCustomerPasswordReset, $resetCustomerPassword, $updateCustomerProfile, $changeCustomerPassword, $businessRepo),
             BusinessController::class => new BusinessController($businessRepo, $locationRepo, $businessUserRepo, $userRepo),
             LocationsController::class => new LocationsController($locationRepo, $businessUserRepo, $userRepo),
-            ServicesController::class => new ServicesController($serviceRepo, $variantResourceRepo, $locationRepo, $businessUserRepo, $userRepo, $servicePackageRepo, $popularServiceRepo, $staffRepo, $bookingDirectLinkRepo),
+            ServicesController::class => new ServicesController($serviceRepo, $variantResourceRepo, $locationRepo, $businessUserRepo, $userRepo, $servicePackageRepo, $popularServiceRepo, $staffRepo, $bookingDirectLinkRepo, $locationAuth),
             ServicePackagesController::class => new ServicePackagesController($servicePackageRepo, $businessUserRepo, $userRepo, $bookingDirectLinkRepo),
             BookingDirectLinksController::class => new BookingDirectLinksController($bookingDirectLinkRepo, $businessRepo, $businessUserRepo, $locationRepo, $userRepo),
             StaffController::class => new StaffController($staffRepo, $businessUserRepo, $locationRepo, $userRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
-            BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo, $createRecurringBooking, $previewRecurringBooking, $recurrenceRuleRepo, $modifyRecurringSeries, $notificationRepo),
-            BookingPaymentsController::class => new BookingPaymentsController($this->db, $bookingRepo, $bookingPaymentRepo, $paymentMethodRepo, $businessUserRepo, $userRepo),
+            BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo, $createRecurringBooking, $previewRecurringBooking, $recurrenceRuleRepo, $modifyRecurringSeries, $notificationRepo, $locationAuth),
+            BookingPaymentsController::class => new BookingPaymentsController($this->db, $bookingRepo, $bookingPaymentRepo, $paymentMethodRepo, $businessUserRepo, $userRepo, $locationAuth),
             PaymentMethodsController::class => new PaymentMethodsController($paymentMethodRepo, $businessUserRepo, $userRepo),
             AdminBusinessBillingController::class => new AdminBusinessBillingController($businessRepo, $userRepo, $billingConfigRepo, $billingSubscriptionRepo),
             BusinessBillingController::class => new BusinessBillingController($businessRepo, $businessUserRepo, $userRepo, $billingConfigRepo, $billingSubscriptionRepo, $billingProviderFactory),
@@ -575,6 +577,7 @@ final class Kernel
                 $clientRepo,
                 new QueueClassBookingNotification($this->db, $notificationRepo),
                 $bookingDirectLinkRepo,
+                $locationAuth,
             ),
             WhatsappController::class => new WhatsappController(
                 $whatsappRepo,

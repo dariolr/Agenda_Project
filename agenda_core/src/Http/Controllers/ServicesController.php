@@ -16,6 +16,8 @@ use Agenda\Infrastructure\Repositories\ServicePackageRepository;
 use Agenda\Infrastructure\Repositories\PopularServiceRepository;
 use Agenda\Infrastructure\Repositories\StaffRepository;
 use Agenda\Infrastructure\Repositories\BookingDirectLinkRepository;
+use Agenda\Infrastructure\Authorization\LocationAuthorizationService;
+use DomainException;
 
 final class ServicesController
 {
@@ -29,6 +31,7 @@ final class ServicesController
         private readonly PopularServiceRepository $popularServiceRepo,
         private readonly StaffRepository $staffRepo,
         private readonly ?BookingDirectLinkRepository $directLinkRepo = null,
+        private readonly ?LocationAuthorizationService $locationAuth = null,
     ) {}
 
     /**
@@ -66,6 +69,45 @@ final class ServicesController
 
         // Normal user: enforce services permission
         return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_services', false);
+    }
+
+    private function forbiddenLocationScope(Request $request): Response
+    {
+        return Response::error(
+            LocationAuthorizationService::ERROR_CODE,
+            LocationAuthorizationService::ERROR_CODE,
+            403,
+            $request->traceId
+        );
+    }
+
+    private function requireBusinessWideLocationScope(Request $request, int $businessId): ?Response
+    {
+        if ($this->locationAuth === null || $this->locationAuth->canAccessAllBusinessLocations($request, $businessId)) {
+            return null;
+        }
+
+        return $this->forbiddenLocationScope($request);
+    }
+
+    /**
+     * @param int[] $locationIds
+     */
+    private function requireLocationScope(Request $request, int $businessId, array $locationIds): ?Response
+    {
+        if ($this->locationAuth === null) {
+            return null;
+        }
+
+        try {
+            $this->locationAuth->assertCanAccessOnlyLocations($request, $businessId, $locationIds);
+            return null;
+        } catch (DomainException $e) {
+            if ($e->getMessage() === LocationAuthorizationService::ERROR_CODE) {
+                return $this->forbiddenLocationScope($request);
+            }
+            throw $e;
+        }
     }
 
     /**
@@ -310,7 +352,7 @@ final class ServicesController
         $businessId = (int) $location['business_id'];
 
         // Authorization check
-        if (!$this->hasBusinessReadAccess($request, $businessId)) {
+        if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
 
@@ -364,7 +406,7 @@ final class ServicesController
         $businessId = (int) $request->getRouteParam('business_id');
 
         // Authorization check
-        if (!$this->hasBusinessReadAccess($request, $businessId)) {
+        if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
 
@@ -399,6 +441,10 @@ final class ServicesController
             if (!$location || (int) $location['business_id'] !== $businessId) {
                 return Response::error("Invalid location_id: $locationId", 'validation_error', 400);
             }
+        }
+        $locationScopeError = $this->requireLocationScope($request, $businessId, array_map('intval', $locationIds));
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
         }
 
         $service = $this->serviceRepository->createMultiLocation(
@@ -458,6 +504,20 @@ final class ServicesController
         $location = $this->locationRepo->findById($locationId);
         if (!$location || (int) $location['business_id'] !== $businessId) {
             return Response::error('Invalid location_id', 'validation_error', 400);
+        }
+        $locationScopeError = $this->requireLocationScope($request, $businessId, [$locationId]);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
+        }
+        $globalFields = ['name', 'description', 'set_description_null', 'category_id', 'sort_order'];
+        foreach ($globalFields as $field) {
+            if (array_key_exists($field, $body)) {
+                $businessWideError = $this->requireBusinessWideLocationScope($request, $businessId);
+                if ($businessWideError !== null) {
+                    return $businessWideError;
+                }
+                break;
+            }
         }
         $hasColor = array_key_exists('color', $body) || array_key_exists('color_hex', $body);
         $colorHex = null;
@@ -552,6 +612,13 @@ final class ServicesController
                 $request->traceId
             );
         }
+        $onlyLocationId = $this->serviceRepository->getSingleActiveVariantLocationId($serviceId);
+        if ($onlyLocationId !== null) {
+            $locationScopeError = $this->requireLocationScope($request, $businessId, [$onlyLocationId]);
+            if ($locationScopeError !== null) {
+                return $locationScopeError;
+            }
+        }
 
         $this->serviceRepository->delete($serviceId);
         $this->packageRepo->markBrokenByServiceId($serviceId);
@@ -638,6 +705,10 @@ final class ServicesController
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
+        $businessWideError = $this->requireBusinessWideLocationScope($request, $businessId);
+        if ($businessWideError !== null) {
+            return $businessWideError;
+        }
 
         $body = $request->getBody();
         $name = trim($body['name'] ?? '');
@@ -673,6 +744,10 @@ final class ServicesController
         // Authorization check
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::notFound('Category not found', $request->traceId);
+        }
+        $businessWideError = $this->requireBusinessWideLocationScope($request, $businessId);
+        if ($businessWideError !== null) {
+            return $businessWideError;
         }
 
         $body = $request->getBody();
@@ -715,6 +790,10 @@ final class ServicesController
         // Authorization check
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::notFound('Category not found', $request->traceId);
+        }
+        $businessWideError = $this->requireBusinessWideLocationScope($request, $businessId);
+        if ($businessWideError !== null) {
+            return $businessWideError;
         }
 
         if ($this->serviceRepository->hasActiveCategoryLinkedEntries($categoryId)) {
@@ -771,6 +850,10 @@ final class ServicesController
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
+        $businessWideError = $this->requireBusinessWideLocationScope($request, $businessId);
+        if ($businessWideError !== null) {
+            return $businessWideError;
+        }
 
         // Validate all services belong to same business
         $serviceIds = array_map(fn($s) => (int) $s['id'], $services);
@@ -821,6 +904,17 @@ final class ServicesController
         // Authorization check
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $businessWideError = $this->requireBusinessWideLocationScope($request, $businessId);
+        if ($businessWideError !== null) {
+            return $businessWideError;
+        }
+
+        foreach ($categories as $cat) {
+            $category = $this->serviceRepository->getCategoryById((int) $cat['id']);
+            if (!$category || (int) $category['business_id'] !== $businessId) {
+                return Response::error('All categories must belong to the same business', 'validation_error', 400);
+            }
         }
 
         // Update each category
@@ -1067,6 +1161,7 @@ final class ServicesController
         }
 
         $locationIds = array_map('intval', $locationIds);
+        $locationIds = array_values(array_unique($locationIds));
 
         // Verify all locations belong to this business
         foreach ($locationIds as $locId) {
@@ -1074,6 +1169,14 @@ final class ServicesController
             if (!$location || (int) $location['business_id'] !== $businessId) {
                 return Response::error("Invalid location_id: {$locId}", 'validation_error', 400);
             }
+        }
+        $currentLocationIds = array_map('intval', $this->serviceRepository->getServiceLocationIds($serviceId));
+        $addedLocationIds = array_values(array_diff($locationIds, $currentLocationIds));
+        $removedLocationIds = array_values(array_diff($currentLocationIds, $locationIds));
+        $changedLocationIds = array_values(array_unique(array_merge($addedLocationIds, $removedLocationIds)));
+        $locationScopeError = $this->requireLocationScope($request, $businessId, $changedLocationIds);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
         }
 
         $this->serviceRepository->updateServiceLocations($serviceId, $locationIds);

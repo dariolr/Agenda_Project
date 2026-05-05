@@ -1640,6 +1640,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "filterInactive": MessageLookupByLibrary.simpleMessage("Inattivi"),
     "filterNew": MessageLookupByLibrary.simpleMessage("Nuovi"),
     "filterVIP": MessageLookupByLibrary.simpleMessage("VIP"),
+    "forbiddenLocationScopeMessage": MessageLookupByLibrary.simpleMessage(
+      "Non hai i permessi per modificare dati collegati a una sede fuori dal tuo perimetro.",
+    ),
     "formClient": MessageLookupByLibrary.simpleMessage("Cliente"),
     "formDate": MessageLookupByLibrary.simpleMessage("Data"),
     "formEmail": MessageLookupByLibrary.simpleMessage("Email"),

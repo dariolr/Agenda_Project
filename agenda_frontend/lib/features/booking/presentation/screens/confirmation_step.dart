@@ -86,7 +86,9 @@ class _ConfirmationStepState extends ConsumerState<ConfirmationStep> {
 
             // Titolo
             Text(
-              isWaitlisted ? l10n.confirmationWaitlistTitle : l10n.confirmationTitle,
+              isWaitlisted
+                  ? l10n.confirmationWaitlistTitle
+                  : l10n.confirmationTitle,
               style: theme.textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -122,7 +124,9 @@ class _ConfirmationStepState extends ConsumerState<ConfirmationStep> {
                   children: [
                     if (bookingState.confirmedBookingId != null)
                       Text(
-                        l10n.confirmationBookingId(bookingState.confirmedBookingId!),
+                        l10n.confirmationBookingId(
+                          bookingState.confirmedBookingId!,
+                        ),
                         textAlign: TextAlign.center,
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.bold,

@@ -13,6 +13,8 @@ use Agenda\Infrastructure\Repositories\BusinessPaymentMethodRepository;
 use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Authorization\LocationAuthorizationService;
+use DomainException;
 use Throwable;
 
 final class BookingPaymentsController
@@ -26,6 +28,7 @@ final class BookingPaymentsController
         private readonly BusinessPaymentMethodRepository $paymentMethodRepo,
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
+        private readonly ?LocationAuthorizationService $locationAuth = null,
     ) {}
 
     public function show(Request $request): Response
@@ -38,6 +41,10 @@ final class BookingPaymentsController
 
         if (!$this->hasBusinessAccess($request, (int) $booking['business_id'], true)) {
             return Response::forbidden('You do not have access to this booking', $request->traceId);
+        }
+        $locationScopeError = $this->requireLocationScope($request, (int) $booking['business_id'], (int) $booking['location_id']);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
         }
 
         $payment = $this->bookingPaymentRepo->findByBookingId($bookingId);
@@ -63,6 +70,10 @@ final class BookingPaymentsController
 
         if (!$this->hasBusinessAccess($request, (int) $booking['business_id'], false)) {
             return Response::forbidden('You do not have access to this booking', $request->traceId);
+        }
+        $locationScopeError = $this->requireLocationScope($request, (int) $booking['business_id'], (int) $booking['location_id']);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
         }
 
         $payload = $request->getBody() ?? [];
@@ -270,5 +281,27 @@ final class BookingPaymentsController
         }
 
         return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_bookings', false);
+    }
+
+    private function requireLocationScope(Request $request, int $businessId, int $locationId): ?Response
+    {
+        if ($this->locationAuth === null) {
+            return null;
+        }
+
+        try {
+            $this->locationAuth->assertCanAccessLocation($request, $businessId, $locationId);
+            return null;
+        } catch (DomainException $e) {
+            if ($e->getMessage() === LocationAuthorizationService::ERROR_CODE) {
+                return Response::error(
+                    LocationAuthorizationService::ERROR_CODE,
+                    LocationAuthorizationService::ERROR_CODE,
+                    403,
+                    $request->traceId
+                );
+            }
+            throw $e;
+        }
     }
 }

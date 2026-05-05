@@ -1868,6 +1868,7 @@
   "apiErrorTokenExpired": "La sessione è scaduta. Accedi di nuovo.",
   "apiErrorUnauthorized": "Autenticazione richiesta.",
   "apiErrorForbidden": "Non hai i permessi per eseguire questa azione.",
+  "forbiddenLocationScopeMessage": "Non hai i permessi per modificare dati collegati a una sede fuori dal tuo perimetro.",
   "apiErrorValidation": "Controlla i dati inseriti.",
   "apiErrorNotFound": "La risorsa richiesta non è stata trovata.",
   "apiErrorClassTypeNameExists": "Esiste già un tipo evento con questo nome.",

@@ -1868,6 +1868,7 @@
   "apiErrorTokenExpired": "Your session has expired. Please sign in again.",
   "apiErrorUnauthorized": "Authentication required.",
   "apiErrorForbidden": "You do not have permission to perform this action.",
+  "forbiddenLocationScopeMessage": "You do not have permission to modify data linked to a location outside your scope.",
   "apiErrorValidation": "Please check the entered data.",
   "apiErrorNotFound": "The requested resource was not found.",
   "apiErrorClassTypeNameExists": "An event type with this name already exists.",

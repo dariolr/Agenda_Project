@@ -1,4 +1,3 @@
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 
@@ -90,7 +89,7 @@ final hasMultipleLocationsProvider = Provider<bool>((ref) {
   final locationsAsync = ref.watch(locationsProvider);
   final urlLocationId = ref.watch(urlLocationIdProvider);
   final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
-  final directLink = (linkSlug != null && urlLocationId != null && urlLocationId > 0)
+  final directLink = (linkSlug != null)
       ? ref.watch(bookingDirectLinkProvider).value
       : null;
 
@@ -121,7 +120,9 @@ final hasMultipleLocationsProvider = Provider<bool>((ref) {
 final effectiveLocationProvider = Provider<Location?>((ref) {
   final locationsAsync = ref.watch(locationsProvider);
   final isDirectLinkBlocked = ref.watch(bookingDirectLinkBlockingErrorProvider);
-  final directLink = isDirectLinkBlocked ? null : ref.watch(bookingDirectLinkProvider).value;
+  final directLink = isDirectLinkBlocked
+      ? null
+      : ref.watch(bookingDirectLinkProvider).value;
   final urlLocationId = ref.watch(urlLocationIdProvider);
   final selectedLocation = ref.watch(selectedLocationProvider);
 

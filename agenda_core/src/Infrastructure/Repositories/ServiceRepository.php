@@ -640,6 +640,20 @@ final class ServiceRepository
         return (int) $stmt->fetchColumn();
     }
 
+    public function getSingleActiveVariantLocationId(int $serviceId): ?int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT location_id
+             FROM service_variants
+             WHERE service_id = ? AND is_active = 1
+             LIMIT 2'
+        );
+        $stmt->execute([$serviceId]);
+        $locationIds = array_column($stmt->fetchAll(), 'location_id');
+
+        return count($locationIds) === 1 ? (int) $locationIds[0] : null;
+    }
+
     /**
      * Soft delete a service (sets is_active = 0).
      */

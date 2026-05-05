@@ -24,8 +24,3 @@ composer install --no-dev --optimize-autoloader
 
 caffeinate -i -t 7200 & pmset displaysleepnow
 
-dariola
-lenesda
-tunitor
-tunitora
-lenisda

@@ -11950,6 +11950,16 @@ class L10n {
     );
   }
 
+  /// `You do not have permission to modify data linked to a location outside your scope.`
+  String get forbiddenLocationScopeMessage {
+    return Intl.message(
+      'You do not have permission to modify data linked to a location outside your scope.',
+      name: 'forbiddenLocationScopeMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Please check the entered data.`
   String get apiErrorValidation {
     return Intl.message(

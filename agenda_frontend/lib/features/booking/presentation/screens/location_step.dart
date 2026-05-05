@@ -1,29 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/location.dart';
 import '../../../../core/widgets/centered_error_view.dart';
-import '../../providers/booking_provider.dart';
 import '../../providers/booking_nomenclature_provider.dart';
+import '../../providers/booking_provider.dart';
 import '../../providers/locations_provider.dart';
 
 class LocationStep extends ConsumerWidget {
   const LocationStep({super.key});
-
-  /// Aggiorna l'URL con il parametro location per persistenza
-  void _updateUrlWithLocation(BuildContext context, int locationId) {
-    final uri = GoRouterState.of(context).uri;
-    final newUri = uri.replace(
-      queryParameters: {
-        ...uri.queryParameters,
-        'location': locationId.toString(),
-      },
-    );
-    // Usa replaceLocation per non aggiungere alla history del browser
-    context.go(newUri.toString());
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -125,8 +111,6 @@ class LocationStep extends ConsumerWidget {
                           ref
                               .read(selectedLocationProvider.notifier)
                               .select(location);
-                          // Aggiorna URL con location selezionata per persistenza
-                          _updateUrlWithLocation(context, location.id);
                         },
                       );
                     },

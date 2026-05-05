@@ -13,7 +13,9 @@ use Agenda\Infrastructure\Repositories\ClassEventRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Authorization\LocationAuthorizationService;
 use Agenda\UseCases\Notifications\QueueClassBookingNotification;
+use DomainException;
 
 final class ClassEventsController
 {
@@ -25,6 +27,7 @@ final class ClassEventsController
         private readonly ?ClientRepository $clientRepo = null,
         private readonly ?QueueClassBookingNotification $queueClassBookingNotification = null,
         private readonly ?BookingDirectLinkRepository $directLinkRepo = null,
+        private readonly ?LocationAuthorizationService $locationAuth = null,
     ) {}
 
     public function indexTypes(Request $request): Response
@@ -107,6 +110,9 @@ final class ClassEventsController
 
         $locationIdsResult = $this->resolveClassTypeLocationIdsForMutation($request, $userId, $businessId, $body, true);
         if (isset($locationIdsResult['error'])) {
+            if (($locationIdsResult['error'] ?? '') === LocationAuthorizationService::ERROR_CODE) {
+                return $this->forbiddenLocationScope($request);
+            }
             return Response::error((string) $locationIdsResult['error'], 'validation_error', 400, $request->traceId);
         }
         $locationIds = $locationIdsResult['location_ids'] ?? null;
@@ -209,6 +215,9 @@ final class ClassEventsController
 
         $locationIdsResult = $this->resolveClassTypeLocationIdsForMutation($request, $userId, $businessId, $body, false);
         if (isset($locationIdsResult['error'])) {
+            if (($locationIdsResult['error'] ?? '') === LocationAuthorizationService::ERROR_CODE) {
+                return $this->forbiddenLocationScope($request);
+            }
             return Response::error((string) $locationIdsResult['error'], 'validation_error', 400, $request->traceId);
         }
         $locationIds = $locationIdsResult['location_ids'] ?? null;
@@ -466,8 +475,9 @@ final class ClassEventsController
                 $request->traceId
             );
         }
-        if (!$this->canManageLocation($userId, $businessId, $locationId)) {
-            return Response::forbidden('Access denied for this location', $request->traceId);
+        $locationScopeError = $this->requireLocationScope($request, $businessId, [$locationId]);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
         }
         if (!$this->classEventRepo->staffExistsInBusiness($businessId, $staffId)) {
             return Response::error('staff_id not found for this business', 'validation_error', 400, $request->traceId);
@@ -642,8 +652,13 @@ final class ClassEventsController
                 $request->traceId
             );
         }
-        if (!$this->canManageLocation($userId, $businessId, $effectiveLocationId)) {
-            return Response::forbidden('Access denied for this location', $request->traceId);
+        $locationScopeError = $this->requireLocationScope(
+            $request,
+            $businessId,
+            [(int) $currentEvent['location_id'], $effectiveLocationId]
+        );
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
         }
         if (!$this->classEventRepo->staffExistsInBusiness($businessId, $effectiveStaffId)) {
             return Response::error('staff_id not found for this business', 'validation_error', 400, $request->traceId);
@@ -696,6 +711,15 @@ final class ClassEventsController
             return Response::forbidden('Access denied', $request->traceId);
         }
 
+        $event = $this->classEventRepo->findById($businessId, $classEventId, null);
+        if ($event === null) {
+            return Response::notFound('Class event not found', $request->traceId);
+        }
+        $locationScopeError = $this->requireLocationScope($request, $businessId, [(int) $event['location_id']]);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
+        }
+
         $body = $request->getBody() ?? [];
         $notifyCustomer = $this->readBoolFromBody($body, 'notify_customer', false);
         if ($notifyCustomer) {
@@ -728,8 +752,9 @@ final class ClassEventsController
         if ($event === null) {
             return Response::notFound('Class event not found', $request->traceId);
         }
-        if (!$this->canManageLocation($userId, $businessId, (int) $event['location_id'])) {
-            return Response::forbidden('Access denied for this location', $request->traceId);
+        $locationScopeError = $this->requireLocationScope($request, $businessId, [(int) $event['location_id']]);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
         }
 
         $deleted = $this->classEventRepo->deleteEvent($businessId, $classEventId);
@@ -750,6 +775,15 @@ final class ClassEventsController
         }
         if (!$this->canManage($userId, $businessId)) {
             return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        $event = $this->classEventRepo->findById($businessId, $classEventId, null);
+        if ($event === null) {
+            return Response::notFound('Class event not found', $request->traceId);
+        }
+        $locationScopeError = $this->requireLocationScope($request, $businessId, [(int) $event['location_id']]);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
         }
 
         $body = $request->getBody() ?? [];
@@ -871,6 +905,15 @@ final class ClassEventsController
             return Response::forbidden('Access denied', $request->traceId);
         }
 
+        $event = $this->classEventRepo->findById($businessId, $classEventId, null);
+        if ($event === null) {
+            return Response::notFound('Class event not found', $request->traceId);
+        }
+        $locationScopeError = $this->requireLocationScope($request, $businessId, [(int) $event['location_id']]);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
+        }
+
         $body = $request->getBody() ?? [];
         $customerId = isset($body['customer_id'])
             ? (int) $body['customer_id']
@@ -932,6 +975,15 @@ final class ClassEventsController
         }
         if (!$this->canManage($userId, $businessId)) {
             return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        $event = $this->classEventRepo->findById($businessId, $classEventId, null);
+        if ($event === null) {
+            return Response::notFound('Class event not found', $request->traceId);
+        }
+        $locationScopeError = $this->requireLocationScope($request, $businessId, [(int) $event['location_id']]);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
         }
 
         $body = $request->getBody() ?? [];
@@ -1279,6 +1331,42 @@ final class ClassEventsController
             return true;
         }
         return $this->businessUserRepo->hasLocationAccess($userId, $businessId, $locationId);
+    }
+
+    private function forbiddenLocationScope(Request $request): Response
+    {
+        return Response::error(
+            LocationAuthorizationService::ERROR_CODE,
+            LocationAuthorizationService::ERROR_CODE,
+            403,
+            $request->traceId
+        );
+    }
+
+    /**
+     * @param int[] $locationIds
+     */
+    private function requireLocationScope(Request $request, int $businessId, array $locationIds): ?Response
+    {
+        if ($this->locationAuth === null) {
+            $userId = $request->userId();
+            foreach ($locationIds as $locationId) {
+                if ($userId === null || !$this->canManageLocation($userId, $businessId, (int) $locationId)) {
+                    return $this->forbiddenLocationScope($request);
+                }
+            }
+            return null;
+        }
+
+        try {
+            $this->locationAuth->assertCanAccessOnlyLocations($request, $businessId, $locationIds);
+            return null;
+        } catch (DomainException $e) {
+            if ($e->getMessage() === LocationAuthorizationService::ERROR_CODE) {
+                return $this->forbiddenLocationScope($request);
+            }
+            throw $e;
+        }
     }
 
     private function resolveCustomerId(int $businessId, int $userId): ?int
@@ -1826,7 +1914,7 @@ final class ClassEventsController
             $allowedSet = array_map('intval', $allowedLocationIds);
             foreach ($locationIds as $locationId) {
                 if (!in_array($locationId, $allowedSet, true)) {
-                    return ['error' => 'location_ids contains unauthorized locations'];
+                    return ['error' => LocationAuthorizationService::ERROR_CODE];
                 }
             }
         }

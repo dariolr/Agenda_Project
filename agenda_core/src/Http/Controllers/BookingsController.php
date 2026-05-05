@@ -23,7 +23,9 @@ use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\Infrastructure\Notifications\EmailService;
+use Agenda\Infrastructure\Authorization\LocationAuthorizationService;
 use Agenda\Infrastructure\Support\Json;
+use DomainException;
 
 final class BookingsController
 {
@@ -44,6 +46,7 @@ final class BookingsController
         private readonly ?RecurrenceRuleRepository $recurrenceRuleRepo = null,
         private readonly ?ModifyRecurringSeries $modifyRecurringSeries = null,
         private readonly ?NotificationRepository $notificationRepo = null,
+        private readonly ?LocationAuthorizationService $locationAuth = null,
     ) {}
 
     /**
@@ -72,6 +75,49 @@ final class BookingsController
 
         // Normal user: enforce bookings permission for write access
         return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_bookings', false);
+    }
+
+    private function forbiddenLocationScope(Request $request): Response
+    {
+        return Response::error(
+            LocationAuthorizationService::ERROR_CODE,
+            LocationAuthorizationService::ERROR_CODE,
+            403,
+            $request->traceId
+        );
+    }
+
+    /**
+     * @param int[] $locationIds
+     */
+    private function requireLocationScope(Request $request, int $businessId, array $locationIds): ?Response
+    {
+        if ($this->locationAuth === null) {
+            return null;
+        }
+
+        try {
+            $this->locationAuth->assertCanAccessOnlyLocations($request, $businessId, $locationIds);
+            return null;
+        } catch (DomainException $e) {
+            if ($e->getMessage() === LocationAuthorizationService::ERROR_CODE) {
+                return $this->forbiddenLocationScope($request);
+            }
+            throw $e;
+        }
+    }
+
+    /**
+     * @param array<int,array<string,mixed>> $bookings
+     */
+    private function requireLocationScopeForBookings(Request $request, int $businessId, array $bookings): ?Response
+    {
+        $locationIds = [];
+        foreach ($bookings as $booking) {
+            $locationIds[] = (int) $booking['location_id'];
+        }
+
+        return $this->requireLocationScope($request, $businessId, $locationIds);
     }
 
     /**
@@ -217,6 +263,32 @@ final class BookingsController
         } elseif ($request->queryParam('location_id') !== null) {
             $filters['location_id'] = (int) $request->queryParam('location_id');
         }
+        if ($this->locationAuth !== null && !$this->locationAuth->canAccessAllBusinessLocations($request, $businessId)) {
+            $requestedLocationIds = [];
+            if (!empty($filters['location_ids']) && is_array($filters['location_ids'])) {
+                $requestedLocationIds = array_map('intval', $filters['location_ids']);
+            } elseif (!empty($filters['location_id'])) {
+                $requestedLocationIds = [(int) $filters['location_id']];
+            }
+
+            if (!empty($requestedLocationIds)) {
+                $locationScopeError = $this->requireLocationScope($request, $businessId, $requestedLocationIds);
+                if ($locationScopeError !== null) {
+                    return $locationScopeError;
+                }
+            } else {
+                $allowedLocationIds = $this->locationAuth->getAllowedLocationIdsForRequest($request, $businessId);
+                if (empty($allowedLocationIds)) {
+                    return Response::success([
+                        'bookings' => [],
+                        'total' => 0,
+                        'limit' => min(100, max(1, (int) ($request->queryParam('limit') ?? 50))),
+                        'offset' => max(0, (int) ($request->queryParam('offset') ?? 0)),
+                    ]);
+                }
+                $filters['location_ids'] = $allowedLocationIds;
+            }
+        }
         
         // Staff filter - support both single and multi-select
         if ($request->queryParam('staff_ids') !== null) {
@@ -352,6 +424,10 @@ final class BookingsController
         if (!$this->hasBusinessAccess($request, $businessId, true)) {
             return Response::notFound('Booking not found');
         }
+        $locationScopeError = $this->requireLocationScope($request, $businessId, [(int) $booking['location_id']]);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
+        }
 
         return Response::success($this->formatBooking($booking));
     }
@@ -378,6 +454,10 @@ final class BookingsController
         $businessId = (int) $booking['business_id'];
         if (!$this->hasBusinessAccess($request, $businessId, true)) {
             return Response::notFound('Booking not found');
+        }
+        $locationScopeError = $this->requireLocationScope($request, $businessId, [(int) $booking['location_id']]);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
         }
 
         $events = $this->auditRepo->getEventsByBookingId($bookingId);
@@ -1618,6 +1698,18 @@ final class BookingsController
         }
 
         $body = $request->getBody();
+        $locationIdsToCheck = [(int) $originalBooking['location_id']];
+        if (isset($body['location_id'])) {
+            $newLocationId = (int) $body['location_id'];
+            if ($this->locationRepo === null || $this->locationRepo->getBusinessIdByLocationId($newLocationId) !== $businessId) {
+                return Response::error('Invalid location_id', 'validation_error', 400, $request->traceId);
+            }
+            $locationIdsToCheck[] = $newLocationId;
+        }
+        $locationScopeError = $this->requireLocationScope($request, $businessId, $locationIdsToCheck);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
+        }
         $reason = $body['reason'] ?? null;
 
         $forcedStaffId = $this->getForcedStaffIdForStaffOperator($request, $businessId);
@@ -1953,6 +2045,10 @@ final class BookingsController
 
         // Get all bookings in the series
         $bookings = $this->bookingRepo->findByRecurrenceRuleId($ruleId);
+        $locationScopeError = $this->requireLocationScopeForBookings($request, $rule->businessId, $bookings);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
+        }
 
         // Count conflicts
         $conflictCount = $this->bookingRepo->countConflictsByRecurrenceRuleId($ruleId);
@@ -1994,6 +2090,11 @@ final class BookingsController
         // Check business access
         if (!$this->hasBusinessAccess($request, $rule->businessId)) {
             return Response::error('Recurrence rule not found', 'not_found', 404);
+        }
+        $seriesBookings = $this->bookingRepo->findByRecurrenceRuleId($ruleId);
+        $locationScopeError = $this->requireLocationScopeForBookings($request, $rule->businessId, $seriesBookings);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
         }
 
         $cancelledCount = 0;
@@ -2065,6 +2166,11 @@ final class BookingsController
         // Check business access
         if (!$this->hasBusinessAccess($request, $rule->businessId)) {
             return Response::error('Recurrence rule not found', 'not_found', 404);
+        }
+        $seriesBookings = $this->bookingRepo->findByRecurrenceRuleId($ruleId);
+        $locationScopeError = $this->requireLocationScopeForBookings($request, $rule->businessId, $seriesBookings);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
         }
 
         // Parse request body

@@ -580,6 +580,7 @@ class ApiClient {
       'unauthorized' => l10n.apiErrorUnauthorized,
       'access_denied' => l10n.apiErrorForbidden,
       'forbidden' => l10n.apiErrorForbidden,
+      'forbidden_location_scope' => l10n.forbiddenLocationScopeMessage,
       'bad_request' => l10n.apiErrorValidation,
       'not_found' => l10n.apiErrorNotFound,
       'validation_error' => l10n.apiErrorValidation,
