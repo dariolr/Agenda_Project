@@ -27,6 +27,7 @@ final class GetMyBookings
                 b.status,
                 b.notes,
                 b.created_at,
+                bdl.slug AS booking_direct_link_slug,
                 bi.id as item_id,
                 bi.start_time,
                 bi.end_time,
@@ -44,10 +45,12 @@ final class GetMyBookings
                 l.cancellation_hours as location_cancellation_hours,
                 bus.id as business_id,
                 bus.name as business_name,
+                bus.slug as business_slug,
                 bus.cancellation_hours as business_cancellation_hours
              FROM bookings b
              JOIN locations l ON b.location_id = l.id
              JOIN businesses bus ON l.business_id = bus.id
+             LEFT JOIN booking_direct_links bdl ON b.booking_direct_link_id = bdl.id AND bdl.is_active = 1
              LEFT JOIN booking_items bi ON b.id = bi.booking_id
              LEFT JOIN service_variants sv ON bi.service_variant_id = sv.id
              LEFT JOIN services s ON sv.service_id = s.id
@@ -70,6 +73,7 @@ final class GetMyBookings
                     'status' => $row['status'],
                     'notes' => $row['notes'],
                     'created_at' => $row['created_at'],
+                    'booking_direct_link_slug' => $row['booking_direct_link_slug'] ?? null,
                     'location_id' => (int) $row['location_id'],
                     'location_name' => $row['location_name'],
                     'location_address' => $row['location_address'],
@@ -78,6 +82,7 @@ final class GetMyBookings
                     'location_cancellation_hours' => $row['location_cancellation_hours'],
                     'business_id' => (int) $row['business_id'],
                     'business_name' => $row['business_name'],
+                    'business_slug' => $row['business_slug'],
                     'business_cancellation_hours' => $row['business_cancellation_hours'],
                     'service_names' => [],
                     'service_ids' => [],

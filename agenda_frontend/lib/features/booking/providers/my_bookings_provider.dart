@@ -123,9 +123,10 @@ class MyBookings extends _$MyBookings {
       final pastClass = (classResponse['past'] as List<dynamic>? ?? [])
           .map((j) => ClassBookingItem.fromJson(j as Map<String, dynamic>))
           .toList();
-      final cancelledClass = (classResponse['cancelled'] as List<dynamic>? ?? [])
-          .map((j) => ClassBookingItem.fromJson(j as Map<String, dynamic>))
-          .toList();
+      final cancelledClass =
+          (classResponse['cancelled'] as List<dynamic>? ?? [])
+              .map((j) => ClassBookingItem.fromJson(j as Map<String, dynamic>))
+              .toList();
 
       state = MyBookingsState(
         upcoming: _withoutReplaced(upcoming),
@@ -478,6 +479,7 @@ BookingItem _fromCustomerBooking(
     id: json['id'] as int? ?? json['booking_id'] as int,
     businessId: json['business_id'] as int,
     businessName: businessName,
+    businessSlug: json['business_slug'] as String?,
     locationId: locationId,
     locationName: locationName,
     locationAddress: json['location_address'] as String?,
@@ -498,6 +500,7 @@ BookingItem _fromCustomerBooking(
         ? DateTime.parse(json['can_modify_until'] as String)
         : null,
     canModifyUntilRaw: json['can_modify_until'] as String?,
+    bookingDirectLinkSlug: json['booking_direct_link_slug'] as String?,
     status: json['status'] as String? ?? 'confirmed',
   );
 }

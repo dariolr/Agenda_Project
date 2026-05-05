@@ -31,6 +31,7 @@ final class BookingRepository
                     b.idempotency_key, b.created_at, b.updated_at,
                     b.recurrence_rule_id, b.recurrence_index, 
                     b.is_recurrence_parent, b.has_conflict,
+                    bdl.slug AS booking_direct_link_slug,
                     c.first_name AS client_first_name, c.last_name AS client_last_name,
                     bus.name AS business_name,
                     bus.slug AS business_slug,
@@ -41,6 +42,7 @@ final class BookingRepository
                     l.country AS location_country,
                     l.timezone AS location_timezone
              FROM bookings b
+             LEFT JOIN booking_direct_links bdl ON b.booking_direct_link_id = bdl.id AND bdl.is_active = 1
              LEFT JOIN clients c ON b.client_id = c.id
              LEFT JOIN businesses bus ON b.business_id = bus.id
              LEFT JOIN locations l ON b.location_id = l.id
@@ -288,9 +290,10 @@ final class BookingRepository
             'INSERT INTO bookings (business_id, location_id, client_id, user_id, 
                                    client_name, notes, status, source,
                                    idempotency_key, idempotency_expires_at,
+                                   booking_direct_link_id,
                                    recurrence_rule_id, recurrence_index, 
                                    is_recurrence_parent, has_conflict)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         
         $idempotencyExpires = null;
@@ -309,6 +312,7 @@ final class BookingRepository
             $data['source'] ?? 'online',
             $data['idempotency_key'] ?? null,
             $idempotencyExpires,
+            $data['booking_direct_link_id'] ?? null,
             $data['recurrence_rule_id'] ?? null,
             $data['recurrence_index'] ?? null,
             (int) ($data['is_recurrence_parent'] ?? 0),

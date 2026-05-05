@@ -3,6 +3,7 @@ class BookingItem {
   final int id;
   final int businessId;
   final String businessName;
+  final String? businessSlug;
   final int locationId;
   final String locationName;
   final String? locationAddress;
@@ -19,6 +20,10 @@ class BookingItem {
   final bool canModify;
   final DateTime? canModifyUntil;
 
+  /// Direct link slug used to create this booking, if any.
+  /// When present, "Prenota di nuovo" CTAs must use this slug.
+  final String? bookingDirectLinkSlug;
+
   /// Raw API string for `can_modify_until` (ISO8601). Useful to display the
   /// location time without device timezone conversion.
   final String? canModifyUntilRaw;
@@ -28,6 +33,7 @@ class BookingItem {
     required this.id,
     required this.businessId,
     required this.businessName,
+    this.businessSlug,
     required this.locationId,
     required this.locationName,
     this.locationAddress,
@@ -44,6 +50,7 @@ class BookingItem {
     required this.canModify,
     this.canModifyUntil,
     this.canModifyUntilRaw,
+    this.bookingDirectLinkSlug,
     this.status = 'confirmed',
   });
 
@@ -57,6 +64,7 @@ class BookingItem {
       businessId: business?['id'] as int? ?? json['business_id'] as int,
       businessName:
           business?['name'] as String? ?? json['business_name'] as String,
+      businessSlug: json['business_slug'] as String?,
       locationId: location?['id'] as int? ?? json['location_id'] as int,
       locationName:
           location?['name'] as String? ?? json['location_name'] as String,
@@ -82,6 +90,7 @@ class BookingItem {
           ? DateTime.parse(json['can_modify_until'] as String)
           : null,
       canModifyUntilRaw: json['can_modify_until'] as String?,
+      bookingDirectLinkSlug: json['booking_direct_link_slug'] as String?,
       status: json['status'] as String? ?? 'confirmed',
     );
   }

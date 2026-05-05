@@ -61,6 +61,7 @@ CREATE TABLE `bookings` (
   `source` enum('online','manual','import','onlinestaff') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'manual',
   `idempotency_key` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Client-provided UUID for idempotent POST',
   `idempotency_expires_at` timestamp NULL DEFAULT NULL COMMENT 'Key expiration (24h TTL)',
+  `booking_direct_link_id` int UNSIGNED DEFAULT NULL COMMENT 'Direct link used to create this booking (nullable, FK to booking_direct_links)',
   `replaces_booking_id` int UNSIGNED DEFAULT NULL COMMENT 'ID of booking this one replaces (for new booking)',
   `replaced_by_booking_id` int UNSIGNED DEFAULT NULL COMMENT 'ID of booking that replaced this (for original)',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1092,7 +1093,9 @@ ALTER TABLE `bookings`
   ADD KEY `idx_bookings_replaced_by_booking_id` (`replaced_by_booking_id`),
   ADD KEY `fk_bookings_location` (`location_id`),
   ADD KEY `idx_bookings_recurrence` (`recurrence_rule_id`),
-  ADD KEY `idx_bookings_recurrence_parent` (`recurrence_rule_id`,`is_recurrence_parent`);
+  ADD KEY `idx_bookings_recurrence_parent` (`recurrence_rule_id`,`is_recurrence_parent`),
+  ADD KEY `idx_bookings_booking_direct_link_id` (`booking_direct_link_id`),
+  ADD CONSTRAINT `fk_bookings_booking_direct_link_id` FOREIGN KEY (`booking_direct_link_id`) REFERENCES `booking_direct_links`(`id`) ON DELETE SET NULL ON UPDATE CASCADE;
 
 --
 -- Indici per le tabelle `booking_events`

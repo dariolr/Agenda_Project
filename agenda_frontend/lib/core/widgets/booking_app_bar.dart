@@ -4,7 +4,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../app/providers/route_slug_provider.dart';
 import '../../features/auth/providers/auth_provider.dart';
+import '../../features/booking/providers/booking_direct_link_provider.dart';
 import '../../features/booking/providers/business_provider.dart';
+import '../../features/booking/providers/locations_provider.dart';
 import '../l10n/l10_extension.dart';
 import '../utils/initials_utils.dart';
 
@@ -129,7 +131,21 @@ class _UserMenuButton extends ConsumerWidget {
       onSelected: (value) async {
         switch (value) {
           case 'bookings':
-            context.push('/$slug/my-bookings');
+            final linkSlug = ref.read(bookingDirectLinkSlugProvider);
+            final locationId = ref.read(urlLocationIdProvider);
+            final queryParts = <String>[];
+            if (locationId != null && locationId > 0) {
+              queryParts.add('location=$locationId');
+            }
+            if (linkSlug != null && linkSlug.trim().isNotEmpty) {
+              queryParts.add(
+                'link=${Uri.encodeQueryComponent(linkSlug.trim())}',
+              );
+            }
+            final query = queryParts.isNotEmpty
+                ? '?${queryParts.join('&')}'
+                : '';
+            context.push('/$slug/my-bookings$query');
           case 'profile':
             context.push('/$slug/profile');
           case 'change-password':

@@ -799,9 +799,18 @@ final class CreateBooking
 
         $notes = $data['notes'] ?? null;
         $requestedLocale = $data['locale'] ?? null;
+
+        // Resolve booking_direct_link_id if a slug was provided
+        $bookingDirectLinkId = null;
         $directLinkSlug = isset($data['booking_direct_link_slug'])
             ? (string) $data['booking_direct_link_slug']
             : null;
+        if ($directLinkSlug !== null && $directLinkSlug !== '' && $this->bookingDirectLinkRepository !== null) {
+            $directLink = $this->bookingDirectLinkRepository->findByBusinessAndSlug($businessId, $directLinkSlug);
+            if ($directLink !== null) {
+                $bookingDirectLinkId = (int) $directLink['id'];
+            }
+        }
 
         // Check if using new "items" format or legacy "service_ids" format
         if (isset($data['items']) && is_array($data['items']) && !empty($data['items'])) {
@@ -1036,6 +1045,7 @@ final class CreateBooking
                 'status' => 'confirmed',
                 'source' => 'online',
                 'idempotency_key' => $idempotencyKey,
+                'booking_direct_link_id' => $bookingDirectLinkId,
             ]);
 
             // Create booking items
@@ -1154,6 +1164,15 @@ final class CreateBooking
             $directLinkSlug
         );
 
+        // Resolve booking_direct_link_id if a slug was provided
+        $bookingDirectLinkId = null;
+        if ($directLinkSlug !== null && $directLinkSlug !== '' && $this->bookingDirectLinkRepository !== null) {
+            $directLink = $this->bookingDirectLinkRepository->findByBusinessAndSlug($businessId, $directLinkSlug);
+            if ($directLink !== null) {
+                $bookingDirectLinkId = (int) $directLink['id'];
+            }
+        }
+
         // Start transaction for conflict detection
         $this->db->beginTransaction();
 
@@ -1236,6 +1255,7 @@ final class CreateBooking
                 'status' => 'confirmed',
                 'source' => $source,
                 'idempotency_key' => $idempotencyKey,
+                'booking_direct_link_id' => $bookingDirectLinkId,
             ]);
 
             // Create booking items

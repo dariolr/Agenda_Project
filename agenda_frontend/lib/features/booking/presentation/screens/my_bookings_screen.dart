@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,8 +13,10 @@ import '/core/widgets/booking_app_bar.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/auth/domain/auth_state.dart';
 import '/features/auth/providers/auth_provider.dart';
-import '/features/booking/providers/business_provider.dart';
+import '/features/booking/domain/booking_url_builder.dart';
+import '/features/booking/providers/booking_direct_link_provider.dart';
 import '/features/booking/providers/booking_nomenclature_provider.dart';
+import '/features/booking/providers/business_provider.dart';
 import '/features/booking/providers/locations_provider.dart';
 import '/features/booking/providers/my_bookings_provider.dart';
 import '../dialogs/booking_history_dialog.dart';
@@ -99,13 +100,27 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
     return Scaffold(
       appBar: BookingAppBar(
         showBackButton: true,
-        // Mostra sempre icona calendario per navigare a nuova prenotazione
+        // Icona calendario: "Prenota di nuovo" preservando il contesto Direct Link
         backIcon: Icons.calendar_month,
         backTooltip: l10n.confirmationNewBooking,
         onBackPressed: () {
-          // Naviga sempre alla pagina di prenotazione (più affidabile su web)
           final slug = ref.read(routeSlugProvider);
-          context.go('/$slug/booking');
+          final linkSlug = ref.read(bookingDirectLinkSlugProvider);
+          final locationId = ref.read(urlLocationIdProvider);
+          if (slug != null && locationId != null && locationId > 0) {
+            final url = buildBookingUrl(
+              slug: slug,
+              locationId: locationId,
+              bookingDirectLinkSlug: linkSlug,
+            );
+            if (context.mounted) {
+              context.go(url);
+            }
+          } else if (slug != null) {
+            if (context.mounted) {
+              context.go('/$slug/booking');
+            }
+          }
         },
         showUserMenu: false,
         title: l10n.myBookings,
@@ -412,6 +427,12 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                     ref,
                     bookingId: booking.id,
                   ),
+                ),
+                // Pulsante "Prenota di nuovo" (con contesto Direct Link se presente)
+                IconButton(
+                  icon: Icon(Icons.replay, size: 20, color: rowIconColor),
+                  tooltip: context.l10n.confirmationNewBooking,
+                  onPressed: () => _handleBookAgain(context, ref, booking),
                 ),
               ],
             ),
@@ -824,6 +845,25 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
       }
     }
   }
+
+  /// Naviga alla pagina di prenotazione preservando il contesto Direct Link
+  /// se la prenotazione originale è stata creata tramite un Direct Link.
+  void _handleBookAgain(
+    BuildContext context,
+    WidgetRef ref,
+    BookingItem booking,
+  ) {
+    final slug = ref.read(routeSlugProvider) ?? booking.businessSlug;
+    if (slug == null) return;
+    final url = buildBookingUrl(
+      slug: slug,
+      locationId: booking.locationId,
+      bookingDirectLinkSlug: booking.bookingDirectLinkSlug,
+    );
+    if (context.mounted) {
+      context.go(url);
+    }
+  }
 }
 
 // ─── Card specializzata per prenotazioni di classe ───────────────────────────
@@ -851,7 +891,9 @@ class _ClassBookingCardState extends ConsumerState<_ClassBookingCard> {
     final booking = widget.booking;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final locale = Localizations.localeOf(context).languageCode == 'it' ? 'it' : 'en';
+    final locale = Localizations.localeOf(context).languageCode == 'it'
+        ? 'it'
+        : 'en';
     final dateFormat = DateFormat.yMd(locale);
     final timeFormat = DateFormat.jm(locale);
     final rowIconColor = colorScheme.onSurface.withOpacity(0.6);
@@ -861,9 +903,7 @@ class _ClassBookingCardState extends ConsumerState<_ClassBookingCard> {
     final hex = booking.classTypeColorHex?.trim() ?? '';
     if (RegExp(r'^#[0-9A-Fa-f]{6}$').hasMatch(hex)) {
       try {
-        classColor = Color(
-          int.parse(hex.substring(1), radix: 16) + 0xFF000000,
-        );
+        classColor = Color(int.parse(hex.substring(1), radix: 16) + 0xFF000000);
       } catch (_) {}
     }
 
@@ -903,7 +943,10 @@ class _ClassBookingCardState extends ConsumerState<_ClassBookingCard> {
                 if (booking.isCancelled)
                   Container(
                     margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.red.shade600,
                       borderRadius: BorderRadius.circular(4),
@@ -920,7 +963,10 @@ class _ClassBookingCardState extends ConsumerState<_ClassBookingCard> {
                 if (booking.isWaitlisted)
                   Container(
                     margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: colorScheme.tertiaryContainer,
                       borderRadius: BorderRadius.circular(4),
@@ -938,7 +984,11 @@ class _ClassBookingCardState extends ConsumerState<_ClassBookingCard> {
             ),
             const SizedBox(height: 4),
 
-            Divider(height: 20, thickness: 0.8, color: colorScheme.outline.withOpacity(0.25)),
+            Divider(
+              height: 20,
+              thickness: 0.8,
+              color: colorScheme.outline.withOpacity(0.25),
+            ),
 
             // Tipo classe con indicatore colore
             Row(
@@ -1011,7 +1061,9 @@ class _ClassBookingCardState extends ConsumerState<_ClassBookingCard> {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   OutlinedButton(
-                    onPressed: _isCancelling ? null : () => _handleCancel(context, ref),
+                    onPressed: _isCancelling
+                        ? null
+                        : () => _handleCancel(context, ref),
                     style: cancelButtonStyle,
                     child: _isCancelling
                         ? const SizedBox(
@@ -1053,10 +1105,12 @@ class _ClassBookingCardState extends ConsumerState<_ClassBookingCard> {
     if (confirm == true && context.mounted) {
       setState(() => _isCancelling = true);
       widget.onCancelLoadingChanged(true);
-      final success = await ref.read(myBookingsProvider.notifier).cancelClassBooking(
-        businessId: widget.booking.businessId,
-        classEventId: widget.booking.classEventId,
-      );
+      final success = await ref
+          .read(myBookingsProvider.notifier)
+          .cancelClassBooking(
+            businessId: widget.booking.businessId,
+            classEventId: widget.booking.classEventId,
+          );
       if (mounted) {
         setState(() => _isCancelling = false);
         widget.onCancelLoadingChanged(false);
@@ -1079,4 +1133,3 @@ class _ClassBookingCardState extends ConsumerState<_ClassBookingCard> {
     }
   }
 }
-
