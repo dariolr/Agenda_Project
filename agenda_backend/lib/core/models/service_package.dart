@@ -1,6 +1,18 @@
 
 import 'online_booking_visibility.dart';
 
+bool _boolFromJson(Object? value, {required bool fallback}) {
+  if (value == null) return fallback;
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized == 'true' || normalized == '1') return true;
+    if (normalized == 'false' || normalized == '0') return false;
+  }
+  return fallback;
+}
+
 class ServicePackageItem {
   final int serviceId;
   final int sortOrder;
@@ -27,8 +39,14 @@ class ServicePackageItem {
       name: json['name'] as String?,
       durationMinutes: json['duration_minutes'] as int?,
       price: (json['price'] as num?)?.toDouble(),
-      serviceIsActive: json['service_is_active'] as bool? ?? true,
-      variantIsActive: json['variant_is_active'] as bool? ?? true,
+      serviceIsActive: _boolFromJson(
+        json['service_is_active'],
+        fallback: true,
+      ),
+      variantIsActive: _boolFromJson(
+        json['variant_is_active'],
+        fallback: true,
+      ),
     );
   }
 }
@@ -117,9 +135,10 @@ class ServicePackage {
   );
 
   factory ServicePackage.fromJson(Map<String, dynamic> json) {
-    final isBookableOnline =
-        (json['is_bookable_online'] as bool?) ??
-        ((json['is_bookable_online'] as num?)?.toInt() != 0);
+    final isBookableOnline = _boolFromJson(
+      json['is_bookable_online'],
+      fallback: true,
+    );
     final itemsJson = json['items'] as List<dynamic>? ?? const [];
     return ServicePackage(
       id: json['id'] as int,
@@ -131,13 +150,13 @@ class ServicePackage {
       description: json['description'] as String?,
       overridePrice: (json['override_price'] as num?)?.toDouble(),
       overrideDurationMinutes: json['override_duration_minutes'] as int?,
-      isActive: json['is_active'] as bool? ?? true,
+      isActive: _boolFromJson(json['is_active'], fallback: true),
       isBookableOnline: isBookableOnline,
       onlineVisibility: OnlineBookingVisibilityOption.fromValues(
         onlineVisibility: json['online_visibility'] as String?,
         isBookableOnline: isBookableOnline,
       ).apiValue,
-      isBroken: json['is_broken'] as bool? ?? false,
+      isBroken: _boolFromJson(json['is_broken'], fallback: false),
       effectivePrice: (json['effective_price'] as num?)?.toDouble() ?? 0,
       effectiveDurationMinutes: json['effective_duration_minutes'] as int? ?? 0,
       items: itemsJson
@@ -176,4 +195,3 @@ class ServicePackageExpansion {
     );
   }
 }
-

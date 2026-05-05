@@ -115,7 +115,14 @@ class ServicePackageListItem extends ConsumerWidget {
                             ],
                           ),
                         ),
-                        if (!package.isActive || package.isBroken)
+                        if (!package.isActive ||
+                            package.isBroken ||
+                            (package.isActive &&
+                                !package.isBroken &&
+                                package.onlineVisibility == 'direct_link') ||
+                            (package.isActive &&
+                                !package.isBroken &&
+                                package.onlineVisibility == 'hidden'))
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Wrap(
@@ -135,19 +142,25 @@ class ServicePackageListItem extends ConsumerWidget {
                                         context.l10n.servicePackageBrokenLabel,
                                     color: colorScheme.error,
                                   ),
-                              ],
-                            ),
-                          ),
-                        if (!package.isBookableOnline)
-                          Padding(
-                            padding: const EdgeInsets.only(top: 2),
-                            child: Text(
-                              context.l10n.notBookableOnline,
-                              style: Theme.of(context).textTheme.bodySmall
-                                  ?.copyWith(
-                                    color: Colors.red[600],
-                                    fontStyle: FontStyle.italic,
+                                if (package.isActive &&
+                                    !package.isBroken &&
+                                    package.onlineVisibility == 'direct_link')
+                                  _StatusChip(
+                                    label: context
+                                        .l10n
+                                        .onlineBookingVisibilityDirectLinkOption,
+                                    color: colorScheme.tertiary,
                                   ),
+                                if (package.isActive &&
+                                    !package.isBroken &&
+                                    package.onlineVisibility == 'hidden')
+                                  _StatusChip(
+                                    label: context
+                                        .l10n
+                                        .onlineBookingVisibilityHiddenOption,
+                                    color: colorScheme.outline,
+                                  ),
+                              ],
                             ),
                           ),
                       ],
