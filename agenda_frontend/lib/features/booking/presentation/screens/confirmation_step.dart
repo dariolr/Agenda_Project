@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/providers/route_slug_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/network/network_providers.dart';
+import '../../providers/booking_direct_link_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/locations_provider.dart';
 
@@ -149,12 +150,21 @@ class _ConfirmationStepState extends ConsumerState<ConfirmationStep> {
             ElevatedButton(
               onPressed: () {
                 final slug = ref.read(routeSlugProvider);
+                final directLinkSlug = ref.read(bookingDirectLinkSlugProvider);
+                final urlLocationId = ref.read(urlLocationIdProvider);
                 final location = ref.read(effectiveLocationProvider);
                 final hasMultipleLocations = ref.read(
                   hasMultipleLocationsProvider,
                 );
                 ref.read(bookingFlowProvider.notifier).reset();
-                if (hasMultipleLocations) {
+
+                // Se la prenotazione corrente e' stata creata da un direct link,
+                // preserva i query param location e link nella navigazione.
+                if (directLinkSlug != null && urlLocationId != null) {
+                  context.go(
+                    '/$slug/booking?location=$urlLocationId&link=$directLinkSlug',
+                  );
+                } else if (hasMultipleLocations) {
                   // Su business multi-location la nuova prenotazione deve
                   // ripartire dalla scelta sede.
                   ref.read(urlLocationIdProvider.notifier).state = null;
