@@ -1,5 +1,6 @@
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/providers/form_factor_provider.dart';
@@ -55,6 +56,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
   String _selectedTimezone = 'Europe/Rome';
   String? _selectedBookingDefaultLocale;
   final Map<String, TextEditingController> _nomenclatureControllers = {};
+  final _maxBookingAdvanceDaysController = TextEditingController();
   bool _isActive = true;
   int _minBookingNoticeHours = 1;
   int _maxBookingAdvanceDays = 90;
@@ -72,7 +74,6 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
 
   // Opzioni disponibili per i dropdown
   static const _noticeHoursOptions = [1, 2, 4, 6, 12, 24, 48];
-  static const _advanceDaysOptions = [7, 14, 30, 60, 90, 180, 365];
   static const List<int?> _cancellationHoursOptions = [
     null,
     0,
@@ -409,6 +410,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       _isActive = widget.initial!.isActive;
       _minBookingNoticeHours = widget.initial!.minBookingNoticeHours;
       _maxBookingAdvanceDays = widget.initial!.maxBookingAdvanceDays;
+      _maxBookingAdvanceDaysController.text = _maxBookingAdvanceDays.toString();
       _cancellationHours = widget.initial!.cancellationHours;
       _allowCustomerChooseStaff = widget.initial!.allowCustomerChooseStaff;
       _allowMultiServiceBooking = widget.initial!.allowMultiServiceBooking;
@@ -463,6 +465,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
         _isActive = lastLocation.isActive;
         _minBookingNoticeHours = lastLocation.minBookingNoticeHours;
         _maxBookingAdvanceDays = lastLocation.maxBookingAdvanceDays;
+        _maxBookingAdvanceDaysController.text = _maxBookingAdvanceDays.toString();
         _cancellationHours = lastLocation.cancellationHours;
         _allowCustomerChooseStaff = lastLocation.allowCustomerChooseStaff;
         _allowMultiServiceBooking = lastLocation.allowMultiServiceBooking;
@@ -486,6 +489,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           _selectedCountryCode = _businessCountryOrDefault();
         }
         _selectedBookingDefaultLocale = null;
+        _maxBookingAdvanceDaysController.text = _maxBookingAdvanceDays.toString();
       }
     }
   }
@@ -495,6 +499,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     _nameController.dispose();
     _addressController.dispose();
     _emailController.dispose();
+    _maxBookingAdvanceDaysController.dispose();
     for (final controller in _nomenclatureControllers.values) {
       controller.dispose();
     }
@@ -828,21 +833,25 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
             // Anticipo massimo
             LabeledFormField(
               label: l10n.teamLocationMaxBookingAdvanceLabel,
-              child: DropdownButtonFormField<int>(
-                value: _maxBookingAdvanceDays,
+              child: TextFormField(
+                controller: _maxBookingAdvanceDaysController,
                 decoration: InputDecoration(
                   border: const OutlineInputBorder(),
                   isDense: true,
                   helperText: l10n.teamLocationMaxBookingAdvanceHint,
                 ),
-                items: _advanceDaysOptions.map((days) {
-                  return DropdownMenuItem(
-                    value: days,
-                    child: Text(l10n.teamLocationDays(days)),
-                  );
-                }).toList(),
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                ],
+                validator: (v) {
+                  final n = int.tryParse(v ?? '');
+                  if (n == null || n <= 0) return l10n.validationInvalidNumber;
+                  return null;
+                },
                 onChanged: (v) {
-                  if (v != null) setState(() => _maxBookingAdvanceDays = v);
+                  final n = int.tryParse(v);
+                  if (n != null && n > 0) setState(() => _maxBookingAdvanceDays = n);
                 },
               ),
             ),

@@ -179,18 +179,6 @@ class ServicesApi {
     await _apiClient.deleteService(serviceId);
   }
 
-  /// DELETE /v1/locations/{locationId}/services/{serviceId}
-  /// Removes a service from one location only.
-  Future<Map<String, dynamic>> removeServiceFromLocation({
-    required int locationId,
-    required int serviceId,
-  }) {
-    return _apiClient.removeServiceFromLocation(
-      locationId: locationId,
-      serviceId: serviceId,
-    );
-  }
-
   /// GET /v1/services/{id}/locations
   /// Gets the location IDs where this service has an active variant
   Future<List<int>> getServiceLocations(int serviceId) async {

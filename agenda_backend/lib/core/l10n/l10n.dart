@@ -2704,6 +2704,16 @@ class L10n {
     );
   }
 
+  /// `This service is active in multiple locations. To remove it from one location, edit the service and deselect that location. You can permanently delete it only when it remains associated with one location.`
+  String get serviceDeleteMultipleLocationsBlocked {
+    return Intl.message(
+      'This service is active in multiple locations. To remove it from one location, edit the service and deselect that location. You can permanently delete it only when it remains associated with one location.',
+      name: 'serviceDeleteMultipleLocationsBlocked',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `This action cannot be undone.`
   String get cannotUndoWarning {
     return Intl.message(

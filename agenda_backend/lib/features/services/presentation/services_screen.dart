@@ -1551,40 +1551,47 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     }
     if (!context.mounted) return;
 
-    final isLastActiveLocation = serviceLocationIds.length <= 1;
-    final title = isLastActiveLocation
-        ? context.l10n.deactivateServiceTitle
-        : context.l10n.removeServiceFromLocationTitle;
-    final message = isLastActiveLocation
-        ? context.l10n.deactivateServiceMessage
-        : context.l10n.removeServiceFromLocationMessage;
-    final confirmLabel = isLastActiveLocation
-        ? context.l10n.deactivateServiceAction
-        : context.l10n.removeServiceFromLocationAction;
+    // If multiple locations, block the delete with a message
+    if (serviceLocationIds.length > 1) {
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.cannotDeleteTitle,
+        message: context.l10n.serviceDeleteMultipleLocationsBlocked,
+      );
+      return;
+    }
 
     showAppConfirmDialog(
       context,
-      title: Text(title),
-      content: Text(message),
-      confirmLabel: confirmLabel,
+      title: Text(context.l10n.deactivateServiceTitle),
+      content: Text(context.l10n.deactivateServiceMessage),
+      confirmLabel: context.l10n.deactivateServiceAction,
       cancelLabel: context.l10n.actionCancel,
       danger: true,
-      onConfirm: () =>
-          _removeServiceFromCurrentLocation(context, ref, serviceId),
+      onConfirm: () => _deleteServiceGlobally(context, ref, serviceId),
     );
   }
 
-  Future<void> _removeServiceFromCurrentLocation(
+  Future<void> _deleteServiceGlobally(
     BuildContext context,
     WidgetRef ref,
     int serviceId,
   ) async {
     try {
-      await ref
-          .read(servicesProvider.notifier)
-          .removeServiceFromCurrentLocationApi(serviceId);
+      await ref.read(servicesProvider.notifier).deleteServiceApi(serviceId);
     } catch (e) {
       if (!context.mounted) return;
+
+      if (e is ApiException &&
+          e.code == 'service_has_multiple_active_locations') {
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.cannotDeleteTitle,
+          message: context.l10n.serviceDeleteMultipleLocationsBlocked,
+        );
+        return;
+      }
+
       final message = e is ApiException
           ? e.message
           : context.l10n.networkUnknownError;

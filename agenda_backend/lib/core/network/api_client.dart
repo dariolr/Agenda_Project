@@ -2045,14 +2045,6 @@ class ApiClient {
     await delete('/v1/services/$serviceId');
   }
 
-  /// DELETE /v1/locations/{locationId}/services/{serviceId}
-  Future<Map<String, dynamic>> removeServiceFromLocation({
-    required int locationId,
-    required int serviceId,
-  }) async {
-    return delete('/v1/locations/$locationId/services/$serviceId');
-  }
-
   /// GET /v1/services/{id}/locations
   /// Returns the list of location IDs where this service has an active variant.
   Future<List<int>> getServiceLocations(int serviceId) async {

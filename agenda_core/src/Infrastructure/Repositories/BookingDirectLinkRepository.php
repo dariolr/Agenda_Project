@@ -462,72 +462,99 @@ final class BookingDirectLinkRepository
         string $visibility,
         ?int $locationId = null
     ): bool {
-        $now = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:s');
-        $queries = [];
-        $params = [];
+        $pdo = $this->db->getPdo();
 
         $serviceSql = "SELECT 1
             FROM services s
-            INNER JOIN service_variants sv ON sv.service_id = s.id
-            INNER JOIN locations l ON l.id = sv.location_id
+            INNER JOIN service_variants sv
+                ON sv.service_id = s.id
+            INNER JOIN locations l
+                ON l.id = sv.location_id
             WHERE s.business_id = ?
-              AND s.category_id = ?
-              AND s.is_active = 1
-              AND sv.is_active = 1
-              AND l.is_active = 1
-              AND sv.is_bookable_online = 1
-              AND sv.online_visibility = ?";
+            AND s.category_id = ?
+            AND s.is_active = 1
+            AND sv.is_active = 1
+            AND l.is_active = 1
+            AND sv.is_bookable_online = 1
+            AND sv.online_visibility = ?";
+
         $serviceParams = [$businessId, $categoryId, $visibility];
+
         if ($locationId !== null) {
-            $serviceSql .= ' AND sv.location_id = ?';
+            $serviceSql .= " AND sv.location_id = ?";
             $serviceParams[] = $locationId;
         }
-        $queries[] = $serviceSql;
-        $params = array_merge($params, $serviceParams);
+
+        $serviceSql .= " LIMIT 1";
+
+        $stmt = $pdo->prepare($serviceSql);
+        $stmt->execute($serviceParams);
+
+        if ($stmt->fetchColumn() !== false) {
+            return true;
+        }
 
         $packageSql = "SELECT 1
             FROM service_packages sp
-            INNER JOIN locations l ON l.id = sp.location_id
+            INNER JOIN locations l
+                ON l.id = sp.location_id
             WHERE sp.business_id = ?
-              AND sp.category_id = ?
-              AND sp.is_active = 1
-              AND sp.is_broken = 0
-              AND l.is_active = 1
-              AND sp.is_bookable_online = 1
-              AND sp.online_visibility = ?";
+            AND sp.category_id = ?
+            AND sp.is_active = 1
+            AND sp.is_broken = 0
+            AND l.is_active = 1
+            AND sp.is_bookable_online = 1
+            AND sp.online_visibility = ?";
+
         $packageParams = [$businessId, $categoryId, $visibility];
+
         if ($locationId !== null) {
-            $packageSql .= ' AND sp.location_id = ?';
+            $packageSql .= " AND sp.location_id = ?";
             $packageParams[] = $locationId;
         }
-        $queries[] = $packageSql;
-        $params = array_merge($params, $packageParams);
+
+        $packageSql .= " LIMIT 1";
+
+        $stmt = $pdo->prepare($packageSql);
+        $stmt->execute($packageParams);
+
+        if ($stmt->fetchColumn() !== false) {
+            return true;
+        }
+
+        $now = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))
+            ->format('Y-m-d H:i:s');
 
         $eventSql = "SELECT 1
             FROM class_events ce
-            INNER JOIN class_types ct ON ct.id = ce.class_type_id AND ct.business_id = ce.business_id
-            INNER JOIN locations l ON l.id = ce.location_id
+            INNER JOIN class_types ct
+                ON ct.id = ce.class_type_id
+            AND ct.business_id = ce.business_id
+            INNER JOIN locations l
+                ON l.id = ce.location_id
             WHERE ce.business_id = ?
-              AND ct.service_category_id = ?
-              AND ce.status = 'SCHEDULED'
-              AND ce.visibility = 'PUBLIC'
-              AND ce.is_bookable_online = 1
-              AND ce.online_visibility = ?
-              AND l.is_active = 1
-              AND ce.starts_at > ?
-              AND (ce.booking_open_at IS NULL OR ce.booking_open_at <= ?)
-              AND (ce.booking_close_at IS NULL OR ce.booking_close_at > ?)";
+            AND ct.service_category_id = ?
+            AND ce.status = 'SCHEDULED'
+            AND ce.visibility = 'PUBLIC'
+            AND ce.is_bookable_online = 1
+            AND ce.online_visibility = ?
+            AND l.is_active = 1
+            AND ce.starts_at > ?
+            AND (ce.booking_open_at IS NULL OR ce.booking_open_at <= ?)
+            AND (ce.booking_close_at IS NULL OR ce.booking_close_at > ?)";
+
         $eventParams = [$businessId, $categoryId, $visibility, $now, $now, $now];
+
         if ($locationId !== null) {
-            $eventSql .= ' AND ce.location_id = ?';
+            $eventSql .= " AND ce.location_id = ?";
             $eventParams[] = $locationId;
         }
-        $queries[] = $eventSql;
-        $params = array_merge($params, $eventParams);
 
-        $sql = 'SELECT 1 FROM (' . implode(' UNION ALL ', $queries) . ') category_children LIMIT 1';
-        $stmt = $this->db->getPdo()->prepare($sql);
-        $stmt->execute($params);
+        $eventSql .= " LIMIT 1";
+
+        $stmt = $pdo->prepare($eventSql);
+        $stmt->execute($eventParams);
+
         return $stmt->fetchColumn() !== false;
     }
 

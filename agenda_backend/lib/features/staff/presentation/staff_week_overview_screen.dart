@@ -1906,8 +1906,9 @@ class _StaffWeekOverviewScreenState
                           for (int i = 0; i < staffList.length; i++) ...[
                             Container(
                               color: i % 2 == 1
-                                  ? Theme.of(context).colorScheme.onSurface
-                                      .withOpacity(0.02)
+                                  ? Theme.of(
+                                      context,
+                                    ).colorScheme.onSurface.withOpacity(0.02)
                                   : null,
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1923,8 +1924,8 @@ class _StaffWeekOverviewScreenState
                                             staffList[i].id,
                                           ),
                                           child: buildDayCell(
-                                            (availability[staffList[i].id]
-                                                    ?[d.weekday]) ??
+                                            (availability[staffList[i].id]?[d
+                                                    .weekday]) ??
                                                 const <HourRange>[],
                                             ref.watch(
                                               exceptionsForStaffOnDateProvider((
@@ -2106,26 +2107,63 @@ class _EditShiftContentState extends ConsumerState<_EditShiftContent> {
 
   Future<void> _pickTime({required bool isStart}) async {
     final step = widget.stepMinutes;
-    final selected = await AppBottomSheet.show<TimeOfDay>(
-      context: context,
-      useRootNavigator: true,
-      padding: EdgeInsets.zero,
-      builder: (ctx) {
-        final height = MediaQuery.of(ctx).size.height * 0.7;
-        return SizedBox(
-          height: height,
-          child: _TimeGridPicker(
-            initial: isStart ? _startTime : _endTime,
-            stepMinutes: step,
-          ),
-        );
-      },
-    );
+    final formFactor = ref.read(formFactorProvider);
+    final isDesktop = formFactor == AppFormFactor.desktop || widget.isDialog;
+
+    if (!mounted) return;
+    TimeOfDay? selected;
+    if (isDesktop) {
+      selected = await showDialog<TimeOfDay>(
+        context: context,
+        useRootNavigator: true,
+        barrierDismissible: true,
+        builder: (ctx) {
+          final colorScheme = Theme.of(ctx).colorScheme;
+          return Dialog(
+            child: Material(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 420,
+                  maxHeight: 520,
+                ),
+                child: _TimeGridPicker(
+                  initial: isStart ? _startTime : _endTime,
+                  stepMinutes: step,
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      selected = await AppBottomSheet.show<TimeOfDay>(
+        context: context,
+        useRootNavigator: true,
+        padding: EdgeInsets.zero,
+        builder: (ctx) {
+          final colorScheme = Theme.of(ctx).colorScheme;
+          final height = MediaQuery.of(ctx).size.height * 0.7;
+          return Material(
+            color: colorScheme.surface,
+            child: SizedBox(
+              height: height,
+              child: _TimeGridPicker(
+                initial: isStart ? _startTime : _endTime,
+                stepMinutes: step,
+              ),
+            ),
+          );
+        },
+      );
+    }
     if (selected != null) {
+      if (!context.mounted) return;
       setState(() {
         _timeError = null;
         if (isStart) {
-          _startTime = selected;
+          _startTime = selected!;
           // Se l'orario di fine è prima dell'inizio, aggiustalo
           final startMinutes = _startTime.hour * 60 + _startTime.minute;
           final endMinutes = _endTime.hour * 60 + _endTime.minute;
@@ -2136,7 +2174,7 @@ class _EditShiftContentState extends ConsumerState<_EditShiftContent> {
             );
           }
         } else {
-          _endTime = selected;
+          _endTime = selected!;
         }
       });
     }

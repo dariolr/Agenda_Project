@@ -404,6 +404,7 @@
   "deactivateServiceMessage": "Il servizio verrà disattivato e non sarà più visibile negli elenchi del gestionale.",
   "deactivateServiceAction": "Disattiva servizio",
   "deactivateServiceGloballyAction": "Disattiva da tutte le sedi",
+  "serviceDeleteMultipleLocationsBlocked": "Questo servizio è attivo su più sedi. Per rimuoverlo da una sede, apri la modifica del servizio e deseleziona la sede. Puoi eliminarlo definitivamente solo quando è associato a una sola sede.",
   "cannotUndoWarning": "Questa azione non può essere annullata.",
   "newCategoryTitle": "Nuova categoria",
   "editCategoryTitle": "Modifica categoria",

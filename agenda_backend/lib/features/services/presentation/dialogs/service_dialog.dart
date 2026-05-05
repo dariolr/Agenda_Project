@@ -412,6 +412,9 @@ Future<void> showServiceDialog(
       ? ref.read(eligibleStaffForServiceProvider(service.id)).toSet()
       : <int>{};
   Set<int> selectedStaffIds = {...originalStaffIds};
+  if (selectedStaffIds.isEmpty && staffList.length == 1) {
+    selectedStaffIds = {staffList.first.id};
+  }
   bool isSelectingStaff = false;
 
   // Location selection

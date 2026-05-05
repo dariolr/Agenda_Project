@@ -404,6 +404,7 @@
   "deactivateServiceMessage": "The service will be deactivated and hidden from the management lists.",
   "deactivateServiceAction": "Deactivate service",
   "deactivateServiceGloballyAction": "Deactivate from all locations",
+  "serviceDeleteMultipleLocationsBlocked": "This service is active in multiple locations. To remove it from one location, edit the service and deselect that location. You can permanently delete it only when it remains associated with one location.",
   "cannotUndoWarning": "This action cannot be undone.",
   "newCategoryTitle": "New category",
   "editCategoryTitle": "Edit category",

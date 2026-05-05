@@ -2539,6 +2539,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "serviceColorLabel": MessageLookupByLibrary.simpleMessage(
       "Colore servizio",
     ),
+    "serviceDeleteMultipleLocationsBlocked": MessageLookupByLibrary.simpleMessage(
+      "Questo servizio è attivo su più sedi. Per rimuoverlo da una sede, apri la modifica del servizio e deseleziona la sede. Puoi eliminarlo definitivamente solo quando è associato a una sola sede.",
+    ),
     "serviceDuplicateCopyWord": MessageLookupByLibrary.simpleMessage("Copia"),
     "serviceDuplicateError": MessageLookupByLibrary.simpleMessage(
       "Esiste già un servizio con questo nome",

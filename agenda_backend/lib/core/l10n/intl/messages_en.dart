@@ -2429,6 +2429,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Server response timeout. Please try again.",
     ),
     "serviceColorLabel": MessageLookupByLibrary.simpleMessage("Service color"),
+    "serviceDeleteMultipleLocationsBlocked": MessageLookupByLibrary.simpleMessage(
+      "This service is active in multiple locations. To remove it from one location, edit the service and deselect that location. You can permanently delete it only when it remains associated with one location.",
+    ),
     "serviceDuplicateCopyWord": MessageLookupByLibrary.simpleMessage("Copy"),
     "serviceDuplicateError": MessageLookupByLibrary.simpleMessage(
       "A service with this name already exists",

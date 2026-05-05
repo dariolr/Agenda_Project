@@ -628,6 +628,19 @@ final class ServiceRepository
     }
 
     /**
+     * Counts the active variants for a service.
+     * Returns the number of variants where is_active = 1.
+     */
+    public function countActiveVariants(int $serviceId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT COUNT(*) FROM service_variants WHERE service_id = ? AND is_active = 1'
+        );
+        $stmt->execute([$serviceId]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    /**
      * Soft delete a service (sets is_active = 0).
      */
     public function delete(int $serviceId): bool

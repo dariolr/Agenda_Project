@@ -524,6 +524,7 @@ final class ServicesController
     /**
      * DELETE /v1/services/{id}
      * Soft delete a service. Auth required.
+     * Blocked if service has multiple active locations.
      */
     public function destroy(Request $request): Response
     {
@@ -540,6 +541,16 @@ final class ServicesController
         // Authorization check
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::notFound('Service not found', $request->traceId);
+        }
+
+        // Check if service has multiple active locations (variants)
+        $activeVariantCount = $this->serviceRepository->countActiveVariants($serviceId);
+        if ($activeVariantCount > 1) {
+            return Response::conflict(
+                'service_has_multiple_active_locations',
+                'service_has_multiple_active_locations',
+                $request->traceId
+            );
         }
 
         $this->serviceRepository->delete($serviceId);

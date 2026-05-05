@@ -684,27 +684,66 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
         ? _date
         : _startDate;
     final step = _planningSlotMinutesForDate(referenceDate);
-    final selected = await AppBottomSheet.show<TimeOfDay>(
-      context: context,
-      useRootNavigator: true,
-      padding: EdgeInsets.zero,
-      builder: (ctx) {
-        final height = MediaQuery.of(ctx).size.height * 0.7;
-        return SizedBox(
-          height: height,
-          child: _TimeGridPicker(
-            initial: isStart ? _startTime : _endTime,
-            stepMinutes: step,
-          ),
-        );
-      },
-    );
+    final formFactor = ref.read(formFactorProvider);
+    final isDesktop =
+        formFactor == AppFormFactor.desktop ||
+        widget.presentation == _ExceptionDialogPresentation.dialog;
+
+    if (!mounted) return;
+    TimeOfDay? selected;
+    if (isDesktop) {
+      selected = await showDialog<TimeOfDay>(
+        context: context,
+        useRootNavigator: true,
+        barrierDismissible: true,
+        builder: (ctx) {
+          final colorScheme = Theme.of(ctx).colorScheme;
+          return Dialog(
+            child: Material(
+              color: colorScheme.surface,
+              borderRadius: BorderRadius.circular(12),
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 420,
+                  maxHeight: 520,
+                ),
+                child: _TimeGridPicker(
+                  initial: isStart ? _startTime : _endTime,
+                  stepMinutes: step,
+                ),
+              ),
+            ),
+          );
+        },
+      );
+    } else {
+      selected = await AppBottomSheet.show<TimeOfDay>(
+        context: context,
+        useRootNavigator: true,
+        padding: EdgeInsets.zero,
+        builder: (ctx) {
+          final colorScheme = Theme.of(ctx).colorScheme;
+          final height = MediaQuery.of(ctx).size.height * 0.7;
+          return Material(
+            color: colorScheme.surface,
+            child: SizedBox(
+              height: height,
+              child: _TimeGridPicker(
+                initial: isStart ? _startTime : _endTime,
+                stepMinutes: step,
+              ),
+            ),
+          );
+        },
+      );
+    }
     if (selected != null) {
+      if (!context.mounted) return;
       setState(() {
         _timeError = null;
         _validationError = null;
         if (isStart) {
-          _startTime = selected;
+          _startTime = selected!;
           // Se l'orario di fine è prima dell'inizio, aggiustalo
           final startMinutes = _startTime.hour * 60 + _startTime.minute;
           final endMinutes = _endTime.hour * 60 + _endTime.minute;
@@ -715,7 +754,7 @@ class _AddExceptionDialogState extends ConsumerState<_AddExceptionDialog> {
             );
           }
         } else {
-          _endTime = selected;
+          _endTime = selected!;
         }
       });
     }

@@ -31,6 +31,19 @@ class ClassEventsNotifier extends StateNotifier<AsyncValue<List<ClassEvent>>> {
         _loadData();
       }
     }, fireImmediately: true);
+    _ref.listen(bookingDirectLinkProvider, (previous, next) {
+      final linkSlug = _ref.read(bookingDirectLinkSlugProvider);
+      if (linkSlug == null) return;
+
+      final previousReady = previous?.value != null;
+      final nextReady = next.value != null;
+
+      if (!previousReady && nextReady) {
+        _hasFetched = false;
+        state = const AsyncValue.loading();
+        _loadData();
+      }
+    });
   }
 
   Future<void> _loadData() async {

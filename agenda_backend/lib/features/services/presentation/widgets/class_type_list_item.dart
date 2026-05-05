@@ -200,9 +200,7 @@ class _ClassTypeListItemState extends State<ClassTypeListItem> {
                               final durationLabel = hasData && durationMinutes != null
                                   ? context.localizedDurationLabel(durationMinutes!)
                                   : null;
-                              final effectivePriceText = hasData
-                                  ? (priceText ?? context.l10n.priceNotAvailable)
-                                  : null;
+                              final effectivePriceText = hasData ? priceText : null;
 
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,

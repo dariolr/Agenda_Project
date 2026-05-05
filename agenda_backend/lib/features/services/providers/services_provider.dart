@@ -368,40 +368,10 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
   }
 
   /// Deletes a service via API and updates local state
-  Future<bool> deleteServiceApi(int serviceId) async {
+  Future<void> deleteServiceApi(int serviceId) async {
     final repository = ref.read(servicesRepositoryProvider);
 
-    try {
-      await repository.deleteService(serviceId);
-
-      // Remove from local state
-      final current = state.value ?? [];
-      final newList = current.where((s) => s.id != serviceId).toList();
-      state = AsyncData(newList);
-
-      // Trigger refresh of servicesForLocationsProvider
-      ref.read(servicesForLocationsRefreshProvider.notifier).trigger();
-
-      ref
-          .read(serviceCategoriesProvider.notifier)
-          .bumpEmptyCategoriesToEnd(servicesOverride: newList);
-
-      return true;
-    } catch (e) {
-      return false;
-    }
-  }
-
-  /// Removes a service from the current location via API and updates local state.
-  Future<Map<String, dynamic>> removeServiceFromCurrentLocationApi(
-    int serviceId,
-  ) async {
-    final repository = ref.read(servicesRepositoryProvider);
-    final location = ref.read(currentLocationProvider);
-    final result = await repository.removeServiceFromLocation(
-      locationId: location.id,
-      serviceId: serviceId,
-    );
+    await repository.deleteService(serviceId);
 
     final current = state.value ?? [];
     final newList = current.where((s) => s.id != serviceId).toList();
@@ -412,8 +382,6 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     ref
         .read(serviceCategoriesProvider.notifier)
         .bumpEmptyCategoriesToEnd(servicesOverride: newList);
-
-    return result;
   }
 
   /// Gets the location IDs where a service has active variants
@@ -588,6 +556,7 @@ class ServiceVariantsNotifier extends AsyncNotifier<List<ServiceVariant>> {
             colorHex: s.color ?? '#CCCCCC',
             currency: currency,
             isBookableOnline: s.isBookableOnline,
+            onlineVisibility: s.onlineVisibility,
             isFree: (s.price ?? 0) == 0,
             isPriceStartingFrom: s.isPriceStartingFrom,
             parallelCapacity: s.parallelCapacity,

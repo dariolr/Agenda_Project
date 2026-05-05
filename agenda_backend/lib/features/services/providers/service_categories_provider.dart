@@ -1,10 +1,12 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/models/class_type.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/models/service_package.dart';
 import '../../agenda/providers/business_providers.dart';
+import '../../class_events/providers/class_events_providers.dart';
 import 'service_packages_provider.dart';
 import 'services_provider.dart';
 import 'services_repository_provider.dart';
@@ -13,8 +15,16 @@ import 'services_repository_provider.dart';
 /// Le categorie vengono inizializzate vuote e popolate dal ServicesNotifier
 /// quando i dati vengono caricati dall'API.
 class ServiceCategoriesNotifier extends Notifier<List<ServiceCategory>> {
+  Set<int> _classTypeCategoryIds = {};
+
   @override
   List<ServiceCategory> build() {
+    ref.listen(classTypesProvider, (_, next) {
+      _classTypeCategoryIds = {
+        for (final ct in next.value ?? const <ClassType>[])
+          if ((ct.serviceCategoryId ?? 0) != 0) ct.serviceCategoryId!,
+      };
+    }, fireImmediately: true);
     // Inizia vuoto - le categorie vengono caricate dall'API insieme ai servizi
     return [];
   }
@@ -158,6 +168,7 @@ class ServiceCategoriesNotifier extends Notifier<List<ServiceCategory>> {
         nonEmptyCatIds.add(categoryId);
       }
     }
+    nonEmptyCatIds.addAll(_classTypeCategoryIds);
 
     int maxNonEmptySort = -1;
     for (final c in state) {
