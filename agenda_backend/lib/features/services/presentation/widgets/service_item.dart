@@ -232,15 +232,18 @@ class ServiceItem extends ConsumerWidget {
           icon: const Icon(Icons.copy_outlined),
           onPressed: onDuplicate,
         ),
-        if (service.onlineVisibility != 'hidden')
-          IconButton(
-            tooltip: context.l10n.closuresImportHolidaysCopyLinkAction,
-            icon: Icon(
-              Icons.link_outlined,
-              color: isBookableOnline ? null : Theme.of(context).disabledColor,
-            ),
-            onPressed: isBookableOnline ? onCopyDirectLink : null,
+        IconButton(
+          tooltip: context.l10n.closuresImportHolidaysCopyLinkAction,
+          icon: Icon(
+            Icons.link_outlined,
+            color: (service.onlineVisibility == 'hidden' || !isBookableOnline)
+                ? Theme.of(context).disabledColor
+                : null,
           ),
+          onPressed: (service.onlineVisibility == 'hidden' || !isBookableOnline)
+              ? null
+              : onCopyDirectLink,
+        ),
         IconButton(
           tooltip: context.l10n.removeServiceFromLocationAction,
           icon: const Icon(Icons.delete_outline, color: Colors.red),
@@ -275,16 +278,16 @@ class ServiceItem extends ConsumerWidget {
           value: 'duplicate',
           child: Text(context.l10n.duplicateAction),
         ),
-        if (service.onlineVisibility != 'hidden')
-          PopupMenuItem(
-            value: 'copy_direct_link',
-            enabled:
-                ref
-                    .watch(serviceVariantByServiceIdProvider(service.id))
-                    ?.isBookableOnline ??
-                true,
-            child: Text(context.l10n.closuresImportHolidaysCopyLinkAction),
-          ),
+        PopupMenuItem(
+          value: 'copy_direct_link',
+          enabled:
+              service.onlineVisibility != 'hidden' &&
+              (ref
+                      .watch(serviceVariantByServiceIdProvider(service.id))
+                      ?.isBookableOnline ??
+                  true),
+          child: Text(context.l10n.closuresImportHolidaysCopyLinkAction),
+        ),
         PopupMenuItem(
           value: 'delete',
           child: Text(context.l10n.removeServiceFromLocationAction),

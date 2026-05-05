@@ -181,15 +181,18 @@ class ServicePackageListItem extends ConsumerWidget {
           icon: const Icon(Icons.edit_outlined),
           onPressed: onEdit,
         ),
-        if (package.onlineVisibility != 'hidden')
-          IconButton(
-            tooltip: context.l10n.closuresImportHolidaysCopyLinkAction,
-            icon: Icon(
-              Icons.link_outlined,
-              color: isBookableOnline ? null : Theme.of(context).disabledColor,
-            ),
-            onPressed: isBookableOnline ? onCopyDirectLink : null,
+        IconButton(
+          tooltip: context.l10n.closuresImportHolidaysCopyLinkAction,
+          icon: Icon(
+            Icons.link_outlined,
+            color: (package.onlineVisibility == 'hidden' || !isBookableOnline)
+                ? Theme.of(context).disabledColor
+                : null,
           ),
+          onPressed: (package.onlineVisibility == 'hidden' || !isBookableOnline)
+              ? null
+              : onCopyDirectLink,
+        ),
         IconButton(
           tooltip: context.l10n.actionDelete,
           icon: const Icon(Icons.delete_outline, color: Colors.red),
@@ -217,12 +220,12 @@ class ServicePackageListItem extends ConsumerWidget {
       },
       itemBuilder: (context) => [
         PopupMenuItem(value: 'edit', child: Text(context.l10n.actionEdit)),
-        if (package.onlineVisibility != 'hidden')
-          PopupMenuItem(
-            value: 'copy_direct_link',
-            enabled: package.isBookableOnline,
-            child: Text(context.l10n.closuresImportHolidaysCopyLinkAction),
-          ),
+        PopupMenuItem(
+          value: 'copy_direct_link',
+          enabled:
+              package.onlineVisibility != 'hidden' && package.isBookableOnline,
+          child: Text(context.l10n.closuresImportHolidaysCopyLinkAction),
+        ),
         PopupMenuItem(value: 'delete', child: Text(context.l10n.actionDelete)),
       ],
     );

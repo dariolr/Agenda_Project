@@ -108,6 +108,18 @@ class _CategoryItemState extends State<CategoryItem> {
   Widget build(BuildContext context) {
     final isEmptyCategory =
         widget.entries.isEmpty || widget.entries.every((e) => !e.isActive);
+
+    // La categoria è "all hidden" se ha almeno un elemento e TUTTI i tipi
+    // (servizi, pacchetti, eventi) che contiene sono hidden.
+    // ClassType non ha onlineVisibility, quindi non è mai hidden.
+    final allHidden =
+        widget.entries.isNotEmpty &&
+        widget.entries.every((e) {
+          if (e.isService) return e.service!.onlineVisibility == 'hidden';
+          if (e.isPackage) return e.package!.onlineVisibility == 'hidden';
+          if (e.isClassType) return false;
+          return false;
+        });
     final categoryBorderColor = widget.colorScheme.outlineVariant.withOpacity(
       0.16,
     );
@@ -254,8 +266,15 @@ class _CategoryItemState extends State<CategoryItem> {
                             tooltip: context
                                 .l10n
                                 .closuresImportHolidaysCopyLinkAction,
-                            icon: const Icon(Icons.link_outlined),
-                            onPressed: widget.onCopyDirectLink,
+                            icon: Icon(
+                              Icons.link_outlined,
+                              color: allHidden
+                                  ? Theme.of(context).disabledColor
+                                  : null,
+                            ),
+                            onPressed: allHidden
+                                ? null
+                                : widget.onCopyDirectLink,
                           ),
                           if (isEmptyCategory)
                             IconButton(

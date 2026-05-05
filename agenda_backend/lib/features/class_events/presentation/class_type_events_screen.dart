@@ -693,13 +693,20 @@ class _EventTile extends StatelessWidget {
                     visualDensity: VisualDensity.compact,
                     onPressed: onEdit,
                   ),
-                if (event.onlineVisibility != 'hidden')
-                  IconButton(
-                    tooltip: context.l10n.closuresImportHolidaysCopyLinkAction,
-                    icon: const Icon(Icons.link_outlined, size: 18),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: onCopyDirectLink,
+                IconButton(
+                  tooltip: context.l10n.closuresImportHolidaysCopyLinkAction,
+                  icon: Icon(
+                    Icons.link_outlined,
+                    size: 18,
+                    color: event.onlineVisibility == 'hidden'
+                        ? Theme.of(context).disabledColor
+                        : null,
                   ),
+                  visualDensity: VisualDensity.compact,
+                  onPressed: event.onlineVisibility == 'hidden'
+                      ? null
+                      : onCopyDirectLink,
+                ),
               ],
             )
           : null,

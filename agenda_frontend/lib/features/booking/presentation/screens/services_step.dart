@@ -490,10 +490,6 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
   }) {
     final widgets = <Widget>[];
     final packages = packagesAsync.value ?? [];
-    // Per i pacchetti usiamo tutti i servizi con staff eligible (non solo quelli
-    // prenotabili online singolarmente): un pacchetto deve essere visibile anche
-    // se i suoi servizi componenti non sono prenotabili online individualmente.
-    final allServiceIds = allServices.map((s) => s.id).toSet();
     final visiblePackages = packages.where((package) {
       if (!package.isActive || !package.isBookableOnline || package.isBroken) {
         return false;
@@ -501,9 +497,10 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
       if (package.onlineVisibility == 'hidden') return false;
       final packageServiceIds = package.orderedServiceIds;
       if (packageServiceIds.isEmpty) return false;
-      return packageServiceIds.every(
-        (serviceId) => allServiceIds.contains(serviceId),
-      );
+      if (!bookingConstraint.hasDirectLinkConstraint) {
+        return package.onlineVisibility == 'public';
+      }
+      return bookingConstraint.allowsPackage(package);
     }).toList();
     final serviceById = {for (final s in allServices) s.id: s};
     final l10n = context.l10n;
@@ -1875,6 +1872,8 @@ class _BookingLinkConstraint {
   bool get locksSingleServiceSelection => targetType == 'service_variant';
   bool get locksSinglePackageSelection => targetType == 'service_package';
   bool get locksSingleEventSelection => targetType == 'class_event';
+
+  bool get hasDirectLinkConstraint => targetType != null;
 
   bool get isScopedToServicesOnly =>
       targetType == 'service_variant' || targetType == 'service_package';

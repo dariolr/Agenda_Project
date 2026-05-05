@@ -611,21 +611,29 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                                                   schedule,
                                                 ),
                                         ),
-                                        if (schedule.onlineVisibility !=
-                                            'hidden')
-                                          IconButton(
-                                            tooltip: l10n
-                                                .closuresImportHolidaysCopyLinkAction,
-                                            icon: const Icon(
-                                              Icons.link_outlined,
-                                              size: 18,
-                                            ),
-                                            onPressed: isBusy
-                                                ? null
-                                                : () => _copyDirectBookingLink(
-                                                    schedule,
-                                                  ),
+                                        IconButton(
+                                          tooltip: l10n
+                                              .closuresImportHolidaysCopyLinkAction,
+                                          icon: Icon(
+                                            Icons.link_outlined,
+                                            size: 18,
+                                            color:
+                                                schedule.onlineVisibility ==
+                                                    'hidden'
+                                                ? Theme.of(
+                                                    context,
+                                                  ).disabledColor
+                                                : null,
                                           ),
+                                          onPressed:
+                                              schedule.onlineVisibility ==
+                                                      'hidden' ||
+                                                  isBusy
+                                              ? null
+                                              : () => _copyDirectBookingLink(
+                                                  schedule,
+                                                ),
+                                        ),
                                         IconButton(
                                           tooltip: l10n.actionDelete,
                                           icon: Icon(
@@ -2868,6 +2876,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           payload: {
             'starts_at': _toApiLocalDateTime(startLocal),
             'ends_at': _toApiLocalDateTime(endLocal),
+            'location_id': _locationId,
             'staff_id': _staffId,
             'capacity_total': capacity,
             'waitlist_enabled': _waitlistEnabled,

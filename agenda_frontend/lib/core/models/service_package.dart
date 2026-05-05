@@ -1,11 +1,25 @@
 
 import 'service.dart';
 
+bool _boolFromJson(Object? value, {required bool fallback}) {
+  if (value == null) return fallback;
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  if (value is String) {
+    final normalized = value.trim().toLowerCase();
+    if (normalized == 'true' || normalized == '1') return true;
+    if (normalized == 'false' || normalized == '0') return false;
+  }
+  return fallback;
+}
+
 class ServicePackageItem {
   final int serviceId;
   final int sortOrder;
   final String? name;
   final int? durationMinutes;
+  final int processingTime;
+  final int blockedTime;
   final double? price;
   final bool serviceIsActive;
   final bool variantIsActive;
@@ -15,6 +29,8 @@ class ServicePackageItem {
     required this.sortOrder,
     this.name,
     this.durationMinutes,
+    this.processingTime = 0,
+    this.blockedTime = 0,
     this.price,
     this.serviceIsActive = true,
     this.variantIsActive = true,
@@ -26,9 +42,17 @@ class ServicePackageItem {
       sortOrder: json['sort_order'] as int? ?? 0,
       name: json['name'] as String?,
       durationMinutes: json['duration_minutes'] as int?,
+      processingTime: json['processing_time'] as int? ?? 0,
+      blockedTime: json['blocked_time'] as int? ?? 0,
       price: (json['price'] as num?)?.toDouble(),
-      serviceIsActive: json['service_is_active'] as bool? ?? true,
-      variantIsActive: json['variant_is_active'] as bool? ?? true,
+      serviceIsActive: _boolFromJson(
+        json['service_is_active'],
+        fallback: true,
+      ),
+      variantIsActive: _boolFromJson(
+        json['variant_is_active'],
+        fallback: true,
+      ),
     );
   }
 }
@@ -79,22 +103,33 @@ class ServicePackage {
   }
 
   /// Durata mostrata al cliente per il pacchetto:
-  /// somma le durate visibili dei servizi componenti quando disponibili.
-  /// Fallback su effectiveDurationMinutes se i servizi non sono risolti.
+  /// somma le durate visibili dei servizi componenti quando sono tutti risolti.
+  /// Se alcuni servizi sono nascosti e non compaiono nella lista pubblica,
+  /// usa gli item del pacchetto restituiti dall'API.
   int customerVisibleDurationMinutes(Map<int, Service> serviceById) {
     final ids = orderedServiceIds;
     if (ids.isEmpty) return effectiveDurationMinutes;
 
-    var foundAny = false;
-    var sum = 0;
+    var allServicesResolved = true;
+    var resolvedSum = 0;
     for (final serviceId in ids) {
       final service = serviceById[serviceId];
-      if (service == null) continue;
-      foundAny = true;
-      sum += service.customerVisibleDurationMinutes;
+      if (service == null) {
+        allServicesResolved = false;
+        break;
+      }
+      resolvedSum += service.customerVisibleDurationMinutes;
+    }
+    if (allServicesResolved) return resolvedSum;
+
+    var itemSum = 0;
+    for (final item in items) {
+      final duration = item.durationMinutes;
+      if (duration == null) return effectiveDurationMinutes;
+      itemSum += duration + item.processingTime;
     }
 
-    return foundAny ? sum : effectiveDurationMinutes;
+    return itemSum;
   }
 
   factory ServicePackage.fromJson(Map<String, dynamic> json) {
@@ -110,10 +145,13 @@ class ServicePackage {
       description: json['description'] as String?,
       overridePrice: (json['override_price'] as num?)?.toDouble(),
       overrideDurationMinutes: json['override_duration_minutes'] as int?,
-      isActive: json['is_active'] as bool? ?? true,
-      isBookableOnline: json['is_bookable_online'] as bool? ?? true,
+      isActive: _boolFromJson(json['is_active'], fallback: true),
+      isBookableOnline: _boolFromJson(
+        json['is_bookable_online'],
+        fallback: true,
+      ),
       onlineVisibility: json['online_visibility'] as String? ?? 'public',
-      isBroken: json['is_broken'] as bool? ?? false,
+      isBroken: _boolFromJson(json['is_broken'], fallback: false),
       effectivePrice: (json['effective_price'] as num?)?.toDouble() ?? 0,
       effectiveDurationMinutes: json['effective_duration_minutes'] as int? ?? 0,
       items: itemsJson
@@ -152,4 +190,3 @@ class ServicePackageExpansion {
     );
   }
 }
-

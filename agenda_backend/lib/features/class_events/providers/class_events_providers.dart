@@ -234,6 +234,7 @@ final upcomingClassEventsByTypeProvider =
 
       final repo = ref.watch(classEventsRepositoryProvider);
       final timezone = ref.watch(effectiveTenantTimezoneProvider);
+      final location = ref.watch(currentLocationProvider);
       final nowUtc = TenantTimeService.nowInTimezone(timezone).toUtc();
       final fromUtc = nowUtc.subtract(const Duration(days: 1));
       final toUtc = nowUtc.add(const Duration(days: 3650));
@@ -242,6 +243,7 @@ final upcomingClassEventsByTypeProvider =
         businessId: businessId,
         fromUtc: fromUtc,
         toUtc: toUtc,
+        locationId: location.id,
         classTypeId: classTypeId,
       );
 
@@ -265,6 +267,7 @@ final allClassEventsByTypeProvider =
 
       final repo = ref.watch(classEventsRepositoryProvider);
       final timezone = ref.watch(effectiveTenantTimezoneProvider);
+      final location = ref.watch(currentLocationProvider);
       final nowUtc = TenantTimeService.nowInTimezone(timezone).toUtc();
       final fromUtc = nowUtc.subtract(const Duration(days: 3650));
       final toUtc = nowUtc.add(const Duration(days: 3650));
@@ -273,6 +276,7 @@ final allClassEventsByTypeProvider =
         businessId: businessId,
         fromUtc: fromUtc,
         toUtc: toUtc,
+        locationId: location.id,
         classTypeId: classTypeId,
       );
 

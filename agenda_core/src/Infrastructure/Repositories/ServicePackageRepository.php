@@ -462,22 +462,8 @@ final class ServicePackageRepository
         $placeholders = implode(',', array_fill(0, count($packageIds), '?'));
         $params = array_merge([$locationId], $packageIds);
 
-        $missingCondition = $includeHiddenForAdmin
-            ? 's.id IS NULL OR s.is_active = 0 OR sv.id IS NULL OR sv.is_active = 0'
-            : "s.id IS NULL
-                            OR s.is_active = 0
-                            OR sv.id IS NULL
-                            OR sv.is_active = 0
-                            OR sv.is_bookable_online = 0
-                            OR sv.online_visibility = 'hidden'";
-        $availableCondition = $includeHiddenForAdmin
-            ? 's.id IS NOT NULL AND s.is_active = 1 AND sv.id IS NOT NULL AND sv.is_active = 1'
-            : "s.id IS NOT NULL
-                            AND s.is_active = 1
-                            AND sv.id IS NOT NULL
-                            AND sv.is_active = 1
-                            AND sv.is_bookable_online = 1
-                            AND sv.online_visibility <> 'hidden'";
+        $missingCondition = 's.id IS NULL OR s.is_active = 0 OR sv.id IS NULL OR sv.is_active = 0';
+        $availableCondition = 's.id IS NOT NULL AND s.is_active = 1 AND sv.id IS NOT NULL AND sv.is_active = 1';
 
         $stmt = $this->db->getPdo()->prepare(
             "SELECT spi.package_id,

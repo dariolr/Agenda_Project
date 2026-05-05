@@ -16,6 +16,7 @@ import '/features/auth/providers/auth_provider.dart';
 import '/features/booking/domain/booking_url_builder.dart';
 import '/features/booking/providers/booking_direct_link_provider.dart';
 import '/features/booking/providers/booking_nomenclature_provider.dart';
+import '/features/booking/providers/booking_provider.dart';
 import '/features/booking/providers/business_provider.dart';
 import '/features/booking/providers/locations_provider.dart';
 import '/features/booking/providers/my_bookings_provider.dart';
@@ -107,6 +108,7 @@ class _MyBookingsScreenState extends ConsumerState<MyBookingsScreen>
           final slug = ref.read(routeSlugProvider);
           final linkSlug = ref.read(bookingDirectLinkSlugProvider);
           final locationId = ref.read(urlLocationIdProvider);
+          ref.read(bookingFlowProvider.notifier).reset();
           if (slug != null && locationId != null && locationId > 0) {
             final url = buildBookingUrl(
               slug: slug,
@@ -860,6 +862,7 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
       locationId: booking.locationId,
       bookingDirectLinkSlug: booking.bookingDirectLinkSlug,
     );
+    ref.read(bookingFlowProvider.notifier).reset();
     if (context.mounted) {
       context.go(url);
     }

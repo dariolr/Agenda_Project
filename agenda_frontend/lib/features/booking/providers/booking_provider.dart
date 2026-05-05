@@ -397,6 +397,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
 
   /// Reset del flow
   void reset() {
+    _didAutoSelectService = false;
     final initialStep = _hasMultipleLocations
         ? BookingStep.location
         : BookingStep.services;
@@ -410,8 +411,11 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     if (!isLocationConstrained) {
       ref.read(selectedLocationProvider.notifier).clear();
     }
-    // Note: availableDatesProvider si resetta automaticamente via listeners
-    // quando cambiano services/staff
+    ref.read(selectedDateProvider.notifier).state = null;
+    ref.read(focusedMonthProvider.notifier).state = ref.read(
+      locationNowProvider,
+    );
+    ref.read(availableDatesProvider.notifier).resetForNewSelection();
   }
 
   /// Vai allo step successivo
@@ -1534,12 +1538,9 @@ class ServicePackagesNotifier
         linkSlug: linkSlug,
       );
       final staff = await repository.getStaff(locationId);
-      final eligibleServiceIds = _eligibleServiceIdsFromActiveStaff(staff);
-      final filteredPackages = packages.where((package) {
-        final serviceIds = package.orderedServiceIds;
-        if (serviceIds.isEmpty) return false;
-        return serviceIds.every(eligibleServiceIds.contains);
-      }).toList();
+      final filteredPackages = packages
+          .where((package) => _canSingleStaffDeliverPackage(package, staff))
+          .toList();
       state = AsyncValue.data(filteredPackages);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -1551,6 +1552,24 @@ class ServicePackagesNotifier
     state = const AsyncValue.loading();
     await _loadData();
   }
+}
+
+bool _canSingleStaffDeliverPackage(
+  ServicePackage package,
+  List<Staff> staffMembers,
+) {
+  final serviceIds = package.orderedServiceIds.toSet();
+  if (serviceIds.isEmpty) return false;
+
+  for (final staff in staffMembers) {
+    if (!staff.isBookableOnline || !staff.isActive) continue;
+    final staffServiceIds = staff.serviceIds.toSet();
+    if (serviceIds.every(staffServiceIds.contains)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 final servicePackagesProvider =
