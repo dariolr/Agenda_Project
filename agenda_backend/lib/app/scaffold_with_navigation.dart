@@ -948,7 +948,7 @@ class _AgendaAddAction extends ConsumerWidget {
           initialStaffId: initialStaffIdForNewBooking,
         );
       } else if (value == 'class_schedule') {
-        showCreateClassEventDialog(context, ref);
+        showCreateClassEventDialog(context, ref, lockLocation: true);
       } else if (value == 'block') {
         showAddBlockDialog(
           context,

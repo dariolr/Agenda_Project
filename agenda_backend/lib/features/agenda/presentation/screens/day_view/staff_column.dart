@@ -2243,6 +2243,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
         initialDate: date,
         initialStartTime: time,
         initialStaffId: widget.staff.id,
+        lockLocation: true,
       );
     } else if (selected == 'block') {
       await showAddBlockDialog(
@@ -2326,6 +2327,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           minute: targetStart.minute,
         ),
         initialStaffId: widget.staff.id,
+        lockLocation: true,
       );
       return;
     }

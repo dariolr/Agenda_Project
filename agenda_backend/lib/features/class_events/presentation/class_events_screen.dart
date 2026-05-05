@@ -145,6 +145,7 @@ Future<bool> showCreateClassEventDialog(
   ClassEvent? prefillEvent,
   bool useRootNavigator = true,
   bool closeParentOnSave = false,
+  bool lockLocation = false,
 }) async {
   final currentLocation = ref.read(currentLocationProvider);
   final DateTime resolvedInitialDate =
@@ -163,6 +164,7 @@ Future<bool> showCreateClassEventDialog(
           initialStaffId: initialStaffId,
           initialEvent: initialEvent,
           prefillEvent: prefillEvent,
+          lockLocation: lockLocation,
         ),
       ) ==
       true;
@@ -1166,6 +1168,7 @@ class _CreateClassForm extends ConsumerStatefulWidget {
     this.initialStaffId,
     this.initialEvent,
     this.prefillEvent,
+    this.lockLocation = false,
   });
 
   final int initialLocationId;
@@ -1176,6 +1179,7 @@ class _CreateClassForm extends ConsumerStatefulWidget {
   final int? initialStaffId;
   final ClassEvent? initialEvent;
   final ClassEvent? prefillEvent;
+  final bool lockLocation;
 
   @override
   ConsumerState<_CreateClassForm> createState() => _CreateClassFormState();
@@ -1525,8 +1529,8 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                 const SizedBox(height: gap),
               ],
 
-              // ── sede (solo creazione, se multipla) ──
-              if (!isEditMode && filteredLocations.length > 1) ...[
+              // ── sede (solo creazione, se multipla e non bloccata) ──
+              if (!isEditMode && filteredLocations.length > 1 && !widget.lockLocation) ...[
                 DropdownButtonFormField<int>(
                   value: _locationId,
                   decoration: InputDecoration(
