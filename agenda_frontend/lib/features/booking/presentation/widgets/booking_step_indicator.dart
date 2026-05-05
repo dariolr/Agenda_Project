@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
+import '../../providers/booking_direct_link_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/booking_nomenclature_provider.dart';
 import '../../providers/class_events_provider.dart';
@@ -34,20 +35,32 @@ class BookingStepIndicator extends ConsumerWidget {
       bookingTextOverridesForLocaleProvider(Localizations.localeOf(context)),
     );
 
+    final directLink = ref.watch(bookingDirectLinkProvider).value;
     final isEventOnly = ref.watch(isEventOnlyModeProvider);
     final hasBoth = ref.watch(hasBothServicesAndEventsProvider);
-    final servicesStepLabel = isEventOnly
-        ? bookingEventsStepLabel(context, phraseOverrides: phraseOverrides)
-        : hasBoth
-        ? bookingServicesAndEventsStepLabel(
-            context,
-            phraseOverrides: phraseOverrides,
-          )
-        : bookingServicesStepLabel(
-            context,
-            customServiceLabel,
-            phraseOverrides: phraseOverrides,
-          );
+    final servicesStepLabel = switch (directLink?.targetType) {
+      'service_variant' || 'service_package' => bookingServicesStepLabel(
+        context,
+        customServiceLabel,
+        phraseOverrides: phraseOverrides,
+      ),
+      'class_event' => bookingEventsStepLabel(
+        context,
+        phraseOverrides: phraseOverrides,
+      ),
+      _ => isEventOnly
+          ? bookingEventsStepLabel(context, phraseOverrides: phraseOverrides)
+          : hasBoth
+          ? bookingServicesAndEventsStepLabel(
+              context,
+              phraseOverrides: phraseOverrides,
+            )
+          : bookingServicesStepLabel(
+              context,
+              customServiceLabel,
+              phraseOverrides: phraseOverrides,
+            ),
+    };
 
     final steps = [
       if (showLocationStep)
