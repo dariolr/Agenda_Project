@@ -22,6 +22,7 @@ flutter build web --release --no-tree-shake-icons --pwa-strategy=none
 
 composer install --no-dev --optimize-autoloader
 
+caffeinate -i -t 7200 & pmset displaysleepnow
 
 dariola
 lenesda

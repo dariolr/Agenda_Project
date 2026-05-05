@@ -1,4 +1,3 @@
-
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/theme/app_spacing.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
@@ -517,11 +516,19 @@ Future<void> showServiceDialog(
       return;
     }
     final normalizedName = StringUtils.toTitleCase(name);
-    final isDuplicate = ServiceValidators.isDuplicateServiceName(
-      allServices,
-      normalizedName,
-      excludeId: isEditing ? service.id : null,
-    );
+    final originalNormalizedName = isEditing
+        ? StringUtils.toTitleCase(service.name.trim())
+        : null;
+    final shouldCheckDuplicate =
+        !isEditing ||
+        normalizedName.toLowerCase() != originalNormalizedName?.toLowerCase();
+    final isDuplicate =
+        shouldCheckDuplicate &&
+        ServiceValidators.isDuplicateServiceName(
+          allServices,
+          normalizedName,
+          excludeId: isEditing ? service.id : null,
+        );
     if (selectedDuration == null) {
       durationError = true;
       return;
@@ -711,6 +718,26 @@ Future<void> showServiceDialog(
             serviceId: savedService.id,
             locationIds: selectedLocationIds.toList(),
           );
+
+          // Auto-associa lo staff alle location appena aggiunte
+          // se quella location ha un solo membro attivo
+          final newlyAddedLocationIds =
+              selectedLocationIds.difference(originalLocationIds);
+          final freshStaff = ref.read(allStaffProvider).value ?? [];
+          for (final newLocId in newlyAddedLocationIds) {
+            final staffAtLocation = freshStaff
+                .where((s) => s.worksAtLocation(newLocId))
+                .toList();
+            if (staffAtLocation.length == 1) {
+              final singleStaff = staffAtLocation.first;
+              if (!singleStaff.serviceIds.contains(serviceId)) {
+                await staffNotifier.updateStaffApi(
+                  staffId: singleStaff.id,
+                  serviceIds: {...singleStaff.serviceIds, serviceId}.toList(),
+                );
+              }
+            }
+          }
         }
       }
 

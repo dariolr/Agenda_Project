@@ -24,7 +24,7 @@ class ServiceValidators {
   }) {
     final needle = normalizedName.toLowerCase();
     return services.any(
-      (s) => s.id != excludeId && s.name.toLowerCase() == needle,
+      (s) => s.isActive && s.id != excludeId && s.name.toLowerCase() == needle,
     );
   }
 }
