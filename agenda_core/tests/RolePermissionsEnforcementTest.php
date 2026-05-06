@@ -17,11 +17,14 @@ final class RolePermissionsEnforcementTest extends TestCase
         $packagesController = (string) file_get_contents(__DIR__ . '/../src/Http/Controllers/ServicePackagesController.php');
         $variantResourcesController = (string) file_get_contents(__DIR__ . '/../src/Http/Controllers/ServiceVariantResourceController.php');
         $resourcesController = (string) file_get_contents(__DIR__ . '/../src/Http/Controllers/ResourcesController.php');
+        $serviceRepository = (string) file_get_contents(__DIR__ . '/../src/Infrastructure/Repositories/ServiceRepository.php');
 
         $this->assertStringContainsString("'can_manage_services'", $servicesController);
         $this->assertStringContainsString("'can_manage_services'", $packagesController);
         $this->assertStringContainsString("'can_manage_services'", $variantResourcesController);
         $this->assertStringContainsString("'can_manage_services'", $resourcesController);
+        $this->assertStringContainsString('has_active_entries', $servicesController);
+        $this->assertStringContainsString('FROM class_types', $serviceRepository);
     }
 
     public function testStaffModulesUseManageStaffPermission(): void
@@ -37,6 +40,21 @@ final class RolePermissionsEnforcementTest extends TestCase
         $this->assertStringContainsString("'can_manage_staff'", $staffPlanningController);
         $this->assertStringContainsString("'can_manage_staff'", $timeBlocksController);
         $this->assertStringContainsString("'can_manage_staff'", $closuresController);
+    }
+
+    public function testStaffDeleteIsBlockedByFutureBookingsAndClassEvents(): void
+    {
+        $staffController = (string) file_get_contents(__DIR__ . '/../src/Http/Controllers/StaffController.php');
+        $bookingRepository = (string) file_get_contents(__DIR__ . '/../src/Infrastructure/Repositories/BookingRepository.php');
+        $classEventRepository = (string) file_get_contents(__DIR__ . '/../src/Infrastructure/Repositories/ClassEventRepository.php');
+
+        $this->assertStringContainsString('staff_has_future_bookings', $staffController);
+        $this->assertStringContainsString('countFutureActiveItemsForStaff', $staffController);
+        $this->assertStringContainsString('countFutureScheduledEventsForStaff', $staffController);
+        $this->assertStringContainsString("b.status NOT IN ('cancelled', 'replaced')", $bookingRepository);
+        $this->assertStringContainsString('AND bi.start_time > UTC_TIMESTAMP()', $bookingRepository);
+        $this->assertStringContainsString('AND status = "SCHEDULED"', $classEventRepository);
+        $this->assertStringContainsString('AND starts_at > UTC_TIMESTAMP()', $classEventRepository);
     }
 
     public function testBookingClientsAndReportsUseSpecificPermissions(): void

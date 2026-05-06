@@ -126,6 +126,14 @@ class ServicesRepository {
   /// Deletes a service
   Future<void> deleteService(int serviceId) => _api.deleteService(serviceId);
 
+  Future<void> removeServiceFromLocation({
+    required int locationId,
+    required int serviceId,
+  }) => _api.removeServiceFromLocation(
+    locationId: locationId,
+    serviceId: serviceId,
+  );
+
   /// Gets the location IDs where this service has an active variant
   Future<List<int>> getServiceLocations(int serviceId) =>
       _api.getServiceLocations(serviceId);

@@ -290,6 +290,23 @@ final canManageBusinessSettingsProvider = Provider<bool>((ref) {
   );
 });
 
+/// Verifica se l'utente può modificare entità globali del business.
+/// Gli operatori limitati a sedi specifiche non possono creare o riordinare sedi.
+final canManageBusinessWideSettingsProvider = Provider<bool>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
+  final contextAsync = ref.watch(currentBusinessUserContextProvider);
+  return contextAsync.when(
+    data: (data) {
+      if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
+      if (data!.isSuperadmin) return true;
+      return (data.role == 'admin' || data.role == 'owner') &&
+          data.hasBusinessScope;
+    },
+    loading: () => false,
+    error: (_, __) => false,
+  );
+});
+
 /// Verifica se l'utente corrente può gestire agenda/prenotazioni.
 final currentUserCanManageBookingsProvider = Provider<bool>((ref) {
   final currentBusinessId = ref.watch(currentBusinessIdProvider);

@@ -8,6 +8,8 @@ use Agenda\Domain\Helpers\ColorHex;
 use Agenda\Domain\Helpers\Unicode;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
+use Agenda\Infrastructure\Repositories\BookingRepository;
+use Agenda\Infrastructure\Repositories\ClassEventRepository;
 use Agenda\Infrastructure\Repositories\StaffRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
@@ -15,11 +17,15 @@ use Agenda\Infrastructure\Repositories\UserRepository;
 
 final class StaffController
 {
+    private const ERROR_STAFF_HAS_FUTURE_BOOKINGS = 'staff_has_future_bookings';
+
     public function __construct(
         private readonly StaffRepository $staffRepository,
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly LocationRepository $locationRepo,
         private readonly UserRepository $userRepo,
+        private readonly ?BookingRepository $bookingRepository = null,
+        private readonly ?ClassEventRepository $classEventRepository = null,
     ) {}
 
     /**
@@ -284,6 +290,17 @@ final class StaffController
             if ($isSelfStaffProfile) {
                 return Response::error('You cannot delete your own staff profile', 'forbidden', 403, $request->traceId);
             }
+        }
+
+        $futureBookingItems = $this->bookingRepository?->countFutureActiveItemsForStaff($businessId, $staffId) ?? 0;
+        $futureClassEvents = $this->classEventRepository?->countFutureScheduledEventsForStaff($businessId, $staffId) ?? 0;
+        if ($futureBookingItems > 0 || $futureClassEvents > 0) {
+            return Response::error(
+                'Cannot delete staff with future bookings or class events',
+                self::ERROR_STAFF_HAS_FUTURE_BOOKINGS,
+                409,
+                $request->traceId
+            );
         }
 
         $this->staffRepository->delete($staffId);

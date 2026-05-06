@@ -10,6 +10,8 @@ use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Authorization\LocationAuthorizationService;
+use DomainException;
 
 final class LocationsController
 {
@@ -38,6 +40,7 @@ final class LocationsController
         private readonly LocationRepository $locationRepo,
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
+        private readonly ?LocationAuthorizationService $locationAuth = null,
     ) {}
 
     /**
@@ -57,6 +60,42 @@ final class LocationsController
 
         // Normal user: check business_users table
         return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+    }
+
+    private function requireBusinessWideLocationScope(Request $request, int $businessId): ?Response
+    {
+        if ($this->locationAuth === null || $this->locationAuth->canAccessAllBusinessLocations($request, $businessId)) {
+            return null;
+        }
+
+        return Response::error(
+            LocationAuthorizationService::ERROR_CODE,
+            LocationAuthorizationService::ERROR_CODE,
+            403,
+            $request->traceId
+        );
+    }
+
+    private function requireLocationScope(Request $request, int $businessId, int $locationId): ?Response
+    {
+        if ($this->locationAuth === null) {
+            return null;
+        }
+
+        try {
+            $this->locationAuth->assertCanAccessLocation($request, $businessId, $locationId);
+            return null;
+        } catch (DomainException $e) {
+            if ($e->getMessage() === LocationAuthorizationService::ERROR_CODE) {
+                return Response::error(
+                    LocationAuthorizationService::ERROR_CODE,
+                    LocationAuthorizationService::ERROR_CODE,
+                    403,
+                    $request->traceId
+                );
+            }
+            throw $e;
+        }
     }
 
     /**
@@ -201,6 +240,10 @@ final class LocationsController
         if (!$this->businessUserRepo->hasAccess($userId, $businessId, $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
+        $businessWideError = $this->requireBusinessWideLocationScope($request, $businessId);
+        if ($businessWideError !== null) {
+            return $businessWideError;
+        }
 
         $body = $request->getBody();
         
@@ -302,6 +345,10 @@ final class LocationsController
         // Check user has access to business
         if (!$this->businessUserRepo->hasAccess($userId, (int) $location['business_id'], $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
+        }
+        $locationScopeError = $this->requireLocationScope($request, (int) $location['business_id'], $locationId);
+        if ($locationScopeError !== null) {
+            return $locationScopeError;
         }
 
         $body = $request->getBody();
@@ -449,6 +496,10 @@ final class LocationsController
         if (!$this->businessUserRepo->hasAccess($userId, $businessId, $isSuperadmin)) {
             return Response::error('Access denied', 'forbidden', 403, $request->traceId);
         }
+        $businessWideError = $this->requireBusinessWideLocationScope($request, $businessId);
+        if ($businessWideError !== null) {
+            return $businessWideError;
+        }
 
         // Cannot delete the only location
         if ($this->locationRepo->isOnlyActiveLocation($locationId, $businessId)) {
@@ -495,6 +546,10 @@ final class LocationsController
         // Check user has access to this business
         if (!$this->businessUserRepo->hasAccess($userId, $businessId, $isSuperadmin)) {
             return Response::forbidden('Access denied', $request->traceId);
+        }
+        $businessWideError = $this->requireBusinessWideLocationScope($request, $businessId);
+        if ($businessWideError !== null) {
+            return $businessWideError;
         }
 
         // Perform batch update

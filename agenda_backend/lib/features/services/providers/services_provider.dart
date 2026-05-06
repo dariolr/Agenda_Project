@@ -372,6 +372,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     final repository = ref.read(servicesRepositoryProvider);
 
     await repository.deleteService(serviceId);
+    ref.invalidate(serviceLocationIdsProvider(serviceId));
 
     final current = state.value ?? [];
     final newList = current.where((s) => s.id != serviceId).toList();
@@ -382,6 +383,56 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     ref
         .read(serviceCategoriesProvider.notifier)
         .bumpEmptyCategoriesToEnd(servicesOverride: newList);
+  }
+
+  Future<void> removeServiceFromCurrentLocationApi(int serviceId) async {
+    final repository = ref.read(servicesRepositoryProvider);
+    final locationId = ref.read(currentLocationProvider).id;
+
+    await repository.removeServiceFromLocation(
+      locationId: locationId,
+      serviceId: serviceId,
+    );
+    ref.invalidate(serviceLocationIdsProvider(serviceId));
+
+    final current = state.value ?? [];
+    final newList = current.where((s) => s.id != serviceId).toList();
+    state = AsyncData(newList);
+
+    ref.read(servicesForLocationsRefreshProvider.notifier).trigger();
+
+    ref
+        .read(serviceCategoriesProvider.notifier)
+        .bumpEmptyCategoriesToEnd(servicesOverride: newList);
+  }
+
+  Future<void> removeServiceFromLocationsApi({
+    required int serviceId,
+    required Iterable<int> locationIds,
+  }) async {
+    final repository = ref.read(servicesRepositoryProvider);
+    final currentLocationId = ref.read(currentLocationProvider).id;
+    final uniqueLocationIds = locationIds.toSet().toList()..sort();
+
+    for (final locationId in uniqueLocationIds) {
+      await repository.removeServiceFromLocation(
+        locationId: locationId,
+        serviceId: serviceId,
+      );
+    }
+    ref.invalidate(serviceLocationIdsProvider(serviceId));
+
+    if (uniqueLocationIds.contains(currentLocationId)) {
+      final current = state.value ?? [];
+      final newList = current.where((s) => s.id != serviceId).toList();
+      state = AsyncData(newList);
+
+      ref
+          .read(serviceCategoriesProvider.notifier)
+          .bumpEmptyCategoriesToEnd(servicesOverride: newList);
+    }
+
+    ref.read(servicesForLocationsRefreshProvider.notifier).trigger();
   }
 
   /// Gets the location IDs where a service has active variants
@@ -402,6 +453,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
         serviceId: serviceId,
         locationIds: locationIds,
       );
+      ref.invalidate(serviceLocationIdsProvider(serviceId));
       return true;
     } catch (e) {
       return false;
@@ -582,6 +634,12 @@ final serviceVariantsProvider =
     AsyncNotifierProvider<ServiceVariantsNotifier, List<ServiceVariant>>(
       ServiceVariantsNotifier.new,
     );
+
+final serviceLocationIdsProvider = FutureProvider.autoDispose
+    .family<List<int>, int>((ref, serviceId) async {
+      final repository = ref.watch(servicesRepositoryProvider);
+      return repository.getServiceLocations(serviceId);
+    });
 
 ///
 /// SERVICE VARIANT BY ID

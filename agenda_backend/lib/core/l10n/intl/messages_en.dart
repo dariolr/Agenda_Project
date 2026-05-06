@@ -391,6 +391,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "apiErrorSlotConflict": MessageLookupByLibrary.simpleMessage(
       "The selected time slot is no longer available.",
     ),
+    "apiErrorStaffHasFutureBookings": MessageLookupByLibrary.simpleMessage(
+      "Cannot delete this team member: future bookings or classes are assigned to them.",
+    ),
     "apiErrorTokenExpired": MessageLookupByLibrary.simpleMessage(
       "Your session has expired. Please sign in again.",
     ),
@@ -946,7 +949,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "This action cannot be undone.",
     ),
     "categoryDuplicateError": MessageLookupByLibrary.simpleMessage(
-      "A category with this name already exists",
+      "A category with this name already exists. You can use it by selecting it in the Category field when creating a service, package, or class type.",
+    ),
+    "chooseServiceRemovalScopeAction": MessageLookupByLibrary.simpleMessage(
+      "Remove service",
+    ),
+    "chooseServiceRemovalScopeTooltip": MessageLookupByLibrary.simpleMessage(
+      "Choose how to remove this service",
     ),
     "classEventsActionBook": MessageLookupByLibrary.simpleMessage("Book"),
     "classEventsActionCancelBooking": MessageLookupByLibrary.simpleMessage(
@@ -2233,6 +2242,16 @@ class MessageLookup extends MessageLookupByLibrary {
     "removeServiceFromLocationTitle": MessageLookupByLibrary.simpleMessage(
       "Remove service from this location?",
     ),
+    "removeServiceFromManageableLocationsAction":
+        MessageLookupByLibrary.simpleMessage("From all manageable locations"),
+    "removeServiceFromSelectedLocationTooltip":
+        MessageLookupByLibrary.simpleMessage("Remove from selected location"),
+    "removeServiceMultiLocationMessage": MessageLookupByLibrary.simpleMessage(
+      "This service is active in multiple locations you can manage. Choose whether to remove it only from the selected location or from all manageable locations.",
+    ),
+    "removeServiceMultiLocationTitle": MessageLookupByLibrary.simpleMessage(
+      "Remove service?",
+    ),
     "reorderCategoriesLabel": MessageLookupByLibrary.simpleMessage(
       "Categories",
     ),
@@ -2433,7 +2452,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "serviceColorLabel": MessageLookupByLibrary.simpleMessage("Service color"),
     "serviceDeleteMultipleLocationsBlocked": MessageLookupByLibrary.simpleMessage(
-      "This service is active in multiple locations. To remove it from one location, edit the service and deselect that location. You can permanently delete it only when it remains associated with one location.",
+      "This service is active in multiple locations. You can remove it from the selected location, or deactivate it when it remains associated with only one location.",
     ),
     "serviceDuplicateCopyWord": MessageLookupByLibrary.simpleMessage("Copy"),
     "serviceDuplicateError": MessageLookupByLibrary.simpleMessage(

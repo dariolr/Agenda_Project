@@ -179,6 +179,17 @@ class ServicesApi {
     await _apiClient.deleteService(serviceId);
   }
 
+  /// DELETE /v1/locations/{location_id}/services/{service_id}
+  Future<void> removeServiceFromLocation({
+    required int locationId,
+    required int serviceId,
+  }) async {
+    await _apiClient.removeServiceFromLocation(
+      locationId: locationId,
+      serviceId: serviceId,
+    );
+  }
+
   /// GET /v1/services/{id}/locations
   /// Gets the location IDs where this service has an active variant
   Future<List<int>> getServiceLocations(int serviceId) async {

@@ -1433,6 +1433,16 @@ class L10n {
     );
   }
 
+  /// `Cannot delete this team member: future bookings or classes are assigned to them.`
+  String get apiErrorStaffHasFutureBookings {
+    return Intl.message(
+      'Cannot delete this team member: future bookings or classes are assigned to them.',
+      name: 'apiErrorStaffHasFutureBookings',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `New location`
   String get teamNewLocationTitle {
     return Intl.message(
@@ -2644,6 +2654,36 @@ class L10n {
     );
   }
 
+  /// `Remove from selected location`
+  String get removeServiceFromSelectedLocationTooltip {
+    return Intl.message(
+      'Remove from selected location',
+      name: 'removeServiceFromSelectedLocationTooltip',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Remove service`
+  String get chooseServiceRemovalScopeAction {
+    return Intl.message(
+      'Remove service',
+      name: 'chooseServiceRemovalScopeAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Choose how to remove this service`
+  String get chooseServiceRemovalScopeTooltip {
+    return Intl.message(
+      'Choose how to remove this service',
+      name: 'chooseServiceRemovalScopeTooltip',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Remove service from this location?`
   String get removeServiceFromLocationTitle {
     return Intl.message(
@@ -2659,6 +2699,36 @@ class L10n {
     return Intl.message(
       'The service will no longer be available in this location. If it is active in other locations, it will stay available there.',
       name: 'removeServiceFromLocationMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Remove service?`
+  String get removeServiceMultiLocationTitle {
+    return Intl.message(
+      'Remove service?',
+      name: 'removeServiceMultiLocationTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This service is active in multiple locations you can manage. Choose whether to remove it only from the selected location or from all manageable locations.`
+  String get removeServiceMultiLocationMessage {
+    return Intl.message(
+      'This service is active in multiple locations you can manage. Choose whether to remove it only from the selected location or from all manageable locations.',
+      name: 'removeServiceMultiLocationMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `From all manageable locations`
+  String get removeServiceFromManageableLocationsAction {
+    return Intl.message(
+      'From all manageable locations',
+      name: 'removeServiceFromManageableLocationsAction',
       desc: '',
       args: [],
     );
@@ -2704,10 +2774,10 @@ class L10n {
     );
   }
 
-  /// `This service is active in multiple locations. To remove it from one location, edit the service and deselect that location. You can permanently delete it only when it remains associated with one location.`
+  /// `This service is active in multiple locations. You can remove it from the selected location, or deactivate it when it remains associated with only one location.`
   String get serviceDeleteMultipleLocationsBlocked {
     return Intl.message(
-      'This service is active in multiple locations. To remove it from one location, edit the service and deselect that location. You can permanently delete it only when it remains associated with one location.',
+      'This service is active in multiple locations. You can remove it from the selected location, or deactivate it when it remains associated with only one location.',
       name: 'serviceDeleteMultipleLocationsBlocked',
       desc: '',
       args: [],
@@ -2764,10 +2834,10 @@ class L10n {
     );
   }
 
-  /// `A category with this name already exists`
+  /// `A category with this name already exists. You can use it by selecting it in the Category field when creating a service, package, or class type.`
   String get categoryDuplicateError {
     return Intl.message(
-      'A category with this name already exists',
+      'A category with this name already exists. You can use it by selecting it in the Category field when creating a service, package, or class type.',
       name: 'categoryDuplicateError',
       desc: '',
       args: [],

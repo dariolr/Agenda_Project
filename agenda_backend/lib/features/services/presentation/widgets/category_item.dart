@@ -143,16 +143,16 @@ class _CategoryItemState extends State<CategoryItem> {
         children: [
           // Header categoria
           MouseRegion(
-            cursor: SystemMouseCursors.click,
+            cursor: widget.isCollapsible
+                ? SystemMouseCursors.click
+                : SystemMouseCursors.basic,
             onEnter: (_) => setState(() => _isHeaderHovered = true),
             onExit: (_) => setState(() => _isHeaderHovered = false),
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
-              onTap: widget.readOnly
-                  ? (widget.isCollapsible
-                        ? () => setState(() => _isExpanded = !_isExpanded)
-                        : null)
-                  : widget.onEditCategory,
+              onTap: widget.isCollapsible
+                  ? () => setState(() => _isExpanded = !_isExpanded)
+                  : null,
               child: Container(
                 width: double.infinity,
                 decoration: BoxDecoration(

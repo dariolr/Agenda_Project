@@ -419,12 +419,13 @@ Future<void> showServiceDialog(
   // Location selection
   final allLocations = ref.read(locationsProvider);
   final hasMultipleLocations = allLocations.length > 1;
+  final showLocationSelector = hasMultipleLocations;
   // In creazione: seleziona location corrente di default
-  // In modifica: carica le location dal server
+  // In modifica: si possono cambiare le sedi tra quelle visibili nello scope utente.
   Set<int> selectedLocationIds = {locationId};
-  Set<int> originalLocationIds = {locationId}; // Per confrontare le modifiche
+  Set<int> originalLocationIds = {locationId};
   bool isSelectingLocations = false;
-  bool isLoadingLocations = isEditing; // Se editing, mostra loading iniziale
+  bool isLoadingLocations = isEditing && showLocationSelector;
 
   // Risorse richieste (Map: resourceId -> quantity)
   final locationResources = ref.read(locationResourcesProvider(locationId));
@@ -707,8 +708,8 @@ Future<void> showServiceDialog(
         );
       }
 
-      // Aggiorna le sedi associate al servizio (solo se modificate)
-      if (isEditing && hasMultipleLocations) {
+      // Aggiorna le sedi associate al servizio solo per utenti business-wide.
+      if (isEditing && showLocationSelector) {
         final locationsChanged = !_setEquals(
           selectedLocationIds,
           originalLocationIds,
@@ -719,10 +720,9 @@ Future<void> showServiceDialog(
             locationIds: selectedLocationIds.toList(),
           );
 
-          // Auto-associa lo staff alle location appena aggiunte
-          // se quella location ha un solo membro attivo
-          final newlyAddedLocationIds =
-              selectedLocationIds.difference(originalLocationIds);
+          final newlyAddedLocationIds = selectedLocationIds.difference(
+            originalLocationIds,
+          );
           final freshStaff = ref.read(allStaffProvider).value ?? [];
           for (final newLocId in newlyAddedLocationIds) {
             final staffAtLocation = freshStaff
@@ -1315,11 +1315,9 @@ Future<void> showServiceDialog(
           ),
         ),
         const SizedBox(height: AppSpacing.formRowSpacing),
-        if (hasMultipleLocations) ...[
+        if (showLocationSelector) ...[
           AppOutlinedActionButton(
-            onPressed: canEditDialog && !isLoadingLocations
-                ? openLocationSelector
-                : null,
+            onPressed: canEditDialog ? openLocationSelector : null,
             expand: true,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Row(
@@ -1330,35 +1328,28 @@ Future<void> showServiceDialog(
                     child: Text(context.l10n.serviceLocationsLabel),
                   ),
                 ),
-                if (isLoadingLocations)
-                  const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                else
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    context.l10n.serviceLocationsCount(
+                      selectedLocationIds.length,
+                      allLocations.length,
                     ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.primary.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      context.l10n.serviceLocationsCount(
-                        selectedLocationIds.length,
-                        allLocations.length,
-                      ),
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Theme.of(context).colorScheme.primary,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
+                ),
               ],
             ),
           ),
@@ -1765,8 +1756,8 @@ Future<void> showServiceDialog(
       final canManageServices = ref.watch(currentUserCanManageServicesProvider);
       final canEdit = canManageServices && !readOnly;
 
-      // Load service locations on first build (for editing)
-      if (isEditing && isLoadingLocations) {
+      // Load service locations on first build only when editing locations is allowed.
+      if (isEditing && showLocationSelector && isLoadingLocations) {
         WidgetsBinding.instance.addPostFrameCallback((_) async {
           try {
             final notifier = ref.read(servicesProvider.notifier);
@@ -1777,7 +1768,6 @@ Future<void> showServiceDialog(
               isLoadingLocations = false;
             });
           } catch (e) {
-            // Fallback to current location on error
             setState(() {
               selectedLocationIds = {locationId};
               originalLocationIds = {locationId};

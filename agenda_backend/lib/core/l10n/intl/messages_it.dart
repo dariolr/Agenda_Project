@@ -406,6 +406,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "apiErrorSlotConflict": MessageLookupByLibrary.simpleMessage(
       "Lo slot orario selezionato non è più disponibile.",
     ),
+    "apiErrorStaffHasFutureBookings": MessageLookupByLibrary.simpleMessage(
+      "Impossibile eliminare il membro del team: esistono prenotazioni o lezioni future associate.",
+    ),
     "apiErrorTokenExpired": MessageLookupByLibrary.simpleMessage(
       "La sessione è scaduta. Accedi di nuovo.",
     ),
@@ -987,7 +990,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "Questa azione non può essere annullata.",
     ),
     "categoryDuplicateError": MessageLookupByLibrary.simpleMessage(
-      "Esiste già una categoria con questo nome",
+      "Esiste già una categoria con questo nome. Puoi usarla selezionandola nel campo Categoria quando crei un servizio, pacchetto o tipo lezione.",
+    ),
+    "chooseServiceRemovalScopeAction": MessageLookupByLibrary.simpleMessage(
+      "Rimuovi servizio",
+    ),
+    "chooseServiceRemovalScopeTooltip": MessageLookupByLibrary.simpleMessage(
+      "Scegli come rimuovere il servizio",
     ),
     "classEventsActionBook": MessageLookupByLibrary.simpleMessage("Prenota"),
     "classEventsActionCancelBooking": MessageLookupByLibrary.simpleMessage(
@@ -2329,6 +2338,16 @@ class MessageLookup extends MessageLookupByLibrary {
     "removeServiceFromLocationTitle": MessageLookupByLibrary.simpleMessage(
       "Rimuovere il servizio da questa sede?",
     ),
+    "removeServiceFromManageableLocationsAction":
+        MessageLookupByLibrary.simpleMessage("Da tutte le sedi gestibili"),
+    "removeServiceFromSelectedLocationTooltip":
+        MessageLookupByLibrary.simpleMessage("Rimuovi dalla sede selezionata"),
+    "removeServiceMultiLocationMessage": MessageLookupByLibrary.simpleMessage(
+      "Questo servizio è attivo su più sedi che puoi gestire. Scegli se rimuoverlo solo dalla sede selezionata o da tutte le sedi gestibili.",
+    ),
+    "removeServiceMultiLocationTitle": MessageLookupByLibrary.simpleMessage(
+      "Rimuovere il servizio?",
+    ),
     "reorderCategoriesLabel": MessageLookupByLibrary.simpleMessage("Categorie"),
     "reorderClassesLabel": MessageLookupByLibrary.simpleMessage("Lezioni"),
     "reorderDoneButtonLabel": MessageLookupByLibrary.simpleMessage(
@@ -2543,7 +2562,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Colore servizio",
     ),
     "serviceDeleteMultipleLocationsBlocked": MessageLookupByLibrary.simpleMessage(
-      "Questo servizio è attivo su più sedi. Per rimuoverlo da una sede, apri la modifica del servizio e deseleziona la sede. Puoi eliminarlo definitivamente solo quando è associato a una sola sede.",
+      "Questo servizio è attivo su più sedi. Puoi rimuoverlo dalla sede selezionata oppure disattivarlo quando resta associato a una sola sede.",
     ),
     "serviceDuplicateCopyWord": MessageLookupByLibrary.simpleMessage("Copia"),
     "serviceDuplicateError": MessageLookupByLibrary.simpleMessage(

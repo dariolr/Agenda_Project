@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -26,6 +25,9 @@ class MoreLocationsScreen extends ConsumerWidget {
     final isWide = formFactor != AppFormFactor.mobile;
     final topPadding = formFactor == AppFormFactor.desktop ? 0.0 : 16.0;
     final canManageSettings = ref.watch(canManageBusinessSettingsProvider);
+    final canManageBusinessWideSettings = ref.watch(
+      canManageBusinessWideSettingsProvider,
+    );
     final canViewStaff = ref.watch(currentUserCanViewStaffProvider);
 
     if (staffAsync.isLoading) {
@@ -63,6 +65,7 @@ class MoreLocationsScreen extends ConsumerWidget {
             location: location,
             hasStaff: staffInLocation.isNotEmpty,
             canManageSettings: canManageSettings,
+            canManageBusinessWideSettings: canManageBusinessWideSettings,
             canViewStaff: canViewStaff,
           ),
           onAddStaff: () {},
@@ -116,12 +119,14 @@ class _LocationActions extends ConsumerWidget {
     required this.location,
     required this.hasStaff,
     required this.canManageSettings,
+    required this.canManageBusinessWideSettings,
     required this.canViewStaff,
   });
 
   final Location location;
   final bool hasStaff;
   final bool canManageSettings;
+  final bool canManageBusinessWideSettings;
   final bool canViewStaff;
 
   @override
@@ -134,7 +139,9 @@ class _LocationActions extends ConsumerWidget {
             tooltip: context.l10n.navStaff,
             icon: const Icon(Icons.badge_outlined),
             onPressed: () {
-              ref.read(staffSectionLocationIdProvider.notifier).set(location.id);
+              ref
+                  .read(staffSectionLocationIdProvider.notifier)
+                  .set(location.id);
               context.go('/staff?from_altro=1');
             },
           ),
@@ -150,9 +157,10 @@ class _LocationActions extends ConsumerWidget {
           IconButton(
             tooltip: context.l10n.actionEdit,
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () => showLocationDialog(context, ref, initial: location),
+            onPressed: () =>
+                showLocationDialog(context, ref, initial: location),
           ),
-        if (canManageSettings)
+        if (canManageBusinessWideSettings)
           IconButton(
             tooltip: context.l10n.actionDelete,
             icon: const Icon(Icons.delete_outline, color: Colors.red),
@@ -187,4 +195,3 @@ class _LocationActions extends ConsumerWidget {
         .deleteLocation(location.id, currentLocationId: currentId);
   }
 }
-

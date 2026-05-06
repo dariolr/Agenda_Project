@@ -335,6 +335,9 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
     final topPadding = formFactor == AppFormFactor.desktop ? 0.0 : 16.0;
     final canManageStaff = ref.watch(currentUserCanManageStaffProvider);
     final canManageSettings = ref.watch(canManageBusinessSettingsProvider);
+    final canManageBusinessWideSettings = ref.watch(
+      canManageBusinessWideSettingsProvider,
+    );
     final currentUserRole = ref.watch(currentUserRoleProvider);
     final currentUserStaffId = ref.watch(currentUserStaffIdProvider);
     final isManagerRole = currentUserRole == 'manager';
@@ -366,6 +369,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
           staff: staff,
           isWide: isWide,
           readOnly: !canManageStaff,
+          showDeleteLocationAction: canManageBusinessWideSettings,
           onTap: canManageSettings
               ? () => showLocationDialog(context, ref, initial: loc)
               : null,
@@ -382,7 +386,7 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
               ? () => showLocationDialog(context, ref, initial: loc)
               : () {},
           onDeleteLocation: () async {
-            if (!canManageSettings) return;
+            if (!canManageBusinessWideSettings) return;
             if (staff.isNotEmpty) {
               await showAppInfoDialog(
                 context,

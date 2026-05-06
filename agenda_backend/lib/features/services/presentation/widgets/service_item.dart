@@ -6,6 +6,7 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/utils/color_utils.dart';
 import '../../../../core/utils/price_utils.dart';
+import '../../../agenda/providers/location_providers.dart';
 import '../../providers/services_provider.dart';
 
 class ServiceItem extends ConsumerWidget {
@@ -202,7 +203,7 @@ class ServiceItem extends ConsumerWidget {
                             ? null
                             : isWide
                             ? _buildActionIcons(context, ref)
-                            : _buildPopupMenu(ref),
+                            : _buildPopupMenu(context, ref),
                       ),
                     ),
                   ),
@@ -218,6 +219,14 @@ class ServiceItem extends ConsumerWidget {
   Widget _buildActionIcons(BuildContext context, WidgetRef ref) {
     final variant = ref.watch(serviceVariantByServiceIdProvider(service.id));
     final isBookableOnline = variant?.isBookableOnline ?? true;
+    final serviceLocationIds = ref
+        .watch(serviceLocationIdsProvider(service.id))
+        .value;
+    final deletePresentation = _resolveDeletePresentation(
+      context,
+      ref,
+      serviceLocationIds,
+    );
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -245,7 +254,7 @@ class ServiceItem extends ConsumerWidget {
               : onCopyDirectLink,
         ),
         IconButton(
-          tooltip: context.l10n.removeServiceFromLocationAction,
+          tooltip: deletePresentation.tooltip,
           icon: const Icon(Icons.delete_outline, color: Colors.red),
           onPressed: onDelete,
         ),
@@ -253,7 +262,16 @@ class ServiceItem extends ConsumerWidget {
     );
   }
 
-  Widget _buildPopupMenu(WidgetRef ref) {
+  Widget _buildPopupMenu(BuildContext context, WidgetRef ref) {
+    final serviceLocationIds = ref
+        .watch(serviceLocationIdsProvider(service.id))
+        .value;
+    final deletePresentation = _resolveDeletePresentation(
+      context,
+      ref,
+      serviceLocationIds,
+    );
+
     return PopupMenuButton<String>(
       icon: const Icon(Icons.more_vert),
       onSelected: (value) {
@@ -288,11 +306,39 @@ class ServiceItem extends ConsumerWidget {
                   true),
           child: Text(context.l10n.closuresImportHolidaysCopyLinkAction),
         ),
-        PopupMenuItem(
-          value: 'delete',
-          child: Text(context.l10n.removeServiceFromLocationAction),
-        ),
+        PopupMenuItem(value: 'delete', child: Text(deletePresentation.label)),
       ],
+    );
+  }
+
+  ({String label, String tooltip}) _resolveDeletePresentation(
+    BuildContext context,
+    WidgetRef ref,
+    List<int>? serviceLocationIds,
+  ) {
+    final serviceLocationCount = serviceLocationIds?.length ?? 1;
+    if (serviceLocationCount <= 1) {
+      return (
+        label: context.l10n.deactivateServiceAction,
+        tooltip: context.l10n.deactivateServiceAction,
+      );
+    }
+
+    final visibleLocationIds = {
+      for (final location in ref.watch(locationsProvider)) location.id,
+    };
+    final manageableServiceLocationCount =
+        serviceLocationIds?.where(visibleLocationIds.contains).length ?? 1;
+    if (manageableServiceLocationCount > 1) {
+      return (
+        label: context.l10n.chooseServiceRemovalScopeAction,
+        tooltip: context.l10n.chooseServiceRemovalScopeTooltip,
+      );
+    }
+
+    return (
+      label: context.l10n.removeServiceFromLocationAction,
+      tooltip: context.l10n.removeServiceFromLocationAction,
     );
   }
 }

@@ -2,6 +2,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT_DIR="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 FINAL_BUNDLE="$SCRIPT_DIR/agenda_all_bundle.txt"
 
 BACKEND_SCRIPT="$SCRIPT_DIR/agenda_backend_bundle.sh"
@@ -13,6 +14,7 @@ BACKEND_FILE="$SCRIPT_DIR/agenda_backend_bundle.txt"
 FRONTEND_FILE="$SCRIPT_DIR/agenda_frontend_bundle.txt"
 CORE_FILE="$SCRIPT_DIR/agenda_core_bundle.txt"
 CONFIG_FILE="$SCRIPT_DIR/config_bundle.txt"
+ROOT_AGENTS_FILE="$ROOT_DIR/AGENTS.MD"
 
 "$BACKEND_SCRIPT"
 "$FRONTEND_SCRIPT"
@@ -22,6 +24,17 @@ CONFIG_FILE="$SCRIPT_DIR/config_bundle.txt"
 {
   echo "=== Bundle di tutti i file sorgente ==="
   echo "Bundle generato il: $(date)"
+  echo
+
+  echo ">>> CONTENUTO: AGENTS.MD"
+  if [[ -f "$ROOT_AGENTS_FILE" ]]; then
+    cat "$ROOT_AGENTS_FILE"
+  else
+    echo "File non trovato: $ROOT_AGENTS_FILE"
+  fi
+
+  echo
+  echo "--------------------------"
   echo
 
   echo ">>> CONTENUTO: Config"

@@ -689,6 +689,7 @@ final class ServicesController
                 'name' => $c['name'],
                 'description' => $c['description'],
                 'sort_order' => (int) $c['sort_order'],
+                'has_active_entries' => $this->serviceRepository->hasActiveCategoryLinkedEntries((int) $c['id']),
             ], $categories),
         ]);
     }

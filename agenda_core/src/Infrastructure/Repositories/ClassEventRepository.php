@@ -289,6 +289,23 @@ final class ClassEventRepository
         return $stmt->fetchColumn() !== false;
     }
 
+    public function countFutureScheduledEventsForStaff(int $businessId, int $staffId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT COUNT(*)
+             FROM class_events
+             WHERE business_id = :business_id
+               AND staff_id = :staff_id
+               AND status = "SCHEDULED"
+               AND starts_at > UTC_TIMESTAMP()'
+        );
+        $stmt->execute([
+            'business_id' => $businessId,
+            'staff_id' => $staffId,
+        ]);
+        return (int) $stmt->fetchColumn();
+    }
+
     public function serviceCategoryExistsInBusiness(int $businessId, int $serviceCategoryId): bool
     {
         $stmt = $this->db->getPdo()->prepare(

@@ -575,6 +575,21 @@ final class BookingRepository
         return $stmt->fetchAll();
     }
 
+    public function countFutureActiveItemsForStaff(int $businessId, int $staffId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            "SELECT COUNT(*)
+             FROM booking_items bi
+             INNER JOIN bookings b ON b.id = bi.booking_id
+             WHERE b.business_id = ?
+               AND bi.staff_id = ?
+               AND b.status NOT IN ('cancelled', 'replaced')
+               AND bi.start_time > UTC_TIMESTAMP()"
+        );
+        $stmt->execute([$businessId, $staffId]);
+        return (int) $stmt->fetchColumn();
+    }
+
     /**
      * Get all occupied time slots for a location on a given date range (all staff).
      * Used for min_gap filtering in smart slot display.

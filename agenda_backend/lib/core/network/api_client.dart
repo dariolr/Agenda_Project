@@ -590,6 +590,7 @@ class ApiClient {
       'class_type_name_exists' => l10n.apiErrorClassTypeNameExists,
       'class_event_full' => l10n.apiErrorSlotConflict,
       'class_event_not_bookable' => l10n.apiErrorValidation,
+      'staff_has_future_bookings' => l10n.apiErrorStaffHasFutureBookings,
       'booking_closed' => l10n.apiErrorValidation,
       'booking_not_open' => l10n.apiErrorValidation,
       'service_capacity_full' => l10n.apiErrorServiceCapacityFull,
@@ -2044,6 +2045,14 @@ class ApiClient {
   /// DELETE /v1/services/{id}
   Future<void> deleteService(int serviceId) async {
     await delete('/v1/services/$serviceId');
+  }
+
+  /// DELETE /v1/locations/{location_id}/services/{service_id}
+  Future<Map<String, dynamic>> removeServiceFromLocation({
+    required int locationId,
+    required int serviceId,
+  }) async {
+    return delete('/v1/locations/$locationId/services/$serviceId');
   }
 
   /// GET /v1/services/{id}/locations

@@ -203,6 +203,9 @@ class _ScaffoldWithNavigationState
     final canViewReports = ref.watch(currentUserCanViewReportsProvider);
     final canManageOperators = ref.watch(canManageOperatorsProvider);
     final canManageClosures = ref.watch(canManageBusinessSettingsProvider);
+    final canManageBusinessWideSettings = ref.watch(
+      canManageBusinessWideSettingsProvider,
+    );
     final servicesReorderMode = ref.watch(servicesReorderModeProvider);
     final isServicesReordering =
         isServices && servicesReorderMode != ServicesReorderMode.none;
@@ -293,7 +296,7 @@ class _ScaffoldWithNavigationState
           actions.add(_BookingsListRefreshAction(ref: ref));
         } else if (isMoreResources && canManageClosures) {
           actions.add(const _ResourcesAddAction());
-        } else if (isMoreLocations && canManageClosures) {
+        } else if (isMoreLocations && canManageBusinessWideSettings) {
           actions.add(const _LocationsAddAction());
         } else if (isMorePaymentMethods && canManageClosures) {
           actions.add(const _PaymentMethodsAddAction());
@@ -510,7 +513,7 @@ class _ScaffoldWithNavigationState
         actions.add(_BookingsListRefreshAction(ref: ref));
       } else if (isMoreResources && canManageClosures) {
         actions.add(const _ResourcesAddAction(compact: true));
-      } else if (isMoreLocations && canManageClosures) {
+      } else if (isMoreLocations && canManageBusinessWideSettings) {
         actions.add(const _LocationsAddAction(compact: true));
       } else if (isMorePaymentMethods && canManageClosures) {
         actions.add(const _PaymentMethodsAddAction(compact: true));
@@ -1396,7 +1399,6 @@ class _ServicesAddAction extends ConsumerWidget {
         hasActiveServicesForLocation ||
         hasActivePackagesForLocation ||
         hasActiveClassTypesForLocation;
-    final isSuperadmin = ref.watch(authProvider).user?.isSuperadmin ?? false;
     final categories = ref.watch(serviceCategoriesProvider);
     final hasCategories = categories.length >= 2;
     final hasPackages = packages.isNotEmpty;
@@ -1602,11 +1604,10 @@ class _ServicesAddAction extends ConsumerWidget {
                 value: 'package',
                 child: Text(l10n.servicePackageNewMenu),
               ),
-            if (isSuperadmin)
-              AdaptiveDropdownItem(
-                value: 'class_type',
-                child: Text(l10n.classTypesCreateTitle),
-              ),
+            AdaptiveDropdownItem(
+              value: 'class_type',
+              child: Text(l10n.classTypesCreateTitle),
+            ),
           ],
           onSelected: (value) {
             if (value == 'category') {

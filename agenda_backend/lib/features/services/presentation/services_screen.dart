@@ -35,6 +35,8 @@ import 'dialogs/service_dialog.dart';
 import 'dialogs/service_package_dialog.dart';
 import 'widgets/categories_list.dart';
 
+enum _ServiceDeleteScope { currentLocation, manageableLocations }
+
 class ServicesScreen extends ConsumerStatefulWidget {
   const ServicesScreen({super.key});
 
@@ -166,7 +168,7 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     final localNonEmptyCategoryIds = <int>{
       for (final s in services)
         if (s.categoryId > 0) s.categoryId,
-      for (final ct in classTypes)
+      for (final ct in classTypesForLocation)
         if ((ct.serviceCategoryId ?? 0) > 0) ct.serviceCategoryId!,
     };
     for (final package in packages) {
@@ -180,7 +182,14 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       }
     }
 
-    var categoriesWithServicesElsewhere = <int>{};
+    final hasLocationScope = ref.watch(allowedLocationIdsProvider) != null;
+    var categoriesWithEntriesElsewhere = <int>{
+      for (final ct in classTypes)
+        if (ct.isActive &&
+            (ct.serviceCategoryId ?? 0) > 0 &&
+            !ct.locationIds.contains(location.id))
+          ct.serviceCategoryId!,
+    }.difference(localNonEmptyCategoryIds);
     final locations = ref.watch(locationsProvider);
     if (locations.length > 1) {
       final allLocationIds = locations.map((location) => location.id).toSet();
@@ -217,17 +226,26 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         ...allCategoriesWithServices,
         ...allCategoriesWithPackages,
       };
-      categoriesWithServicesElsewhere = allCategoriesWithEntries.difference(
-        localNonEmptyCategoryIds,
-      );
+      categoriesWithEntriesElsewhere = {
+        ...categoriesWithEntriesElsewhere,
+        ...allCategoriesWithEntries.difference(localNonEmptyCategoryIds),
+      };
     }
 
-    final categories = allCategories.where((category) {
-      if (localNonEmptyCategoryIds.contains(category.id)) {
-        return true;
-      }
-      return !categoriesWithServicesElsewhere.contains(category.id);
-    }).toList();
+    final categories = hasLocationScope
+        ? allCategories
+              .where(
+                (category) =>
+                    localNonEmptyCategoryIds.contains(category.id) ||
+                    !category.hasActiveEntries,
+              )
+              .toList()
+        : allCategories.where((category) {
+            if (localNonEmptyCategoryIds.contains(category.id)) {
+              return true;
+            }
+            return !categoriesWithEntriesElsewhere.contains(category.id);
+          }).toList();
     final canReorderClassTypes = classTypesForLocation.length > 1;
     final hasOnlyClassTypesForReorder =
         canReorderClassTypes && !hasServiceOrPackageEntries;
@@ -1551,12 +1569,37 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     }
     if (!context.mounted) return;
 
-    // If multiple locations, block the delete with a message
     if (serviceLocationIds.length > 1) {
-      await FeedbackDialog.showError(
+      final visibleLocationIds = {
+        for (final location in ref.read(locationsProvider)) location.id,
+      };
+      final manageableServiceLocationIds = serviceLocationIds
+          .where(visibleLocationIds.contains)
+          .toSet();
+
+      if (manageableServiceLocationIds.length > 1) {
+        final scope = await _chooseMultiLocationServiceDeleteScope(context);
+        if (!context.mounted || scope == null) return;
+        if (scope == _ServiceDeleteScope.manageableLocations) {
+          await _removeServiceFromLocations(
+            context,
+            ref,
+            serviceId: serviceId,
+            locationIds: manageableServiceLocationIds,
+          );
+          return;
+        }
+      }
+
+      showAppConfirmDialog(
         context,
-        title: context.l10n.cannotDeleteTitle,
-        message: context.l10n.serviceDeleteMultipleLocationsBlocked,
+        title: Text(context.l10n.removeServiceFromLocationTitle),
+        content: Text(context.l10n.removeServiceFromLocationMessage),
+        confirmLabel: context.l10n.removeServiceFromLocationAction,
+        cancelLabel: context.l10n.actionCancel,
+        danger: true,
+        onConfirm: () =>
+            _removeServiceFromCurrentLocation(context, ref, serviceId),
       );
       return;
     }
@@ -1569,6 +1612,43 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
       cancelLabel: context.l10n.actionCancel,
       danger: true,
       onConfirm: () => _deleteServiceGlobally(context, ref, serviceId),
+    );
+  }
+
+  Future<_ServiceDeleteScope?> _chooseMultiLocationServiceDeleteScope(
+    BuildContext context,
+  ) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return showDialog<_ServiceDeleteScope>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(context.l10n.removeServiceMultiLocationTitle),
+        content: Text(context.l10n.removeServiceMultiLocationMessage),
+        actions: [
+          TextButton(
+            onPressed: () =>
+                Navigator.of(dialogContext, rootNavigator: true).pop(),
+            child: Text(context.l10n.actionCancel),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(
+              dialogContext,
+              rootNavigator: true,
+            ).pop(_ServiceDeleteScope.currentLocation),
+            child: Text(context.l10n.removeServiceFromLocationAction),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(
+              dialogContext,
+              rootNavigator: true,
+            ).pop(_ServiceDeleteScope.manageableLocations),
+            style: ElevatedButton.styleFrom(backgroundColor: colorScheme.error),
+            child: Text(
+              context.l10n.removeServiceFromManageableLocationsAction,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1592,6 +1672,54 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
         return;
       }
 
+      final message = e is ApiException
+          ? e.message
+          : context.l10n.networkUnknownError;
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.errorTitle,
+        message: message,
+      );
+    }
+  }
+
+  Future<void> _removeServiceFromCurrentLocation(
+    BuildContext context,
+    WidgetRef ref,
+    int serviceId,
+  ) async {
+    try {
+      await ref
+          .read(servicesProvider.notifier)
+          .removeServiceFromCurrentLocationApi(serviceId);
+    } catch (e) {
+      if (!context.mounted) return;
+      final message = e is ApiException
+          ? e.message
+          : context.l10n.networkUnknownError;
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.errorTitle,
+        message: message,
+      );
+    }
+  }
+
+  Future<void> _removeServiceFromLocations(
+    BuildContext context,
+    WidgetRef ref, {
+    required int serviceId,
+    required Iterable<int> locationIds,
+  }) async {
+    try {
+      await ref
+          .read(servicesProvider.notifier)
+          .removeServiceFromLocationsApi(
+            serviceId: serviceId,
+            locationIds: locationIds,
+          );
+    } catch (e) {
+      if (!context.mounted) return;
       final message = e is ApiException
           ? e.message
           : context.l10n.networkUnknownError;

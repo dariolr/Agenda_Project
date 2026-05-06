@@ -31,4 +31,17 @@ final class LocationScopedAuthorizationSourceTest extends TestCase
         $this->assertStringContainsString('requireLocationScopeForBookings', $bookingsController);
         $this->assertStringContainsString('LocationAuthorizationService::ERROR_CODE', $bookingPaymentsController);
     }
+
+    public function testLocationsControllerBlocksGlobalLocationMutationsForLocationScopedUsers(): void
+    {
+        $source = (string) file_get_contents(__DIR__ . '/../src/Http/Controllers/LocationsController.php');
+
+        $this->assertStringContainsString('LocationAuthorizationService::ERROR_CODE', $source);
+        $this->assertStringContainsString('requireBusinessWideLocationScope', $source);
+        $this->assertStringContainsString('requireLocationScope', $source);
+        $this->assertMatchesRegularExpression(
+            '/public function destroy\\(Request \\$request\\): Response.*?\\$businessWideError = \\$this->requireBusinessWideLocationScope\\(\\$request, \\$businessId\\);/s',
+            $source
+        );
+    }
 }

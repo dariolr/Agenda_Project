@@ -891,6 +891,18 @@ final class ServiceRepository
             return true;
         }
 
+        $classTypesStmt = $pdo->prepare(
+            'SELECT 1
+             FROM class_types
+             WHERE service_category_id = ?
+               AND is_active = 1
+             LIMIT 1'
+        );
+        $classTypesStmt->execute([$categoryId]);
+        if ($classTypesStmt->fetchColumn() !== false) {
+            return true;
+        }
+
         return false;
     }
 

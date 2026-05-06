@@ -22,6 +22,7 @@ class LocationItem extends StatelessWidget {
     this.headerTrailing,
     this.staffListOverride,
     this.showDefaultActions = true,
+    this.showDeleteLocationAction = true,
     this.showBody = true,
     this.onTap,
     this.readOnly = false,
@@ -40,6 +41,7 @@ class LocationItem extends StatelessWidget {
   final Widget? headerTrailing;
   final Widget? staffListOverride;
   final bool showDefaultActions;
+  final bool showDeleteLocationAction;
   final bool showBody;
   final VoidCallback? onTap;
   final bool readOnly;
@@ -136,11 +138,12 @@ class LocationItem extends StatelessWidget {
                   icon: const Icon(Icons.edit_outlined),
                   onPressed: onEditLocation,
                 ),
-                IconButton(
-                  tooltip: context.l10n.actionDelete,
-                  icon: const Icon(Icons.delete_outline, color: Colors.red),
-                  onPressed: onDeleteLocation,
-                ),
+                if (showDeleteLocationAction)
+                  IconButton(
+                    tooltip: context.l10n.actionDelete,
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
+                    onPressed: onDeleteLocation,
+                  ),
               ],
               if (headerTrailing != null) headerTrailing!,
             ],
