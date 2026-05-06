@@ -1361,7 +1361,7 @@ final class CreateBooking
                 'location_show_price_to_customer' => (bool) ($location['show_price_to_customer'] ?? true),
                 'cancellation_hours' => $location['cancellation_hours'] ?? 24,
                 'manage_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($location['business_slug'] ?? '') . '/my-bookings',
-                'booking_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($location['business_slug'] ?? '') . '/booking',
+                'booking_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($location['business_slug'] ?? '') . '/booking' . (!empty($location['id']) ? '?location=' . (int) $location['id'] : ''),
                 'locale' => $locale,
             ];
 

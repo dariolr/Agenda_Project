@@ -463,7 +463,7 @@ final class UpdateBooking
                 'start_time' => $newStartTime,
                 'services' => implode(', ', array_column($booking['items'] ?? [], 'service_name')),
                 'manage_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($locationData['business_slug'] ?? '') . '/my-bookings',
-                'booking_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($locationData['business_slug'] ?? '') . '/booking',
+                'booking_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($locationData['business_slug'] ?? '') . '/booking' . (!empty($booking['location_id']) ? '?location=' . (int) $booking['location_id'] : ''),
                 'locale' => $locale,
             ];
 

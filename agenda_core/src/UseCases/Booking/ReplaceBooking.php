@@ -672,7 +672,7 @@ final class ReplaceBooking
                 'end_time' => $lastEnd,
                 'services' => $services,
                 'manage_url' => $frontendUrl . '/' . $businessSlug . '/my-bookings',
-                'booking_url' => $frontendUrl . '/' . $businessSlug . '/booking',
+                'booking_url' => $frontendUrl . '/' . $businessSlug . '/booking' . (!empty($location['id']) ? '?location=' . (int) $location['id'] : ''),
                 'locale' => $locale,
             ];
 

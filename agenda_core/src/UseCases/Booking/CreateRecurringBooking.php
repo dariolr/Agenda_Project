@@ -474,7 +474,7 @@ final class CreateRecurringBooking
                 'total_price' => $occurrencePrice,
                 'cancellation_hours' => $location['cancellation_hours'] ?? 24,
                 'manage_url' => $frontendUrl . '/' . $businessSlug . '/my-bookings',
-                'booking_url' => $frontendUrl . '/' . $businessSlug . '/booking',
+                'booking_url' => $frontendUrl . '/' . $businessSlug . '/booking' . (!empty($location['id']) ? '?location=' . (int) $location['id'] : ''),
                 'locale' => $locale,
                 'is_recurring' => $occurrencesCount >= 2,
                 'recurrence_frequency' => $recurrenceFrequency,
@@ -566,7 +566,7 @@ final class CreateRecurringBooking
                     'end_time' => (string) $createdBooking['end_time'],
                     'services' => $services,
                     'manage_url' => $frontendUrl . '/' . $businessSlug . '/my-bookings',
-                    'booking_url' => $frontendUrl . '/' . $businessSlug . '/booking',
+                    'booking_url' => $frontendUrl . '/' . $businessSlug . '/booking' . (!empty($location['id']) ? '?location=' . (int) $location['id'] : ''),
                     'locale' => $locale,
                 ];
 
