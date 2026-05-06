@@ -109,6 +109,30 @@ class BookingsListFilters {
         (source != null && source!.isNotEmpty);
   }
 
+  static const List<String> allStatuses = [
+    'confirmed',
+    'completed',
+    'cancelled',
+    'no_show',
+  ];
+
+  /// True se ci sono filtri attivi che restringono il conteggio
+  /// rispetto al totale complessivo del periodo (tutte le sedi, tutti gli operatori, ecc.)
+  bool get hasSecondaryFilters {
+    final hasStatusFilter = status != null &&
+        status!.isNotEmpty &&
+        status!.length < allStatuses.length;
+
+    return locationId != null ||
+        (locationIds != null && locationIds!.isNotEmpty) ||
+        staffId != null ||
+        (staffIds != null && staffIds!.isNotEmpty) ||
+        (serviceIds != null && serviceIds!.isNotEmpty) ||
+        (clientSearch != null && clientSearch!.isNotEmpty) ||
+        (source != null && source!.isNotEmpty) ||
+        hasStatusFilter;
+  }
+
   @override
   String toString() {
     return 'BookingsListFilters(locationId: $locationId, locationIds: $locationIds, staffId: $staffId, staffIds: $staffIds, serviceIds: $serviceIds, clientSearch: $clientSearch, status: $status, source: $source, startDate: $startDate, endDate: $endDate, includePast: $includePast, sortBy: $sortBy, sortOrder: $sortOrder)';
@@ -226,6 +250,7 @@ class BookingsListFiltersNotifier extends Notifier<BookingsListFilters> {
 class BookingsListState {
   final List<BookingListItem> bookings;
   final int total;
+  final int? totalForPeriod;
   final int offset;
   final int limit;
   final bool isLoading;
@@ -235,6 +260,7 @@ class BookingsListState {
   const BookingsListState({
     this.bookings = const [],
     this.total = 0,
+    this.totalForPeriod,
     this.offset = 0,
     this.limit = 50,
     this.isLoading = false,
@@ -248,6 +274,8 @@ class BookingsListState {
   BookingsListState copyWith({
     List<BookingListItem>? bookings,
     int? total,
+    int? totalForPeriod,
+    bool clearTotalForPeriod = false,
     int? offset,
     int? limit,
     bool? isLoading,
@@ -258,6 +286,9 @@ class BookingsListState {
     return BookingsListState(
       bookings: bookings ?? this.bookings,
       total: total ?? this.total,
+      totalForPeriod: clearTotalForPeriod
+          ? null
+          : (totalForPeriod ?? this.totalForPeriod),
       offset: offset ?? this.offset,
       limit: limit ?? this.limit,
       isLoading: isLoading ?? this.isLoading,
@@ -294,7 +325,8 @@ class BookingsListNotifier extends Notifier<BookingsListState> {
 
     try {
       final apiClient = ref.read(apiClientProvider);
-      final response = await apiClient.getBookingsList(
+
+      final mainFuture = apiClient.getBookingsList(
         businessId: businessId,
         locationId: filters.locationId,
         locationIds: filters.locationIds,
@@ -313,10 +345,34 @@ class BookingsListNotifier extends Notifier<BookingsListState> {
         offset: 0,
       );
 
-      final result = BookingListResult.fromJson(response);
+      // Quando ci sono filtri attivi, recupera in parallelo il totale
+      // complessivo del periodo (solo range date, senza location né altri filtri)
+      final periodFuture = filters.hasSecondaryFilters
+          ? apiClient.getBookingsList(
+              businessId: businessId,
+              startDate: filters.startDate,
+              endDate: filters.endDate,
+              includePast: filters.includePast,
+              limit: 1,
+              offset: 0,
+            )
+          : null;
+
+      final results = await Future.wait([
+        mainFuture,
+        if (periodFuture != null) periodFuture,
+      ]);
+
+      final result = BookingListResult.fromJson(results[0]);
+      final periodTotal = (periodFuture != null && results.length > 1)
+          ? BookingListResult.fromJson(results[1]).total
+          : null;
+
       state = state.copyWith(
         bookings: result.bookings,
         total: result.total,
+        totalForPeriod: periodTotal,
+        clearTotalForPeriod: periodFuture == null,
         offset: 0,
         isLoading: false,
       );

@@ -8190,6 +8190,16 @@ class L10n {
     );
   }
 
+  /// `{count} bookings ({percent}% of {periodTotal})`
+  String bookingsListTotalWithPeriod(int count, String percent, int periodTotal) {
+    return Intl.message(
+      '$count bookings ($percent% of $periodTotal)',
+      name: 'bookingsListTotalWithPeriod',
+      desc: '',
+      args: [count, percent, periodTotal],
+    );
+  }
+
   /// `Load more`
   String get bookingsListLoadMore {
     return Intl.message(

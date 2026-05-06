@@ -68,6 +68,17 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
     final urlLocationId = ref.watch(urlLocationIdProvider);
 
+    // Guard: il router aggiorna bookingDirectLinkSlugProvider via Future.microtask,
+    // quindi per UN FRAME il provider può essere null anche se l'URL ha già ?link=.
+    // GoRouterState.of(context).uri è sempre sincrono con l'URL corrente.
+    // Se il link è nell'URL ma il provider non è ancora aggiornato, mostriamo
+    // loading per evitare il flash dello step sede.
+    final currentUri = GoRouterState.of(context).uri;
+    final rawLinkSlug = currentUri.queryParameters['link'];
+    if (rawLinkSlug != null && rawLinkSlug.isNotEmpty && linkSlug == null) {
+      return const AppLoadingScreen();
+    }
+
     // Auth redirect
     final currentBusinessId = businessAsync.value?.id;
     final authenticatedBusinessId = authenticatedBusinessIdAsync.value;

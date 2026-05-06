@@ -482,6 +482,14 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
     ref.listen<int>(currentBusinessIdProvider, (previous, next) {
       if (next <= 0) return;
       if (previous == next) return;
+      setState(() {
+        _selectedLocationIds.clear();
+        _selectedStaffIds.clear();
+        _selectedServiceIds.clear();
+        _selectedStatuses = _allBookingStatuses.toSet();
+        _onlineOnly = false;
+        _clientSearchController.clear();
+      });
       _loadInitialData();
     });
 
@@ -503,7 +511,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
             child: Row(
               children: [
                 Text(
-                  l10n.bookingsListTotalCount(listState.total),
+                  _buildTotalLabel(context, listState),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
@@ -529,6 +537,23 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
         ],
       ),
     );
+  }
+
+  String _buildTotalLabel(BuildContext context, BookingsListState listState) {
+    final l10n = context.l10n;
+    final periodTotal = listState.totalForPeriod;
+    if (periodTotal != null && periodTotal > 0) {
+      final pct = listState.total / periodTotal * 100;
+      final pctStr = pct == pct.truncateToDouble()
+          ? pct.toStringAsFixed(0)
+          : pct.toStringAsFixed(1);
+      return l10n.bookingsListTotalWithPeriod(
+        listState.total,
+        pctStr,
+        periodTotal,
+      );
+    }
+    return l10n.bookingsListTotalCount(listState.total);
   }
 
   Widget _buildFiltersSection(BuildContext context) {

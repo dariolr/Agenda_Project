@@ -1350,6 +1350,20 @@
       }
     }
   },
+  "bookingsListTotalWithPeriod": "{count} bookings ({percent}% of {periodTotal})",
+  "@bookingsListTotalWithPeriod": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "String"
+      },
+      "periodTotal": {
+        "type": "int"
+      }
+    }
+  },
   "bookingsListLoadMore": "Load more",
   "bookingsListResetFilters": "Reset filters",
   "bookingsListAllLocations": "All locations",

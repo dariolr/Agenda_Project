@@ -232,6 +232,9 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m91(locations, steps) =>
       "Onboarding completed. Auto-mapped locations: ${locations}. Next steps: ${steps}";
 
+  static String m92(count, percent, periodTotal) =>
+      "${count} bookings (${percent}% of ${periodTotal})";
+
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
     "actionApply": MessageLookupByLibrary.simpleMessage("Apply"),
@@ -918,6 +921,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "bookingsListTitle": MessageLookupByLibrary.simpleMessage("Bookings List"),
     "bookingsListTotalCount": m16,
+    "bookingsListTotalWithPeriod": m92,
     "businessOnlineBookingsNotificationEmailHelper":
         MessageLookupByLibrary.simpleMessage(
           "Receives notifications only when customers create/modify/cancel online bookings",

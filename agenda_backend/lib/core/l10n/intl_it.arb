@@ -1350,6 +1350,20 @@
       }
     }
   },
+  "bookingsListTotalWithPeriod": "{count} prenotazioni ({percent}% di {periodTotal})",
+  "@bookingsListTotalWithPeriod": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "percent": {
+        "type": "String"
+      },
+      "periodTotal": {
+        "type": "int"
+      }
+    }
+  },
   "bookingsListLoadMore": "Carica altre",
   "bookingsListResetFilters": "Reset filtri",
   "bookingsListAllLocations": "Tutte le sedi",

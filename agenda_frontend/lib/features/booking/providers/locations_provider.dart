@@ -89,9 +89,14 @@ final hasMultipleLocationsProvider = Provider<bool>((ref) {
   final locationsAsync = ref.watch(locationsProvider);
   final urlLocationId = ref.watch(urlLocationIdProvider);
   final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
-  final directLink = (linkSlug != null)
-      ? ref.watch(bookingDirectLinkProvider).value
-      : null;
+  final directLinkAsync =
+      (linkSlug != null) ? ref.watch(bookingDirectLinkProvider) : null;
+
+  // Finché il direct link non è risolto non dichiariamo multiple locations:
+  // evita il flash dello step sede che verrebbe saltato un frame dopo.
+  if (directLinkAsync != null && directLinkAsync.isLoading) return false;
+
+  final directLink = directLinkAsync?.value;
 
   return locationsAsync.maybeWhen(
     data: (locations) {
