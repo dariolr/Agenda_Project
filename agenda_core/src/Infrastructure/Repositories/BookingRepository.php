@@ -260,7 +260,7 @@ final class BookingRepository
                 JOIN bookings b ON bi.booking_id = b.id
                 WHERE bi.staff_id = ?
                   AND bi.location_id = ?
-                  AND b.status IN ('pending', 'confirmed')
+                  AND b.status NOT IN ('cancelled', 'replaced')
                   AND bi.start_time < ?
                   AND bi.end_time > ?";
         
@@ -551,7 +551,7 @@ final class BookingRepository
                 JOIN bookings b ON bi.booking_id = b.id
                 WHERE bi.staff_id = ?
                   AND bi.location_id = ?
-                  AND b.status IN ('pending', 'confirmed')
+                  AND b.status NOT IN ('cancelled', 'replaced')
                   AND bi.start_time >= ?
                   AND bi.end_time <= ?";
         
@@ -595,7 +595,7 @@ final class BookingRepository
                 FROM booking_items bi
                 JOIN bookings b ON bi.booking_id = b.id
                 WHERE bi.location_id = ?
-                  AND b.status IN ('pending', 'confirmed')
+                  AND b.status NOT IN ('cancelled', 'replaced')
                   AND bi.start_time >= ?
                   AND bi.end_time <= ?";
         
@@ -640,7 +640,7 @@ final class BookingRepository
                 JOIN bookings b ON bi.booking_id = b.id
                 WHERE bi.staff_id = ?
                   AND bi.location_id = ?
-                  AND b.status IN ('pending', 'confirmed')
+                  AND b.status NOT IN ('cancelled', 'replaced')
                   AND (
                       (bi.start_time < ? AND bi.end_time > ?)
                       OR (bi.start_time >= ? AND bi.start_time < ?)
@@ -684,7 +684,7 @@ final class BookingRepository
                 WHERE bi.location_id = ?
                   AND bi.staff_id = ?
                   AND bi.service_variant_id = ?
-                  AND b.status IN ('pending', 'confirmed')
+                  AND b.status NOT IN ('cancelled', 'replaced')
                   AND bi.start_time < ?
                   AND bi.end_time > ?";
 
@@ -728,7 +728,7 @@ final class BookingRepository
                 WHERE bi.location_id = ?
                   AND bi.staff_id = ?
                   AND bi.service_variant_id <> ?
-                  AND b.status IN ('pending', 'confirmed')
+                  AND b.status NOT IN ('cancelled', 'replaced')
                   AND bi.start_time < ?
                   AND bi.end_time > ?";
 

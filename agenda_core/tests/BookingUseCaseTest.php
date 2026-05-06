@@ -83,6 +83,26 @@ final class BookingUseCaseTest extends TestCase
         );
     }
 
+    public function testBlockedExtraExtendsVisibleBookingItemDuration(): void
+    {
+        $startTime = new DateTimeImmutable('2025-01-15 10:00:00', new DateTimeZone('UTC'));
+        $serviceDuration = 45;
+        $blockedExtra = 15;
+        $processingExtra = 10;
+
+        $visibleDuration = $serviceDuration + $blockedExtra;
+        $occupiedDuration = $visibleDuration + $processingExtra;
+
+        $this->assertEquals(
+            '2025-01-15 11:00:00',
+            $startTime->modify("+{$visibleDuration} minutes")->format('Y-m-d H:i:s')
+        );
+        $this->assertEquals(
+            '2025-01-15 11:10:00',
+            $startTime->modify("+{$occupiedDuration} minutes")->format('Y-m-d H:i:s')
+        );
+    }
+
     // ==================== Conflict Detection Tests ====================
 
     public function testConflictDetection(): void

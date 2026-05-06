@@ -984,12 +984,11 @@ final class CreateBooking
             $itemsToCreate = [];
 
             foreach ($services as $index => $service) {
-                // Display duration (what appears in gestionale) - only service time
-                $displayDuration = (int) $service['duration_minutes'];
-                // Blocked duration (for conflict check and next service start) - includes processing/blocked time
-                $blockedDuration = $displayDuration
-                    + (int) ($service['processing_time'] ?? 0)
-                    + (int) ($service['blocked_time'] ?? 0);
+                $serviceDuration = (int) $service['duration_minutes'];
+                $processingExtra = (int) ($service['processing_time'] ?? 0);
+                $blockedExtra = (int) ($service['blocked_time'] ?? 0);
+                $displayDuration = $serviceDuration + $blockedExtra;
+                $blockedDuration = $displayDuration + $processingExtra;
                 
                 $displayEndTime = $currentTime->modify("+{$displayDuration} minutes");
                 $blockedEndTime = $currentTime->modify("+{$blockedDuration} minutes");
@@ -1017,7 +1016,9 @@ final class CreateBooking
                     'service_variant_id' => (int) $service['service_variant_id'],
                     'staff_id' => $staffId,
                     'start_time' => $currentTime->format('Y-m-d H:i:s'),
-                    'end_time' => $displayEndTime->format('Y-m-d H:i:s'), // Display duration only
+                    'end_time' => $displayEndTime->format('Y-m-d H:i:s'),
+                    'extra_blocked_minutes' => $blockedExtra,
+                    'extra_processing_minutes' => $processingExtra,
                     'service_name_snapshot' => $service['name'],
                     'client_name_snapshot' => $clientName,
                 ] + $this->buildItemPricingSnapshot(
@@ -1204,12 +1205,11 @@ final class CreateBooking
                 }
                 $service = $services[0];
 
-                // Display duration (what appears in gestionale) - only service time
-                $displayDuration = (int) $service['duration_minutes'];
-                // Blocked duration (for conflict check) - includes processing/blocked time
-                $blockedDuration = $displayDuration
-                    + (int) ($service['processing_time'] ?? 0)
-                    + (int) ($service['blocked_time'] ?? 0);
+                $serviceDuration = (int) $service['duration_minutes'];
+                $processingExtra = (int) ($service['processing_time'] ?? 0);
+                $blockedExtra = (int) ($service['blocked_time'] ?? 0);
+                $displayDuration = $serviceDuration + $blockedExtra;
+                $blockedDuration = $displayDuration + $processingExtra;
                 
                 $displayEndTime = $startTime->modify("+{$displayDuration} minutes");
                 $blockedEndTime = $startTime->modify("+{$blockedDuration} minutes");
@@ -1237,7 +1237,9 @@ final class CreateBooking
                     'service_variant_id' => (int) $service['service_variant_id'],
                     'staff_id' => $staffId,
                     'start_time' => $startTime->format('Y-m-d H:i:s'),
-                    'end_time' => $displayEndTime->format('Y-m-d H:i:s'), // Display duration only
+                    'end_time' => $displayEndTime->format('Y-m-d H:i:s'),
+                    'extra_blocked_minutes' => $blockedExtra,
+                    'extra_processing_minutes' => $processingExtra,
                     'service_name_snapshot' => $service['name'],
                     'client_name_snapshot' => $clientName,
                 ] + $this->buildItemPricingSnapshot($item, $service);

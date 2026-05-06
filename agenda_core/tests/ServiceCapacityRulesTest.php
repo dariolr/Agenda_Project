@@ -57,6 +57,33 @@ final class ServiceCapacityRulesTest extends TestCase
         $this->assertTrue($this->canBook($existing, 1, 10, 100, '08:30', '09:30', 1));
     }
 
+    public function testReplacedBookingsDoNotConsumeCapacity(): void
+    {
+        $existing = [
+            $this->bookingItem(1, 10, 100, '08:00', '09:00', 'replaced'),
+        ];
+
+        $this->assertTrue($this->canBook($existing, 1, 10, 100, '08:30', '09:30', 1));
+    }
+
+    public function testCompletedBookingsConsumeCapacity(): void
+    {
+        $existing = [
+            $this->bookingItem(1, 10, 100, '08:00', '09:00', 'completed'),
+        ];
+
+        $this->assertFalse($this->canBook($existing, 1, 10, 100, '08:30', '09:30', 1));
+    }
+
+    public function testNoShowBookingsConsumeCapacity(): void
+    {
+        $existing = [
+            $this->bookingItem(1, 10, 100, '08:00', '09:00', 'no_show'),
+        ];
+
+        $this->assertFalse($this->canBook($existing, 1, 10, 100, '08:30', '09:30', 1));
+    }
+
     public function testCapacityCheckLocksVariantBeforeCountingOverlaps(): void
     {
         $source = (string) file_get_contents(__DIR__ . '/../src/UseCases/Booking/CreateBooking.php');
@@ -114,7 +141,7 @@ final class ServiceCapacityRulesTest extends TestCase
         $sameVariantOverlaps = 0;
 
         foreach ($existing as $item) {
-            if (!in_array($item['status'], ['pending', 'confirmed'], true)) {
+            if (in_array($item['status'], ['cancelled', 'replaced'], true)) {
                 continue;
             }
             if ($item['location_id'] !== $locationId || $item['staff_id'] !== $staffId) {
