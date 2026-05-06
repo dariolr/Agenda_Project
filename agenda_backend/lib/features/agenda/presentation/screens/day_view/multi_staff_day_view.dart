@@ -136,10 +136,9 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
       },
     );
 
-    // 🔹 Rimosso: lo scroll automatico al cambio data
-    // Lo scroll avviene SOLO:
-    // 1. Alla prima apertura dell'app (gestito in AgendaDay._handleCenterVerticalController)
-    // 2. Dopo creazione/modifica appuntamento (via agendaScrollRequestProvider)
+    // 🔹 Rimosso: lo scroll automatico al cambio data.
+    // Le richieste esplicite via agendaScrollRequestProvider restano per
+    // spostamenti/reschedule, ma non vengono più inviate dal salvataggio dialog.
     _dateSub = ref.listenManual<DateTime>(agendaDateProvider, (prev, next) {
       // No-op: non fare scroll automatico al cambio data
     });

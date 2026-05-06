@@ -37,7 +37,6 @@ import '../../../services/providers/service_packages_repository_provider.dart';
 import '../../../services/providers/services_provider.dart';
 import '../../domain/booking_payment_preview.dart';
 import '../../domain/service_item_data.dart';
-import '../../providers/agenda_scroll_request_provider.dart';
 import '../../providers/appointment_providers.dart';
 import '../../providers/booking_reschedule_capability_provider.dart';
 import '../../providers/booking_reschedule_provider.dart';
@@ -2319,8 +2318,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       final processedIds = <int>{};
       int nextTotalCents = 0;
       int nextReferenceTotalCents = 0;
-      Appointment? scrollTarget;
-
       for (int i = 0; i < validItems.length; i++) {
         final item = validItems[i];
 
@@ -2389,10 +2386,9 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           await ref
               .read(appointmentsProvider.notifier)
               .updateAppointment(updated);
-          scrollTarget ??= updated;
         } else {
           // Crea nuovo appuntamento (aggiunto durante la modifica)
-          final created = await ref
+          await ref
               .read(appointmentsProvider.notifier)
               .addAppointment(
                 bookingId: bookingId,
@@ -2410,7 +2406,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                 extraBlockedMinutes: blockedExtraMinutes,
                 extraProcessingMinutes: processingExtraMinutes,
               );
-          scrollTarget ??= created;
         }
       }
 
@@ -2647,9 +2642,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         }
       }
 
-      if (scrollTarget != null) {
-        ref.read(agendaScrollRequestProvider.notifier).request(scrollTarget);
-      }
       _invalidateWeeklyAppointmentsCaches(
         changedDate: _date,
         previousDate: widget.initial.startTime,

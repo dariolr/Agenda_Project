@@ -47,7 +47,6 @@ import '../../../staff/providers/staff_planning_provider.dart';
 import '../../data/bookings_api.dart';
 import '../../domain/booking_payment_preview.dart';
 import '../../domain/service_item_data.dart';
-import '../../providers/agenda_scroll_request_provider.dart';
 import '../../providers/appointment_providers.dart';
 import '../../providers/booking_payment_providers.dart';
 import '../../providers/bookings_provider.dart';
@@ -2364,15 +2363,6 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     _invalidateWeeklyAppointmentsCaches(changedDate: _date);
     await ref.read(appointmentsProvider.future);
 
-    // Trova il primo appointment creato per lo scroll
-    final currentList = ref.read(appointmentsProvider).value ?? [];
-    final scrollTarget = currentList
-        .where((a) => a.bookingId == bookingResponse.id)
-        .firstOrNull;
-
-    if (scrollTarget != null) {
-      ref.read(agendaScrollRequestProvider.notifier).request(scrollTarget);
-    }
   }
 
   Future<void> _persistPendingPaymentIfNeeded(
