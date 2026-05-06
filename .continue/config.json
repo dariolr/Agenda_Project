@@ -1,0 +1,51 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Bash(cd *)",
+      "Bash(head *)",
+      "Bash(git status *)",
+      "Bash(pwd)",
+      "Bash(ls *)",
+      "Bash(cd *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(sed *)",
+      "Bash(awk *)",
+      "Bash(wc *)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(grep*)",
+
+      "Bash(dart analyze *)",
+      "Bash(dart pub get)",
+      "Bash(flutter analyze *)",
+      "Bash(flutter pub get)",
+      "Bash(flutter test *)",
+
+      "Bash(php *)",
+      "Bash(composer install *)",
+      "Bash(composer update *)",
+      "Bash(composer dump-autoload *)",
+
+      "Bash(git status *)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git checkout *)",
+      "Bash(git restore *)"
+    ],
+    "deny": [
+      "Bash(rm *)",
+      "Bash(sudo *)",
+      "Bash(chmod *)",
+      "Bash(chown *)",
+      "Bash(git push *)",
+      "Bash(git reset --hard *)",
+      "Bash(git clean *)"
+    ]
+  },
+  "effortLevel": "medium"
+}
