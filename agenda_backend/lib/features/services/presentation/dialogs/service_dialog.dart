@@ -427,6 +427,13 @@ Future<void> showServiceDialog(
   bool isSelectingLocations = false;
   bool isLoadingLocations = isEditing && showLocationSelector;
 
+  // Scope check: i campi globali (nome, descrizione, categoria) richiedono
+  // che l'utente abbia scope su tutte le location del servizio.
+  final allowedLocationIds = ref.read(allowedLocationIdsProvider);
+  // Prima del caricamento asincrono delle location del servizio, ottimisticamente
+  // true (verrà aggiornato dopo il load). In creazione è sempre true.
+  bool canEditServiceFields = !isEditing || allowedLocationIds == null;
+
   // Risorse richieste (Map: resourceId -> quantity)
   final locationResources = ref.read(locationResourcesProvider(locationId));
   final existingResourceRequirements =
@@ -610,12 +617,16 @@ Future<void> showServiceDialog(
             service.description != null && service.description!.isNotEmpty;
         final hasDescription = descriptionText.isNotEmpty;
 
+        // I campi globali (nome, categoria, descrizione) vengono inviati solo
+        // se l'utente ha scope su tutte le location del servizio.
         savedService = await notifier.updateServiceApi(
           serviceId: service.id,
-          name: normalizedName,
-          categoryId: selectedCategory!,
-          description: hasDescription ? descriptionText : null,
-          setDescriptionNull: hadDescription && !hasDescription,
+          name: canEditServiceFields ? normalizedName : null,
+          categoryId: canEditServiceFields ? selectedCategory! : null,
+          description:
+              canEditServiceFields && hasDescription ? descriptionText : null,
+          setDescriptionNull:
+              canEditServiceFields && hadDescription && !hasDescription,
           durationMinutes: selectedDuration!,
           price: finalPrice ?? 0,
           colorHex: ColorUtils.toHex(selectedColor),
@@ -1280,7 +1291,7 @@ Future<void> showServiceDialog(
               for (final c in categories)
                 DropdownMenuItem(value: c.id, child: Text(c.name)),
             ],
-            onChanged: canEditDialog
+            onChanged: canEditDialog && canEditServiceFields
                 ? (v) => setState(() {
                     selectedCategory = v;
                     categoryError = false;
@@ -1293,7 +1304,7 @@ Future<void> showServiceDialog(
           label: context.l10n.fieldNameRequiredLabel,
           child: TextField(
             controller: nameController,
-            enabled: canEditDialog,
+            enabled: canEditDialog && canEditServiceFields,
             decoration: InputDecoration(
               border: const OutlineInputBorder(),
               isDense: true,
@@ -1307,7 +1318,7 @@ Future<void> showServiceDialog(
           child: TextField(
             controller: descController,
             maxLines: 3,
-            enabled: canEditDialog,
+            enabled: canEditDialog && canEditServiceFields,
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
               isDense: true,
@@ -1766,6 +1777,13 @@ Future<void> showServiceDialog(
               selectedLocationIds = loadedIds.toSet();
               originalLocationIds = loadedIds.toSet();
               isLoadingLocations = false;
+              // Se l'utente ha scope location, può modificare i campi globali
+              // solo se tutte le location del servizio sono nel suo scope.
+              if (allowedLocationIds != null) {
+                canEditServiceFields = loadedIds.every(
+                  (id) => allowedLocationIds.contains(id),
+                );
+              }
             });
           } catch (e) {
             setState(() {
