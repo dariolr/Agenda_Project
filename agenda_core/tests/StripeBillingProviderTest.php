@@ -154,6 +154,112 @@ final class StripeBillingProviderTest extends TestCase
         $this->assertSame(42, (int) $row['business_id']);
     }
 
+    public function testSubscriptionUpdatedCancelAtPeriodEndKeepsActiveAndPeriodEnd(): void
+    {
+        $periodStart = 1_714_569_600;
+        $periodEnd = 1_717_161_600;
+        $event = [
+            'id' => 'evt_subscription_updated_cancel_at_period_end',
+            'object' => 'event',
+            'type' => 'customer.subscription.updated',
+            'data' => [
+                'object' => [
+                    'id' => 'sub_cancel_at_period_end',
+                    'object' => 'subscription',
+                    'customer' => 'cus_test',
+                    'status' => 'active',
+                    'current_period_start' => $periodStart,
+                    'current_period_end' => $periodEnd,
+                    'cancel_at_period_end' => true,
+                    'metadata' => [
+                        'business_id' => '42',
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->provider()->handleWebhook($this->payload($event), $this->headers($event));
+
+        $this->assertSame(BillingSubscriptionStatus::ACTIVE, $result->targetStatus);
+        $this->assertTrue($result->cancelAtPeriodEnd);
+        $this->assertSame(gmdate('Y-m-d H:i:s', $periodStart), $result->currentPeriodStart);
+        $this->assertSame(gmdate('Y-m-d H:i:s', $periodEnd), $result->currentPeriodEnd);
+        $this->assertNull($result->canceledAt);
+    }
+
+    public function testSubscriptionUpdatedReadsCurrentPeriodFromSubscriptionItem(): void
+    {
+        $periodStart = 1_714_569_600;
+        $periodEnd = 1_717_161_600;
+        $event = [
+            'id' => 'evt_subscription_updated_item_period',
+            'object' => 'event',
+            'type' => 'customer.subscription.updated',
+            'data' => [
+                'object' => [
+                    'id' => 'sub_item_period',
+                    'object' => 'subscription',
+                    'customer' => 'cus_test',
+                    'status' => 'active',
+                    'cancel_at_period_end' => true,
+                    'metadata' => [
+                        'business_id' => '42',
+                    ],
+                    'items' => [
+                        'data' => [
+                            [
+                                'current_period_start' => $periodStart,
+                                'current_period_end' => $periodEnd,
+                                'price' => [
+                                    'id' => 'price_test',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->provider()->handleWebhook($this->payload($event), $this->headers($event));
+
+        $this->assertSame(BillingSubscriptionStatus::ACTIVE, $result->targetStatus);
+        $this->assertTrue($result->cancelAtPeriodEnd);
+        $this->assertSame(gmdate('Y-m-d H:i:s', $periodStart), $result->currentPeriodStart);
+        $this->assertSame(gmdate('Y-m-d H:i:s', $periodEnd), $result->currentPeriodEnd);
+        $this->assertSame('price_test', $result->providerPriceReference);
+        $this->assertNull($result->canceledAt);
+    }
+
+    public function testSubscriptionDeletedSetsCanceledStatusAndCanceledAt(): void
+    {
+        $canceledAt = 1_714_569_660;
+        $event = [
+            'id' => 'evt_subscription_deleted',
+            'object' => 'event',
+            'created' => 1_714_569_700,
+            'type' => 'customer.subscription.deleted',
+            'data' => [
+                'object' => [
+                    'id' => 'sub_deleted',
+                    'object' => 'subscription',
+                    'customer' => 'cus_test',
+                    'status' => 'canceled',
+                    'cancel_at_period_end' => false,
+                    'canceled_at' => $canceledAt,
+                    'metadata' => [
+                        'business_id' => '42',
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->provider()->handleWebhook($this->payload($event), $this->headers($event));
+
+        $this->assertSame(BillingSubscriptionStatus::CANCELED, $result->targetStatus);
+        $this->assertFalse($result->cancelAtPeriodEnd);
+        $this->assertSame(gmdate('Y-m-d H:i:s', $canceledAt), $result->canceledAt);
+    }
+
     public function testInvoicePaidRemainsSupportedAsSuccessfulPayment(): void
     {
         $event = [

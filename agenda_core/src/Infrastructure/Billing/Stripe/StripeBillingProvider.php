@@ -22,6 +22,12 @@ final class StripeBillingProvider implements BillingProviderInterface
         'invoice_payment.paid',
     ];
 
+    private const SUBSCRIPTION_EVENTS = [
+        'customer.subscription.created',
+        'customer.subscription.updated',
+        'customer.subscription.deleted',
+    ];
+
     public function __construct(
         private readonly StripeClientFactory $clientFactory,
         private readonly BusinessBillingConfigRepository $configRepository,
@@ -119,14 +125,37 @@ final class StripeBillingProvider implements BillingProviderInterface
         $businessId = $this->extractBusinessId($object);
         $customerId = $this->extractCustomerId($object);
         $subscriptionId = $this->extractSubscriptionId($type, $object);
+        if ($this->isSubscriptionEvent($type)) {
+            $object = $this->resolveSubscriptionSnapshot(
+                $object,
+                $subscriptionId,
+            );
+            $businessId = $this->extractBusinessId($object);
+            $customerId = $this->extractCustomerId($object);
+            $subscriptionId = $this->extractSubscriptionId($type, $object);
+        }
 
         $status = $this->targetStatus($type, $object);
-        $periodStart = $this->timestampOrNull($object['current_period_start'] ?? null);
-        $periodEnd = $this->timestampOrNull($object['current_period_end'] ?? null);
+        $periodStart = $this->extractCurrentPeriodStart($object);
+        $periodEnd = $this->extractCurrentPeriodEnd($object);
+        $cancelAtPeriodEnd = $this->extractCancelAtPeriodEnd($object);
+        if ($status === BillingSubscriptionStatus::CANCELED) {
+            $cancelAtPeriodEnd = false;
+        }
+        if ($cancelAtPeriodEnd === true && $periodEnd === null) {
+            $this->logMissingCurrentPeriodEnd((string) $eventArray['id'], $subscriptionId, $businessId);
+        }
         $lastPaymentAt = $this->isPaymentSucceededEvent($type)
             ? $this->timestampOrNull($object['status_transitions']['paid_at'] ?? $object['created'] ?? null)
             : null;
         $lastPaymentFailedAt = $type === 'invoice.payment_failed' ? $this->timestampOrNull($object['created'] ?? null) : null;
+        $canceledAt = $status === BillingSubscriptionStatus::CANCELED
+            ? $this->timestampOrNull($this->firstValue([
+                $object['canceled_at'] ?? null,
+                $object['ended_at'] ?? null,
+                $eventArray['created'] ?? null,
+            ]))
+            : null;
 
         return new BillingWebhookResult(
             providerEventId: (string) $eventArray['id'],
@@ -139,7 +168,8 @@ final class StripeBillingProvider implements BillingProviderInterface
             targetStatus: $status,
             currentPeriodStart: $periodStart,
             currentPeriodEnd: $periodEnd,
-            cancelAtPeriodEnd: isset($object['cancel_at_period_end']) ? (bool) $object['cancel_at_period_end'] : null,
+            cancelAtPeriodEnd: $cancelAtPeriodEnd,
+            canceledAt: $canceledAt,
             lastPaymentAt: $lastPaymentAt,
             lastPaymentFailedAt: $lastPaymentFailedAt,
             rawPayload: $eventArray,
@@ -179,7 +209,7 @@ final class StripeBillingProvider implements BillingProviderInterface
         if ($type === 'customer.subscription.deleted') {
             return BillingSubscriptionStatus::CANCELED;
         }
-        if ($type === 'customer.subscription.created' || $type === 'customer.subscription.updated') {
+        if ($this->isSubscriptionEvent($type)) {
             return match ((string) ($object['status'] ?? '')) {
                 'active', 'trialing' => BillingSubscriptionStatus::ACTIVE,
                 'past_due' => BillingSubscriptionStatus::PAST_DUE,
@@ -221,7 +251,7 @@ final class StripeBillingProvider implements BillingProviderInterface
 
     private function extractSubscriptionId(string $type, array $object): ?string
     {
-        if ($type === 'customer.subscription.created' || $type === 'customer.subscription.updated' || $type === 'customer.subscription.deleted') {
+        if ($this->isSubscriptionEvent($type)) {
             return $this->stringOrNull($object['id'] ?? null);
         }
 
@@ -249,9 +279,66 @@ final class StripeBillingProvider implements BillingProviderInterface
         return null;
     }
 
+    private function extractCurrentPeriodStart(array $object): ?string
+    {
+        return $this->timestampOrNull($this->firstValue([
+            $object['current_period_start'] ?? null,
+            $object['items']['data'][0]['current_period_start'] ?? null,
+        ]));
+    }
+
+    private function extractCurrentPeriodEnd(array $object): ?string
+    {
+        return $this->timestampOrNull($this->firstValue([
+            $object['current_period_end'] ?? null,
+            $object['items']['data'][0]['current_period_end'] ?? null,
+        ]));
+    }
+
+    private function extractCancelAtPeriodEnd(array $object): ?bool
+    {
+        return array_key_exists('cancel_at_period_end', $object)
+            ? (bool) $object['cancel_at_period_end']
+            : null;
+    }
+
     private function isPaymentSucceededEvent(string $type): bool
     {
         return in_array($type, self::PAYMENT_SUCCEEDED_EVENTS, true);
+    }
+
+    private function isSubscriptionEvent(string $type): bool
+    {
+        return in_array($type, self::SUBSCRIPTION_EVENTS, true);
+    }
+
+    private function resolveSubscriptionSnapshot(
+        array $object,
+        ?string $subscriptionId,
+    ): array {
+        if ($this->extractCurrentPeriodEnd($object) !== null || $subscriptionId === null) {
+            return $object;
+        }
+
+        try {
+            $subscription = $this->clientFactory->create()->subscriptions->retrieve($subscriptionId, []);
+            $subscriptionArray = $subscription->toArray();
+            if (is_array($subscriptionArray)) {
+                return array_replace_recursive($object, $subscriptionArray);
+            }
+        } catch (\Throwable) {}
+
+        return $object;
+    }
+
+    private function logMissingCurrentPeriodEnd(string $eventId, ?string $subscriptionId, ?int $businessId): void
+    {
+        error_log(sprintf(
+            '[StripeBillingProvider] WARNING missing current_period_end for cancel_at_period_end event_id=%s subscription_id=%s business_id=%s',
+            $eventId,
+            $subscriptionId ?? 'null',
+            $businessId === null ? 'null' : (string) $businessId,
+        ));
     }
 
     private function firstValue(array $values): mixed

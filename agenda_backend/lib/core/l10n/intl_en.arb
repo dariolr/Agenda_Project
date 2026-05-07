@@ -1913,16 +1913,25 @@
   "billingDescription": "Billing status and subscription management.",
   "billingNotRequiredMessage": "This business is not subject to billing.",
   "billingCurrentPeriodEndLabel": "Next renewal",
+  "billingCurrentPeriodEndCancellationLabel": "Expires on",
   "billingActivateAction": "Activate subscription",
+  "billingReactivateAction": "Reactivate subscription",
   "billingManageAction": "Manage subscription",
   "billingNotRequiredTitle": "No billing required",
   "billingActiveTitle": "Subscription active",
+  "billingActiveUntilCancellationScheduledTitle": "Subscription active until {currentPeriodEnd}",
+  "@billingActiveUntilCancellationScheduledTitle": {
+    "placeholders": {
+      "currentPeriodEnd": {}
+    }
+  },
   "billingPaymentFailedTitle": "Payment failed",
   "billingRequiredTitle": "Subscription required",
   "billingStatusNotRequired": "Not required",
   "billingStatusInactive": "Inactive",
   "billingStatusPendingCheckout": "Checkout pending",
   "billingStatusActive": "Active",
+  "billingStatusCancellationScheduled": "Cancellation scheduled",
   "billingStatusPastDue": "Past due",
   "billingStatusUnpaid": "Unpaid",
   "billingStatusCanceled": "Canceled",

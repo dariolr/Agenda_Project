@@ -52,6 +52,7 @@ final class StripeWebhookController
                     currentPeriodStart: $result->currentPeriodStart,
                     currentPeriodEnd: $result->currentPeriodEnd,
                     cancelAtPeriodEnd: $result->cancelAtPeriodEnd,
+                    canceledAt: $result->canceledAt,
                     lastPaymentAt: $result->lastPaymentAt,
                     lastPaymentFailedAt: $result->lastPaymentFailedAt,
                     rawPayload: $result->rawPayload,
