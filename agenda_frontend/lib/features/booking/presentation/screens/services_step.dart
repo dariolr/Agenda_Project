@@ -636,8 +636,12 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
       );
     }
 
+    // Il footer fisso è alto ~88px (info selezione + bottone); aggiunge
+    // viewPadding.bottom per la gesture bar Android.
+    final bottomInset =
+        MediaQuery.of(context).viewPadding.bottom + 88 + 24;
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
       children: widgets,
     );
   }
@@ -745,8 +749,10 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
 
         if (!showCategories) {
           // Singola categoria o nessuna: mostra eventi raggruppati per data
+          final bottomInset =
+              MediaQuery.of(context).viewPadding.bottom + 88 + 24;
           return ListView(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
             children: _buildEventsByDate(
               context,
               byCategory.values.expand((e) => e).toList(),
@@ -779,8 +785,10 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
           );
         }
 
+        final bottomInset =
+            MediaQuery.of(context).viewPadding.bottom + 88 + 24;
         return ListView(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
           children: items,
         );
       },

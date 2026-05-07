@@ -1701,10 +1701,14 @@ class ApiClient {
 
   Future<Map<String, dynamic>> getBillingSubscription({
     required int businessId,
+    bool checkoutCancelled = false,
   }) async {
     return get(
       ApiConfig.billingSubscription,
-      queryParameters: {'business_id': businessId},
+      queryParameters: {
+        'business_id': businessId,
+        if (checkoutCancelled) 'checkout_cancelled': '1',
+      },
     );
   }
 

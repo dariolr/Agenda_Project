@@ -12179,6 +12179,156 @@ class L10n {
     );
   }
 
+  /// `Billing fields`
+  String get billingSuperadminFieldsTitle {
+    return Intl.message(
+      'Billing fields',
+      name: 'billingSuperadminFieldsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `billing_enabled`
+  String get billingBillingEnabledLabel {
+    return Intl.message(
+      'billing_enabled',
+      name: 'billingBillingEnabledLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `status`
+  String get billingStatusFieldLabel {
+    return Intl.message(
+      'status',
+      name: 'billingStatusFieldLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `provider_code`
+  String get billingProviderCodeFieldLabel {
+    return Intl.message(
+      'provider_code',
+      name: 'billingProviderCodeFieldLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `provider_price_reference`
+  String get billingProviderPriceReferenceLabel {
+    return Intl.message(
+      'provider_price_reference',
+      name: 'billingProviderPriceReferenceLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `provider_customer_id`
+  String get billingProviderCustomerIdLabel {
+    return Intl.message(
+      'provider_customer_id',
+      name: 'billingProviderCustomerIdLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `provider_subscription_id`
+  String get billingProviderSubscriptionIdLabel {
+    return Intl.message(
+      'provider_subscription_id',
+      name: 'billingProviderSubscriptionIdLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `current_period_start`
+  String get billingCurrentPeriodStartFieldLabel {
+    return Intl.message(
+      'current_period_start',
+      name: 'billingCurrentPeriodStartFieldLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `cancel_at_period_end`
+  String get billingCancelAtPeriodEndLabel {
+    return Intl.message(
+      'cancel_at_period_end',
+      name: 'billingCancelAtPeriodEndLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `current_period_end`
+  String get billingCurrentPeriodEndFieldLabel {
+    return Intl.message(
+      'current_period_end',
+      name: 'billingCurrentPeriodEndFieldLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `canceled_at`
+  String get billingCanceledAtFieldLabel {
+    return Intl.message(
+      'canceled_at',
+      name: 'billingCanceledAtFieldLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `last_payment_at`
+  String get billingLastPaymentAtFieldLabel {
+    return Intl.message(
+      'last_payment_at',
+      name: 'billingLastPaymentAtFieldLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `last_payment_failed_at`
+  String get billingLastPaymentFailedAtFieldLabel {
+    return Intl.message(
+      'last_payment_failed_at',
+      name: 'billingLastPaymentFailedAtFieldLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `can_start_checkout`
+  String get billingCanStartCheckoutFieldLabel {
+    return Intl.message(
+      'can_start_checkout',
+      name: 'billingCanStartCheckoutFieldLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `can_open_portal`
+  String get billingCanOpenPortalFieldLabel {
+    return Intl.message(
+      'can_open_portal',
+      name: 'billingCanOpenPortalFieldLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Enter a valid monthly amount.`
   String get billingAmountRequired {
     return Intl.message(
@@ -12239,6 +12389,16 @@ class L10n {
     );
   }
 
+  /// `Retry activation`
+  String get billingRetryActivationAction {
+    return Intl.message(
+      'Retry activation',
+      name: 'billingRetryActivationAction',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Reactivate subscription`
   String get billingReactivateAction {
     return Intl.message(
@@ -12254,6 +12414,26 @@ class L10n {
     return Intl.message(
       'Manage subscription',
       name: 'billingManageAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Checkout canceled. You can try again whenever you want.`
+  String get billingCheckoutCanceledMessage {
+    return Intl.message(
+      'Checkout canceled. You can try again whenever you want.',
+      name: 'billingCheckoutCanceledMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `A subscription already exists for this business. Use Manage subscription.`
+  String get billingSubscriptionAlreadyExistsError {
+    return Intl.message(
+      'A subscription already exists for this business. Use Manage subscription.',
+      name: 'billingSubscriptionAlreadyExistsError',
       desc: '',
       args: [],
     );
@@ -12286,6 +12466,16 @@ class L10n {
       name: 'billingActiveUntilCancellationScheduledTitle',
       desc: '',
       args: [currentPeriodEnd],
+    );
+  }
+
+  /// `Subscription inactive`
+  String get billingInactiveTitle {
+    return Intl.message(
+      'Subscription inactive',
+      name: 'billingInactiveTitle',
+      desc: '',
+      args: [],
     );
   }
 

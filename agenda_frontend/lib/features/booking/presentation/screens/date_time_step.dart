@@ -152,6 +152,14 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
             // Contenuto scrollabile
             Expanded(
               child: SingleChildScrollView(
+                // Aggiunge padding bottom per footer fisso (~72px) +
+                // gesture bar Android + eventuale tastiera.
+                padding: EdgeInsets.only(
+                  bottom: MediaQuery.of(context).viewPadding.bottom +
+                      MediaQuery.of(context).viewInsets.bottom +
+                      72 +
+                      24,
+                ),
                 child: Column(
                   children: [
                     // Calendario

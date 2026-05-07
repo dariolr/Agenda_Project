@@ -81,6 +81,23 @@ final class BusinessBillingSubscriptionRepository
         ]);
     }
 
+    public function markAbandonedPendingCheckoutInactive(int $businessId): void
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE business_billing_subscription
+             SET status = ?
+             WHERE business_id = ?
+               AND status = ?
+               AND provider_subscription_id IS NULL
+               AND last_checkout_session_id IS NOT NULL'
+        );
+        $stmt->execute([
+            BillingSubscriptionStatus::INACTIVE,
+            $businessId,
+            BillingSubscriptionStatus::PENDING_CHECKOUT,
+        ]);
+    }
+
     public function updateFromWebhookResult(BillingWebhookResult $result): void
     {
         if ($result->businessId === null) {

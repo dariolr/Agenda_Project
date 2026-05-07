@@ -129,7 +129,17 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
         Expanded(
           child: SingleChildScrollView(
             controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+            // Aggiunge padding bottom per footer fisso (~72px) +
+            // gesture bar Android + tastiera (quando il campo note è attivo).
+            padding: EdgeInsets.fromLTRB(
+              16,
+              0,
+              16,
+              MediaQuery.of(context).viewPadding.bottom +
+                  MediaQuery.of(context).viewInsets.bottom +
+                  72 +
+                  24,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

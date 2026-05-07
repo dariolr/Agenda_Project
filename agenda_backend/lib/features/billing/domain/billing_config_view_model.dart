@@ -7,11 +7,15 @@ class BillingConfigViewModel {
     required this.amountCents,
     required this.currency,
     required this.providerCode,
+    required this.providerCustomerId,
+    required this.providerSubscriptionId,
     required this.status,
     required this.currentPeriodStart,
     required this.currentPeriodEnd,
     required this.cancelAtPeriodEnd,
     required this.canceledAt,
+    required this.lastPaymentAt,
+    required this.lastPaymentFailedAt,
     required this.canStartCheckout,
     required this.canOpenPortal,
     this.providerPriceReference,
@@ -25,11 +29,15 @@ class BillingConfigViewModel {
   final int? amountCents;
   final String currency;
   final String? providerCode;
+  final String? providerCustomerId;
+  final String? providerSubscriptionId;
   final String status;
   final DateTime? currentPeriodStart;
   final DateTime? currentPeriodEnd;
   final bool cancelAtPeriodEnd;
   final DateTime? canceledAt;
+  final DateTime? lastPaymentAt;
+  final DateTime? lastPaymentFailedAt;
   final bool canStartCheckout;
   final bool canOpenPortal;
   final String? providerPriceReference;
@@ -44,6 +52,12 @@ class BillingConfigViewModel {
       amountCents: json['amount_cents'] as int?,
       currency: json['currency'] as String? ?? 'EUR',
       providerCode: json['provider_code'] as String?,
+      providerCustomerId:
+          json['provider_customer_id'] as String? ??
+          json['providerCustomerId'] as String?,
+      providerSubscriptionId:
+          json['provider_subscription_id'] as String? ??
+          json['providerSubscriptionId'] as String?,
       status:
           json['status'] as String? ??
           json['subscription_status'] as String? ??
@@ -58,6 +72,12 @@ class BillingConfigViewModel {
         json['cancel_at_period_end'] ?? json['cancelAtPeriodEnd'],
       ),
       canceledAt: _parseDate(json['canceled_at'] ?? json['canceledAt']),
+      lastPaymentAt: _parseDate(
+        json['last_payment_at'] ?? json['lastPaymentAt'],
+      ),
+      lastPaymentFailedAt: _parseDate(
+        json['last_payment_failed_at'] ?? json['lastPaymentFailedAt'],
+      ),
       canStartCheckout: json['can_start_checkout'] as bool? ?? false,
       canOpenPortal: json['can_open_portal'] as bool? ?? false,
       providerPriceReference: json['provider_price_reference'] as String?,

@@ -6,6 +6,7 @@ namespace Agenda\Http\Controllers\Billing;
 
 use Agenda\Domain\Billing\BillingMode;
 use Agenda\Domain\Billing\BillingProviderFactory;
+use Agenda\Domain\Billing\BillingSubscription;
 use Agenda\Domain\Billing\BillingSubscriptionStatus;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
@@ -43,6 +44,11 @@ final class BusinessBillingController
         }
 
         $subscription ??= $this->subscriptionRepository->findOrCreateByBusinessId($businessId);
+        if ($this->isCheckoutCancelReturn($request) && $this->isPendingCheckoutWithoutSubscription($subscription)) {
+            $this->subscriptionRepository->markAbandonedPendingCheckoutInactive($businessId);
+            $subscription = $this->subscriptionRepository->findOrCreateByBusinessId($businessId);
+        }
+
         return Response::success($this->formatState($config, $subscription));
     }
 
@@ -66,6 +72,13 @@ final class BusinessBillingController
         }
 
         $subscription = $this->subscriptionRepository->findOrCreateByBusinessId($businessId);
+        if ($this->hasManageableSubscription($subscription)) {
+            return Response::conflict(
+                'subscription_already_exists',
+                'Subscription already exists for this business',
+                $request->traceId
+            );
+        }
 
         try {
             $provider = $this->providerFactory->get($config->providerCode);
@@ -89,6 +102,27 @@ final class BusinessBillingController
         );
 
         return Response::success(['url' => (string) $result['url']]);
+    }
+
+    private function hasManageableSubscription(BillingSubscription $subscription): bool
+    {
+        if (
+            $subscription->status === BillingSubscriptionStatus::ACTIVE
+            && $subscription->cancelAtPeriodEnd
+        ) {
+            return true;
+        }
+
+        if ($subscription->providerSubscriptionId === null || $subscription->providerSubscriptionId === '') {
+            return false;
+        }
+
+        return in_array($subscription->status, [
+            BillingSubscriptionStatus::ACTIVE,
+            BillingSubscriptionStatus::PENDING_CHECKOUT,
+            BillingSubscriptionStatus::PAST_DUE,
+            BillingSubscriptionStatus::UNPAID,
+        ], true);
     }
 
     public function portalSession(Request $request): Response
@@ -142,6 +176,9 @@ final class BusinessBillingController
         $status = $config->billingEnabled
             ? ($subscription?->status ?? BillingSubscriptionStatus::INACTIVE)
             : BillingSubscriptionStatus::NOT_REQUIRED;
+        if ($subscription !== null && $this->isPendingCheckoutWithoutSubscription($subscription)) {
+            $status = BillingSubscriptionStatus::INACTIVE;
+        }
 
         return [
             'billing_enabled' => $config->billingEnabled,
@@ -151,14 +188,53 @@ final class BusinessBillingController
             'amount_cents' => $config->amountCents,
             'currency' => $config->currency,
             'provider_code' => $config->providerCode,
+            'provider_price_reference' => $config->providerPriceReference,
+            'provider_customer_id' => $subscription?->providerCustomerId,
+            'provider_subscription_id' => $subscription?->providerSubscriptionId,
             'status' => $status,
             'current_period_start' => $subscription?->currentPeriodStart,
             'current_period_end' => $subscription?->currentPeriodEnd,
             'cancel_at_period_end' => $subscription?->cancelAtPeriodEnd ?? false,
             'canceled_at' => $subscription?->canceledAt,
-            'can_start_checkout' => $config->billingEnabled && in_array($status, [BillingSubscriptionStatus::INACTIVE, BillingSubscriptionStatus::PENDING_CHECKOUT], true),
+            'last_payment_at' => $subscription?->lastPaymentAt,
+            'last_payment_failed_at' => $subscription?->lastPaymentFailedAt,
+            'can_start_checkout' => $config->billingEnabled && $this->canStartCheckout($status, $subscription),
             'can_open_portal' => $config->billingEnabled && ($subscription?->providerCustomerId !== null),
         ];
+    }
+
+    private function isCheckoutCancelReturn(Request $request): bool
+    {
+        return in_array((string) $request->queryParam('checkout_cancelled'), ['1', 'true'], true);
+    }
+
+    private function isPendingCheckoutWithoutSubscription(BillingSubscription $subscription): bool
+    {
+        return $subscription->status === BillingSubscriptionStatus::PENDING_CHECKOUT
+            && ($subscription->providerSubscriptionId === null || $subscription->providerSubscriptionId === '')
+            && $subscription->lastCheckoutSessionId !== null
+            && $subscription->lastCheckoutSessionId !== '';
+    }
+
+    private function canStartCheckout(string $status, ?BillingSubscription $subscription): bool
+    {
+        if ($subscription === null) {
+            return true;
+        }
+
+        if ($this->hasManageableSubscription($subscription)) {
+            return false;
+        }
+
+        if (in_array($status, [
+            BillingSubscriptionStatus::INACTIVE,
+            BillingSubscriptionStatus::CANCELED,
+            BillingSubscriptionStatus::ERROR,
+        ], true)) {
+            return true;
+        }
+
+        return $subscription?->providerSubscriptionId === null || $subscription?->providerSubscriptionId === '';
     }
 
     private function frontendUrl(string $path): string

@@ -5,8 +5,14 @@ class BillingApi {
 
   final ApiClient _apiClient;
 
-  Future<Map<String, dynamic>> getSubscription(int businessId) {
-    return _apiClient.getBillingSubscription(businessId: businessId);
+  Future<Map<String, dynamic>> getSubscription(
+    int businessId, {
+    bool checkoutCancelled = false,
+  }) {
+    return _apiClient.getBillingSubscription(
+      businessId: businessId,
+      checkoutCancelled: checkoutCancelled,
+    );
   }
 
   Future<String> createCheckoutSession(int businessId) {

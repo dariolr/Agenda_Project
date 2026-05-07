@@ -503,15 +503,47 @@ class MessageLookup extends MessageLookupByLibrary {
     "billingAmountRequired": MessageLookupByLibrary.simpleMessage(
       "Enter a valid monthly amount.",
     ),
+    "billingBillingEnabledLabel": MessageLookupByLibrary.simpleMessage(
+      "billing_enabled",
+    ),
+    "billingCanOpenPortalFieldLabel": MessageLookupByLibrary.simpleMessage(
+      "can_open_portal",
+    ),
+    "billingCanStartCheckoutFieldLabel": MessageLookupByLibrary.simpleMessage(
+      "can_start_checkout",
+    ),
+    "billingCancelAtPeriodEndLabel": MessageLookupByLibrary.simpleMessage(
+      "cancel_at_period_end",
+    ),
+    "billingCanceledAtFieldLabel": MessageLookupByLibrary.simpleMessage(
+      "canceled_at",
+    ),
+    "billingCheckoutCanceledMessage": MessageLookupByLibrary.simpleMessage(
+      "Checkout canceled. You can try again whenever you want.",
+    ),
     "billingCurrencyLabel": MessageLookupByLibrary.simpleMessage("Currency"),
     "billingCurrentPeriodEndCancellationLabel":
         MessageLookupByLibrary.simpleMessage("Expires on"),
+    "billingCurrentPeriodEndFieldLabel": MessageLookupByLibrary.simpleMessage(
+      "current_period_end",
+    ),
     "billingCurrentPeriodEndLabel": MessageLookupByLibrary.simpleMessage(
       "Next renewal",
+    ),
+    "billingCurrentPeriodStartFieldLabel": MessageLookupByLibrary.simpleMessage(
+      "current_period_start",
     ),
     "billingDescription": MessageLookupByLibrary.simpleMessage(
       "Billing status and subscription management.",
     ),
+    "billingInactiveTitle": MessageLookupByLibrary.simpleMessage(
+      "Subscription inactive",
+    ),
+    "billingLastPaymentAtFieldLabel": MessageLookupByLibrary.simpleMessage(
+      "last_payment_at",
+    ),
+    "billingLastPaymentFailedAtFieldLabel":
+        MessageLookupByLibrary.simpleMessage("last_payment_failed_at"),
     "billingManageAction": MessageLookupByLibrary.simpleMessage(
       "Manage subscription",
     ),
@@ -528,11 +560,26 @@ class MessageLookup extends MessageLookupByLibrary {
     "billingPaymentFailedTitle": MessageLookupByLibrary.simpleMessage(
       "Payment failed",
     ),
+    "billingProviderCodeFieldLabel": MessageLookupByLibrary.simpleMessage(
+      "provider_code",
+    ),
+    "billingProviderCustomerIdLabel": MessageLookupByLibrary.simpleMessage(
+      "provider_customer_id",
+    ),
+    "billingProviderPriceReferenceLabel": MessageLookupByLibrary.simpleMessage(
+      "provider_price_reference",
+    ),
+    "billingProviderSubscriptionIdLabel": MessageLookupByLibrary.simpleMessage(
+      "provider_subscription_id",
+    ),
     "billingReactivateAction": MessageLookupByLibrary.simpleMessage(
       "Reactivate subscription",
     ),
     "billingRequiredTitle": MessageLookupByLibrary.simpleMessage(
       "Subscription required",
+    ),
+    "billingRetryActivationAction": MessageLookupByLibrary.simpleMessage(
+      "Retry activation",
     ),
     "billingStatusActive": MessageLookupByLibrary.simpleMessage("Active"),
     "billingStatusCanceled": MessageLookupByLibrary.simpleMessage("Canceled"),
@@ -540,6 +587,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Cancellation scheduled",
     ),
     "billingStatusError": MessageLookupByLibrary.simpleMessage("Error"),
+    "billingStatusFieldLabel": MessageLookupByLibrary.simpleMessage("status"),
     "billingStatusInactive": MessageLookupByLibrary.simpleMessage("Inactive"),
     "billingStatusLabel": MessageLookupByLibrary.simpleMessage("Status"),
     "billingStatusNotRequired": MessageLookupByLibrary.simpleMessage(
@@ -550,6 +598,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Checkout pending",
     ),
     "billingStatusUnpaid": MessageLookupByLibrary.simpleMessage("Unpaid"),
+    "billingSubscriptionAlreadyExistsError": MessageLookupByLibrary.simpleMessage(
+      "A subscription already exists for this business. Use Manage subscription.",
+    ),
+    "billingSuperadminFieldsTitle": MessageLookupByLibrary.simpleMessage(
+      "Billing fields",
+    ),
     "billingTitle": MessageLookupByLibrary.simpleMessage("Subscription"),
     "blockAllDay": MessageLookupByLibrary.simpleMessage("All day"),
     "blockAllowOnlineBookingDuringBlock": MessageLookupByLibrary.simpleMessage(

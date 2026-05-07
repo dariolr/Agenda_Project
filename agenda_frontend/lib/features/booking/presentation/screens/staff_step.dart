@@ -135,8 +135,10 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                       );
                     }
 
+                    final bottomInset =
+                        MediaQuery.of(context).viewPadding.bottom + 88 + 24;
                     return ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
                       children: [
                         _StaffTile(
                           staff: null,
@@ -228,8 +230,10 @@ class _StaffStepState extends ConsumerState<StaffStep> {
 
                   // Se c'è un solo staff, mostra solo quello (già selezionato)
                   if (eligibleStaff.length == 1) {
+                    final bottomInset =
+                        MediaQuery.of(context).viewPadding.bottom + 88 + 24;
                     return ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
                       children: [
                         _StaffTile(
                           staff: eligibleStaff.first,
@@ -245,8 +249,10 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                   }
 
                   // Più staff disponibili: mostra "Qualsiasi" + lista
+                  final bottomInsetMulti =
+                      MediaQuery.of(context).viewPadding.bottom + 88 + 24;
                   return ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInsetMulti),
                     children: [
                       // Opzione "Qualsiasi operatore"
                       _StaffTile(

@@ -6,8 +6,14 @@ class BillingRepository {
 
   final BillingApi _api;
 
-  Future<BillingConfigViewModel> getSubscription(int businessId) async {
-    final response = await _api.getSubscription(businessId);
+  Future<BillingConfigViewModel> getSubscription(
+    int businessId, {
+    bool checkoutCancelled = false,
+  }) async {
+    final response = await _api.getSubscription(
+      businessId,
+      checkoutCancelled: checkoutCancelled,
+    );
     return BillingConfigViewModel.fromJson(response);
   }
 

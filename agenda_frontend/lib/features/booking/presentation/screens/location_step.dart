@@ -96,9 +96,13 @@ class LocationStep extends ConsumerWidget {
                     );
                   }
 
+                  // Il footer fisso è alto ~72px; aggiunge viewPadding.bottom
+                  // per la gesture bar Android così l'ultimo item è sempre visibile.
+                  final bottomInset =
+                      MediaQuery.of(context).viewPadding.bottom + 72 + 24;
                   return ListView.builder(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
                     itemCount: locations.length,
                     itemBuilder: (context, index) {
                       final location = locations[index];

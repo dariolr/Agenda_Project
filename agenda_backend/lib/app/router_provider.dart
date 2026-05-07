@@ -462,8 +462,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'abbonamento',
                     name: 'billing',
-                    pageBuilder: (BuildContext context, GoRouterState state) =>
-                        const NoTransitionPage(child: BillingScreen()),
+                    pageBuilder: (BuildContext context, GoRouterState state) {
+                      final checkoutCanceled =
+                          state.uri.queryParameters['billing'] == 'cancel';
+                      return NoTransitionPage(
+                        child: BillingScreen(
+                          checkoutCanceled: checkoutCanceled,
+                        ),
+                      );
+                    },
                   ),
                   GoRoute(
                     path: 'whatsapp-business',
