@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/services/same_tab_redirect.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../domain/billing_config_view_model.dart';
@@ -136,7 +136,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : const Icon(Icons.open_in_new),
+                                : const Icon(Icons.arrow_forward),
                             label: Text(context.l10n.billingActivateAction),
                           ),
                         if (billing.canOpenPortal)
@@ -173,14 +173,21 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
       final url = await ref
           .read(billingRepositoryProvider)
           .createCheckoutSession(businessId);
-      await _launch(url);
-      ref.invalidate(billingSubscriptionProvider);
+      await _redirect(url);
     } on ApiException catch (e) {
       if (context.mounted) {
         await FeedbackDialog.showError(
           context,
           title: context.l10n.errorTitle,
           message: e.message,
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: context.l10n.networkUnknownError,
         );
       }
     } finally {
@@ -195,8 +202,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
       final url = await ref
           .read(billingRepositoryProvider)
           .createPortalSession(businessId);
-      await _launch(url);
-      ref.invalidate(billingSubscriptionProvider);
+      await _redirect(url);
     } on ApiException catch (e) {
       if (context.mounted) {
         await FeedbackDialog.showError(
@@ -205,21 +211,31 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
           message: e.message,
         );
       }
+    } catch (_) {
+      if (context.mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: context.l10n.networkUnknownError,
+        );
+      }
     } finally {
       if (mounted) setState(() => _loadingPortal = false);
     }
   }
 
-  Future<void> _launch(String url) async {
-    final uri = Uri.tryParse(url);
+  Future<void> _redirect(String url) async {
+    final uri = Uri.tryParse(url.trim());
     if (uri == null ||
-        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        uri.host.isEmpty ||
+        (uri.scheme != 'https' && uri.scheme != 'http')) {
       throw const ApiException(
         code: 'invalid_url',
         message: 'URL non valido',
         statusCode: 400,
       );
     }
+    await redirectInCurrentTab(uri.toString());
   }
 
   String _formatAmount(BillingConfigViewModel billing) {

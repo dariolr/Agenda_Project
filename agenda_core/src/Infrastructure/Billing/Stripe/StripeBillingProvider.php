@@ -17,6 +17,11 @@ use Stripe\Webhook;
 
 final class StripeBillingProvider implements BillingProviderInterface
 {
+    private const PAYMENT_SUCCEEDED_EVENTS = [
+        'invoice.paid',
+        'invoice_payment.paid',
+    ];
+
     public function __construct(
         private readonly StripeClientFactory $clientFactory,
         private readonly BusinessBillingConfigRepository $configRepository,
@@ -112,16 +117,15 @@ final class StripeBillingProvider implements BillingProviderInterface
         $type = (string) $eventArray['type'];
 
         $businessId = $this->extractBusinessId($object);
-        $customerId = $this->stringOrNull($object['customer'] ?? null);
-        $subscriptionId = $this->stringOrNull($object['subscription'] ?? null);
-        if ($type === 'customer.subscription.created' || $type === 'customer.subscription.updated' || $type === 'customer.subscription.deleted') {
-            $subscriptionId = $this->stringOrNull($object['id'] ?? null);
-        }
+        $customerId = $this->extractCustomerId($object);
+        $subscriptionId = $this->extractSubscriptionId($type, $object);
 
         $status = $this->targetStatus($type, $object);
         $periodStart = $this->timestampOrNull($object['current_period_start'] ?? null);
         $periodEnd = $this->timestampOrNull($object['current_period_end'] ?? null);
-        $lastPaymentAt = $type === 'invoice.paid' ? $this->timestampOrNull($object['status_transitions']['paid_at'] ?? $object['created'] ?? null) : null;
+        $lastPaymentAt = $this->isPaymentSucceededEvent($type)
+            ? $this->timestampOrNull($object['status_transitions']['paid_at'] ?? $object['created'] ?? null)
+            : null;
         $lastPaymentFailedAt = $type === 'invoice.payment_failed' ? $this->timestampOrNull($object['created'] ?? null) : null;
 
         return new BillingWebhookResult(
@@ -166,7 +170,7 @@ final class StripeBillingProvider implements BillingProviderInterface
         if ($type === 'checkout.session.completed') {
             return BillingSubscriptionStatus::ACTIVE;
         }
-        if ($type === 'invoice.paid') {
+        if ($this->isPaymentSucceededEvent($type)) {
             return BillingSubscriptionStatus::ACTIVE;
         }
         if ($type === 'invoice.payment_failed') {
@@ -190,7 +194,16 @@ final class StripeBillingProvider implements BillingProviderInterface
 
     private function extractBusinessId(array $object): ?int
     {
-        $value = $object['metadata']['business_id'] ?? $object['client_reference_id'] ?? null;
+        $value = $this->firstValue([
+            $object['metadata']['business_id'] ?? null,
+            $object['client_reference_id'] ?? null,
+            $object['subscription_details']['metadata']['business_id'] ?? null,
+            $object['parent']['subscription_details']['metadata']['business_id'] ?? null,
+            $object['invoice']['metadata']['business_id'] ?? null,
+            $object['invoice']['client_reference_id'] ?? null,
+            $object['invoice']['subscription_details']['metadata']['business_id'] ?? null,
+            $object['invoice']['parent']['subscription_details']['metadata']['business_id'] ?? null,
+        ]);
         if (is_numeric($value) && (int) $value > 0) {
             return (int) $value;
         }
@@ -198,11 +211,55 @@ final class StripeBillingProvider implements BillingProviderInterface
         return null;
     }
 
+    private function extractCustomerId(array $object): ?string
+    {
+        return $this->stringOrNull($this->firstValue([
+            $object['customer'] ?? null,
+            $object['invoice']['customer'] ?? null,
+        ]));
+    }
+
+    private function extractSubscriptionId(string $type, array $object): ?string
+    {
+        if ($type === 'customer.subscription.created' || $type === 'customer.subscription.updated' || $type === 'customer.subscription.deleted') {
+            return $this->stringOrNull($object['id'] ?? null);
+        }
+
+        return $this->stringOrNull($this->firstValue([
+            $object['subscription'] ?? null,
+            $object['invoice']['subscription'] ?? null,
+            $object['parent']['subscription_details']['subscription'] ?? null,
+            $object['invoice']['parent']['subscription_details']['subscription'] ?? null,
+        ]));
+    }
+
     private function extractPriceReference(array $object): ?string
     {
-        $lines = $object['items']['data'] ?? [];
-        if (isset($lines[0]['price']['id'])) {
-            return (string) $lines[0]['price']['id'];
+        foreach ([
+            $object['items']['data'] ?? null,
+            $object['lines']['data'] ?? null,
+            $object['invoice']['items']['data'] ?? null,
+            $object['invoice']['lines']['data'] ?? null,
+        ] as $lines) {
+            if (isset($lines[0]['price']['id'])) {
+                return (string) $lines[0]['price']['id'];
+            }
+        }
+
+        return null;
+    }
+
+    private function isPaymentSucceededEvent(string $type): bool
+    {
+        return in_array($type, self::PAYMENT_SUCCEEDED_EVENTS, true);
+    }
+
+    private function firstValue(array $values): mixed
+    {
+        foreach ($values as $value) {
+            if ($value !== null && $value !== '') {
+                return $value;
+            }
         }
 
         return null;

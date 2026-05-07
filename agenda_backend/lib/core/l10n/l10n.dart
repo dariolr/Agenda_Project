@@ -8191,7 +8191,11 @@ class L10n {
   }
 
   /// `{count} bookings ({percent}% of {periodTotal})`
-  String bookingsListTotalWithPeriod(int count, String percent, int periodTotal) {
+  String bookingsListTotalWithPeriod(
+    int count,
+    String percent,
+    int periodTotal,
+  ) {
     return Intl.message(
       '$count bookings ($percent% of $periodTotal)',
       name: 'bookingsListTotalWithPeriod',
