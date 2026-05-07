@@ -48,10 +48,16 @@ class BillingConfigViewModel {
           json['status'] as String? ??
           json['subscription_status'] as String? ??
           'not_required',
-      currentPeriodStart: _parseDate(json['current_period_start']),
-      currentPeriodEnd: _parseDate(json['current_period_end']),
-      cancelAtPeriodEnd: json['cancel_at_period_end'] as bool? ?? false,
-      canceledAt: _parseDate(json['canceled_at']),
+      currentPeriodStart: _parseDate(
+        json['current_period_start'] ?? json['currentPeriodStart'],
+      ),
+      currentPeriodEnd: _parseDate(
+        json['current_period_end'] ?? json['currentPeriodEnd'],
+      ),
+      cancelAtPeriodEnd: _parseBool(
+        json['cancel_at_period_end'] ?? json['cancelAtPeriodEnd'],
+      ),
+      canceledAt: _parseDate(json['canceled_at'] ?? json['canceledAt']),
       canStartCheckout: json['can_start_checkout'] as bool? ?? false,
       canOpenPortal: json['can_open_portal'] as bool? ?? false,
       providerPriceReference: json['provider_price_reference'] as String?,
@@ -62,5 +68,14 @@ class BillingConfigViewModel {
   static DateTime? _parseDate(Object? value) {
     if (value == null) return null;
     return DateTime.tryParse(value.toString());
+  }
+
+  static bool _parseBool(Object? value) {
+    if (value is bool) return value;
+    if (value is num) return value != 0;
+    if (value is String) {
+      return ['1', 'true', 'yes', 'on'].contains(value.toLowerCase().trim());
+    }
+    return false;
   }
 }

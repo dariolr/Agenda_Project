@@ -18,6 +18,7 @@ final class BillingWebhookResult
         public readonly ?string $currentPeriodStart,
         public readonly ?string $currentPeriodEnd,
         public readonly ?bool $cancelAtPeriodEnd,
+        public readonly ?string $canceledAt,
         public readonly ?string $lastPaymentAt,
         public readonly ?string $lastPaymentFailedAt,
         public readonly array $rawPayload,

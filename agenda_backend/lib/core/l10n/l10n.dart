@@ -8191,7 +8191,11 @@ class L10n {
   }
 
   /// `{count} bookings ({percent}% of {periodTotal})`
-  String bookingsListTotalWithPeriod(int count, String percent, int periodTotal) {
+  String bookingsListTotalWithPeriod(
+    int count,
+    String percent,
+    int periodTotal,
+  ) {
     return Intl.message(
       '$count bookings ($percent% of $periodTotal)',
       name: 'bookingsListTotalWithPeriod',
@@ -12215,11 +12219,31 @@ class L10n {
     );
   }
 
+  /// `Expires on`
+  String get billingCurrentPeriodEndCancellationLabel {
+    return Intl.message(
+      'Expires on',
+      name: 'billingCurrentPeriodEndCancellationLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Activate subscription`
   String get billingActivateAction {
     return Intl.message(
       'Activate subscription',
       name: 'billingActivateAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reactivate subscription`
+  String get billingReactivateAction {
+    return Intl.message(
+      'Reactivate subscription',
+      name: 'billingReactivateAction',
       desc: '',
       args: [],
     );
@@ -12252,6 +12276,16 @@ class L10n {
       name: 'billingActiveTitle',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `Subscription active until {currentPeriodEnd}`
+  String billingActiveUntilCancellationScheduledTitle(Object currentPeriodEnd) {
+    return Intl.message(
+      'Subscription active until $currentPeriodEnd',
+      name: 'billingActiveUntilCancellationScheduledTitle',
+      desc: '',
+      args: [currentPeriodEnd],
     );
   }
 
@@ -12310,6 +12344,16 @@ class L10n {
     return Intl.message(
       'Active',
       name: 'billingStatusActive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cancellation scheduled`
+  String get billingStatusCancellationScheduled {
+    return Intl.message(
+      'Cancellation scheduled',
+      name: 'billingStatusCancellationScheduled',
       desc: '',
       args: [],
     );

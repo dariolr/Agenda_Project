@@ -1,19 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/services/same_tab_redirect.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../domain/billing_config_view_model.dart';
 import '../providers/billing_provider.dart';
 
-class BillingScreen extends ConsumerWidget {
+class BillingScreen extends ConsumerStatefulWidget {
   const BillingScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<BillingScreen> createState() => _BillingScreenState();
+}
+
+class _BillingScreenState extends ConsumerState<BillingScreen>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    Future.microtask(() => ref.invalidate(billingSubscriptionProvider));
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(billingSubscriptionProvider);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final billingAsync = ref.watch(billingSubscriptionProvider);
 
     return Scaffold(
@@ -61,6 +87,9 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final billing = widget.billing;
+    final canActivate = _canActivate(billing);
+    final canReactivate = _canReactivate(billing);
+    final canManage = _canManage(billing);
 
     return SafeArea(
       child: ListView(
@@ -112,11 +141,15 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
                     ),
                     _InfoRow(
                       label: context.l10n.billingStatusLabel,
-                      value: _statusLabel(context, billing.status),
+                      value: _statusLabel(context, billing),
                     ),
                     if (billing.currentPeriodEnd != null)
                       _InfoRow(
-                        label: context.l10n.billingCurrentPeriodEndLabel,
+                        label: billing.cancelAtPeriodEnd
+                            ? context
+                                  .l10n
+                                  .billingCurrentPeriodEndCancellationLabel
+                            : context.l10n.billingCurrentPeriodEndLabel,
                         value: _formatDate(billing.currentPeriodEnd!),
                       ),
                     const SizedBox(height: 20),
@@ -124,7 +157,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
                       spacing: 12,
                       runSpacing: 12,
                       children: [
-                        if (billing.canStartCheckout)
+                        if (canActivate)
                           FilledButton.icon(
                             onPressed: _loadingCheckout
                                 ? null
@@ -136,10 +169,25 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
                                       strokeWidth: 2,
                                     ),
                                   )
-                                : const Icon(Icons.open_in_new),
+                                : const Icon(Icons.arrow_forward),
                             label: Text(context.l10n.billingActivateAction),
                           ),
-                        if (billing.canOpenPortal)
+                        if (canReactivate)
+                          FilledButton.icon(
+                            onPressed: _loadingPortal
+                                ? null
+                                : () => _openPortal(context),
+                            icon: _loadingPortal
+                                ? const SizedBox.square(
+                                    dimension: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.refresh),
+                            label: Text(context.l10n.billingReactivateAction),
+                          ),
+                        if (canManage)
                           FilledButton.tonalIcon(
                             onPressed: _loadingPortal
                                 ? null
@@ -166,6 +214,29 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
     );
   }
 
+  bool _canActivate(BillingConfigViewModel billing) {
+    if (!billing.billingEnabled || billing.cancelAtPeriodEnd) return false;
+    return {
+      'inactive',
+      'canceled',
+      'unpaid',
+      'error',
+      'not_required',
+    }.contains(billing.status);
+  }
+
+  bool _canReactivate(BillingConfigViewModel billing) {
+    return billing.status == 'active' &&
+        billing.cancelAtPeriodEnd &&
+        billing.canOpenPortal;
+  }
+
+  bool _canManage(BillingConfigViewModel billing) {
+    return billing.status == 'active' &&
+        !billing.cancelAtPeriodEnd &&
+        billing.canOpenPortal;
+  }
+
   Future<void> _openCheckout(BuildContext context) async {
     setState(() => _loadingCheckout = true);
     try {
@@ -173,14 +244,21 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
       final url = await ref
           .read(billingRepositoryProvider)
           .createCheckoutSession(businessId);
-      await _launch(url);
-      ref.invalidate(billingSubscriptionProvider);
+      await _redirect(url);
     } on ApiException catch (e) {
       if (context.mounted) {
         await FeedbackDialog.showError(
           context,
           title: context.l10n.errorTitle,
           message: e.message,
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: context.l10n.networkUnknownError,
         );
       }
     } finally {
@@ -195,8 +273,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
       final url = await ref
           .read(billingRepositoryProvider)
           .createPortalSession(businessId);
-      await _launch(url);
-      ref.invalidate(billingSubscriptionProvider);
+      await _redirect(url);
     } on ApiException catch (e) {
       if (context.mounted) {
         await FeedbackDialog.showError(
@@ -205,21 +282,31 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
           message: e.message,
         );
       }
+    } catch (_) {
+      if (context.mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: context.l10n.networkUnknownError,
+        );
+      }
     } finally {
       if (mounted) setState(() => _loadingPortal = false);
     }
   }
 
-  Future<void> _launch(String url) async {
-    final uri = Uri.tryParse(url);
+  Future<void> _redirect(String url) async {
+    final uri = Uri.tryParse(url.trim());
     if (uri == null ||
-        !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        uri.host.isEmpty ||
+        (uri.scheme != 'https' && uri.scheme != 'http')) {
       throw const ApiException(
         code: 'invalid_url',
         message: 'URL non valido',
         statusCode: 400,
       );
     }
+    await redirectInCurrentTab(uri.toString());
   }
 
   String _formatAmount(BillingConfigViewModel billing) {
@@ -234,15 +321,26 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
 
   String _statusTitle(BuildContext context, BillingConfigViewModel billing) {
     if (!billing.billingEnabled) return context.l10n.billingNotRequiredTitle;
-    if (billing.status == 'active') return context.l10n.billingActiveTitle;
+    if (billing.status == 'active') {
+      if (billing.cancelAtPeriodEnd && billing.currentPeriodEnd != null) {
+        return context.l10n.billingActiveUntilCancellationScheduledTitle(
+          _formatDate(billing.currentPeriodEnd!),
+        );
+      }
+      return context.l10n.billingActiveTitle;
+    }
     if (billing.status == 'past_due' || billing.status == 'unpaid') {
       return context.l10n.billingPaymentFailedTitle;
     }
     return context.l10n.billingRequiredTitle;
   }
 
-  String _statusLabel(BuildContext context, String status) {
-    return switch (status) {
+  String _statusLabel(BuildContext context, BillingConfigViewModel billing) {
+    if (billing.status == 'active' && billing.cancelAtPeriodEnd) {
+      return context.l10n.billingStatusCancellationScheduled;
+    }
+
+    return switch (billing.status) {
       'not_required' => context.l10n.billingStatusNotRequired,
       'inactive' => context.l10n.billingStatusInactive,
       'pending_checkout' => context.l10n.billingStatusPendingCheckout,
@@ -251,7 +349,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
       'unpaid' => context.l10n.billingStatusUnpaid,
       'canceled' => context.l10n.billingStatusCanceled,
       'error' => context.l10n.billingStatusError,
-      _ => status,
+      _ => billing.status,
     };
   }
 }

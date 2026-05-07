@@ -91,8 +91,8 @@ final class BusinessBillingSubscriptionRepository
             'INSERT INTO business_billing_subscription
                 (business_id, provider_code, provider_customer_id, provider_subscription_id,
                  provider_price_reference, status, current_period_start, current_period_end,
-                 cancel_at_period_end, last_payment_at, last_payment_failed_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 cancel_at_period_end, canceled_at, last_payment_at, last_payment_failed_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 provider_code = COALESCE(VALUES(provider_code), provider_code),
                 provider_customer_id = COALESCE(VALUES(provider_customer_id), provider_customer_id),
@@ -101,11 +101,12 @@ final class BusinessBillingSubscriptionRepository
                 status = COALESCE(VALUES(status), status),
                 current_period_start = COALESCE(VALUES(current_period_start), current_period_start),
                 current_period_end = COALESCE(VALUES(current_period_end), current_period_end),
-                cancel_at_period_end = VALUES(cancel_at_period_end),
-                canceled_at = IF(VALUES(status) = "canceled", CURRENT_TIMESTAMP, canceled_at),
+                cancel_at_period_end = IF(? IS NULL, cancel_at_period_end, ?),
+                canceled_at = COALESCE(VALUES(canceled_at), canceled_at),
                 last_payment_at = COALESCE(VALUES(last_payment_at), last_payment_at),
                 last_payment_failed_at = COALESCE(VALUES(last_payment_failed_at), last_payment_failed_at)'
         );
+        $cancelAtPeriodEnd = $result->cancelAtPeriodEnd === null ? null : ($result->cancelAtPeriodEnd ? 1 : 0);
         $stmt->execute([
             $result->businessId,
             $result->providerCode,
@@ -115,9 +116,12 @@ final class BusinessBillingSubscriptionRepository
             $result->targetStatus,
             $result->currentPeriodStart,
             $result->currentPeriodEnd,
-            $result->cancelAtPeriodEnd === null ? 0 : ($result->cancelAtPeriodEnd ? 1 : 0),
+            $cancelAtPeriodEnd ?? 0,
+            $result->canceledAt,
             $result->lastPaymentAt,
             $result->lastPaymentFailedAt,
+            $cancelAtPeriodEnd,
+            $cancelAtPeriodEnd,
         ]);
     }
 

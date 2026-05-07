@@ -1913,16 +1913,25 @@
   "billingDescription": "Stato fatturazione e gestione abbonamento.",
   "billingNotRequiredMessage": "Questo business non è soggetto a fatturazione.",
   "billingCurrentPeriodEndLabel": "Prossimo rinnovo",
+  "billingCurrentPeriodEndCancellationLabel": "Scade il",
   "billingActivateAction": "Attiva abbonamento",
+  "billingReactivateAction": "Riattiva abbonamento",
   "billingManageAction": "Gestisci abbonamento",
   "billingNotRequiredTitle": "Nessuna fatturazione richiesta",
   "billingActiveTitle": "Abbonamento attivo",
+  "billingActiveUntilCancellationScheduledTitle": "Abbonamento attivo fino al {currentPeriodEnd}",
+  "@billingActiveUntilCancellationScheduledTitle": {
+    "placeholders": {
+      "currentPeriodEnd": {}
+    }
+  },
   "billingPaymentFailedTitle": "Pagamento non riuscito",
   "billingRequiredTitle": "Abbonamento richiesto",
   "billingStatusNotRequired": "Non richiesto",
   "billingStatusInactive": "Non attivo",
   "billingStatusPendingCheckout": "Checkout in corso",
   "billingStatusActive": "Attivo",
+  "billingStatusCancellationScheduled": "Annullamento programmato",
   "billingStatusPastDue": "In ritardo",
   "billingStatusUnpaid": "Non pagato",
   "billingStatusCanceled": "Cancellato",
