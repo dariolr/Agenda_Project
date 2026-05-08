@@ -19,6 +19,14 @@ class BillingApi {
     return _apiClient.createBillingCheckoutSession(businessId: businessId);
   }
 
+  Future<String> resumeCheckoutSession(int businessId) {
+    return _apiClient.resumeBillingCheckoutSession(businessId: businessId);
+  }
+
+  Future<void> cancelCheckoutSession(int businessId) {
+    return _apiClient.cancelBillingCheckoutSession(businessId: businessId);
+  }
+
   Future<String> createPortalSession(int businessId) {
     return _apiClient.createBillingPortalSession(businessId: businessId);
   }

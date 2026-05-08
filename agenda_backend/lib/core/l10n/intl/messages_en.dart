@@ -515,11 +515,23 @@ class MessageLookup extends MessageLookupByLibrary {
     "billingCancelAtPeriodEndLabel": MessageLookupByLibrary.simpleMessage(
       "cancel_at_period_end",
     ),
+    "billingCancelCheckoutRetryAction": MessageLookupByLibrary.simpleMessage(
+      "Cancel checkout",
+    ),
     "billingCanceledAtFieldLabel": MessageLookupByLibrary.simpleMessage(
       "canceled_at",
     ),
+    "billingCheckoutAlreadyStartedError": MessageLookupByLibrary.simpleMessage(
+      "Checkout already started. Complete or cancel the open session before trying again.",
+    ),
     "billingCheckoutCanceledMessage": MessageLookupByLibrary.simpleMessage(
       "Checkout canceled. You can try again whenever you want.",
+    ),
+    "billingCheckoutIncompleteMessage": MessageLookupByLibrary.simpleMessage(
+      "Checkout not completed. You can retry the payment whenever you want.",
+    ),
+    "billingCheckoutStartedMessage": MessageLookupByLibrary.simpleMessage(
+      "Checkout already started. Complete or cancel the open session before trying again.",
     ),
     "billingCurrencyLabel": MessageLookupByLibrary.simpleMessage("Currency"),
     "billingCurrentPeriodEndCancellationLabel":
@@ -538,6 +550,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "billingInactiveTitle": MessageLookupByLibrary.simpleMessage(
       "Subscription inactive",
+    ),
+    "billingLastCheckoutSessionIdLabel": MessageLookupByLibrary.simpleMessage(
+      "last_checkout_session_id",
     ),
     "billingLastPaymentAtFieldLabel": MessageLookupByLibrary.simpleMessage(
       "last_payment_at",
@@ -578,8 +593,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "billingRequiredTitle": MessageLookupByLibrary.simpleMessage(
       "Subscription required",
     ),
+    "billingResumeCheckoutAction": MessageLookupByLibrary.simpleMessage(
+      "Resume checkout",
+    ),
     "billingRetryActivationAction": MessageLookupByLibrary.simpleMessage(
       "Retry activation",
+    ),
+    "billingRetryPaymentAction": MessageLookupByLibrary.simpleMessage(
+      "Retry payment",
     ),
     "billingStatusActive": MessageLookupByLibrary.simpleMessage("Active"),
     "billingStatusCanceled": MessageLookupByLibrary.simpleMessage("Canceled"),
@@ -595,7 +616,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "billingStatusPastDue": MessageLookupByLibrary.simpleMessage("Past due"),
     "billingStatusPendingCheckout": MessageLookupByLibrary.simpleMessage(
-      "Checkout pending",
+      "Checkout not completed",
     ),
     "billingStatusUnpaid": MessageLookupByLibrary.simpleMessage("Unpaid"),
     "billingSubscriptionAlreadyExistsError": MessageLookupByLibrary.simpleMessage(

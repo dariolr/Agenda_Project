@@ -125,6 +125,7 @@ class _BillingContent extends ConsumerStatefulWidget {
 class _BillingContentState extends ConsumerState<_BillingContent> {
   bool _loadingCheckout = false;
   bool _loadingPortal = false;
+  bool _loadingCancelCheckout = false;
 
   @override
   Widget build(BuildContext context) {
@@ -134,6 +135,9 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
     final canActivate = _canActivate(billing);
     final canReactivate = _canReactivate(billing);
     final canManage = _canManage(billing);
+    final isStartedCheckout = _isStartedPendingCheckout(billing);
+    final isActionLoading =
+        _loadingCheckout || _loadingPortal || _loadingCancelCheckout;
 
     return SafeArea(
       child: ListView(
@@ -179,9 +183,14 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
                   if (!billing.billingEnabled)
                     Text(context.l10n.billingNotRequiredMessage)
                   else ...[
-                    if (widget.checkoutCanceled) ...[
+                    if (_isStartedPendingCheckout(billing)) ...[
                       _BillingNotice(
-                        message: context.l10n.billingCheckoutCanceledMessage,
+                        message: context.l10n.billingCheckoutStartedMessage,
+                      ),
+                      const SizedBox(height: 16),
+                    ] else if (_shouldShowCheckoutIncompleteNotice(billing)) ...[
+                      _BillingNotice(
+                        message: context.l10n.billingCheckoutIncompleteMessage,
                       ),
                       const SizedBox(height: 16),
                     ],
@@ -269,6 +278,10 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
                         ),
                       ),
                       _DiagnosticRow(
+                        label: context.l10n.billingLastCheckoutSessionIdLabel,
+                        value: _formatNullable(billing.lastCheckoutSessionId),
+                      ),
+                      _DiagnosticRow(
                         label: context.l10n.billingCanStartCheckoutFieldLabel,
                         value: _formatBool(billing.canStartCheckout),
                       ),
@@ -282,48 +295,55 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
                       spacing: 12,
                       runSpacing: 12,
                       children: [
-                        if (canActivate)
+                        if (isStartedCheckout)
                           FilledButton.icon(
-                            onPressed: _loadingCheckout
+                            onPressed: isActionLoading
+                                ? null
+                                : () => _resumeCheckout(context),
+                            icon: _loadingCheckout
+                                ? const _ButtonProgressIndicator()
+                                : const Icon(Icons.open_in_new),
+                            label: Text(context.l10n.billingResumeCheckoutAction),
+                          ),
+                        if (isStartedCheckout)
+                          FilledButton.tonalIcon(
+                            onPressed: isActionLoading
+                                ? null
+                                : () => _cancelCheckout(context),
+                            icon: _loadingCancelCheckout
+                                ? const _ButtonProgressIndicator()
+                                : const Icon(Icons.restart_alt),
+                            label: Text(
+                              context.l10n.billingCancelCheckoutRetryAction,
+                            ),
+                          ),
+                        if (!isStartedCheckout && canActivate)
+                          FilledButton.icon(
+                            onPressed: isActionLoading
                                 ? null
                                 : () => _openCheckout(context),
                             icon: _loadingCheckout
-                                ? const SizedBox.square(
-                                    dimension: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
+                                ? const _ButtonProgressIndicator()
                                 : const Icon(Icons.arrow_forward),
                             label: Text(_activateActionLabel(context, billing)),
                           ),
                         if (canReactivate)
                           FilledButton.icon(
-                            onPressed: _loadingPortal
+                            onPressed: isActionLoading
                                 ? null
                                 : () => _openPortal(context),
                             icon: _loadingPortal
-                                ? const SizedBox.square(
-                                    dimension: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
+                                ? const _ButtonProgressIndicator()
                                 : const Icon(Icons.refresh),
                             label: Text(context.l10n.billingReactivateAction),
                           ),
                         if (canManage)
                           FilledButton.tonalIcon(
-                            onPressed: _loadingPortal
+                            onPressed: isActionLoading
                                 ? null
                                 : () => _openPortal(context),
                             icon: _loadingPortal
-                                ? const SizedBox.square(
-                                    dimension: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
+                                ? const _ButtonProgressIndicator()
                                 : const Icon(Icons.manage_accounts_outlined),
                             label: Text(context.l10n.billingManageAction),
                           ),
@@ -342,10 +362,12 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
   bool _canActivate(BillingConfigViewModel billing) {
     if (!billing.billingEnabled) return false;
     if (billing.status == 'active' && billing.cancelAtPeriodEnd) return false;
-    if (billing.status == 'pending_checkout' &&
-        (billing.providerSubscriptionId == null ||
-            billing.providerSubscriptionId!.isEmpty)) {
-      return true;
+    if (billing.status == 'pending_checkout') {
+      return _isRetryablePendingCheckout(billing);
+    }
+    if ((billing.status == 'past_due' || billing.status == 'unpaid') &&
+        billing.lastPaymentAt == null) {
+      return billing.canStartCheckout;
     }
     return {
       'inactive',
@@ -361,8 +383,11 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
     BillingConfigViewModel billing,
   ) {
     if (billing.status == 'pending_checkout' &&
-        (billing.providerSubscriptionId == null ||
-            billing.providerSubscriptionId!.isEmpty)) {
+        _isRetryablePendingCheckout(billing)) {
+      return context.l10n.billingRetryPaymentAction;
+    }
+    if ((billing.status == 'past_due' || billing.status == 'unpaid') &&
+        billing.lastPaymentAt == null) {
       return context.l10n.billingRetryActivationAction;
     }
 
@@ -381,6 +406,37 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
         billing.canOpenPortal;
   }
 
+  bool _isPendingCheckoutWithoutPayment(BillingConfigViewModel billing) {
+    return billing.status == 'pending_checkout' && billing.lastPaymentAt == null;
+  }
+
+  bool _isRetryablePendingCheckout(BillingConfigViewModel billing) {
+    return _isPendingCheckoutWithoutPayment(billing) &&
+        billing.checkoutRetryable &&
+        billing.checkoutState != 'started';
+  }
+
+  bool _isStartedPendingCheckout(BillingConfigViewModel billing) {
+    return _isPendingCheckoutWithoutPayment(billing) &&
+        (billing.checkoutState == 'started' ||
+            (!billing.checkoutRetryable &&
+                billing.lastCheckoutSessionId != null &&
+                billing.lastCheckoutSessionId!.isNotEmpty));
+  }
+
+  bool _shouldShowCheckoutIncompleteNotice(BillingConfigViewModel billing) {
+    if (widget.checkoutCanceled || _isRetryablePendingCheckout(billing)) {
+      return true;
+    }
+
+    return billing.lastPaymentAt == null &&
+        (billing.providerSubscriptionId == null ||
+            billing.providerSubscriptionId!.isEmpty) &&
+        billing.lastCheckoutSessionId != null &&
+        billing.lastCheckoutSessionId!.isNotEmpty &&
+        billing.checkoutRetryable;
+  }
+
   Future<void> _openCheckout(BuildContext context) async {
     setState(() => _loadingCheckout = true);
     try {
@@ -392,15 +448,14 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
     } on ApiException catch (e) {
       if (e.statusCode == 409 && e.code == 'subscription_already_exists') {
         ref.invalidate(billingSubscriptionProvider);
+      } else if (e.statusCode == 409 && e.code == 'checkout_already_started') {
+        ref.invalidate(billingSubscriptionProvider);
       }
       if (context.mounted) {
         await FeedbackDialog.showError(
           context,
           title: context.l10n.errorTitle,
-          message:
-              e.statusCode == 409 && e.code == 'subscription_already_exists'
-              ? context.l10n.billingSubscriptionAlreadyExistsError
-              : e.message,
+          message: _checkoutErrorMessage(context, e),
         );
       }
     } catch (_) {
@@ -414,6 +469,75 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
     } finally {
       if (mounted) setState(() => _loadingCheckout = false);
     }
+  }
+
+  Future<void> _resumeCheckout(BuildContext context) async {
+    setState(() => _loadingCheckout = true);
+    try {
+      final businessId = ref.read(currentBusinessIdProvider);
+      final url = await ref
+          .read(billingRepositoryProvider)
+          .resumeCheckoutSession(businessId);
+      await _redirect(url);
+    } on ApiException catch (e) {
+      ref.invalidate(billingSubscriptionProvider);
+      if (context.mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: _checkoutErrorMessage(context, e),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: context.l10n.networkUnknownError,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loadingCheckout = false);
+    }
+  }
+
+  Future<void> _cancelCheckout(BuildContext context) async {
+    setState(() => _loadingCancelCheckout = true);
+    try {
+      final businessId = ref.read(currentBusinessIdProvider);
+      await ref.read(billingRepositoryProvider).cancelCheckoutSession(businessId);
+      ref.invalidate(billingSubscriptionProvider);
+    } on ApiException catch (e) {
+      ref.invalidate(billingSubscriptionProvider);
+      if (context.mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: _checkoutErrorMessage(context, e),
+        );
+      }
+    } catch (_) {
+      if (context.mounted) {
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.errorTitle,
+          message: context.l10n.networkUnknownError,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _loadingCancelCheckout = false);
+    }
+  }
+
+  String _checkoutErrorMessage(BuildContext context, ApiException error) {
+    if (error.statusCode == 409 && error.code == 'subscription_already_exists') {
+      return context.l10n.billingSubscriptionAlreadyExistsError;
+    }
+    if (error.statusCode == 409 && error.code == 'checkout_already_started') {
+      return context.l10n.billingCheckoutAlreadyStartedError;
+    }
+
+    return error.message;
   }
 
   Future<void> _openPortal(BuildContext context) async {
@@ -509,10 +633,9 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
       'not_required' => context.l10n.billingStatusNotRequired,
       'inactive' => context.l10n.billingStatusInactive,
       'pending_checkout' =>
-        (billing.providerSubscriptionId == null ||
-                billing.providerSubscriptionId!.isEmpty)
-            ? context.l10n.billingStatusInactive
-            : context.l10n.billingStatusPendingCheckout,
+        _isPendingCheckoutWithoutPayment(billing)
+            ? context.l10n.billingStatusPendingCheckout
+            : context.l10n.billingStatusInactive,
       'active' => context.l10n.billingStatusActive,
       'past_due' => context.l10n.billingStatusPastDue,
       'unpaid' => context.l10n.billingStatusUnpaid,
@@ -570,6 +693,18 @@ class _InfoRow extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _ButtonProgressIndicator extends StatelessWidget {
+  const _ButtonProgressIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox.square(
+      dimension: 18,
+      child: CircularProgressIndicator(strokeWidth: 2),
     );
   }
 }

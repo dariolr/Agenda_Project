@@ -83,6 +83,10 @@ class ApiConfig {
 
   static const String billingSubscription = '/v1/billing/subscription';
   static const String billingCheckoutSession = '/v1/billing/checkout-session';
+  static const String billingCheckoutSessionResume =
+      '/v1/billing/checkout-session/resume';
+  static const String billingCheckoutSessionCancel =
+      '/v1/billing/checkout-session/cancel';
   static const String billingPortalSession = '/v1/billing/portal-session';
 
   static String adminBusinessBillingConfig(int businessId) =>

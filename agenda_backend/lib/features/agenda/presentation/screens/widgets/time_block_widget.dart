@@ -8,7 +8,13 @@ import '../../../../../core/l10n/l10_extension.dart';
 import '../../../../../core/models/time_block.dart';
 import '../../../domain/config/layout_config.dart';
 import '../../../providers/agenda_display_settings_provider.dart';
+import '../../../providers/agenda_providers.dart';
 import '../../../providers/block_resizing_provider.dart';
+import '../../../providers/drag_layer_link_provider.dart';
+import '../../../providers/drag_offset_provider.dart';
+import '../../../providers/drag_session_provider.dart';
+import '../../../providers/dragged_base_range_provider.dart';
+import '../../../providers/temp_drag_time_provider.dart';
 import '../../../providers/is_resizing_provider.dart';
 import '../../../providers/layout_config_provider.dart';
 import '../../../providers/time_blocks_provider.dart';
@@ -45,6 +51,9 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
 
   bool _isResizing = false;
   bool _suppressTapAfterResize = false;
+  bool _blockDragForResize = false;
+  bool _isResizeZoneHovered = false;
+  bool _isDraggingBlock = false;
   Offset? _lastPointerGlobalPosition;
 
   bool _isPointerInResizeHotzone(RenderBox cardBox, Offset globalPosition) {
@@ -161,6 +170,16 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
     }
   }
 
+  void _clearDragState() {
+    if (mounted) setState(() => _isDraggingBlock = false);
+    ref.read(dragSessionProvider.notifier).clear();
+    ref.read(dragOffsetProvider.notifier).clear();
+    ref.read(dragOffsetXProvider.notifier).clear();
+    ref.read(dragPositionProvider.notifier).clear();
+    ref.read(draggedBaseRangeProvider.notifier).clear();
+    ref.read(tempDragTimeProvider.notifier).clear();
+  }
+
   void _performResizeCancel() {
     ref
         .read(blockResizingProvider.notifier)
@@ -222,14 +241,20 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
     final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
     final canResize = !widget.block.isAllDay && canManageBookings;
 
+    final canDrag = canManageBookings && !widget.block.isAllDay;
+
     return Listener(
       onPointerDown: (event) {
         _lastPointerGlobalPosition = event.position;
-        if (!canResize) return;
-        final cardBox = context.findRenderObject() as RenderBox?;
-        if (cardBox == null) return;
-        if (!_isPointerInResizeHotzone(cardBox, event.position)) return;
-        _startResize();
+        if (canResize) {
+          final cardBox = context.findRenderObject() as RenderBox?;
+          if (cardBox != null && _isPointerInResizeHotzone(cardBox, event.position)) {
+            setState(() => _blockDragForResize = true);
+            _startResize();
+            return;
+          }
+        }
+        setState(() => _blockDragForResize = false);
       },
       onPointerMove: (event) {
         if (_isResizing) {
@@ -240,16 +265,36 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
         if (_isResizing) {
           await _performResizeEnd();
         }
+        setState(() => _blockDragForResize = false);
         _lastPointerGlobalPosition = null;
       },
       onPointerCancel: (_) {
         if (_isResizing) {
           _performResizeCancel();
         }
+        setState(() => _blockDragForResize = false);
         _lastPointerGlobalPosition = null;
       },
+      onPointerHover: (event) {
+        if (!canResize) return;
+        final cardBox = context.findRenderObject() as RenderBox?;
+        if (cardBox == null) return;
+        final inZone = _isPointerInResizeHotzone(cardBox, event.position);
+        if (_isResizeZoneHovered != inZone) {
+          setState(() => _isResizeZoneHovered = inZone);
+        }
+      },
       child: MouseRegion(
-        cursor: canResize ? SystemMouseCursors.resizeUpDown : MouseCursor.defer,
+        cursor: _isDraggingBlock
+            ? SystemMouseCursors.grabbing
+            : _isResizeZoneHovered && canResize
+                ? SystemMouseCursors.resizeUpDown
+                : canDrag
+                    ? SystemMouseCursors.grab
+                    : MouseCursor.defer,
+        onExit: (_) {
+          if (_isResizeZoneHovered) setState(() => _isResizeZoneHovered = false);
+        },
         child: GestureDetector(
           onSecondaryTapDown: canManageBookings
               ? (details) {
@@ -284,157 +329,261 @@ class _TimeBlockWidgetState extends ConsumerState<TimeBlockWidget> {
                   showAddBlockDialog(context, ref, initial: widget.block);
                 }
               : null,
-          child: Container(
-            width: widget.width,
-            height: widget.height,
-            decoration: BoxDecoration(
-              color: blockColor,
-              borderRadius: blockBorderRadius,
-              border: Border.all(color: borderColor, width: 1.5),
-            ),
-            child: ClipRRect(
-              borderRadius: blockInnerBorderRadius,
-              child: Stack(
-                children: [
-                  CustomPaint(
-                    size: Size(widget.width, widget.height),
-                    painter: _DiagonalPatternPainter(
-                      color: accentColor.withOpacity(0.1),
+          child: LongPressDraggable<TimeBlock>(
+            data: widget.block,
+            feedback: Consumer(
+              builder: (_, r, __) {
+                final times = r.watch(tempDragTimeProvider);
+                final feedbackBlock = times != null
+                    ? widget.block.copyWith(
+                        startTime: times.$1,
+                        endTime: times.$2,
+                      )
+                    : effectiveBlock;
+                return Material(
+                  color: Colors.transparent,
+                  child: Opacity(
+                    opacity: 0.85,
+                    child: _buildCard(
+                      blockColor: blockColor,
+                      blockBorderRadius: blockBorderRadius,
+                      blockInnerBorderRadius: blockInnerBorderRadius,
+                      borderColor: borderColor,
+                      accentColor: accentColor,
+                      canResize: false,
+                      effectiveBlock: feedbackBlock,
+                      colorScheme: colorScheme,
                     ),
                   ),
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      final maxHeight = constraints.maxHeight;
-                      final maxWidth = constraints.maxWidth;
-                      if (maxHeight < 18) {
-                        return Align(
-                          alignment: Alignment.centerLeft,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Container(
-                              width: 22,
-                              height: 2,
-                              decoration: BoxDecoration(
-                                color: colorScheme.error.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          ),
-                        );
-                      }
-                      if (maxWidth < 24) {
-                        final indicatorWidth = (maxWidth - 6).clamp(8.0, 22.0);
-                        return Align(
-                          alignment: Alignment.centerLeft,
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 3),
-                            child: Container(
-                              width: indicatorWidth,
-                              height: 2,
-                              decoration: BoxDecoration(
-                                color: colorScheme.error.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(2),
-                              ),
-                            ),
-                          ),
-                        );
-                      }
+                );
+              },
+            ),
+            feedbackOffset: Offset.zero,
+            dragAnchorStrategy: childDragAnchorStrategy,
+            maxSimultaneousDrags: (_blockDragForResize || !canDrag) ? 0 : 1,
+            childWhenDragging: Opacity(
+              opacity: 0.3,
+              child: _buildCard(
+                blockColor: blockColor,
+                blockBorderRadius: blockBorderRadius,
+                blockInnerBorderRadius: blockInnerBorderRadius,
+                borderColor: borderColor,
+                accentColor: accentColor,
+                canResize: false,
+                effectiveBlock: effectiveBlock,
+                colorScheme: colorScheme,
+              ),
+            ),
+            onDragStarted: () {
+              setState(() => _isDraggingBlock = true);
+              final cardBox = context.findRenderObject() as RenderBox?;
+              final bodyBox = ref.read(dragBodyBoxProvider);
+              ref.read(dragSessionProvider.notifier).start();
+              ref.read(draggedBaseRangeProvider.notifier).set(
+                widget.block.startTime,
+                widget.block.endTime,
+              );
+              if (cardBox != null &&
+                  bodyBox != null &&
+                  _lastPointerGlobalPosition != null) {
+                final cardTopLeft = cardBox.localToGlobal(Offset.zero);
+                ref.read(dragOffsetProvider.notifier).set(
+                  _lastPointerGlobalPosition!.dy - cardTopLeft.dy,
+                );
+                ref.read(dragOffsetXProvider.notifier).set(
+                  _lastPointerGlobalPosition!.dx - cardTopLeft.dx,
+                );
+                final local = bodyBox.globalToLocal(
+                  _lastPointerGlobalPosition!,
+                );
+                ref.read(dragPositionProvider.notifier).set(local);
+              }
+            },
+            onDragUpdate: (details) {
+              final prev = ref.read(dragPositionProvider);
+              final bodyBox = ref.read(dragBodyBoxProvider);
+              if (bodyBox != null) {
+                final local = bodyBox.globalToLocal(details.globalPosition);
+                ref
+                    .read(dragPositionProvider.notifier)
+                    .set(Offset.lerp(prev, local, 0.85)!);
+              }
+            },
+            onDragEnd: (_) => _clearDragState(),
+            onDragCompleted: _clearDragState,
+            onDraggableCanceled: (_, __) => _clearDragState(),
+            child: _buildCard(
+              blockColor: blockColor,
+              blockBorderRadius: blockBorderRadius,
+              blockInnerBorderRadius: blockInnerBorderRadius,
+              borderColor: borderColor,
+              accentColor: accentColor,
+              canResize: canResize,
+              effectiveBlock: effectiveBlock,
+              colorScheme: colorScheme,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-                      final isCompact = maxHeight < 30 || maxWidth < 90;
-                      final horizontalPadding = isCompact ? 6.0 : 8.0;
-                      final verticalPadding = isCompact ? 2.0 : 4.0;
-                      final showLeadingIcon = !isCompact && maxWidth >= 84;
-                      final showRecurringIcon =
-                          !isCompact &&
-                          effectiveBlock.isRecurring &&
-                          maxWidth >= 110;
-
-                      return Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: horizontalPadding,
-                          vertical: verticalPadding,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              children: [
-                                if (showLeadingIcon) ...[
-                                  Icon(
-                                    effectiveBlock.allowOnlineBookingDuringBlock
-                                        ? Icons.event_note
-                                        : Icons.block,
-                                    size: 14,
-                                    color: accentColor,
-                                  ),
-                                  const SizedBox(width: 4),
-                                ],
-                                Expanded(
-                                  child: Text(
-                                    effectiveBlock.reason ??
-                                        (effectiveBlock
-                                                .allowOnlineBookingDuringBlock
-                                            ? context.l10n.blockPromemoriaLabel
-                                            : 'Blocco'),
-                                    style: TextStyle(
-                                      fontSize: isCompact ? 10 : 12,
-                                      fontWeight: FontWeight.w600,
-                                      color: accentColor,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                                if (showRecurringIcon)
-                                  Padding(
-                                    padding: const EdgeInsets.only(left: 2),
-                                    child: Tooltip(
-                                      message:
-                                          context.l10n.blockRecurringIndicator,
-                                      child: Icon(
-                                        Icons.repeat,
-                                        size: 12,
-                                        color: accentColor.withOpacity(0.8),
-                                      ),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            if (maxHeight > 40) ...[
-                              const SizedBox(height: 2),
-                              Text(
-                                _formatTimeRange(context, effectiveBlock),
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: accentColor.withOpacity(0.8),
-                                ),
-                              ),
-                            ],
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  if (canResize)
-                    Align(
-                      alignment: Alignment.bottomCenter,
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Container(
-                          width: 22,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: accentColor.withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
+  Widget _buildCard({
+    required Color blockColor,
+    required BorderRadius blockBorderRadius,
+    required BorderRadius blockInnerBorderRadius,
+    required Color borderColor,
+    required Color accentColor,
+    required bool canResize,
+    required TimeBlock effectiveBlock,
+    required ColorScheme colorScheme,
+  }) {
+    return Container(
+      width: widget.width,
+      height: widget.height,
+      decoration: BoxDecoration(
+        color: blockColor,
+        borderRadius: blockBorderRadius,
+        border: Border.all(color: borderColor, width: 1.5),
+      ),
+      child: ClipRRect(
+        borderRadius: blockInnerBorderRadius,
+        child: Stack(
+          children: [
+            CustomPaint(
+              size: Size(widget.width, widget.height),
+              painter: _DiagonalPatternPainter(
+                color: accentColor.withOpacity(0.1),
+              ),
+            ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final maxHeight = constraints.maxHeight;
+                final maxWidth = constraints.maxWidth;
+                if (maxHeight < 18) {
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Container(
+                        width: 22,
+                        height: 2,
+                        decoration: BoxDecoration(
+                          color: colorScheme.error.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(2),
                         ),
                       ),
                     ),
-                ],
-              ),
+                  );
+                }
+                if (maxWidth < 24) {
+                  final indicatorWidth = (maxWidth - 6).clamp(8.0, 22.0);
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: Container(
+                        width: indicatorWidth,
+                        height: 2,
+                        decoration: BoxDecoration(
+                          color: colorScheme.error.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                final isCompact = maxHeight < 30 || maxWidth < 90;
+                final horizontalPadding = isCompact ? 6.0 : 8.0;
+                final verticalPadding = isCompact ? 2.0 : 4.0;
+                final showLeadingIcon = !isCompact && maxWidth >= 84;
+                final showRecurringIcon =
+                    !isCompact &&
+                    effectiveBlock.isRecurring &&
+                    maxWidth >= 110;
+
+                return Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: horizontalPadding,
+                    vertical: verticalPadding,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          if (showLeadingIcon) ...[
+                            Icon(
+                              effectiveBlock.allowOnlineBookingDuringBlock
+                                  ? Icons.event_note
+                                  : Icons.block,
+                              size: 14,
+                              color: accentColor,
+                            ),
+                            const SizedBox(width: 4),
+                          ],
+                          Expanded(
+                            child: Text(
+                              effectiveBlock.reason ??
+                                  (effectiveBlock.allowOnlineBookingDuringBlock
+                                      ? context.l10n.blockPromemoriaLabel
+                                      : 'Blocco'),
+                              style: TextStyle(
+                                fontSize: isCompact ? 10 : 12,
+                                fontWeight: FontWeight.w600,
+                                color: accentColor,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          if (showRecurringIcon)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 2),
+                              child: Tooltip(
+                                message: context.l10n.blockRecurringIndicator,
+                                child: Icon(
+                                  Icons.repeat,
+                                  size: 12,
+                                  color: accentColor.withOpacity(0.8),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                      if (maxHeight > 40) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          _formatTimeRange(context, effectiveBlock),
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: accentColor.withOpacity(0.8),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
             ),
-          ),
+            if (canResize)
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: Container(
+                    width: 22,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: accentColor.withOpacity(0.9),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
       ),
     );

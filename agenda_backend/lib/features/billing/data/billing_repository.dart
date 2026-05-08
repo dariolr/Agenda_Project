@@ -21,6 +21,14 @@ class BillingRepository {
     return _api.createCheckoutSession(businessId);
   }
 
+  Future<String> resumeCheckoutSession(int businessId) {
+    return _api.resumeCheckoutSession(businessId);
+  }
+
+  Future<void> cancelCheckoutSession(int businessId) {
+    return _api.cancelCheckoutSession(businessId);
+  }
+
   Future<String> createPortalSession(int businessId) {
     return _api.createPortalSession(businessId);
   }

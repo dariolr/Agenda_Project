@@ -6,6 +6,14 @@ namespace Agenda\Domain\Billing;
 
 interface BillingProviderInterface
 {
+    public function createCustomer(BillingConfig $config, array $context): array;
+
+    public function retrieveCheckoutSession(string $checkoutSessionId): ?array;
+
+    public function expireCheckoutSession(string $checkoutSessionId): ?array;
+
+    public function findManageableSubscription(BillingConfig $config, BillingSubscription $subscription): ?array;
+
     public function createSubscriptionCheckout(BillingConfig $config, BillingSubscription $subscription, array $context): array;
 
     public function createCustomerPortal(BillingConfig $config, BillingSubscription $subscription, array $context): array;

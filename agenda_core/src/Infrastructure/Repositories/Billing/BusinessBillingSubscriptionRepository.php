@@ -9,10 +9,26 @@ use Agenda\Domain\Billing\BillingSubscriptionStatus;
 use Agenda\Domain\Billing\BillingWebhookResult;
 use Agenda\Infrastructure\Database\Connection;
 use PDO;
+use PDOException;
 
 final class BusinessBillingSubscriptionRepository
 {
     public function __construct(private readonly Connection $db) {}
+
+    public function beginTransaction(): void
+    {
+        $this->db->beginTransaction();
+    }
+
+    public function commit(): void
+    {
+        $this->db->commit();
+    }
+
+    public function rollback(): void
+    {
+        $this->db->rollback();
+    }
 
     public function findByBusinessId(int $businessId): ?BillingSubscription
     {
@@ -36,6 +52,34 @@ final class BusinessBillingSubscriptionRepository
         $stmt->execute([$businessId, BillingSubscriptionStatus::INACTIVE]);
 
         return $this->findByBusinessId($businessId) ?? throw new \RuntimeException('Unable to create billing subscription');
+    }
+
+    public function findOrCreateByBusinessIdForUpdate(int $businessId): BillingSubscription
+    {
+        $driver = $this->db->getPdo()->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $stmt = $this->db->getPdo()->prepare(
+                'INSERT OR IGNORE INTO business_billing_subscription (business_id, status) VALUES (?, ?)'
+            );
+        } else {
+            $stmt = $this->db->getPdo()->prepare(
+                'INSERT INTO business_billing_subscription (business_id, status)
+                 VALUES (?, ?)
+                 ON DUPLICATE KEY UPDATE business_id = business_id'
+            );
+        }
+        $stmt->execute([$businessId, BillingSubscriptionStatus::INACTIVE]);
+
+        $sql = 'SELECT * FROM business_billing_subscription WHERE business_id = ? LIMIT 1';
+        if ($driver !== 'sqlite') {
+            $sql .= ' FOR UPDATE';
+        }
+
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute([$businessId]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        return $row ? BillingSubscription::fromArray($row) : throw new \RuntimeException('Unable to lock billing subscription');
     }
 
     public function markNotRequired(int $businessId): void
@@ -67,7 +111,8 @@ final class BusinessBillingSubscriptionRepository
                  provider_subscription_id = COALESCE(?, provider_subscription_id),
                  provider_price_reference = COALESCE(?, provider_price_reference),
                  status = ?,
-                 last_checkout_session_id = ?
+                 last_checkout_session_id = ?,
+                 updated_at = CURRENT_TIMESTAMP
              WHERE business_id = ?'
         );
         $stmt->execute([
@@ -77,6 +122,114 @@ final class BusinessBillingSubscriptionRepository
             $providerPriceReference,
             BillingSubscriptionStatus::PENDING_CHECKOUT,
             $checkoutSessionId,
+            $businessId,
+        ]);
+    }
+
+    public function reserveCheckoutCreation(
+        int $businessId,
+        string $providerCode,
+        ?string $providerPriceReference,
+    ): bool {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE business_billing_subscription
+             SET provider_code = ?,
+                 provider_price_reference = COALESCE(?, provider_price_reference),
+                 status = ?,
+                 last_checkout_session_id = NULL,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE business_id = ?
+               AND (
+                    status <> ?
+                    OR last_checkout_session_id IS NOT NULL
+               )'
+        );
+        $stmt->execute([
+            $providerCode,
+            $providerPriceReference,
+            BillingSubscriptionStatus::PENDING_CHECKOUT,
+            $businessId,
+            BillingSubscriptionStatus::PENDING_CHECKOUT,
+        ]);
+
+        return $stmt->rowCount() > 0;
+    }
+
+    public function clearCheckoutReservation(int $businessId): void
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE business_billing_subscription
+             SET status = ?,
+                 last_checkout_session_id = NULL,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE business_id = ?
+               AND status = ?
+               AND last_checkout_session_id IS NULL'
+        );
+        $stmt->execute([
+            BillingSubscriptionStatus::INACTIVE,
+            $businessId,
+            BillingSubscriptionStatus::PENDING_CHECKOUT,
+        ]);
+    }
+
+    public function clearAbandonedCheckout(int $businessId): void
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE business_billing_subscription
+             SET status = ?,
+                 last_checkout_session_id = NULL,
+                 updated_at = CURRENT_TIMESTAMP
+             WHERE business_id = ?
+               AND status = ?'
+        );
+        $stmt->execute([
+            BillingSubscriptionStatus::INACTIVE,
+            $businessId,
+            BillingSubscriptionStatus::PENDING_CHECKOUT,
+        ]);
+    }
+
+    public function updateProviderCustomerId(int $businessId, string $providerCode, string $providerCustomerId): void
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE business_billing_subscription
+             SET provider_code = ?,
+                 provider_customer_id = ?
+             WHERE business_id = ?'
+        );
+        $stmt->execute([$providerCode, $providerCustomerId, $businessId]);
+    }
+
+    public function syncManageableProviderSubscription(
+        int $businessId,
+        string $providerCode,
+        array $subscription,
+    ): void {
+        $cancelAtPeriodEnd = array_key_exists('cancel_at_period_end', $subscription)
+            ? (!empty($subscription['cancel_at_period_end']) ? 1 : 0)
+            : 0;
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE business_billing_subscription
+             SET provider_code = ?,
+                 provider_customer_id = COALESCE(?, provider_customer_id),
+                 provider_subscription_id = COALESCE(?, provider_subscription_id),
+                 provider_price_reference = COALESCE(?, provider_price_reference),
+                 status = COALESCE(?, status),
+                 current_period_start = COALESCE(?, current_period_start),
+                 current_period_end = COALESCE(?, current_period_end),
+                 cancel_at_period_end = ?
+             WHERE business_id = ?'
+        );
+        $stmt->execute([
+            $providerCode,
+            $subscription['provider_customer_id'] ?? null,
+            $subscription['provider_subscription_id'] ?? null,
+            $subscription['provider_price_reference'] ?? null,
+            $subscription['status'] ?? null,
+            $subscription['current_period_start'] ?? null,
+            $subscription['current_period_end'] ?? null,
+            $cancelAtPeriodEnd,
             $businessId,
         ]);
     }
@@ -104,24 +257,29 @@ final class BusinessBillingSubscriptionRepository
             return;
         }
 
+        if ($this->findByBusinessId($result->businessId) !== null) {
+            $this->updateExistingFromWebhookResult($result);
+            return;
+        }
+
+        try {
+            $this->insertFromWebhookResult($result);
+        } catch (PDOException $e) {
+            if ($e->getCode() !== '23000') {
+                throw $e;
+            }
+            $this->updateExistingFromWebhookResult($result);
+        }
+    }
+
+    private function insertFromWebhookResult(BillingWebhookResult $result): void
+    {
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO business_billing_subscription
                 (business_id, provider_code, provider_customer_id, provider_subscription_id,
                  provider_price_reference, status, current_period_start, current_period_end,
                  cancel_at_period_end, canceled_at, last_payment_at, last_payment_failed_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE
-                provider_code = COALESCE(VALUES(provider_code), provider_code),
-                provider_customer_id = COALESCE(VALUES(provider_customer_id), provider_customer_id),
-                provider_subscription_id = COALESCE(VALUES(provider_subscription_id), provider_subscription_id),
-                provider_price_reference = COALESCE(VALUES(provider_price_reference), provider_price_reference),
-                status = COALESCE(VALUES(status), status),
-                current_period_start = COALESCE(VALUES(current_period_start), current_period_start),
-                current_period_end = COALESCE(VALUES(current_period_end), current_period_end),
-                cancel_at_period_end = IF(? IS NULL, cancel_at_period_end, ?),
-                canceled_at = COALESCE(VALUES(canceled_at), canceled_at),
-                last_payment_at = COALESCE(VALUES(last_payment_at), last_payment_at),
-                last_payment_failed_at = COALESCE(VALUES(last_payment_failed_at), last_payment_failed_at)'
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $cancelAtPeriodEnd = $result->cancelAtPeriodEnd === null ? null : ($result->cancelAtPeriodEnd ? 1 : 0);
         $stmt->execute([
@@ -137,9 +295,96 @@ final class BusinessBillingSubscriptionRepository
             $result->canceledAt,
             $result->lastPaymentAt,
             $result->lastPaymentFailedAt,
-            $cancelAtPeriodEnd,
-            $cancelAtPeriodEnd,
         ]);
+    }
+
+    private function updateExistingFromWebhookResult(BillingWebhookResult $result): void
+    {
+        $existing = $this->findByBusinessId($result->businessId ?? 0);
+        if ($existing === null) {
+            return;
+        }
+        if ($this->isConflictingActiveSubscription($existing, $result)) {
+            error_log(sprintf(
+                '[BusinessBillingSubscriptionRepository] conflicting active billing subscription business_id=%d canonical_subscription_id=%s incoming_subscription_id=%s event_id=%s',
+                $existing->businessId,
+                $existing->providerSubscriptionId ?? 'null',
+                $result->providerSubscriptionId ?? 'null',
+                $result->providerEventId,
+            ));
+            return;
+        }
+
+        $providerSubscriptionId = $result->providerSubscriptionId ?? $existing->providerSubscriptionId;
+        $targetStatus = $result->targetStatus ?? $existing->status;
+        $subscriptionChanged = $result->providerSubscriptionId !== null
+            && $result->providerSubscriptionId !== $existing->providerSubscriptionId;
+        $isFailedInitialPayment = $subscriptionChanged
+            && in_array($targetStatus, [
+                BillingSubscriptionStatus::PAST_DUE,
+                BillingSubscriptionStatus::UNPAID,
+                BillingSubscriptionStatus::ERROR,
+            ], true);
+        $lastPaymentAt = $result->lastPaymentAt ?? ($isFailedInitialPayment ? null : $existing->lastPaymentAt);
+        $canceledAt = $targetStatus === BillingSubscriptionStatus::ACTIVE
+            ? null
+            : ($result->canceledAt ?? $existing->canceledAt);
+        $cancelAtPeriodEnd = $result->cancelAtPeriodEnd === null
+            ? ($existing->cancelAtPeriodEnd ? 1 : 0)
+            : ($result->cancelAtPeriodEnd ? 1 : 0);
+
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE business_billing_subscription
+             SET provider_code = ?,
+                 provider_customer_id = ?,
+                 provider_subscription_id = ?,
+                 provider_price_reference = ?,
+                 status = ?,
+                 current_period_start = ?,
+                 current_period_end = ?,
+                 cancel_at_period_end = ?,
+                 canceled_at = ?,
+                 last_payment_at = ?,
+                 last_payment_failed_at = ?
+             WHERE business_id = ?'
+        );
+        $stmt->execute([
+            $result->providerCode ?? $existing->providerCode,
+            $result->providerCustomerId ?? $existing->providerCustomerId,
+            $providerSubscriptionId,
+            $result->providerPriceReference ?? $existing->providerPriceReference,
+            $targetStatus,
+            $result->currentPeriodStart ?? $existing->currentPeriodStart,
+            $result->currentPeriodEnd ?? $existing->currentPeriodEnd,
+            $cancelAtPeriodEnd,
+            $canceledAt,
+            $lastPaymentAt,
+            $result->lastPaymentFailedAt ?? $existing->lastPaymentFailedAt,
+            $result->businessId,
+        ]);
+    }
+
+    private function isConflictingActiveSubscription(BillingSubscription $existing, BillingWebhookResult $result): bool
+    {
+        if ($existing->providerSubscriptionId === null || $result->providerSubscriptionId === null) {
+            return false;
+        }
+        if ($existing->providerSubscriptionId === $result->providerSubscriptionId) {
+            return false;
+        }
+        if (!in_array($existing->status, [
+            BillingSubscriptionStatus::ACTIVE,
+            BillingSubscriptionStatus::PAST_DUE,
+            BillingSubscriptionStatus::UNPAID,
+        ], true)) {
+            return false;
+        }
+
+        return in_array($result->targetStatus, [
+            BillingSubscriptionStatus::ACTIVE,
+            BillingSubscriptionStatus::PAST_DUE,
+            BillingSubscriptionStatus::UNPAID,
+        ], true);
     }
 
     public function findBusinessIdByProviderSubscriptionId(string $providerCode, string $providerSubscriptionId): ?int

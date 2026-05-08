@@ -12309,6 +12309,16 @@ class L10n {
     );
   }
 
+  /// `last_checkout_session_id`
+  String get billingLastCheckoutSessionIdLabel {
+    return Intl.message(
+      'last_checkout_session_id',
+      name: 'billingLastCheckoutSessionIdLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `can_start_checkout`
   String get billingCanStartCheckoutFieldLabel {
     return Intl.message(
@@ -12399,6 +12409,36 @@ class L10n {
     );
   }
 
+  /// `Retry payment`
+  String get billingRetryPaymentAction {
+    return Intl.message(
+      'Retry payment',
+      name: 'billingRetryPaymentAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Resume checkout`
+  String get billingResumeCheckoutAction {
+    return Intl.message(
+      'Resume checkout',
+      name: 'billingResumeCheckoutAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Cancel checkout`
+  String get billingCancelCheckoutRetryAction {
+    return Intl.message(
+      'Cancel checkout',
+      name: 'billingCancelCheckoutRetryAction',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Reactivate subscription`
   String get billingReactivateAction {
     return Intl.message(
@@ -12424,6 +12464,36 @@ class L10n {
     return Intl.message(
       'Checkout canceled. You can try again whenever you want.',
       name: 'billingCheckoutCanceledMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Checkout not completed. You can retry the payment whenever you want.`
+  String get billingCheckoutIncompleteMessage {
+    return Intl.message(
+      'Checkout not completed. You can retry the payment whenever you want.',
+      name: 'billingCheckoutIncompleteMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Checkout already started. Complete or cancel the open session before trying again.`
+  String get billingCheckoutStartedMessage {
+    return Intl.message(
+      'Checkout already started. Complete or cancel the open session before trying again.',
+      name: 'billingCheckoutStartedMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Checkout already started. Complete or cancel the open session before trying again.`
+  String get billingCheckoutAlreadyStartedError {
+    return Intl.message(
+      'Checkout already started. Complete or cancel the open session before trying again.',
+      name: 'billingCheckoutAlreadyStartedError',
       desc: '',
       args: [],
     );
@@ -12519,10 +12589,10 @@ class L10n {
     );
   }
 
-  /// `Checkout pending`
+  /// `Checkout not completed`
   String get billingStatusPendingCheckout {
     return Intl.message(
-      'Checkout pending',
+      'Checkout not completed',
       name: 'billingStatusPendingCheckout',
       desc: '',
       args: [],

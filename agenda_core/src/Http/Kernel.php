@@ -190,6 +190,8 @@ final class Kernel
         $this->router->get('/v1/businesses', BusinessController::class, 'index', ['auth']);
         $this->router->get('/v1/billing/subscription', BusinessBillingController::class, 'subscription', ['auth']);
         $this->router->post('/v1/billing/checkout-session', BusinessBillingController::class, 'checkoutSession', ['auth']);
+        $this->router->post('/v1/billing/checkout-session/resume', BusinessBillingController::class, 'resumeCheckoutSession', ['auth']);
+        $this->router->post('/v1/billing/checkout-session/cancel', BusinessBillingController::class, 'cancelCheckoutSession', ['auth']);
         $this->router->post('/v1/billing/portal-session', BusinessBillingController::class, 'portalSession', ['auth']);
         $this->router->get('/v1/businesses/{id}', BusinessController::class, 'show', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/locations', LocationsController::class, 'index', ['auth']);

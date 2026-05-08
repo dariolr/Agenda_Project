@@ -699,10 +699,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                 onLongPressStart: (dt, details) => _handleSlotLongPress(
                   dt: dt,
                   details: details,
-                  appointments: staffAppointments,
-                  classEvents: staffClassEvents,
-                  blocks: staffBlocks,
-                  minutesPerSlot: layoutConfig.minutesPerSlot,
                 ),
               );
             }
@@ -785,7 +781,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       onWillAcceptWithDetails: (details) {
         if (!canManageBookings) return false;
         final data = details.data;
-        if (data is! Appointment && data is! _ClassEventDragData) {
+        if (data is! Appointment && data is! _ClassEventDragData && data is! TimeBlock) {
           return false;
         }
         setState(() => _isHighlighted = true);
@@ -861,6 +857,52 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
               context,
               title: classMutationErrorTitle,
               message: classMutationErrorMessage,
+            );
+          }
+          return;
+        }
+
+        if (dragged is TimeBlock) {
+          final block = dragged;
+          if (block.isAllDay) return;
+          final duration = block.endTime.difference(block.startTime);
+          final durationMinutes = math.max(
+            duration.inMinutes,
+            layoutConfig.minutesPerSlot,
+          );
+          final slotStepMinutes = layoutConfig.minutesPerSlot;
+          final totalMinutes = LayoutConfig.hoursInDay * 60;
+          final rawMinutes = layoutConfig.minutesFromHeight(
+            (localPointer.dy - dragOffsetY).clamp(0.0, double.infinity),
+          );
+          final roundedMinutes = (((rawMinutes / slotStepMinutes).round() *
+                      slotStepMinutes)
+                  .clamp(0, math.max(totalMinutes - durationMinutes, 0)))
+              .toInt();
+          final dayStart = DateTime(
+            agendaDate.year,
+            agendaDate.month,
+            agendaDate.day,
+          );
+          final newStart = dayStart.add(Duration(minutes: roundedMinutes));
+          final newEnd = newStart.add(Duration(minutes: durationMinutes));
+
+          if (block.startTime == newStart && block.endTime == newEnd) return;
+
+          ref.read(dragSessionProvider.notifier).markHandled();
+
+          try {
+            await ref.read(timeBlocksProvider.notifier).moveBlock(
+              blockId: block.id,
+              newStart: newStart,
+              newEnd: newEnd,
+            );
+          } catch (_) {
+            if (!context.mounted) return;
+            await FeedbackDialog.showError(
+              context,
+              title: context.l10n.errorTitle,
+              message: context.l10n.classEventsCreateErrorMessage,
             );
           }
           return;
@@ -2155,30 +2197,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
   Future<void> _handleSlotLongPress({
     required DateTime dt,
     required LongPressStartDetails details,
-    required List<Appointment> appointments,
-    required List<ClassEvent> classEvents,
-    required List<TimeBlock> blocks,
-    required int minutesPerSlot,
   }) async {
-    final slotEnd = dt.add(Duration(minutes: minutesPerSlot));
-    final isSlotOccupied =
-        appointments.any(
-          (a) =>
-              !a.isCancelled &&
-              !a.isReplaced &&
-              a.startTime.isBefore(slotEnd) &&
-              a.endTime.isAfter(dt),
-        ) ||
-        classEvents.any((e) {
-          final startsAt = e.startsAtLocal ?? e.startsAtUtc.toLocal();
-          final endsAt = e.endsAtLocal ?? e.endsAtUtc.toLocal();
-          return startsAt.isBefore(slotEnd) && endsAt.isAfter(dt);
-        }) ||
-        blocks.any(
-          (b) => b.startTime.isBefore(slotEnd) && b.endTime.isAfter(dt),
-        );
-
-    if (isSlotOccupied) return;
 
     final location = ref.read(currentLocationProvider);
     final services = ref.read(servicesProvider).value ?? const [];

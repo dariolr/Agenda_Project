@@ -44,10 +44,6 @@ final class BusinessBillingController
         }
 
         $subscription ??= $this->subscriptionRepository->findOrCreateByBusinessId($businessId);
-        if ($this->isCheckoutCancelReturn($request) && $this->isPendingCheckoutWithoutSubscription($subscription)) {
-            $this->subscriptionRepository->markAbandonedPendingCheckoutInactive($businessId);
-            $subscription = $this->subscriptionRepository->findOrCreateByBusinessId($businessId);
-        }
 
         return Response::success($this->formatState($config, $subscription));
     }
@@ -71,37 +67,283 @@ final class BusinessBillingController
             return Response::validationError('Billing configuration is not valid', $request->traceId);
         }
 
-        $subscription = $this->subscriptionRepository->findOrCreateByBusinessId($businessId);
-        if ($this->hasManageableSubscription($subscription)) {
-            return Response::conflict(
-                'subscription_already_exists',
-                'Subscription already exists for this business',
-                $request->traceId
-            );
-        }
-
+        $provider = $this->providerFactory->get($config->providerCode);
+        $checkoutReserved = false;
         try {
-            $provider = $this->providerFactory->get($config->providerCode);
+            $this->subscriptionRepository->beginTransaction();
+            $subscription = $this->subscriptionRepository->findOrCreateByBusinessIdForUpdate($businessId);
+            if (
+                $subscription->status === BillingSubscriptionStatus::ACTIVE
+                && $subscription->providerSubscriptionId !== null
+                && $subscription->providerSubscriptionId !== ''
+            ) {
+                $this->subscriptionRepository->rollback();
+                return Response::conflict(
+                    'subscription_already_active',
+                    'Subscription is already active for this business',
+                    $request->traceId
+                );
+            }
+            if ($this->hasManageableSubscription($subscription)) {
+                $this->subscriptionRepository->rollback();
+                return Response::conflict(
+                    'subscription_already_exists',
+                    'Subscription already exists for this business',
+                    $request->traceId
+                );
+            }
+
+            if ($subscription->status === BillingSubscriptionStatus::PENDING_CHECKOUT && $subscription->lastCheckoutSessionId === null) {
+                if ($this->isRecentPendingCheckout($subscription)) {
+                    $this->subscriptionRepository->rollback();
+                    return Response::conflict(
+                        'checkout_already_started',
+                        'Checkout has already been started for this business',
+                        $request->traceId
+                    );
+                }
+
+                $this->subscriptionRepository->clearCheckoutReservation($businessId);
+            }
+
+            if ($subscription->status === BillingSubscriptionStatus::PENDING_CHECKOUT && $subscription->lastCheckoutSessionId !== null) {
+                $existingSession = $provider->retrieveCheckoutSession($subscription->lastCheckoutSessionId);
+                if ($existingSession === null) {
+                    $this->subscriptionRepository->rollback();
+                    return Response::conflict(
+                        'checkout_already_started',
+                        'Checkout has already been started for this business',
+                        $request->traceId
+                    );
+                }
+                $sessionStatus = (string) ($existingSession['status'] ?? '');
+                $paymentStatus = (string) ($existingSession['payment_status'] ?? '');
+                if ($sessionStatus === 'open') {
+                    $this->subscriptionRepository->rollback();
+                    return Response::conflict(
+                        'checkout_already_started',
+                        'Checkout has already been started for this business',
+                        $request->traceId
+                    );
+                }
+                if (
+                    $sessionStatus === 'expired'
+                    || $sessionStatus === 'canceled'
+                    || (in_array($sessionStatus, ['complete', 'completed'], true) && $paymentStatus !== 'paid')
+                ) {
+                    $this->subscriptionRepository->clearAbandonedCheckout($businessId);
+                } elseif (in_array($sessionStatus, ['complete', 'completed'], true) && $paymentStatus === 'paid') {
+                    $existingSubscription = $provider->findManageableSubscription($config, $subscription);
+                    if ($existingSubscription !== null) {
+                        $this->subscriptionRepository->syncManageableProviderSubscription(
+                            $businessId,
+                            $config->providerCode,
+                            $existingSubscription,
+                        );
+                    }
+                    $this->subscriptionRepository->commit();
+                    return Response::conflict(
+                        'subscription_already_exists',
+                        'Subscription already exists for this business',
+                        $request->traceId
+                    );
+                } else {
+                    $this->subscriptionRepository->rollback();
+                    return Response::conflict(
+                        'checkout_already_started',
+                        'Checkout has already been started for this business',
+                        $request->traceId
+                    );
+                }
+            }
+
+            if (!$this->subscriptionRepository->reserveCheckoutCreation(
+                $businessId,
+                $config->providerCode,
+                $config->providerPriceReference,
+            )) {
+                $this->subscriptionRepository->rollback();
+                return Response::conflict(
+                    'checkout_already_started',
+                    'Checkout has already been started for this business',
+                    $request->traceId
+                );
+            }
+            $this->subscriptionRepository->commit();
+            $checkoutReserved = true;
+
+            if ($subscription->providerCustomerId === null || $subscription->providerCustomerId === '') {
+                $customer = $provider->createCustomer($config, [
+                    'business_name' => $business['name'] ?? null,
+                    'business_email' => $business['email'] ?? null,
+                ]);
+                $this->subscriptionRepository->updateProviderCustomerId(
+                    $businessId,
+                    $config->providerCode,
+                    (string) $customer['provider_customer_id'],
+                );
+                $subscription = $this->subscriptionRepository->findByBusinessId($businessId)
+                    ?? throw new \RuntimeException('Unable to load billing subscription');
+            }
+
+            $existingSubscription = $provider->findManageableSubscription($config, $subscription);
+            if ($existingSubscription !== null) {
+                $this->subscriptionRepository->syncManageableProviderSubscription(
+                    $businessId,
+                    $config->providerCode,
+                    $existingSubscription,
+                );
+                $checkoutReserved = false;
+                return Response::conflict(
+                    'subscription_already_exists',
+                    'Subscription already exists for this business',
+                    $request->traceId
+                );
+            }
+
             $result = $provider->createSubscriptionCheckout($config, $subscription, [
                 'business_name' => $business['name'] ?? null,
                 'business_email' => $business['email'] ?? null,
                 'success_url' => $this->frontendUrl('/altro/abbonamento?billing=success'),
                 'cancel_url' => $this->frontendUrl('/altro/abbonamento?billing=cancel'),
             ]);
+            $this->subscriptionRepository->updateAfterCheckoutCreation(
+                $businessId,
+                $config->providerCode,
+                $result['provider_customer_id'] ?? null,
+                $result['provider_subscription_id'] ?? null,
+                $result['provider_price_reference'] ?? $config->providerPriceReference,
+                $result['checkout_session_id'] ?? null,
+            );
+            $checkoutReserved = false;
         } catch (\InvalidArgumentException $e) {
+            $this->subscriptionRepository->rollback();
+            if ($checkoutReserved) {
+                $this->subscriptionRepository->clearCheckoutReservation($businessId);
+            }
             return Response::validationError($e->getMessage(), $request->traceId);
+        } catch (\Throwable $e) {
+            $this->subscriptionRepository->rollback();
+            if ($checkoutReserved) {
+                $this->subscriptionRepository->clearCheckoutReservation($businessId);
+            }
+            throw $e;
         }
 
-        $this->subscriptionRepository->updateAfterCheckoutCreation(
-            $businessId,
-            $config->providerCode,
-            $result['provider_customer_id'] ?? null,
-            $result['provider_subscription_id'] ?? null,
-            $result['provider_price_reference'] ?? $config->providerPriceReference,
-            $result['checkout_session_id'] ?? null,
-        );
-
         return Response::success(['url' => (string) $result['url']]);
+    }
+
+    public function resumeCheckoutSession(Request $request): Response
+    {
+        $context = $this->pendingCheckoutContext($request);
+        if ($context instanceof Response) {
+            return $context;
+        }
+
+        [$businessId, $config, $subscription, $provider] = $context;
+        $session = $provider->retrieveCheckoutSession((string) $subscription->lastCheckoutSessionId);
+        if ($session === null) {
+            return Response::conflict('checkout_already_started', 'Checkout has already been started for this business', $request->traceId);
+        }
+
+        $sessionStatus = (string) ($session['status'] ?? '');
+        $paymentStatus = (string) ($session['payment_status'] ?? '');
+        if ($sessionStatus === 'open' && ($session['url'] ?? null) !== null) {
+            return Response::success(['url' => (string) $session['url']]);
+        }
+        if ($sessionStatus === 'expired' || $sessionStatus === 'canceled' || (in_array($sessionStatus, ['complete', 'completed'], true) && $paymentStatus !== 'paid')) {
+            $this->subscriptionRepository->clearAbandonedCheckout($businessId);
+            return Response::conflict('checkout_retryable', 'Checkout can be retried', $request->traceId);
+        }
+        if (in_array($sessionStatus, ['complete', 'completed'], true) && $paymentStatus === 'paid') {
+            $this->syncExistingManageableSubscription($businessId, (string) $config->providerCode, $provider, $config, $subscription);
+            return Response::conflict('subscription_already_exists', 'Subscription already exists for this business', $request->traceId);
+        }
+
+        return Response::conflict('checkout_already_started', 'Checkout has already been started for this business', $request->traceId);
+    }
+
+    public function cancelCheckoutSession(Request $request): Response
+    {
+        $context = $this->pendingCheckoutContext($request);
+        if ($context instanceof Response) {
+            return $context;
+        }
+
+        [$businessId, $config, $subscription, $provider] = $context;
+        $session = $provider->retrieveCheckoutSession((string) $subscription->lastCheckoutSessionId);
+        if ($session === null) {
+            return Response::conflict('checkout_already_started', 'Checkout has already been started for this business', $request->traceId);
+        }
+
+        $sessionStatus = (string) ($session['status'] ?? '');
+        $paymentStatus = (string) ($session['payment_status'] ?? '');
+        if ($sessionStatus === 'open') {
+            $expired = $provider->expireCheckoutSession((string) $subscription->lastCheckoutSessionId);
+            if ($expired === null) {
+                return Response::conflict('checkout_already_started', 'Checkout has already been started for this business', $request->traceId);
+            }
+            $this->subscriptionRepository->clearAbandonedCheckout($businessId);
+            return Response::success(['checkout_state' => 'retryable']);
+        }
+        if ($sessionStatus === 'expired' || $sessionStatus === 'canceled' || (in_array($sessionStatus, ['complete', 'completed'], true) && $paymentStatus !== 'paid')) {
+            $this->subscriptionRepository->clearAbandonedCheckout($businessId);
+            return Response::success(['checkout_state' => 'retryable']);
+        }
+        if (in_array($sessionStatus, ['complete', 'completed'], true) && $paymentStatus === 'paid') {
+            $this->syncExistingManageableSubscription($businessId, (string) $config->providerCode, $provider, $config, $subscription);
+            return Response::conflict('subscription_already_exists', 'Subscription already exists for this business', $request->traceId);
+        }
+
+        return Response::conflict('checkout_already_started', 'Checkout has already been started for this business', $request->traceId);
+    }
+
+    /**
+     * @return array{0:int,1:mixed,2:BillingSubscription,3:mixed}|Response
+     */
+    private function pendingCheckoutContext(Request $request): array|Response
+    {
+        $businessId = $this->businessId($request);
+        if ($businessId === null) {
+            return Response::badRequest('business_id is required', $request->traceId);
+        }
+        if (!$this->hasAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+
+        $config = $this->configRepository->findOrCreateByBusinessId($businessId);
+        $subscription = $this->subscriptionRepository->findByBusinessId($businessId);
+        if (!$config->billingEnabled || $config->providerCode === null || $subscription === null) {
+            return Response::conflict('billing_not_available', 'Billing is not available', $request->traceId);
+        }
+        if ($subscription->status !== BillingSubscriptionStatus::PENDING_CHECKOUT || $subscription->lastCheckoutSessionId === null || $subscription->lastCheckoutSessionId === '') {
+            return Response::conflict('checkout_not_started', 'Checkout has not been started for this business', $request->traceId);
+        }
+
+        return [$businessId, $config, $subscription, $this->providerFactory->get((string) $config->providerCode)];
+    }
+
+    private function syncExistingManageableSubscription(int $businessId, string $providerCode, mixed $provider, mixed $config, BillingSubscription $subscription): void
+    {
+        $existingSubscription = $provider->findManageableSubscription($config, $subscription);
+        if ($existingSubscription !== null) {
+            $this->subscriptionRepository->syncManageableProviderSubscription($businessId, $providerCode, $existingSubscription);
+        }
+    }
+
+    private function isRecentPendingCheckout(BillingSubscription $subscription): bool
+    {
+        if ($subscription->updatedAt === null || $subscription->updatedAt === '') {
+            return true;
+        }
+
+        try {
+            $updatedAt = new \DateTimeImmutable($subscription->updatedAt);
+        } catch (\Throwable) {
+            return true;
+        }
+
+        return $updatedAt > (new \DateTimeImmutable('-5 minutes'));
     }
 
     private function hasManageableSubscription(BillingSubscription $subscription): bool
@@ -117,9 +359,18 @@ final class BusinessBillingController
             return false;
         }
 
+        if (
+            in_array($subscription->status, [
+                BillingSubscriptionStatus::PAST_DUE,
+                BillingSubscriptionStatus::UNPAID,
+            ], true)
+            && $subscription->lastPaymentAt === null
+        ) {
+            return false;
+        }
+
         return in_array($subscription->status, [
             BillingSubscriptionStatus::ACTIVE,
-            BillingSubscriptionStatus::PENDING_CHECKOUT,
             BillingSubscriptionStatus::PAST_DUE,
             BillingSubscriptionStatus::UNPAID,
         ], true);
@@ -176,8 +427,13 @@ final class BusinessBillingController
         $status = $config->billingEnabled
             ? ($subscription?->status ?? BillingSubscriptionStatus::INACTIVE)
             : BillingSubscriptionStatus::NOT_REQUIRED;
-        if ($subscription !== null && $this->isPendingCheckoutWithoutSubscription($subscription)) {
-            $status = BillingSubscriptionStatus::INACTIVE;
+        $checkoutRetryable = $subscription !== null
+            && $subscription->status === BillingSubscriptionStatus::PENDING_CHECKOUT
+            && $subscription->lastPaymentAt === null
+            && ($subscription->lastCheckoutSessionId === null || $subscription->lastCheckoutSessionId === '');
+        $checkoutState = null;
+        if ($subscription !== null && $subscription->status === BillingSubscriptionStatus::PENDING_CHECKOUT) {
+            $checkoutState = $checkoutRetryable ? 'retryable' : 'started';
         }
 
         return [
@@ -198,22 +454,12 @@ final class BusinessBillingController
             'canceled_at' => $subscription?->canceledAt,
             'last_payment_at' => $subscription?->lastPaymentAt,
             'last_payment_failed_at' => $subscription?->lastPaymentFailedAt,
+            'last_checkout_session_id' => $subscription?->lastCheckoutSessionId,
+            'checkout_retryable' => $checkoutRetryable,
+            'checkout_state' => $checkoutState,
             'can_start_checkout' => $config->billingEnabled && $this->canStartCheckout($status, $subscription),
             'can_open_portal' => $config->billingEnabled && ($subscription?->providerCustomerId !== null),
         ];
-    }
-
-    private function isCheckoutCancelReturn(Request $request): bool
-    {
-        return in_array((string) $request->queryParam('checkout_cancelled'), ['1', 'true'], true);
-    }
-
-    private function isPendingCheckoutWithoutSubscription(BillingSubscription $subscription): bool
-    {
-        return $subscription->status === BillingSubscriptionStatus::PENDING_CHECKOUT
-            && ($subscription->providerSubscriptionId === null || $subscription->providerSubscriptionId === '')
-            && $subscription->lastCheckoutSessionId !== null
-            && $subscription->lastCheckoutSessionId !== '';
     }
 
     private function canStartCheckout(string $status, ?BillingSubscription $subscription): bool
@@ -228,9 +474,20 @@ final class BusinessBillingController
 
         if (in_array($status, [
             BillingSubscriptionStatus::INACTIVE,
+            BillingSubscriptionStatus::PENDING_CHECKOUT,
             BillingSubscriptionStatus::CANCELED,
             BillingSubscriptionStatus::ERROR,
         ], true)) {
+            return true;
+        }
+
+        if (
+            in_array($status, [
+                BillingSubscriptionStatus::PAST_DUE,
+                BillingSubscriptionStatus::UNPAID,
+            ], true)
+            && $subscription->lastPaymentAt === null
+        ) {
             return true;
         }
 

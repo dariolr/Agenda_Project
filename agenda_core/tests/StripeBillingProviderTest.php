@@ -290,6 +290,68 @@ final class StripeBillingProviderTest extends TestCase
         $this->assertSame('2024-05-01 13:20:00', $result->lastPaymentAt);
     }
 
+    public function testCheckoutCompletedWithoutPaidStatusDoesNotMarkActiveOrPaid(): void
+    {
+        $event = [
+            'id' => 'evt_checkout_unpaid',
+            'object' => 'event',
+            'type' => 'checkout.session.completed',
+            'created' => 1_714_569_700,
+            'data' => [
+                'object' => [
+                    'id' => 'cs_unpaid',
+                    'object' => 'checkout.session',
+                    'status' => 'complete',
+                    'payment_status' => 'unpaid',
+                    'customer' => 'cus_unpaid',
+                    'subscription' => 'sub_unpaid',
+                    'client_reference_id' => '42',
+                ],
+            ],
+        ];
+
+        $result = $this->provider()->handleWebhook($this->payload($event), $this->headers($event));
+
+        $this->assertSame('checkout.session.completed', $result->eventType);
+        $this->assertSame(42, $result->businessId);
+        $this->assertSame('sub_unpaid', $result->providerSubscriptionId);
+        $this->assertNotSame(BillingSubscriptionStatus::ACTIVE, $result->targetStatus);
+        $this->assertNull($result->lastPaymentAt);
+    }
+
+    public function testInvoicePaymentFailedMarksPastDueAndDoesNotSetLastPaymentAt(): void
+    {
+        $event = [
+            'id' => 'evt_invoice_payment_failed',
+            'object' => 'event',
+            'type' => 'invoice_payment.failed',
+            'data' => [
+                'object' => [
+                    'id' => 'inpay_failed',
+                    'object' => 'invoice_payment',
+                    'created' => 1_714_569_700,
+                    'status' => 'failed',
+                    'invoice' => [
+                        'id' => 'in_failed',
+                        'object' => 'invoice',
+                        'customer' => 'cus_failed',
+                        'subscription' => 'sub_failed',
+                        'metadata' => [
+                            'business_id' => '42',
+                        ],
+                    ],
+                ],
+            ],
+        ];
+
+        $result = $this->provider()->handleWebhook($this->payload($event), $this->headers($event));
+
+        $this->assertSame(BillingSubscriptionStatus::PAST_DUE, $result->targetStatus);
+        $this->assertSame('sub_failed', $result->providerSubscriptionId);
+        $this->assertNull($result->lastPaymentAt);
+        $this->assertSame('2024-05-01 13:21:40', $result->lastPaymentFailedAt);
+    }
+
     private function provider(): StripeBillingProvider
     {
         return new StripeBillingProvider(

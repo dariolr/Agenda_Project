@@ -16,6 +16,9 @@ class BillingConfigViewModel {
     required this.canceledAt,
     required this.lastPaymentAt,
     required this.lastPaymentFailedAt,
+    required this.lastCheckoutSessionId,
+    required this.checkoutRetryable,
+    required this.checkoutState,
     required this.canStartCheckout,
     required this.canOpenPortal,
     this.providerPriceReference,
@@ -38,6 +41,9 @@ class BillingConfigViewModel {
   final DateTime? canceledAt;
   final DateTime? lastPaymentAt;
   final DateTime? lastPaymentFailedAt;
+  final String? lastCheckoutSessionId;
+  final bool checkoutRetryable;
+  final String? checkoutState;
   final bool canStartCheckout;
   final bool canOpenPortal;
   final String? providerPriceReference;
@@ -78,6 +84,14 @@ class BillingConfigViewModel {
       lastPaymentFailedAt: _parseDate(
         json['last_payment_failed_at'] ?? json['lastPaymentFailedAt'],
       ),
+      lastCheckoutSessionId:
+          json['last_checkout_session_id'] as String? ??
+          json['lastCheckoutSessionId'] as String?,
+      checkoutRetryable: _parseBool(
+        json['checkout_retryable'] ?? json['checkoutRetryable'],
+      ),
+      checkoutState:
+          json['checkout_state'] as String? ?? json['checkoutState'] as String?,
       canStartCheckout: json['can_start_checkout'] as bool? ?? false,
       canOpenPortal: json['can_open_portal'] as bool? ?? false,
       providerPriceReference: json['provider_price_reference'] as String?,
