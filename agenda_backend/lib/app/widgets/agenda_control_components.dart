@@ -11,6 +11,10 @@ import 'package:agenda_backend/features/agenda/presentation/widgets/agenda_displ
 import 'package:agenda_backend/features/agenda/providers/calendar_view_mode_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
+import 'package:agenda_backend/core/services/preferences_service.dart';
+import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
+import 'package:agenda_backend/features/billing/providers/billing_notice_provider.dart';
 import 'package:agenda_backend/features/reports/providers/reports_filter_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -1571,6 +1575,69 @@ class AgendaDisplaySettingsButton extends ConsumerWidget {
                     const Icon(Icons.tune, size: 22),
                     const SizedBox(width: 8),
                     Text(context.l10n.agendaDisplaySettingsAction),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class AgendaBillingWarningButton extends ConsumerWidget {
+  const AgendaBillingWarningButton({
+    super.key,
+    this.height = kAgendaControlHeight,
+    this.iconOnly = true,
+  });
+
+  final double height;
+  final bool iconOnly;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final show =
+        ref.watch(shouldShowBillingAgendaWarningIconProvider).asData?.value ??
+        false;
+    if (!show) return const SizedBox.shrink();
+
+    final scheme = Theme.of(context).colorScheme;
+    final formFactor = ref.watch(formFactorProvider);
+    final isDesktopOrTablet =
+        formFactor == AppFormFactor.desktop ||
+        formFactor == AppFormFactor.tablet;
+
+    return Tooltip(
+      message: context.l10n.billingAgendaNoticeTitle,
+      child: SizedBox(
+        height: height,
+        width: iconOnly ? 46 : null,
+        child: AppOutlinedActionButton(
+          onPressed: () {
+            final businessId = ref.read(currentBusinessIdProvider);
+            final today = ref.read(tenantTodayProvider);
+            final dateStr =
+                '${today.year}-${today.month.toString().padLeft(2, '0')}-${today.day.toString().padLeft(2, '0')}';
+            final prefs = ref.read(sharedPreferencesProvider);
+            prefs.remove(PrefsKeys.billingNoticeSeen(businessId, dateStr));
+            ref.invalidate(shouldShowBillingAgendaNoticeProvider);
+            ref.invalidate(shouldShowBillingAgendaWarningIconProvider);
+          },
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          borderRadius: isDesktopOrTablet
+              ? kAgendaPillRadius
+              : BorderRadius.circular(8),
+          borderColor: isDesktopOrTablet
+              ? scheme.error.withOpacity(0.5)
+              : scheme.error,
+          foregroundColor: scheme.error,
+          child: iconOnly
+              ? const Icon(Icons.warning_amber_rounded, size: 22)
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.warning_amber_rounded, size: 22),
+                    const SizedBox(width: 8),
+                    Text(context.l10n.billingAgendaNoticeTitle),
                   ],
                 ),
         ),

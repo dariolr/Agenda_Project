@@ -2004,5 +2004,9 @@
   "locationShowPriceToCustomerLabel": "Show price to customer",
   "locationShowPriceToCustomerHint": "If enabled, the price is shown during online booking and in the booking list",
   "locationShowDurationToCustomerLabel": "Show duration to customer",
-  "locationShowDurationToCustomerHint": "If enabled, the duration is shown during online booking and in the booking list"
+  "locationShowDurationToCustomerHint": "If enabled, the duration is shown during online booking and in the booking list",
+  "billingAgendaNoticeTitle": "Subscription required",
+  "billingAgendaNoticeMessage": "Activate the business subscription to keep using the management app without interruptions.",
+  "billingAgendaNoticeAction": "Activate subscription",
+  "billingAgendaNoticeDismissTooltip": "Hide until tomorrow"
 }

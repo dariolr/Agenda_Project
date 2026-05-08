@@ -32,6 +32,7 @@ import '../features/agenda/providers/date_range_provider.dart';
 import '../features/agenda/providers/layout_config_provider.dart';
 import '../features/agenda/providers/location_providers.dart';
 import '../features/agenda/providers/tenant_time_provider.dart';
+
 import '../features/auth/providers/auth_provider.dart';
 import '../features/business/presentation/dialogs/invite_operator_dialog.dart';
 import '../features/business/presentation/dialogs/location_closure_dialog.dart';
@@ -118,6 +119,7 @@ class _ScaffoldWithNavigationState
     extends ConsumerState<ScaffoldWithNavigation> {
   int? _lastShellIndex;
   int _lastMoreBranchIndex = 6;
+  bool _altroHadBillingFromAgenda = false;
 
   @override
   Widget build(BuildContext context) {
@@ -186,8 +188,15 @@ class _ScaffoldWithNavigationState
             isMoreLocations ||
             isMorePaymentMethods ||
             isMoreWhatsappBusiness);
-    final backTarget = isReport && fromAgendaEntry ? '/agenda' : '/altro';
-    final showCloseBackButton = fromAltroEntry || (isReport && fromAgendaEntry);
+    final backTarget =
+        (isReport || isMoreBilling) && fromAgendaEntry ? '/agenda' : '/altro';
+    final showCloseBackButton =
+        fromAltroEntry || ((isReport || isMoreBilling) && fromAgendaEntry);
+    if (isMoreBilling && fromAgendaEntry) {
+      _altroHadBillingFromAgenda = true;
+    } else if (isMore) {
+      _altroHadBillingFromAgenda = false;
+    }
     final agendaDate = ref.watch(agendaDateProvider);
     final today = ref.watch(tenantTodayProvider);
     final isToday = DateUtils.isSameDay(agendaDate, today);
@@ -775,6 +784,9 @@ class _ScaffoldWithNavigationState
           currentPath.startsWith('/altro/') || fromAltroEntry;
       if (isAltroSubFeatureOpen) {
         _goBranch(6, ref, forceInitialLocation: true);
+      } else if (_altroHadBillingFromAgenda) {
+        _altroHadBillingFromAgenda = false;
+        _goBranch(6, ref, forceInitialLocation: true);
       } else {
         _goBranch(
           _resolveMoreBranchTarget(includeClients: includeClients),
@@ -834,6 +846,9 @@ class _ScaffoldWithNavigationState
       final isAltroSubFeatureOpen =
           currentPath.startsWith('/altro/') || fromAltroEntry;
       if (isAltroSubFeatureOpen) {
+        _goBranch(6, ref, forceInitialLocation: true);
+      } else if (_altroHadBillingFromAgenda) {
+        _altroHadBillingFromAgenda = false;
         _goBranch(6, ref, forceInitialLocation: true);
       } else {
         _goBranch(
@@ -1147,6 +1162,8 @@ class _AgendaFilterActions extends ConsumerWidget {
               ),
             ),
           ),
+          const SizedBox(width: _spacing),
+          AgendaBillingWarningButton(height: _actionButtonHeight),
         ],
       ),
     );

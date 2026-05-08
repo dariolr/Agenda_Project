@@ -2004,5 +2004,9 @@
   "locationShowPriceToCustomerLabel": "Mostra prezzo al cliente",
   "locationShowPriceToCustomerHint": "Se attivo, il prezzo viene mostrato durante la prenotazione online e nell'elenco delle prenotazioni",
   "locationShowDurationToCustomerLabel": "Mostra durata al cliente",
-  "locationShowDurationToCustomerHint": "Se attivo, la durata viene mostrata durante la prenotazione online e nell'elenco delle prenotazioni"
+  "locationShowDurationToCustomerHint": "Se attivo, la durata viene mostrata durante la prenotazione online e nell'elenco delle prenotazioni",
+  "billingAgendaNoticeTitle": "Abbonamento richiesto",
+  "billingAgendaNoticeMessage": "Attiva l’abbonamento per continuare a usare il gestionale senza interruzioni.",
+  "billingAgendaNoticeAction": "Attiva abbonamento",
+  "billingAgendaNoticeDismissTooltip": "Nascondi fino a domani"
 }

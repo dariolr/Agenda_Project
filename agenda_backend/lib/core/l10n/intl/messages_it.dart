@@ -519,6 +519,18 @@ class MessageLookup extends MessageLookupByLibrary {
     "billingAdminEnabledLabel": MessageLookupByLibrary.simpleMessage(
       "Soggetto a pagamento",
     ),
+    "billingAgendaNoticeAction": MessageLookupByLibrary.simpleMessage(
+      "Attiva abbonamento",
+    ),
+    "billingAgendaNoticeDismissTooltip": MessageLookupByLibrary.simpleMessage(
+      "Nascondi fino a domani",
+    ),
+    "billingAgendaNoticeMessage": MessageLookupByLibrary.simpleMessage(
+      "Attiva l’abbonamento per continuare a usare il gestionale senza interruzioni.",
+    ),
+    "billingAgendaNoticeTitle": MessageLookupByLibrary.simpleMessage(
+      "Abbonamento richiesto",
+    ),
     "billingAmountRequired": MessageLookupByLibrary.simpleMessage(
       "Inserisci un importo mensile valido.",
     ),

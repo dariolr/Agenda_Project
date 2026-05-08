@@ -500,6 +500,18 @@ class MessageLookup extends MessageLookupByLibrary {
     "billingAdminEnabledLabel": MessageLookupByLibrary.simpleMessage(
       "Subject to billing",
     ),
+    "billingAgendaNoticeAction": MessageLookupByLibrary.simpleMessage(
+      "Activate subscription",
+    ),
+    "billingAgendaNoticeDismissTooltip": MessageLookupByLibrary.simpleMessage(
+      "Hide until tomorrow",
+    ),
+    "billingAgendaNoticeMessage": MessageLookupByLibrary.simpleMessage(
+      "Activate the business subscription to keep using the management app without interruptions.",
+    ),
+    "billingAgendaNoticeTitle": MessageLookupByLibrary.simpleMessage(
+      "Subscription required",
+    ),
     "billingAmountRequired": MessageLookupByLibrary.simpleMessage(
       "Enter a valid monthly amount.",
     ),

@@ -13088,6 +13088,46 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Subscription required`
+  String get billingAgendaNoticeTitle {
+    return Intl.message(
+      'Subscription required',
+      name: 'billingAgendaNoticeTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Activate the business subscription to keep using the management app without interruptions.`
+  String get billingAgendaNoticeMessage {
+    return Intl.message(
+      'Activate the business subscription to keep using the management app without interruptions.',
+      name: 'billingAgendaNoticeMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Activate subscription`
+  String get billingAgendaNoticeAction {
+    return Intl.message(
+      'Activate subscription',
+      name: 'billingAgendaNoticeAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Hide until tomorrow`
+  String get billingAgendaNoticeDismissTooltip {
+    return Intl.message(
+      'Hide until tomorrow',
+      name: 'billingAgendaNoticeDismissTooltip',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

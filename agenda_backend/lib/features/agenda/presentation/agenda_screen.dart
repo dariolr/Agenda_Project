@@ -19,6 +19,7 @@ import 'package:agenda_backend/features/agenda/providers/calendar_view_mode_prov
 import 'package:agenda_backend/features/agenda/providers/is_resizing_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/layout_config_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/staff_filter_providers.dart';
+import 'package:agenda_backend/features/agenda/presentation/widgets/billing_required_agenda_banner.dart';
 import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/weekly_appointments_provider.dart';
 import 'package:agenda_backend/features/agenda/utils/week_range.dart';
@@ -628,6 +629,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              const BillingRequiredAgendaBanner(),
               if (rescheduleSession != null && canUseBookingReschedule)
                 Container(
                   width: double.infinity,

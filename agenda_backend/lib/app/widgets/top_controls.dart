@@ -242,6 +242,11 @@ class TopControls extends ConsumerWidget {
                 alignment: AlignmentDirectional.centerStart,
                 child: AgendaDisplaySettingsButton(),
               ),
+              const SizedBox(width: kTopControlsSpacing),
+              const Align(
+                alignment: AlignmentDirectional.centerStart,
+                child: AgendaBillingWarningButton(),
+              ),
             ],
           ],
         );
@@ -407,6 +412,11 @@ class TopControls extends ConsumerWidget {
           const Align(
             alignment: AlignmentDirectional.centerStart,
             child: AgendaDisplaySettingsButton(),
+          ),
+          const SizedBox(width: kTopControlsSpacing),
+          const Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: AgendaBillingWarningButton(),
           ),
         ],
       ];

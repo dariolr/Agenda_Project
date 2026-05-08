@@ -118,6 +118,11 @@ class PrefsKeys {
   static String lastVisitedRouteUpdatedAtForUser(int userId) =>
       'last_visited_route_updated_at_user_$userId';
 
+  /// Chiave per il banner giornaliero billing agenda.
+  /// Formato: billing_notice_seen:{businessId}:{yyyy-MM-dd}
+  static String billingNoticeSeen(int businessId, String dateStr) =>
+      'billing_notice_seen:$businessId:$dateStr';
+
   /// Chiave legacy (senza business_id) per migrazione
   static const legacyStaffFilterMode = 'staff_filter_mode';
   static const legacySelectedStaffIds = 'selected_staff_ids';
