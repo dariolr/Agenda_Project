@@ -6,6 +6,7 @@ import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/core/l10n/date_time_formats.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/service_variant.dart';
+import 'package:agenda_backend/core/widgets/adaptive_dropdown.dart';
 import 'package:agenda_backend/core/widgets/feedback_dialog.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/hover_slot.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/widgets/unavailable_slot_pattern.dart';
@@ -2213,29 +2214,23 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     });
 
     final l10n = context.l10n;
-    final position = details.globalPosition;
-    final screenSize = MediaQuery.of(context).size;
 
-    final selected = await showMenu<String>(
+    final selected = await showAdaptiveMenuAtPosition<String>(
       context: context,
-      position: RelativeRect.fromLTRB(
-        position.dx,
-        position.dy,
-        screenSize.width - position.dx,
-        screenSize.height - position.dy,
-      ),
+      globalPosition: details.globalPosition,
+      title: l10n.agendaAddTitle,
       items: [
         if (hasService)
-          PopupMenuItem(
+          AdaptiveDropdownItem(
             value: 'appointment',
             child: Text(l10n.agendaAddAppointment),
           ),
         if (hasClassType)
-          PopupMenuItem(
+          AdaptiveDropdownItem(
             value: 'class_schedule',
             child: Text(l10n.classEventsNewScheduleButton),
           ),
-        PopupMenuItem(
+        AdaptiveDropdownItem(
           value: 'block',
           child: Text(l10n.agendaAddBlock),
         ),

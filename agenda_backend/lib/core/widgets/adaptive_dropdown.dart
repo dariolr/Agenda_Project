@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
@@ -543,4 +544,135 @@ class _DesktopPopupItemState<T> extends State<_DesktopPopupItem<T>> {
       ),
     );
   }
+}
+
+/// Shows a styled popup menu at an arbitrary [globalPosition] on the screen.
+/// Uses the same visual style as the [AdaptiveDropdown] desktop popup.
+/// Returns the selected item value, or `null` if dismissed.
+Future<T?> showAdaptiveMenuAtPosition<T>({
+  required BuildContext context,
+  required Offset globalPosition,
+  required List<AdaptiveDropdownItem<T>> items,
+  String? title,
+  double popupWidth = 200,
+  double maxHeight = 300,
+  double borderRadius = 12.0,
+}) {
+  final overlay = Overlay.of(context);
+  final overlayBox = overlay.context.findRenderObject()! as RenderBox;
+  final overlaySize = overlayBox.size;
+  final local = overlayBox.globalToLocal(globalPosition);
+
+  double left = local.dx;
+  double top = local.dy;
+  if (left + popupWidth > overlaySize.width) {
+    left = overlaySize.width - popupWidth - 8.0;
+  }
+
+  final completer = Completer<T?>();
+  OverlayEntry? entry;
+
+  void dismiss() {
+    entry?.remove();
+    entry = null;
+    if (!completer.isCompleted) completer.complete(null);
+  }
+
+  void select(T value) {
+    entry?.remove();
+    entry = null;
+    if (!completer.isCompleted) completer.complete(value);
+  }
+
+  entry = OverlayEntry(
+    builder: (_) {
+      final colorScheme = Theme.of(context).colorScheme;
+      return Stack(
+        children: [
+          Positioned.fill(
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: dismiss,
+              child: const ColoredBox(color: Colors.transparent),
+            ),
+          ),
+          Positioned(
+            left: left,
+            top: top,
+            child: _PositionedPopupAnimation(
+              child: Material(
+                elevation: 8,
+                color: colorScheme.surface,
+                borderRadius: BorderRadius.circular(borderRadius),
+                clipBehavior: Clip.antiAlias,
+                child: Container(
+                  width: popupWidth,
+                  constraints: BoxConstraints(maxHeight: maxHeight),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(borderRadius),
+                    border: Border.all(color: Colors.grey.withOpacity(0.35)),
+                  ),
+                  child: _DesktopDropdownContent<T>(
+                    items: items,
+                    title: title,
+                    borderRadius: borderRadius,
+                    onSelected: select,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
+
+  overlay.insert(entry!);
+  return completer.future;
+}
+
+class _PositionedPopupAnimation extends StatefulWidget {
+  const _PositionedPopupAnimation({required this.child});
+  final Widget child;
+
+  @override
+  State<_PositionedPopupAnimation> createState() =>
+      _PositionedPopupAnimationState();
+}
+
+class _PositionedPopupAnimationState extends State<_PositionedPopupAnimation>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _fade;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _scale = Tween<double>(begin: 0.95, end: 1.0).animate(
+      CurvedAnimation(parent: _ctrl, curve: Curves.easeOut),
+    );
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => FadeTransition(
+    opacity: _fade,
+    child: ScaleTransition(
+      scale: _scale,
+      alignment: Alignment.topLeft,
+      child: widget.child,
+    ),
+  );
 }
