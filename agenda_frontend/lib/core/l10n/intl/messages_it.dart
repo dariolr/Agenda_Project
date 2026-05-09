@@ -698,7 +698,35 @@ class MessageLookup extends MessageLookupByLibrary {
       "Non hai prenotazioni in programma",
     ),
     "notModifiable": MessageLookupByLibrary.simpleMessage("Non modificabile"),
+    "onlinePaymentRequiredBadge": MessageLookupByLibrary.simpleMessage(
+      "Pagamento online richiesto",
+    ),
     "pastBookings": MessageLookupByLibrary.simpleMessage("Passate"),
+    "paymentResultFailedMessage": MessageLookupByLibrary.simpleMessage(
+      "Il pagamento non è stato completato. Puoi riprovare se la prenotazione è ancora disponibile.",
+    ),
+    "paymentResultFailedTitle": MessageLookupByLibrary.simpleMessage(
+      "Pagamento non completato",
+    ),
+    "paymentResultMyBookings": MessageLookupByLibrary.simpleMessage(
+      "Le mie prenotazioni",
+    ),
+    "paymentResultPendingMessage": MessageLookupByLibrary.simpleMessage(
+      "Stiamo verificando il pagamento. La prenotazione sarà confermata appena riceviamo l\'esito.",
+    ),
+    "paymentResultPendingTitle": MessageLookupByLibrary.simpleMessage(
+      "Pagamento in verifica",
+    ),
+    "paymentResultRetry": MessageLookupByLibrary.simpleMessage(
+      "Riprova pagamento",
+    ),
+    "paymentResultSuccessMessage": MessageLookupByLibrary.simpleMessage(
+      "Il pagamento è stato completato e la prenotazione è confermata.",
+    ),
+    "paymentResultSuccessTitle": MessageLookupByLibrary.simpleMessage(
+      "Prenotazione confermata",
+    ),
+    "paymentResultTitle": MessageLookupByLibrary.simpleMessage("Pagamento"),
     "priceFormat": m28,
     "profileTitle": MessageLookupByLibrary.simpleMessage("Profilo"),
     "rescheduleBookingTitle": MessageLookupByLibrary.simpleMessage(
@@ -800,6 +828,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "summaryNotes": MessageLookupByLibrary.simpleMessage("Note (opzionale)"),
     "summaryNotesHint": MessageLookupByLibrary.simpleMessage(
       "Aggiungi eventuali note per l\'appuntamento...",
+    ),
+    "summaryOnlinePaymentNote": MessageLookupByLibrary.simpleMessage(
+      "Verrai reindirizzato a Stripe per completare il pagamento dopo la conferma.",
     ),
     "summaryOperator": MessageLookupByLibrary.simpleMessage("Operatore"),
     "summaryPrice": MessageLookupByLibrary.simpleMessage("Prezzo totale"),

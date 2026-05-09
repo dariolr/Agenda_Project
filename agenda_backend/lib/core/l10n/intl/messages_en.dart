@@ -1952,6 +1952,45 @@ class MessageLookup extends MessageLookupByLibrary {
     "onlineBookingVisibilityPublicOption": MessageLookupByLibrary.simpleMessage(
       "Visible on the public booking page",
     ),
+    "onlinePaymentsConnectPayPal": MessageLookupByLibrary.simpleMessage(
+      "Connect PayPal",
+    ),
+    "onlinePaymentsConnectStripe": MessageLookupByLibrary.simpleMessage(
+      "Connect Stripe",
+    ),
+    "onlinePaymentsDescription": MessageLookupByLibrary.simpleMessage(
+      "Connect gateways to collect online bookings",
+    ),
+    "onlinePaymentsDisable": MessageLookupByLibrary.simpleMessage("Disable"),
+    "onlinePaymentsEnabled": MessageLookupByLibrary.simpleMessage("Enabled"),
+    "onlinePaymentsNoApiKeys": MessageLookupByLibrary.simpleMessage(
+      "Do not enter API keys in the management app. Connection uses the provider\'s official onboarding.",
+    ),
+    "onlinePaymentsProviderCanBeEnabled": MessageLookupByLibrary.simpleMessage(
+      "Provider active. Enable it to use it for online bookings.",
+    ),
+    "onlinePaymentsProviderNeedsOnboarding":
+        MessageLookupByLibrary.simpleMessage(
+          "Complete provider configuration before enabling it.",
+        ),
+    "onlinePaymentsProviderReady": MessageLookupByLibrary.simpleMessage(
+      "Provider active and enabled for online payments.",
+    ),
+    "onlinePaymentsStatusActive": MessageLookupByLibrary.simpleMessage(
+      "Active",
+    ),
+    "onlinePaymentsStatusDisabled": MessageLookupByLibrary.simpleMessage(
+      "Disabled",
+    ),
+    "onlinePaymentsStatusIncomplete": MessageLookupByLibrary.simpleMessage(
+      "Incomplete configuration",
+    ),
+    "onlinePaymentsStatusRequiresVerification":
+        MessageLookupByLibrary.simpleMessage("Requires provider verification"),
+    "onlinePaymentsSync": MessageLookupByLibrary.simpleMessage("Sync"),
+    "onlinePaymentsTitle": MessageLookupByLibrary.simpleMessage(
+      "Online payments",
+    ),
     "operatorsAcceptedOn": m46,
     "operatorsDeleteInvite": MessageLookupByLibrary.simpleMessage(
       "Delete invite",

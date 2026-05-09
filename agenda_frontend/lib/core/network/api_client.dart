@@ -1,4 +1,3 @@
-
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 
@@ -726,6 +725,14 @@ class ApiClient {
     );
   }
 
+  Future<Map<String, dynamic>> getOnlineBookingPaymentStatus(int paymentId) {
+    return get(ApiConfig.onlineBookingPaymentStatus(paymentId));
+  }
+
+  Future<Map<String, dynamic>> retryOnlineBookingPayment(int paymentId) {
+    return post(ApiConfig.onlineBookingPaymentRetry(paymentId));
+  }
+
   /// POST /v1/customer/{business_id}/class-events/{id}/book
   Future<Map<String, dynamic>> bookClassEvent({
     required int businessId,
@@ -1060,4 +1067,3 @@ class ApiClient {
         .catchError((e) => throw _handleError(e as DioException));
   }
 }
-

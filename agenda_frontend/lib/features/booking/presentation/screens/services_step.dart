@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -100,7 +99,9 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
                 .where(bookingConstraint.allowsService)
                 .toList(),
           );
-    final visiblePackages = packages.where(bookingConstraint.allowsPackage).toList();
+    final visiblePackages = packages
+        .where(bookingConstraint.allowsPackage)
+        .toList();
     final visibleClassEvents = (classEventsAsync.value ?? const <ClassEvent>[])
         .where(bookingConstraint.allowsEvent)
         .toList();
@@ -182,13 +183,13 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
           buildServicesContent(),
           _buildClassEventsTab(
             context,
-        ref,
-        AsyncValue.data(visibleClassEvents),
-        bookingState.request.selectedClassEvent,
-        bookingConstraint: bookingConstraint,
-        hasSelectedServices: selectedServices.isNotEmpty,
-        bookedEventStatus: bookedEventStatus,
-      ),
+            ref,
+            AsyncValue.data(visibleClassEvents),
+            bookingState.request.selectedClassEvent,
+            bookingConstraint: bookingConstraint,
+            hasSelectedServices: selectedServices.isNotEmpty,
+            bookedEventStatus: bookedEventStatus,
+          ),
         ],
       );
     } else if (hasClassEvents) {
@@ -638,8 +639,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
 
     // Il footer fisso è alto ~88px (info selezione + bottone); aggiunge
     // viewPadding.bottom per la gesture bar Android.
-    final bottomInset =
-        MediaQuery.of(context).viewPadding.bottom + 88 + 24;
+    final bottomInset = MediaQuery.of(context).viewPadding.bottom + 88 + 24;
     return ListView(
       padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
       children: widgets,
@@ -785,8 +785,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
           );
         }
 
-        final bottomInset =
-            MediaQuery.of(context).viewPadding.bottom + 88 + 24;
+        final bottomInset = MediaQuery.of(context).viewPadding.bottom + 88 + 24;
         return ListView(
           padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
           children: items,
@@ -1130,6 +1129,10 @@ class _ClassEventTile extends ConsumerWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
+                      if (event.onlinePaymentRequired) ...[
+                        const SizedBox(height: 6),
+                        _OnlinePaymentRequiredBadge(theme: theme),
+                      ],
                       const SizedBox(height: 2),
                       Text(
                         timeLabel,
@@ -1697,6 +1700,10 @@ class _ServiceTile extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (service.onlinePaymentRequired) ...[
+                      const SizedBox(height: 6),
+                      _OnlinePaymentRequiredBadge(theme: theme),
+                    ],
                     if (showDurationToCustomer) ...[
                       const SizedBox(height: 4),
                       Text(
@@ -1826,6 +1833,10 @@ class _PackageTile extends StatelessWidget {
                           ),
                         ],
                       ),
+                      if (package.onlinePaymentRequired) ...[
+                        const SizedBox(height: 6),
+                        _OnlinePaymentRequiredBadge(theme: theme),
+                      ],
                       const SizedBox(height: 4),
                       Text(
                         context.localizedDurationLabel(
@@ -1848,6 +1859,32 @@ class _PackageTile extends StatelessWidget {
                   ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _OnlinePaymentRequiredBadge extends StatelessWidget {
+  const _OnlinePaymentRequiredBadge({required this.theme});
+
+  final ThemeData theme;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Text(
+          context.l10n.onlinePaymentRequiredBadge,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSecondaryContainer,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),

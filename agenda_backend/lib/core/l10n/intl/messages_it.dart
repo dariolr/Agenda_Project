@@ -2018,6 +2018,45 @@ class MessageLookup extends MessageLookupByLibrary {
     "onlineBookingVisibilityPublicOption": MessageLookupByLibrary.simpleMessage(
       "Visibile nella pagina pubblica",
     ),
+    "onlinePaymentsConnectPayPal": MessageLookupByLibrary.simpleMessage(
+      "Collega PayPal",
+    ),
+    "onlinePaymentsConnectStripe": MessageLookupByLibrary.simpleMessage(
+      "Collega Stripe",
+    ),
+    "onlinePaymentsDescription": MessageLookupByLibrary.simpleMessage(
+      "Collega gateway per incassare le prenotazioni online",
+    ),
+    "onlinePaymentsDisable": MessageLookupByLibrary.simpleMessage("Disabilita"),
+    "onlinePaymentsEnabled": MessageLookupByLibrary.simpleMessage("Abilitato"),
+    "onlinePaymentsNoApiKeys": MessageLookupByLibrary.simpleMessage(
+      "Non inserire API key nel gestionale. Il collegamento avviene tramite onboarding ufficiale del provider.",
+    ),
+    "onlinePaymentsProviderCanBeEnabled": MessageLookupByLibrary.simpleMessage(
+      "Provider attivo. Abilitalo per usarlo nelle prenotazioni online.",
+    ),
+    "onlinePaymentsProviderNeedsOnboarding":
+        MessageLookupByLibrary.simpleMessage(
+          "Completa la configurazione provider prima di abilitarlo.",
+        ),
+    "onlinePaymentsProviderReady": MessageLookupByLibrary.simpleMessage(
+      "Provider attivo e abilitato per i pagamenti online.",
+    ),
+    "onlinePaymentsStatusActive": MessageLookupByLibrary.simpleMessage(
+      "Attivo",
+    ),
+    "onlinePaymentsStatusDisabled": MessageLookupByLibrary.simpleMessage(
+      "Disabilitato",
+    ),
+    "onlinePaymentsStatusIncomplete": MessageLookupByLibrary.simpleMessage(
+      "Configurazione incompleta",
+    ),
+    "onlinePaymentsStatusRequiresVerification":
+        MessageLookupByLibrary.simpleMessage("Richiede verifica provider"),
+    "onlinePaymentsSync": MessageLookupByLibrary.simpleMessage("Sincronizza"),
+    "onlinePaymentsTitle": MessageLookupByLibrary.simpleMessage(
+      "Pagamenti online",
+    ),
     "operatorsAcceptedOn": m46,
     "operatorsDeleteInvite": MessageLookupByLibrary.simpleMessage(
       "Elimina invito",

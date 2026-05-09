@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -135,6 +134,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       context.go('/$slug/my-bookings');
       return;
     }
+    if (widget.redirectFrom == 'payment-result' && mounted) {
+      final query = Uri(queryParameters: widget.redirectQueryParameters).query;
+      context.go('/$slug/payment-result${query.isNotEmpty ? '?$query' : ''}');
+      return;
+    }
 
     // Altrimenti vai al booking
     if (mounted) {
@@ -243,6 +247,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       // Se l'utente voleva vedere my-bookings, portalo lì
       if (widget.redirectFrom == 'my-bookings' && mounted) {
         context.go('/$slug/my-bookings');
+        return;
+      }
+      if (widget.redirectFrom == 'payment-result' && mounted) {
+        final query = Uri(
+          queryParameters: widget.redirectQueryParameters,
+        ).query;
+        context.go('/$slug/payment-result${query.isNotEmpty ? '?$query' : ''}');
         return;
       }
 
@@ -663,4 +674,3 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     );
   }
 }
-

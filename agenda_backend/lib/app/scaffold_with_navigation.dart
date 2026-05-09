@@ -171,6 +171,7 @@ class _ScaffoldWithNavigationState
     final isMoreResources = currentPath == '/altro/risorse';
     final isMoreLocations = currentPath == '/altro/sedi';
     final isMorePaymentMethods = currentPath == '/altro/metodi-pagamento';
+    final isMoreOnlinePayments = currentPath == '/altro/pagamenti-online';
     final isMoreBilling = currentPath == '/altro/abbonamento';
     final isMoreWhatsappBusiness = currentPath == '/altro/whatsapp-business';
     final hasAltroBack =
@@ -187,9 +188,11 @@ class _ScaffoldWithNavigationState
             isMoreResources ||
             isMoreLocations ||
             isMorePaymentMethods ||
+            isMoreOnlinePayments ||
             isMoreWhatsappBusiness);
-    final backTarget =
-        (isReport || isMoreBilling) && fromAgendaEntry ? '/agenda' : '/altro';
+    final backTarget = (isReport || isMoreBilling) && fromAgendaEntry
+        ? '/agenda'
+        : '/altro';
     final showCloseBackButton =
         fromAltroEntry || ((isReport || isMoreBilling) && fromAgendaEntry);
     if (isMoreBilling && fromAgendaEntry) {
@@ -366,6 +369,8 @@ class _ScaffoldWithNavigationState
                       ? Text(context.l10n.teamLocationsLabel)
                       : isMorePaymentMethods
                       ? Text(context.l10n.paymentMethodsTitle)
+                      : isMoreOnlinePayments
+                      ? Text(context.l10n.onlinePaymentsTitle)
                       : isMoreBilling
                       ? Text(context.l10n.billingTitle)
                       : isMoreWhatsappBusiness
@@ -579,6 +584,8 @@ class _ScaffoldWithNavigationState
                     ? Text(context.l10n.teamLocationsLabel)
                     : isMorePaymentMethods
                     ? Text(context.l10n.paymentMethodsTitle)
+                    : isMoreOnlinePayments
+                    ? Text(context.l10n.onlinePaymentsTitle)
                     : isMoreBilling
                     ? Text(context.l10n.billingTitle)
                     : isMoreWhatsappBusiness

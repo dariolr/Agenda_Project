@@ -681,7 +681,33 @@ class MessageLookup extends MessageLookupByLibrary {
       "You have no upcoming bookings",
     ),
     "notModifiable": MessageLookupByLibrary.simpleMessage("Not modifiable"),
+    "onlinePaymentRequiredBadge": MessageLookupByLibrary.simpleMessage(
+      "Online payment required",
+    ),
     "pastBookings": MessageLookupByLibrary.simpleMessage("Past"),
+    "paymentResultFailedMessage": MessageLookupByLibrary.simpleMessage(
+      "Payment was not completed. You can retry if the booking is still available.",
+    ),
+    "paymentResultFailedTitle": MessageLookupByLibrary.simpleMessage(
+      "Payment not completed",
+    ),
+    "paymentResultMyBookings": MessageLookupByLibrary.simpleMessage(
+      "My bookings",
+    ),
+    "paymentResultPendingMessage": MessageLookupByLibrary.simpleMessage(
+      "We\'re checking the payment. Your booking will be confirmed as soon as we receive the result.",
+    ),
+    "paymentResultPendingTitle": MessageLookupByLibrary.simpleMessage(
+      "Checking payment",
+    ),
+    "paymentResultRetry": MessageLookupByLibrary.simpleMessage("Retry payment"),
+    "paymentResultSuccessMessage": MessageLookupByLibrary.simpleMessage(
+      "Payment is complete and your booking is confirmed.",
+    ),
+    "paymentResultSuccessTitle": MessageLookupByLibrary.simpleMessage(
+      "Booking confirmed",
+    ),
+    "paymentResultTitle": MessageLookupByLibrary.simpleMessage("Payment"),
     "priceFormat": m28,
     "profileTitle": MessageLookupByLibrary.simpleMessage("Profile"),
     "rescheduleBookingTitle": MessageLookupByLibrary.simpleMessage(
@@ -779,6 +805,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "summaryNotes": MessageLookupByLibrary.simpleMessage("Notes (optional)"),
     "summaryNotesHint": MessageLookupByLibrary.simpleMessage(
       "Add any notes for the appointment...",
+    ),
+    "summaryOnlinePaymentNote": MessageLookupByLibrary.simpleMessage(
+      "You will be redirected to Stripe to complete the payment after confirming.",
     ),
     "summaryOperator": MessageLookupByLibrary.simpleMessage("Staff member"),
     "summaryPrice": MessageLookupByLibrary.simpleMessage("Total price"),

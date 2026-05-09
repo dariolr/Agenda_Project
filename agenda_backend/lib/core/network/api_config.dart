@@ -96,6 +96,22 @@ class ApiConfig {
   static String businessPaymentMethod(int businessId, int methodId) =>
       '/v1/businesses/$businessId/payment-methods/$methodId';
 
+  /// Account gateway pagamenti online business-scoped.
+  static String onlinePaymentAccounts(int businessId) =>
+      '/v1/businesses/$businessId/online-payment-accounts';
+
+  static String onlinePaymentAccount(int businessId, String providerCode) =>
+      '/v1/businesses/$businessId/online-payment-accounts/$providerCode';
+
+  static String onlinePaymentAccountOnboardingLink(
+    int businessId,
+    String providerCode,
+  ) =>
+      '/v1/businesses/$businessId/online-payment-accounts/$providerCode/onboarding-link';
+
+  static String onlinePaymentAccountSync(int businessId, String providerCode) =>
+      '/v1/businesses/$businessId/online-payment-accounts/$providerCode/sync';
+
   /// Lista bookings filtrata per business (gestionale)
   static String bookingsList(int businessId) =>
       '/v1/businesses/$businessId/bookings/list';

@@ -2008,5 +2008,20 @@
   "billingAgendaNoticeTitle": "Abbonamento richiesto",
   "billingAgendaNoticeMessage": "Attiva l’abbonamento per continuare a usare il gestionale senza interruzioni.",
   "billingAgendaNoticeAction": "Attiva abbonamento",
-  "billingAgendaNoticeDismissTooltip": "Nascondi fino a domani"
+  "billingAgendaNoticeDismissTooltip": "Nascondi fino a domani",
+  "onlinePaymentsTitle": "Pagamenti online",
+  "onlinePaymentsDescription": "Collega gateway per incassare le prenotazioni online",
+  "onlinePaymentsConnectStripe": "Collega Stripe",
+  "onlinePaymentsConnectPayPal": "Collega PayPal",
+  "onlinePaymentsSync": "Sincronizza",
+  "onlinePaymentsDisable": "Disabilita",
+  "onlinePaymentsEnabled": "Abilitato",
+  "onlinePaymentsStatusActive": "Attivo",
+  "onlinePaymentsStatusDisabled": "Disabilitato",
+  "onlinePaymentsStatusIncomplete": "Configurazione incompleta",
+  "onlinePaymentsStatusRequiresVerification": "Richiede verifica provider",
+  "onlinePaymentsNoApiKeys": "Non inserire API key nel gestionale. Il collegamento avviene tramite onboarding ufficiale del provider.",
+  "onlinePaymentsProviderReady": "Provider attivo e abilitato per i pagamenti online.",
+  "onlinePaymentsProviderCanBeEnabled": "Provider attivo. Abilitalo per usarlo nelle prenotazioni online.",
+  "onlinePaymentsProviderNeedsOnboarding": "Completa la configurazione provider prima di abilitarlo."
 }

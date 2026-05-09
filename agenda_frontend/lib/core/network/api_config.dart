@@ -73,13 +73,23 @@ class ApiConfig {
   static String customerCreateBooking(int businessId) =>
       '/v1/customer/$businessId/bookings';
 
+  /// GET /v1/online-booking-payments/{payment_id}/status
+  static String onlineBookingPaymentStatus(int paymentId) =>
+      '/v1/online-booking-payments/$paymentId/status';
+
+  /// POST /v1/online-booking-payments/{payment_id}/retry
+  static String onlineBookingPaymentRetry(int paymentId) =>
+      '/v1/online-booking-payments/$paymentId/retry';
+
   /// POST /v1/customer/{business_id}/class-events/{id}/book
   static String customerBookClassEvent(int businessId, int classEventId) =>
       '/v1/customer/$businessId/class-events/$classEventId/book';
 
   /// POST /v1/customer/{business_id}/class-events/{id}/cancel-booking
-  static String customerCancelClassEventBooking(int businessId, int classEventId) =>
-      '/v1/customer/$businessId/class-events/$classEventId/cancel-booking';
+  static String customerCancelClassEventBooking(
+    int businessId,
+    int classEventId,
+  ) => '/v1/customer/$businessId/class-events/$classEventId/cancel-booking';
 
   // ========== LEGACY AUTH ENDPOINTS (DEPRECATI per frontend) ==========
   // Questi sono per OPERATORI (gestionale), non per clienti

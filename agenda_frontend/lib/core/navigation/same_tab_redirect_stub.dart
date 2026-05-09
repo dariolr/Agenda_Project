@@ -1,0 +1,1 @@
+void redirectSameTabImpl(String url) {}

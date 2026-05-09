@@ -5,14 +5,21 @@ declare(strict_types=1);
 namespace Agenda\Http\Controllers;
 
 use Agenda\Domain\Helpers\ColorHex;
+use Agenda\Domain\OnlinePayments\OnlinePaymentCheckoutRequest;
+use Agenda\Domain\OnlinePayments\OnlinePaymentProviderCode;
+use Agenda\Domain\OnlinePayments\OnlinePaymentProviderInterface;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
+use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Environment\EnvironmentPolicy;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\BookingDirectLinkRepository;
 use Agenda\Infrastructure\Repositories\ClassEventRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
+use Agenda\Infrastructure\Repositories\OnlinePayments\BusinessOnlinePaymentAccountRepository;
+use Agenda\Infrastructure\Repositories\OnlinePayments\OnlineBookingPaymentRepository;
 use Agenda\Infrastructure\Authorization\LocationAuthorizationService;
 use Agenda\UseCases\Notifications\QueueClassBookingNotification;
 use DomainException;
@@ -28,6 +35,11 @@ final class ClassEventsController
         private readonly ?QueueClassBookingNotification $queueClassBookingNotification = null,
         private readonly ?BookingDirectLinkRepository $directLinkRepo = null,
         private readonly ?LocationAuthorizationService $locationAuth = null,
+        private readonly ?Connection $db = null,
+        private readonly ?BusinessOnlinePaymentAccountRepository $onlinePaymentAccounts = null,
+        private readonly ?OnlineBookingPaymentRepository $onlineBookingPayments = null,
+        /** @var array<string, OnlinePaymentProviderInterface> */
+        private readonly array $onlinePaymentProviders = [],
     ) {}
 
     public function indexTypes(Request $request): Response
@@ -1094,6 +1106,33 @@ final class ClassEventsController
             }
         }
 
+        $requiresPayment = (int) ($event['online_payment_required'] ?? 0) === 1
+            && $this->db !== null
+            && $this->onlinePaymentAccounts !== null
+            && $this->onlineBookingPayments !== null;
+
+        if ($requiresPayment) {
+            $stripeAccount = $this->onlinePaymentAccounts->findByBusinessAndProvider(
+                $routeBusinessId,
+                OnlinePaymentProviderCode::STRIPE,
+                $this->onlinePaymentMode()
+            );
+            if (
+                $stripeAccount === null
+                || !$stripeAccount->isEnabled
+                || $stripeAccount->onboardingStatus !== 'active'
+                || !$stripeAccount->chargesEnabled
+                || !$stripeAccount->detailsSubmitted
+            ) {
+                return Response::error(
+                    'Stripe online payments are not ready for this business',
+                    'online_payment_provider_not_configured',
+                    409,
+                    $request->traceId
+                );
+            }
+        }
+
         try {
             $booking = $this->classEventRepo->book($routeBusinessId, $classEventId, (int) $clientId);
         } catch (\RuntimeException $e) {
@@ -1107,10 +1146,26 @@ final class ClassEventsController
             return Response::serverError('Unable to create class booking', $request->traceId);
         }
 
-        // Notifica: confirmed o waitlisted a seconda dello status
+        $bookingStatus = strtoupper((string) ($booking['status'] ?? ''));
+
+        // Pagamento online richiesto e booking confermato (non in waitlist).
+        if ($requiresPayment && $bookingStatus === 'CONFIRMED') {
+            $checkoutResponse = $this->createClassBookingCheckout(
+                $request,
+                (int) $booking['id'],
+                $routeBusinessId,
+                $event
+            );
+            if ($checkoutResponse instanceof Response) {
+                return $checkoutResponse;
+            }
+
+            return Response::created($this->formatClassBooking($booking) + $checkoutResponse);
+        }
+
+        // Notifica: confirmed o waitlisted a seconda dello status (solo se non richiede pagamento)
         if ($this->queueClassBookingNotification !== null && !empty($booking['id'])) {
-            $status = strtolower((string) ($booking['status'] ?? ''));
-            $channel = $status === 'waitlisted' ? 'class_booking_waitlisted' : 'class_booking_confirmed';
+            $channel = $bookingStatus === 'WAITLISTED' ? 'class_booking_waitlisted' : 'class_booking_confirmed';
             try {
                 $this->queueClassBookingNotification->execute(
                     (int) $booking['id'],
@@ -1607,6 +1662,7 @@ final class ClassEventsController
             'status' => $row['status'] ?? 'SCHEDULED',
             'visibility' => $row['visibility'] ?? 'PUBLIC',
             'price_cents' => isset($row['price_cents']) ? (int) $row['price_cents'] : null,
+            'online_payment_required' => (bool) ($row['online_payment_required'] ?? false),
             'currency' => $row['currency'] ?? null,
             'spots_left' => $spotsLeft,
             'is_full' => $spotsLeft <= 0,
@@ -1924,5 +1980,131 @@ final class ClassEventsController
         }
 
         return ['location_ids' => $locationIds];
+    }
+
+    /**
+     * @param array<string,mixed> $event
+     * @return array<string,mixed>|Response
+     */
+    private function createClassBookingCheckout(
+        Request $request,
+        int $classBookingId,
+        int $businessId,
+        array $event
+    ): array|Response {
+        if ($this->db === null || $this->onlinePaymentAccounts === null || $this->onlineBookingPayments === null) {
+            $this->cancelPendingClassBookingById($classBookingId);
+            return Response::error('Online payment provider is not configured', 'online_payment_provider_not_configured', 409, $request->traceId);
+        }
+
+        if (!EnvironmentPolicy::current()->canUseRealPayments()) {
+            $this->cancelPendingClassBookingById($classBookingId);
+            return Response::error('Real payments are disabled in this environment', 'demo_blocked', 403, $request->traceId);
+        }
+
+        // Marca il class booking come PENDING_PAYMENT (slot già riservato da book()).
+        $this->db->getPdo()->prepare(
+            "UPDATE class_bookings SET status = 'PENDING_PAYMENT', updated_at = NOW() WHERE id = ? AND status = 'CONFIRMED'"
+        )->execute([$classBookingId]);
+
+        $account = $this->onlinePaymentAccounts->findByBusinessAndProvider(
+            $businessId,
+            OnlinePaymentProviderCode::STRIPE,
+            $this->onlinePaymentMode()
+        );
+        $provider = $this->onlinePaymentProviders[OnlinePaymentProviderCode::STRIPE] ?? null;
+        if ($account === null || $account->providerAccountId === null || !$provider instanceof OnlinePaymentProviderInterface) {
+            $this->revertClassBookingFromPending($classBookingId);
+            return Response::error('Stripe online payments are not ready for this business', 'online_payment_provider_not_configured', 409, $request->traceId);
+        }
+
+        $amountCents = (int) ($event['price_cents'] ?? 0);
+        $currency = strtoupper((string) ($event['currency'] ?? 'EUR'));
+        $locationId = (int) ($event['location_id'] ?? 0);
+
+        $slugStmt = $this->db->getPdo()->prepare('SELECT slug FROM businesses WHERE id = ? LIMIT 1');
+        $slugStmt->execute([$businessId]);
+        $businessSlug = (string) ($slugStmt->fetchColumn() ?: '');
+
+        $payment = $this->onlineBookingPayments->createPending([
+            'business_id' => $businessId,
+            'location_id' => $locationId,
+            'class_booking_id' => $classBookingId,
+            'provider_code' => OnlinePaymentProviderCode::STRIPE,
+            'provider_account_id' => $account->providerAccountId,
+            'amount_cents' => $amountCents,
+            'currency' => $currency,
+            'expires_at' => gmdate('Y-m-d H:i:s', time() + 30 * 60),
+        ]);
+
+        try {
+            $checkout = $provider->createCheckout(new OnlinePaymentCheckoutRequest(
+                businessId: $businessId,
+                locationId: $locationId,
+                bookingId: null,
+                classBookingId: $classBookingId,
+                onlineBookingPaymentId: $payment->id,
+                amountCents: $payment->amountCents,
+                currency: $payment->currency,
+                mode: $this->onlinePaymentMode(),
+                providerAccountId: $account->providerAccountId,
+                returnUrl: '',
+                cancelUrl: '',
+                idempotencyKey: null,
+                businessSlug: $businessSlug,
+            ));
+            $this->onlineBookingPayments->attachCheckout($payment->id, $checkout);
+        } catch (\Throwable) {
+            $this->onlineBookingPayments->markFailed($payment->id);
+            $this->revertClassBookingFromPending($classBookingId);
+            return Response::error('Unable to create Stripe checkout session', 'online_payment_checkout_failed', 502, $request->traceId);
+        }
+
+        return [
+            'requires_payment' => true,
+            'payment_required' => true,
+            'payment_provider' => OnlinePaymentProviderCode::STRIPE,
+            'payment_id' => $payment->id,
+            'checkout_url' => $checkout->checkoutUrl,
+            'amount_cents' => $payment->amountCents,
+            'currency' => $payment->currency,
+        ];
+    }
+
+    private function cancelPendingClassBookingById(int $classBookingId): void
+    {
+        if ($this->db === null) {
+            return;
+        }
+        $row = $this->db->getPdo()->query("SELECT class_event_id, business_id FROM class_bookings WHERE id = {$classBookingId} LIMIT 1")->fetch(\PDO::FETCH_ASSOC);
+        if (!$row) {
+            return;
+        }
+        $stmt = $this->db->getPdo()->prepare("UPDATE class_bookings SET status = 'CANCELLED_BY_CUSTOMER', cancelled_at = NOW(), updated_at = NOW() WHERE id = ? AND status IN ('CONFIRMED','PENDING_PAYMENT')");
+        $stmt->execute([$classBookingId]);
+        if ($stmt->rowCount() > 0) {
+            $this->db->getPdo()->prepare("UPDATE class_events SET confirmed_count = GREATEST(0, confirmed_count - 1), updated_at = NOW() WHERE id = ? AND business_id = ?")->execute([$row['class_event_id'], $row['business_id']]);
+        }
+    }
+
+    private function revertClassBookingFromPending(int $classBookingId): void
+    {
+        if ($this->db === null) {
+            return;
+        }
+        $row = $this->db->getPdo()->query("SELECT class_event_id, business_id FROM class_bookings WHERE id = {$classBookingId} LIMIT 1")->fetch(\PDO::FETCH_ASSOC);
+        if (!$row) {
+            return;
+        }
+        $stmt = $this->db->getPdo()->prepare("UPDATE class_bookings SET status = 'CANCELLED_BY_CUSTOMER', cancelled_at = NOW(), updated_at = NOW() WHERE id = ? AND status = 'PENDING_PAYMENT'");
+        $stmt->execute([$classBookingId]);
+        if ($stmt->rowCount() > 0) {
+            $this->db->getPdo()->prepare("UPDATE class_events SET confirmed_count = GREATEST(0, confirmed_count - 1), updated_at = NOW() WHERE id = ? AND business_id = ?")->execute([$row['class_event_id'], $row['business_id']]);
+        }
+    }
+
+    private function onlinePaymentMode(): string
+    {
+        return (($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: 'production') === 'production') ? 'live' : 'test';
     }
 }

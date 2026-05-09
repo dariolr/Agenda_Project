@@ -36,6 +36,7 @@ use Agenda\Http\Controllers\WhatsappController;
 use Agenda\Http\Controllers\Billing\AdminBusinessBillingController;
 use Agenda\Http\Controllers\Billing\BusinessBillingController;
 use Agenda\Http\Controllers\Billing\StripeWebhookController;
+use Agenda\Http\Controllers\OnlinePayments\OnlinePaymentAccountsController;
 use Agenda\Domain\Billing\BillingProviderCode;
 use Agenda\Domain\Billing\BillingProviderFactory;
 use Agenda\Http\Middleware\AuthMiddleware;
@@ -77,8 +78,14 @@ use Agenda\Infrastructure\Repositories\WhatsappRepository;
 use Agenda\Infrastructure\Repositories\Billing\BillingProviderEventRepository;
 use Agenda\Infrastructure\Repositories\Billing\BusinessBillingConfigRepository;
 use Agenda\Infrastructure\Repositories\Billing\BusinessBillingSubscriptionRepository;
+use Agenda\Infrastructure\Repositories\OnlinePayments\BusinessOnlinePaymentAccountRepository;
+use Agenda\Infrastructure\Repositories\OnlinePayments\OnlineBookingPaymentRepository;
+use Agenda\Infrastructure\Repositories\OnlinePayments\OnlinePaymentProviderEventRepository;
 use Agenda\Infrastructure\Billing\Stripe\StripeBillingProvider;
 use Agenda\Infrastructure\Billing\Stripe\StripeClientFactory;
+use Agenda\Infrastructure\OnlinePayments\PayPal\PayPalMultipartyOnlinePaymentProvider;
+use Agenda\Infrastructure\OnlinePayments\Stripe\StripeConnectClientFactory;
+use Agenda\Infrastructure\OnlinePayments\Stripe\StripeConnectOnlinePaymentProvider;
 use Agenda\Infrastructure\Security\JwtService;
 use Agenda\Infrastructure\Security\PasswordHasher;
 use Agenda\Infrastructure\Security\TokenCipher;
@@ -183,6 +190,7 @@ final class Kernel
         $this->router->get('/v1/whatsapp/webhook', WhatsappController::class, 'webhookPublicVerify');
         $this->router->post('/v1/whatsapp/webhook', WhatsappController::class, 'webhookPublicIngest');
         $this->router->post('/v1/stripe/webhook', StripeWebhookController::class, 'handle');
+        $this->router->post('/v1/online-payments/stripe/webhook', OnlinePaymentAccountsController::class, 'stripeWebhook');
         
         // Calendar ICS download (public, token-protected)
 
@@ -195,6 +203,13 @@ final class Kernel
         $this->router->post('/v1/billing/portal-session', BusinessBillingController::class, 'portalSession', ['auth']);
         $this->router->get('/v1/businesses/{id}', BusinessController::class, 'show', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/locations', LocationsController::class, 'index', ['auth']);
+        $this->router->get('/v1/businesses/{business_id}/online-payment-accounts', OnlinePaymentAccountsController::class, 'index', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/online-payment-accounts/{provider_code}/onboarding-link', OnlinePaymentAccountsController::class, 'onboardingLink', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/online-payment-accounts/{provider_code}/sync', OnlinePaymentAccountsController::class, 'sync', ['auth']);
+        $this->router->patch('/v1/businesses/{business_id}/online-payment-accounts/{provider_code}', OnlinePaymentAccountsController::class, 'update', ['auth']);
+        $this->router->delete('/v1/businesses/{business_id}/online-payment-accounts/{provider_code}', OnlinePaymentAccountsController::class, 'destroy', ['auth']);
+        $this->router->get('/v1/online-booking-payments/{payment_id}/status', OnlinePaymentAccountsController::class, 'status', ['customer_auth']);
+        $this->router->post('/v1/online-booking-payments/{payment_id}/retry', OnlinePaymentAccountsController::class, 'retry', ['customer_auth', 'idempotency']);
         $this->router->post('/v1/businesses/{business_id}/locations', LocationsController::class, 'store', ['auth']);
         $this->router->get('/v1/locations/{id}', LocationsController::class, 'show', ['auth']);
         $this->router->put('/v1/locations/{id}', LocationsController::class, 'update', ['auth']);
@@ -287,6 +302,7 @@ final class Kernel
         $this->router->post('/v1/businesses/{business_id}/class-events', ClassEventsController::class, 'store', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/class-events/{id}', ClassEventsController::class, 'show', ['auth']);
         $this->router->put('/v1/businesses/{business_id}/class-events/{id}', ClassEventsController::class, 'update', ['auth']);
+        $this->router->patch('/v1/businesses/{business_id}/class-events/{id}/online-payment', OnlinePaymentAccountsController::class, 'updateClassEvent', ['auth']);
         $this->router->delete('/v1/businesses/{business_id}/class-events/{id}', ClassEventsController::class, 'destroy', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/class-events/{id}/cancel', ClassEventsController::class, 'cancel', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/class-events/{id}/participants', ClassEventsController::class, 'participants', ['auth']);
@@ -303,6 +319,7 @@ final class Kernel
         $this->router->get('/v1/locations/{location_id}/admin/service-packages/{id}/expand', ServicePackagesController::class, 'expandAdmin', ['auth', 'location_path', 'location_access']);
         $this->router->post('/v1/locations/{location_id}/service-packages', ServicePackagesController::class, 'store', ['auth', 'location_path', 'location_access']);
         $this->router->put('/v1/locations/{location_id}/service-packages/{id}', ServicePackagesController::class, 'update', ['auth', 'location_path', 'location_access']);
+        $this->router->patch('/v1/locations/{location_id}/service-packages/{id}/online-payment', OnlinePaymentAccountsController::class, 'updateServicePackage', ['auth', 'location_path', 'location_access']);
         $this->router->delete('/v1/locations/{location_id}/service-packages/{id}', ServicePackagesController::class, 'destroy', ['auth', 'location_path', 'location_access']);
         $this->router->post('/v1/service-packages/reorder', ServicePackagesController::class, 'reorder', ['auth']);
 
@@ -329,6 +346,7 @@ final class Kernel
         // Bookings (protected, business-scoped via path)
         $this->router->get('/v1/locations/{location_id}/bookings', BookingsController::class, 'index', ['auth', 'location_path', 'location_access']);
         $this->router->get('/v1/locations/{location_id}/bookings/{booking_id}', BookingsController::class, 'show', ['auth', 'location_path', 'location_access']);
+        $this->router->patch('/v1/locations/{location_id}/service-variants/{id}/online-payment', OnlinePaymentAccountsController::class, 'updateServiceVariant', ['auth', 'location_path', 'location_access']);
         $this->router->post('/v1/locations/{location_id}/bookings', BookingsController::class, 'store', ['auth', 'location_path', 'location_access', 'idempotency']);
         $this->router->put('/v1/locations/{location_id}/bookings/{booking_id}', BookingsController::class, 'update', ['auth', 'location_path', 'location_access']);
         $this->router->delete('/v1/locations/{location_id}/bookings/{booking_id}', BookingsController::class, 'destroy', ['auth', 'location_path', 'location_access']);
@@ -483,6 +501,9 @@ final class Kernel
         $billingConfigRepo = new BusinessBillingConfigRepository($this->db);
         $billingSubscriptionRepo = new BusinessBillingSubscriptionRepository($this->db);
         $billingEventRepo = new BillingProviderEventRepository($this->db);
+        $businessOnlinePaymentAccountRepo = new BusinessOnlinePaymentAccountRepository($this->db);
+        $onlineBookingPaymentRepo = new OnlineBookingPaymentRepository($this->db);
+        $onlinePaymentEventRepo = new OnlinePaymentProviderEventRepository($this->db);
 
         // Services
         $jwtService = new JwtService();
@@ -495,6 +516,10 @@ final class Kernel
                 $billingConfigRepo
             ),
         ]);
+        $onlinePaymentProviders = [
+            'stripe' => new StripeConnectOnlinePaymentProvider(new StripeConnectClientFactory()),
+            'paypal' => new PayPalMultipartyOnlinePaymentProvider(),
+        ];
         $locationAuth = new LocationAuthorizationService($businessUserRepo, $locationRepo, $userRepo);
 
         // Operator Auth Use Cases
@@ -547,12 +572,13 @@ final class Kernel
             BookingDirectLinksController::class => new BookingDirectLinksController($bookingDirectLinkRepo, $businessRepo, $businessUserRepo, $locationRepo, $userRepo),
             StaffController::class => new StaffController($staffRepo, $businessUserRepo, $locationRepo, $userRepo, $bookingRepo, $classEventRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
-            BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo, $createRecurringBooking, $previewRecurringBooking, $recurrenceRuleRepo, $modifyRecurringSeries, $notificationRepo, $locationAuth),
+            BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo, $createRecurringBooking, $previewRecurringBooking, $recurrenceRuleRepo, $modifyRecurringSeries, $notificationRepo, $locationAuth, $this->db, $businessOnlinePaymentAccountRepo, $onlineBookingPaymentRepo, $onlinePaymentProviders),
             BookingPaymentsController::class => new BookingPaymentsController($this->db, $bookingRepo, $bookingPaymentRepo, $paymentMethodRepo, $businessUserRepo, $userRepo, $locationAuth),
             PaymentMethodsController::class => new PaymentMethodsController($paymentMethodRepo, $businessUserRepo, $userRepo),
             AdminBusinessBillingController::class => new AdminBusinessBillingController($businessRepo, $userRepo, $billingConfigRepo, $billingSubscriptionRepo),
             BusinessBillingController::class => new BusinessBillingController($businessRepo, $businessUserRepo, $userRepo, $billingConfigRepo, $billingSubscriptionRepo, $billingProviderFactory),
             StripeWebhookController::class => new StripeWebhookController($billingProviderFactory, $billingSubscriptionRepo, $billingEventRepo),
+            OnlinePaymentAccountsController::class => new OnlinePaymentAccountsController($this->db, $businessOnlinePaymentAccountRepo, $onlineBookingPaymentRepo, $onlinePaymentEventRepo, $businessUserRepo, $userRepo, $onlinePaymentProviders, $bookingRepo, $locationRepo, $clientRepo, $notificationRepo, new QueueClassBookingNotification($this->db, $notificationRepo)),
             BookingNotificationsController::class => new BookingNotificationsController($notificationRepo, $businessUserRepo, $userRepo),
             ClientsController::class => new ClientsController($clientRepo, $businessUserRepo, $userRepo, $bookingRepo),
             AppointmentsController::class => new AppointmentsController($bookingRepo, $createBooking, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $bookingAuditRepo, $notificationRepo, $this->db),
@@ -580,6 +606,10 @@ final class Kernel
                 new QueueClassBookingNotification($this->db, $notificationRepo),
                 $bookingDirectLinkRepo,
                 $locationAuth,
+                $this->db,
+                $businessOnlinePaymentAccountRepo,
+                $onlineBookingPaymentRepo,
+                $onlinePaymentProviders,
             ),
             WhatsappController::class => new WhatsappController(
                 $whatsappRepo,

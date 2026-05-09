@@ -13,6 +13,13 @@ use Agenda\UseCases\Booking\GetMyBookings;
 use Agenda\UseCases\Booking\ModifyRecurringSeries;
 use Agenda\UseCases\Booking\ReplaceBooking;
 use Agenda\Domain\Exceptions\BookingException;
+use Agenda\Domain\OnlinePayments\OnlinePaymentCheckoutRequest;
+use Agenda\Domain\OnlinePayments\OnlinePaymentProviderCode;
+use Agenda\Domain\OnlinePayments\OnlinePaymentProviderInterface;
+use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Environment\EnvironmentPolicy;
+use Agenda\Infrastructure\Repositories\OnlinePayments\BusinessOnlinePaymentAccountRepository;
+use Agenda\Infrastructure\Repositories\OnlinePayments\OnlineBookingPaymentRepository;
 use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\BookingAuditRepository;
 use Agenda\Infrastructure\Repositories\RecurrenceRuleRepository;
@@ -47,6 +54,11 @@ final class BookingsController
         private readonly ?ModifyRecurringSeries $modifyRecurringSeries = null,
         private readonly ?NotificationRepository $notificationRepo = null,
         private readonly ?LocationAuthorizationService $locationAuth = null,
+        private readonly ?Connection $db = null,
+        private readonly ?BusinessOnlinePaymentAccountRepository $onlinePaymentAccounts = null,
+        private readonly ?OnlineBookingPaymentRepository $onlineBookingPayments = null,
+        /** @var array<string, OnlinePaymentProviderInterface> */
+        private readonly array $onlinePaymentProviders = [],
     ) {}
 
     /**
@@ -1517,6 +1529,23 @@ final class BookingsController
             );
         }
 
+        $paymentIntent = $this->resolveCustomerOnlinePaymentIntent(
+            $routeBusinessId,
+            $locationId,
+            $items,
+            isset($body['service_ids']) && is_array($body['service_ids']) ? array_map('intval', $body['service_ids']) : [],
+            isset($body['pricing_overrides']) && is_array($body['pricing_overrides']) ? $body['pricing_overrides'] : []
+        );
+        if (($paymentIntent['error_code'] ?? null) !== null) {
+            return Response::error(
+                (string) $paymentIntent['error_message'],
+                (string) $paymentIntent['error_code'],
+                (int) ($paymentIntent['http_status'] ?? 409),
+                $request->traceId
+            );
+        }
+        $requiresPayment = (bool) ($paymentIntent['required'] ?? false);
+
         try {
             // Customer bookings: no past dates, no conflict override
             if ($items !== null) {
@@ -1530,6 +1559,8 @@ final class BookingsController
                         'notes' => $body['notes'] ?? null,
                         'locale' => $requestLocale,
                         'booking_direct_link_slug' => $directLinkSlug,
+                        'status' => $requiresPayment ? 'pending_payment' : 'confirmed',
+                        'queue_notifications' => !$requiresPayment,
                     ],
                     $idempotencyKey
                 );
@@ -1549,9 +1580,28 @@ final class BookingsController
                         'notes' => $body['notes'] ?? null,
                         'locale' => $requestLocale,
                         'booking_direct_link_slug' => $directLinkSlug,
+                        'status' => $requiresPayment ? 'pending_payment' : 'confirmed',
+                        'queue_notifications' => !$requiresPayment,
                     ],
                     $idempotencyKey
                 );
+            }
+
+            if ($requiresPayment && isset($booking['id'])) {
+                $paymentResponse = $this->createOnlinePaymentCheckout(
+                    $request,
+                    (int) $booking['id'],
+                    $routeBusinessId,
+                    $locationId,
+                    (int) $paymentIntent['amount_cents'],
+                    (string) $paymentIntent['currency'],
+                    $idempotencyKey
+                );
+                if ($paymentResponse instanceof Response) {
+                    return $paymentResponse;
+                }
+
+                return Response::success($booking + $paymentResponse, 201);
             }
 
             // Notify only for customer-originated online bookings
@@ -1574,6 +1624,235 @@ final class BookingsController
                 ],
             ], $e->getHttpStatus());
         }
+    }
+
+    /**
+     * @param array<int,array<string,mixed>>|null $items
+     * @param int[] $legacyServiceIds
+     * @param array<int,array<string,mixed>> $pricingOverrides
+     * @return array{required:bool,amount_cents?:int,currency?:string,error_code?:string,error_message?:string,http_status?:int}
+     */
+    private function resolveCustomerOnlinePaymentIntent(
+        int $businessId,
+        int $locationId,
+        ?array $items,
+        array $legacyServiceIds,
+        array $pricingOverrides
+    ): array {
+        if ($this->db === null || $this->onlinePaymentAccounts === null) {
+            return ['required' => false];
+        }
+
+        $serviceIds = $items !== null
+            ? array_values(array_unique(array_map(static fn (array $item): int => (int) $item['service_id'], $items)))
+            : array_values(array_unique(array_map('intval', $legacyServiceIds)));
+        if ($serviceIds === []) {
+            return ['required' => false];
+        }
+
+        $packageIds = [];
+        foreach (($items ?? []) as $item) {
+            if (!empty($item['package_id'])) {
+                $packageIds[] = (int) $item['package_id'];
+            }
+        }
+        foreach ($pricingOverrides as $override) {
+            if (is_array($override) && !empty($override['package_id'])) {
+                $packageIds[] = (int) $override['package_id'];
+            }
+        }
+        $packageIds = array_values(array_unique(array_filter($packageIds)));
+
+        $pdo = $this->db->getPdo();
+        $currencyStmt = $pdo->prepare(
+            "SELECT UPPER(COALESCE(l.currency, b.currency, 'EUR')) AS currency
+             FROM locations l
+             JOIN businesses b ON b.id = l.business_id
+             WHERE l.id = ? AND b.id = ?
+             LIMIT 1"
+        );
+        $currencyStmt->execute([$locationId, $businessId]);
+        $currency = (string) ($currencyStmt->fetchColumn() ?: 'EUR');
+
+        $amountCents = 0;
+        $coveredServiceIds = [];
+        if ($packageIds !== []) {
+            $placeholders = implode(',', array_fill(0, count($packageIds), '?'));
+            $stmt = $pdo->prepare(
+                "SELECT sp.id, sp.override_price, sp.online_payment_required, COALESCE(SUM(sv.price), 0) AS services_total
+                 FROM service_packages sp
+                 LEFT JOIN service_package_items spi ON spi.package_id = sp.id
+                 LEFT JOIN service_variants sv ON sv.service_id = spi.service_id AND sv.location_id = sp.location_id
+                 WHERE sp.id IN ({$placeholders}) AND sp.business_id = ? AND sp.location_id = ? AND sp.is_active = 1
+                 GROUP BY sp.id"
+            );
+            $stmt->execute([...$packageIds, $businessId, $locationId]);
+            foreach ($stmt->fetchAll() as $package) {
+                if ((int) ($package['online_payment_required'] ?? 0) !== 1) {
+                    continue;
+                }
+                $rawPrice = $package['override_price'] ?? $package['services_total'] ?? 0;
+                $amountCents += (int) round(((float) $rawPrice) * 100);
+
+                $itemsStmt = $pdo->prepare('SELECT service_id FROM service_package_items WHERE package_id = ?');
+                $itemsStmt->execute([(int) $package['id']]);
+                foreach ($itemsStmt->fetchAll() as $packageItem) {
+                    $coveredServiceIds[] = (int) $packageItem['service_id'];
+                }
+            }
+        }
+
+        $coveredServiceIds = array_values(array_unique($coveredServiceIds));
+        $billableServiceIds = array_values(array_diff($serviceIds, $coveredServiceIds));
+        if ($billableServiceIds !== []) {
+            $placeholders = implode(',', array_fill(0, count($billableServiceIds), '?'));
+            $stmt = $pdo->prepare(
+                "SELECT s.id AS service_id, sv.price, sv.online_payment_required
+                 FROM services s
+                 JOIN service_variants sv ON sv.service_id = s.id AND sv.location_id = ?
+                 WHERE s.id IN ({$placeholders}) AND s.business_id = ?"
+            );
+            $stmt->execute([$locationId, ...$billableServiceIds, $businessId]);
+            foreach ($stmt->fetchAll() as $service) {
+                if ((int) ($service['online_payment_required'] ?? 0) === 1) {
+                    $amountCents += (int) round(((float) ($service['price'] ?? 0)) * 100);
+                }
+            }
+        }
+
+        if ($amountCents <= 0) {
+            return ['required' => false];
+        }
+
+        $stripeAccount = $this->onlinePaymentAccounts->findByBusinessAndProvider(
+            $businessId,
+            OnlinePaymentProviderCode::STRIPE,
+            $this->onlinePaymentMode()
+        );
+        if (
+            $stripeAccount === null
+            || !$stripeAccount->isEnabled
+            || $stripeAccount->onboardingStatus !== 'active'
+            || !$stripeAccount->chargesEnabled
+            || !$stripeAccount->detailsSubmitted
+        ) {
+            return [
+                'required' => true,
+                'error_code' => 'online_payment_provider_not_configured',
+                'error_message' => 'Stripe online payments are not ready for this business',
+                'http_status' => 409,
+            ];
+        }
+
+        return [
+            'required' => true,
+            'amount_cents' => $amountCents,
+            'currency' => $currency,
+        ];
+    }
+
+    /**
+     * @return array<string,mixed>|Response
+     */
+    private function createOnlinePaymentCheckout(
+        Request $request,
+        int $bookingId,
+        int $businessId,
+        int $locationId,
+        int $amountCents,
+        string $currency,
+        ?string $idempotencyKey
+    ): array|Response {
+        if ($this->db === null || $this->onlinePaymentAccounts === null || $this->onlineBookingPayments === null) {
+            return Response::error('Online payment provider is not configured', 'online_payment_provider_not_configured', 409, $request->traceId);
+        }
+        if (!EnvironmentPolicy::current()->canUseRealPayments()) {
+            $this->cancelPendingPaymentBooking($bookingId);
+            return Response::error('Real payments are disabled in this environment', 'demo_blocked', 403, $request->traceId);
+        }
+
+        $existingPayment = $this->onlineBookingPayments->findActivePendingForBooking($bookingId);
+        if ($existingPayment !== null && $existingPayment->checkoutUrl !== null) {
+            return [
+                'requires_payment' => true,
+                'payment_required' => true,
+                'payment_provider' => OnlinePaymentProviderCode::STRIPE,
+                'payment_id' => $existingPayment->id,
+                'checkout_url' => $existingPayment->checkoutUrl,
+                'amount_cents' => $existingPayment->amountCents,
+                'currency' => $existingPayment->currency,
+            ];
+        }
+
+        $account = $this->onlinePaymentAccounts->findByBusinessAndProvider($businessId, OnlinePaymentProviderCode::STRIPE, $this->onlinePaymentMode());
+        $provider = $this->onlinePaymentProviders[OnlinePaymentProviderCode::STRIPE] ?? null;
+        if ($account === null || $account->providerAccountId === null || !$provider instanceof OnlinePaymentProviderInterface) {
+            $this->cancelPendingPaymentBooking($bookingId);
+            return Response::error('Stripe online payments are not ready for this business', 'online_payment_provider_not_configured', 409, $request->traceId);
+        }
+
+        $slugStmt = $this->db->getPdo()->prepare('SELECT slug FROM businesses WHERE id = ? LIMIT 1');
+        $slugStmt->execute([$businessId]);
+        $businessSlug = (string) ($slugStmt->fetchColumn() ?: '');
+
+        $payment = $existingPayment ?? $this->onlineBookingPayments->createPending([
+            'business_id' => $businessId,
+            'location_id' => $locationId,
+            'booking_id' => $bookingId,
+            'provider_code' => OnlinePaymentProviderCode::STRIPE,
+            'provider_account_id' => $account->providerAccountId,
+            'amount_cents' => $amountCents,
+            'currency' => $currency,
+            'idempotency_key' => $idempotencyKey,
+            'expires_at' => gmdate('Y-m-d H:i:s', time() + 30 * 60),
+        ]);
+
+        try {
+            $checkout = $provider->createCheckout(new OnlinePaymentCheckoutRequest(
+                businessId: $businessId,
+                locationId: $locationId,
+                bookingId: $bookingId,
+                classBookingId: null,
+                onlineBookingPaymentId: $payment->id,
+                amountCents: $payment->amountCents,
+                currency: $payment->currency,
+                mode: $this->onlinePaymentMode(),
+                providerAccountId: $account->providerAccountId,
+                returnUrl: '',
+                cancelUrl: '',
+                idempotencyKey: $idempotencyKey,
+                businessSlug: $businessSlug,
+            ));
+            $this->onlineBookingPayments->attachCheckout($payment->id, $checkout);
+        } catch (\Throwable) {
+            $this->onlineBookingPayments->markFailed($payment->id);
+            $this->cancelPendingPaymentBooking($bookingId);
+            return Response::error('Unable to create Stripe checkout session', 'online_payment_checkout_failed', 502, $request->traceId);
+        }
+
+        return [
+            'requires_payment' => true,
+            'payment_required' => true,
+            'payment_provider' => OnlinePaymentProviderCode::STRIPE,
+            'payment_id' => $payment->id,
+            'checkout_url' => $checkout->checkoutUrl,
+            'amount_cents' => $payment->amountCents,
+            'currency' => $payment->currency,
+        ];
+    }
+
+    private function cancelPendingPaymentBooking(int $bookingId): void
+    {
+        if ($this->db === null) {
+            return;
+        }
+        $stmt = $this->db->getPdo()->prepare("UPDATE bookings SET status = 'cancelled', updated_at = NOW() WHERE id = ? AND status = 'pending_payment'");
+        $stmt->execute([$bookingId]);
+    }
+
+    private function onlinePaymentMode(): string
+    {
+        return (($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: 'production') === 'production') ? 'live' : 'test';
     }
 
     /**

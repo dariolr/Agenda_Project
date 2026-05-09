@@ -1,4 +1,3 @@
-
 import 'service.dart';
 
 bool _boolFromJson(Object? value, {required bool fallback}) {
@@ -45,14 +44,8 @@ class ServicePackageItem {
       processingTime: json['processing_time'] as int? ?? 0,
       blockedTime: json['blocked_time'] as int? ?? 0,
       price: (json['price'] as num?)?.toDouble(),
-      serviceIsActive: _boolFromJson(
-        json['service_is_active'],
-        fallback: true,
-      ),
-      variantIsActive: _boolFromJson(
-        json['variant_is_active'],
-        fallback: true,
-      ),
+      serviceIsActive: _boolFromJson(json['service_is_active'], fallback: true),
+      variantIsActive: _boolFromJson(json['variant_is_active'], fallback: true),
     );
   }
 }
@@ -72,6 +65,7 @@ class ServicePackage {
   final bool isBookableOnline;
   final String onlineVisibility;
   final bool isBroken;
+  final bool onlinePaymentRequired;
   final double effectivePrice;
   final int effectiveDurationMinutes;
   final List<ServicePackageItem> items;
@@ -91,6 +85,7 @@ class ServicePackage {
     this.isBookableOnline = true,
     this.onlineVisibility = 'public',
     this.isBroken = false,
+    this.onlinePaymentRequired = false,
     required this.effectivePrice,
     required this.effectiveDurationMinutes,
     required this.items,
@@ -152,6 +147,10 @@ class ServicePackage {
       ),
       onlineVisibility: json['online_visibility'] as String? ?? 'public',
       isBroken: _boolFromJson(json['is_broken'], fallback: false),
+      onlinePaymentRequired: _boolFromJson(
+        json['online_payment_required'],
+        fallback: false,
+      ),
       effectivePrice: (json['effective_price'] as num?)?.toDouble() ?? 0,
       effectiveDurationMinutes: json['effective_duration_minutes'] as int? ?? 0,
       items: itemsJson

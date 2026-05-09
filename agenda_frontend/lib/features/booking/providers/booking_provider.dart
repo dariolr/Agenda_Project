@@ -12,6 +12,7 @@ import '../../../core/models/staff.dart';
 import '../../../core/models/time_slot.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/network_providers.dart';
+import '../../../core/navigation/same_tab_redirect.dart';
 import '../../../core/services/pending_booking_storage.dart';
 import '../data/booking_repository.dart';
 import '../domain/booking_config.dart';
@@ -1212,6 +1213,17 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         bookingDirectLinkSlug: bookingDirectLinkSlug,
       );
 
+      final checkoutUrl = result['checkout_url']?.toString();
+      if ((result['requires_payment'] == true ||
+              result['payment_required'] == true) &&
+          checkoutUrl != null &&
+          checkoutUrl.isNotEmpty) {
+        await PendingBookingStorage.clear();
+        state = state.copyWith(isLoading: false);
+        redirectSameTab(checkoutUrl);
+        return true;
+      }
+
       // Prenotazione confermata - elimina lo stato salvato
       await PendingBookingStorage.clear();
 
@@ -1273,6 +1285,16 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         notes: state.request.notes,
         bookingDirectLinkSlug: ref.read(bookingDirectLinkSlugProvider),
       );
+
+      final checkoutUrl = result['checkout_url']?.toString();
+      if ((result['requires_payment'] == true ||
+              result['payment_required'] == true) &&
+          checkoutUrl != null &&
+          checkoutUrl.isNotEmpty) {
+        state = state.copyWith(isLoading: false);
+        redirectSameTab(checkoutUrl);
+        return true;
+      }
 
       final bookingId =
           result['id']?.toString() ??

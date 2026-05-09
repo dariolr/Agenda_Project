@@ -13,6 +13,7 @@ import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/booking/presentation/screens/booking_screen.dart';
 import '../features/booking/presentation/screens/my_bookings_screen.dart';
+import '../features/booking/presentation/screens/payment_result_screen.dart';
 import '../features/booking/providers/booking_direct_link_provider.dart';
 import '../features/booking/providers/booking_locale_provider.dart';
 import '../features/booking/providers/locations_provider.dart';
@@ -96,6 +97,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         const protectedRoutes = {
           'booking',
           'my-bookings',
+          'payment-result',
           'profile',
           'change-password',
         };
@@ -204,6 +206,12 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/:slug/my-bookings',
         name: 'business-my-bookings',
         builder: (context, state) => const MyBookingsScreen(),
+      ),
+
+      GoRoute(
+        path: '/:slug/payment-result',
+        name: 'business-payment-result',
+        builder: (context, state) => const PaymentResultScreen(),
       ),
 
       /// Cambio password (richiede auth)

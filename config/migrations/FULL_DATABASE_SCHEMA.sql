@@ -53,7 +53,7 @@ CREATE TABLE `bookings` (
   `user_id` int UNSIGNED DEFAULT NULL COMMENT 'User who booked online',
   `client_name` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Fallback if no client',
   `notes` text COLLATE utf8mb4_unicode_ci,
-  `status` enum('pending','confirmed','completed','cancelled','no_show','replaced') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'confirmed',
+  `status` enum('pending','pending_payment','confirmed','completed','cancelled','no_show','replaced') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'confirmed',
   `recurrence_rule_id` int UNSIGNED DEFAULT NULL COMMENT 'FK a booking_recurrence_rules se ricorrente',
   `recurrence_index` int UNSIGNED DEFAULT NULL COMMENT 'Indice occorrenza nella serie (0 = prima, 1 = seconda, ...)',
   `is_recurrence_parent` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'True se è la prenotazione madre della serie',
@@ -276,7 +276,7 @@ CREATE TABLE `class_bookings` (
   `business_id` int UNSIGNED NOT NULL,
   `class_event_id` int UNSIGNED NOT NULL,
   `customer_id` int UNSIGNED NOT NULL COMMENT 'FK clients.id',
-  `status` enum('CONFIRMED','WAITLISTED','CANCELLED_BY_CUSTOMER','CANCELLED_BY_STAFF','NO_SHOW','ATTENDED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` enum('CONFIRMED','WAITLISTED','CANCELLED_BY_CUSTOMER','CANCELLED_BY_STAFF','NO_SHOW','ATTENDED','PENDING_PAYMENT') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `waitlist_position` int UNSIGNED DEFAULT NULL,
   `booked_at` timestamp NOT NULL COMMENT 'UTC',
   `cancelled_at` timestamp NULL DEFAULT NULL,
@@ -315,6 +315,7 @@ CREATE TABLE `class_events` (
   `visibility` enum('PUBLIC','PRIVATE') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'PUBLIC',
   `price_cents` int UNSIGNED DEFAULT NULL,
   `currency` varchar(3) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `online_payment_required` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ;
@@ -802,6 +803,7 @@ CREATE TABLE `service_packages` (
   `is_bookable_online` tinyint(1) NOT NULL DEFAULT '1',
   `online_visibility` enum('public','direct_link','hidden') NOT NULL DEFAULT 'public',
   `is_broken` tinyint(1) DEFAULT '0',
+  `online_payment_required` tinyint(1) NOT NULL DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -838,6 +840,7 @@ CREATE TABLE `service_variants` (
   `online_visibility` enum('public','direct_link','hidden') NOT NULL DEFAULT 'public',
   `is_free` tinyint(1) NOT NULL DEFAULT '0',
   `is_price_starting_from` tinyint(1) NOT NULL DEFAULT '0' COMMENT 'Mostra "da €X"',
+  `online_payment_required` tinyint(1) NOT NULL DEFAULT '0',
   `parallel_capacity` int UNSIGNED NOT NULL DEFAULT '1' COMMENT 'Numero massimo di prenotazioni contemporanee consentite per questa variante servizio nella stessa location/staff/intervallo',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1062,6 +1065,107 @@ CREATE TABLE `webhook_endpoints` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Webhook endpoints registered by businesses';
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `business_online_payment_accounts`
+--
+
+CREATE TABLE `business_online_payment_accounts` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `business_id` int UNSIGNED NOT NULL,
+  `provider_code` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `mode` enum('test','live') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'test',
+  `provider_account_id` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider_merchant_id` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `onboarding_status` enum('not_configured','pending','active','restricted','disabled','error') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'not_configured',
+  `charges_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `payouts_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `details_submitted` tinyint(1) NOT NULL DEFAULT '0',
+  `capabilities_json` json DEFAULT NULL,
+  `requirements_json` json DEFAULT NULL,
+  `last_onboarding_url_created_at` timestamp NULL DEFAULT NULL,
+  `last_sync_at` timestamp NULL DEFAULT NULL,
+  `last_error_code` varchar(120) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `last_error_message` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_bopa_business_provider_mode` (`business_id`,`provider_code`,`mode`),
+  KEY `idx_bopa_business_enabled` (`business_id`,`is_enabled`),
+  CONSTRAINT `fk_bopa_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `online_booking_payments`
+--
+
+CREATE TABLE `online_booking_payments` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `business_id` int UNSIGNED NOT NULL,
+  `location_id` int UNSIGNED NOT NULL,
+  `booking_id` int UNSIGNED DEFAULT NULL,
+  `class_booking_id` int UNSIGNED DEFAULT NULL,
+  `provider_code` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `provider_account_id` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider_checkout_id` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider_payment_id` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider_order_id` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `status` enum('pending','requires_action','paid','failed','cancelled','expired','refunded') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `amount_cents` int UNSIGNED NOT NULL,
+  `currency` varchar(3) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'EUR',
+  `checkout_url` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `return_url` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `cancel_url` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `idempotency_key` varchar(64) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `expires_at` timestamp NULL DEFAULT NULL,
+  `paid_at` timestamp NULL DEFAULT NULL,
+  `failed_at` timestamp NULL DEFAULT NULL,
+  `cancelled_at` timestamp NULL DEFAULT NULL,
+  `refunded_at` timestamp NULL DEFAULT NULL,
+  `payload_json` json DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_obp_business_status` (`business_id`,`status`),
+  KEY `idx_obp_booking` (`booking_id`),
+  KEY `idx_obp_class_booking` (`class_booking_id`),
+  UNIQUE KEY `uk_obp_provider_checkout` (`provider_code`,`provider_checkout_id`),
+  UNIQUE KEY `uk_obp_provider_payment` (`provider_code`,`provider_payment_id`),
+  UNIQUE KEY `uk_obp_business_idempotency` (`business_id`,`idempotency_key`),
+  CONSTRAINT `fk_obp_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_obp_location` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_obp_booking` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_obp_class_booking` FOREIGN KEY (`class_booking_id`) REFERENCES `class_bookings` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `online_payment_provider_events`
+--
+
+CREATE TABLE `online_payment_provider_events` (
+  `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT,
+  `provider_code` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `provider_event_id` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `event_type` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `business_id` int UNSIGNED DEFAULT NULL,
+  `online_booking_payment_id` bigint UNSIGNED DEFAULT NULL,
+  `payload_json` json DEFAULT NULL,
+  `processed_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_oppe_provider_event` (`provider_code`,`provider_event_id`),
+  KEY `idx_oppe_business` (`business_id`),
+  KEY `idx_oppe_payment` (`online_booking_payment_id`),
+  CONSTRAINT `fk_oppe_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE SET NULL ON UPDATE CASCADE,
+  CONSTRAINT `fk_oppe_payment` FOREIGN KEY (`online_booking_payment_id`) REFERENCES `online_booking_payments` (`id`) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Indici per le tabelle scaricate
@@ -2403,7 +2507,7 @@ CREATE TABLE `class_bookings` (
   `business_id` int UNSIGNED NOT NULL,
   `class_event_id` int UNSIGNED NOT NULL,
   `customer_id` int UNSIGNED NOT NULL COMMENT 'FK clients.id',
-  `status` enum('CONFIRMED','WAITLISTED','CANCELLED_BY_CUSTOMER','CANCELLED_BY_STAFF','NO_SHOW','ATTENDED') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `status` enum('CONFIRMED','WAITLISTED','CANCELLED_BY_CUSTOMER','CANCELLED_BY_STAFF','NO_SHOW','ATTENDED','PENDING_PAYMENT') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `waitlist_position` int UNSIGNED DEFAULT NULL,
   `booked_at` timestamp NOT NULL COMMENT 'UTC',
   `cancelled_at` timestamp NULL DEFAULT NULL,

@@ -29,6 +29,7 @@ import '../features/more/presentation/locations_screen.dart';
 import '../features/more/presentation/more_screen.dart';
 import '../features/more/presentation/whatsapp_business_screen.dart';
 import '../features/payments/presentation/payment_methods_screen.dart';
+import '../features/online_payments/presentation/online_payments_screen.dart';
 import '../features/billing/presentation/billing_screen.dart';
 import '../features/reports/presentation/reports_screen.dart';
 import '../features/services/presentation/services_screen.dart';
@@ -458,6 +459,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                     name: 'payment-methods',
                     pageBuilder: (BuildContext context, GoRouterState state) =>
                         const NoTransitionPage(child: PaymentMethodsScreen()),
+                  ),
+                  GoRoute(
+                    path: 'pagamenti-online',
+                    name: 'online-payments',
+                    pageBuilder: (BuildContext context, GoRouterState state) =>
+                        const NoTransitionPage(child: OnlinePaymentsScreen()),
                   ),
                   GoRoute(
                     path: 'abbonamento',

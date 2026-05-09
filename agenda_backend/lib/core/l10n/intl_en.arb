@@ -2008,5 +2008,20 @@
   "billingAgendaNoticeTitle": "Subscription required",
   "billingAgendaNoticeMessage": "Activate the business subscription to keep using the management app without interruptions.",
   "billingAgendaNoticeAction": "Activate subscription",
-  "billingAgendaNoticeDismissTooltip": "Hide until tomorrow"
+  "billingAgendaNoticeDismissTooltip": "Hide until tomorrow",
+  "onlinePaymentsTitle": "Online payments",
+  "onlinePaymentsDescription": "Connect gateways to collect online bookings",
+  "onlinePaymentsConnectStripe": "Connect Stripe",
+  "onlinePaymentsConnectPayPal": "Connect PayPal",
+  "onlinePaymentsSync": "Sync",
+  "onlinePaymentsDisable": "Disable",
+  "onlinePaymentsEnabled": "Enabled",
+  "onlinePaymentsStatusActive": "Active",
+  "onlinePaymentsStatusDisabled": "Disabled",
+  "onlinePaymentsStatusIncomplete": "Incomplete configuration",
+  "onlinePaymentsStatusRequiresVerification": "Requires provider verification",
+  "onlinePaymentsNoApiKeys": "Do not enter API keys in the management app. Connection uses the provider's official onboarding.",
+  "onlinePaymentsProviderReady": "Provider active and enabled for online payments.",
+  "onlinePaymentsProviderCanBeEnabled": "Provider active. Enable it to use it for online bookings.",
+  "onlinePaymentsProviderNeedsOnboarding": "Complete provider configuration before enabling it."
 }

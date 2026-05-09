@@ -462,6 +462,38 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                 ),
                 const SizedBox(height: 16),
 
+                // Avviso pagamento online
+                if (request.services.any((s) => s.onlinePaymentRequired) ||
+                    (request.selectedClassEvent?.onlinePaymentRequired ??
+                        false)) ...[
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.credit_card_outlined,
+                          color: theme.colorScheme.onPrimaryContainer,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            l10n.summaryOnlinePaymentNote,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onPrimaryContainer,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+
                 // Policy modifica/cancellazione (ultima informazione)
                 _SummarySection(
                   title: l10n.summaryCancellationPolicyTitle,

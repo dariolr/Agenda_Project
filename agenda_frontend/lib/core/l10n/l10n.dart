@@ -1739,6 +1739,16 @@ class L10n {
     );
   }
 
+  /// `You will be redirected to Stripe to complete the payment after confirming.`
+  String get summaryOnlinePaymentNote {
+    return Intl.message(
+      'You will be redirected to Stripe to complete the payment after confirming.',
+      name: 'summaryOnlinePaymentNote',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `The selected time slot is no longer available`
   String get bookingErrorSlotConflict {
     return Intl.message(
@@ -3058,6 +3068,106 @@ class L10n {
     return Intl.message(
       'Log out and sign in here',
       name: 'wrongBusinessAuthAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Online payment required`
+  String get onlinePaymentRequiredBadge {
+    return Intl.message(
+      'Online payment required',
+      name: 'onlinePaymentRequiredBadge',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Payment`
+  String get paymentResultTitle {
+    return Intl.message(
+      'Payment',
+      name: 'paymentResultTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Booking confirmed`
+  String get paymentResultSuccessTitle {
+    return Intl.message(
+      'Booking confirmed',
+      name: 'paymentResultSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Payment is complete and your booking is confirmed.`
+  String get paymentResultSuccessMessage {
+    return Intl.message(
+      'Payment is complete and your booking is confirmed.',
+      name: 'paymentResultSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Checking payment`
+  String get paymentResultPendingTitle {
+    return Intl.message(
+      'Checking payment',
+      name: 'paymentResultPendingTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `We're checking the payment. Your booking will be confirmed as soon as we receive the result.`
+  String get paymentResultPendingMessage {
+    return Intl.message(
+      'We\'re checking the payment. Your booking will be confirmed as soon as we receive the result.',
+      name: 'paymentResultPendingMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Payment not completed`
+  String get paymentResultFailedTitle {
+    return Intl.message(
+      'Payment not completed',
+      name: 'paymentResultFailedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Payment was not completed. You can retry if the booking is still available.`
+  String get paymentResultFailedMessage {
+    return Intl.message(
+      'Payment was not completed. You can retry if the booking is still available.',
+      name: 'paymentResultFailedMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Retry payment`
+  String get paymentResultRetry {
+    return Intl.message(
+      'Retry payment',
+      name: 'paymentResultRetry',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `My bookings`
+  String get paymentResultMyBookings {
+    return Intl.message(
+      'My bookings',
+      name: 'paymentResultMyBookings',
       desc: '',
       args: [],
     );

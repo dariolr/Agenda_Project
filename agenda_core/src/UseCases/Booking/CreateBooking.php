@@ -799,6 +799,10 @@ final class CreateBooking
 
         $notes = $data['notes'] ?? null;
         $requestedLocale = $data['locale'] ?? null;
+        $targetStatus = in_array(($data['status'] ?? 'confirmed'), ['confirmed', 'pending_payment'], true)
+            ? (string) $data['status']
+            : 'confirmed';
+        $queueNotifications = (bool) ($data['queue_notifications'] ?? true);
 
         // Resolve booking_direct_link_id if a slug was provided
         $bookingDirectLinkId = null;
@@ -816,7 +820,7 @@ final class CreateBooking
         if (isset($data['items']) && is_array($data['items']) && !empty($data['items'])) {
             return $this->executeForCustomerWithItems(
                 $clientId, $locationId, $businessId, $data['items'],
-                $notes, $idempotencyKey, $requestedLocale, $directLinkSlug
+                $notes, $idempotencyKey, $requestedLocale, $directLinkSlug, $targetStatus, $queueNotifications
             );
         }
 
@@ -1043,7 +1047,7 @@ final class CreateBooking
                 'client_name' => $clientName,
                 'user_id' => null, // Customer booking, no operator user
                 'notes' => $notes,
-                'status' => 'confirmed',
+                'status' => $targetStatus,
                 'source' => 'online',
                 'idempotency_key' => $idempotencyKey,
                 'booking_direct_link_id' => $bookingDirectLinkId,
@@ -1063,8 +1067,9 @@ final class CreateBooking
             // Create audit event for booking_created (by customer)
             $this->createBookingCreatedEvent($bookingId, 'customer', $clientId, $booking);
             
-            // Queue notifications
-            $this->queueNotificationsForClient($booking, $location, $clientId, $requestedLocale);
+            if ($queueNotifications && $targetStatus === 'confirmed') {
+                $this->queueNotificationsForClient($booking, $location, $clientId, $requestedLocale);
+            }
             
             return $this->formatBookingResponse($booking);
 
@@ -1092,7 +1097,9 @@ final class CreateBooking
         ?string $notes,
         ?string $idempotencyKey,
         ?string $requestedLocale = null,
-        ?string $directLinkSlug = null
+        ?string $directLinkSlug = null,
+        string $targetStatus = 'confirmed',
+        bool $queueNotifications = true
     ): array {
         // Validate location
         $location = $this->locationRepository->findById($locationId);
@@ -1254,7 +1261,7 @@ final class CreateBooking
                 'client_name' => $clientName,
                 'user_id' => null, // Customer booking, no operator user
                 'notes' => $notes,
-                'status' => 'confirmed',
+                'status' => $targetStatus,
                 'source' => $source,
                 'idempotency_key' => $idempotencyKey,
                 'booking_direct_link_id' => $bookingDirectLinkId,
@@ -1274,8 +1281,9 @@ final class CreateBooking
             // Create audit event for booking_created (by customer)
             $this->createBookingCreatedEvent($bookingId, 'customer', $clientId, $booking);
 
-            // Queue notifications
-            $this->queueNotificationsForClient($booking, $location, $clientId, $requestedLocale);
+            if ($queueNotifications && $targetStatus === 'confirmed') {
+                $this->queueNotificationsForClient($booking, $location, $clientId, $requestedLocale);
+            }
 
             return $this->formatBookingResponse($booking);
 

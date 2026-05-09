@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -161,6 +160,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         // Se l'utente voleva vedere my-bookings, portalo lì
         if (widget.redirectFrom == 'my-bookings') {
           context.go('/$slug/my-bookings');
+          return;
+        }
+        if (widget.redirectFrom == 'payment-result') {
+          final query = Uri(
+            queryParameters: widget.redirectQueryParameters,
+          ).query;
+          context.go(
+            '/$slug/payment-result${query.isNotEmpty ? '?$query' : ''}',
+          );
           return;
         }
 
@@ -447,4 +455,3 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 }
-

@@ -312,6 +312,7 @@ final class ServicePackageRepository
             'effective_duration_minutes' => $effectiveDuration,
             'is_active' => (bool) $package['is_active'],
             'is_broken' => (bool) $package['is_broken'] || $summary['missing_count'] > 0,
+            'online_payment_required' => (bool) ($package['online_payment_required'] ?? false),
         ];
     }
 
@@ -348,6 +349,7 @@ final class ServicePackageRepository
             'effective_duration_minutes' => $effectiveDuration,
             'is_active' => (bool) $package['is_active'],
             'is_broken' => (bool) $package['is_broken'] || $summary['missing_count'] > 0,
+            'online_payment_required' => (bool) ($package['online_payment_required'] ?? false),
         ];
     }
 
@@ -541,6 +543,7 @@ final class ServicePackageRepository
             'is_bookable_online' => (bool) ($package['is_bookable_online'] ?? true),
             'online_visibility' => (string) ($package['online_visibility'] ?? 'public'),
             'is_broken' => $package['is_broken'] || $totals['missing_count'] > 0,
+            'online_payment_required' => (bool) ($package['online_payment_required'] ?? false),
             'effective_price' => $effectivePrice,
             'effective_duration_minutes' => $effectiveDuration,
             'items' => $itemsByPackage[$packageId] ?? [],

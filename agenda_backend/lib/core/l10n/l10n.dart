@@ -13128,6 +13128,151 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Online payments`
+  String get onlinePaymentsTitle {
+    return Intl.message(
+      'Online payments',
+      name: 'onlinePaymentsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Connect gateways to collect online bookings`
+  String get onlinePaymentsDescription {
+    return Intl.message(
+      'Connect gateways to collect online bookings',
+      name: 'onlinePaymentsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Connect Stripe`
+  String get onlinePaymentsConnectStripe {
+    return Intl.message(
+      'Connect Stripe',
+      name: 'onlinePaymentsConnectStripe',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Connect PayPal`
+  String get onlinePaymentsConnectPayPal {
+    return Intl.message(
+      'Connect PayPal',
+      name: 'onlinePaymentsConnectPayPal',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sync`
+  String get onlinePaymentsSync {
+    return Intl.message('Sync', name: 'onlinePaymentsSync', desc: '', args: []);
+  }
+
+  /// `Disable`
+  String get onlinePaymentsDisable {
+    return Intl.message(
+      'Disable',
+      name: 'onlinePaymentsDisable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enabled`
+  String get onlinePaymentsEnabled {
+    return Intl.message(
+      'Enabled',
+      name: 'onlinePaymentsEnabled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Active`
+  String get onlinePaymentsStatusActive {
+    return Intl.message(
+      'Active',
+      name: 'onlinePaymentsStatusActive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Disabled`
+  String get onlinePaymentsStatusDisabled {
+    return Intl.message(
+      'Disabled',
+      name: 'onlinePaymentsStatusDisabled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Incomplete configuration`
+  String get onlinePaymentsStatusIncomplete {
+    return Intl.message(
+      'Incomplete configuration',
+      name: 'onlinePaymentsStatusIncomplete',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Requires provider verification`
+  String get onlinePaymentsStatusRequiresVerification {
+    return Intl.message(
+      'Requires provider verification',
+      name: 'onlinePaymentsStatusRequiresVerification',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Do not enter API keys in the management app. Connection uses the provider's official onboarding.`
+  String get onlinePaymentsNoApiKeys {
+    return Intl.message(
+      'Do not enter API keys in the management app. Connection uses the provider\'s official onboarding.',
+      name: 'onlinePaymentsNoApiKeys',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Provider active and enabled for online payments.`
+  String get onlinePaymentsProviderReady {
+    return Intl.message(
+      'Provider active and enabled for online payments.',
+      name: 'onlinePaymentsProviderReady',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Provider active. Enable it to use it for online bookings.`
+  String get onlinePaymentsProviderCanBeEnabled {
+    return Intl.message(
+      'Provider active. Enable it to use it for online bookings.',
+      name: 'onlinePaymentsProviderCanBeEnabled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Complete provider configuration before enabling it.`
+  String get onlinePaymentsProviderNeedsOnboarding {
+    return Intl.message(
+      'Complete provider configuration before enabling it.',
+      name: 'onlinePaymentsProviderNeedsOnboarding',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

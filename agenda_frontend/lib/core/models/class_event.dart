@@ -1,4 +1,3 @@
-
 /// Evento di classe prenotabile online (lezione di gruppo)
 class ClassEvent {
   final int id;
@@ -25,6 +24,7 @@ class ClassEvent {
   final String visibility;
   final String onlineVisibility;
   final int? priceCents;
+  final bool onlinePaymentRequired;
   final String? currency;
   final int spotsLeft;
   final bool isFull;
@@ -54,6 +54,7 @@ class ClassEvent {
     this.visibility = 'PUBLIC',
     this.onlineVisibility = 'public',
     this.priceCents,
+    this.onlinePaymentRequired = false,
     this.currency,
     required this.spotsLeft,
     required this.isFull,
@@ -85,10 +86,18 @@ class ClassEvent {
     visibility: json['visibility'] as String? ?? 'PUBLIC',
     onlineVisibility: json['online_visibility'] as String? ?? 'public',
     priceCents: json['price_cents'] as int?,
+    onlinePaymentRequired: _parseBool(json['online_payment_required']),
     currency: json['currency'] as String?,
     spotsLeft: json['spots_left'] as int? ?? 0,
     isFull: json['is_full'] as bool? ?? false,
   );
+
+  static bool _parseBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value == 1;
+    if (value is String) return value == '1' || value.toLowerCase() == 'true';
+    return false;
+  }
 
   String get formattedPrice {
     if (priceCents == null || priceCents == 0) return 'Gratis';
@@ -130,4 +139,3 @@ class ClassEvent {
     return !start.isAfter(limit);
   }
 }
-

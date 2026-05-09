@@ -87,6 +87,14 @@ class MoreScreen extends ConsumerWidget {
           color: const Color(0xFF6D4C41),
           onTap: () => context.go(_withFromAltro('/altro/metodi-pagamento')),
         ),
+      if (canManageSettings)
+        _MoreItem(
+          icon: Icons.account_balance_wallet_outlined,
+          title: l10n.onlinePaymentsTitle,
+          description: l10n.onlinePaymentsDescription,
+          color: const Color(0xFF00796B),
+          onTap: () => context.go(_withFromAltro('/altro/pagamenti-online')),
+        ),
       if (showBilling)
         _MoreItem(
           icon: Icons.workspace_premium_outlined,

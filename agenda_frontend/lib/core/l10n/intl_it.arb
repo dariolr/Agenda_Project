@@ -311,6 +311,7 @@
   "summaryPrice": "Prezzo totale",
   "summaryNotes": "Note (opzionale)",
   "summaryNotesHint": "Aggiungi eventuali note per l'appuntamento...",
+  "summaryOnlinePaymentNote": "Verrai reindirizzato a Stripe per completare il pagamento dopo la conferma.",
   
   "bookingErrorSlotConflict": "L'orario selezionato non è più disponibile",
   "bookingErrorInvalidService": "Uno o più servizi selezionati non sono disponibili",
@@ -597,5 +598,15 @@
       "businessName": { "type": "String" }
     }
   },
-  "wrongBusinessAuthAction": "Esci e accedi qui"
+  "wrongBusinessAuthAction": "Esci e accedi qui",
+  "onlinePaymentRequiredBadge": "Pagamento online richiesto",
+  "paymentResultTitle": "Pagamento",
+  "paymentResultSuccessTitle": "Prenotazione confermata",
+  "paymentResultSuccessMessage": "Il pagamento è stato completato e la prenotazione è confermata.",
+  "paymentResultPendingTitle": "Pagamento in verifica",
+  "paymentResultPendingMessage": "Stiamo verificando il pagamento. La prenotazione sarà confermata appena riceviamo l'esito.",
+  "paymentResultFailedTitle": "Pagamento non completato",
+  "paymentResultFailedMessage": "Il pagamento non è stato completato. Puoi riprovare se la prenotazione è ancora disponibile.",
+  "paymentResultRetry": "Riprova pagamento",
+  "paymentResultMyBookings": "Le mie prenotazioni"
 }

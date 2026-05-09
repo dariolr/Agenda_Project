@@ -311,6 +311,7 @@
   "summaryPrice": "Total price",
   "summaryNotes": "Notes (optional)",
   "summaryNotesHint": "Add any notes for the appointment...",
+  "summaryOnlinePaymentNote": "You will be redirected to Stripe to complete the payment after confirming.",
   
   "bookingErrorSlotConflict": "The selected time slot is no longer available",
   "bookingErrorInvalidService": "One or more selected services are not available",
@@ -597,5 +598,15 @@
       "businessName": { "type": "String" }
     }
   },
-  "wrongBusinessAuthAction": "Log out and sign in here"
+  "wrongBusinessAuthAction": "Log out and sign in here",
+  "onlinePaymentRequiredBadge": "Online payment required",
+  "paymentResultTitle": "Payment",
+  "paymentResultSuccessTitle": "Booking confirmed",
+  "paymentResultSuccessMessage": "Payment is complete and your booking is confirmed.",
+  "paymentResultPendingTitle": "Checking payment",
+  "paymentResultPendingMessage": "We're checking the payment. Your booking will be confirmed as soon as we receive the result.",
+  "paymentResultFailedTitle": "Payment not completed",
+  "paymentResultFailedMessage": "Payment was not completed. You can retry if the booking is still available.",
+  "paymentResultRetry": "Retry payment",
+  "paymentResultMyBookings": "My bookings"
 }

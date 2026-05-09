@@ -1,4 +1,3 @@
-
 /// Modello Servizio prenotabile online
 class Service {
   final int id;
@@ -14,6 +13,7 @@ class Service {
   final double price;
   final bool isFree;
   final bool isPriceStartingFrom;
+  final bool onlinePaymentRequired;
   final bool isBookableOnline;
   final String onlineVisibility;
   final bool isActive;
@@ -33,6 +33,7 @@ class Service {
     required this.price,
     this.isFree = false,
     this.isPriceStartingFrom = false,
+    this.onlinePaymentRequired = false,
     this.isBookableOnline = true,
     this.onlineVisibility = 'public',
     this.isActive = true,
@@ -61,6 +62,7 @@ class Service {
     double? price,
     bool? isFree,
     bool? isPriceStartingFrom,
+    bool? onlinePaymentRequired,
     bool? isBookableOnline,
     String? onlineVisibility,
     bool? isActive,
@@ -79,6 +81,7 @@ class Service {
     price: price ?? this.price,
     isFree: isFree ?? this.isFree,
     isPriceStartingFrom: isPriceStartingFrom ?? this.isPriceStartingFrom,
+    onlinePaymentRequired: onlinePaymentRequired ?? this.onlinePaymentRequired,
     isBookableOnline: isBookableOnline ?? this.isBookableOnline,
     onlineVisibility: onlineVisibility ?? this.onlineVisibility,
     isActive: isActive ?? this.isActive,
@@ -109,6 +112,7 @@ class Service {
         0.0,
     isFree: json['is_free'] as bool? ?? false,
     isPriceStartingFrom: json['is_price_starting_from'] as bool? ?? false,
+    onlinePaymentRequired: _parseBool(json['online_payment_required']),
     isBookableOnline: _parseBookableOnline(json['is_bookable_online']),
     onlineVisibility: json['online_visibility'] as String? ?? 'public',
     isActive: _parseIsActive(json['is_active']),
@@ -120,6 +124,13 @@ class Service {
     if (value is num) return value == 1;
     if (value is String) return value == '1' || value.toLowerCase() == 'true';
     return true;
+  }
+
+  static bool _parseBool(dynamic value) {
+    if (value is bool) return value;
+    if (value is num) return value == 1;
+    if (value is String) return value == '1' || value.toLowerCase() == 'true';
+    return false;
   }
 
   static bool _parseIsActive(dynamic value) {
@@ -153,4 +164,3 @@ class Service {
     return isPriceStartingFrom ? 'da €$priceStr' : '€$priceStr';
   }
 }
-

@@ -46,6 +46,7 @@ final class ServiceRepository
                     sv.duration_minutes, sv.processing_time, sv.blocked_time,
                     sv.price, sv.color_hex AS color,
                     sv.is_bookable_online, sv.online_visibility, sv.is_price_starting_from AS is_price_from,
+                    sv.online_payment_required,
                     COALESCE(sv.parallel_capacity, 1) AS parallel_capacity
              FROM services s
              LEFT JOIN service_variants sv ON s.id = sv.service_id AND sv.location_id = ?
@@ -74,6 +75,7 @@ final class ServiceRepository
                     sv.duration_minutes, sv.processing_time, sv.blocked_time,
                     sv.price, sv.color_hex AS color,
                     sv.is_bookable_online, sv.online_visibility, sv.is_price_starting_from AS is_price_from,
+                    sv.online_payment_required,
                     COALESCE(sv.parallel_capacity, 1) AS parallel_capacity,
                     sc.name AS category_name
              FROM services s
@@ -119,6 +121,7 @@ final class ServiceRepository
                     sv.duration_minutes, sv.processing_time, sv.blocked_time,
                     sv.price, sv.color_hex AS color,
                     sv.is_bookable_online, sv.online_visibility, sv.is_price_starting_from AS is_price_from,
+                    sv.online_payment_required,
                     COALESCE(sv.parallel_capacity, 1) AS parallel_capacity,
                     sc.name AS category_name
              FROM services s
@@ -156,6 +159,7 @@ final class ServiceRepository
                     sv.is_active AS variant_is_active,
                     sv.is_bookable_online, sv.online_visibility,
                     sv.is_price_starting_from AS is_price_from,
+                    sv.online_payment_required,
                     COALESCE(sv.parallel_capacity, 1) AS parallel_capacity,
                     COALESCE(sv.processing_time, 0) AS processing_time,
                     COALESCE(sv.blocked_time, 0) AS blocked_time
