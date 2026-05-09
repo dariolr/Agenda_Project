@@ -108,6 +108,20 @@
         "panel": "dedicated",
         "clear": true
       }
+    },
+    {
+      "label": "Bundle",
+      "type": "shell",
+      "command": "zsh",
+      "args": [
+        "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/config/scripts/bundle/agenda_all_bundle.sh"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
     }
   ]
 }
