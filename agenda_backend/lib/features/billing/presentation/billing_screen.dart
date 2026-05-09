@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/l10n/date_time_formats.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/services/billing_external_navigation.dart';
 import '../../../core/services/same_tab_redirect.dart';
 import '../../../core/services/tenant_time_service.dart';
 import '../../../core/widgets/feedback_dialog.dart';
@@ -26,28 +27,63 @@ class BillingScreen extends ConsumerStatefulWidget {
 
 class _BillingScreenState extends ConsumerState<BillingScreen>
     with WidgetsBindingObserver {
+  final ScrollController _scrollController = ScrollController();
+  VoidCallback? _removeExternalNavigationListener;
+  int _layoutEpoch = 0;
+
   @override
   void initState() {
     super.initState();
-    if (!kIsWeb) {
-      WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
+    if (kIsWeb) {
+      _removeExternalNavigationListener = listenBillingExternalNavigationReturn(
+        _handleBillingExternalReturn,
+      );
     }
     Future.microtask(_refreshInitialSubscription);
   }
 
   @override
   void dispose() {
-    if (!kIsWeb) {
-      WidgetsBinding.instance.removeObserver(this);
-    }
+    _removeExternalNavigationListener?.call();
+    _scrollController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!kIsWeb && state == AppLifecycleState.resumed) {
+    if (state != AppLifecycleState.resumed) return;
+    if (_handleBillingExternalReturn()) return;
+    if (!kIsWeb) {
       ref.invalidate(billingSubscriptionProvider);
     }
+  }
+
+  bool _handleBillingExternalReturn() {
+    if (!consumeBillingExternalNavigation()) {
+      return false;
+    }
+
+    Future<void>(() async {
+      await WidgetsBinding.instance.endOfFrame;
+      resetBillingExternalNavigationViewport();
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
+      ref.invalidate(billingSubscriptionProvider);
+      if (mounted) {
+        setState(() => _layoutEpoch++);
+      }
+
+      await Future<void>.delayed(const Duration(milliseconds: 150));
+      resetBillingExternalNavigationViewport();
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
+    });
+
+    return true;
   }
 
   Future<void> _refreshInitialSubscription() async {
@@ -79,6 +115,8 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
     return Scaffold(
       body: billingAsync.when(
         data: (billing) => _BillingContent(
+          key: ValueKey(_layoutEpoch),
+          scrollController: _scrollController,
           billing: billing,
           checkoutCanceled: widget.checkoutCanceled,
           isSuperadmin: isSuperadmin,
@@ -109,11 +147,14 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
 
 class _BillingContent extends ConsumerStatefulWidget {
   const _BillingContent({
+    super.key,
+    required this.scrollController,
     required this.billing,
     required this.checkoutCanceled,
     required this.isSuperadmin,
   });
 
+  final ScrollController scrollController;
   final BillingConfigViewModel billing;
   final bool checkoutCanceled;
   final bool isSuperadmin;
@@ -141,6 +182,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
 
     return SafeArea(
       child: ListView(
+        controller: widget.scrollController,
         padding: const EdgeInsets.all(24),
         children: [
           Text(
@@ -188,7 +230,9 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
                         message: context.l10n.billingCheckoutStartedMessage,
                       ),
                       const SizedBox(height: 16),
-                    ] else if (_shouldShowCheckoutIncompleteNotice(billing)) ...[
+                    ] else if (_shouldShowCheckoutIncompleteNotice(
+                      billing,
+                    )) ...[
                       _BillingNotice(
                         message: context.l10n.billingCheckoutIncompleteMessage,
                       ),
@@ -303,7 +347,9 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
                             icon: _loadingCheckout
                                 ? const _ButtonProgressIndicator()
                                 : const Icon(Icons.open_in_new),
-                            label: Text(context.l10n.billingResumeCheckoutAction),
+                            label: Text(
+                              context.l10n.billingResumeCheckoutAction,
+                            ),
                           ),
                         if (isStartedCheckout)
                           FilledButton.tonalIcon(
@@ -407,7 +453,8 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
   }
 
   bool _isPendingCheckoutWithoutPayment(BillingConfigViewModel billing) {
-    return billing.status == 'pending_checkout' && billing.lastPaymentAt == null;
+    return billing.status == 'pending_checkout' &&
+        billing.lastPaymentAt == null;
   }
 
   bool _isRetryablePendingCheckout(BillingConfigViewModel billing) {
@@ -505,7 +552,9 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
     setState(() => _loadingCancelCheckout = true);
     try {
       final businessId = ref.read(currentBusinessIdProvider);
-      await ref.read(billingRepositoryProvider).cancelCheckoutSession(businessId);
+      await ref
+          .read(billingRepositoryProvider)
+          .cancelCheckoutSession(businessId);
       ref.invalidate(billingSubscriptionProvider);
     } on ApiException catch (e) {
       ref.invalidate(billingSubscriptionProvider);
@@ -530,7 +579,8 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
   }
 
   String _checkoutErrorMessage(BuildContext context, ApiException error) {
-    if (error.statusCode == 409 && error.code == 'subscription_already_exists') {
+    if (error.statusCode == 409 &&
+        error.code == 'subscription_already_exists') {
       return context.l10n.billingSubscriptionAlreadyExistsError;
     }
     if (error.statusCode == 409 && error.code == 'checkout_already_started') {
@@ -580,6 +630,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
         statusCode: 400,
       );
     }
+    markBillingExternalNavigation(route: '/altro/abbonamento');
     await redirectInCurrentTab(uri.toString());
   }
 
