@@ -388,7 +388,8 @@ final class ServiceRepository
         bool $isPriceStartingFrom = false,
         ?int $processingTime = null,
         ?int $blockedTime = null,
-        int $parallelCapacity = 1
+        int $parallelCapacity = 1,
+        bool $onlinePaymentRequired = false
     ): array {
         $pdo = $this->db->getPdo();
         
@@ -412,8 +413,8 @@ final class ServiceRepository
             $isBookableOnline = $onlineVisibility === 'hidden' ? false : true;
 
             $stmt = $pdo->prepare(
-                'INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, color_hex, is_bookable_online, online_visibility, is_price_starting_from, parallel_capacity, is_active, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
+                'INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, color_hex, is_bookable_online, online_visibility, is_price_starting_from, parallel_capacity, online_payment_required, is_active, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
             );
             $stmt->execute([
                 $serviceId,
@@ -427,6 +428,7 @@ final class ServiceRepository
                 $onlineVisibility,
                 $isPriceStartingFrom ? 1 : 0,
                 $parallelCapacity,
+                $onlinePaymentRequired ? 1 : 0,
             ]);
             $variantId = (int) $pdo->lastInsertId();
 
@@ -456,7 +458,8 @@ final class ServiceRepository
         bool $isPriceStartingFrom = false,
         ?int $processingTime = null,
         ?int $blockedTime = null,
-        int $parallelCapacity = 1
+        int $parallelCapacity = 1,
+        bool $onlinePaymentRequired = false
     ): array {
         if (empty($locationIds)) {
             throw new \InvalidArgumentException('At least one location_id is required');
@@ -484,8 +487,8 @@ final class ServiceRepository
             $isBookableOnline = $onlineVisibility === 'hidden' ? false : true;
 
             $stmtVariant = $pdo->prepare(
-                'INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, color_hex, is_bookable_online, online_visibility, is_price_starting_from, parallel_capacity, is_active, created_at)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
+                'INSERT INTO service_variants (service_id, location_id, duration_minutes, processing_time, blocked_time, price, color_hex, is_bookable_online, online_visibility, is_price_starting_from, parallel_capacity, online_payment_required, is_active, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, NOW())'
             );
 
             $firstLocationId = $locationIds[0];
@@ -502,6 +505,7 @@ final class ServiceRepository
                     $onlineVisibility,
                     $isPriceStartingFrom ? 1 : 0,
                     $parallelCapacity,
+                    $onlinePaymentRequired ? 1 : 0,
                 ]);
             }
 
@@ -536,7 +540,8 @@ final class ServiceRepository
         ?int $parallelCapacity = null,
         bool $setProcessingTimeNull = false,
         bool $setBlockedTimeNull = false,
-        bool $setDescriptionNull = false
+        bool $setDescriptionNull = false,
+        ?bool $onlinePaymentRequired = null
     ): ?array {
         $pdo = $this->db->getPdo();
 
@@ -611,6 +616,10 @@ final class ServiceRepository
             if ($parallelCapacity !== null) {
                 $variantUpdates[] = 'parallel_capacity = ?';
                 $variantParams[] = $parallelCapacity;
+            }
+            if ($onlinePaymentRequired !== null) {
+                $variantUpdates[] = 'online_payment_required = ?';
+                $variantParams[] = $onlinePaymentRequired ? 1 : 0;
             }
 
             if (!empty($variantUpdates)) {

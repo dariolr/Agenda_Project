@@ -1,6 +1,6 @@
 # Environments (agenda_frontend)
 
-Il frontend prenotazioni supporta `local`, `demo`, `production` con config centralizzata in `lib/core/environment/`.
+Il frontend prenotazioni supporta `local`, `demo`, `staging`, `production` con config centralizzata in `lib/core/environment/`.
 
 ## Variabili
 
@@ -26,6 +26,26 @@ In `demo`:
 - blocco su flag sensibili reali (`ALLOW_*`)
 - banner demo obbligatorio
 - API demo obbligatoria (no `https://api.romeolab.it`)
+
+In `staging`:
+
+- `ALLOW_REAL_EXPORTS` deve essere `false`
+- `DEMO_MODE` deve essere `false`
+- URL non devono puntare ai domini production
+
+## Build staging
+
+```bash
+flutter build web --release --no-tree-shake-icons \
+  --dart-define=APP_ENV=staging \
+  --dart-define=DEMO_MODE=false \
+  --dart-define=API_BASE_URL=https://staging-api.romeolab.it \
+  --dart-define=FRONTEND_URL=https://staging-prenota.romeolab.it \
+  --dart-define=ALLOW_REAL_PAYMENTS=true \
+  --dart-define=ALLOW_EXTERNAL_WEBHOOKS=true \
+  --dart-define=ALLOW_REAL_EXPORTS=false \
+  --dart-define=SHOW_DEMO_BANNER=false
+```
 
 ## Build demo
 

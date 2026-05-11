@@ -68,6 +68,7 @@ class ServicePackage {
   final double effectivePrice;
   final int effectiveDurationMinutes;
   final List<ServicePackageItem> items;
+  final bool onlinePaymentRequired;
 
   const ServicePackage({
     required this.id,
@@ -86,6 +87,7 @@ class ServicePackage {
     required this.effectivePrice,
     required this.effectiveDurationMinutes,
     required this.items,
+    this.onlinePaymentRequired = false,
   });
 
   int get serviceCount => items.length;
@@ -113,6 +115,7 @@ class ServicePackage {
     double? effectivePrice,
     int? effectiveDurationMinutes,
     List<ServicePackageItem>? items,
+    bool? onlinePaymentRequired,
   }) => ServicePackage(
     id: id ?? this.id,
     businessId: businessId ?? this.businessId,
@@ -132,6 +135,7 @@ class ServicePackage {
     effectiveDurationMinutes:
         effectiveDurationMinutes ?? this.effectiveDurationMinutes,
     items: items ?? this.items,
+    onlinePaymentRequired: onlinePaymentRequired ?? this.onlinePaymentRequired,
   );
 
   factory ServicePackage.fromJson(Map<String, dynamic> json) {
@@ -159,6 +163,10 @@ class ServicePackage {
       isBroken: _boolFromJson(json['is_broken'], fallback: false),
       effectivePrice: (json['effective_price'] as num?)?.toDouble() ?? 0,
       effectiveDurationMinutes: json['effective_duration_minutes'] as int? ?? 0,
+      onlinePaymentRequired: _boolFromJson(
+        json['online_payment_required'],
+        fallback: false,
+      ),
       items: itemsJson
           .map(
             (item) => ServicePackageItem.fromJson(item as Map<String, dynamic>),

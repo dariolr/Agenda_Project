@@ -204,6 +204,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     int? processingTime,
     int? blockedTime,
     int parallelCapacity = 1,
+    bool onlinePaymentRequired = false,
   }) async {
     final repository = ref.read(servicesRepositoryProvider);
     final businessId = ref.read(currentBusinessIdProvider);
@@ -226,6 +227,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
         processingTime: processingTime,
         blockedTime: blockedTime,
         parallelCapacity: parallelCapacity,
+        onlinePaymentRequired: onlinePaymentRequired,
       );
 
       // Add to local state only if current location is in the list
@@ -260,6 +262,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     int? processingTime,
     int? blockedTime,
     int parallelCapacity = 1,
+    bool onlinePaymentRequired = false,
   }) async {
     final repository = ref.read(servicesRepositoryProvider);
     final location = ref.read(currentLocationProvider);
@@ -281,6 +284,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
         processingTime: processingTime,
         blockedTime: blockedTime,
         parallelCapacity: parallelCapacity,
+        onlinePaymentRequired: onlinePaymentRequired,
       );
 
       // Add to local state
@@ -320,6 +324,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
     int? processingTime,
     int? blockedTime,
     int? parallelCapacity,
+    bool? onlinePaymentRequired,
   }) async {
     final repository = ref.read(servicesRepositoryProvider);
     final location = ref.read(currentLocationProvider);
@@ -345,6 +350,7 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
         processingTime: processingTime,
         blockedTime: blockedTime,
         parallelCapacity: parallelCapacity,
+        onlinePaymentRequired: onlinePaymentRequired,
       );
 
       // Update local state

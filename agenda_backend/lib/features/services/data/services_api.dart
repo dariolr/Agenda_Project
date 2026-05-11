@@ -75,6 +75,7 @@ class ServicesApi {
     int? processingTime,
     int? blockedTime,
     int parallelCapacity = 1,
+    bool onlinePaymentRequired = false,
   }) async {
     final data = await _apiClient.createServiceMultiLocation(
       businessId: businessId,
@@ -91,6 +92,7 @@ class ServicesApi {
       processingTime: processingTime,
       blockedTime: blockedTime,
       parallelCapacity: parallelCapacity,
+      onlinePaymentRequired: onlinePaymentRequired,
     );
     return Service.fromJson(data['service'] as Map<String, dynamic>);
   }
@@ -111,6 +113,7 @@ class ServicesApi {
     int? processingTime,
     int? blockedTime,
     int parallelCapacity = 1,
+    bool onlinePaymentRequired = false,
   }) async {
     final data = await _apiClient.createService(
       locationId: locationId,
@@ -126,6 +129,7 @@ class ServicesApi {
       processingTime: processingTime,
       blockedTime: blockedTime,
       parallelCapacity: parallelCapacity,
+      onlinePaymentRequired: onlinePaymentRequired,
     );
     return Service.fromJson(data['service'] as Map<String, dynamic>);
   }
@@ -150,6 +154,7 @@ class ServicesApi {
     int? processingTime,
     int? blockedTime,
     int? parallelCapacity,
+    bool? onlinePaymentRequired,
   }) async {
     final data = await _apiClient.updateService(
       serviceId: serviceId,
@@ -169,6 +174,7 @@ class ServicesApi {
       processingTime: processingTime,
       blockedTime: blockedTime,
       parallelCapacity: parallelCapacity,
+      onlinePaymentRequired: onlinePaymentRequired,
     );
     return Service.fromJson(data['service'] as Map<String, dynamic>);
   }

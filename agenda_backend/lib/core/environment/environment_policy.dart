@@ -8,6 +8,7 @@ class EnvironmentPolicy {
   final AppEnvironmentConfig config;
 
   bool isDemoEnvironment() => config.isDemo;
+  bool isStagingEnvironment() => config.isStaging;
   bool canSendRealEmails() => config.allowRealEmails;
   bool canSendRealWhatsapp() => config.allowRealWhatsapp;
   bool canUseRealPayments() => config.allowRealPayments;

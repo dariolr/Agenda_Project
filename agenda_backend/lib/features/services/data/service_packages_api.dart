@@ -26,6 +26,7 @@ class ServicePackagesApi {
     bool isActive = true,
     bool isBookableOnline = true,
     String? onlineVisibility,
+    bool onlinePaymentRequired = false,
   }) async {
     final data = await _apiClient.createServicePackage(
       locationId: locationId,
@@ -38,6 +39,7 @@ class ServicePackagesApi {
       isActive: isActive,
       isBookableOnline: isBookableOnline,
       onlineVisibility: onlineVisibility,
+      onlinePaymentRequired: onlinePaymentRequired,
     );
     return ServicePackage.fromJson(data['package'] as Map<String, dynamic>);
   }
@@ -56,6 +58,7 @@ class ServicePackagesApi {
     bool? isBookableOnline,
     String? onlineVisibility,
     List<int>? serviceIds,
+    bool? onlinePaymentRequired,
   }) async {
     final data = await _apiClient.updateServicePackage(
       locationId: locationId,
@@ -71,6 +74,7 @@ class ServicePackagesApi {
       isBookableOnline: isBookableOnline,
       onlineVisibility: onlineVisibility,
       serviceIds: serviceIds,
+      onlinePaymentRequired: onlinePaymentRequired,
     );
     return ServicePackage.fromJson(data['package'] as Map<String, dynamic>);
   }

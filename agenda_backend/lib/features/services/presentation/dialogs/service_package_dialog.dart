@@ -77,6 +77,7 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
 
   bool _isActive = true;
   bool _isSaving = false;
+  bool _onlinePaymentRequired = false;
   late OnlineBookingVisibilityOption _onlineBookingVisibility;
   int? _selectedCategoryId;
   String? _servicesError;
@@ -99,6 +100,8 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
       text: pkg?.overrideDurationMinutes?.toString() ?? '',
     );
     _isActive = pkg?.isActive ?? true;
+    _onlinePaymentRequired = pkg?.onlinePaymentRequired ?? false;
+    _overridePriceController.addListener(_onOverridePriceChanged);
     _onlineBookingVisibility = OnlineBookingVisibilityOption.fromValues(
       onlineVisibility: pkg?.onlineVisibility,
       isBookableOnline: pkg?.isBookableOnline,
@@ -123,11 +126,24 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
     }
   }
 
+  void _onOverridePriceChanged() => setState(() {
+        if (_isPackageFree) _onlinePaymentRequired = false;
+      });
+
+  bool get _isPackageFree {
+    final text = _overridePriceController.text.trim();
+    if (text.isEmpty) return false;
+    final parsed = PriceFormatter.parse(text);
+    return parsed != null && parsed == 0;
+  }
+
   @override
   void dispose() {
     _nameController.dispose();
     _descriptionController.dispose();
-    _overridePriceController.dispose();
+    _overridePriceController
+      ..removeListener(_onOverridePriceChanged)
+      ..dispose();
     _overrideDurationController.dispose();
     super.dispose();
   }
@@ -281,6 +297,22 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
                   targetId: widget.package?.id,
                   enabled: !_isSaving,
                 ),
+              ),
+              const SizedBox(height: 16),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                title: Text(
+                  context.l10n.onlinePaymentRequiredLabel,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                subtitle: Text(
+                  context.l10n.onlinePaymentRequiredDescription,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                value: _onlinePaymentRequired,
+                onChanged: _isSaving || _isPackageFree
+                    ? null
+                    : (v) => setState(() => _onlinePaymentRequired = v),
               ),
               const SizedBox(height: 12),
               Text(
@@ -494,6 +526,7 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
           isActive: _isActive,
           isBookableOnline: _onlineBookingVisibility.isBookableOnline,
           onlineVisibility: _onlineBookingVisibility.apiValue,
+          onlinePaymentRequired: _isPackageFree ? false : _onlinePaymentRequired,
         );
         if (mounted) {
           setState(() => _isSaving = false);
@@ -519,6 +552,7 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
           isActive: _isActive,
           isBookableOnline: _onlineBookingVisibility.isBookableOnline,
           onlineVisibility: _onlineBookingVisibility.apiValue,
+          onlinePaymentRequired: _isPackageFree ? false : _onlinePaymentRequired,
         );
         if (mounted) {
           setState(() => _isSaving = false);

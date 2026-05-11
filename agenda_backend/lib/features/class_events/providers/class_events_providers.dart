@@ -448,6 +448,7 @@ class ClassEventCreateController extends AsyncNotifier<void> {
     required bool waitlistEnabled,
     bool isBookableOnline = true,
     String? onlineVisibility,
+    bool onlinePaymentRequired = false,
     int? priceCents,
     String? currency,
   }) async {
@@ -468,6 +469,7 @@ class ClassEventCreateController extends AsyncNotifier<void> {
           'waitlist_enabled': waitlistEnabled,
           'is_bookable_online': isBookableOnline,
           if (onlineVisibility != null) 'online_visibility': onlineVisibility,
+          'online_payment_required': onlinePaymentRequired,
           'price_cents': priceCents,
           if (currency != null) 'currency': currency,
         },

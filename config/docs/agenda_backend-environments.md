@@ -6,11 +6,12 @@
 
 - `local`
 - `demo`
+- `staging`
 - `production`
 
 ## Variabili supportate
 
-- `APP_ENV` (`local|demo|production`)
+- `APP_ENV` (`local|demo|staging|production`)
 - `DEMO_MODE`
 - `API_BASE_URL`
 - `FRONTEND_URL`
@@ -37,6 +38,9 @@ Controlli fail-fast:
 - In `demo`, `SHOW_DEMO_BANNER` deve essere `true`.
 - In `demo`, `API_BASE_URL` non può essere `https://api.romeolab.it`.
 - `DEMO_MODE` deve essere coerente con `APP_ENV`.
+- In `staging`, `ALLOW_REAL_EMAILS`, `ALLOW_REAL_WHATSAPP`, `ALLOW_DESTRUCTIVE_BUSINESS_ACTIONS`, `ALLOW_REAL_EXPORTS` devono essere `false`.
+- In `staging`, `DEMO_MODE` deve essere `false`.
+- In `staging`, URL non devono puntare ai domini production.
 
 ## Accesso centralizzato
 
@@ -67,6 +71,23 @@ flutter build web --release --no-tree-shake-icons \
   --dart-define=ALLOW_REAL_EXPORTS=false \
   --dart-define=SHOW_DEMO_BANNER=true \
   --dart-define=DEMO_RESET_EXPECTED=true
+```
+
+Staging:
+
+```bash
+flutter build web --release --no-tree-shake-icons \
+  --dart-define=APP_ENV=staging \
+  --dart-define=DEMO_MODE=false \
+  --dart-define=API_BASE_URL=https://staging-api.romeolab.it \
+  --dart-define=FRONTEND_URL=https://staging-gestionale.romeolab.it \
+  --dart-define=ALLOW_REAL_EMAILS=false \
+  --dart-define=ALLOW_REAL_WHATSAPP=false \
+  --dart-define=ALLOW_REAL_PAYMENTS=true \
+  --dart-define=ALLOW_EXTERNAL_WEBHOOKS=true \
+  --dart-define=ALLOW_DESTRUCTIVE_BUSINESS_ACTIONS=false \
+  --dart-define=ALLOW_REAL_EXPORTS=false \
+  --dart-define=SHOW_DEMO_BANNER=false
 ```
 
 Production:

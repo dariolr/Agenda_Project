@@ -800,6 +800,7 @@ class ApiClient {
     bool isActive = true,
     bool isBookableOnline = true,
     String? onlineVisibility,
+    bool onlinePaymentRequired = false,
   }) async {
     return post(
       ApiConfig.servicePackages(locationId),
@@ -814,6 +815,7 @@ class ApiClient {
         'is_active': isActive,
         'is_bookable_online': isBookableOnline,
         if (onlineVisibility != null) 'online_visibility': onlineVisibility,
+        'online_payment_required': onlinePaymentRequired,
       },
     );
   }
@@ -833,6 +835,7 @@ class ApiClient {
     bool? isBookableOnline,
     String? onlineVisibility,
     List<int>? serviceIds,
+    bool? onlinePaymentRequired,
   }) async {
     final data = <String, dynamic>{};
     if (name != null) data['name'] = name;
@@ -848,6 +851,9 @@ class ApiClient {
     if (isBookableOnline != null) data['is_bookable_online'] = isBookableOnline;
     if (onlineVisibility != null) data['online_visibility'] = onlineVisibility;
     if (serviceIds != null) data['service_ids'] = serviceIds;
+    if (onlinePaymentRequired != null) {
+      data['online_payment_required'] = onlinePaymentRequired;
+    }
 
     return put(ApiConfig.servicePackage(locationId, packageId), data: data);
   }
@@ -1948,6 +1954,7 @@ class ApiClient {
     int? processingTime,
     int? blockedTime,
     int parallelCapacity = 1,
+    bool onlinePaymentRequired = false,
   }) async {
     final response = await post(
       '/v1/businesses/$businessId/services',
@@ -1966,6 +1973,7 @@ class ApiClient {
         'parallel_capacity': parallelCapacity,
         if (processingTime != null) 'processing_time': processingTime,
         if (blockedTime != null) 'blocked_time': blockedTime,
+        'online_payment_required': onlinePaymentRequired,
       },
     );
     return response;
@@ -1986,6 +1994,7 @@ class ApiClient {
     int? processingTime,
     int? blockedTime,
     int parallelCapacity = 1,
+    bool onlinePaymentRequired = false,
   }) async {
     final response = await post(
       '/v1/locations/$locationId/services',
@@ -2003,6 +2012,7 @@ class ApiClient {
         'parallel_capacity': parallelCapacity,
         if (processingTime != null) 'processing_time': processingTime,
         if (blockedTime != null) 'blocked_time': blockedTime,
+        'online_payment_required': onlinePaymentRequired,
       },
     );
     return response;
@@ -2027,6 +2037,7 @@ class ApiClient {
     int? processingTime,
     int? blockedTime,
     int? parallelCapacity,
+    bool? onlinePaymentRequired,
   }) async {
     final response = await put(
       '/v1/services/$serviceId',
@@ -2052,6 +2063,8 @@ class ApiClient {
         if (sortOrder != null) 'sort_order': sortOrder,
         if (processingTime != null) 'processing_time': processingTime,
         if (blockedTime != null) 'blocked_time': blockedTime,
+        if (onlinePaymentRequired != null)
+          'online_payment_required': onlinePaymentRequired,
       },
     );
     return response;

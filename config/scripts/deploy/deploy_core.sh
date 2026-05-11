@@ -24,12 +24,12 @@ for arg in "$@"; do
     --dry-run)
       DRY_RUN=1
       ;;
-    demo|production)
+    demo|staging|production)
       ENV_NAME="$arg"
       ;;
     *)
       echo "ERROR: argomento non valido: $arg" >&2
-      echo "Uso: $0 [demo|production] [--dry-run]" >&2
+      echo "Uso: $0 [demo|staging|production] [--dry-run]" >&2
       exit 1
       ;;
   esac

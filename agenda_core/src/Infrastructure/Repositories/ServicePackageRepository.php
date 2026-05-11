@@ -146,8 +146,8 @@ final class ServicePackageRepository
             );
             $stmt = $pdo->prepare(
                 'INSERT INTO service_packages
-                    (business_id, location_id, category_id, sort_order, name, description, override_price, override_duration_minutes, is_active, is_bookable_online, online_visibility, is_broken)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                    (business_id, location_id, category_id, sort_order, name, description, override_price, override_duration_minutes, is_active, is_bookable_online, online_visibility, is_broken, online_payment_required)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
             $onlineVisibility = $this->normalizeOnlineVisibility(
                 $data['online_visibility'] ?? null,
@@ -166,6 +166,7 @@ final class ServicePackageRepository
                 $onlineVisibility === 'hidden' ? 0 : 1,
                 $onlineVisibility,
                 $data['is_broken'],
+                !empty($data['online_payment_required']) ? 1 : 0,
             ]);
 
             $packageId = (int) $pdo->lastInsertId();

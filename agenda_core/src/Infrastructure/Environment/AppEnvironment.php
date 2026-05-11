@@ -8,6 +8,7 @@ final class AppEnvironment
 {
     public const LOCAL = 'local';
     public const DEMO = 'demo';
+    public const STAGING = 'staging';
     public const PRODUCTION = 'production';
 
     public static function normalize(string $value): string
@@ -23,9 +24,9 @@ final class AppEnvironment
             return self::LOCAL;
         }
 
-        if (!in_array($normalized, [self::LOCAL, self::DEMO, self::PRODUCTION], true)) {
+        if (!in_array($normalized, [self::LOCAL, self::DEMO, self::STAGING, self::PRODUCTION], true)) {
             throw new \RuntimeException(
-                sprintf('APP_ENV non riconosciuto: "%s". Valori ammessi: local, demo, production.', $value)
+                sprintf('APP_ENV non riconosciuto: "%s". Valori ammessi: local, demo, staging, production.', $value)
             );
         }
 

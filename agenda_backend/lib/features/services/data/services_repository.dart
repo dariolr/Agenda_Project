@@ -36,6 +36,7 @@ class ServicesRepository {
     int? processingTime,
     int? blockedTime,
     int parallelCapacity = 1,
+    bool onlinePaymentRequired = false,
   }) => _api.createServiceMultiLocation(
     businessId: businessId,
     locationIds: locationIds,
@@ -51,6 +52,7 @@ class ServicesRepository {
     processingTime: processingTime,
     blockedTime: blockedTime,
     parallelCapacity: parallelCapacity,
+    onlinePaymentRequired: onlinePaymentRequired,
   );
 
   /// Creates a new service (legacy, single location)
@@ -68,6 +70,7 @@ class ServicesRepository {
     int? processingTime,
     int? blockedTime,
     int parallelCapacity = 1,
+    bool onlinePaymentRequired = false,
   }) => _api.createService(
     locationId: locationId,
     name: name,
@@ -82,6 +85,7 @@ class ServicesRepository {
     processingTime: processingTime,
     blockedTime: blockedTime,
     parallelCapacity: parallelCapacity,
+    onlinePaymentRequired: onlinePaymentRequired,
   );
 
   /// Updates an existing service
@@ -103,6 +107,7 @@ class ServicesRepository {
     int? processingTime,
     int? blockedTime,
     int? parallelCapacity,
+    bool? onlinePaymentRequired,
   }) => _api.updateService(
     serviceId: serviceId,
     locationId: locationId,
@@ -121,6 +126,7 @@ class ServicesRepository {
     processingTime: processingTime,
     blockedTime: blockedTime,
     parallelCapacity: parallelCapacity,
+    onlinePaymentRequired: onlinePaymentRequired,
   );
 
   /// Deletes a service

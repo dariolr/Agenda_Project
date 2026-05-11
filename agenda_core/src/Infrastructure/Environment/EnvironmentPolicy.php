@@ -20,6 +20,11 @@ final class EnvironmentPolicy
         return $this->config->isDemo;
     }
 
+    public function isStagingEnvironment(): bool
+    {
+        return $this->config->isStaging;
+    }
+
     public function canSendRealEmails(): bool
     {
         return $this->config->allowRealEmails;

@@ -20,6 +20,24 @@
       }
     },
     {
+      "label": "Deploy agenda_core (staging)",
+      "type": "shell",
+      "command": "zsh",
+      "args": [
+        "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/config/scripts/deploy/deploy_core.sh",
+        "staging"
+      ],
+      "options": {
+        "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_core"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
       "label": "Deploy agenda_core (production)",
       "type": "shell",
       "command": "zsh",
@@ -56,6 +74,24 @@
       }
     },
     {
+      "label": "Deploy agenda_backend (staging)",
+      "type": "shell",
+      "command": "zsh",
+      "args": [
+        "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/config/scripts/deploy/deploy_backend.sh",
+        "staging"
+      ],
+      "options": {
+        "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_backend"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
       "label": "Deploy agenda_backend (production)",
       "type": "shell",
       "command": "zsh",
@@ -80,6 +116,24 @@
       "args": [
         "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/config/scripts/deploy/deploy_frontend.sh",
         "demo"
+      ],
+      "options": {
+        "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_frontend"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Deploy agenda_frontend (staging)",
+      "type": "shell",
+      "command": "zsh",
+      "args": [
+        "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/config/scripts/deploy/deploy_frontend.sh",
+        "staging"
       ],
       "options": {
         "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_frontend"

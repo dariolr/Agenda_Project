@@ -509,6 +509,7 @@ Future<void> showServiceDialog(
       );
   bool isFree = existingVariant?.isFree ?? false;
   bool isPriceStartingFrom = existingVariant?.isPriceStartingFrom ?? false;
+  bool onlinePaymentRequired = service?.onlinePaymentRequired ?? false;
 
   bool nameError = false;
   bool durationError = false;
@@ -590,6 +591,7 @@ Future<void> showServiceDialog(
             processingTime: processingToSave > 0 ? processingToSave : null,
             blockedTime: blockedToSave > 0 ? blockedToSave : null,
             parallelCapacity: parallelCapacity,
+            onlinePaymentRequired: isFree ? false : onlinePaymentRequired,
           );
         } else {
           // Single location - use standard API
@@ -608,6 +610,7 @@ Future<void> showServiceDialog(
             processingTime: processingToSave > 0 ? processingToSave : null,
             blockedTime: blockedToSave > 0 ? blockedToSave : null,
             parallelCapacity: parallelCapacity,
+            onlinePaymentRequired: isFree ? false : onlinePaymentRequired,
           );
         }
       } else {
@@ -636,6 +639,7 @@ Future<void> showServiceDialog(
           processingTime: processingToSave,
           blockedTime: blockedToSave,
           parallelCapacity: parallelCapacity,
+          onlinePaymentRequired: onlinePaymentRequired,
         );
       }
 
@@ -1719,6 +1723,7 @@ Future<void> showServiceDialog(
                     if (isFree) {
                       priceController.clear();
                       isPriceStartingFrom = false;
+                      onlinePaymentRequired = false;
                     }
                   });
                 }
@@ -1753,6 +1758,22 @@ Future<void> showServiceDialog(
             targetId: existingVariant?.id ?? service?.serviceVariantId,
             enabled: canEditDialog,
           ),
+        ),
+        const SizedBox(height: 16),
+        SwitchListTile.adaptive(
+          contentPadding: EdgeInsets.zero,
+          title: Text(
+            context.l10n.onlinePaymentRequiredLabel,
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          subtitle: Text(
+            context.l10n.onlinePaymentRequiredDescription,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          value: onlinePaymentRequired,
+          onChanged: canEditDialog && !isFree
+              ? (v) => setState(() => onlinePaymentRequired = v)
+              : null,
         ),
       ],
     );

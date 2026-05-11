@@ -2023,5 +2023,7 @@
   "onlinePaymentsNoApiKeys": "Non inserire API key nel gestionale. Il collegamento avviene tramite onboarding ufficiale del provider.",
   "onlinePaymentsProviderReady": "Provider attivo e abilitato per i pagamenti online.",
   "onlinePaymentsProviderCanBeEnabled": "Provider attivo. Abilitalo per usarlo nelle prenotazioni online.",
-  "onlinePaymentsProviderNeedsOnboarding": "Completa la configurazione provider prima di abilitarlo."
+  "onlinePaymentsProviderNeedsOnboarding": "Completa la configurazione provider prima di abilitarlo.",
+  "onlinePaymentRequiredLabel": "Pagamento online richiesto",
+  "onlinePaymentRequiredDescription": "Il cliente dovrà completare il pagamento online per confermare la prenotazione."
 }

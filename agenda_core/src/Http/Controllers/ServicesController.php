@@ -390,7 +390,8 @@ final class ServicesController
             isPriceStartingFrom: (bool) ($body['is_price_starting_from'] ?? false),
             processingTime: isset($body['processing_time']) ? (int) $body['processing_time'] : null,
             blockedTime: isset($body['blocked_time']) ? (int) $body['blocked_time'] : null,
-            parallelCapacity: $parallelCapacity
+            parallelCapacity: $parallelCapacity,
+            onlinePaymentRequired: (bool) ($body['online_payment_required'] ?? false)
         );
         $this->createDirectLinkIfNeeded((int) $businessId, $service, $onlineVisibility);
 
@@ -461,7 +462,8 @@ final class ServicesController
             isPriceStartingFrom: (bool) ($body['is_price_starting_from'] ?? false),
             processingTime: isset($body['processing_time']) ? (int) $body['processing_time'] : null,
             blockedTime: isset($body['blocked_time']) ? (int) $body['blocked_time'] : null,
-            parallelCapacity: $parallelCapacity
+            parallelCapacity: $parallelCapacity,
+            onlinePaymentRequired: (bool) ($body['online_payment_required'] ?? false)
         );
         $this->createDirectLinkIfNeeded((int) $businessId, $service, $onlineVisibility);
 
@@ -570,7 +572,8 @@ final class ServicesController
             parallelCapacity: $parallelCapacity,
             setProcessingTimeNull: $setProcessingTimeNull,
             setBlockedTimeNull: $setBlockedTimeNull,
-            setDescriptionNull: $setDescriptionNull
+            setDescriptionNull: $setDescriptionNull,
+            onlinePaymentRequired: array_key_exists('online_payment_required', $body) ? (bool) $body['online_payment_required'] : null
         );
 
         if (!$service) {
@@ -1016,6 +1019,7 @@ final class ServicesController
             'category_id' => $service['category_id'] ? (int) $service['category_id'] : null,
             'service_variant_id' => isset($service['service_variant_id']) ? (int) $service['service_variant_id'] : null,
             'sort_order' => (int) ($service['sort_order'] ?? 0),
+            'online_payment_required' => (bool) ($service['online_payment_required'] ?? false),
         ];
     }
 

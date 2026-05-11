@@ -54,6 +54,7 @@ class AppEnvironmentConfig {
     required this.webBaseUrl,
     required this.isLocal,
     required this.isDemo,
+    required this.isStaging,
     required this.isProduction,
     required this.showDemoBanner,
     required this.allowRealEmails,
@@ -78,6 +79,7 @@ class AppEnvironmentConfig {
 
   final bool isLocal;
   final bool isDemo;
+  final bool isStaging;
   final bool isProduction;
 
   final bool showDemoBanner;
@@ -105,6 +107,7 @@ class AppEnvironmentConfig {
     final environment = AppEnvironment.parse(raw.appEnv);
 
     final isDemo = environment == AppEnvironment.demo;
+    final isStaging = environment == AppEnvironment.staging;
     final isProduction = environment == AppEnvironment.production;
     final isLocal = environment == AppEnvironment.local;
 
@@ -118,6 +121,13 @@ class AppEnvironmentConfig {
     if (resolvedDemoMode != isDemo) {
       throw StateError(
         'Configurazione incoerente: APP_ENV=$environment ma DEMO_MODE=$resolvedDemoMode.',
+      );
+    }
+
+    // staging: DEMO_MODE deve essere false (non e demo)
+    if (isStaging && resolvedDemoMode) {
+      throw StateError(
+        'Configurazione incoerente: APP_ENV=staging ma DEMO_MODE=true.',
       );
     }
 
@@ -166,6 +176,40 @@ class AppEnvironmentConfig {
       }
     }
 
+    if (isStaging) {
+      if (allowRealEmails) {
+        throw StateError(
+          'Configurazione staging non sicura: ALLOW_REAL_EMAILS deve essere false in staging.',
+        );
+      }
+      if (allowRealWhatsapp) {
+        throw StateError(
+          'Configurazione staging non sicura: ALLOW_REAL_WHATSAPP deve essere false in staging.',
+        );
+      }
+      if (allowDestructiveBusinessActions) {
+        throw StateError(
+          'Configurazione staging non sicura: ALLOW_DESTRUCTIVE_BUSINESS_ACTIONS deve essere false in staging.',
+        );
+      }
+      if (allowRealExports) {
+        throw StateError(
+          'Configurazione staging non sicura: ALLOW_REAL_EXPORTS deve essere false in staging.',
+        );
+      }
+      const stagingForbiddenUrls = [
+        'https://api.romeolab.it',
+        'https://prenota.romeolab.it',
+        'https://gestionale.romeolab.it',
+      ];
+      if (stagingForbiddenUrls.contains(apiBaseUrl) ||
+          stagingForbiddenUrls.contains(webBaseUrl)) {
+        throw StateError(
+          'Configurazione staging non sicura: URL di staging non devono puntare ai domini di production.',
+        );
+      }
+    }
+
     return AppEnvironmentConfig(
       environment: environment,
       environmentName: environment.name,
@@ -173,6 +217,7 @@ class AppEnvironmentConfig {
       webBaseUrl: webBaseUrl,
       isLocal: isLocal,
       isDemo: isDemo,
+      isStaging: isStaging,
       isProduction: isProduction,
       showDemoBanner: showDemoBanner,
       allowRealEmails: allowRealEmails,

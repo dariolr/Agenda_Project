@@ -12,6 +12,7 @@ final class EnvironmentConfig
         public readonly string $environmentName,
         public readonly bool $isLocal,
         public readonly bool $isDemo,
+        public readonly bool $isStaging,
         public readonly bool $isProduction,
         public readonly string $apiBaseUrl,
         public readonly string $webBaseUrl,
@@ -43,12 +44,14 @@ final class EnvironmentConfig
         $appEnv = AppEnvironment::normalize(self::env('APP_ENV', 'production'));
         $isProduction = $appEnv === AppEnvironment::PRODUCTION;
         $isDemo = $appEnv === AppEnvironment::DEMO;
+        $isStaging = $appEnv === AppEnvironment::STAGING;
         $isLocal = $appEnv === AppEnvironment::LOCAL;
 
         $config = new self(
             environmentName: $appEnv,
             isLocal: $isLocal,
             isDemo: $isDemo,
+            isStaging: $isStaging,
             isProduction: $isProduction,
             apiBaseUrl: self::env('API_BASE_URL', 'https://api.romeolab.it'),
             webBaseUrl: self::env('FRONTEND_URL', 'https://prenota.romeolab.it'),
@@ -113,6 +116,59 @@ final class EnvironmentConfig
             $dbLower = strtolower(trim($config->dbDatabase));
             if ($dbLower === '' || in_array($dbLower, ['agenda_core', 'agenda_production', 'agenda_prod'], true)) {
                 throw new \RuntimeException('Configurazione demo non sicura: DB_DATABASE deve puntare a database demo dedicato.');
+            }
+        }
+
+        if ($config->isStaging) {
+            if ($config->allowRealEmails) {
+                throw new \RuntimeException('Configurazione staging non sicura: ALLOW_REAL_EMAILS deve essere false in staging.');
+            }
+            if ($config->allowRealWhatsapp) {
+                throw new \RuntimeException('Configurazione staging non sicura: ALLOW_REAL_WHATSAPP deve essere false in staging.');
+            }
+            if ($config->allowDestructiveBusinessActions) {
+                throw new \RuntimeException('Configurazione staging non sicura: ALLOW_DESTRUCTIVE_BUSINESS_ACTIONS deve essere false in staging.');
+            }
+            if ($config->allowRealExports) {
+                throw new \RuntimeException('Configurazione staging non sicura: ALLOW_REAL_EXPORTS deve essere false in staging.');
+            }
+
+            // Staging ammette ALLOW_REAL_PAYMENTS=true solo con chiave Stripe test mode.
+            if ($config->allowRealPayments) {
+                $stripeKey = self::env('STRIPE_ONLINE_PAYMENTS_SECRET_KEY', '');
+                if ($stripeKey !== '' && !str_starts_with($stripeKey, 'sk_test_')) {
+                    throw new \RuntimeException(
+                        'Configurazione staging non sicura: STRIPE_ONLINE_PAYMENTS_SECRET_KEY deve iniziare con sk_test_ in staging.'
+                    );
+                }
+                $webhookSecret = self::env('STRIPE_CONNECT_WEBHOOK_SECRET', '');
+                if ($webhookSecret !== '' && !str_starts_with($webhookSecret, 'whsec_')) {
+                    throw new \RuntimeException(
+                        'Configurazione staging non sicura: STRIPE_CONNECT_WEBHOOK_SECRET deve iniziare con whsec_ in staging.'
+                    );
+                }
+            }
+
+            foreach (['https://api.romeolab.it', 'https://prenota.romeolab.it', 'https://gestionale.romeolab.it'] as $productionUrl) {
+                if ($config->apiBaseUrl === $productionUrl || $config->webBaseUrl === $productionUrl) {
+                    throw new \RuntimeException(
+                        'Configurazione staging non sicura: URL di staging non devono puntare ai domini di production.'
+                    );
+                }
+            }
+
+            $dbLower = strtolower(trim($config->dbDatabase));
+            if ($dbLower === '' || in_array($dbLower, ['agenda_core', 'agenda_production', 'agenda_prod'], true)) {
+                throw new \RuntimeException('Configurazione staging non sicura: DB_DATABASE non puo\' essere uguale al DB di produzione.');
+            }
+
+            $successUrl = self::env('STRIPE_ONLINE_PAYMENT_SUCCESS_URL', '');
+            $cancelUrl = self::env('STRIPE_ONLINE_PAYMENT_CANCEL_URL', '');
+            if ($successUrl !== '' && !str_contains($successUrl, '{slug}')) {
+                throw new \RuntimeException('Configurazione staging non sicura: STRIPE_ONLINE_PAYMENT_SUCCESS_URL deve contenere {slug}.');
+            }
+            if ($cancelUrl !== '' && !str_contains($cancelUrl, '{slug}')) {
+                throw new \RuntimeException('Configurazione staging non sicura: STRIPE_ONLINE_PAYMENT_CANCEL_URL deve contenere {slug}.');
             }
         }
     }

@@ -1284,6 +1284,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   TimeOfDay _startTime = const TimeOfDay(hour: 9, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 10, minute: 30);
   bool _waitlistEnabled = true;
+  bool _onlinePaymentRequired = false;
   OnlineBookingVisibilityOption _onlineBookingVisibility =
       OnlineBookingVisibilityOption.publicVisible;
 
@@ -1306,6 +1307,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           widget.initialEndTime ??
           _fromDayMinutes(_toDayMinutes(_startTime) + 90);
     }
+    _priceController.addListener(_onPriceChanged);
   }
 
   @override
@@ -1330,8 +1332,19 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
   @override
   void dispose() {
     _capacityController.dispose();
-    _priceController.dispose();
+    _priceController
+      ..removeListener(_onPriceChanged)
+      ..dispose();
     super.dispose();
+  }
+
+  void _onPriceChanged() => setState(() {
+        if (_isEventFree) _onlinePaymentRequired = false;
+      });
+
+  bool get _isEventFree {
+    final cents = _parsePriceCents();
+    return cents == null || cents == 0;
   }
 
   @override
@@ -1743,6 +1756,21 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                   targetId: classEventId,
                   enabled: !isLoading,
                 ),
+              ),
+              SwitchListTile.adaptive(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+                title: Text(
+                  context.l10n.onlinePaymentRequiredLabel,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+                subtitle: Text(
+                  context.l10n.onlinePaymentRequiredDescription,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+                value: _onlinePaymentRequired,
+                onChanged: isLoading || _isEventFree
+                    ? null
+                    : (v) => setState(() => _onlinePaymentRequired = v),
               ),
 
               if (isEditMode && classEventId != null) ...[
@@ -2886,6 +2914,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
             'waitlist_enabled': _waitlistEnabled,
             'is_bookable_online': _onlineBookingVisibility.isBookableOnline,
             'online_visibility': _onlineBookingVisibility.apiValue,
+            'online_payment_required': _isEventFree ? false : _onlinePaymentRequired,
             'price_cents': priceCents,
             if (priceCents != null) 'currency': currency,
           },
@@ -2995,6 +3024,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
               waitlistEnabled: _waitlistEnabled,
               isBookableOnline: _onlineBookingVisibility.isBookableOnline,
               onlineVisibility: _onlineBookingVisibility.apiValue,
+              onlinePaymentRequired: _isEventFree ? false : _onlinePaymentRequired,
               priceCents: priceCents,
               currency: priceCents != null ? currency : null,
             );
@@ -3114,6 +3144,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                 'waitlist_enabled': _waitlistEnabled,
                 'is_bookable_online': _onlineBookingVisibility.isBookableOnline,
                 'online_visibility': _onlineBookingVisibility.apiValue,
+                'online_payment_required': _isEventFree ? false : _onlinePaymentRequired,
                 'price_cents': priceCents,
                 if (priceCents != null) 'currency': currency,
               },
@@ -3169,6 +3200,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         ? (event.priceCents! / 100).toStringAsFixed(2)
         : '';
     _waitlistEnabled = event.waitlistEnabled;
+    _onlinePaymentRequired = event.onlinePaymentRequired;
     _onlineBookingVisibility = OnlineBookingVisibilityOption.fromValues(
       onlineVisibility: event.onlineVisibility,
       isBookableOnline: event.isBookableOnline,

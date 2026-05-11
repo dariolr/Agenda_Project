@@ -31,6 +31,7 @@ class ClassEvent {
   final String? currency;
   final String? myBookingStatus;
   final ClassBooking? myBooking;
+  final bool onlinePaymentRequired;
 
   const ClassEvent({
     required this.id,
@@ -61,6 +62,7 @@ class ClassEvent {
     this.currency,
     this.myBookingStatus,
     this.myBooking,
+    this.onlinePaymentRequired = false,
   });
 
   int get spotsLeft => capacityTotal - capacityReserved - confirmedCount;
@@ -135,6 +137,9 @@ class ClassEvent {
       myBooking: json['my_booking'] is Map<String, dynamic>
           ? ClassBooking.fromJson(json['my_booking'] as Map<String, dynamic>)
           : null,
+      onlinePaymentRequired: (json['online_payment_required'] is bool)
+          ? json['online_payment_required'] as bool
+          : (json['online_payment_required'] as num?)?.toInt() == 1,
     );
   }
 

@@ -75,6 +75,7 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
     bool isActive = true,
     bool isBookableOnline = true,
     String? onlineVisibility,
+    bool onlinePaymentRequired = false,
   }) async {
     final location = ref.read(currentLocationProvider);
     if (location.id <= 0) return null;
@@ -92,6 +93,7 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
         isActive: isActive,
         isBookableOnline: isBookableOnline,
         onlineVisibility: onlineVisibility,
+        onlinePaymentRequired: onlinePaymentRequired,
       );
       if (created.categoryId == 0 && categoryId > 0) {
         created = created.copyWith(categoryId: categoryId);
@@ -119,6 +121,7 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
     bool? isBookableOnline,
     String? onlineVisibility,
     List<int>? serviceIds,
+    bool? onlinePaymentRequired,
   }) async {
     final location = ref.read(currentLocationProvider);
     if (location.id <= 0) return null;
@@ -139,6 +142,7 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
         isBookableOnline: isBookableOnline,
         onlineVisibility: onlineVisibility,
         serviceIds: serviceIds,
+        onlinePaymentRequired: onlinePaymentRequired,
       );
       if (updated.categoryId == 0 && categoryId != null && categoryId > 0) {
         updated = updated.copyWith(categoryId: categoryId);

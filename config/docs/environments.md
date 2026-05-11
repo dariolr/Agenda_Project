@@ -6,13 +6,14 @@ Ambienti ufficiali:
 
 - `local`
 - `demo`
+- `staging`
 - `production`
 
 Principio: differenze ambiente centralizzate in config/policy, non in fork di progetto.
 
 ## Cartelle monorepo dedicate
 
-- `config/environments/{local,demo,production}`
+- `config/environments/{local,demo,staging,production}`
 - `database/{migrations,seeds,demo}`
 - `config/scripts/deploy`
 - `config/scripts/db`
@@ -38,9 +39,9 @@ I template ambiente centralizzati sono in `config/environments/`:
 
 ## Script wrapper monorepo
 
-- deploy backend web con env: `config/scripts/deploy/deploy_backend.sh <demo|production>`
-- deploy frontend web con env: `config/scripts/deploy/deploy_frontend.sh <demo|production>`
-- deploy core API con env: `config/scripts/deploy/deploy_core.sh <demo|production>`
+- deploy backend web con env: `config/scripts/deploy/deploy_backend.sh <demo|staging|production>`
+- deploy frontend web con env: `config/scripts/deploy/deploy_frontend.sh <demo|staging|production>`
+- deploy core API con env: `config/scripts/deploy/deploy_core.sh <demo|staging|production>`
 - prepare demo DB core: `config/scripts/db/core_prepare_demo.sh`
 - seed demo DB core: `config/scripts/db/core_seed_demo.sh`
 - reset demo DB core: `config/scripts/db/core_reset_demo.sh`

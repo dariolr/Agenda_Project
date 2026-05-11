@@ -13273,6 +13273,26 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Online payment required`
+  String get onlinePaymentRequiredLabel {
+    return Intl.message(
+      'Online payment required',
+      name: 'onlinePaymentRequiredLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The customer must complete the online payment to confirm the booking.`
+  String get onlinePaymentRequiredDescription {
+    return Intl.message(
+      'The customer must complete the online payment to confirm the booking.',
+      name: 'onlinePaymentRequiredDescription',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

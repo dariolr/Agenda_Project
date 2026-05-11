@@ -230,6 +230,7 @@ final class ServicePackagesController
             'is_bookable_online' => isset($body['is_bookable_online']) ? (int) (bool) $body['is_bookable_online'] : 1,
             'online_visibility' => $onlineVisibility,
             'is_broken' => 0,
+            'online_payment_required' => (bool) ($body['online_payment_required'] ?? false),
         ], $serviceIds);
 
         $created = $this->packageRepo->getDetailedById($packageId, $locationId);
@@ -319,6 +320,10 @@ final class ServicePackagesController
 
         if ($onlineVisibility !== null) {
             $updateData['online_visibility'] = $onlineVisibility;
+        }
+
+        if (array_key_exists('online_payment_required', $body)) {
+            $updateData['online_payment_required'] = (int) (bool) $body['online_payment_required'];
         }
 
         $serviceIds = null;

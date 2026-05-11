@@ -2018,6 +2018,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "onlineBookingVisibilityPublicOption": MessageLookupByLibrary.simpleMessage(
       "Visibile nella pagina pubblica",
     ),
+    "onlinePaymentRequiredDescription": MessageLookupByLibrary.simpleMessage(
+      "Il cliente dovrà completare il pagamento online per confermare la prenotazione.",
+    ),
+    "onlinePaymentRequiredLabel": MessageLookupByLibrary.simpleMessage(
+      "Pagamento online richiesto",
+    ),
     "onlinePaymentsConnectPayPal": MessageLookupByLibrary.simpleMessage(
       "Collega PayPal",
     ),

@@ -12,6 +12,7 @@ void main() {
       webBaseUrl: 'https://demo-gestionale.romeolab.it',
       isLocal: false,
       isDemo: true,
+      isStaging: false,
       isProduction: false,
       showDemoBanner: true,
       allowRealEmails: false,

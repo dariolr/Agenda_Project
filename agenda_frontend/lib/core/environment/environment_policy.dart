@@ -8,6 +8,7 @@ class EnvironmentPolicy {
   final AppEnvironmentConfig config;
 
   bool isDemoEnvironment() => config.isDemo;
+  bool isStagingEnvironment() => config.isStaging;
   bool canUseRealPayments() => config.allowRealPayments;
   bool canCallExternalWebhooks() => config.allowExternalWebhooks;
   bool canRunRealExports() => config.allowRealExports;

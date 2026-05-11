@@ -1,6 +1,6 @@
 # agenda_core Environment Rules
 
-- Ambienti: `local`, `demo`, `production`.
+- Ambienti: `local`, `demo`, `staging`, `production`.
 - Configurazione centralizzata, mai hardcoded nel codice.
 - Demo non deve puntare a produzione.
 - Demo deve usare DB separato.

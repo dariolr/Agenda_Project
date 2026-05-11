@@ -28,13 +28,13 @@ CREATE TABLE IF NOT EXISTS `business_online_payment_accounts` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE `service_variants`
-  ADD COLUMN IF NOT EXISTS `online_payment_required` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_price_starting_from`;
+  ADD COLUMN `online_payment_required` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_price_starting_from`;
 
 ALTER TABLE `service_packages`
-  ADD COLUMN IF NOT EXISTS `online_payment_required` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_broken`;
+  ADD COLUMN `online_payment_required` TINYINT(1) NOT NULL DEFAULT 0 AFTER `is_broken`;
 
 ALTER TABLE `class_events`
-  ADD COLUMN IF NOT EXISTS `online_payment_required` TINYINT(1) NOT NULL DEFAULT 0 AFTER `currency`;
+  ADD COLUMN `online_payment_required` TINYINT(1) NOT NULL DEFAULT 0 AFTER `currency`;
 
 CREATE TABLE IF NOT EXISTS `online_booking_payments` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,

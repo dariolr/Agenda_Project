@@ -1952,6 +1952,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "onlineBookingVisibilityPublicOption": MessageLookupByLibrary.simpleMessage(
       "Visible on the public booking page",
     ),
+    "onlinePaymentRequiredDescription": MessageLookupByLibrary.simpleMessage(
+      "The customer must complete the online payment to confirm the booking.",
+    ),
+    "onlinePaymentRequiredLabel": MessageLookupByLibrary.simpleMessage(
+      "Online payment required",
+    ),
     "onlinePaymentsConnectPayPal": MessageLookupByLibrary.simpleMessage(
       "Connect PayPal",
     ),

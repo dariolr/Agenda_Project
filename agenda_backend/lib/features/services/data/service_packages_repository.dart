@@ -23,6 +23,7 @@ class ServicePackagesRepository {
     bool isActive = true,
     bool isBookableOnline = true,
     String? onlineVisibility,
+    bool onlinePaymentRequired = false,
   }) => _api.createPackage(
     locationId: locationId,
     name: name,
@@ -34,6 +35,7 @@ class ServicePackagesRepository {
     isActive: isActive,
     isBookableOnline: isBookableOnline,
     onlineVisibility: onlineVisibility,
+    onlinePaymentRequired: onlinePaymentRequired,
   );
 
   Future<ServicePackage> updatePackage({
@@ -50,6 +52,7 @@ class ServicePackagesRepository {
     bool? isBookableOnline,
     String? onlineVisibility,
     List<int>? serviceIds,
+    bool? onlinePaymentRequired,
   }) => _api.updatePackage(
     locationId: locationId,
     packageId: packageId,
@@ -64,6 +67,7 @@ class ServicePackagesRepository {
     isBookableOnline: isBookableOnline,
     onlineVisibility: onlineVisibility,
     serviceIds: serviceIds,
+    onlinePaymentRequired: onlinePaymentRequired,
   );
 
   Future<void> deletePackage({

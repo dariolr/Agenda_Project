@@ -10,6 +10,7 @@
 
 - `local`
 - `demo`
+- `staging`
 - `production`
 
 ## Variabili principali
@@ -46,6 +47,11 @@ Controlli principali:
 - in `demo`: banner demo obbligatorio
 - in `demo`: API non può puntare a `https://api.romeolab.it`
 - in `demo`: DB deve essere separato dal DB default/production
+- in `staging`: `ALLOW_REAL_EMAILS`, `ALLOW_REAL_WHATSAPP`, `ALLOW_DESTRUCTIVE_BUSINESS_ACTIONS`, `ALLOW_REAL_EXPORTS` obbligatoriamente `false`
+- in `staging`: `ALLOW_REAL_PAYMENTS=true` consentito solo con `STRIPE_ONLINE_PAYMENTS_SECRET_KEY` che inizia con `sk_test_`
+- in `staging`: `STRIPE_CONNECT_WEBHOOK_SECRET` deve iniziare con `whsec_`
+- in `staging`: URL non devono puntare ai domini production
+- in `staging`: DB deve essere separato dal DB production
 
 ## Risposta blocco demo
 

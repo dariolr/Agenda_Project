@@ -87,34 +87,33 @@
         "--dart-define=META_EMBEDDED_SIGNUP_SCOPES=business_management,whatsapp_business_management,whatsapp_business_messaging"
       ]
     },
-    {
-      "name": "Backend (Demo Local API)",
+{
+      "name": "Backend (Staging API)",
       "type": "dart",
       "request": "launch",
       "deviceId": "chrome",
       "args": [
-        "--no-pub",
-        "--web-port=8081",
+        "--web-port=8080",
         "--dart-define-from-file=.vscode/debug_credentials.json",
-        "--dart-define=APP_ENV=demo",
-        "--dart-define=DEMO_MODE=true",
-        "--dart-define=API_BASE_URL=http://localhost:8888",
-        "--dart-define=FRONTEND_URL=http://localhost:3001",
+        "--dart-define=APP_ENV=local",
+        "--dart-define=DEMO_MODE=false",
+        "--dart-define=API_BASE_URL=https://staging-api.romeolab.it",
+        "--dart-define=FRONTEND_URL=https://staging-gestionale.romeolab.it",
         "--dart-define=ALLOW_REAL_EMAILS=false",
         "--dart-define=ALLOW_REAL_WHATSAPP=false",
-        "--dart-define=ALLOW_REAL_PAYMENTS=false",
-        "--dart-define=ALLOW_EXTERNAL_WEBHOOKS=false",
+        "--dart-define=ALLOW_REAL_PAYMENTS=true",
+        "--dart-define=ALLOW_EXTERNAL_WEBHOOKS=true",
         "--dart-define=ALLOW_DESTRUCTIVE_BUSINESS_ACTIONS=false",
         "--dart-define=ALLOW_PLAN_CHANGES=false",
         "--dart-define=ALLOW_REAL_EXPORTS=false",
-        "--dart-define=SHOW_DEMO_BANNER=true",
-        "--dart-define=DEMO_RESET_EXPECTED=true",
+        "--dart-define=SHOW_DEMO_BANNER=false",
+        "--dart-define=DEMO_RESET_EXPECTED=false",
         "--dart-define=DEMO_AUTO_LOGIN_ENABLED=false",
         "--dart-define=META_APP_ID=2025478641711692",
         "--dart-define=META_GRAPH_VERSION=v21.0",
-        "--dart-define=META_EMBEDDED_SIGNUP_REDIRECT_URI=http://localhost:3001/auth/meta-whatsapp-callback",
+        "--dart-define=META_EMBEDDED_SIGNUP_REDIRECT_URI=https://staging-gestionale.romeolab.it/auth/meta-whatsapp-callback",
         "--dart-define=META_EMBEDDED_SIGNUP_SCOPES=business_management,whatsapp_business_management,whatsapp_business_messaging"
       ]
     }
-  ]
+      ]
 }

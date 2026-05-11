@@ -23,6 +23,7 @@ class Service {
   final int? serviceVariantId; // ID della variante per location (da API)
   final List<ServiceVariantResourceRequirement>
   resourceRequirements; // risorse richieste
+  final bool onlinePaymentRequired;
 
   const Service({
     required this.id,
@@ -44,6 +45,7 @@ class Service {
     this.parallelCapacity = 1,
     this.serviceVariantId,
     this.resourceRequirements = const [],
+    this.onlinePaymentRequired = false,
   });
 
   Service copyWith({
@@ -66,6 +68,7 @@ class Service {
     int? parallelCapacity,
     int? serviceVariantId,
     List<ServiceVariantResourceRequirement>? resourceRequirements,
+    bool? onlinePaymentRequired,
   }) => Service(
     id: id ?? this.id,
     businessId: businessId ?? this.businessId,
@@ -86,6 +89,7 @@ class Service {
     parallelCapacity: parallelCapacity ?? this.parallelCapacity,
     serviceVariantId: serviceVariantId ?? this.serviceVariantId,
     resourceRequirements: resourceRequirements ?? this.resourceRequirements,
+    onlinePaymentRequired: onlinePaymentRequired ?? this.onlinePaymentRequired,
   );
 
   factory Service.fromJson(Map<String, dynamic> json) {
@@ -127,6 +131,10 @@ class Service {
       parallelCapacity: json['parallel_capacity'] as int? ?? 1,
       serviceVariantId: json['service_variant_id'] as int?,
       resourceRequirements: resourceRequirements,
+      onlinePaymentRequired:
+          (json['online_payment_required'] is bool)
+              ? json['online_payment_required'] as bool
+              : (json['online_payment_required'] as num?)?.toInt() == 1,
     );
   }
 
@@ -147,6 +155,7 @@ class Service {
     'is_price_starting_from': isPriceStartingFrom,
     'parallel_capacity': parallelCapacity,
     if (serviceVariantId != null) 'service_variant_id': serviceVariantId,
+    'online_payment_required': onlinePaymentRequired,
   };
 }
 

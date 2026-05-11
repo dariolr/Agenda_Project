@@ -524,6 +524,7 @@ final class ClassEventsController
             'visibility' => isset($body['visibility']) ? strtoupper((string) $body['visibility']) : 'PUBLIC',
             'price_cents' => isset($body['price_cents']) ? (int) $body['price_cents'] : null,
             'currency' => $body['currency'] ?? null,
+            'online_payment_required' => (bool) ($body['online_payment_required'] ?? false),
             'resource_requirements' => $resourceRequirements,
         ]);
 
@@ -590,6 +591,7 @@ final class ClassEventsController
             'visibility',
             'price_cents',
             'currency',
+            'online_payment_required',
         ];
         foreach ($map as $field) {
             if (array_key_exists($field, $body)) {

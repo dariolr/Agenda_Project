@@ -655,6 +655,7 @@ final class ClassEventRepository
                     capacity_total, capacity_reserved, confirmed_count, waitlist_count,
                     waitlist_enabled, is_bookable_online, online_visibility, booking_open_at, booking_close_at,
                     cancel_cutoff_minutes, status, visibility, price_cents, currency,
+                    online_payment_required,
                     created_at, updated_at
                 ) VALUES (
                     :business_id, :class_type_id,
@@ -663,6 +664,7 @@ final class ClassEventRepository
                     :capacity_total, :capacity_reserved, :confirmed_count, :waitlist_count,
                     :waitlist_enabled, :is_bookable_online, :online_visibility, :booking_open_at, :booking_close_at,
                     :cancel_cutoff_minutes, :status, :visibility, :price_cents, :currency,
+                    :online_payment_required,
                     :created_at, :updated_at
                 )'
             );
@@ -687,6 +689,7 @@ final class ClassEventRepository
                 'visibility' => $data['visibility'] ?? 'PUBLIC',
                 'price_cents' => $data['price_cents'] ?? null,
                 'currency' => $data['currency'] ?? null,
+                'online_payment_required' => !empty($data['online_payment_required']) ? 1 : 0,
                 'created_at' => $currentUtc,
                 'updated_at' => $currentUtc,
             ]);
@@ -730,6 +733,7 @@ final class ClassEventRepository
             'visibility',
             'price_cents',
             'currency',
+            'online_payment_required',
         ];
 
         $fields = [];
@@ -749,7 +753,7 @@ final class ClassEventRepository
                     }
                 }
                 $fields[] = "{$field} = :{$field}";
-                $params[$field] = in_array($field, ['waitlist_enabled', 'is_bookable_online'], true)
+                $params[$field] = in_array($field, ['waitlist_enabled', 'is_bookable_online', 'online_payment_required'], true)
                     ? (!empty($data[$field]) ? 1 : 0)
                     : $data[$field];
             }
