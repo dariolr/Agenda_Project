@@ -93,7 +93,7 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
     return Scaffold(
       body: billingAsync.when(
         skipLoadingOnReload: false,
-        skipLoadingOnRefresh: false,
+        skipLoadingOnRefresh: true,
         data: (billing) => _BillingContent(
           scrollController: _scrollController,
           billing: billing,
@@ -163,6 +163,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
 
     return SafeArea(
       child: ListView(
+        key: const PageStorageKey<String>('billing-subscription-scroll'),
         controller: widget.scrollController,
         padding: const EdgeInsets.all(24),
         children: [
