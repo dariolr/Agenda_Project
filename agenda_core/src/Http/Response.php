@@ -15,6 +15,9 @@ final class Response
         public readonly int $status,
         public readonly array $data,
         public readonly ?string $traceId = null,
+        private readonly ?string $rawBody = null,
+        private readonly string $contentType = 'application/json; charset=utf-8',
+        private readonly array $headers = [],
     ) {}
 
     public static function success(array $data, int $status = 200): self
@@ -196,7 +199,7 @@ final class Response
     public function send(): void
     {
         http_response_code($this->status);
-        header('Content-Type: application/json; charset=utf-8');
+        header('Content-Type: ' . $this->contentType);
         
         // Determina l'origin consentito dinamicamente
         $allowedOrigins = array_map('trim', explode(',', EnvironmentConfig::current()->corsAllowedOrigins));
@@ -209,6 +212,9 @@ final class Response
         
         if ($this->traceId !== null) {
             header('X-Trace-Id: ' . $this->traceId);
+        }
+        foreach ($this->headers as $name => $value) {
+            header($name . ': ' . $value);
         }
 
         // Set cookies
@@ -225,6 +231,11 @@ final class Response
             setcookie($name, $cookie['value'], $cookieOptions);
         }
         
+        if ($this->rawBody !== null) {
+            echo $this->rawBody;
+            return;
+        }
+
         echo Json::encode($this->normalizeOutputData());
     }
 
