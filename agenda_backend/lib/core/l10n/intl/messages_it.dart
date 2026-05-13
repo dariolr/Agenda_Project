@@ -546,23 +546,20 @@ class MessageLookup extends MessageLookupByLibrary {
     "billingCancelAtPeriodEndLabel": MessageLookupByLibrary.simpleMessage(
       "cancel_at_period_end",
     ),
-    "billingCancelCheckoutRetryAction": MessageLookupByLibrary.simpleMessage(
-      "Annulla checkout in corso",
-    ),
     "billingCanceledAtFieldLabel": MessageLookupByLibrary.simpleMessage(
       "canceled_at",
     ),
     "billingCheckoutAlreadyStartedError": MessageLookupByLibrary.simpleMessage(
-      "Checkout già avviato. Completa o annulla la sessione aperta prima di riprovare.",
+      "Pagamento già avviato. Completa il pagamento aperto prima di riprovare.",
     ),
     "billingCheckoutCanceledMessage": MessageLookupByLibrary.simpleMessage(
-      "Checkout annullato. Puoi riprovare quando vuoi.",
+      "Pagamento annullato. Puoi riprovare quando vuoi.",
     ),
     "billingCheckoutIncompleteMessage": MessageLookupByLibrary.simpleMessage(
-      "Checkout non completato. Puoi riprovare l’attivazione.",
+      "Pagamento non completato. Puoi riprovare l’attivazione.",
     ),
     "billingCheckoutStartedMessage": MessageLookupByLibrary.simpleMessage(
-      "Checkout già avviato. Completa o annulla la sessione aperta prima di riprovare.",
+      "Pagamento già avviato. Completa il pagamento aperto prima di riprovare.",
     ),
     "billingCurrencyLabel": MessageLookupByLibrary.simpleMessage("Valuta"),
     "billingCurrentPeriodEndCancellationLabel":
@@ -624,9 +621,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "billingRequiredTitle": MessageLookupByLibrary.simpleMessage(
       "Abbonamento richiesto",
     ),
-    "billingResumeCheckoutAction": MessageLookupByLibrary.simpleMessage(
-      "Riprendi checkout",
-    ),
     "billingRetryActivationAction": MessageLookupByLibrary.simpleMessage(
       "Riprova attivazione",
     ),
@@ -646,9 +640,6 @@ class MessageLookup extends MessageLookupByLibrary {
       "Non richiesto",
     ),
     "billingStatusPastDue": MessageLookupByLibrary.simpleMessage("In ritardo"),
-    "billingStatusPendingCheckout": MessageLookupByLibrary.simpleMessage(
-      "Checkout non completato",
-    ),
     "billingStatusUnpaid": MessageLookupByLibrary.simpleMessage("Non pagato"),
     "billingSubscriptionAlreadyExistsError": MessageLookupByLibrary.simpleMessage(
       "Esiste già un abbonamento per questo business. Usa Gestisci abbonamento.",

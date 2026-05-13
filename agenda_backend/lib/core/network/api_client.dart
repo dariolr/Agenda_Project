@@ -1725,17 +1725,6 @@ class ApiClient {
     return response['url'] as String? ?? '';
   }
 
-  Future<String> resumeBillingCheckoutSession({required int businessId}) async {
-    final response = await post(
-      '${ApiConfig.billingCheckoutSessionResume}?business_id=$businessId',
-    );
-    return response['url'] as String? ?? '';
-  }
-
-  Future<void> cancelBillingCheckoutSession({required int businessId}) async {
-    await post('${ApiConfig.billingCheckoutSessionCancel}?business_id=$businessId');
-  }
-
   Future<String> createBillingPortalSession({required int businessId}) async {
     final response = await post(
       '${ApiConfig.billingPortalSession}?business_id=$businessId',

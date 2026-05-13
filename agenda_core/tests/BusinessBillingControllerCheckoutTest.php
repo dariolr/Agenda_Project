@@ -51,7 +51,7 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
         );
     }
 
-    public function testActiveWithProviderSubscriptionReturnsConflict(): void
+    public function testActiveWithProviderSubscriptionReturnsPortal(): void
     {
         $this->seedBillingSubscription(
             BillingSubscriptionStatus::ACTIVE,
@@ -60,14 +60,14 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
 
         $response = $this->controller->checkoutSession($this->request());
 
-        $this->assertSame(409, $response->status);
-        $this->assertFalse($response->data['success']);
-        $this->assertSame('subscription_already_active', $response->data['error']['code']);
-        $this->assertSame('errors.subscription_already_active', $response->data['error']['message_key']);
+        $this->assertSame(200, $response->status);
+        $this->assertTrue($response->data['success']);
+        $this->assertSame('portal', $response->data['data']['purpose']);
+        $this->assertSame('https://billing.stripe.test/portal', $response->data['data']['url']);
         $this->assertSame(0, $this->provider->checkoutCalls);
     }
 
-    public function testActiveCancelAtPeriodEndReturnsConflict(): void
+    public function testActiveCancelAtPeriodEndReturnsPortal(): void
     {
         $this->seedBillingSubscription(
             BillingSubscriptionStatus::ACTIVE,
@@ -77,8 +77,9 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
 
         $response = $this->controller->checkoutSession($this->request());
 
-        $this->assertSame(409, $response->status);
-        $this->assertSame('subscription_already_active', $response->data['error']['code']);
+        $this->assertSame(200, $response->status);
+        $this->assertSame('portal', $response->data['data']['purpose']);
+        $this->assertSame('https://billing.stripe.test/portal', $response->data['data']['url']);
         $this->assertSame(0, $this->provider->checkoutCalls);
     }
 
@@ -109,7 +110,7 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
         $this->assertSame(1, $this->provider->checkoutCalls);
     }
 
-    public function testSecondCheckoutRequestBlocksOpenPendingCheckoutSession(): void
+    public function testSecondCheckoutRequestReturnsOpenPendingCheckoutSession(): void
     {
         $this->provider->checkoutSessionId = 'cs_open';
         $this->provider->checkoutUrl = 'https://checkout.stripe.test/open';
@@ -119,13 +120,13 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
         $secondResponse = $this->controller->checkoutSession($this->request());
 
         $this->assertSame(200, $firstResponse->status);
-        $this->assertSame(409, $secondResponse->status);
-        $this->assertSame('checkout_already_started', $secondResponse->data['error']['code']);
-        $this->assertArrayNotHasKey('data', $secondResponse->data);
+        $this->assertSame(200, $secondResponse->status);
+        $this->assertSame('https://checkout.stripe.test/open', $secondResponse->data['data']['url']);
+        $this->assertSame('cs_open', $secondResponse->data['data']['session_id']);
         $this->assertSame(1, $this->provider->checkoutCalls);
     }
 
-    public function testSecondCheckoutRequestDoesNotCreateNewSessionWhenPendingSessionCannotBeRetrieved(): void
+    public function testPendingSessionCannotBeRetrievedCreatesNewCheckout(): void
     {
         $this->seedBillingSubscription(
             BillingSubscriptionStatus::PENDING_CHECKOUT,
@@ -134,9 +135,9 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
 
         $response = $this->controller->checkoutSession($this->request());
 
-        $this->assertSame(409, $response->status);
-        $this->assertSame('checkout_already_started', $response->data['error']['code']);
-        $this->assertSame(0, $this->provider->checkoutCalls);
+        $this->assertSame(200, $response->status);
+        $this->assertSame('https://checkout.stripe.test/session', $response->data['data']['url']);
+        $this->assertSame(1, $this->provider->checkoutCalls);
     }
 
     public function testPendingCheckoutReservationWithoutSessionBlocksNewCheckout(): void
@@ -192,7 +193,7 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
         $this->assertSame(1, $this->provider->checkoutCalls);
     }
 
-    public function testExistingStripeSubscriptionPreventsNewCheckoutAndSyncsLocalState(): void
+    public function testExistingStripeSubscriptionReturnsPortalAndSyncsLocalState(): void
     {
         $this->provider->manageableSubscription = [
             'provider_customer_id' => 'cus_test',
@@ -209,8 +210,9 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
             ->query('SELECT * FROM business_billing_subscription WHERE business_id = 42')
             ->fetch(PDO::FETCH_ASSOC);
 
-        $this->assertSame(409, $response->status);
-        $this->assertSame('subscription_already_exists', $response->data['error']['code']);
+        $this->assertSame(200, $response->status);
+        $this->assertSame('portal', $response->data['data']['purpose']);
+        $this->assertSame('https://billing.stripe.test/portal', $response->data['data']['url']);
         $this->assertSame(0, $this->provider->checkoutCalls);
         $this->assertSame('sub_existing_stripe', $row['provider_subscription_id']);
         $this->assertSame(BillingSubscriptionStatus::ACTIVE, $row['status']);
@@ -256,7 +258,7 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
         $this->assertSame(1, $this->provider->checkoutCalls);
     }
 
-    public function testCompletedPaidPendingCheckoutSyncsSubscriptionAndDoesNotCreateCheckout(): void
+    public function testCompletedPaidPendingCheckoutSyncsSubscriptionAndReturnsPortal(): void
     {
         $this->seedBillingSubscription(
             BillingSubscriptionStatus::PENDING_CHECKOUT,
@@ -283,8 +285,9 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
             ->query('SELECT status, provider_subscription_id FROM business_billing_subscription WHERE business_id = 42')
             ->fetch(PDO::FETCH_ASSOC);
 
-        $this->assertSame(409, $response->status);
-        $this->assertSame('subscription_already_exists', $response->data['error']['code']);
+        $this->assertSame(200, $response->status);
+        $this->assertSame('portal', $response->data['data']['purpose']);
+        $this->assertSame('https://billing.stripe.test/portal', $response->data['data']['url']);
         $this->assertSame(0, $this->provider->checkoutCalls);
         $this->assertSame(BillingSubscriptionStatus::ACTIVE, $row['status']);
         $this->assertSame('sub_paid_checkout', $row['provider_subscription_id']);
@@ -329,7 +332,8 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
             ->fetch(PDO::FETCH_ASSOC);
 
         $this->assertSame(200, $response->status);
-        $this->assertSame('retryable', $response->data['data']['checkout_state']);
+        $this->assertSame(BillingSubscriptionStatus::INACTIVE, $response->data['data']['status']);
+        $this->assertTrue($response->data['data']['canceled_pending_checkout']);
         $this->assertSame(BillingSubscriptionStatus::INACTIVE, $row['status']);
         $this->assertNull($row['last_checkout_session_id']);
         $this->assertNull($row['last_payment_at']);
@@ -353,7 +357,7 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
         $this->assertSame(1, $this->provider->checkoutCalls);
     }
 
-    public function testPendingCheckoutWithSessionIsExposedAsStarted(): void
+    public function testPendingCheckoutWithSessionIsExposedAsPrepared(): void
     {
         $this->seedBillingSubscription(
             BillingSubscriptionStatus::PENDING_CHECKOUT,
@@ -365,13 +369,13 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
         $this->assertSame(200, $response->status);
         $this->assertSame(BillingSubscriptionStatus::PENDING_CHECKOUT, $response->data['data']['status']);
         $this->assertFalse($response->data['data']['checkout_retryable']);
-        $this->assertSame('started', $response->data['data']['checkout_state']);
+        $this->assertSame('prepared', $response->data['data']['checkout_state']);
         $this->assertSame('cs_open', $response->data['data']['last_checkout_session_id']);
         $this->assertNull($response->data['data']['last_payment_at']);
         $this->assertNull($response->data['data']['current_period_end']);
     }
 
-    public function testCheckoutCancelReturnKeepsPendingCheckoutStartedWhenSessionExists(): void
+    public function testCheckoutCancelReturnKeepsPendingCheckoutWhenSessionExists(): void
     {
         $this->seedBillingSubscription(
             BillingSubscriptionStatus::PENDING_CHECKOUT,
@@ -380,14 +384,15 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
 
         $response = $this->controller->subscription($this->request(['checkout_cancelled' => '1']));
         $storedStatus = $this->pdo
-            ->query('SELECT status FROM business_billing_subscription WHERE business_id = 42')
-            ->fetchColumn();
+            ->query('SELECT status, last_checkout_session_id FROM business_billing_subscription WHERE business_id = 42')
+            ->fetch(PDO::FETCH_ASSOC);
 
         $this->assertSame(200, $response->status);
         $this->assertSame(BillingSubscriptionStatus::PENDING_CHECKOUT, $response->data['data']['status']);
         $this->assertFalse($response->data['data']['checkout_retryable']);
-        $this->assertSame('started', $response->data['data']['checkout_state']);
-        $this->assertSame(BillingSubscriptionStatus::PENDING_CHECKOUT, $storedStatus);
+        $this->assertSame('prepared', $response->data['data']['checkout_state']);
+        $this->assertSame(BillingSubscriptionStatus::PENDING_CHECKOUT, $storedStatus['status']);
+        $this->assertSame('cs_cancelled', $storedStatus['last_checkout_session_id']);
     }
 
     private function createSchema(): void

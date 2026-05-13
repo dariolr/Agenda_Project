@@ -2422,6 +2422,38 @@ CREATE TABLE `business_billing_subscription` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
+-- Struttura della tabella `business_billing_checkout_handoffs`
+-- Legacy: non usata dal flow principale Stripe del gestionale.
+--
+CREATE TABLE `business_billing_checkout_handoffs` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `business_id` int UNSIGNED NOT NULL,
+  `user_id` int UNSIGNED NOT NULL,
+  `provider_code` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'stripe',
+  `purpose` enum('checkout','portal') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `token_hash` varchar(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `checkout_session_id` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `portal_session_id` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `target_url` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `expires_at` timestamp NOT NULL,
+  `used_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_business_billing_checkout_handoff_token` (`token_hash`),
+  KEY `idx_business_billing_checkout_handoffs_business` (`business_id`),
+  KEY `idx_business_billing_checkout_handoffs_user` (`user_id`),
+  KEY `idx_business_billing_checkout_handoffs_expires_at` (`expires_at`),
+  KEY `idx_business_billing_checkout_handoffs_used_at` (`used_at`),
+  CONSTRAINT `fk_business_billing_checkout_handoffs_business`
+    FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT `fk_business_billing_checkout_handoffs_user`
+    FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
+    ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
 -- Struttura della tabella `billing_provider_events`
 --
 CREATE TABLE `billing_provider_events` (

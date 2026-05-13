@@ -527,14 +527,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "billingCancelAtPeriodEndLabel": MessageLookupByLibrary.simpleMessage(
       "cancel_at_period_end",
     ),
-    "billingCancelCheckoutRetryAction": MessageLookupByLibrary.simpleMessage(
-      "Cancel checkout",
-    ),
     "billingCanceledAtFieldLabel": MessageLookupByLibrary.simpleMessage(
       "canceled_at",
     ),
     "billingCheckoutAlreadyStartedError": MessageLookupByLibrary.simpleMessage(
-      "Checkout already started. Complete or cancel the open session before trying again.",
+      "Checkout already started. Complete the open session before trying again.",
     ),
     "billingCheckoutCanceledMessage": MessageLookupByLibrary.simpleMessage(
       "Checkout canceled. You can try again whenever you want.",
@@ -543,7 +540,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Checkout not completed. You can retry the payment whenever you want.",
     ),
     "billingCheckoutStartedMessage": MessageLookupByLibrary.simpleMessage(
-      "Checkout already started. Complete or cancel the open session before trying again.",
+      "Checkout already started. Complete the open session before trying again.",
     ),
     "billingCurrencyLabel": MessageLookupByLibrary.simpleMessage("Currency"),
     "billingCurrentPeriodEndCancellationLabel":
@@ -605,9 +602,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "billingRequiredTitle": MessageLookupByLibrary.simpleMessage(
       "Subscription required",
     ),
-    "billingResumeCheckoutAction": MessageLookupByLibrary.simpleMessage(
-      "Resume checkout",
-    ),
     "billingRetryActivationAction": MessageLookupByLibrary.simpleMessage(
       "Retry activation",
     ),
@@ -627,9 +621,6 @@ class MessageLookup extends MessageLookupByLibrary {
       "Not required",
     ),
     "billingStatusPastDue": MessageLookupByLibrary.simpleMessage("Past due"),
-    "billingStatusPendingCheckout": MessageLookupByLibrary.simpleMessage(
-      "Checkout not completed",
-    ),
     "billingStatusUnpaid": MessageLookupByLibrary.simpleMessage("Unpaid"),
     "billingSubscriptionAlreadyExistsError": MessageLookupByLibrary.simpleMessage(
       "A subscription already exists for this business. Use Manage subscription.",

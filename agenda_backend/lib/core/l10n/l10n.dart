@@ -12419,26 +12419,6 @@ class L10n {
     );
   }
 
-  /// `Resume checkout`
-  String get billingResumeCheckoutAction {
-    return Intl.message(
-      'Resume checkout',
-      name: 'billingResumeCheckoutAction',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Cancel checkout`
-  String get billingCancelCheckoutRetryAction {
-    return Intl.message(
-      'Cancel checkout',
-      name: 'billingCancelCheckoutRetryAction',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Reactivate subscription`
   String get billingReactivateAction {
     return Intl.message(
@@ -12479,20 +12459,20 @@ class L10n {
     );
   }
 
-  /// `Checkout already started. Complete or cancel the open session before trying again.`
+  /// `Checkout already started. Complete the open session before trying again.`
   String get billingCheckoutStartedMessage {
     return Intl.message(
-      'Checkout already started. Complete or cancel the open session before trying again.',
+      'Checkout already started. Complete the open session before trying again.',
       name: 'billingCheckoutStartedMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `Checkout already started. Complete or cancel the open session before trying again.`
+  /// `Checkout already started. Complete the open session before trying again.`
   String get billingCheckoutAlreadyStartedError {
     return Intl.message(
-      'Checkout already started. Complete or cancel the open session before trying again.',
+      'Checkout already started. Complete the open session before trying again.',
       name: 'billingCheckoutAlreadyStartedError',
       desc: '',
       args: [],
@@ -12584,16 +12564,6 @@ class L10n {
     return Intl.message(
       'Inactive',
       name: 'billingStatusInactive',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Checkout not completed`
-  String get billingStatusPendingCheckout {
-    return Intl.message(
-      'Checkout not completed',
-      name: 'billingStatusPendingCheckout',
       desc: '',
       args: [],
     );

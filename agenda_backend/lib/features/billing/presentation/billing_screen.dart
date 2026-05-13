@@ -1,19 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../core/l10n/date_time_formats.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/network/api_client.dart';
-import '../../../core/services/same_tab_redirect.dart';
 import '../../../core/services/tenant_time_service.dart';
-import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/tenant_time_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../domain/billing_config_view_model.dart';
 import '../providers/billing_provider.dart';
+import 'widgets/billing_external_link.dart';
+
+enum _BillingExternalPurpose { checkout, portal }
+
+class _BillingExternalAction {
+  const _BillingExternalAction({
+    required this.key,
+    required this.purpose,
+    required this.label,
+    required this.icon,
+    this.tonal = false,
+  });
+
+  final String key;
+  final _BillingExternalPurpose purpose;
+  final String label;
+  final IconData icon;
+  final bool tonal;
+}
 
 class BillingScreen extends ConsumerStatefulWidget {
   const BillingScreen({super.key, this.checkoutCanceled = false});
@@ -26,28 +42,26 @@ class BillingScreen extends ConsumerStatefulWidget {
 
 class _BillingScreenState extends ConsumerState<BillingScreen>
     with WidgetsBindingObserver {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
-    if (!kIsWeb) {
-      WidgetsBinding.instance.addObserver(this);
-    }
+    WidgetsBinding.instance.addObserver(this);
     Future.microtask(_refreshInitialSubscription);
   }
 
   @override
   void dispose() {
-    if (!kIsWeb) {
-      WidgetsBinding.instance.removeObserver(this);
-    }
+    _scrollController.dispose();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!kIsWeb && state == AppLifecycleState.resumed) {
-      ref.invalidate(billingSubscriptionProvider);
-    }
+    if (state != AppLifecycleState.resumed) return;
+    ref.invalidate(billingSubscriptionProvider);
   }
 
   Future<void> _refreshInitialSubscription() async {
@@ -78,7 +92,10 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
 
     return Scaffold(
       body: billingAsync.when(
+        skipLoadingOnReload: false,
+        skipLoadingOnRefresh: true,
         data: (billing) => _BillingContent(
+          scrollController: _scrollController,
           billing: billing,
           checkoutCanceled: widget.checkoutCanceled,
           isSuperadmin: isSuperadmin,
@@ -109,11 +126,13 @@ class _BillingScreenState extends ConsumerState<BillingScreen>
 
 class _BillingContent extends ConsumerStatefulWidget {
   const _BillingContent({
+    required this.scrollController,
     required this.billing,
     required this.checkoutCanceled,
     required this.isSuperadmin,
   });
 
+  final ScrollController scrollController;
   final BillingConfigViewModel billing;
   final bool checkoutCanceled;
   final bool isSuperadmin;
@@ -123,24 +142,29 @@ class _BillingContent extends ConsumerStatefulWidget {
 }
 
 class _BillingContentState extends ConsumerState<_BillingContent> {
-  bool _loadingCheckout = false;
-  bool _loadingPortal = false;
-  bool _loadingCancelCheckout = false;
+  bool _preparingExternalLink = false;
+  String? _preparingActionKey;
+  String? _preparedActionKey;
+  String? _preparedExternalUrl;
+  String? _prepareExternalLinkError;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final billing = widget.billing;
-    final canActivate = _canActivate(billing);
-    final canReactivate = _canReactivate(billing);
-    final canManage = _canManage(billing);
-    final isStartedCheckout = _isStartedPendingCheckout(billing);
-    final isActionLoading =
-        _loadingCheckout || _loadingPortal || _loadingCancelCheckout;
+    final externalAction = _externalActionForBilling(context, billing);
+    if (externalAction != null) {
+      _scheduleExternalLinkPreparation(externalAction);
+    }
+    final preparedUrl = _preparedActionKey == externalAction?.key
+        ? _preparedExternalUrl
+        : null;
 
     return SafeArea(
       child: ListView(
+        key: const PageStorageKey<String>('billing-subscription-scroll'),
+        controller: widget.scrollController,
         padding: const EdgeInsets.all(24),
         children: [
           Text(
@@ -188,7 +212,9 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
                         message: context.l10n.billingCheckoutStartedMessage,
                       ),
                       const SizedBox(height: 16),
-                    ] else if (_shouldShowCheckoutIncompleteNotice(billing)) ...[
+                    ] else if (_shouldShowCheckoutIncompleteNotice(
+                      billing,
+                    )) ...[
                       _BillingNotice(
                         message: context.l10n.billingCheckoutIncompleteMessage,
                       ),
@@ -291,64 +317,36 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
                       ),
                     ],
                     const SizedBox(height: 20),
-                    Wrap(
-                      spacing: 12,
-                      runSpacing: 12,
-                      children: [
-                        if (isStartedCheckout)
-                          FilledButton.icon(
-                            onPressed: isActionLoading
-                                ? null
-                                : () => _resumeCheckout(context),
-                            icon: _loadingCheckout
-                                ? const _ButtonProgressIndicator()
-                                : const Icon(Icons.open_in_new),
-                            label: Text(context.l10n.billingResumeCheckoutAction),
-                          ),
-                        if (isStartedCheckout)
-                          FilledButton.tonalIcon(
-                            onPressed: isActionLoading
-                                ? null
-                                : () => _cancelCheckout(context),
-                            icon: _loadingCancelCheckout
-                                ? const _ButtonProgressIndicator()
-                                : const Icon(Icons.restart_alt),
-                            label: Text(
-                              context.l10n.billingCancelCheckoutRetryAction,
-                            ),
-                          ),
-                        if (!isStartedCheckout && canActivate)
-                          FilledButton.icon(
-                            onPressed: isActionLoading
-                                ? null
-                                : () => _openCheckout(context),
-                            icon: _loadingCheckout
-                                ? const _ButtonProgressIndicator()
-                                : const Icon(Icons.arrow_forward),
-                            label: Text(_activateActionLabel(context, billing)),
-                          ),
-                        if (canReactivate)
-                          FilledButton.icon(
-                            onPressed: isActionLoading
-                                ? null
-                                : () => _openPortal(context),
-                            icon: _loadingPortal
-                                ? const _ButtonProgressIndicator()
-                                : const Icon(Icons.refresh),
-                            label: Text(context.l10n.billingReactivateAction),
-                          ),
-                        if (canManage)
-                          FilledButton.tonalIcon(
-                            onPressed: isActionLoading
-                                ? null
-                                : () => _openPortal(context),
-                            icon: _loadingPortal
-                                ? const _ButtonProgressIndicator()
-                                : const Icon(Icons.manage_accounts_outlined),
-                            label: Text(context.l10n.billingManageAction),
-                          ),
+                    if (externalAction != null) ...[
+                      if (_prepareExternalLinkError != null) ...[
+                        _BillingNotice(message: _prepareExternalLinkError!),
+                        const SizedBox(height: 16),
                       ],
-                    ),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          BillingExternalLink(
+                            url: preparedUrl,
+                            icon: externalAction.icon,
+                            label: externalAction.label,
+                            tonal: externalAction.tonal,
+                            loading: _preparingExternalLink,
+                          ),
+                          if (_prepareExternalLinkError != null)
+                            FilledButton.tonalIcon(
+                              onPressed: _preparingExternalLink
+                                  ? null
+                                  : () => _prepareExternalLink(
+                                      externalAction,
+                                      force: true,
+                                    ),
+                              icon: const Icon(Icons.refresh),
+                              label: Text(context.l10n.actionRetry),
+                            ),
+                        ],
+                      ),
+                    ],
                   ],
                 ],
               ),
@@ -362,16 +360,15 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
   bool _canActivate(BillingConfigViewModel billing) {
     if (!billing.billingEnabled) return false;
     if (billing.status == 'active' && billing.cancelAtPeriodEnd) return false;
-    if (billing.status == 'pending_checkout') {
-      return _isRetryablePendingCheckout(billing);
-    }
+    if (billing.status == 'pending_checkout') return true;
     if ((billing.status == 'past_due' || billing.status == 'unpaid') &&
-        billing.lastPaymentAt == null) {
-      return billing.canStartCheckout;
+        _canManage(billing)) {
+      return false;
     }
     return {
       'inactive',
       'canceled',
+      'past_due',
       'unpaid',
       'error',
       'not_required',
@@ -382,32 +379,17 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
     BuildContext context,
     BillingConfigViewModel billing,
   ) {
-    if (billing.status == 'pending_checkout' &&
-        _isRetryablePendingCheckout(billing)) {
-      return context.l10n.billingRetryPaymentAction;
-    }
-    if ((billing.status == 'past_due' || billing.status == 'unpaid') &&
-        billing.lastPaymentAt == null) {
-      return context.l10n.billingRetryActivationAction;
-    }
-
     return context.l10n.billingActivateAction;
   }
 
-  bool _canReactivate(BillingConfigViewModel billing) {
-    return billing.status == 'active' &&
-        billing.cancelAtPeriodEnd &&
-        billing.canOpenPortal;
-  }
-
   bool _canManage(BillingConfigViewModel billing) {
-    return billing.status == 'active' &&
-        !billing.cancelAtPeriodEnd &&
-        billing.canOpenPortal;
+    if (!billing.canOpenPortal) return false;
+    return {'active', 'past_due', 'unpaid'}.contains(billing.status);
   }
 
   bool _isPendingCheckoutWithoutPayment(BillingConfigViewModel billing) {
-    return billing.status == 'pending_checkout' && billing.lastPaymentAt == null;
+    return billing.status == 'pending_checkout' &&
+        billing.lastPaymentAt == null;
   }
 
   bool _isRetryablePendingCheckout(BillingConfigViewModel billing) {
@@ -418,10 +400,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
 
   bool _isStartedPendingCheckout(BillingConfigViewModel billing) {
     return _isPendingCheckoutWithoutPayment(billing) &&
-        (billing.checkoutState == 'started' ||
-            (!billing.checkoutRetryable &&
-                billing.lastCheckoutSessionId != null &&
-                billing.lastCheckoutSessionId!.isNotEmpty));
+        billing.checkoutState == 'started';
   }
 
   bool _shouldShowCheckoutIncompleteNotice(BillingConfigViewModel billing) {
@@ -437,100 +416,105 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
         billing.checkoutRetryable;
   }
 
-  Future<void> _openCheckout(BuildContext context) async {
-    setState(() => _loadingCheckout = true);
+  _BillingExternalAction? _externalActionForBilling(
+    BuildContext context,
+    BillingConfigViewModel billing,
+  ) {
+    if (_canActivate(billing)) {
+      return _BillingExternalAction(
+        key: 'checkout:create:${billing.status}:${billing.checkoutState}',
+        purpose: _BillingExternalPurpose.checkout,
+        label: _activateActionLabel(context, billing),
+        icon: Icons.arrow_forward,
+      );
+    }
+    if (_canManage(billing)) {
+      return _BillingExternalAction(
+        key: 'portal:manage',
+        purpose: _BillingExternalPurpose.portal,
+        label: context.l10n.billingManageAction,
+        icon: Icons.manage_accounts_outlined,
+        tonal: true,
+      );
+    }
+
+    return null;
+  }
+
+  void _scheduleExternalLinkPreparation(_BillingExternalAction action) {
+    if (_preparedActionKey == action.key || _preparingActionKey == action.key) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _prepareExternalLink(action);
+    });
+  }
+
+  Future<void> _prepareExternalLink(
+    _BillingExternalAction action, {
+    bool force = false,
+  }) async {
+    if (!force &&
+        (_preparedActionKey == action.key ||
+            _preparingActionKey == action.key)) {
+      return;
+    }
+
+    setState(() {
+      _preparingExternalLink = true;
+      _preparingActionKey = action.key;
+      _preparedActionKey = null;
+      _preparedExternalUrl = null;
+      _prepareExternalLinkError = null;
+    });
+
     try {
       final businessId = ref.read(currentBusinessIdProvider);
-      final url = await ref
-          .read(billingRepositoryProvider)
-          .createCheckoutSession(businessId);
-      await _redirect(url);
+      final repository = ref.read(billingRepositoryProvider);
+      final url = switch (action.purpose) {
+        _BillingExternalPurpose.checkout =>
+          await repository.createCheckoutSession(businessId),
+        _BillingExternalPurpose.portal => await repository.createPortalSession(
+          businessId,
+        ),
+      };
+      final validatedUrl = _validatedExternalUrl(url);
+      if (!mounted) return;
+      setState(() {
+        _preparedActionKey = action.key;
+        _preparedExternalUrl = validatedUrl;
+        _prepareExternalLinkError = null;
+      });
     } on ApiException catch (e) {
       if (e.statusCode == 409 && e.code == 'subscription_already_exists') {
         ref.invalidate(billingSubscriptionProvider);
       } else if (e.statusCode == 409 && e.code == 'checkout_already_started') {
         ref.invalidate(billingSubscriptionProvider);
       }
-      if (context.mounted) {
-        await FeedbackDialog.showError(
-          context,
-          title: context.l10n.errorTitle,
-          message: _checkoutErrorMessage(context, e),
-        );
-      }
+      if (!mounted) return;
+      setState(() {
+        _prepareExternalLinkError = _checkoutErrorMessage(context, e);
+      });
     } catch (_) {
-      if (context.mounted) {
-        await FeedbackDialog.showError(
-          context,
-          title: context.l10n.errorTitle,
-          message: context.l10n.networkUnknownError,
-        );
-      }
+      if (!mounted) return;
+      setState(() {
+        _prepareExternalLinkError = context.l10n.networkUnknownError;
+      });
     } finally {
-      if (mounted) setState(() => _loadingCheckout = false);
-    }
-  }
-
-  Future<void> _resumeCheckout(BuildContext context) async {
-    setState(() => _loadingCheckout = true);
-    try {
-      final businessId = ref.read(currentBusinessIdProvider);
-      final url = await ref
-          .read(billingRepositoryProvider)
-          .resumeCheckoutSession(businessId);
-      await _redirect(url);
-    } on ApiException catch (e) {
-      ref.invalidate(billingSubscriptionProvider);
-      if (context.mounted) {
-        await FeedbackDialog.showError(
-          context,
-          title: context.l10n.errorTitle,
-          message: _checkoutErrorMessage(context, e),
-        );
+      if (mounted) {
+        setState(() {
+          _preparingExternalLink = false;
+          _preparingActionKey = null;
+        });
       }
-    } catch (_) {
-      if (context.mounted) {
-        await FeedbackDialog.showError(
-          context,
-          title: context.l10n.errorTitle,
-          message: context.l10n.networkUnknownError,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loadingCheckout = false);
-    }
-  }
-
-  Future<void> _cancelCheckout(BuildContext context) async {
-    setState(() => _loadingCancelCheckout = true);
-    try {
-      final businessId = ref.read(currentBusinessIdProvider);
-      await ref.read(billingRepositoryProvider).cancelCheckoutSession(businessId);
-      ref.invalidate(billingSubscriptionProvider);
-    } on ApiException catch (e) {
-      ref.invalidate(billingSubscriptionProvider);
-      if (context.mounted) {
-        await FeedbackDialog.showError(
-          context,
-          title: context.l10n.errorTitle,
-          message: _checkoutErrorMessage(context, e),
-        );
-      }
-    } catch (_) {
-      if (context.mounted) {
-        await FeedbackDialog.showError(
-          context,
-          title: context.l10n.errorTitle,
-          message: context.l10n.networkUnknownError,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loadingCancelCheckout = false);
     }
   }
 
   String _checkoutErrorMessage(BuildContext context, ApiException error) {
-    if (error.statusCode == 409 && error.code == 'subscription_already_exists') {
+    if (error.statusCode == 409 &&
+        error.code == 'subscription_already_exists') {
       return context.l10n.billingSubscriptionAlreadyExistsError;
     }
     if (error.statusCode == 409 && error.code == 'checkout_already_started') {
@@ -540,36 +524,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
     return error.message;
   }
 
-  Future<void> _openPortal(BuildContext context) async {
-    setState(() => _loadingPortal = true);
-    try {
-      final businessId = ref.read(currentBusinessIdProvider);
-      final url = await ref
-          .read(billingRepositoryProvider)
-          .createPortalSession(businessId);
-      await _redirect(url);
-    } on ApiException catch (e) {
-      if (context.mounted) {
-        await FeedbackDialog.showError(
-          context,
-          title: context.l10n.errorTitle,
-          message: e.message,
-        );
-      }
-    } catch (_) {
-      if (context.mounted) {
-        await FeedbackDialog.showError(
-          context,
-          title: context.l10n.errorTitle,
-          message: context.l10n.networkUnknownError,
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _loadingPortal = false);
-    }
-  }
-
-  Future<void> _redirect(String url) async {
+  String _validatedExternalUrl(String url) {
     final uri = Uri.tryParse(url.trim());
     if (uri == null ||
         uri.host.isEmpty ||
@@ -580,7 +535,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
         statusCode: 400,
       );
     }
-    await redirectInCurrentTab(uri.toString());
+    return uri.toString();
   }
 
   String _formatAmount(BillingConfigViewModel billing) {
@@ -632,10 +587,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
     return switch (billing.status) {
       'not_required' => context.l10n.billingStatusNotRequired,
       'inactive' => context.l10n.billingStatusInactive,
-      'pending_checkout' =>
-        _isPendingCheckoutWithoutPayment(billing)
-            ? context.l10n.billingStatusPendingCheckout
-            : context.l10n.billingStatusInactive,
+      'pending_checkout' => context.l10n.billingStatusInactive,
       'active' => context.l10n.billingStatusActive,
       'past_due' => context.l10n.billingStatusPastDue,
       'unpaid' => context.l10n.billingStatusUnpaid,
@@ -693,18 +645,6 @@ class _InfoRow extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _ButtonProgressIndicator extends StatelessWidget {
-  const _ButtonProgressIndicator();
-
-  @override
-  Widget build(BuildContext context) {
-    return const SizedBox.square(
-      dimension: 18,
-      child: CircularProgressIndicator(strokeWidth: 2),
     );
   }
 }

@@ -15,7 +15,15 @@ final billingSubscriptionProvider = FutureProvider<BillingConfigViewModel>((
 ) async {
   final businessId = ref.watch(currentBusinessIdProvider);
   if (businessId <= 0) {
-    return BillingConfigViewModel.fromJson(const {});
+    await ref.watch(businessesProvider.future);
+    final resolvedBusinessId = ref.read(currentBusinessIdProvider);
+    if (resolvedBusinessId <= 0) {
+      return BillingConfigViewModel.fromJson(const {});
+    }
+
+    return ref
+        .watch(billingRepositoryProvider)
+        .getSubscription(resolvedBusinessId);
   }
 
   return ref.watch(billingRepositoryProvider).getSubscription(businessId);
