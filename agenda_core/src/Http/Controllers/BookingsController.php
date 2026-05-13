@@ -1643,6 +1643,12 @@ final class BookingsController
             return ['required' => false];
         }
 
+        // In ambienti non-production i pagamenti reali sono disabilitati:
+        // la prenotazione viene confermata normalmente senza redirect a Stripe.
+        if (!EnvironmentPolicy::current()->canUseRealPayments()) {
+            return ['required' => false];
+        }
+
         $serviceIds = $items !== null
             ? array_values(array_unique(array_map(static fn (array $item): int => (int) $item['service_id'], $items)))
             : array_values(array_unique(array_map('intval', $legacyServiceIds)));

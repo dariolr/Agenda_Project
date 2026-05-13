@@ -3,6 +3,7 @@
   "configurations": [
     {
       "name": "Backend (Prod API)",
+      "cwd": "${workspaceFolder}/agenda_backend",
       "type": "dart",
       "request": "launch",
       "deviceId": "chrome",
@@ -31,6 +32,7 @@
     },
     {
       "name": "Backend (Local API)",
+      "cwd": "${workspaceFolder}/agenda_backend",
       "type": "dart",
       "request": "launch",
       "deviceId": "chrome",
@@ -60,6 +62,7 @@
     },
     {
       "name": "Backend (Demo API)",
+      "cwd": "${workspaceFolder}/agenda_backend",
       "type": "dart",
       "request": "launch",
       "deviceId": "chrome",
@@ -89,13 +92,14 @@
     },
 {
       "name": "Backend (Staging API)",
+      "cwd": "${workspaceFolder}/agenda_backend",
       "type": "dart",
       "request": "launch",
       "deviceId": "chrome",
       "args": [
         "--web-port=8080",
         "--dart-define-from-file=.vscode/debug_credentials.json",
-        "--dart-define=APP_ENV=local",
+        "--dart-define=APP_ENV=staging",
         "--dart-define=DEMO_MODE=false",
         "--dart-define=API_BASE_URL=https://staging-api.romeolab.it",
         "--dart-define=FRONTEND_URL=https://staging-gestionale.romeolab.it",

@@ -1111,7 +1111,8 @@ final class ClassEventsController
         $requiresPayment = (int) ($event['online_payment_required'] ?? 0) === 1
             && $this->db !== null
             && $this->onlinePaymentAccounts !== null
-            && $this->onlineBookingPayments !== null;
+            && $this->onlineBookingPayments !== null
+            && EnvironmentPolicy::current()->canUseRealPayments();
 
         if ($requiresPayment) {
             $stripeAccount = $this->onlinePaymentAccounts->findByBusinessAndProvider(
