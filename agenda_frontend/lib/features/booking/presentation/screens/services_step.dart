@@ -602,6 +602,12 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     );
     final isCollapsible = totalEntries > 30 && categoryDataList.length >= 3;
 
+    // Mostra il badge "Pagamento online richiesto" solo se esistono articoli
+    // a pagamento che NON richiedono il pagamento online (contrasto significativo).
+    final showOnlinePaymentBadge =
+        services.any((s) => !s.isFree && s.price > 0 && !s.onlinePaymentRequired) ||
+        visiblePackages.any((p) => p.effectivePrice > 0 && !p.onlinePaymentRequired);
+
     for (final data in categoryDataList) {
       widgets.add(
         _CategorySection(
@@ -615,6 +621,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
           isCollapsible: isCollapsible,
           showPriceToCustomer: showPriceToCustomer,
           showDurationToCustomer: showDurationToCustomer,
+          showOnlinePaymentBadge: showOnlinePaymentBadge,
           onServiceTap: (service) {
             if (bookingConstraint.locksSingleServiceSelection &&
                 selectedServiceIds.contains(service.id)) {
@@ -747,6 +754,12 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
           }
         }
 
+        // Mostra il badge "Pagamento online richiesto" solo se esistono eventi
+        // a pagamento che NON richiedono il pagamento online.
+        final showOnlinePaymentBadge = events.any(
+          (e) => (e.priceCents ?? 0) > 0 && !e.onlinePaymentRequired,
+        );
+
         if (!showCategories) {
           // Singola categoria o nessuna: mostra eventi raggruppati per data
           final bottomInset =
@@ -760,6 +773,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
               bookedEventStatus,
               phraseOverrides,
               onEventTap,
+              showOnlinePaymentBadge: showOnlinePaymentBadge,
             ),
           );
         }
@@ -781,6 +795,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
               isCollapsible: isCollapsible,
               hasSelectedEvent: catEvents.any((e) => e.id == selectedEvent?.id),
               onEventTap: onEventTap,
+              showOnlinePaymentBadge: showOnlinePaymentBadge,
             ),
           );
         }
@@ -918,8 +933,9 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     ClassEvent? selectedEvent,
     Map<int, String> bookedEventStatus,
     Map<String, String>? phraseOverrides,
-    void Function(ClassEvent) onEventTap,
-  ) {
+    void Function(ClassEvent) onEventTap, {
+    bool showOnlinePaymentBadge = true,
+  }) {
     final byDate = <String, List<ClassEvent>>{};
     for (final e in events) {
       final dateKey = e.displayStartsAt.substring(0, 10);
@@ -949,6 +965,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
             isSelected: selectedEvent?.id == event.id,
             existingStatus: existingStatus,
             phraseOverrides: phraseOverrides,
+            showOnlinePaymentBadge: showOnlinePaymentBadge,
             onTap: existingStatus != null ? () {} : () => onEventTap(event),
           ),
         );
@@ -966,6 +983,7 @@ class _ClassEventTile extends ConsumerWidget {
   final String? existingStatus;
   final Map<String, String>? phraseOverrides;
   final VoidCallback onTap;
+  final bool showOnlinePaymentBadge;
 
   const _ClassEventTile({
     required this.event,
@@ -973,6 +991,7 @@ class _ClassEventTile extends ConsumerWidget {
     required this.onTap,
     this.existingStatus,
     this.phraseOverrides,
+    this.showOnlinePaymentBadge = true,
   });
 
   Future<void> _confirmWaitlist(BuildContext context) async {
@@ -1129,7 +1148,7 @@ class _ClassEventTile extends ConsumerWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      if (event.onlinePaymentRequired) ...[
+                      if (event.onlinePaymentRequired && showOnlinePaymentBadge) ...[
                         const SizedBox(height: 6),
                         _OnlinePaymentRequiredBadge(theme: theme),
                       ],
@@ -1270,6 +1289,7 @@ class _CategorySection extends StatefulWidget {
   final bool isCollapsible;
   final bool showPriceToCustomer;
   final bool showDurationToCustomer;
+  final bool showOnlinePaymentBadge;
 
   const _CategorySection({
     super.key,
@@ -1286,6 +1306,7 @@ class _CategorySection extends StatefulWidget {
     this.isCollapsible = false,
     this.showPriceToCustomer = true,
     this.showDurationToCustomer = true,
+    this.showOnlinePaymentBadge = true,
   });
 
   @override
@@ -1425,6 +1446,7 @@ class _CategorySectionState extends State<_CategorySection> {
                           ? null
                           : () => widget.onPackageTap(entry.package!),
                       showPriceToCustomer: widget.showPriceToCustomer,
+                      showOnlinePaymentBadge: widget.showOnlinePaymentBadge,
                     )
                   else
                     _ServiceTile(
@@ -1437,6 +1459,7 @@ class _CategorySectionState extends State<_CategorySection> {
                           : () => widget.onServiceTap(entry.service!),
                       showPriceToCustomer: widget.showPriceToCustomer,
                       showDurationToCustomer: widget.showDurationToCustomer,
+                      showOnlinePaymentBadge: widget.showOnlinePaymentBadge,
                     ),
                 if (!widget.isCollapsible) const SizedBox(height: 8),
               ],
@@ -1473,6 +1496,7 @@ class _EventCategorySection extends StatefulWidget {
   final Map<String, String>? phraseOverrides;
   final bool isCollapsible;
   final bool hasSelectedEvent;
+  final bool showOnlinePaymentBadge;
   final void Function(ClassEvent) onEventTap;
 
   const _EventCategorySection({
@@ -1485,6 +1509,7 @@ class _EventCategorySection extends StatefulWidget {
     required this.hasSelectedEvent,
     required this.onEventTap,
     this.isCollapsible = false,
+    this.showOnlinePaymentBadge = true,
   });
 
   @override
@@ -1607,6 +1632,7 @@ class _EventCategorySectionState extends State<_EventCategorySection> {
                 widget.bookedEventStatus,
                 widget.phraseOverrides,
                 widget.onEventTap,
+                showOnlinePaymentBadge: widget.showOnlinePaymentBadge,
               ),
             ),
           )
@@ -1639,6 +1665,7 @@ class _ServiceTile extends StatelessWidget {
   final VoidCallback onTap;
   final bool showPriceToCustomer;
   final bool showDurationToCustomer;
+  final bool showOnlinePaymentBadge;
 
   const _ServiceTile({
     required this.service,
@@ -1646,6 +1673,7 @@ class _ServiceTile extends StatelessWidget {
     required this.onTap,
     this.showPriceToCustomer = true,
     this.showDurationToCustomer = true,
+    this.showOnlinePaymentBadge = true,
   });
 
   @override
@@ -1700,7 +1728,7 @@ class _ServiceTile extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
-                    if (service.onlinePaymentRequired) ...[
+                    if (service.onlinePaymentRequired && showOnlinePaymentBadge) ...[
                       const SizedBox(height: 6),
                       _OnlinePaymentRequiredBadge(theme: theme),
                     ],
@@ -1760,6 +1788,7 @@ class _PackageTile extends StatelessWidget {
   final bool isDisabled;
   final VoidCallback? onTap;
   final bool showPriceToCustomer;
+  final bool showOnlinePaymentBadge;
 
   const _PackageTile({
     required this.package,
@@ -1768,6 +1797,7 @@ class _PackageTile extends StatelessWidget {
     required this.isDisabled,
     required this.onTap,
     this.showPriceToCustomer = true,
+    this.showOnlinePaymentBadge = true,
   });
 
   @override
@@ -1833,7 +1863,7 @@ class _PackageTile extends StatelessWidget {
                           ),
                         ],
                       ),
-                      if (package.onlinePaymentRequired) ...[
+                      if (package.onlinePaymentRequired && showOnlinePaymentBadge) ...[
                         const SizedBox(height: 6),
                         _OnlinePaymentRequiredBadge(theme: theme),
                       ],

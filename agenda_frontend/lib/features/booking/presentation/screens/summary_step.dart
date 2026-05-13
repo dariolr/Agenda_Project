@@ -369,16 +369,13 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                   ),
                                 ),
                               if (location?.showPriceToCustomer ?? true)
-                                Row(
-                                  children: [
-                                    Text(
-                                      l10n.summaryPrice,
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                    ),
-                                  ],
+                                Text(
+                                  totals.hasMixedPayment
+                                      ? l10n.summaryPrice
+                                      : l10n.summaryPrice,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                             ],
                           ),
@@ -389,6 +386,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                             (location?.showPriceToCustomer ?? true))
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               if (location?.showDurationToCustomer ?? true)
                                 Row(
@@ -409,27 +407,76 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                   ],
                                 ),
                               if (location?.showPriceToCustomer ?? true)
-                                Row(
-                                  children: [
-                                    Icon(
-                                      Icons.euro,
-                                      size: 16,
-                                      color: theme.colorScheme.primary,
-                                    ),
-                                    const SizedBox(width: 6),
-                                    Text(
-                                      _formatTotalPrice(
-                                        context,
-                                        totals.totalPrice,
-                                      ).replaceFirst('€', '').trim(),
-                                      style: theme.textTheme.bodyMedium
-                                          ?.copyWith(
-                                            fontWeight: FontWeight.w700,
+                                if (totals.hasMixedPayment)
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.credit_card_outlined,
+                                            size: 15,
                                             color: theme.colorScheme.primary,
                                           ),
-                                    ),
-                                  ],
-                                ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '${l10n.summaryOnlinePaymentPrice}: ${_formatTotalPrice(context, totals.onlinePaymentPrice)}',
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                  color:
+                                                      theme.colorScheme.primary,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.store_outlined,
+                                            size: 15,
+                                            color: theme.colorScheme.onSurface
+                                                .withOpacity(0.7),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '${l10n.summaryInPersonPrice}: ${_formatTotalPrice(context, totals.inPersonPrice)}',
+                                            style: theme.textTheme.bodyMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withOpacity(0.8),
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  )
+                                else
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.euro,
+                                        size: 16,
+                                        color: theme.colorScheme.primary,
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        _formatTotalPrice(
+                                          context,
+                                          totals.totalPrice,
+                                        ).replaceFirst('€', '').trim(),
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
                             ],
                           ),
                       ],

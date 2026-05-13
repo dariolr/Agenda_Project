@@ -173,6 +173,8 @@ class BookingFlowState {
 
 class BookingTotals {
   final double totalPrice;
+  final double onlinePaymentPrice;
+  final double inPersonPrice;
   final int totalDurationMinutes;
   final List<ServicePackage> selectedPackages;
   final Set<int> coveredServiceIds;
@@ -180,11 +182,15 @@ class BookingTotals {
 
   const BookingTotals({
     required this.totalPrice,
+    required this.onlinePaymentPrice,
+    required this.inPersonPrice,
     required this.totalDurationMinutes,
     required this.selectedPackages,
     required this.coveredServiceIds,
     required this.selectedItemCount,
   });
+
+  bool get hasMixedPayment => onlinePaymentPrice > 0 && inPersonPrice > 0;
 }
 
 /// Provider principale per il flow di prenotazione
@@ -1621,12 +1627,20 @@ final bookingTotalsProvider = Provider<BookingTotals>((ref) {
   }
 
   var totalPrice = 0.0;
+  var onlinePaymentPrice = 0.0;
+  var inPersonPrice = 0.0;
   var totalDuration = 0;
   final selectedServiceById = {
     for (final service in services) service.id: service,
   };
   for (final pkg in selectedPackages) {
-    totalPrice += pkg.effectivePrice;
+    final price = pkg.effectivePrice;
+    totalPrice += price;
+    if (pkg.onlinePaymentRequired) {
+      onlinePaymentPrice += price;
+    } else {
+      inPersonPrice += price;
+    }
     totalDuration += pkg.customerVisibleDurationMinutes(selectedServiceById);
   }
 
@@ -1634,7 +1648,13 @@ final bookingTotalsProvider = Provider<BookingTotals>((ref) {
       .where((s) => !coveredServiceIds.contains(s.id))
       .toList();
   for (final service in remainingServices) {
-    totalPrice += service.isFree ? 0 : service.price;
+    final price = service.isFree ? 0.0 : service.price;
+    totalPrice += price;
+    if (price > 0 && service.onlinePaymentRequired) {
+      onlinePaymentPrice += price;
+    } else {
+      inPersonPrice += price;
+    }
     totalDuration += service.customerVisibleDurationMinutes;
   }
 
@@ -1642,6 +1662,8 @@ final bookingTotalsProvider = Provider<BookingTotals>((ref) {
 
   return BookingTotals(
     totalPrice: totalPrice,
+    onlinePaymentPrice: onlinePaymentPrice,
+    inPersonPrice: inPersonPrice,
     totalDurationMinutes: totalDuration,
     selectedPackages: selectedPackages,
     coveredServiceIds: coveredServiceIds,

@@ -172,6 +172,7 @@ final class ServicesController
                 'category_name' => $service['category_name'] ?? null,
                 'service_variant_id' => $variantId,
                 'sort_order' => (int) ($service['sort_order'] ?? 0),
+                'online_payment_required' => (bool) ($service['online_payment_required'] ?? false),
                 'resource_requirements' => array_map(fn($req) => [
                     'id' => (int) $req['id'],
                     'resource_id' => (int) $req['resource_id'],
@@ -324,6 +325,7 @@ final class ServicesController
                     'category_id' => $service['category_id'] ? (int) $service['category_id'] : null,
                     'service_variant_id' => $variantId,
                     'sort_order' => (int) ($service['sort_order'] ?? 0),
+                    'online_payment_required' => (bool) ($service['online_payment_required'] ?? false),
                     'resource_requirements' => array_map(fn($req) => [
                         'id' => (int) $req['id'],
                         'resource_id' => (int) $req['resource_id'],

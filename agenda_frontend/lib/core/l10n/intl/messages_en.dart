@@ -806,8 +806,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "summaryNotesHint": MessageLookupByLibrary.simpleMessage(
       "Add any notes for the appointment...",
     ),
+    "summaryInPersonPrice": MessageLookupByLibrary.simpleMessage(
+      "To pay in person",
+    ),
     "summaryOnlinePaymentNote": MessageLookupByLibrary.simpleMessage(
       "You will be redirected to Stripe to complete the payment after confirming.",
+    ),
+    "summaryOnlinePaymentPrice": MessageLookupByLibrary.simpleMessage(
+      "To pay online",
     ),
     "summaryOperator": MessageLookupByLibrary.simpleMessage("Staff member"),
     "summaryPrice": MessageLookupByLibrary.simpleMessage("Total price"),

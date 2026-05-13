@@ -829,8 +829,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "summaryNotesHint": MessageLookupByLibrary.simpleMessage(
       "Aggiungi eventuali note per l\'appuntamento...",
     ),
+    "summaryInPersonPrice": MessageLookupByLibrary.simpleMessage(
+      "Da pagare in sede",
+    ),
     "summaryOnlinePaymentNote": MessageLookupByLibrary.simpleMessage(
       "Verrai reindirizzato a Stripe per completare il pagamento dopo la conferma.",
+    ),
+    "summaryOnlinePaymentPrice": MessageLookupByLibrary.simpleMessage(
+      "Da pagare online",
     ),
     "summaryOperator": MessageLookupByLibrary.simpleMessage("Operatore"),
     "summaryPrice": MessageLookupByLibrary.simpleMessage("Prezzo totale"),

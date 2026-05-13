@@ -1719,6 +1719,26 @@ class L10n {
     );
   }
 
+  /// `To pay online`
+  String get summaryOnlinePaymentPrice {
+    return Intl.message(
+      'To pay online',
+      name: 'summaryOnlinePaymentPrice',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `To pay in person`
+  String get summaryInPersonPrice {
+    return Intl.message(
+      'To pay in person',
+      name: 'summaryInPersonPrice',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Notes (optional)`
   String get summaryNotes {
     return Intl.message(
