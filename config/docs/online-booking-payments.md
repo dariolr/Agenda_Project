@@ -27,8 +27,7 @@ Variabili richieste per `agenda_core`:
 - `STRIPE_ONLINE_PAYMENTS_SECRET_KEY`
 - `STRIPE_CONNECT_CLIENT_ID`
 - `STRIPE_CONNECT_WEBHOOK_SECRET`
-- `STRIPE_CONNECT_REFRESH_URL`
-- `STRIPE_CONNECT_RETURN_URL`
+- `STRIPE_CONNECT_ONBOARDING_URL` - URL gestionale canonica per Stripe Connect, es. `https://gestionale.romeolab.it/altro/pagamenti-online?from_altro=1`
 - `STRIPE_ONLINE_PAYMENT_SUCCESS_URL` — deve contenere `{slug}` per lo slug business (es. `https://prenota.romeolab.it/{slug}/payment-result?status=success`)
 - `STRIPE_ONLINE_PAYMENT_CANCEL_URL` — deve contenere `{slug}` (es. `https://prenota.romeolab.it/{slug}/payment-result?status=cancel`)
 

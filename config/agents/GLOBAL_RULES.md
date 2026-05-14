@@ -13,6 +13,8 @@
 - Prima individua i file coinvolti, poi modifica solo quelli.
 - Mantieni compatibilità con i comportamenti esistenti.
 - Se trovi istruzioni obsolete, spostale in archivio o rimuovile.
-- Non applicare workaround o patch locali se il problema ha un'origine più profonda: identifica la causa radice e correggila lì.
+- Risolvi i problemi alla radice, non con escamotage sul sintomo. Prima di modificare codice, individua il flow reale, la sorgente dello stato e il confine corretto della fix.
+- Non mascherare errori o comportamenti errati con filtri di log, flag locali, retry arbitrari, normalizzazioni UI o query param aggiunti a posteriori se la causa è nel flow, nell'API, nello stato condiviso o nel contratto tra componenti.
+- I workaround sono ammessi solo se richiesti esplicitamente o se dichiarati come temporanei, con causa radice, rischio residuo e fix definitiva da fare.
 - Se la causa radice è fuori scope del task corrente, segnalarlo esplicitamente invece di mascherare il sintomo.
 - Alla fine indica file creati, modificati, spostati, eliminati e test/verifiche eseguite.

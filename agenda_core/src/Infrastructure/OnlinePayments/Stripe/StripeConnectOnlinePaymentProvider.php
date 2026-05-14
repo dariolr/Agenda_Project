@@ -49,11 +49,20 @@ final class StripeConnectOnlinePaymentProvider implements OnlinePaymentProviderI
         if ($onboardingUrl === '') {
             throw new \RuntimeException('Stripe Connect onboarding URL is not configured');
         }
+        $returnUrl = $this->withQueryParams($onboardingUrl, [
+            'provider' => $this->providerCode(),
+            'onboarding' => 'return',
+        ]);
+
+        $refreshUrl = $this->withQueryParams($onboardingUrl, [
+            'provider' => $this->providerCode(),
+            'onboarding' => 'refresh',
+        ]);
 
         $link = $client->accountLinks->create([
             'account' => $accountId,
-            'refresh_url' => $onboardingUrl,
-            'return_url' => $onboardingUrl,
+            'refresh_url' => $refreshUrl,
+            'return_url' => $returnUrl,
             'type' => 'account_onboarding',
         ]);
 
@@ -64,6 +73,15 @@ final class StripeConnectOnlinePaymentProvider implements OnlinePaymentProviderI
             status: 'pending',
             providerAccountId: $accountId,
         );
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    private function withQueryParams(string $url, array $params): string
+    {
+        $separator = str_contains($url, '?') ? '&' : '?';
+        return $url . $separator . http_build_query($params);
     }
 
     public function refreshAccountStatus(OnlinePaymentAccount $account): OnlinePaymentAccountStatusResult

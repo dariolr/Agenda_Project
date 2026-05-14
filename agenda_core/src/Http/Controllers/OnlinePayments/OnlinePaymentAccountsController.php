@@ -503,7 +503,13 @@ final class OnlinePaymentAccountsController
         $mode = $this->mode();
         $account = $this->accounts->findByBusinessAndProvider($businessId, $providerCode, $mode);
         if ($account === null) {
-            return Response::error('Online payment provider is not configured', 'online_payment_provider_not_configured', 404, $request->traceId);
+            return Response::success([
+                'provider_code' => $providerCode,
+                'status' => 'not_configured',
+                'charges_enabled' => false,
+                'payouts_enabled' => false,
+                'details_submitted' => false,
+            ]);
         }
 
         $provider = $this->providers[$providerCode] ?? null;

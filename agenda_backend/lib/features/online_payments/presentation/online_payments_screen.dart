@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/online_payment_account.dart';
 import '../../../core/services/browser_focus_listener.dart';
+import '../../../core/services/browser_history.dart';
 import '../../../core/services/external_tab.dart';
-import '../../../core/services/online_payment_connection_marker.dart';
 import '../../../core/widgets/app_switch.dart';
-import '../../../core/widgets/stripe_icon.dart';
 import '../../../core/widgets/feedback_dialog.dart';
+import '../../../core/widgets/stripe_icon.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../providers/online_payment_accounts_provider.dart';
 
@@ -20,11 +21,17 @@ class OnlinePaymentsScreen extends ConsumerStatefulWidget {
       _OnlinePaymentsScreenState();
 }
 
+String canonicalOnlinePaymentsCallbackUri(Uri _) {
+  return '/altro/pagamenti-online';
+}
+
 class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
     with WidgetsBindingObserver {
-  bool _syncedOnMount = false;
+  int? _syncedBusinessId;
   bool _syncing = false;
   bool _connectionStarted = false;
+  bool _stripeReturnDetected = false;
+  bool _stripeReturnConsumed = false;
   List<OnlinePaymentAccount> _lastAccounts = const [];
   BrowserFocusSubscription? _focusSubscription;
 
@@ -54,9 +61,7 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
   Future<void> _syncAndInvalidate({bool force = false}) async {
     final businessId = ref.read(currentBusinessIdProvider);
     if (businessId <= 0) return;
-    final effectiveForce =
-        force || hasOnlinePaymentConnectionStarted(businessId);
-    if (!effectiveForce && !_hasStripeAccountToSync()) return;
+    if (!force && !_hasStripeAccountToSync()) return;
     if (mounted) setState(() => _syncing = true);
     try {
       for (var attempt = 0; attempt < 4; attempt += 1) {
@@ -76,10 +81,15 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
         _lastAccounts = accounts;
         if (_stripeIsReady(accounts)) {
           _connectionStarted = false;
-          clearOnlinePaymentConnectionStarted(businessId);
+          _stripeReturnDetected = false;
           break;
         }
-        if (!effectiveForce && _stripeIsManuallyDisconnected(accounts)) {
+        if (_stripeRequiresOperatorAction(accounts)) {
+          _connectionStarted = false;
+          _stripeReturnDetected = false;
+          break;
+        }
+        if (!force && _stripeIsManuallyDisconnected(accounts)) {
           break;
         }
       }
@@ -90,8 +100,31 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final uri = GoRouterState.of(context).uri;
+    final query = uri.queryParameters;
+
+    final isStripeOnboardingCallback =
+        query['provider'] == 'stripe' &&
+        (query['onboarding'] == 'return' ||
+            query['onboarding'] == 'refresh' ||
+            query['stripe_connect_return'] == '1' ||
+            query['stripe_connect_refresh'] == '1');
+
+    if (isStripeOnboardingCallback && !_stripeReturnConsumed) {
+      _stripeReturnConsumed = true;
+      _stripeReturnDetected = true;
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        replaceBrowserUrl('/altro/pagamenti-online');
+        _syncAndInvalidate(force: true);
+      });
+    }
+
+    final businessId = ref.watch(currentBusinessIdProvider);
     final accountsAsync = ref.watch(onlinePaymentAccountsProvider);
     final visibleAccounts = accountsAsync.value ?? _lastAccounts;
+
     if (accountsAsync.hasValue) {
       _lastAccounts = accountsAsync.value ?? const [];
     }
@@ -99,6 +132,7 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
     if (accountsAsync.isLoading && visibleAccounts.isEmpty) {
       return const Center(child: CircularProgressIndicator());
     }
+
     if (accountsAsync.hasError && visibleAccounts.isEmpty) {
       final error = accountsAsync.error;
       return Center(
@@ -111,15 +145,20 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
       );
     }
 
-    if (!_syncedOnMount && accountsAsync.hasValue) {
-      _syncedOnMount = true;
+    if (businessId > 0 &&
+        _syncedBusinessId != businessId &&
+        accountsAsync.hasValue) {
+      _syncedBusinessId = businessId;
       final forceInitialSync = _shouldForceConnectionSync();
+
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _syncAndInvalidate(force: forceInitialSync);
+        if (!mounted) return;
+        _syncAndInvalidate(force: forceInitialSync);
       });
     }
 
     final stripe = _find(visibleAccounts, 'stripe');
+
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
@@ -158,6 +197,15 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
     return stripe?.onboardingStatus == 'disabled';
   }
 
+  bool _stripeRequiresOperatorAction(List<OnlinePaymentAccount> accounts) {
+    final stripe = _find(accounts, 'stripe');
+    if (stripe == null) return false;
+    final message = stripe.lastErrorMessage ?? '';
+    return stripe.onboardingStatus == 'restricted' ||
+        stripe.lastErrorCode == 'stripe_requirements_due' ||
+        message.startsWith('requirements.');
+  }
+
   bool _hasStripeAccountToSync() {
     final stripe = _find(_lastAccounts, 'stripe');
     if (stripe == null) return false;
@@ -165,9 +213,7 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
   }
 
   bool _shouldForceConnectionSync() {
-    final businessId = ref.read(currentBusinessIdProvider);
-    if (businessId <= 0) return _connectionStarted;
-    return _connectionStarted || hasOnlinePaymentConnectionStarted(businessId);
+    return _connectionStarted || _stripeReturnDetected;
   }
 }
 
@@ -314,10 +360,12 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
       );
       if (!mounted) return;
       if (url.isNotEmpty) {
-        markOnlinePaymentConnectionStarted(businessId);
         widget.onConnectionStarted();
         ref.invalidate(onlinePaymentAccountsProvider);
-        await navigatePendingExternalTab(pendingTab, url);
+        await navigatePendingExternalTab(
+          pendingTab,
+          _validatedExternalUrl(url),
+        );
       }
     } catch (error) {
       if (context.mounted) {
@@ -330,6 +378,16 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
     } finally {
       if (mounted) setState(() => _loadingOnboardingUrl = false);
     }
+  }
+
+  String _validatedExternalUrl(String url) {
+    final uri = Uri.tryParse(url.trim());
+    if (uri == null ||
+        uri.host.isEmpty ||
+        (uri.scheme != 'https' && uri.scheme != 'http')) {
+      throw StateError('URL non valido');
+    }
+    return uri.toString();
   }
 
   String _statusLabel(BuildContext context, OnlinePaymentAccount? account) {
@@ -389,7 +447,6 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
       await ref
           .read(onlinePaymentAccountsRepositoryProvider)
           .disable(businessId: businessId, providerCode: widget.providerCode);
-      clearOnlinePaymentConnectionStarted(businessId);
       ref.invalidate(onlinePaymentAccountsProvider);
     });
   }
