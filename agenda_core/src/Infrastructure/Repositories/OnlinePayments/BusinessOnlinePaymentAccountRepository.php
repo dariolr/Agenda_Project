@@ -24,6 +24,19 @@ final class BusinessOnlinePaymentAccountRepository
         return $row ? OnlinePaymentAccount::fromArray($row) : null;
     }
 
+    public function findByProviderAccountId(string $providerAccountId, string $mode = 'test'): ?OnlinePaymentAccount
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT * FROM business_online_payment_accounts
+             WHERE provider_account_id = ? AND mode = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$providerAccountId, $mode]);
+        $row = $stmt->fetch();
+
+        return $row ? OnlinePaymentAccount::fromArray($row) : null;
+    }
+
     /**
      * @return OnlinePaymentAccount[]
      */

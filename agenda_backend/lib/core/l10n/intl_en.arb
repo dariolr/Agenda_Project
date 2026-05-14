@@ -2024,6 +2024,7 @@
   "onlinePaymentsProviderCanBeEnabled": "Stripe is connected. Enable online payments to use it for bookings.",
   "onlinePaymentsProviderConnected": "Stripe is connected. Use the control below to enable or pause online payments.",
   "onlinePaymentsProviderNeedsOnboarding": "Connect Stripe to receive online payments from bookings.",
+  "onlinePaymentsStripeRequirementsDue": "Stripe requires additional information to complete account setup.",
   "onlinePaymentsSyncingStatus": "Updating provider status",
   "onlinePaymentsAcceptanceEnabled": "Online payments active",
   "onlinePaymentsAcceptanceDisabled": "Online payments disabled",

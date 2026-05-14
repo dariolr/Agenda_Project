@@ -2024,6 +2024,7 @@
   "onlinePaymentsProviderCanBeEnabled": "Stripe è connesso. Attiva i pagamenti online per usarlo nelle prenotazioni.",
   "onlinePaymentsProviderConnected": "Stripe è connesso. Usa il controllo sotto per attivare o mettere in pausa i pagamenti online.",
   "onlinePaymentsProviderNeedsOnboarding": "Connetti Stripe per ricevere pagamenti online dalle prenotazioni.",
+  "onlinePaymentsStripeRequirementsDue": "Stripe richiede informazioni aggiuntive per completare la configurazione dell'account.",
   "onlinePaymentsSyncingStatus": "Aggiornamento in corso",
   "onlinePaymentsAcceptanceEnabled": "Pagamenti online attivi",
   "onlinePaymentsAcceptanceDisabled": "Pagamenti online disattivati",

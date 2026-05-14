@@ -2007,6 +2007,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "onlinePaymentsStatusRequiresVerification":
         MessageLookupByLibrary.simpleMessage("Requires provider verification"),
+    "onlinePaymentsStripeRequirementsDue": MessageLookupByLibrary.simpleMessage(
+      "Stripe requires additional information to complete account setup.",
+    ),
     "onlinePaymentsSync": MessageLookupByLibrary.simpleMessage("Sync"),
     "onlinePaymentsSyncingStatus": MessageLookupByLibrary.simpleMessage(
       "Updating provider status",

@@ -13274,6 +13274,16 @@ class L10n {
     );
   }
 
+  /// `Stripe requires additional information to complete account setup.`
+  String get onlinePaymentsStripeRequirementsDue {
+    return Intl.message(
+      'Stripe requires additional information to complete account setup.',
+      name: 'onlinePaymentsStripeRequirementsDue',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Updating provider status`
   String get onlinePaymentsSyncingStatus {
     return Intl.message(

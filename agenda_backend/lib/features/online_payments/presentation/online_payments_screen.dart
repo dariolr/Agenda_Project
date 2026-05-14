@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/online_payment_account.dart';
+import '../../../core/services/browser_focus_listener.dart';
+import '../../../core/services/external_tab.dart';
+import '../../../core/services/online_payment_connection_marker.dart';
 import '../../../core/widgets/app_switch.dart';
-import '../../../core/widgets/external_link.dart';
 import '../../../core/widgets/stripe_icon.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
@@ -22,16 +24,23 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
     with WidgetsBindingObserver {
   bool _syncedOnMount = false;
   bool _syncing = false;
+  bool _connectionStarted = false;
   List<OnlinePaymentAccount> _lastAccounts = const [];
+  BrowserFocusSubscription? _focusSubscription;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _focusSubscription = addBrowserFocusListener(() {
+      if (!mounted) return;
+      _syncAndInvalidate(force: _shouldForceConnectionSync());
+    });
   }
 
   @override
   void dispose() {
+    _focusSubscription?.call();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -39,12 +48,15 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
-    _syncAndInvalidate();
+    _syncAndInvalidate(force: _shouldForceConnectionSync());
   }
 
-  Future<void> _syncAndInvalidate() async {
+  Future<void> _syncAndInvalidate({bool force = false}) async {
     final businessId = ref.read(currentBusinessIdProvider);
     if (businessId <= 0) return;
+    final effectiveForce =
+        force || hasOnlinePaymentConnectionStarted(businessId);
+    if (!effectiveForce && !_hasStripeAccountToSync()) return;
     if (mounted) setState(() => _syncing = true);
     try {
       for (var attempt = 0; attempt < 4; attempt += 1) {
@@ -62,8 +74,12 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
           onlinePaymentAccountsProvider.future,
         );
         _lastAccounts = accounts;
-        if (_stripeIsReady(accounts) ||
-            _stripeIsManuallyDisconnected(accounts)) {
+        if (_stripeIsReady(accounts)) {
+          _connectionStarted = false;
+          clearOnlinePaymentConnectionStarted(businessId);
+          break;
+        }
+        if (!effectiveForce && _stripeIsManuallyDisconnected(accounts)) {
           break;
         }
       }
@@ -97,8 +113,9 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
 
     if (!_syncedOnMount && accountsAsync.hasValue) {
       _syncedOnMount = true;
+      final forceInitialSync = _shouldForceConnectionSync();
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _syncAndInvalidate();
+        if (mounted) _syncAndInvalidate(force: forceInitialSync);
       });
     }
 
@@ -110,6 +127,9 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
           account: stripe,
           providerCode: 'stripe',
           syncing: _syncing,
+          onConnectionStarted: () {
+            _connectionStarted = true;
+          },
         ),
       ],
     );
@@ -137,16 +157,30 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
     final stripe = _find(accounts, 'stripe');
     return stripe?.onboardingStatus == 'disabled';
   }
+
+  bool _hasStripeAccountToSync() {
+    final stripe = _find(_lastAccounts, 'stripe');
+    if (stripe == null) return false;
+    return stripe.onboardingStatus != 'not_configured';
+  }
+
+  bool _shouldForceConnectionSync() {
+    final businessId = ref.read(currentBusinessIdProvider);
+    if (businessId <= 0) return _connectionStarted;
+    return _connectionStarted || hasOnlinePaymentConnectionStarted(businessId);
+  }
 }
 
 class _ProviderCard extends ConsumerStatefulWidget {
   const _ProviderCard({
     required this.providerCode,
+    required this.onConnectionStarted,
     this.account,
     this.syncing = false,
   });
 
   final String providerCode;
+  final VoidCallback onConnectionStarted;
   final OnlinePaymentAccount? account;
   final bool syncing;
 
@@ -157,8 +191,6 @@ class _ProviderCard extends ConsumerStatefulWidget {
 class _ProviderCardState extends ConsumerState<_ProviderCard> {
   bool _busy = false;
   bool _loadingOnboardingUrl = false;
-  String? _onboardingUrl;
-  bool _onboardingUrlFailed = false;
 
   @override
   Widget build(BuildContext context) {
@@ -174,8 +206,6 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
     final isEnabled = account?.isEnabled ?? false;
     final isBusy = _busy || widget.syncing;
 
-    if (!isConnected && !widget.syncing) _scheduleOnboardingUrlFetch();
-
     final connectIcon = _loadingOnboardingUrl
         ? const SizedBox.square(
             dimension: 18,
@@ -189,21 +219,12 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
             icon: const Icon(Icons.link_off),
             label: Text(l10n.onlinePaymentsDisconnectStripe),
           )
-        : ExternalLink(
-            url: isBusy || widget.syncing || _loadingOnboardingUrl
+        : FilledButton.icon(
+            onPressed: isBusy || widget.syncing || _loadingOnboardingUrl
                 ? null
-                : _onboardingUrl,
-            builder: (ctx, open) => FilledButton.icon(
-              onPressed: open == null
-                  ? null
-                  : () {
-                      setState(() => _onboardingUrl = null);
-                      ref.invalidate(onlinePaymentAccountsProvider);
-                      open();
-                    },
-              icon: connectIcon,
-              label: Text(l10n.onlinePaymentsConnectStripe),
-            ),
+                : () => _connect(context),
+            icon: connectIcon,
+            label: Text(l10n.onlinePaymentsConnectStripe),
           );
 
     return Card(
@@ -252,10 +273,10 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
                     color: scheme.onSurfaceVariant,
                   ),
                 ),
-                if ((account?.lastErrorMessage ?? '').isNotEmpty) ...[
+                if (_visibleErrorMessage(context, account) != null) ...[
                   const SizedBox(height: 8),
                   Text(
-                    account!.lastErrorMessage!,
+                    _visibleErrorMessage(context, account)!,
                     style: Theme.of(
                       context,
                     ).textTheme.bodySmall?.copyWith(color: scheme.error),
@@ -279,26 +300,11 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
     );
   }
 
-  void _scheduleOnboardingUrlFetch() {
-    if (_onboardingUrl != null ||
-        _loadingOnboardingUrl ||
-        _onboardingUrlFailed) {
-      return;
-    }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _fetchOnboardingUrl();
-    });
-  }
-
-  Future<void> _fetchOnboardingUrl() async {
-    if (_loadingOnboardingUrl ||
-        _onboardingUrl != null ||
-        _onboardingUrlFailed) {
-      return;
-    }
+  Future<void> _connect(BuildContext context) async {
+    if (_loadingOnboardingUrl) return;
     final businessId = ref.read(currentBusinessIdProvider);
     if (businessId <= 0) return;
+    final pendingTab = openPendingExternalTab();
     setState(() => _loadingOnboardingUrl = true);
     try {
       final repository = ref.read(onlinePaymentAccountsRepositoryProvider);
@@ -308,10 +314,12 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
       );
       if (!mounted) return;
       if (url.isNotEmpty) {
-        setState(() => _onboardingUrl = url);
+        markOnlinePaymentConnectionStarted(businessId);
+        widget.onConnectionStarted();
+        ref.invalidate(onlinePaymentAccountsProvider);
+        await navigatePendingExternalTab(pendingTab, url);
       }
     } catch (error) {
-      if (mounted) setState(() => _onboardingUrlFailed = true);
       if (context.mounted) {
         await FeedbackDialog.showError(
           context,
@@ -359,12 +367,29 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
     return l10n.onlinePaymentsProviderNeedsOnboarding;
   }
 
+  String? _visibleErrorMessage(
+    BuildContext context,
+    OnlinePaymentAccount? account,
+  ) {
+    if (account == null) return null;
+    final l10n = context.l10n;
+    final code = account.lastErrorCode ?? '';
+    final message = account.lastErrorMessage ?? '';
+    if (code == 'stripe_requirements_due' ||
+        message.startsWith('requirements.')) {
+      return l10n.onlinePaymentsStripeRequirementsDue;
+    }
+    if (message.trim().isEmpty) return null;
+    return message;
+  }
+
   Future<void> _disable(BuildContext context) async {
     await _run(context, () async {
       final businessId = ref.read(currentBusinessIdProvider);
       await ref
           .read(onlinePaymentAccountsRepositoryProvider)
           .disable(businessId: businessId, providerCode: widget.providerCode);
+      clearOnlinePaymentConnectionStarted(businessId);
       ref.invalidate(onlinePaymentAccountsProvider);
     });
   }

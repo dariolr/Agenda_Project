@@ -6,6 +6,7 @@ namespace Agenda\Http\Controllers\OnlinePayments;
 
 use Agenda\Domain\OnlinePayments\OnlinePaymentProviderCode;
 use Agenda\Domain\OnlinePayments\OnlinePaymentProviderInterface;
+use Agenda\Domain\OnlinePayments\OnlinePaymentWebhookResult;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Database\Connection;
@@ -62,6 +63,111 @@ final class OnlinePaymentAccountsController
             return Response::success(['duplicate' => true]);
         }
 
+        return match ($result->eventType) {
+            'account.updated' => $this->handleAccountUpdated($result),
+            'capability.updated' => $this->handleCapabilityUpdated($result, $provider),
+            'account.application.deauthorized' => $this->handleAccountDeauthorized($result),
+            default => $this->handlePaymentEvent($result),
+        };
+    }
+
+    private function handleAccountUpdated(OnlinePaymentWebhookResult $result): Response
+    {
+        $providerAccountId = (string) ($result->rawPayload['account'] ?? '');
+        if ($providerAccountId === '') {
+            return Response::success(['processed' => true, 'account_found' => false]);
+        }
+
+        $mode = $this->mode();
+        $account = $this->accounts->findByProviderAccountId($providerAccountId, $mode);
+        if ($account === null) {
+            return Response::success(['processed' => true, 'account_found' => false]);
+        }
+
+        $raw = is_array($result->rawPayload['data']['object'] ?? null) ? $result->rawPayload['data']['object'] : [];
+        $requirements = is_array($raw['requirements'] ?? null) ? $raw['requirements'] : [];
+        $currentlyDue = $requirements['currently_due'] ?? [];
+        $pastDue = $requirements['past_due'] ?? [];
+        $disabledReason = $requirements['disabled_reason'] ?? null;
+        $chargesEnabled = (bool) ($raw['charges_enabled'] ?? false);
+        $payoutsEnabled = (bool) ($raw['payouts_enabled'] ?? false);
+        $detailsSubmitted = (bool) ($raw['details_submitted'] ?? false);
+        $status = $chargesEnabled && empty($currentlyDue) && empty($pastDue) && $disabledReason === null
+            ? 'active'
+            : ($detailsSubmitted ? 'restricted' : 'pending');
+
+        $this->accounts->syncCapabilities(
+            $account->businessId,
+            $account->providerCode,
+            $mode,
+            $chargesEnabled,
+            $payoutsEnabled,
+            $detailsSubmitted,
+            is_array($raw['capabilities'] ?? null) ? $raw['capabilities'] : null,
+            $requirements,
+            $status,
+            $providerAccountId,
+            null,
+            $disabledReason !== null ? 'stripe_requirements_due' : null,
+            is_string($disabledReason) ? $disabledReason : null,
+        );
+
+        return Response::success(['processed' => true]);
+    }
+
+    private function handleCapabilityUpdated(OnlinePaymentWebhookResult $result, OnlinePaymentProviderInterface $provider): Response
+    {
+        $providerAccountId = (string) ($result->rawPayload['account'] ?? '');
+        if ($providerAccountId === '') {
+            return Response::success(['processed' => true, 'account_found' => false]);
+        }
+
+        $mode = $this->mode();
+        $account = $this->accounts->findByProviderAccountId($providerAccountId, $mode);
+        if ($account === null) {
+            return Response::success(['processed' => true, 'account_found' => false]);
+        }
+
+        $statusResult = $provider->refreshAccountStatus($account);
+        $this->accounts->syncCapabilities(
+            $account->businessId,
+            $account->providerCode,
+            $mode,
+            $statusResult->chargesEnabled,
+            $statusResult->payoutsEnabled,
+            $statusResult->detailsSubmitted,
+            $statusResult->capabilities,
+            $statusResult->requirements,
+            $statusResult->status,
+            $statusResult->providerAccountId,
+            $statusResult->providerMerchantId,
+            $statusResult->errorCode,
+            $statusResult->errorMessage,
+        );
+
+        return Response::success(['processed' => true]);
+    }
+
+    private function handleAccountDeauthorized(OnlinePaymentWebhookResult $result): Response
+    {
+        $providerAccountId = (string) ($result->rawPayload['account'] ?? '');
+        if ($providerAccountId === '') {
+            return Response::success(['processed' => true, 'account_found' => false]);
+        }
+
+        $mode = $this->mode();
+        $account = $this->accounts->findByProviderAccountId($providerAccountId, $mode);
+        if ($account === null) {
+            return Response::success(['processed' => true, 'account_found' => false]);
+        }
+
+        $this->accounts->disable($account->businessId, $account->providerCode, $mode);
+
+        return Response::success(['processed' => true]);
+    }
+
+    private function handlePaymentEvent(OnlinePaymentWebhookResult $result): Response
+    {
         $payment = $result->onlineBookingPaymentId !== null
             ? $this->payments->findById($result->onlineBookingPaymentId)
             : ($result->providerCheckoutId !== null
