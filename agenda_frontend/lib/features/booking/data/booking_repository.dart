@@ -1,4 +1,3 @@
-
 import 'package:uuid/uuid.dart';
 
 import '../../../core/models/class_event.dart';
@@ -304,6 +303,7 @@ class BookingRepository {
     String? notes,
     String? idempotencyKey,
     List<Map<String, dynamic>>? items,
+    List<int>? packageIds,
     List<Map<String, dynamic>>? pricingOverrides,
     String? bookingDirectLinkSlug,
   }) async {
@@ -320,6 +320,7 @@ class BookingRepository {
       staffId: staffId,
       notes: notes,
       items: items,
+      packageIds: packageIds,
       pricingOverrides: pricingOverrides,
       bookingDirectLinkSlug: bookingDirectLinkSlug,
     );
@@ -328,4 +329,3 @@ class BookingRepository {
   /// Genera un nuovo idempotency key (UUID v4)
   String generateIdempotencyKey() => _uuid.v4();
 }
-

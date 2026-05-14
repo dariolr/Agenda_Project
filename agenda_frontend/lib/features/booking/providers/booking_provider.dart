@@ -1157,6 +1157,13 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
 
     try {
       final services = state.request.services;
+      final packageIdByServiceId = <int, int>{};
+      for (final entry
+          in state.request.selectedPackageServiceIdsByPackage.entries) {
+        for (final serviceId in entry.value) {
+          packageIdByServiceId.putIfAbsent(serviceId, () => entry.key);
+        }
+      }
 
       List<Map<String, dynamic>>? items;
       final shouldUseItems =
@@ -1180,6 +1187,8 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
             'staff_id': staff.id,
             // Invia orario come ISO locale (NO toUtc - il backend gestisce il timezone)
             'start_time': currentStart.toIso8601String(),
+            if (packageIdByServiceId[service.id] != null)
+              'package_id': packageIdByServiceId[service.id],
           });
           currentStart = currentStart.add(
             Duration(minutes: service.durationMinutes),
@@ -1208,6 +1217,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         staffId: staffId,
         notes: state.request.notes,
         items: items,
+        packageIds: state.request.selectedPackageIds.toList(),
         pricingOverrides: pricingOverrides.isEmpty ? null : pricingOverrides,
         bookingDirectLinkSlug: bookingDirectLinkSlug,
       );
