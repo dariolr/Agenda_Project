@@ -825,12 +825,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "summaryDateTime": MessageLookupByLibrary.simpleMessage("Data e ora"),
     "summaryDuration": MessageLookupByLibrary.simpleMessage("Durata totale"),
+    "summaryInPersonPrice": MessageLookupByLibrary.simpleMessage(
+      "Da pagare in sede",
+    ),
     "summaryNotes": MessageLookupByLibrary.simpleMessage("Note (opzionale)"),
     "summaryNotesHint": MessageLookupByLibrary.simpleMessage(
       "Aggiungi eventuali note per l\'appuntamento...",
-    ),
-    "summaryInPersonPrice": MessageLookupByLibrary.simpleMessage(
-      "Da pagare in sede",
     ),
     "summaryOnlinePaymentNote": MessageLookupByLibrary.simpleMessage(
       "Verrai reindirizzato a Stripe per completare il pagamento dopo la conferma.",

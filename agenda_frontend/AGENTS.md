@@ -44,6 +44,10 @@ flutter test
 ## Source of Truth Staff Planning
 - Documento canonico: `../config/docs/STAFF_PLANNING_MODEL.md`
 
+## UI/UX Essenziale
+- Link HTTP/HTTPS → `ExternalLink`/`ExternalLinkButton` (`lib/core/widgets/external_link.dart`), **non** `launchUrl`
+- `redirectSameTab(url)` rimane corretto solo per redirect full-page nello stesso tab (es. Stripe Checkout)
+
 ## Documentazione Progetto Centralizzata
 - Cartella regole agenti: `../config/agents/agenda_frontend/`
 - Cartella documentazione canonica: `../config/docs/`
@@ -52,3 +56,4 @@ flutter test
 1. `context.l10n` per i testi
 2. Provider senza loop infiniti
 3. Flusso booking coerente (servizi/staff/data)
+4. Link HTTP/HTTPS tramite `ExternalLink`/`ExternalLinkButton`

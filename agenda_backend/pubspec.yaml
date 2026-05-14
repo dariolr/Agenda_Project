@@ -43,6 +43,7 @@ flutter:
     - assets/
     - assets/icons/meta.svg
     - assets/icons/whatsapp.svg
+    - assets/icons/stripe-blurple.svg
   
   fonts:
     - family: Roboto

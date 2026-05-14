@@ -23,7 +23,7 @@ final class PayPalMultipartyOnlinePaymentProvider implements OnlinePaymentProvid
         return OnlinePaymentProviderCode::PAYPAL;
     }
 
-    public function createOnboardingLink(int $businessId, string $mode): OnlinePaymentOnboardingResult
+    public function createOnboardingLink(int $businessId, string $mode, ?string $existingAccountId = null): OnlinePaymentOnboardingResult
     {
         throw new \RuntimeException('PayPal seller onboarding is not implemented yet');
     }

@@ -17,6 +17,7 @@ import '../../providers/booking_nomenclature_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../providers/locations_provider.dart';
 import '../widgets/wrong_business_auth_banner.dart';
+import '../../../../core/widgets/stripe_icon.dart';
 
 class SummaryStep extends ConsumerStatefulWidget {
   const SummaryStep({super.key});
@@ -411,44 +412,42 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                   Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
+                                      Text(
+                                        _formatTotalPrice(context, totals.totalPrice),
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w700,
+                                              color: theme.colorScheme.primary,
+                                            ),
+                                      ),
+                                      const SizedBox(height: 6),
                                       Row(
                                         children: [
-                                          Icon(
-                                            Icons.credit_card_outlined,
-                                            size: 15,
-                                            color: theme.colorScheme.primary,
-                                          ),
+                                          const StripeIcon(size: 14),
                                           const SizedBox(width: 4),
                                           Text(
                                             '${l10n.summaryOnlinePaymentPrice}: ${_formatTotalPrice(context, totals.onlinePaymentPrice)}',
-                                            style: theme.textTheme.bodyMedium
+                                            style: theme.textTheme.bodySmall
                                                 ?.copyWith(
-                                                  fontWeight: FontWeight.w700,
-                                                  color:
-                                                      theme.colorScheme.primary,
+                                                  color: theme.colorScheme.onSurface.withOpacity(0.7),
                                                 ),
                                           ),
                                         ],
                                       ),
-                                      const SizedBox(height: 4),
+                                      const SizedBox(height: 2),
                                       Row(
                                         children: [
                                           Icon(
                                             Icons.store_outlined,
-                                            size: 15,
-                                            color: theme.colorScheme.onSurface
-                                                .withOpacity(0.7),
+                                            size: 14,
+                                            color: theme.colorScheme.onSurface.withOpacity(0.6),
                                           ),
                                           const SizedBox(width: 4),
                                           Text(
                                             '${l10n.summaryInPersonPrice}: ${_formatTotalPrice(context, totals.inPersonPrice)}',
-                                            style: theme.textTheme.bodyMedium
+                                            style: theme.textTheme.bodySmall
                                                 ?.copyWith(
-                                                  fontWeight: FontWeight.w700,
-                                                  color: theme
-                                                      .colorScheme
-                                                      .onSurface
-                                                      .withOpacity(0.8),
+                                                  color: theme.colorScheme.onSurface.withOpacity(0.7),
                                                 ),
                                           ),
                                         ],
@@ -521,11 +520,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                     ),
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.credit_card_outlined,
-                          color: theme.colorScheme.onPrimaryContainer,
-                          size: 20,
-                        ),
+                        const StripeIcon(size: 20),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(

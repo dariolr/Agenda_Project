@@ -135,10 +135,10 @@ final class EnvironmentConfig
 
             // Staging ammette ALLOW_REAL_PAYMENTS=true solo con chiave Stripe test mode.
             if ($config->allowRealPayments) {
-                $stripeKey = self::env('STRIPE_ONLINE_PAYMENTS_SECRET_KEY', '');
+                $stripeKey = self::env('STRIPE_SECRET_KEY', '');
                 if ($stripeKey !== '' && !str_starts_with($stripeKey, 'sk_test_')) {
                     throw new \RuntimeException(
-                        'Configurazione staging non sicura: STRIPE_ONLINE_PAYMENTS_SECRET_KEY deve iniziare con sk_test_ in staging.'
+                        'Configurazione staging non sicura: STRIPE_SECRET_KEY deve iniziare con sk_test_ in staging.'
                     );
                 }
                 $webhookSecret = self::env('STRIPE_CONNECT_WEBHOOK_SECRET', '');

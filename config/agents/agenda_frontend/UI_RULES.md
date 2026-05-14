@@ -1,33 +1,21 @@
-# agenda_backend UI Rules (Flutter)
-
-## Responsive
-
-- Desktop: > 840px — usare Dialog/popup.
-- Tablet/Mobile: < 840px — usare BottomSheet.
-- Usare `formFactorProvider` per determinare form factor.
+# agenda_frontend UI Rules (Flutter)
 
 ## Testi e localizzazione
 
-- Tutti i testi visibili usano `context.l10n` (import: `/core/l10n/l10_extension.dart`).
-- Aggiungere chiavi in `lib/core/l10n/intl_it.arb` e `lib/core/l10n/intl_en.arb`.
+- Tutti i testi visibili usano `context.l10n`.
+- Aggiungere chiavi in `lib/core/l10n/intl_en.arb` e `lib/core/l10n/intl_it.arb`.
 - Dopo modifiche .arb: `dart run intl_utils:generate`.
 
 ## Stile
 
-- Nessun ripple/splash effect invasivo.
 - Usare `const` constructors dove possibile.
 - Estrarre widget se `build()` supera 200 righe.
-- Estetica sobria e coerente con l'esistente.
+- Estetica sobria e coerente con il booking flow esistente.
 
 ## Navigazione
 
-- Usare `go_router` e le rotte definite in `lib/app/router.dart`.
+- Routing path-based con slug: `/:slug/...` via `go_router`.
 - Non introdurre push diretti che bypassano il router.
-
-## Code generation
-
-- Dopo modifiche a file `@riverpod`: `dart run build_runner build --delete-conflicting-outputs`.
-- Non lasciare generated file non aggiornati.
 
 ## Link esterni (HTTP/HTTPS)
 
@@ -36,8 +24,8 @@
 - `ExternalLinkButton`: drop-in `FilledButton` con spinner integrato durante caricamento.
 - Entrambi aprono in nuova scheda via `Link` + `LinkTarget.blank` (evita blocco popup del browser).
 - **Non usare** `launchUrl` con `LaunchMode.externalApplication` per URL HTTP/HTTPS.
-- **Eccezione consentita**: `launchUrl` rimane corretto per schemi di sistema (`mailto:`, `tel:`, `sms:`, `whatsapp:`).
-- Per link che richiedono una chiamata API preventiva (es. onboarding Stripe), pre-caricare l'URL in state e passarlo al widget; non chiamare API dentro `onPressed`.
+- **Eccezione consentita**: `launchUrl` rimane corretto per schemi di sistema (`mailto:`, `tel:`, `sms:`).
+- **Eccezione consentita**: `redirectSameTab(url)` rimane corretto per redirect full-page nello stesso tab (es. redirect a Stripe Checkout dopo conferma prenotazione).
 
 ## Commit checklist UI
 

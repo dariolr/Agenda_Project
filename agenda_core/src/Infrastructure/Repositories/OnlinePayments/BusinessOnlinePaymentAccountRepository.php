@@ -58,7 +58,11 @@ final class BusinessOnlinePaymentAccountRepository
              ON DUPLICATE KEY UPDATE
                 provider_account_id = COALESCE(VALUES(provider_account_id), provider_account_id),
                 provider_merchant_id = COALESCE(VALUES(provider_merchant_id), provider_merchant_id),
-                onboarding_status = VALUES(onboarding_status),
+                onboarding_status = IF(
+                    onboarding_status = "disabled" AND is_enabled = 0,
+                    onboarding_status,
+                    VALUES(onboarding_status)
+                ),
                 last_error_code = NULL,
                 last_error_message = NULL,
                 updated_at = NOW()'
@@ -78,6 +82,46 @@ final class BusinessOnlinePaymentAccountRepository
              WHERE business_id = ? AND provider_code = ? AND mode = ?'
         );
         $stmt->execute([$businessId, $providerCode, $mode]);
+    }
+
+    public function touchOnboardingLinkCreatedAt(int $businessId, string $providerCode, string $mode): void
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE business_online_payment_accounts
+             SET last_onboarding_url_created_at = NOW(), updated_at = NOW()
+             WHERE business_id = ? AND provider_code = ? AND mode = ?'
+        );
+        $stmt->execute([$businessId, $providerCode, $mode]);
+    }
+
+    public function markOnboardingStarted(
+        int $businessId,
+        string $providerCode,
+        string $mode,
+        ?string $providerAccountId,
+        ?string $providerMerchantId = null,
+        string $status = 'pending',
+    ): void {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE business_online_payment_accounts
+             SET provider_account_id = COALESCE(?, provider_account_id),
+                 provider_merchant_id = COALESCE(?, provider_merchant_id),
+                 onboarding_status = ?,
+                 is_enabled = 0,
+                 last_onboarding_url_created_at = NOW(),
+                 last_error_code = NULL,
+                 last_error_message = NULL,
+                 updated_at = NOW()
+             WHERE business_id = ? AND provider_code = ? AND mode = ?'
+        );
+        $stmt->execute([
+            $providerAccountId,
+            $providerMerchantId,
+            $status,
+            $businessId,
+            $providerCode,
+            $mode,
+        ]);
     }
 
     public function markActive(int $businessId, string $providerCode, string $mode): void
@@ -156,7 +200,11 @@ final class BusinessOnlinePaymentAccountRepository
              ON DUPLICATE KEY UPDATE
                 provider_account_id = COALESCE(VALUES(provider_account_id), provider_account_id),
                 provider_merchant_id = COALESCE(VALUES(provider_merchant_id), provider_merchant_id),
-                onboarding_status = VALUES(onboarding_status),
+                onboarding_status = IF(
+                    onboarding_status = "disabled" AND is_enabled = 0,
+                    onboarding_status,
+                    VALUES(onboarding_status)
+                ),
                 charges_enabled = VALUES(charges_enabled),
                 payouts_enabled = VALUES(payouts_enabled),
                 details_submitted = VALUES(details_submitted),
@@ -165,7 +213,11 @@ final class BusinessOnlinePaymentAccountRepository
                 last_sync_at = NOW(),
                 last_error_code = VALUES(last_error_code),
                 last_error_message = VALUES(last_error_message),
-                is_enabled = IF(VALUES(onboarding_status) = "active", is_enabled, 0),
+                is_enabled = IF(
+                    onboarding_status = "disabled" AND is_enabled = 0,
+                    0,
+                    IF(VALUES(onboarding_status) = "active", is_enabled, 0)
+                ),
                 updated_at = NOW()'
         );
         $stmt->execute([

@@ -802,12 +802,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "summaryDateTime": MessageLookupByLibrary.simpleMessage("Date and time"),
     "summaryDuration": MessageLookupByLibrary.simpleMessage("Total duration"),
+    "summaryInPersonPrice": MessageLookupByLibrary.simpleMessage(
+      "To pay in person",
+    ),
     "summaryNotes": MessageLookupByLibrary.simpleMessage("Notes (optional)"),
     "summaryNotesHint": MessageLookupByLibrary.simpleMessage(
       "Add any notes for the appointment...",
-    ),
-    "summaryInPersonPrice": MessageLookupByLibrary.simpleMessage(
-      "To pay in person",
     ),
     "summaryOnlinePaymentNote": MessageLookupByLibrary.simpleMessage(
       "You will be redirected to Stripe to complete the payment after confirming.",

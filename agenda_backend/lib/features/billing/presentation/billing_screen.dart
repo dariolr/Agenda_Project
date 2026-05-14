@@ -10,8 +10,8 @@ import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/tenant_time_provider.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../domain/billing_config_view_model.dart';
+import '../../../core/widgets/external_link.dart';
 import '../providers/billing_provider.dart';
-import 'widgets/billing_external_link.dart';
 
 enum _BillingExternalPurpose { checkout, portal }
 
@@ -326,7 +326,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
                         spacing: 12,
                         runSpacing: 12,
                         children: [
-                          BillingExternalLink(
+                          ExternalLinkButton(
                             url: preparedUrl,
                             icon: externalAction.icon,
                             label: externalAction.label,

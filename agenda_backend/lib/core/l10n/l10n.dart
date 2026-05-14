@@ -13139,6 +13139,16 @@ class L10n {
     );
   }
 
+  /// `Disconnect Stripe`
+  String get onlinePaymentsDisconnectStripe {
+    return Intl.message(
+      'Disconnect Stripe',
+      name: 'onlinePaymentsDisconnectStripe',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Sync`
   String get onlinePaymentsSync {
     return Intl.message('Sync', name: 'onlinePaymentsSync', desc: '', args: []);
@@ -13164,11 +13174,21 @@ class L10n {
     );
   }
 
-  /// `Active`
+  /// `Connected`
   String get onlinePaymentsStatusActive {
     return Intl.message(
-      'Active',
+      'Connected',
       name: 'onlinePaymentsStatusActive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Paused`
+  String get onlinePaymentsStatusConnectedPaused {
+    return Intl.message(
+      'Paused',
+      name: 'onlinePaymentsStatusConnectedPaused',
       desc: '',
       args: [],
     );
@@ -13204,41 +13224,101 @@ class L10n {
     );
   }
 
-  /// `Do not enter API keys in the management app. Connection uses the provider's official onboarding.`
+  /// `Stripe is not connected yet. Start the connection through the official onboarding.`
   String get onlinePaymentsNoApiKeys {
     return Intl.message(
-      'Do not enter API keys in the management app. Connection uses the provider\'s official onboarding.',
+      'Stripe is not connected yet. Start the connection through the official onboarding.',
       name: 'onlinePaymentsNoApiKeys',
       desc: '',
       args: [],
     );
   }
 
-  /// `Provider active and enabled for online payments.`
+  /// `Stripe is connected and online payments are active.`
   String get onlinePaymentsProviderReady {
     return Intl.message(
-      'Provider active and enabled for online payments.',
+      'Stripe is connected and online payments are active.',
       name: 'onlinePaymentsProviderReady',
       desc: '',
       args: [],
     );
   }
 
-  /// `Provider active. Enable it to use it for online bookings.`
+  /// `Stripe is connected. Enable online payments to use it for bookings.`
   String get onlinePaymentsProviderCanBeEnabled {
     return Intl.message(
-      'Provider active. Enable it to use it for online bookings.',
+      'Stripe is connected. Enable online payments to use it for bookings.',
       name: 'onlinePaymentsProviderCanBeEnabled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Complete provider configuration before enabling it.`
+  /// `Stripe is connected. Use the control below to enable or pause online payments.`
+  String get onlinePaymentsProviderConnected {
+    return Intl.message(
+      'Stripe is connected. Use the control below to enable or pause online payments.',
+      name: 'onlinePaymentsProviderConnected',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Connect Stripe to receive online payments from bookings.`
   String get onlinePaymentsProviderNeedsOnboarding {
     return Intl.message(
-      'Complete provider configuration before enabling it.',
+      'Connect Stripe to receive online payments from bookings.',
       name: 'onlinePaymentsProviderNeedsOnboarding',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Updating provider status`
+  String get onlinePaymentsSyncingStatus {
+    return Intl.message(
+      'Updating provider status',
+      name: 'onlinePaymentsSyncingStatus',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Online payments active`
+  String get onlinePaymentsAcceptanceEnabled {
+    return Intl.message(
+      'Online payments active',
+      name: 'onlinePaymentsAcceptanceEnabled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Online payments disabled`
+  String get onlinePaymentsAcceptanceDisabled {
+    return Intl.message(
+      'Online payments disabled',
+      name: 'onlinePaymentsAcceptanceDisabled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Disable to pause online payments: customers will not be able to complete bookings that require payment.`
+  String get onlinePaymentsAcceptanceEnabledDescription {
+    return Intl.message(
+      'Disable to pause online payments: customers will not be able to complete bookings that require payment.',
+      name: 'onlinePaymentsAcceptanceEnabledDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enable to let customers pay online for items that require payment at booking time.`
+  String get onlinePaymentsAcceptanceDisabledDescription {
+    return Intl.message(
+      'Enable to let customers pay online for items that require payment at booking time.',
+      name: 'onlinePaymentsAcceptanceDisabledDescription',
       desc: '',
       args: [],
     );

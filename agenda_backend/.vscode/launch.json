@@ -1,9 +1,10 @@
 {
   "version": "0.2.0",
   "configurations": [
+    
     {
       "name": "Backend (Prod API)",
-      "cwd": "${workspaceFolder}/agenda_backend",
+      "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_backend",
       "type": "dart",
       "request": "launch",
       "deviceId": "chrome",
@@ -32,7 +33,7 @@
     },
     {
       "name": "Backend (Local API)",
-      "cwd": "${workspaceFolder}/agenda_backend",
+      "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_backend",
       "type": "dart",
       "request": "launch",
       "deviceId": "chrome",
@@ -62,7 +63,7 @@
     },
     {
       "name": "Backend (Demo API)",
-      "cwd": "${workspaceFolder}/agenda_backend",
+      "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_backend",
       "type": "dart",
       "request": "launch",
       "deviceId": "chrome",
@@ -90,13 +91,14 @@
         "--dart-define=META_EMBEDDED_SIGNUP_SCOPES=business_management,whatsapp_business_management,whatsapp_business_messaging"
       ]
     },
-{
+    {
       "name": "Backend (Staging API)",
-      "cwd": "${workspaceFolder}/agenda_backend",
+      "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_backend",
       "type": "dart",
       "request": "launch",
       "deviceId": "chrome",
       "args": [
+        "--no-pub",
         "--web-port=8080",
         "--dart-define-from-file=.vscode/debug_credentials.json",
         "--dart-define=APP_ENV=staging",

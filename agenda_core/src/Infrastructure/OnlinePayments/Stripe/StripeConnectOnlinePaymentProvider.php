@@ -27,28 +27,33 @@ final class StripeConnectOnlinePaymentProvider implements OnlinePaymentProviderI
         return OnlinePaymentProviderCode::STRIPE;
     }
 
-    public function createOnboardingLink(int $businessId, string $mode): OnlinePaymentOnboardingResult
+    public function createOnboardingLink(int $businessId, string $mode, ?string $existingAccountId = null): OnlinePaymentOnboardingResult
     {
         $client = $this->clientFactory->create();
-        $account = $client->accounts->create([
-            'type' => 'express',
-            'metadata' => [
-                'business_id' => (string) $businessId,
-                'mode' => $mode,
-                'feature' => 'online_booking_payments',
-            ],
-        ]);
 
-        $returnUrl = $this->env('STRIPE_CONNECT_RETURN_URL', '');
-        $refreshUrl = $this->env('STRIPE_CONNECT_REFRESH_URL', '');
-        if ($returnUrl === '' || $refreshUrl === '') {
-            throw new \RuntimeException('Stripe Connect return/refresh URLs are not configured');
+        if ($existingAccountId !== null && $existingAccountId !== '') {
+            $accountId = $existingAccountId;
+        } else {
+            $account = $client->accounts->create([
+                'type' => 'express',
+                'metadata' => [
+                    'business_id' => (string) $businessId,
+                    'mode' => $mode,
+                    'feature' => 'online_booking_payments',
+                ],
+            ]);
+            $accountId = (string) $account->id;
+        }
+
+        $onboardingUrl = $this->env('STRIPE_CONNECT_ONBOARDING_URL', '');
+        if ($onboardingUrl === '') {
+            throw new \RuntimeException('Stripe Connect onboarding URL is not configured');
         }
 
         $link = $client->accountLinks->create([
-            'account' => $account->id,
-            'refresh_url' => $refreshUrl,
-            'return_url' => $returnUrl,
+            'account' => $accountId,
+            'refresh_url' => $onboardingUrl,
+            'return_url' => $onboardingUrl,
             'type' => 'account_onboarding',
         ]);
 
@@ -57,7 +62,7 @@ final class StripeConnectOnlinePaymentProvider implements OnlinePaymentProviderI
             onboardingUrl: (string) $link->url,
             expiresAt: isset($link->expires_at) ? gmdate('Y-m-d H:i:s', (int) $link->expires_at) : null,
             status: 'pending',
-            providerAccountId: (string) $account->id,
+            providerAccountId: $accountId,
         );
     }
 

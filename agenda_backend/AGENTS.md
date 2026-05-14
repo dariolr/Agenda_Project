@@ -79,6 +79,7 @@ Route non-shell:
 - Divider menu/lista: `PopupMenuDivider()` / `Divider()`
 - Icona servizi: usare `Icons.category_outlined` (non forbici)
 - Pulsanti async con loading per prevenire doppio click
+- Link HTTP/HTTPS → `ExternalLink`/`ExternalLinkButton` (`lib/core/widgets/external_link.dart`), **non** `launchUrl`
 
 ## Superadmin (regola chiave)
 - Quando si esce da un business, invalidare tutti i provider business-specific.
@@ -99,3 +100,4 @@ Route non-shell:
 4. Testi con `context.l10n`
 5. `ref.watch()` per UI, `ref.read()` per azioni
 6. API async (`Future<T>`) nei repository
+7. Link HTTP/HTTPS tramite `ExternalLink`/`ExternalLinkButton`

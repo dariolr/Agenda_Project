@@ -10,7 +10,7 @@ interface OnlinePaymentProviderInterface
 {
     public function providerCode(): string;
 
-    public function createOnboardingLink(int $businessId, string $mode): OnlinePaymentOnboardingResult;
+    public function createOnboardingLink(int $businessId, string $mode, ?string $existingAccountId = null): OnlinePaymentOnboardingResult;
 
     public function refreshAccountStatus(OnlinePaymentAccount $account): OnlinePaymentAccountStatusResult;
 

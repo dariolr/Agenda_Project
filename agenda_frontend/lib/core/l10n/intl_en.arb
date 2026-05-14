@@ -308,6 +308,8 @@
   "summaryCancellationPolicyAcceptLabel": "I accept the modify/cancel policy",
   "summaryCancellationPolicyAcceptRequiredError": "To confirm, you must accept the modify/cancel policy.",
   "summaryDuration": "Total duration",
+  "summaryOnlinePaymentPrice": "To pay online",
+  "summaryInPersonPrice": "To pay in person",
   "summaryPrice": "Total price",
   "summaryNotes": "Notes (optional)",
   "summaryNotesHint": "Add any notes for the appointment...",

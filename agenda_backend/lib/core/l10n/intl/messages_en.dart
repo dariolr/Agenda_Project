@@ -1949,6 +1949,20 @@ class MessageLookup extends MessageLookupByLibrary {
     "onlinePaymentRequiredLabel": MessageLookupByLibrary.simpleMessage(
       "Online payment required",
     ),
+    "onlinePaymentsAcceptanceDisabled": MessageLookupByLibrary.simpleMessage(
+      "Online payments disabled",
+    ),
+    "onlinePaymentsAcceptanceDisabledDescription":
+        MessageLookupByLibrary.simpleMessage(
+          "Enable to let customers pay online for items that require payment at booking time.",
+        ),
+    "onlinePaymentsAcceptanceEnabled": MessageLookupByLibrary.simpleMessage(
+      "Online payments active",
+    ),
+    "onlinePaymentsAcceptanceEnabledDescription":
+        MessageLookupByLibrary.simpleMessage(
+          "Disable to pause online payments: customers will not be able to complete bookings that require payment.",
+        ),
     "onlinePaymentsConnectPayPal": MessageLookupByLibrary.simpleMessage(
       "Connect PayPal",
     ),
@@ -1959,22 +1973,31 @@ class MessageLookup extends MessageLookupByLibrary {
       "Connect gateways to collect online bookings",
     ),
     "onlinePaymentsDisable": MessageLookupByLibrary.simpleMessage("Disable"),
+    "onlinePaymentsDisconnectStripe": MessageLookupByLibrary.simpleMessage(
+      "Disconnect Stripe",
+    ),
     "onlinePaymentsEnabled": MessageLookupByLibrary.simpleMessage("Enabled"),
     "onlinePaymentsNoApiKeys": MessageLookupByLibrary.simpleMessage(
-      "Do not enter API keys in the management app. Connection uses the provider\'s official onboarding.",
+      "Stripe is not connected yet. Start the connection through the official onboarding.",
     ),
     "onlinePaymentsProviderCanBeEnabled": MessageLookupByLibrary.simpleMessage(
-      "Provider active. Enable it to use it for online bookings.",
+      "Stripe is connected. Enable online payments to use it for bookings.",
+    ),
+    "onlinePaymentsProviderConnected": MessageLookupByLibrary.simpleMessage(
+      "Stripe is connected. Use the control below to enable or pause online payments.",
     ),
     "onlinePaymentsProviderNeedsOnboarding":
         MessageLookupByLibrary.simpleMessage(
-          "Complete provider configuration before enabling it.",
+          "Connect Stripe to receive online payments from bookings.",
         ),
     "onlinePaymentsProviderReady": MessageLookupByLibrary.simpleMessage(
-      "Provider active and enabled for online payments.",
+      "Stripe is connected and online payments are active.",
     ),
     "onlinePaymentsStatusActive": MessageLookupByLibrary.simpleMessage(
-      "Active",
+      "Connected",
+    ),
+    "onlinePaymentsStatusConnectedPaused": MessageLookupByLibrary.simpleMessage(
+      "Paused",
     ),
     "onlinePaymentsStatusDisabled": MessageLookupByLibrary.simpleMessage(
       "Disabled",
@@ -1985,6 +2008,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "onlinePaymentsStatusRequiresVerification":
         MessageLookupByLibrary.simpleMessage("Requires provider verification"),
     "onlinePaymentsSync": MessageLookupByLibrary.simpleMessage("Sync"),
+    "onlinePaymentsSyncingStatus": MessageLookupByLibrary.simpleMessage(
+      "Updating provider status",
+    ),
     "onlinePaymentsTitle": MessageLookupByLibrary.simpleMessage(
       "Online payments",
     ),

@@ -147,7 +147,11 @@ class CurrentBusinessId extends Notifier<int> {
         _lastKnownBusinessId = businesses.first.id;
         return businesses.first.id;
       },
-      loading: () => _lastKnownBusinessId,
+      // Durante il restore iniziale della sessione (auth non ancora confermata)
+      // restituiamo 0 per evitare chiamate API premature senza token.
+      // Quando invece l'utente è già autenticato e la lista si sta ricaricando,
+      // manteniamo l'id precedente per evitare flickering dell'UI.
+      loading: () => authState.isAuthenticated ? _lastKnownBusinessId : 0,
       error: (_, __) => _lastKnownBusinessId,
     );
   }

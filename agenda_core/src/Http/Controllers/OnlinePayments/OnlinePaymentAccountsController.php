@@ -341,7 +341,8 @@ final class OnlinePaymentAccountsController
 
         try {
             $mode = $this->mode();
-            $result = $provider->createOnboardingLink($businessId, $mode);
+            $existingAccount = $this->accounts->findByBusinessAndProvider($businessId, $providerCode, $mode);
+            $result = $provider->createOnboardingLink($businessId, $mode, $existingAccount?->providerAccountId);
             $this->accounts->upsertProviderAccount(
                 $businessId,
                 $providerCode,
@@ -350,7 +351,23 @@ final class OnlinePaymentAccountsController
                 $result->providerMerchantId,
                 $result->status,
             );
-            $this->accounts->setOnboardingPending($businessId, $providerCode, $mode, $result->providerAccountId);
+            // Imposta "pending" solo per account nuovi: per account esistenti
+            // (active, restricted, disabled…) generare un nuovo link non deve
+            // sovrascrivere lo stato reale — quello viene aggiornato solo da sync.
+            // Aggiorna però sempre last_onboarding_url_created_at (dentro setOnboardingPending)
+            // tramite la query separata qui sotto.
+            if ($existingAccount === null) {
+                $this->accounts->setOnboardingPending($businessId, $providerCode, $mode, $result->providerAccountId);
+            } else {
+                $this->accounts->markOnboardingStarted(
+                    $businessId,
+                    $providerCode,
+                    $mode,
+                    $result->providerAccountId,
+                    $result->providerMerchantId,
+                    $result->status,
+                );
+            }
 
             return Response::success([
                 'provider_code' => $providerCode,

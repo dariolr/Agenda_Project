@@ -1709,16 +1709,6 @@ class L10n {
     );
   }
 
-  /// `Total price`
-  String get summaryPrice {
-    return Intl.message(
-      'Total price',
-      name: 'summaryPrice',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `To pay online`
   String get summaryOnlinePaymentPrice {
     return Intl.message(
@@ -1734,6 +1724,16 @@ class L10n {
     return Intl.message(
       'To pay in person',
       name: 'summaryInPersonPrice',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Total price`
+  String get summaryPrice {
+    return Intl.message(
+      'Total price',
+      name: 'summaryPrice',
       desc: '',
       args: [],
     );
