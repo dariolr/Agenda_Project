@@ -2026,6 +2026,7 @@
   "onlinePaymentsProviderNeedsOnboarding": "Connetti Stripe per ricevere pagamenti online dalle prenotazioni.",
   "onlinePaymentsStripeRequirementsDue": "Stripe richiede informazioni aggiuntive per completare la configurazione dell'account.",
   "onlinePaymentsSyncingStatus": "Aggiornamento in corso",
+  "onlinePaymentsSyncFailed": "Non è stato possibile aggiornare lo stato Stripe. Riprova più tardi o contatta l'assistenza se il problema persiste.",
   "onlinePaymentsAcceptanceEnabled": "Pagamenti online attivi",
   "onlinePaymentsAcceptanceDisabled": "Pagamenti online disattivati",
   "onlinePaymentsAcceptanceEnabledDescription": "Disattiva per mettere in pausa i pagamenti online: i clienti non potranno completare prenotazioni che richiedono pagamento.",

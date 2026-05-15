@@ -5,7 +5,6 @@ import 'package:go_router/go_router.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/online_payment_account.dart';
 import '../../../core/services/browser_focus_listener.dart';
-import '../../../core/services/browser_history.dart';
 import '../../../core/services/external_tab.dart';
 import '../../../core/widgets/app_switch.dart';
 import '../../../core/widgets/feedback_dialog.dart';
@@ -32,6 +31,7 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
   bool _connectionStarted = false;
   bool _stripeReturnDetected = false;
   bool _stripeReturnConsumed = false;
+  Object? _syncError;
   List<OnlinePaymentAccount> _lastAccounts = const [];
   BrowserFocusSubscription? _focusSubscription;
 
@@ -61,8 +61,10 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
   Future<void> _syncAndInvalidate({bool force = false}) async {
     final businessId = ref.read(currentBusinessIdProvider);
     if (businessId <= 0) return;
+    if (!force && _syncError != null) return;
     if (!force && !_hasStripeAccountToSync()) return;
     if (mounted) setState(() => _syncing = true);
+    Object? syncError;
     try {
       for (var attempt = 0; attempt < 4; attempt += 1) {
         if (attempt > 0) {
@@ -73,28 +75,47 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
           await ref
               .read(onlinePaymentAccountsRepositoryProvider)
               .sync(businessId: businessId, providerCode: 'stripe');
-        } catch (_) {}
+          syncError = null;
+        } catch (error) {
+          syncError = error;
+        }
         if (!mounted) return;
-        final accounts = await ref.refresh(
-          onlinePaymentAccountsProvider.future,
-        );
+        final List<OnlinePaymentAccount> accounts;
+        try {
+          accounts = await ref.refresh(onlinePaymentAccountsProvider.future);
+        } catch (error) {
+          syncError = error;
+          break;
+        }
         _lastAccounts = accounts;
         if (_stripeIsReady(accounts)) {
           _connectionStarted = false;
           _stripeReturnDetected = false;
+          _syncError = null;
           break;
         }
         if (_stripeRequiresOperatorAction(accounts)) {
           _connectionStarted = false;
           _stripeReturnDetected = false;
+          _syncError = null;
           break;
         }
         if (!force && _stripeIsManuallyDisconnected(accounts)) {
+          _syncError = null;
           break;
         }
       }
     } finally {
-      if (mounted) setState(() => _syncing = false);
+      if (mounted) {
+        setState(() {
+          _syncing = false;
+          if (syncError != null) {
+            _syncError = syncError;
+            _connectionStarted = false;
+            _stripeReturnDetected = false;
+          }
+        });
+      }
     }
   }
 
@@ -116,7 +137,13 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        replaceBrowserUrl('/altro/pagamenti-online');
+
+        const canonicalUri = '/altro/pagamenti-online';
+
+        if (GoRouterState.of(context).uri.toString() != canonicalUri) {
+          context.replace(canonicalUri);
+        }
+
         _syncAndInvalidate(force: true);
       });
     }
@@ -166,8 +193,12 @@ class _OnlinePaymentsScreenState extends ConsumerState<OnlinePaymentsScreen>
           account: stripe,
           providerCode: 'stripe',
           syncing: _syncing,
+          syncError: _syncError,
           onConnectionStarted: () {
-            _connectionStarted = true;
+            setState(() {
+              _connectionStarted = true;
+              _syncError = null;
+            });
           },
         ),
       ],
@@ -223,12 +254,14 @@ class _ProviderCard extends ConsumerStatefulWidget {
     required this.onConnectionStarted,
     this.account,
     this.syncing = false,
+    this.syncError,
   });
 
   final String providerCode;
   final VoidCallback onConnectionStarted;
   final OnlinePaymentAccount? account;
   final bool syncing;
+  final Object? syncError;
 
   @override
   ConsumerState<_ProviderCard> createState() => _ProviderCardState();
@@ -323,6 +356,15 @@ class _ProviderCardState extends ConsumerState<_ProviderCard> {
                   const SizedBox(height: 8),
                   Text(
                     _visibleErrorMessage(context, account)!,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodySmall?.copyWith(color: scheme.error),
+                  ),
+                ],
+                if (widget.syncError != null) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.onlinePaymentsSyncFailed,
                     style: Theme.of(
                       context,
                     ).textTheme.bodySmall?.copyWith(color: scheme.error),

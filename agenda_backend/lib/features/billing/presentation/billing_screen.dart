@@ -147,6 +147,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
   String? _preparedActionKey;
   String? _preparedExternalUrl;
   String? _prepareExternalLinkError;
+  String? _failedActionKey;
 
   @override
   Widget build(BuildContext context) {
@@ -159,6 +160,9 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
     }
     final preparedUrl = _preparedActionKey == externalAction?.key
         ? _preparedExternalUrl
+        : null;
+    final preparationError = _failedActionKey == externalAction?.key
+        ? _prepareExternalLinkError
         : null;
 
     return SafeArea(
@@ -318,31 +322,34 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
                     ],
                     const SizedBox(height: 20),
                     if (externalAction != null) ...[
-                      if (_prepareExternalLinkError != null) ...[
-                        _BillingNotice(message: _prepareExternalLinkError!),
+                      if (preparationError != null) ...[
+                        _BillingNotice(message: preparationError),
                         const SizedBox(height: 16),
                       ],
                       Wrap(
                         spacing: 12,
                         runSpacing: 12,
                         children: [
-                          ExternalLinkButton(
-                            url: preparedUrl,
-                            icon: externalAction.icon,
-                            label: externalAction.label,
-                            tonal: externalAction.tonal,
-                            loading: _preparingExternalLink,
-                          ),
-                          if (_prepareExternalLinkError != null)
-                            FilledButton.tonalIcon(
+                          if (preparationError != null)
+                            _BillingActionButton(
                               onPressed: _preparingExternalLink
                                   ? null
                                   : () => _prepareExternalLink(
                                       externalAction,
                                       force: true,
                                     ),
-                              icon: const Icon(Icons.refresh),
-                              label: Text(context.l10n.actionRetry),
+                              icon: externalAction.icon,
+                              label: externalAction.label,
+                              tonal: externalAction.tonal,
+                              loading: _preparingExternalLink,
+                            )
+                          else
+                            ExternalLinkButton(
+                              url: preparedUrl,
+                              icon: externalAction.icon,
+                              label: externalAction.label,
+                              tonal: externalAction.tonal,
+                              loading: _preparingExternalLink,
                             ),
                         ],
                       ),
@@ -442,7 +449,9 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
   }
 
   void _scheduleExternalLinkPreparation(_BillingExternalAction action) {
-    if (_preparedActionKey == action.key || _preparingActionKey == action.key) {
+    if (_preparedActionKey == action.key ||
+        _preparingActionKey == action.key ||
+        _failedActionKey == action.key) {
       return;
     }
 
@@ -468,6 +477,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
       _preparedActionKey = null;
       _preparedExternalUrl = null;
       _prepareExternalLinkError = null;
+      _failedActionKey = null;
     });
 
     try {
@@ -486,21 +496,19 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
         _preparedActionKey = action.key;
         _preparedExternalUrl = validatedUrl;
         _prepareExternalLinkError = null;
+        _failedActionKey = null;
       });
     } on ApiException catch (e) {
-      if (e.statusCode == 409 && e.code == 'subscription_already_exists') {
-        ref.invalidate(billingSubscriptionProvider);
-      } else if (e.statusCode == 409 && e.code == 'checkout_already_started') {
-        ref.invalidate(billingSubscriptionProvider);
-      }
       if (!mounted) return;
       setState(() {
         _prepareExternalLinkError = _checkoutErrorMessage(context, e);
+        _failedActionKey = action.key;
       });
     } catch (_) {
       if (!mounted) return;
       setState(() {
         _prepareExternalLinkError = context.l10n.networkUnknownError;
+        _failedActionKey = action.key;
       });
     } finally {
       if (mounted) {
@@ -605,6 +613,44 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
       return Colors.green.shade700;
     }
     return null;
+  }
+}
+
+class _BillingActionButton extends StatelessWidget {
+  const _BillingActionButton({
+    required this.onPressed,
+    required this.icon,
+    required this.label,
+    required this.tonal,
+    required this.loading,
+  });
+
+  final VoidCallback? onPressed;
+  final IconData icon;
+  final String label;
+  final bool tonal;
+  final bool loading;
+
+  @override
+  Widget build(BuildContext context) {
+    final effectiveIcon = loading
+        ? const SizedBox.square(
+            dimension: 18,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : Icon(icon);
+    if (tonal) {
+      return FilledButton.tonalIcon(
+        onPressed: onPressed,
+        icon: effectiveIcon,
+        label: Text(label),
+      );
+    }
+    return FilledButton.icon(
+      onPressed: onPressed,
+      icon: effectiveIcon,
+      label: Text(label),
+    );
   }
 }
 

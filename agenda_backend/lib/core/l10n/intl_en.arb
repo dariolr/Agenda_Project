@@ -2026,6 +2026,7 @@
   "onlinePaymentsProviderNeedsOnboarding": "Connect Stripe to receive online payments from bookings.",
   "onlinePaymentsStripeRequirementsDue": "Stripe requires additional information to complete account setup.",
   "onlinePaymentsSyncingStatus": "Updating provider status",
+  "onlinePaymentsSyncFailed": "Stripe status could not be updated. Try again later or contact support if the issue persists.",
   "onlinePaymentsAcceptanceEnabled": "Online payments active",
   "onlinePaymentsAcceptanceDisabled": "Online payments disabled",
   "onlinePaymentsAcceptanceEnabledDescription": "Disable to pause online payments: customers will not be able to complete bookings that require payment.",

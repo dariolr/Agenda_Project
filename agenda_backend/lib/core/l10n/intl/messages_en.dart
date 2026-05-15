@@ -2011,6 +2011,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Stripe requires additional information to complete account setup.",
     ),
     "onlinePaymentsSync": MessageLookupByLibrary.simpleMessage("Sync"),
+    "onlinePaymentsSyncFailed": MessageLookupByLibrary.simpleMessage(
+      "Stripe status could not be updated. Try again later or contact support if the issue persists.",
+    ),
     "onlinePaymentsSyncingStatus": MessageLookupByLibrary.simpleMessage(
       "Updating provider status",
     ),

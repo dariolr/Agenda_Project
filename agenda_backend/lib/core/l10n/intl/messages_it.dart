@@ -2077,6 +2077,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Stripe richiede informazioni aggiuntive per completare la configurazione dell\'account.",
     ),
     "onlinePaymentsSync": MessageLookupByLibrary.simpleMessage("Sincronizza"),
+    "onlinePaymentsSyncFailed": MessageLookupByLibrary.simpleMessage(
+      "Non è stato possibile aggiornare lo stato Stripe. Riprova più tardi o contatta l\'assistenza se il problema persiste.",
+    ),
     "onlinePaymentsSyncingStatus": MessageLookupByLibrary.simpleMessage(
       "Aggiornamento in corso",
     ),

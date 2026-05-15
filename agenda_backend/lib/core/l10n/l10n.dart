@@ -13294,6 +13294,16 @@ class L10n {
     );
   }
 
+  /// `Stripe status could not be updated. Try again later or contact support if the issue persists.`
+  String get onlinePaymentsSyncFailed {
+    return Intl.message(
+      'Stripe status could not be updated. Try again later or contact support if the issue persists.',
+      name: 'onlinePaymentsSyncFailed',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Online payments active`
   String get onlinePaymentsAcceptanceEnabled {
     return Intl.message(
