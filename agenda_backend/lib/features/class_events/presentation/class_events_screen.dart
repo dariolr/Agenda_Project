@@ -1261,7 +1261,7 @@ class _StagedParticipant {
 }
 
 class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
-  static const int _timeStepMinutes = 15;
+  static const int _timeStepMinutes = 5;
   final _formKey = GlobalKey<FormState>();
   final _capacityController = TextEditingController();
   final _priceController = TextEditingController();
