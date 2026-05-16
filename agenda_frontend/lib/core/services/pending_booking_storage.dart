@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
@@ -173,6 +172,7 @@ Map<String, dynamic> _classEventToJson(ClassEvent event) => {
   'class_type_name': event.classTypeName,
   'class_type_color_hex': event.classTypeColorHex,
   'class_type_service_category_id': event.classTypeServiceCategoryId,
+  'class_type_service_category_name': event.classTypeServiceCategoryName,
   'starts_at': event.startsAt,
   'starts_at_local': event.startsAtLocal,
   'ends_at': event.endsAt,
@@ -265,4 +265,3 @@ class PendingBookingStorage {
     }
   }
 }
-

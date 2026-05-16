@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -100,7 +99,9 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
                 .where(bookingConstraint.allowsService)
                 .toList(),
           );
-    final visiblePackages = packages.where(bookingConstraint.allowsPackage).toList();
+    final visiblePackages = packages
+        .where(bookingConstraint.allowsPackage)
+        .toList();
     final visibleClassEvents = (classEventsAsync.value ?? const <ClassEvent>[])
         .where(bookingConstraint.allowsEvent)
         .toList();
@@ -182,13 +183,13 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
           buildServicesContent(),
           _buildClassEventsTab(
             context,
-        ref,
-        AsyncValue.data(visibleClassEvents),
-        bookingState.request.selectedClassEvent,
-        bookingConstraint: bookingConstraint,
-        hasSelectedServices: selectedServices.isNotEmpty,
-        bookedEventStatus: bookedEventStatus,
-      ),
+            ref,
+            AsyncValue.data(visibleClassEvents),
+            bookingState.request.selectedClassEvent,
+            bookingConstraint: bookingConstraint,
+            hasSelectedServices: selectedServices.isNotEmpty,
+            bookedEventStatus: bookedEventStatus,
+          ),
         ],
       );
     } else if (hasClassEvents) {
@@ -638,8 +639,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
 
     // Il footer fisso è alto ~88px (info selezione + bottone); aggiunge
     // viewPadding.bottom per la gesture bar Android.
-    final bottomInset =
-        MediaQuery.of(context).viewPadding.bottom + 88 + 24;
+    final bottomInset = MediaQuery.of(context).viewPadding.bottom + 88 + 24;
     return ListView(
       padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
       children: widgets,
@@ -767,9 +767,17 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
         final items = <Widget>[];
         for (final catId in sortedCategoryIds) {
           final catEvents = byCategory[catId]!;
+          String? eventCategoryName;
+          for (final event in catEvents) {
+            final name = event.classTypeServiceCategoryName?.trim();
+            if (name != null && name.isNotEmpty) {
+              eventCategoryName = name;
+              break;
+            }
+          }
           final catName = catId != null && categoryById.containsKey(catId)
               ? categoryById[catId]!.name
-              : context.l10n.tabEvents;
+              : (eventCategoryName ?? context.l10n.tabEvents);
           items.add(
             _EventCategorySection(
               key: ValueKey(catId),
@@ -785,8 +793,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
           );
         }
 
-        final bottomInset =
-            MediaQuery.of(context).viewPadding.bottom + 88 + 24;
+        final bottomInset = MediaQuery.of(context).viewPadding.bottom + 88 + 24;
         return ListView(
           padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
           children: items,

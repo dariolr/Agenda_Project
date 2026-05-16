@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '/core/l10n/date_time_formats.dart';
 import '/core/l10n/l10_extension.dart';
@@ -670,7 +669,7 @@ class _EventTile extends StatelessWidget {
         ),
       ),
       title: Text(
-        '${DateFormat('dd/MM/yyyy').format(startsAtLocal)} • '
+        '${DtFmt.longDate(context, startsAtLocal)} • '
         '${DtFmt.hm(context, startsAtLocal.hour, startsAtLocal.minute)}'
         ' - ${DtFmt.hm(context, endsAtLocal.hour, endsAtLocal.minute)}',
         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
