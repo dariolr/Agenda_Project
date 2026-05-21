@@ -19,6 +19,8 @@ import 'package:agenda_backend/features/agenda/providers/agenda_display_settings
 import 'package:agenda_backend/features/agenda/providers/appointment_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/block_resizing_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/booking_reschedule_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
+import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/drag_layer_link_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/drag_offset_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/drag_session_provider.dart';
@@ -1249,9 +1251,32 @@ class _SingleStaffWeekTimelineColumnState
 
       final anchorId = rescheduleSession.anchorAppointmentId;
       final appointmentsNotifier = ref.read(appointmentsProvider.notifier);
-      final bookingAppointments = appointmentsNotifier.getByBookingId(
+      var bookingAppointments = appointmentsNotifier.getByBookingId(
         rescheduleSession.bookingId,
       );
+      if (bookingAppointments.isEmpty) {
+        final businessId = ref.read(currentBusinessProvider).id;
+        final locationId = ref.read(currentLocationProvider).id;
+        bookingAppointments = [
+          for (final item in rescheduleSession.items)
+            Appointment(
+              id: item.appointmentId,
+              bookingId: rescheduleSession.bookingId,
+              businessId: businessId,
+              locationId: locationId,
+              staffId: item.staffId,
+              serviceId: 0,
+              serviceVariantId: 0,
+              clientId: null,
+              clientName: '',
+              serviceName: '',
+              startTime: item.startTime,
+              endTime: item.endTime,
+              extraBlockedMinutes: item.blockedExtraMinutes,
+              bookingStatus: 'confirmed',
+            ),
+        ];
+      }
       if (bookingAppointments.isEmpty) {
         ref.read(bookingRescheduleSessionProvider.notifier).clear();
         if (!context.mounted) return;
