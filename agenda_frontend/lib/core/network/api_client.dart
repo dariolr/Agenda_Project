@@ -69,6 +69,7 @@ class ApiClient {
   int? _currentBusinessId;
 
   ApiClient({required TokenStorage tokenStorage, Dio? dio})
+    // ignore: prefer_initializing_formals
     : _tokenStorage = tokenStorage,
       _dio = dio ?? Dio() {
     _dio.options.baseUrl = ApiConfig.baseUrl;

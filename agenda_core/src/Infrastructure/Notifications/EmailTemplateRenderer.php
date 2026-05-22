@@ -24,7 +24,36 @@ final class EmailTemplateRenderer
         foreach ($variables as $key => $value) {
             $template = str_replace('{{' . $key . '}}', (string) $value, $template);
         }
+        $template = self::cleanupOptionalContactLines($template);
         $template = self::appendPoweredByBlock($template);
+        return $template;
+    }
+
+    private static function cleanupOptionalContactLines(string $template): string
+    {
+        $template = preg_replace(
+            '/\{\{(?:location_address_line|location_phone)\}\}/',
+            '',
+            $template
+        ) ?? $template;
+
+        $template = preg_replace(
+            '/[ \t]*\|[ \t]*(?=(?:<br\s*\/?>|<\/p>|<\/td>|<\/div>|<\/span>|[\r\n]|$))/i',
+            '',
+            $template
+        ) ?? $template;
+
+        do {
+            $previous = $template;
+            $template = preg_replace(
+                '/<br\s*\/?>[ \t]*(?:\r?\n[ \t]*)*(?=(?:<br\s*\/?>|<\/p>))/i',
+                '',
+                $template
+            ) ?? $template;
+        } while ($template !== $previous);
+
+        $template = preg_replace('/[ \t]+\|[ \t]*$/m', '', $template) ?? $template;
+
         return $template;
     }
 
