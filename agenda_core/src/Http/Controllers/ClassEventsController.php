@@ -1685,6 +1685,7 @@ final class ClassEventsController
         $base['class_type_service_category_id'] = isset($row['class_type_service_category_id'])
             ? (int) $row['class_type_service_category_id']
             : null;
+        $base['class_type_service_category_name'] = $row['class_type_service_category_name'] ?? null;
 
         return $base;
     }

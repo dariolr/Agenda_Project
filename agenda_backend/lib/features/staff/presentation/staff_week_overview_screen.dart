@@ -1006,7 +1006,7 @@ class _StaffWeekOverviewScreenState
     void showAllDayExceptionMenu(int staffId, int weekday, DateTime date) {
       if (!canEditAvailability) return;
       final l10n = context.l10n;
-      final isMobile = formFactor == AppFormFactor.mobile;
+      final useBottomSheet = formFactor != AppFormFactor.desktop;
       final locale = Intl.getCurrentLocale();
       final dateLabel = DateFormat('EEEE d MMMM', locale).format(date);
       final staff = staffList.firstWhere(
@@ -1085,7 +1085,7 @@ class _StaffWeekOverviewScreenState
         );
       }
 
-      if (isMobile) {
+      if (useBottomSheet) {
         AppBottomSheet.show(
           context: context,
           heightFactor: null,
@@ -1181,7 +1181,7 @@ class _StaffWeekOverviewScreenState
     }) {
       if (!canEditAvailability) return;
       final l10n = context.l10n;
-      final isMobile = formFactor == AppFormFactor.mobile;
+      final useBottomSheet = formFactor != AppFormFactor.desktop;
       final locale = Intl.getCurrentLocale();
       // Data in formato completo: "lunedì 1 dicembre"
       final dateLabel = DateFormat('EEEE d MMMM', locale).format(date);
@@ -1531,8 +1531,8 @@ class _StaffWeekOverviewScreenState
         );
       }
 
-      if (isMobile) {
-        // Mobile: AppBottomSheet con avatar e nome
+      if (useBottomSheet) {
+        // Mobile/tablet: AppBottomSheet con avatar e nome
         AppBottomSheet.show(
           context: context,
           heightFactor: null, // Auto-size
@@ -1575,7 +1575,7 @@ class _StaffWeekOverviewScreenState
           ),
         );
       } else {
-        // Desktop/Tablet: AppFormDialog con avatar centrato
+        // Desktop: AppFormDialog con avatar centrato
         showDialog(
           context: context,
           builder: (ctx) => AppFormDialog(

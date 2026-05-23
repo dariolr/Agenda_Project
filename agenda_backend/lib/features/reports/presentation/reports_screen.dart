@@ -33,6 +33,21 @@ class ReportsScreen extends ConsumerStatefulWidget {
   ConsumerState<ReportsScreen> createState() => _ReportsScreenState();
 }
 
+enum _ReportSortMetric { appointments, revenue }
+
+enum _ReportTableKey { staff, location, service, dayOfWeek, period, hour }
+
+@immutable
+class _ReportSortState {
+  const _ReportSortState({
+    this.metric = _ReportSortMetric.revenue,
+    this.ascending = false,
+  });
+
+  final _ReportSortMetric metric;
+  final bool ascending;
+}
+
 class _ReportsScreenState extends ConsumerState<ReportsScreen>
     with SingleTickerProviderStateMixin {
   static const List<String> _allReportStatuses = <String>[
@@ -53,6 +68,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
   /// 0 = Appointments report, 1 = Work Hours report
   int _currentTab = 0;
+  final Map<_ReportTableKey, _ReportSortState> _reportSortStates = {};
 
   List<Staff> _staffScopedByLocations({
     required List<Staff> staff,
@@ -488,19 +504,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
               return Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  title: Text(
-                    l10n.reportsFullPeriodToggle,
-                    style: Theme.of(context).textTheme.bodyMedium,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    title: Text(
+                      l10n.reportsFullPeriodToggle,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    value: filterState.useFullPeriod,
+                    onChanged: (value) {
+                      final notifier = ref.read(reportsFilterProvider.notifier);
+                      notifier.setFullPeriod(value);
+                      notifier.applyPreset(filterState.selectedPreset);
+                    },
                   ),
-                  value: filterState.useFullPeriod,
-                  onChanged: (value) {
-                    final notifier = ref.read(reportsFilterProvider.notifier);
-                    notifier.setFullPeriod(value);
-                    notifier.applyPreset(filterState.selectedPreset);
-                  },
                 ),
               );
             },
@@ -780,6 +799,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     final numberFormat = NumberFormat.decimalPattern(locale);
     final percentFormat = NumberFormat.decimalPattern(locale);
     final totalCollected = summary.paidCents / 100;
+    final totalToCollect =
+        (summary.dueCents - summary.discountCents).clamp(0, 1 << 31) / 100;
     final hasRevenuePaymentMethod = summary.paymentMethodBreakdown.any(
       (entry) => entry.isRevenue,
     );
@@ -794,7 +815,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       if (hasRevenuePaymentMethod)
         _SummaryCardData(
           icon: Icons.euro,
-          label: l10n.reportsAppointmentsAmount,
+          label: l10n.paymentTotalToCollect,
+          value: currencyFormat.format(totalToCollect),
+          color: Colors.green,
+        ),
+      if (hasRevenuePaymentMethod)
+        _SummaryCardData(
+          icon: Icons.payments_outlined,
+          label: l10n.paymentEntered,
           value: currencyFormat.format(totalCollected),
           color: Colors.green,
         ),
@@ -1072,14 +1100,33 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  card.value,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                if (card.secondaryValue == null)
+                  Text(
+                    card.value,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  )
+                else ...[
+                  Text(
+                    card.value,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
+                  Text(
+                    card.secondaryValue!,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ],
                 Text(
                   card.label,
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -1144,6 +1191,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         child: Text(l10n.reportsNoData),
       );
     }
+    final sortedData = _sortReportRows<StaffReportRow>(
+      _ReportTableKey.staff,
+      data,
+      appointmentsOf: (row) => row.appointments,
+      revenueOf: (row) => row.revenue,
+      labelOf: (row) => row.staffName,
+    );
+    final sortState = _reportSortState(_ReportTableKey.staff);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1158,29 +1213,49 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               child: DataTable(
                 dividerThickness: 0.2,
                 horizontalMargin: 16,
+                sortColumnIndex:
+                    sortState.metric == _ReportSortMetric.appointments ? 1 : 3,
+                sortAscending: sortState.ascending,
                 columns: [
                   DataColumn(label: Text(l10n.reportsColStaff)),
                   DataColumn(
                     label: Text(l10n.reportsColAppointments),
                     numeric: true,
+                    onSort: (_, __) => _setReportSortMetric(
+                      _ReportTableKey.staff,
+                      _ReportSortMetric.appointments,
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(l10n.reportsColPercentage),
+                    numeric: true,
                   ),
                   DataColumn(
                     label: Text(l10n.reportsColRevenue),
+                    numeric: true,
+                    onSort: (_, __) => _setReportSortMetric(
+                      _ReportTableKey.staff,
+                      _ReportSortMetric.revenue,
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(l10n.reportsColPercentage),
                     numeric: true,
                   ),
                   DataColumn(
                     label: Text(l10n.reportsColAvgRevenue),
                     numeric: true,
                   ),
-                  DataColumn(
-                    label: Text(l10n.reportsColPercentage),
-                    numeric: true,
-                  ),
                 ],
-                rows: data.map((row) {
-                  final percentage = summary.totalRevenue > 0
-                      ? (row.revenue / summary.totalRevenue * 100)
-                      : 0.0;
+                rows: sortedData.map((row) {
+                  final appointmentsPercentage = _appointmentsPercentage(
+                    row.appointments,
+                    summary,
+                  );
+                  final revenuePercentage = _revenuePercentage(
+                    row.revenue,
+                    summary,
+                  );
                   return DataRow(
                     cells: [
                       DataCell(
@@ -1202,9 +1277,24 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                         ),
                       ),
                       DataCell(Text(row.appointments.toString())),
+                      DataCell(
+                        _buildShareCell(
+                          context,
+                          _ReportTableKey.staff,
+                          appointmentsPercentage,
+                          _ReportSortMetric.appointments,
+                        ),
+                      ),
                       DataCell(Text('€${row.revenue.toStringAsFixed(2)}')),
+                      DataCell(
+                        _buildShareCell(
+                          context,
+                          _ReportTableKey.staff,
+                          revenuePercentage,
+                          _ReportSortMetric.revenue,
+                        ),
+                      ),
                       DataCell(Text('€${row.avgRevenue.toStringAsFixed(2)}')),
-                      DataCell(_buildPercentageBar(context, percentage)),
                     ],
                   );
                 }).toList(),
@@ -1231,6 +1321,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         child: Text(l10n.reportsNoData),
       );
     }
+    final sortedData = _sortReportRows<LocationReportRow>(
+      _ReportTableKey.location,
+      data,
+      appointmentsOf: (row) => row.appointments,
+      revenueOf: (row) => row.revenue,
+      labelOf: (row) => row.locationName,
+    );
+    final sortState = _reportSortState(_ReportTableKey.location);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1245,33 +1343,68 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               child: DataTable(
                 dividerThickness: 0.2,
                 horizontalMargin: 16,
+                sortColumnIndex:
+                    sortState.metric == _ReportSortMetric.appointments ? 1 : 3,
+                sortAscending: sortState.ascending,
                 columns: [
                   DataColumn(label: Text(l10n.reportsColLocation)),
                   DataColumn(
                     label: Text(l10n.reportsColAppointments),
                     numeric: true,
+                    onSort: (_, __) => _setReportSortMetric(
+                      _ReportTableKey.location,
+                      _ReportSortMetric.appointments,
+                    ),
                   ),
-                  DataColumn(
-                    label: Text(l10n.reportsColRevenue),
-                    numeric: true,
-                  ),
-                  DataColumn(label: Text(l10n.reportsColHours), numeric: true),
                   DataColumn(
                     label: Text(l10n.reportsColPercentage),
                     numeric: true,
                   ),
+                  DataColumn(
+                    label: Text(l10n.reportsColRevenue),
+                    numeric: true,
+                    onSort: (_, __) => _setReportSortMetric(
+                      _ReportTableKey.location,
+                      _ReportSortMetric.revenue,
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(l10n.reportsColPercentage),
+                    numeric: true,
+                  ),
+                  DataColumn(label: Text(l10n.reportsColHours), numeric: true),
                 ],
-                rows: data.map((row) {
-                  final percentage = summary.totalRevenue > 0
-                      ? (row.revenue / summary.totalRevenue * 100)
-                      : 0.0;
+                rows: sortedData.map((row) {
+                  final appointmentsPercentage = _appointmentsPercentage(
+                    row.appointments,
+                    summary,
+                  );
+                  final revenuePercentage = _revenuePercentage(
+                    row.revenue,
+                    summary,
+                  );
                   return DataRow(
                     cells: [
                       DataCell(Text(row.locationName)),
                       DataCell(Text(row.appointments.toString())),
+                      DataCell(
+                        _buildShareCell(
+                          context,
+                          _ReportTableKey.location,
+                          appointmentsPercentage,
+                          _ReportSortMetric.appointments,
+                        ),
+                      ),
                       DataCell(Text('€${row.revenue.toStringAsFixed(2)}')),
+                      DataCell(
+                        _buildShareCell(
+                          context,
+                          _ReportTableKey.location,
+                          revenuePercentage,
+                          _ReportSortMetric.revenue,
+                        ),
+                      ),
                       DataCell(Text('${row.hours.toStringAsFixed(1)}h')),
-                      DataCell(_buildPercentageBar(context, percentage)),
                     ],
                   );
                 }).toList(),
@@ -1297,6 +1430,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         child: Text(l10n.reportsNoData),
       );
     }
+    final sortedData = _sortReportRows<ServiceReportRow>(
+      _ReportTableKey.service,
+      data,
+      appointmentsOf: (row) => row.appointments,
+      revenueOf: (row) => row.revenue,
+      labelOf: (row) => row.serviceName,
+    );
+    final sortState = _reportSortState(_ReportTableKey.service);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1311,33 +1452,68 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               child: DataTable(
                 dividerThickness: 0.2,
                 horizontalMargin: 16,
+                sortColumnIndex:
+                    sortState.metric == _ReportSortMetric.appointments ? 2 : 4,
+                sortAscending: sortState.ascending,
                 columns: [
                   DataColumn(label: Text(l10n.reportsColService)),
                   DataColumn(label: Text(l10n.reportsColCategory)),
                   DataColumn(
                     label: Text(l10n.reportsColAppointments),
                     numeric: true,
+                    onSort: (_, __) => _setReportSortMetric(
+                      _ReportTableKey.service,
+                      _ReportSortMetric.appointments,
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(l10n.reportsColPercentage),
+                    numeric: true,
                   ),
                   DataColumn(
                     label: Text(l10n.reportsColRevenue),
                     numeric: true,
+                    onSort: (_, __) => _setReportSortMetric(
+                      _ReportTableKey.service,
+                      _ReportSortMetric.revenue,
+                    ),
                   ),
                   DataColumn(
                     label: Text(l10n.reportsColPercentage),
                     numeric: true,
                   ),
                 ],
-                rows: data.map((row) {
-                  final percentage = summary.totalAppointments > 0
-                      ? (row.appointments / summary.totalAppointments * 100)
-                      : 0.0;
+                rows: sortedData.map((row) {
+                  final appointmentsPercentage = _appointmentsPercentage(
+                    row.appointments,
+                    summary,
+                  );
+                  final revenuePercentage = _revenuePercentage(
+                    row.revenue,
+                    summary,
+                  );
                   return DataRow(
                     cells: [
                       DataCell(Text(row.serviceName)),
                       DataCell(Text(row.categoryName ?? '-')),
                       DataCell(Text(row.appointments.toString())),
+                      DataCell(
+                        _buildShareCell(
+                          context,
+                          _ReportTableKey.service,
+                          appointmentsPercentage,
+                          _ReportSortMetric.appointments,
+                        ),
+                      ),
                       DataCell(Text('€${row.revenue.toStringAsFixed(2)}')),
-                      DataCell(_buildPercentageBar(context, percentage)),
+                      DataCell(
+                        _buildShareCell(
+                          context,
+                          _ReportTableKey.service,
+                          revenuePercentage,
+                          _ReportSortMetric.revenue,
+                        ),
+                      ),
                     ],
                   );
                 }).toList(),
@@ -1374,9 +1550,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       l10n.daySunday,
     ];
 
-    // Sort by ISO weekday
-    final sortedData = List<DayOfWeekReportRow>.from(data)
-      ..sort((a, b) => a.isoWeekday.compareTo(b.isoWeekday));
+    final sortedData = _sortReportRows<DayOfWeekReportRow>(
+      _ReportTableKey.dayOfWeek,
+      data,
+      appointmentsOf: (row) => row.appointments,
+      revenueOf: (row) => row.revenue,
+      labelOf: (row) => row.isoWeekday.toString(),
+    );
+    final sortState = _reportSortState(_ReportTableKey.dayOfWeek);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1391,15 +1572,30 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               child: DataTable(
                 dividerThickness: 0.2,
                 horizontalMargin: 16,
+                sortColumnIndex:
+                    sortState.metric == _ReportSortMetric.appointments ? 1 : 3,
+                sortAscending: sortState.ascending,
                 columns: [
                   DataColumn(label: Text(l10n.reportsColDay)),
                   DataColumn(
                     label: Text(l10n.reportsColAppointments),
                     numeric: true,
+                    onSort: (_, __) => _setReportSortMetric(
+                      _ReportTableKey.dayOfWeek,
+                      _ReportSortMetric.appointments,
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(l10n.reportsColPercentage),
+                    numeric: true,
                   ),
                   DataColumn(
                     label: Text(l10n.reportsColRevenue),
                     numeric: true,
+                    onSort: (_, __) => _setReportSortMetric(
+                      _ReportTableKey.dayOfWeek,
+                      _ReportSortMetric.revenue,
+                    ),
                   ),
                   DataColumn(
                     label: Text(l10n.reportsColPercentage),
@@ -1408,15 +1604,35 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                 ],
                 rows: sortedData.map((row) {
                   final dayName = dayNames[row.isoWeekday - 1];
-                  final percentage = summary.totalAppointments > 0
-                      ? (row.appointments / summary.totalAppointments * 100)
-                      : 0.0;
+                  final appointmentsPercentage = _appointmentsPercentage(
+                    row.appointments,
+                    summary,
+                  );
+                  final revenuePercentage = _revenuePercentage(
+                    row.revenue,
+                    summary,
+                  );
                   return DataRow(
                     cells: [
                       DataCell(Text(dayName)),
                       DataCell(Text(row.appointments.toString())),
+                      DataCell(
+                        _buildShareCell(
+                          context,
+                          _ReportTableKey.dayOfWeek,
+                          appointmentsPercentage,
+                          _ReportSortMetric.appointments,
+                        ),
+                      ),
                       DataCell(Text('€${row.revenue.toStringAsFixed(2)}')),
-                      DataCell(_buildPercentageBar(context, percentage)),
+                      DataCell(
+                        _buildShareCell(
+                          context,
+                          _ReportTableKey.dayOfWeek,
+                          revenuePercentage,
+                          _ReportSortMetric.revenue,
+                        ),
+                      ),
                     ],
                   );
                 }).toList(),
@@ -1450,6 +1666,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       'month' => DateFormat('MMM yyyy'),
       _ => DateFormat('dd/MM/yyyy'),
     };
+    final sortedData = _sortReportRows<PeriodReportRow>(
+      _ReportTableKey.period,
+      data,
+      appointmentsOf: (row) => row.appointments,
+      revenueOf: (row) => row.revenue,
+      labelOf: (row) => row.periodStart.toIso8601String(),
+    );
+    final sortState = _reportSortState(_ReportTableKey.period);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1464,22 +1688,37 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               child: DataTable(
                 dividerThickness: 0.2,
                 horizontalMargin: 16,
+                sortColumnIndex:
+                    sortState.metric == _ReportSortMetric.appointments ? 1 : 3,
+                sortAscending: sortState.ascending,
                 columns: [
                   DataColumn(label: Text(l10n.reportsColPeriod)),
                   DataColumn(
                     label: Text(l10n.reportsColAppointments),
                     numeric: true,
+                    onSort: (_, __) => _setReportSortMetric(
+                      _ReportTableKey.period,
+                      _ReportSortMetric.appointments,
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(l10n.reportsColPercentage),
+                    numeric: true,
                   ),
                   DataColumn(
                     label: Text(l10n.reportsColRevenue),
                     numeric: true,
+                    onSort: (_, __) => _setReportSortMetric(
+                      _ReportTableKey.period,
+                      _ReportSortMetric.revenue,
+                    ),
                   ),
                   DataColumn(
                     label: Text(l10n.reportsColPercentage),
                     numeric: true,
                   ),
                 ],
-                rows: data.map((row) {
+                rows: sortedData.map((row) {
                   String periodLabel = dateFormat.format(row.periodStart);
                   if (breakdown.granularity == 'week') {
                     final endOfWeek = row.periodStart.add(
@@ -1488,15 +1727,35 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                     periodLabel =
                         '${dateFormat.format(row.periodStart)} - ${dateFormat.format(endOfWeek)}';
                   }
-                  final percentage = summary.totalAppointments > 0
-                      ? (row.appointments / summary.totalAppointments * 100)
-                      : 0.0;
+                  final appointmentsPercentage = _appointmentsPercentage(
+                    row.appointments,
+                    summary,
+                  );
+                  final revenuePercentage = _revenuePercentage(
+                    row.revenue,
+                    summary,
+                  );
                   return DataRow(
                     cells: [
                       DataCell(Text(periodLabel)),
                       DataCell(Text(row.appointments.toString())),
+                      DataCell(
+                        _buildShareCell(
+                          context,
+                          _ReportTableKey.period,
+                          appointmentsPercentage,
+                          _ReportSortMetric.appointments,
+                        ),
+                      ),
                       DataCell(Text('€${row.revenue.toStringAsFixed(2)}')),
-                      DataCell(_buildPercentageBar(context, percentage)),
+                      DataCell(
+                        _buildShareCell(
+                          context,
+                          _ReportTableKey.period,
+                          revenuePercentage,
+                          _ReportSortMetric.revenue,
+                        ),
+                      ),
                     ],
                   );
                 }).toList(),
@@ -1523,9 +1782,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       );
     }
 
-    // Sort by hour
-    final sortedData = List<HourReportRow>.from(data)
-      ..sort((a, b) => a.hour.compareTo(b.hour));
+    final sortedData = _sortReportRows<HourReportRow>(
+      _ReportTableKey.hour,
+      data,
+      appointmentsOf: (row) => row.appointments,
+      revenueOf: (row) => row.revenue,
+      labelOf: (row) => row.hour.toString().padLeft(2, '0'),
+    );
+    final sortState = _reportSortState(_ReportTableKey.hour);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -1540,15 +1804,30 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               child: DataTable(
                 dividerThickness: 0.2,
                 horizontalMargin: 16,
+                sortColumnIndex:
+                    sortState.metric == _ReportSortMetric.appointments ? 1 : 3,
+                sortAscending: sortState.ascending,
                 columns: [
                   DataColumn(label: Text(l10n.reportsColHour)),
                   DataColumn(
                     label: Text(l10n.reportsColAppointments),
                     numeric: true,
+                    onSort: (_, __) => _setReportSortMetric(
+                      _ReportTableKey.hour,
+                      _ReportSortMetric.appointments,
+                    ),
+                  ),
+                  DataColumn(
+                    label: Text(l10n.reportsColPercentage),
+                    numeric: true,
                   ),
                   DataColumn(
                     label: Text(l10n.reportsColRevenue),
                     numeric: true,
+                    onSort: (_, __) => _setReportSortMetric(
+                      _ReportTableKey.hour,
+                      _ReportSortMetric.revenue,
+                    ),
                   ),
                   DataColumn(
                     label: Text(l10n.reportsColPercentage),
@@ -1557,15 +1836,35 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
                 ],
                 rows: sortedData.map((row) {
                   final hourLabel = '${row.hour.toString().padLeft(2, '0')}:00';
-                  final percentage = summary.totalAppointments > 0
-                      ? (row.appointments / summary.totalAppointments * 100)
-                      : 0.0;
+                  final appointmentsPercentage = _appointmentsPercentage(
+                    row.appointments,
+                    summary,
+                  );
+                  final revenuePercentage = _revenuePercentage(
+                    row.revenue,
+                    summary,
+                  );
                   return DataRow(
                     cells: [
                       DataCell(Text(hourLabel)),
                       DataCell(Text(row.appointments.toString())),
+                      DataCell(
+                        _buildShareCell(
+                          context,
+                          _ReportTableKey.hour,
+                          appointmentsPercentage,
+                          _ReportSortMetric.appointments,
+                        ),
+                      ),
                       DataCell(Text('€${row.revenue.toStringAsFixed(2)}')),
-                      DataCell(_buildPercentageBar(context, percentage)),
+                      DataCell(
+                        _buildShareCell(
+                          context,
+                          _ReportTableKey.hour,
+                          revenuePercentage,
+                          _ReportSortMetric.revenue,
+                        ),
+                      ),
                     ],
                   );
                 }).toList(),
@@ -1575,6 +1874,74 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         );
       },
     );
+  }
+
+  _ReportSortState _reportSortState(_ReportTableKey tableKey) {
+    return _reportSortStates[tableKey] ?? const _ReportSortState();
+  }
+
+  void _setReportSortMetric(
+    _ReportTableKey tableKey,
+    _ReportSortMetric metric,
+  ) {
+    setState(() {
+      final current = _reportSortState(tableKey);
+      if (current.metric == metric) {
+        _reportSortStates[tableKey] = _ReportSortState(
+          metric: metric,
+          ascending: !current.ascending,
+        );
+        return;
+      }
+      _reportSortStates[tableKey] = _ReportSortState(metric: metric);
+    });
+  }
+
+  List<T> _sortReportRows<T>(
+    _ReportTableKey tableKey,
+    List<T> rows, {
+    required int Function(T row) appointmentsOf,
+    required double Function(T row) revenueOf,
+    required String Function(T row) labelOf,
+  }) {
+    final sortState = _reportSortState(tableKey);
+    final sorted = List<T>.from(rows);
+    sorted.sort((a, b) {
+      final comparison = switch (sortState.metric) {
+        _ReportSortMetric.appointments => appointmentsOf(
+          a,
+        ).compareTo(appointmentsOf(b)),
+        _ReportSortMetric.revenue => revenueOf(a).compareTo(revenueOf(b)),
+      };
+      final directional = sortState.ascending ? comparison : -comparison;
+      if (directional != 0) return directional;
+      return labelOf(a).toLowerCase().compareTo(labelOf(b).toLowerCase());
+    });
+    return sorted;
+  }
+
+  double _appointmentsPercentage(int appointments, ReportSummary summary) {
+    return summary.totalAppointments > 0
+        ? (appointments / summary.totalAppointments * 100)
+        : 0.0;
+  }
+
+  double _revenuePercentage(double revenue, ReportSummary summary) {
+    return summary.totalRevenue > 0
+        ? (revenue / summary.totalRevenue * 100)
+        : 0.0;
+  }
+
+  Widget _buildShareCell(
+    BuildContext context,
+    _ReportTableKey tableKey,
+    double percentage,
+    _ReportSortMetric metric,
+  ) {
+    if (_reportSortState(tableKey).metric == metric) {
+      return _buildPercentageBar(context, percentage);
+    }
+    return Text('${percentage.toStringAsFixed(0)}%');
   }
 
   Widget _buildPercentageBar(BuildContext context, double percentage) {
@@ -1639,8 +2006,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     WorkHoursSummary summary,
   ) {
     final l10n = context.l10n;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     final locale = Localizations.localeOf(context).toString();
     final numberFormat = NumberFormat.decimalPattern(locale);
 
@@ -1652,7 +2018,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       final totalM = totalMinutes % 60;
       final totalHoursStr = totalM == 0
           ? '${totalH}h'
-          : '${totalH}h ${totalM}m';
+          : '${totalH}h ${totalM}min';
 
       if (hours >= 24) {
         final days = totalMinutes ~/ (24 * 60);
@@ -1665,187 +2031,94 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         } else if (m == 0) {
           primary = '${days}g ${h}h';
         } else if (h == 0) {
-          primary = '${days}g ${m}m';
+          primary = '${days}g ${m}min';
         } else {
-          primary = '${days}g ${h}h ${m}m';
+          primary = '${days}g ${h}h ${m}min';
         }
         return (primary, totalHoursStr);
       }
       return (totalHoursStr, null);
     }
 
-    Widget buildHoursValue(double hours, {Color? textColor}) {
+    _SummaryCardData hoursCard({
+      required IconData icon,
+      required String label,
+      required double hours,
+      required Color color,
+    }) {
       final (primary, totalHours) = formatHoursWithTotal(hours);
-      if (totalHours == null) {
-        return Text(
-          primary,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-        );
-      }
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            primary,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
-          ),
-          Text(
-            '= $totalHours',
-            style: TextStyle(
-              fontSize: 11,
-              color: (textColor ?? Theme.of(context).colorScheme.onSurface)
-                  .withValues(alpha: 0.6),
-            ),
-          ),
-        ],
+      return _SummaryCardData(
+        icon: icon,
+        label: label,
+        value: primary,
+        secondaryValue: totalHours == null ? null : '= $totalHours',
+        color: color,
       );
     }
 
     final cards = [
-      _WorkHoursCardData(
+      hoursCard(
         icon: Icons.schedule,
         label: l10n.reportsWorkHoursScheduled,
-        hoursWidget: buildHoursValue(summary.totalScheduledHours),
+        hours: summary.totalScheduledHours,
         color: colorScheme.primary,
       ),
-      _WorkHoursCardData(
+      hoursCard(
         icon: Icons.work,
         label: l10n.reportsWorkHoursWorked,
-        hoursWidget: buildHoursValue(summary.totalWorkedHours),
+        hours: summary.totalWorkedHours,
         color: Colors.green,
       ),
-      _WorkHoursCardData(
+      hoursCard(
         icon: Icons.block,
         label: l10n.reportsWorkHoursBlocked,
-        hoursWidget: buildHoursValue(summary.totalBlockedHours),
+        hours: summary.totalBlockedHours,
         color: Colors.orange,
       ),
-      _WorkHoursCardData(
+      hoursCard(
         icon: Icons.beach_access,
         label: l10n.reportsWorkHoursOff,
-        hoursWidget: buildHoursValue(summary.totalExceptionOffHours),
+        hours: summary.totalExceptionOffHours,
         color: Colors.red,
       ),
-      _WorkHoursCardData(
+      hoursCard(
         icon: Icons.event_available,
         label: l10n.reportsWorkHoursAvailable,
-        hoursWidget: buildHoursValue(summary.totalAvailableHours),
+        hours: summary.totalAvailableHours,
         color: Colors.blue,
       ),
-      _WorkHoursCardData(
+      _SummaryCardData(
         icon: Icons.pie_chart,
         label: l10n.reportsWorkHoursUtilization,
-        percentageValue:
-            '${numberFormat.format(summary.overallUtilizationPercentage)}%',
+        value: '${numberFormat.format(summary.overallUtilizationPercentage)}%',
         color: Colors.purple,
       ),
     ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth > 900;
-        final crossAxisCount = isDesktop
-            ? 3
+        final crossAxisCount = constraints.maxWidth > 800
+            ? 4
             : constraints.maxWidth > 500
             ? 2
             : 2;
 
-        // Aspect ratio più alto su desktop (card più basse)
-        final aspectRatio = isDesktop ? 2.8 : 2.5;
-
-        // Su desktop limita la larghezza e centra
-        final maxGridWidth = isDesktop ? 900.0 : constraints.maxWidth;
-
-        return Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxGridWidth),
-            child: GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                childAspectRatio: aspectRatio,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: cards.length,
-              itemBuilder: (context, index) {
-                final card = cards[index];
-                return _buildWorkHoursSummaryCard(context, card);
-              },
-            ),
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: 2.5,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
           ),
+          itemCount: cards.length,
+          itemBuilder: (context, index) {
+            final card = cards[index];
+            return _buildSummaryCard(context, card);
+          },
         );
       },
-    );
-  }
-
-  Widget _buildWorkHoursSummaryCard(
-    BuildContext context,
-    _WorkHoursCardData card,
-  ) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: card.color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(card.icon, color: card.color, size: 18),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    card.label,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  if (card.percentageValue != null)
-                    Text(
-                      card.percentageValue!,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
-                    )
-                  else if (card.hoursWidget != null)
-                    card.hoursWidget!,
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -1870,10 +2143,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
         final m = remainingMinutes % 60;
         if (m == 0 && h == 0) return '${days}g';
         if (m == 0) return '${days}g ${h}h';
-        if (h == 0) return '${days}g ${m}m';
-        return '${days}g ${h}h ${m}m';
+        if (h == 0) return '${days}g ${m}min';
+        return '${days}g ${h}h ${m}min';
       }
-      return totalM == 0 ? '${totalH}h' : '${totalH}h ${totalM}m';
+      return totalM == 0 ? '${totalH}h' : '${totalH}h ${totalM}min';
     }
 
     String? formatHoursTotal(double hours) {
@@ -1881,7 +2154,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       final totalMinutes = (hours * 60).round();
       final totalH = totalMinutes ~/ 60;
       final totalM = totalMinutes % 60;
-      return totalM == 0 ? '${totalH}h' : '${totalH}h ${totalM}m';
+      return totalM == 0 ? '${totalH}h' : '${totalH}h ${totalM}min';
     }
 
     Widget buildHoursCell(double hours, {TextStyle? style}) {
@@ -2020,29 +2293,15 @@ class _SummaryCardData {
     required this.icon,
     required this.label,
     required this.value,
+    this.secondaryValue,
     required this.color,
   });
 
   final IconData icon;
   final String label;
   final String value;
+  final String? secondaryValue;
   final Color color;
-}
-
-class _WorkHoursCardData {
-  const _WorkHoursCardData({
-    required this.icon,
-    required this.label,
-    required this.color,
-    this.hoursWidget,
-    this.percentageValue,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final Widget? hoursWidget;
-  final String? percentageValue;
 }
 
 // ============================================================================

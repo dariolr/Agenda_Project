@@ -6,6 +6,7 @@ class ClassEvent {
   final String classTypeName;
   final String? classTypeColorHex;
   final int? classTypeServiceCategoryId;
+  final String? classTypeServiceCategoryName;
   final String startsAt;
   final String? startsAtLocal;
   final String endsAt;
@@ -36,6 +37,7 @@ class ClassEvent {
     required this.classTypeName,
     this.classTypeColorHex,
     this.classTypeServiceCategoryId,
+    this.classTypeServiceCategoryName,
     required this.startsAt,
     this.startsAtLocal,
     required this.endsAt,
@@ -67,6 +69,8 @@ class ClassEvent {
     classTypeName: json['class_type_name'] as String? ?? '',
     classTypeColorHex: json['class_type_color_hex'] as String?,
     classTypeServiceCategoryId: json['class_type_service_category_id'] as int?,
+    classTypeServiceCategoryName:
+        json['class_type_service_category_name'] as String?,
     startsAt: json['starts_at'] as String,
     startsAtLocal: json['starts_at_local'] as String?,
     endsAt: json['ends_at'] as String,

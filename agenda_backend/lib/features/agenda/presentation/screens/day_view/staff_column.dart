@@ -2031,9 +2031,31 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       targetStart.minute,
     );
 
-    final bookingAppointments = ref
+    var bookingAppointments = ref
         .read(appointmentsProvider.notifier)
         .getByBookingId(rescheduleSession.bookingId);
+    if (bookingAppointments.isEmpty) {
+      final locationId = ref.read(currentLocationProvider).id;
+      bookingAppointments = [
+        for (final item in rescheduleSession.items)
+          Appointment(
+            id: item.appointmentId,
+            bookingId: rescheduleSession.bookingId,
+            businessId: widget.staff.businessId,
+            locationId: locationId,
+            staffId: item.staffId,
+            serviceId: 0,
+            serviceVariantId: 0,
+            serviceName: '',
+            startTime: item.startTime,
+            endTime: item.endTime,
+            clientName: '',
+            clientId: null,
+            extraBlockedMinutes: item.blockedExtraMinutes,
+            bookingStatus: 'confirmed',
+          ),
+      ];
+    }
     if (bookingAppointments.isEmpty) {
       ref.read(bookingRescheduleSessionProvider.notifier).clear();
       if (mounted) {
@@ -2695,4 +2717,3 @@ class _ClassEventCard extends ConsumerWidget {
     );
   }
 }
-

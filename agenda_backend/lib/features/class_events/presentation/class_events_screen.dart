@@ -537,7 +537,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
                                     dense: true,
                                     visualDensity: VisualDensity.compact,
                                     title: Text(
-                                      '${DateFormat('dd/MM/yyyy').format(startsAtLocal)} • ${DtFmt.hm(context, startsAtLocal.hour, startsAtLocal.minute)} - ${DtFmt.hm(context, endsAtLocal.hour, endsAtLocal.minute)}',
+                                      '${DtFmt.longDate(context, startsAtLocal)} • ${DtFmt.hm(context, startsAtLocal.hour, startsAtLocal.minute)} - ${DtFmt.hm(context, endsAtLocal.hour, endsAtLocal.minute)}',
                                       style: isPast
                                           ? TextStyle(
                                               color: colorScheme.onSurface
@@ -727,10 +727,15 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
 
   Future<void> _duplicateSchedule(ClassEvent schedule) async {
     if (!mounted || widget.initial == null) return;
+    final timezone = ref.read(effectiveTenantTimezoneProvider);
+    final startsAtLocal =
+        schedule.startsAtLocal ??
+        TenantTimeService.fromUtcToTenant(schedule.startsAtUtc, timezone);
     await showCreateClassEventDialog(
       context,
       ref,
       initialClassTypeId: widget.initial!.id,
+      initialDate: DateUtils.dateOnly(startsAtLocal),
       prefillEvent: schedule,
       useRootNavigator: false,
       closeParentOnSave: true,
@@ -1261,7 +1266,7 @@ class _StagedParticipant {
 }
 
 class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
-  static const int _timeStepMinutes = 15;
+  static const int _timeStepMinutes = 5;
   final _formKey = GlobalKey<FormState>();
   final _capacityController = TextEditingController();
   final _priceController = TextEditingController();
@@ -3675,6 +3680,7 @@ class _ScheduleTimeGridPickerState extends State<_ScheduleTimeGridPicker> {
   late final ScrollController _scrollController;
   late final List<TimeOfDay> _entries;
   late final int _selectedIndex;
+  bool _didInitialScroll = false;
 
   @override
   void initState() {
@@ -3689,19 +3695,25 @@ class _ScheduleTimeGridPickerState extends State<_ScheduleTimeGridPicker> {
           time.hour == widget.initial.hour &&
           time.minute == widget.initial.minute,
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToSelected());
   }
 
-  void _scrollToSelected() {
+  void _scheduleScrollToSelected(BoxConstraints constraints) {
+    if (_didInitialScroll || _selectedIndex < 0) return;
+    _didInitialScroll = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _scrollToSelected(constraints);
+    });
+  }
+
+  void _scrollToSelected(BoxConstraints constraints) {
     if (!_scrollController.hasClients || _selectedIndex < 0) return;
 
     const crossAxisCount = 4;
     const mainAxisSpacing = 6.0;
     const childAspectRatio = 2.7;
-    const padding = 12.0;
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final availableWidth = screenWidth - padding * 2;
+    final availableWidth = constraints.maxWidth;
     final itemWidth =
         (availableWidth - (crossAxisCount - 1) * 6) / crossAxisCount;
     final itemHeight = itemWidth / childAspectRatio;
@@ -3709,20 +3721,14 @@ class _ScheduleTimeGridPickerState extends State<_ScheduleTimeGridPicker> {
     final targetRow = _selectedIndex ~/ crossAxisCount;
 
     final viewportHeight = _scrollController.position.viewportDimension;
-    const headerOffset = 40.0;
     final targetOffset =
         (targetRow * rowHeight) -
         (viewportHeight / 2) +
-        (rowHeight / 2) +
-        headerOffset;
+        (rowHeight / 2);
     final maxScroll = _scrollController.position.maxScrollExtent;
     final clampedOffset = targetOffset.clamp(0.0, maxScroll);
 
-    _scrollController.animateTo(
-      clampedOffset,
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
-    );
+    _scrollController.jumpTo(clampedOffset);
   }
 
   @override
@@ -3751,32 +3757,39 @@ class _ScheduleTimeGridPickerState extends State<_ScheduleTimeGridPicker> {
           ),
           const SizedBox(height: 10),
           Expanded(
-            child: GridView.builder(
-              controller: _scrollController,
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 4,
-                mainAxisSpacing: 6,
-                crossAxisSpacing: 6,
-                childAspectRatio: 2.7,
-              ),
-              itemCount: _entries.length,
-              itemBuilder: (context, index) {
-                final time = _entries[index];
-                final isSelected = index == _selectedIndex;
-                return OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    backgroundColor: isSelected
-                        ? Theme.of(context).colorScheme.primary.withOpacity(0.1)
-                        : null,
-                    side: BorderSide(
-                      color: isSelected
-                          ? Theme.of(context).colorScheme.primary
-                          : Theme.of(context).dividerColor,
-                    ),
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                _scheduleScrollToSelected(constraints);
+                return GridView.builder(
+                  controller: _scrollController,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 4,
+                    mainAxisSpacing: 6,
+                    crossAxisSpacing: 6,
+                    childAspectRatio: 2.7,
                   ),
-                  onPressed: () => Navigator.pop(context, time),
-                  child: Text(DtFmt.hm(context, time.hour, time.minute)),
+                  itemCount: _entries.length,
+                  itemBuilder: (context, index) {
+                    final time = _entries[index];
+                    final isSelected = index == _selectedIndex;
+                    return OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: isSelected
+                            ? Theme.of(
+                                context,
+                              ).colorScheme.primary.withOpacity(0.1)
+                            : null,
+                        side: BorderSide(
+                          color: isSelected
+                              ? Theme.of(context).colorScheme.primary
+                              : Theme.of(context).dividerColor,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                      ),
+                      onPressed: () => Navigator.pop(context, time),
+                      child: Text(DtFmt.hm(context, time.hour, time.minute)),
+                    );
+                  },
                 );
               },
             ),

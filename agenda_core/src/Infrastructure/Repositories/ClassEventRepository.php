@@ -473,11 +473,15 @@ final class ClassEventRepository
                 ct.name               AS class_type_name,
                 ct.color_hex          AS class_type_color_hex,
                 ct.service_category_id AS class_type_service_category_id,
+                sc.name                AS class_type_service_category_name,
                 l.timezone             AS location_timezone
             FROM class_events ce
             LEFT JOIN class_types ct
               ON ct.id = ce.class_type_id
              AND ct.business_id = ce.business_id
+            LEFT JOIN service_categories sc
+              ON sc.id = ct.service_category_id
+             AND sc.business_id = ce.business_id
             INNER JOIN locations l
               ON l.id = ce.location_id
             WHERE ce.business_id  = :business_id

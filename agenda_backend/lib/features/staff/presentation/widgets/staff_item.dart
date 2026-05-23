@@ -62,132 +62,139 @@ class _StaffItemState extends ConsumerState<StaffItem> {
       cursor: SystemMouseCursors.click,
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: Container(
-        decoration: BoxDecoration(
-          color: bgColor,
-          borderRadius: BorderRadius.only(
-            bottomLeft: widget.isLast ? const Radius.circular(16) : Radius.zero,
-            bottomRight: widget.isLast
-                ? const Radius.circular(16)
-                : Radius.zero,
-          ),
+      child: Material(
+        color: bgColor,
+        borderRadius: BorderRadius.only(
+          bottomLeft: widget.isLast ? const Radius.circular(16) : Radius.zero,
+          bottomRight: widget.isLast ? const Radius.circular(16) : Radius.zero,
         ),
-        child: ListTile(
-          contentPadding: const EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: 10,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.only(
+              bottomLeft: widget.isLast
+                  ? const Radius.circular(16)
+                  : Radius.zero,
+              bottomRight: widget.isLast
+                  ? const Radius.circular(16)
+                  : Radius.zero,
+            ),
           ),
-          minVerticalPadding: 0,
-          leading: StaffCircleAvatar(
-            height: 36,
-            color: widget.staff.color,
-            isHighlighted: false,
-            initials: widget.staff.initials,
-          ),
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      widget.staff.displayName,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w500,
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 10,
+            ),
+            minVerticalPadding: 0,
+            leading: StaffCircleAvatar(
+              height: 36,
+              color: widget.staff.color,
+              isHighlighted: false,
+              initials: widget.staff.initials,
+            ),
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        widget.staff.displayName,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w500),
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 6,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: colorScheme.surfaceContainerHighest,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      'ID: ${widget.staff.id}',
-                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                        fontFamily: 'monospace',
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
                       ),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        'ID: ${widget.staff.id}',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: colorScheme.onSurfaceVariant,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (eligibleServicesCount == 0) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    context.l10n.teamEligibleServicesNone,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                      fontStyle: FontStyle.italic,
                     ),
                   ),
                 ],
-              ),
-              if (eligibleServicesCount == 0) ...[
-                const SizedBox(height: 2),
-                Text(
-                  context.l10n.teamEligibleServicesNone,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                    fontStyle: FontStyle.italic,
+                if (!widget.staff.isBookableOnline) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    context.l10n.staffNotBookableOnlineTooltip,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.error,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
-                ),
+                ],
               ],
-              if (!widget.staff.isBookableOnline) ...[
-                const SizedBox(height: 2),
-                Text(
-                  context.l10n.staffNotBookableOnlineTooltip,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-              ],
-            ],
+            ),
+            onTap: widget.onEdit,
+            mouseCursor: SystemMouseCursors.click,
+            trailing:
+                widget.trailingOverride ??
+                (widget.readOnly
+                    ? null
+                    : widget.isWide
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            tooltip: context.l10n.actionEdit,
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: widget.onEdit,
+                          ),
+                          IconButton(
+                            tooltip: context.l10n.duplicateAction,
+                            icon: const Icon(Icons.copy_outlined),
+                            onPressed: widget.onDuplicate,
+                          ),
+                          IconButton(
+                            tooltip: context.l10n.actionDelete,
+                            icon: const Icon(Icons.delete_outline),
+                            onPressed: widget.onDelete,
+                          ),
+                        ],
+                      )
+                    : PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert),
+                        onSelected: (value) {
+                          if (value == 'edit') widget.onEdit();
+                          if (value == 'duplicate') widget.onDuplicate();
+                          if (value == 'delete') widget.onDelete();
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                            value: 'edit',
+                            child: Text(context.l10n.actionEdit),
+                          ),
+                          PopupMenuItem(
+                            value: 'duplicate',
+                            child: Text(context.l10n.duplicateAction),
+                          ),
+                          PopupMenuItem(
+                            value: 'delete',
+                            child: Text(context.l10n.actionDelete),
+                          ),
+                        ],
+                      )),
           ),
-          onTap: widget.onEdit,
-          mouseCursor: SystemMouseCursors.click,
-          trailing:
-              widget.trailingOverride ??
-              (widget.readOnly
-                  ? null
-                  : widget.isWide
-                  ? Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          tooltip: context.l10n.actionEdit,
-                          icon: const Icon(Icons.edit_outlined),
-                          onPressed: widget.onEdit,
-                        ),
-                        IconButton(
-                          tooltip: context.l10n.duplicateAction,
-                          icon: const Icon(Icons.copy_outlined),
-                          onPressed: widget.onDuplicate,
-                        ),
-                        IconButton(
-                          tooltip: context.l10n.actionDelete,
-                          icon: const Icon(Icons.delete_outline),
-                          onPressed: widget.onDelete,
-                        ),
-                      ],
-                    )
-                  : PopupMenuButton<String>(
-                      icon: const Icon(Icons.more_vert),
-                      onSelected: (value) {
-                        if (value == 'edit') widget.onEdit();
-                        if (value == 'duplicate') widget.onDuplicate();
-                        if (value == 'delete') widget.onDelete();
-                      },
-                      itemBuilder: (context) => [
-                        PopupMenuItem(
-                          value: 'edit',
-                          child: Text(context.l10n.actionEdit),
-                        ),
-                        PopupMenuItem(
-                          value: 'duplicate',
-                          child: Text(context.l10n.duplicateAction),
-                        ),
-                        PopupMenuItem(
-                          value: 'delete',
-                          child: Text(context.l10n.actionDelete),
-                        ),
-                      ],
-                    )),
         ),
       ),
     );

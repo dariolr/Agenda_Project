@@ -69,6 +69,7 @@ class ApiClient {
   int? _currentBusinessId;
 
   ApiClient({required TokenStorage tokenStorage, Dio? dio})
+    // ignore: prefer_initializing_formals
     : _tokenStorage = tokenStorage,
       _dio = dio ?? Dio() {
     _dio.options.baseUrl = ApiConfig.baseUrl;
@@ -695,6 +696,7 @@ class ApiClient {
     int? staffId,
     String? notes,
     List<Map<String, dynamic>>? items,
+    List<int>? packageIds,
     List<Map<String, dynamic>>? pricingOverrides,
     String? bookingDirectLinkSlug,
   }) async {
@@ -710,6 +712,9 @@ class ApiClient {
       if (pricingOverrides != null && pricingOverrides.isNotEmpty) {
         data['pricing_overrides'] = pricingOverrides;
       }
+    }
+    if (packageIds != null && packageIds.isNotEmpty) {
+      data['package_ids'] = packageIds;
     }
     if (notes != null && notes.isNotEmpty) {
       data['notes'] = notes;

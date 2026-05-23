@@ -76,6 +76,9 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     }
     final bookedEventStatus = ref.watch(bookedClassEventStatusProvider);
     final location = ref.watch(effectiveLocationProvider);
+    final allowMultiServiceBooking = ref.watch(
+      allowMultiServiceBookingProvider,
+    );
     final showPriceToCustomer = location?.showPriceToCustomer ?? true;
     final showDurationToCustomer = location?.showDurationToCustomer ?? true;
 
@@ -126,6 +129,21 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
         if (mounted) _tabController.animateTo(0);
       });
     }
+
+    final headerSubtitle = showBothTabs
+        ? bookingServicesAndEventsSubtitle(
+            context,
+            phraseOverrides: phraseOverrides,
+          )
+        : hasClassEvents
+        ? bookingEventsSubtitle(context, phraseOverrides: phraseOverrides)
+        : allowMultiServiceBooking
+        ? bookingServicesSubtitle(
+            context,
+            customServiceLabel,
+            phraseOverrides: phraseOverrides,
+          )
+        : null;
 
     Widget buildServicesContent() {
       if (bookingState.request.isClassEventBooking) {
@@ -236,27 +254,15 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    showBothTabs
-                        ? bookingServicesAndEventsSubtitle(
-                            context,
-                            phraseOverrides: phraseOverrides,
-                          )
-                        : hasClassEvents
-                        ? bookingEventsSubtitle(
-                            context,
-                            phraseOverrides: phraseOverrides,
-                          )
-                        : bookingServicesSubtitle(
-                            context,
-                            customServiceLabel,
-                            phraseOverrides: phraseOverrides,
-                          ),
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurface.withOpacity(0.7),
+                  if (headerSubtitle != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      headerSubtitle,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withOpacity(0.7),
+                      ),
                     ),
-                  ),
+                  ],
                   const SizedBox(height: 12),
                 ],
               ),
@@ -781,9 +787,17 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
         final items = <Widget>[];
         for (final catId in sortedCategoryIds) {
           final catEvents = byCategory[catId]!;
+          String? eventCategoryName;
+          for (final event in catEvents) {
+            final name = event.classTypeServiceCategoryName?.trim();
+            if (name != null && name.isNotEmpty) {
+              eventCategoryName = name;
+              break;
+            }
+          }
           final catName = catId != null && categoryById.containsKey(catId)
               ? categoryById[catId]!.name
-              : context.l10n.tabEvents;
+              : (eventCategoryName ?? context.l10n.tabEvents);
           items.add(
             _EventCategorySection(
               key: ValueKey(catId),

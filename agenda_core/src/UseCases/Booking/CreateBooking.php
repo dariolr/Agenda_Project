@@ -118,17 +118,28 @@ final class CreateBooking
         int $locationId,
         array $services,
         array $requestedServiceIds,
-        ?string $directLinkSlug
+        ?string $directLinkSlug,
+        array $packageCoveredServiceIds = []
     ): void {
         $directServiceIds = [];
+        $coveredIds = array_fill_keys($this->normalizePositiveIds($packageCoveredServiceIds), true);
 
         foreach ($services as $service) {
             $serviceId = (int) ($service['id'] ?? 0);
             $visibility = (string) ($service['online_visibility'] ?? 'public');
             $variantActive = (int) ($service['variant_is_active'] ?? 0) === 1;
             $bookableOnline = (int) ($service['is_bookable_online'] ?? 0) === 1;
+            $isPackageCovered = isset($coveredIds[$serviceId]);
 
-            if (!$variantActive || !$bookableOnline || $visibility === 'hidden') {
+            if (!$variantActive) {
+                throw BookingException::invalidService([$serviceId]);
+            }
+
+            if ($isPackageCovered) {
+                continue;
+            }
+
+            if (!$bookableOnline || $visibility === 'hidden') {
                 throw BookingException::invalidService([$serviceId]);
             }
 
@@ -156,6 +167,141 @@ final class CreateBooking
         if (!empty($directServiceIds)) {
             throw BookingException::invalidService($directServiceIds);
         }
+    }
+
+    private function normalizePositiveIds(array $ids): array
+    {
+        $normalized = array_values(array_unique(array_filter(
+            array_map(static fn ($id): int => (int) $id, $ids),
+            static fn (int $id): bool => $id > 0
+        )));
+        sort($normalized);
+        return $normalized;
+    }
+
+    private function packageIdsFromPayload(array $data): array
+    {
+        $packageIds = [];
+
+        if (isset($data['package_ids']) && is_array($data['package_ids'])) {
+            $packageIds = array_merge($packageIds, $data['package_ids']);
+        }
+
+        if (isset($data['items']) && is_array($data['items'])) {
+            foreach ($data['items'] as $item) {
+                if (is_array($item) && isset($item['package_id'])) {
+                    $packageIds[] = $item['package_id'];
+                }
+            }
+        }
+
+        if (isset($data['pricing_overrides']) && is_array($data['pricing_overrides'])) {
+            foreach ($data['pricing_overrides'] as $override) {
+                if (is_array($override) && isset($override['package_id'])) {
+                    $packageIds[] = $override['package_id'];
+                }
+            }
+        }
+
+        return $this->normalizePositiveIds($packageIds);
+    }
+
+    private function resolveCustomerPackageCoveredServiceIds(
+        int $businessId,
+        int $locationId,
+        array $packageIds,
+        array $requestedServiceIds,
+        ?string $directLinkSlug
+    ): array {
+        $packageIds = $this->normalizePositiveIds($packageIds);
+        if (empty($packageIds)) {
+            return [];
+        }
+
+        $requestedLookup = array_fill_keys($this->normalizePositiveIds($requestedServiceIds), true);
+        $placeholders = implode(',', array_fill(0, count($packageIds), '?'));
+        $params = array_merge($packageIds, [$businessId, $locationId]);
+
+        $stmt = $this->db->getPdo()->prepare(
+            "SELECT sp.id AS package_id,
+                    sp.is_active,
+                    sp.is_bookable_online,
+                    sp.online_visibility,
+                    sp.is_broken,
+                    spi.service_id
+             FROM service_packages sp
+             INNER JOIN service_package_items spi ON spi.package_id = sp.id
+             WHERE sp.id IN ({$placeholders})
+               AND sp.business_id = ?
+               AND sp.location_id = ?
+             ORDER BY sp.id ASC, spi.sort_order ASC, spi.service_id ASC"
+        );
+        $stmt->execute($params);
+        $rows = $stmt->fetchAll();
+
+        $packages = [];
+        foreach ($rows as $row) {
+            $packageId = (int) $row['package_id'];
+            if (!isset($packages[$packageId])) {
+                $packages[$packageId] = [
+                    'is_active' => (int) ($row['is_active'] ?? 0) === 1,
+                    'is_bookable_online' => (int) ($row['is_bookable_online'] ?? 0) === 1,
+                    'online_visibility' => (string) ($row['online_visibility'] ?? 'public'),
+                    'is_broken' => (int) ($row['is_broken'] ?? 0) === 1,
+                    'service_ids' => [],
+                ];
+            }
+            $packages[$packageId]['service_ids'][] = (int) $row['service_id'];
+        }
+
+        if (count($packages) !== count($packageIds)) {
+            throw BookingException::invalidService($requestedServiceIds);
+        }
+
+        $coveredServiceIds = [];
+        foreach ($packageIds as $packageId) {
+            $package = $packages[$packageId] ?? null;
+            if ($package === null || empty($package['service_ids'])) {
+                throw BookingException::invalidService($requestedServiceIds);
+            }
+
+            $visibility = (string) $package['online_visibility'];
+            if (
+                !$package['is_active']
+                || !$package['is_bookable_online']
+                || $package['is_broken']
+                || $visibility === 'hidden'
+            ) {
+                throw BookingException::invalidService($requestedServiceIds);
+            }
+
+            if ($visibility === 'direct_link') {
+                $slug = trim((string) ($directLinkSlug ?? ''));
+                if (
+                    $slug === ''
+                    || $this->bookingDirectLinkRepository === null
+                    || !$this->bookingDirectLinkRepository->authorizesRequestedServiceIds(
+                        $businessId,
+                        $locationId,
+                        $slug,
+                        $requestedServiceIds
+                    )
+                ) {
+                    throw BookingException::invalidService($requestedServiceIds);
+                }
+            } elseif ($visibility !== 'public') {
+                throw BookingException::invalidService($requestedServiceIds);
+            }
+
+            foreach ($package['service_ids'] as $serviceId) {
+                if (!isset($requestedLookup[$serviceId])) {
+                    throw BookingException::invalidService($requestedServiceIds);
+                }
+                $coveredServiceIds[] = $serviceId;
+            }
+        }
+
+        return $this->normalizePositiveIds($coveredServiceIds);
     }
 
     /**
@@ -820,7 +966,8 @@ final class CreateBooking
         if (isset($data['items']) && is_array($data['items']) && !empty($data['items'])) {
             return $this->executeForCustomerWithItems(
                 $clientId, $locationId, $businessId, $data['items'],
-                $notes, $idempotencyKey, $requestedLocale, $directLinkSlug, $targetStatus, $queueNotifications
+                $notes, $idempotencyKey, $requestedLocale, $directLinkSlug, $targetStatus, $queueNotifications,
+                $this->packageIdsFromPayload($data)
             );
         }
 
@@ -894,12 +1041,20 @@ final class CreateBooking
         if (count($services) !== count($serviceIds)) {
             throw BookingException::invalidService($serviceIds);
         }
+        $packageCoveredServiceIds = $this->resolveCustomerPackageCoveredServiceIds(
+            $businessId,
+            $locationId,
+            $this->packageIdsFromPayload($data),
+            array_map('intval', $serviceIds),
+            $directLinkSlug
+        );
         $this->assertCustomerServicesAreBookableOnline(
             $businessId,
             $locationId,
             $services,
             array_map('intval', $serviceIds),
-            $directLinkSlug
+            $directLinkSlug,
+            $packageCoveredServiceIds
         );
 
         // Calculate total duration (including processing_time and blocked_time)
@@ -1099,7 +1254,8 @@ final class CreateBooking
         ?string $requestedLocale = null,
         ?string $directLinkSlug = null,
         string $targetStatus = 'confirmed',
-        bool $queueNotifications = true
+        bool $queueNotifications = true,
+        array $packageIds = []
     ): array {
         // Validate location
         $location = $this->locationRepository->findById($locationId);
@@ -1164,12 +1320,20 @@ final class CreateBooking
         if (count($servicesForValidation) !== count($serviceIds)) {
             throw BookingException::invalidService($serviceIds);
         }
+        $packageCoveredServiceIds = $this->resolveCustomerPackageCoveredServiceIds(
+            $businessId,
+            $locationId,
+            $packageIds,
+            $serviceIds,
+            $directLinkSlug
+        );
         $this->assertCustomerServicesAreBookableOnline(
             $businessId,
             $locationId,
             $servicesForValidation,
             $serviceIds,
-            $directLinkSlug
+            $directLinkSlug,
+            $packageCoveredServiceIds
         );
 
         // Resolve booking_direct_link_id if a slug was provided

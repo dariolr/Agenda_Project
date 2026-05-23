@@ -10,3 +10,5 @@ linter:
     - prefer_const_declarations
     - avoid_print
     - prefer_single_quotes
+    - prefer_initializing_formals: false  # Uncomment to enable the `prefer_initializing_formals` rule
+

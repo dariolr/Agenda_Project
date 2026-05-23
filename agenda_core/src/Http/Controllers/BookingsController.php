@@ -1449,6 +1449,9 @@ final class BookingsController
         $directLinkSlug = isset($body['booking_direct_link_slug'])
             ? trim((string) $body['booking_direct_link_slug'])
             : null;
+        $packageIds = isset($body['package_ids']) && is_array($body['package_ids'])
+            ? array_map('intval', $body['package_ids'])
+            : [];
 
         // DEBUG: Log request body
         file_put_contents(
@@ -1559,6 +1562,7 @@ final class BookingsController
                         'notes' => $body['notes'] ?? null,
                         'locale' => $requestLocale,
                         'booking_direct_link_slug' => $directLinkSlug,
+                        'package_ids' => $packageIds,
                         'status' => $requiresPayment ? 'pending_payment' : 'confirmed',
                         'queue_notifications' => !$requiresPayment,
                     ],
@@ -1580,6 +1584,7 @@ final class BookingsController
                         'notes' => $body['notes'] ?? null,
                         'locale' => $requestLocale,
                         'booking_direct_link_slug' => $directLinkSlug,
+                        'package_ids' => $packageIds,
                         'status' => $requiresPayment ? 'pending_payment' : 'confirmed',
                         'queue_notifications' => !$requiresPayment,
                     ],
