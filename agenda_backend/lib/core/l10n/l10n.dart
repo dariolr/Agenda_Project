@@ -13098,6 +13098,36 @@ class L10n {
       args: [],
     );
   }
+
+  /// `First renewal date`
+  String get billingCycleAnchorAtLabel {
+    return Intl.message(
+      'First renewal date',
+      name: 'billingCycleAnchorAtLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Optional — the first billing cycle will start on this date`
+  String get billingCycleAnchorAtHint {
+    return Intl.message(
+      'Optional — the first billing cycle will start on this date',
+      name: 'billingCycleAnchorAtHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The renewal date must be in the future`
+  String get billingCycleAnchorAtPastError {
+    return Intl.message(
+      'The renewal date must be in the future',
+      name: 'billingCycleAnchorAtPastError',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

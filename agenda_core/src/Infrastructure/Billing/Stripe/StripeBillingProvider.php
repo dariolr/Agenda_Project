@@ -128,6 +128,19 @@ final class StripeBillingProvider implements BillingProviderInterface
             throw new \InvalidArgumentException('Provider customer is missing');
         }
 
+        $subscriptionData = [
+            'metadata' => ['business_id' => (string) $config->businessId],
+        ];
+
+        if ($config->billingCycleAnchorAt !== null) {
+            $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+            if ($config->billingCycleAnchorAt <= $now) {
+                throw new \InvalidArgumentException('billing_cycle_anchor_in_past');
+            }
+            $subscriptionData['billing_cycle_anchor'] = $config->billingCycleAnchorAt->getTimestamp();
+            $subscriptionData['proration_behavior'] = 'none';
+        }
+
         $session = $client->checkout->sessions->create([
             'mode' => 'subscription',
             'customer' => $subscription->providerCustomerId,
@@ -138,9 +151,7 @@ final class StripeBillingProvider implements BillingProviderInterface
             'cancel_url' => $this->env('STRIPE_CANCEL_URL', $context['cancel_url'] ?? ''),
             'client_reference_id' => (string) $config->businessId,
             'metadata' => ['business_id' => (string) $config->businessId],
-            'subscription_data' => [
-                'metadata' => ['business_id' => (string) $config->businessId],
-            ],
+            'subscription_data' => $subscriptionData,
         ]);
 
         return [

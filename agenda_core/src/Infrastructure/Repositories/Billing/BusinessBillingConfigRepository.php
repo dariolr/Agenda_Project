@@ -49,6 +49,16 @@ final class BusinessBillingConfigRepository
             ? substr(trim((string) $payload['notes']), 0, 255)
             : null;
 
+        $billingCycleAnchorAt = null;
+        if (!empty($payload['billing_cycle_anchor_at'])) {
+            try {
+                $dt = new \DateTimeImmutable((string) $payload['billing_cycle_anchor_at'], new \DateTimeZone('UTC'));
+                $billingCycleAnchorAt = $dt->format('Y-m-d H:i:s');
+            } catch (\Throwable) {
+                throw new \InvalidArgumentException('billing_cycle_anchor_at is not a valid date');
+            }
+        }
+
         if (!$enabled) {
             $data = [
                 0,
@@ -57,6 +67,7 @@ final class BusinessBillingConfigRepository
                 null,
                 null,
                 $currency !== '' ? $currency : 'EUR',
+                null,
                 null,
                 null,
                 $notes,
@@ -80,6 +91,7 @@ final class BusinessBillingConfigRepository
                 $currency !== '' ? $currency : 'EUR',
                 $providerCode,
                 $payload['provider_price_reference'] ?? null,
+                $billingCycleAnchorAt,
                 $notes,
             ];
         }
@@ -87,8 +99,8 @@ final class BusinessBillingConfigRepository
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO business_billing_config
                 (business_id, billing_enabled, billing_mode, billing_interval_unit, billing_interval_count,
-                 amount_cents, currency, provider_code, provider_price_reference, notes)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 amount_cents, currency, provider_code, provider_price_reference, billing_cycle_anchor_at, notes)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                 billing_enabled = VALUES(billing_enabled),
                 billing_mode = VALUES(billing_mode),
@@ -98,6 +110,7 @@ final class BusinessBillingConfigRepository
                 currency = VALUES(currency),
                 provider_code = VALUES(provider_code),
                 provider_price_reference = VALUES(provider_price_reference),
+                billing_cycle_anchor_at = VALUES(billing_cycle_anchor_at),
                 notes = VALUES(notes)'
         );
         $stmt->execute(array_merge([$businessId], $data));

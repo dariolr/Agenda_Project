@@ -525,6 +525,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "billingAgendaNoticeDismissTooltip": MessageLookupByLibrary.simpleMessage(
       "Nascondi fino a domani",
     ),
+    "billingCycleAnchorAtLabel": MessageLookupByLibrary.simpleMessage(
+      "Data primo rinnovo",
+    ),
+    "billingCycleAnchorAtHint": MessageLookupByLibrary.simpleMessage(
+      "Opzionale — il primo ciclo inizierà in questa data",
+    ),
+    "billingCycleAnchorAtPastError": MessageLookupByLibrary.simpleMessage(
+      "La data di rinnovo deve essere nel futuro",
+    ),
     "billingAgendaNoticeMessage": MessageLookupByLibrary.simpleMessage(
       "Attiva l’abbonamento per continuare a usare il gestionale senza interruzioni.",
     ),

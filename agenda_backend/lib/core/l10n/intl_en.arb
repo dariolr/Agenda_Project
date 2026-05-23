@@ -2005,5 +2005,8 @@
   "billingAgendaNoticeTitle": "Subscription required",
   "billingAgendaNoticeMessage": "Activate the business subscription to keep using the management app without interruptions.",
   "billingAgendaNoticeAction": "Activate subscription",
-  "billingAgendaNoticeDismissTooltip": "Hide until tomorrow"
+  "billingAgendaNoticeDismissTooltip": "Hide until tomorrow",
+  "billingCycleAnchorAtLabel": "First renewal date",
+  "billingCycleAnchorAtHint": "Optional — the first billing cycle will start on this date",
+  "billingCycleAnchorAtPastError": "The renewal date must be in the future"
 }

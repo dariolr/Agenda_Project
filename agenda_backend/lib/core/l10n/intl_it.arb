@@ -2005,5 +2005,8 @@
   "billingAgendaNoticeTitle": "Abbonamento richiesto",
   "billingAgendaNoticeMessage": "Attiva l’abbonamento per continuare a usare il gestionale senza interruzioni.",
   "billingAgendaNoticeAction": "Attiva abbonamento",
-  "billingAgendaNoticeDismissTooltip": "Nascondi fino a domani"
+  "billingAgendaNoticeDismissTooltip": "Nascondi fino a domani",
+  "billingCycleAnchorAtLabel": "Data primo rinnovo",
+  "billingCycleAnchorAtHint": "Opzionale — il primo ciclo inizierà in questa data",
+  "billingCycleAnchorAtPastError": "La data di rinnovo deve essere nel futuro"
 }

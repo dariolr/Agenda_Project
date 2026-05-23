@@ -506,6 +506,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "billingAgendaNoticeDismissTooltip": MessageLookupByLibrary.simpleMessage(
       "Hide until tomorrow",
     ),
+    "billingCycleAnchorAtLabel": MessageLookupByLibrary.simpleMessage(
+      "First renewal date",
+    ),
+    "billingCycleAnchorAtHint": MessageLookupByLibrary.simpleMessage(
+      "Optional — the first billing cycle will start on this date",
+    ),
+    "billingCycleAnchorAtPastError": MessageLookupByLibrary.simpleMessage(
+      "The renewal date must be in the future",
+    ),
     "billingAgendaNoticeMessage": MessageLookupByLibrary.simpleMessage(
       "Activate the business subscription to keep using the management app without interruptions.",
     ),
