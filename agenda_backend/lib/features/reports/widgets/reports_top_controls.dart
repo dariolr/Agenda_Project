@@ -187,18 +187,24 @@ class _ReportsTopControlsContent extends StatelessWidget {
           const SizedBox(width: 16),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 280),
-            child: SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              visualDensity: const VisualDensity(horizontal: -4, vertical: -4),
-              dense: true,
-              title: Text(
-                l10n.reportsFullPeriodToggle,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant,
+            child: Material(
+              type: MaterialType.transparency,
+              child: SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                visualDensity: const VisualDensity(
+                  horizontal: -4,
+                  vertical: -4,
                 ),
+                dense: true,
+                title: Text(
+                  l10n.reportsFullPeriodToggle,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                value: useFullPeriod,
+                onChanged: onFullPeriodChanged,
               ),
-              value: useFullPeriod,
-              onChanged: onFullPeriodChanged,
             ),
           ),
         ],

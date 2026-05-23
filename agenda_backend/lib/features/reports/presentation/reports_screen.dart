@@ -504,19 +504,22 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
 
               return Padding(
                 padding: const EdgeInsets.only(top: 12),
-                child: SwitchListTile.adaptive(
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  title: Text(
-                    l10n.reportsFullPeriodToggle,
-                    style: Theme.of(context).textTheme.bodyMedium,
+                child: Material(
+                  type: MaterialType.transparency,
+                  child: SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    title: Text(
+                      l10n.reportsFullPeriodToggle,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                    value: filterState.useFullPeriod,
+                    onChanged: (value) {
+                      final notifier = ref.read(reportsFilterProvider.notifier);
+                      notifier.setFullPeriod(value);
+                      notifier.applyPreset(filterState.selectedPreset);
+                    },
                   ),
-                  value: filterState.useFullPeriod,
-                  onChanged: (value) {
-                    final notifier = ref.read(reportsFilterProvider.notifier);
-                    notifier.setFullPeriod(value);
-                    notifier.applyPreset(filterState.selectedPreset);
-                  },
                 ),
               );
             },
@@ -796,6 +799,8 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     final numberFormat = NumberFormat.decimalPattern(locale);
     final percentFormat = NumberFormat.decimalPattern(locale);
     final totalCollected = summary.paidCents / 100;
+    final totalToCollect =
+        (summary.dueCents - summary.discountCents).clamp(0, 1 << 31) / 100;
     final hasRevenuePaymentMethod = summary.paymentMethodBreakdown.any(
       (entry) => entry.isRevenue,
     );
@@ -810,7 +815,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       if (hasRevenuePaymentMethod)
         _SummaryCardData(
           icon: Icons.euro,
-          label: l10n.reportsAppointmentsAmount,
+          label: l10n.paymentTotalToCollect,
+          value: currencyFormat.format(totalToCollect),
+          color: Colors.green,
+        ),
+      if (hasRevenuePaymentMethod)
+        _SummaryCardData(
+          icon: Icons.payments_outlined,
+          label: l10n.paymentEntered,
           value: currencyFormat.format(totalCollected),
           color: Colors.green,
         ),
@@ -1088,14 +1100,33 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  card.value,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                if (card.secondaryValue == null)
+                  Text(
+                    card.value,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  )
+                else ...[
+                  Text(
+                    card.value,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                ),
+                  Text(
+                    card.secondaryValue!,
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ],
                 Text(
                   card.label,
                   style: theme.textTheme.bodySmall?.copyWith(
@@ -1975,8 +2006,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     WorkHoursSummary summary,
   ) {
     final l10n = context.l10n;
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final colorScheme = Theme.of(context).colorScheme;
     final locale = Localizations.localeOf(context).toString();
     final numberFormat = NumberFormat.decimalPattern(locale);
 
@@ -2010,178 +2040,85 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
       return (totalHoursStr, null);
     }
 
-    Widget buildHoursValue(double hours, {Color? textColor}) {
+    _SummaryCardData hoursCard({
+      required IconData icon,
+      required String label,
+      required double hours,
+      required Color color,
+    }) {
       final (primary, totalHours) = formatHoursWithTotal(hours);
-      if (totalHours == null) {
-        return Text(
-          primary,
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: textColor,
-          ),
-        );
-      }
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            primary,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: textColor,
-            ),
-          ),
-          Text(
-            '= $totalHours',
-            style: TextStyle(
-              fontSize: 11,
-              color: (textColor ?? Theme.of(context).colorScheme.onSurface)
-                  .withValues(alpha: 0.6),
-            ),
-          ),
-        ],
+      return _SummaryCardData(
+        icon: icon,
+        label: label,
+        value: primary,
+        secondaryValue: totalHours == null ? null : '= $totalHours',
+        color: color,
       );
     }
 
     final cards = [
-      _WorkHoursCardData(
+      hoursCard(
         icon: Icons.schedule,
         label: l10n.reportsWorkHoursScheduled,
-        hoursWidget: buildHoursValue(summary.totalScheduledHours),
+        hours: summary.totalScheduledHours,
         color: colorScheme.primary,
       ),
-      _WorkHoursCardData(
+      hoursCard(
         icon: Icons.work,
         label: l10n.reportsWorkHoursWorked,
-        hoursWidget: buildHoursValue(summary.totalWorkedHours),
+        hours: summary.totalWorkedHours,
         color: Colors.green,
       ),
-      _WorkHoursCardData(
+      hoursCard(
         icon: Icons.block,
         label: l10n.reportsWorkHoursBlocked,
-        hoursWidget: buildHoursValue(summary.totalBlockedHours),
+        hours: summary.totalBlockedHours,
         color: Colors.orange,
       ),
-      _WorkHoursCardData(
+      hoursCard(
         icon: Icons.beach_access,
         label: l10n.reportsWorkHoursOff,
-        hoursWidget: buildHoursValue(summary.totalExceptionOffHours),
+        hours: summary.totalExceptionOffHours,
         color: Colors.red,
       ),
-      _WorkHoursCardData(
+      hoursCard(
         icon: Icons.event_available,
         label: l10n.reportsWorkHoursAvailable,
-        hoursWidget: buildHoursValue(summary.totalAvailableHours),
+        hours: summary.totalAvailableHours,
         color: Colors.blue,
       ),
-      _WorkHoursCardData(
+      _SummaryCardData(
         icon: Icons.pie_chart,
         label: l10n.reportsWorkHoursUtilization,
-        percentageValue:
-            '${numberFormat.format(summary.overallUtilizationPercentage)}%',
+        value: '${numberFormat.format(summary.overallUtilizationPercentage)}%',
         color: Colors.purple,
       ),
     ];
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth > 900;
-        final crossAxisCount = isDesktop
-            ? 3
+        final crossAxisCount = constraints.maxWidth > 800
+            ? 4
             : constraints.maxWidth > 500
             ? 2
             : 2;
 
-        // Aspect ratio più alto su desktop (card più basse)
-        final aspectRatio = isDesktop ? 2.8 : 2.5;
-
-        // Su desktop limita la larghezza e centra
-        final maxGridWidth = isDesktop ? 900.0 : constraints.maxWidth;
-
-        return Center(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: maxGridWidth),
-            child: GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: crossAxisCount,
-                childAspectRatio: aspectRatio,
-                crossAxisSpacing: 12,
-                mainAxisSpacing: 12,
-              ),
-              itemCount: cards.length,
-              itemBuilder: (context, index) {
-                final card = cards[index];
-                return _buildWorkHoursSummaryCard(context, card);
-              },
-            ),
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: 2.5,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
           ),
+          itemCount: cards.length,
+          itemBuilder: (context, index) {
+            final card = cards[index];
+            return _buildSummaryCard(context, card);
+          },
         );
       },
-    );
-  }
-
-  Widget _buildWorkHoursSummaryCard(
-    BuildContext context,
-    _WorkHoursCardData card,
-  ) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
-
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: colorScheme.outlineVariant),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: card.color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(card.icon, color: card.color, size: 18),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    card.label,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  if (card.percentageValue != null)
-                    Text(
-                      card.percentageValue!,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: colorScheme.onSurface,
-                      ),
-                    )
-                  else if (card.hoursWidget != null)
-                    card.hoursWidget!,
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -2356,29 +2293,15 @@ class _SummaryCardData {
     required this.icon,
     required this.label,
     required this.value,
+    this.secondaryValue,
     required this.color,
   });
 
   final IconData icon;
   final String label;
   final String value;
+  final String? secondaryValue;
   final Color color;
-}
-
-class _WorkHoursCardData {
-  const _WorkHoursCardData({
-    required this.icon,
-    required this.label,
-    required this.color,
-    this.hoursWidget,
-    this.percentageValue,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final Widget? hoursWidget;
-  final String? percentageValue;
 }
 
 // ============================================================================
