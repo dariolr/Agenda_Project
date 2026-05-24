@@ -44,7 +44,7 @@ class _AdminBusinessBillingConfigDialogState
   final _notesController = TextEditingController();
   bool _enabled = false;
   String _currency = 'EUR';
-  DateTime? _billingCycleAnchorAt;
+  DateTime? _activationDeadlineAt;
   bool _initialized = false;
   bool _saving = false;
 
@@ -78,7 +78,7 @@ class _AdminBusinessBillingConfigDialogState
               _amountController.text = config.amountCents == null
                   ? ''
                   : (config.amountCents! / 100).toStringAsFixed(2);
-              _billingCycleAnchorAt = config.billingCycleAnchorAt;
+              _activationDeadlineAt = config.activationDeadlineAt;
               _notesController.text = config.notes ?? '';
               _initialized = true;
             }
@@ -132,23 +132,23 @@ class _AdminBusinessBillingConfigDialogState
                   borderRadius: BorderRadius.circular(4),
                   child: InputDecorator(
                     decoration: InputDecoration(
-                      labelText: context.l10n.billingCycleAnchorAtLabel,
-                      helperText: context.l10n.billingCycleAnchorAtHint,
+                      labelText: context.l10n.billingActivationDeadlineLabel,
+                      helperText: context.l10n.billingActivationDeadlineHint,
                       border: const OutlineInputBorder(),
-                      suffixIcon: _billingCycleAnchorAt != null
+                      suffixIcon: _activationDeadlineAt != null
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 18),
                               onPressed: _enabled && !_saving
-                                  ? () => setState(() => _billingCycleAnchorAt = null)
+                                  ? () => setState(() => _activationDeadlineAt = null)
                                   : null,
                             )
                           : const Icon(Icons.calendar_today, size: 18),
                     ),
                     child: Text(
-                      _billingCycleAnchorAt != null
-                          ? '${_billingCycleAnchorAt!.year.toString().padLeft(4, '0')}-'
-                            '${_billingCycleAnchorAt!.month.toString().padLeft(2, '0')}-'
-                            '${_billingCycleAnchorAt!.day.toString().padLeft(2, '0')}'
+                      _activationDeadlineAt != null
+                          ? '${_activationDeadlineAt!.year.toString().padLeft(4, '0')}-'
+                            '${_activationDeadlineAt!.month.toString().padLeft(2, '0')}-'
+                            '${_activationDeadlineAt!.day.toString().padLeft(2, '0')}'
                           : '',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
@@ -218,7 +218,7 @@ class _AdminBusinessBillingConfigDialogState
             amountCents: amountCents,
             currency: _currency,
             providerCode: _enabled ? 'stripe' : null,
-            billingCycleAnchorAt: _enabled ? _billingCycleAnchorAt : null,
+            activationDeadlineAt: _enabled ? _activationDeadlineAt : null,
             notes: _notesController.text.trim().isEmpty
                 ? null
                 : _notesController.text.trim(),
@@ -241,15 +241,15 @@ class _AdminBusinessBillingConfigDialogState
 
   Future<void> _pickAnchorDate(BuildContext context) async {
     final now = DateTime.now();
-    final initial = _billingCycleAnchorAt ?? now.add(const Duration(days: 1));
+    final initial = _activationDeadlineAt ?? now.add(const Duration(days: 1));
     final picked = await showDatePicker(
       context: context,
-      initialDate: initial.isAfter(now) ? initial : now.add(const Duration(days: 1)),
-      firstDate: now.add(const Duration(days: 1)),
+      initialDate: initial,
+      firstDate: DateTime(now.year - 1),
       lastDate: DateTime(now.year + 5),
     );
     if (picked != null) {
-      setState(() => _billingCycleAnchorAt = picked);
+      setState(() => _activationDeadlineAt = picked);
     }
   }
 

@@ -30,6 +30,7 @@ import '../features/more/presentation/more_screen.dart';
 import '../features/more/presentation/whatsapp_business_screen.dart';
 import '../features/payments/presentation/payment_methods_screen.dart';
 import '../features/billing/presentation/billing_screen.dart';
+import '../features/billing/providers/billing_provider.dart';
 import '../features/reports/presentation/reports_screen.dart';
 import '../features/services/presentation/services_screen.dart';
 import '../features/staff/presentation/staff_week_overview_screen.dart';
@@ -257,6 +258,19 @@ final routerProvider = Provider<GoRouter>((ref) {
           !isOnChangePassword &&
           !isLoggingIn) {
         return '/businesses';
+      }
+
+      // Blocco accesso per billing scaduto (access_blocked server-side).
+      if (isAuthenticated && !isSuperadmin) {
+        final billing = ref.read(billingSubscriptionProvider).asData?.value;
+        final isOnBillingScreen = state.uri.path == '/altro/abbonamento';
+        final isOnMyBusinesses = state.uri.path == '/my-businesses';
+        if (billing != null &&
+            billing.accessBlocked &&
+            !isOnBillingScreen &&
+            !isOnMyBusinesses) {
+          return '/altro/abbonamento';
+        }
       }
 
       // Route guard by explicit permissions.

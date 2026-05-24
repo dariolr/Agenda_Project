@@ -465,7 +465,7 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
                 currency TEXT NOT NULL DEFAULT "EUR",
                 provider_code TEXT NULL,
                 provider_price_reference TEXT NULL,
-                billing_cycle_anchor_at TEXT NULL,
+                activation_deadline_at TEXT NULL,
                 notes TEXT NULL,
                 created_at TEXT NULL,
                 updated_at TEXT NULL

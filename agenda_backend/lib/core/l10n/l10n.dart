@@ -13099,31 +13099,51 @@ class L10n {
     );
   }
 
-  /// `First renewal date`
-  String get billingCycleAnchorAtLabel {
+  /// `Subscription activation deadline`
+  String get billingActivationDeadlineLabel {
     return Intl.message(
-      'First renewal date',
-      name: 'billingCycleAnchorAtLabel',
+      'Subscription activation deadline',
+      name: 'billingActivationDeadlineLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Optional — the first billing cycle will start on this date`
-  String get billingCycleAnchorAtHint {
+  /// `If set, the business can use the app for free until this date. After that, they must activate the subscription to continue.`
+  String get billingActivationDeadlineHint {
     return Intl.message(
-      'Optional — the first billing cycle will start on this date',
-      name: 'billingCycleAnchorAtHint',
+      'If set, the business can use the app for free until this date. After that, they must activate the subscription to continue.',
+      name: 'billingActivationDeadlineHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `The renewal date must be in the future`
-  String get billingCycleAnchorAtPastError {
+  /// `Subscription required`
+  String get billingAccessBlockedTitle {
     return Intl.message(
-      'The renewal date must be in the future',
-      name: 'billingCycleAnchorAtPastError',
+      'Subscription required',
+      name: 'billingAccessBlockedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The free period has ended. To continue using the app, activate your monthly subscription.`
+  String get billingAccessBlockedMessage {
+    return Intl.message(
+      'The free period has ended. To continue using the app, activate your monthly subscription.',
+      name: 'billingAccessBlockedMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Activate subscription`
+  String get billingAccessBlockedActivateAction {
+    return Intl.message(
+      'Activate subscription',
+      name: 'billingAccessBlockedActivateAction',
       desc: '',
       args: [],
     );

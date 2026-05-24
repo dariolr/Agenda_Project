@@ -36,7 +36,7 @@ class BillingRepository {
     required int? amountCents,
     required String currency,
     required String? providerCode,
-    DateTime? billingCycleAnchorAt,
+    DateTime? activationDeadlineAt,
     String? notes,
   }) {
     return _api.updateAdminConfig(businessId, {
@@ -44,7 +44,7 @@ class BillingRepository {
       'amount_cents': amountCents,
       'currency': currency,
       'provider_code': providerCode,
-      'billing_cycle_anchor_at': billingCycleAnchorAt?.toUtc().toIso8601String(),
+      'activation_deadline_at': activationDeadlineAt?.toUtc().toIso8601String(),
       'notes': notes,
     });
   }

@@ -48,8 +48,8 @@ final class AdminBusinessBillingControllerTest extends TestCase
 
         $this->assertSame(200, $response->status);
         $this->assertTrue($response->data['success']);
-        $this->assertArrayHasKey('billing_cycle_anchor_at', $response->data['data']);
-        $this->assertNull($response->data['data']['billing_cycle_anchor_at']);
+        $this->assertArrayHasKey('activation_deadline_at', $response->data['data']);
+        $this->assertNull($response->data['data']['activation_deadline_at']);
     }
 
     public function testShowReturnsForbiddenForNonSuperadmin(): void
@@ -67,9 +67,9 @@ final class AdminBusinessBillingControllerTest extends TestCase
         $this->assertSame(404, $response->status);
     }
 
-    // ── PUT without billing_cycle_anchor_at ───────────────────────────────────
+    // ── PUT without activation_deadline_at ───────────────────────────────────
 
-    public function testUpdateEnablesBillingWithoutAnchorDate(): void
+    public function testUpdateEnablesBillingWithoutDeadlineDate(): void
     {
         $response = $this->controller->update($this->makeRequest(1, 42, [
             'billing_enabled' => true,
@@ -78,10 +78,10 @@ final class AdminBusinessBillingControllerTest extends TestCase
 
         $this->assertSame(200, $response->status);
         $this->assertTrue($response->data['success']);
-        $this->assertNull($response->data['data']['billing_cycle_anchor_at']);
+        $this->assertNull($response->data['data']['activation_deadline_at']);
     }
 
-    public function testUpdateDisablesBillingAndClearsAnchorDate(): void
+    public function testUpdateDisablesBillingAndClearsDeadlineDate(): void
     {
         $future = gmdate('Y-m-d H:i:s', strtotime('+30 days'));
         $this->pdo->exec(
@@ -89,7 +89,7 @@ final class AdminBusinessBillingControllerTest extends TestCase
              SET billing_enabled = 1, billing_mode = 'recurring',
                  billing_interval_unit = 'month', billing_interval_count = 1,
                  amount_cents = 2900, provider_code = 'stripe',
-                 billing_cycle_anchor_at = '{$future}'
+                 activation_deadline_at = '{$future}'
              WHERE business_id = 42"
         );
 
@@ -99,45 +99,45 @@ final class AdminBusinessBillingControllerTest extends TestCase
 
         $this->assertSame(200, $response->status);
         $row = $this->pdo
-            ->query('SELECT billing_cycle_anchor_at FROM business_billing_config WHERE business_id = 42')
+            ->query('SELECT activation_deadline_at FROM business_billing_config WHERE business_id = 42')
             ->fetch(PDO::FETCH_ASSOC);
-        $this->assertNull($row['billing_cycle_anchor_at']);
+        $this->assertNull($row['activation_deadline_at']);
     }
 
-    // ── PUT with billing_cycle_anchor_at ──────────────────────────────────────
+    // ── PUT with activation_deadline_at ──────────────────────────────────────
 
-    public function testUpdateSavesAndReturnsFutureBillingCycleAnchorAt(): void
+    public function testUpdateSavesAndReturnsFutureActivationDeadlineAt(): void
     {
         $futureIso = gmdate('Y-m-d\TH:i:s\Z', strtotime('+15 days'));
 
         $response = $this->controller->update($this->makeRequest(1, 42, [
             'billing_enabled' => true,
             'amount_cents' => 4900,
-            'billing_cycle_anchor_at' => $futureIso,
+            'activation_deadline_at' => $futureIso,
         ]));
 
         $this->assertSame(200, $response->status);
-        $this->assertNotNull($response->data['data']['billing_cycle_anchor_at']);
+        $this->assertNotNull($response->data['data']['activation_deadline_at']);
 
         $row = $this->pdo
-            ->query('SELECT billing_cycle_anchor_at FROM business_billing_config WHERE business_id = 42')
+            ->query('SELECT activation_deadline_at FROM business_billing_config WHERE business_id = 42')
             ->fetch(PDO::FETCH_ASSOC);
-        $this->assertNotNull($row['billing_cycle_anchor_at']);
+        $this->assertNotNull($row['activation_deadline_at']);
     }
 
-    public function testUpdateReturnsBadRequestForPastBillingCycleAnchorAt(): void
+    public function testUpdateAcceptsPastActivationDeadlineAt(): void
     {
         $pastIso = gmdate('Y-m-d\TH:i:s\Z', strtotime('-1 day'));
 
         $response = $this->controller->update($this->makeRequest(1, 42, [
             'billing_enabled' => true,
             'amount_cents' => 2900,
-            'billing_cycle_anchor_at' => $pastIso,
+            'activation_deadline_at' => $pastIso,
         ]));
 
-        $this->assertSame(422, $response->status);
-        $this->assertFalse($response->data['success']);
-        $this->assertSame('billing_cycle_anchor_in_past', $response->data['error']['message']);
+        $this->assertSame(200, $response->status);
+        $this->assertTrue($response->data['success']);
+        $this->assertNotNull($response->data['data']['activation_deadline_at']);
     }
 
     public function testUpdateReturnsBadRequestWhenAmountMissingWithBillingEnabled(): void
@@ -227,7 +227,7 @@ final class AdminBusinessBillingControllerTest extends TestCase
                 currency TEXT NOT NULL DEFAULT "EUR",
                 provider_code TEXT NULL,
                 provider_price_reference TEXT NULL,
-                billing_cycle_anchor_at TEXT NULL,
+                activation_deadline_at TEXT NULL,
                 notes TEXT NULL,
                 created_at TEXT NULL,
                 updated_at TEXT NULL

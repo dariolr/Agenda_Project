@@ -50,18 +50,14 @@ final class AdminBusinessBillingController
         $body = $request->getBody() ?? [];
         $enabled = $this->parseBool($body['billing_enabled'] ?? false);
 
-        // Validate billing_cycle_anchor_at if provided
-        $billingCycleAnchorAt = null;
-        if (isset($body['billing_cycle_anchor_at']) && $body['billing_cycle_anchor_at'] !== null && $body['billing_cycle_anchor_at'] !== '') {
+        // Validate activation_deadline_at if provided
+        $activationDeadlineAt = null;
+        if (isset($body['activation_deadline_at']) && $body['activation_deadline_at'] !== null && $body['activation_deadline_at'] !== '') {
             try {
-                $anchorDt = new \DateTimeImmutable((string) $body['billing_cycle_anchor_at'], new \DateTimeZone('UTC'));
-                $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
-                if ($anchorDt <= $now) {
-                    return Response::validationError('billing_cycle_anchor_in_past', $request->traceId);
-                }
-                $billingCycleAnchorAt = $anchorDt->format(\DateTimeInterface::ATOM);
+                $deadlineDt = new \DateTimeImmutable((string) $body['activation_deadline_at'], new \DateTimeZone('UTC'));
+                $activationDeadlineAt = $deadlineDt->format(\DateTimeInterface::ATOM);
             } catch (\Throwable) {
-                return Response::validationError('billing_cycle_anchor_at is not a valid date', $request->traceId);
+                return Response::validationError('activation_deadline_at is not a valid date', $request->traceId);
             }
         }
 
@@ -70,7 +66,7 @@ final class AdminBusinessBillingController
             'amount_cents' => isset($body['amount_cents']) ? (int) $body['amount_cents'] : null,
             'currency' => 'EUR',
             'provider_code' => $enabled ? BillingProviderCode::STRIPE : null,
-            'billing_cycle_anchor_at' => $billingCycleAnchorAt,
+            'activation_deadline_at' => $activationDeadlineAt,
             'notes' => $body['notes'] ?? null,
         ];
 
@@ -121,7 +117,7 @@ final class AdminBusinessBillingController
             'currency' => $config['currency'],
             'provider_code' => $config['provider_code'],
             'provider_price_reference' => $config['provider_price_reference'],
-            'billing_cycle_anchor_at' => $config['billing_cycle_anchor_at'],
+            'activation_deadline_at' => $config['activation_deadline_at'],
             'notes' => $config['notes'],
             'subscription_status' => $subscription?->status,
             'current_period_end' => $subscription?->currentPeriodEnd,

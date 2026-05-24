@@ -2006,7 +2006,9 @@
   "billingAgendaNoticeMessage": "Attiva l’abbonamento per continuare a usare il gestionale senza interruzioni.",
   "billingAgendaNoticeAction": "Attiva abbonamento",
   "billingAgendaNoticeDismissTooltip": "Nascondi fino a domani",
-  "billingCycleAnchorAtLabel": "Data primo rinnovo",
-  "billingCycleAnchorAtHint": "Opzionale — il primo ciclo inizierà in questa data",
-  "billingCycleAnchorAtPastError": "La data di rinnovo deve essere nel futuro"
+  "billingActivationDeadlineLabel": "Data limite attivazione abbonamento",
+  "billingActivationDeadlineHint": "Se impostata, il business potrà usare il gestionale gratuitamente fino a questa data. Dopo, dovrà attivare l'abbonamento per continuare.",
+  "billingAccessBlockedTitle": "Abbonamento richiesto",
+  "billingAccessBlockedMessage": "Il periodo gratuito è terminato. Per continuare a usare il gestionale, attiva l'abbonamento mensile.",
+  "billingAccessBlockedActivateAction": "Attiva abbonamento"
 }

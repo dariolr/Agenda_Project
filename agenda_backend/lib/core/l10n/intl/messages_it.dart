@@ -525,15 +525,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "billingAgendaNoticeDismissTooltip": MessageLookupByLibrary.simpleMessage(
       "Nascondi fino a domani",
     ),
-    "billingCycleAnchorAtLabel": MessageLookupByLibrary.simpleMessage(
-      "Data primo rinnovo",
-    ),
-    "billingCycleAnchorAtHint": MessageLookupByLibrary.simpleMessage(
-      "Opzionale — il primo ciclo inizierà in questa data",
-    ),
-    "billingCycleAnchorAtPastError": MessageLookupByLibrary.simpleMessage(
-      "La data di rinnovo deve essere nel futuro",
-    ),
     "billingAgendaNoticeMessage": MessageLookupByLibrary.simpleMessage(
       "Attiva l’abbonamento per continuare a usare il gestionale senza interruzioni.",
     ),
@@ -581,6 +572,21 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "billingCurrentPeriodStartFieldLabel": MessageLookupByLibrary.simpleMessage(
       "current_period_start",
+    ),
+    "billingActivationDeadlineLabel": MessageLookupByLibrary.simpleMessage(
+      "Data limite attivazione abbonamento",
+    ),
+    "billingActivationDeadlineHint": MessageLookupByLibrary.simpleMessage(
+      "Se impostata, il business potrà usare il gestionale gratuitamente fino a questa data. Dopo, dovrà attivare l'abbonamento per continuare.",
+    ),
+    "billingAccessBlockedTitle": MessageLookupByLibrary.simpleMessage(
+      "Abbonamento richiesto",
+    ),
+    "billingAccessBlockedMessage": MessageLookupByLibrary.simpleMessage(
+      "Il periodo gratuito è terminato. Per continuare a usare il gestionale, attiva l'abbonamento mensile.",
+    ),
+    "billingAccessBlockedActivateAction": MessageLookupByLibrary.simpleMessage(
+      "Attiva abbonamento",
     ),
     "billingDescription": MessageLookupByLibrary.simpleMessage(
       "Stato fatturazione e gestione abbonamento.",

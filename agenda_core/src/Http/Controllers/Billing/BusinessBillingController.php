@@ -469,6 +469,18 @@ final class BusinessBillingController
             $checkoutState = $checkoutRetryable ? 'retryable' : 'prepared';
         }
 
+        $activationDeadline = $config->activationDeadlineAt;
+        $accessBlocked = false;
+        if (
+            $config->billingEnabled &&
+            $config->billingMode === BillingMode::RECURRING &&
+            $activationDeadline !== null &&
+            $activationDeadline < new \DateTimeImmutable('now', new \DateTimeZone('UTC')) &&
+            !in_array($status, [BillingSubscriptionStatus::ACTIVE], true)
+        ) {
+            $accessBlocked = true;
+        }
+
         return [
             'billing_enabled' => $config->billingEnabled,
             'billing_mode' => $config->billingMode,
@@ -492,6 +504,10 @@ final class BusinessBillingController
             'checkout_state' => $checkoutState,
             'can_start_checkout' => $config->billingEnabled && $this->canStartCheckout($status, $subscription),
             'can_open_portal' => $config->billingEnabled && ($subscription?->providerCustomerId !== null),
+            'access_blocked' => $accessBlocked,
+            'activation_deadline_at' => $activationDeadline !== null
+                ? $activationDeadline->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z')
+                : null,
         ];
     }
 

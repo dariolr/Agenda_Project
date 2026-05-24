@@ -84,16 +84,26 @@ final class BusinessBillingSubscriptionRepository
 
     public function markNotRequired(int $businessId): void
     {
-        $stmt = $this->db->getPdo()->prepare(
-            'INSERT INTO business_billing_subscription (business_id, status)
-             VALUES (?, ?)
-             ON DUPLICATE KEY UPDATE
-                provider_code = NULL,
-                provider_price_reference = NULL,
-                status = VALUES(status),
-                cancel_at_period_end = 0'
-        );
-        $stmt->execute([$businessId, BillingSubscriptionStatus::NOT_REQUIRED]);
+        $exists = $this->db->getPdo()
+            ->prepare('SELECT 1 FROM business_billing_subscription WHERE business_id = ? LIMIT 1');
+        $exists->execute([$businessId]);
+
+        if ($exists->fetchColumn() === false) {
+            $stmt = $this->db->getPdo()->prepare(
+                'INSERT INTO business_billing_subscription (business_id, status) VALUES (?, ?)'
+            );
+            $stmt->execute([$businessId, BillingSubscriptionStatus::NOT_REQUIRED]);
+        } else {
+            $stmt = $this->db->getPdo()->prepare(
+                'UPDATE business_billing_subscription
+                 SET provider_code = NULL,
+                     provider_price_reference = NULL,
+                     status = ?,
+                     cancel_at_period_end = 0
+                 WHERE business_id = ?'
+            );
+            $stmt->execute([BillingSubscriptionStatus::NOT_REQUIRED, $businessId]);
+        }
     }
 
     public function updateAfterCheckoutCreation(

@@ -506,15 +506,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "billingAgendaNoticeDismissTooltip": MessageLookupByLibrary.simpleMessage(
       "Hide until tomorrow",
     ),
-    "billingCycleAnchorAtLabel": MessageLookupByLibrary.simpleMessage(
-      "First renewal date",
-    ),
-    "billingCycleAnchorAtHint": MessageLookupByLibrary.simpleMessage(
-      "Optional — the first billing cycle will start on this date",
-    ),
-    "billingCycleAnchorAtPastError": MessageLookupByLibrary.simpleMessage(
-      "The renewal date must be in the future",
-    ),
     "billingAgendaNoticeMessage": MessageLookupByLibrary.simpleMessage(
       "Activate the business subscription to keep using the management app without interruptions.",
     ),
@@ -562,6 +553,21 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "billingCurrentPeriodStartFieldLabel": MessageLookupByLibrary.simpleMessage(
       "current_period_start",
+    ),
+    "billingActivationDeadlineLabel": MessageLookupByLibrary.simpleMessage(
+      "Subscription activation deadline",
+    ),
+    "billingActivationDeadlineHint": MessageLookupByLibrary.simpleMessage(
+      "If set, the business can use the app for free until this date. After that, they must activate the subscription to continue.",
+    ),
+    "billingAccessBlockedTitle": MessageLookupByLibrary.simpleMessage(
+      "Subscription required",
+    ),
+    "billingAccessBlockedMessage": MessageLookupByLibrary.simpleMessage(
+      "The free period has ended. To continue using the app, activate your monthly subscription.",
+    ),
+    "billingAccessBlockedActivateAction": MessageLookupByLibrary.simpleMessage(
+      "Activate subscription",
     ),
     "billingDescription": MessageLookupByLibrary.simpleMessage(
       "Billing status and subscription management.",

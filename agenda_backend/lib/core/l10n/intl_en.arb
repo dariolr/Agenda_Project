@@ -2006,7 +2006,9 @@
   "billingAgendaNoticeMessage": "Activate the business subscription to keep using the management app without interruptions.",
   "billingAgendaNoticeAction": "Activate subscription",
   "billingAgendaNoticeDismissTooltip": "Hide until tomorrow",
-  "billingCycleAnchorAtLabel": "First renewal date",
-  "billingCycleAnchorAtHint": "Optional — the first billing cycle will start on this date",
-  "billingCycleAnchorAtPastError": "The renewal date must be in the future"
+  "billingActivationDeadlineLabel": "Subscription activation deadline",
+  "billingActivationDeadlineHint": "If set, the business can use the app for free until this date. After that, they must activate the subscription to continue.",
+  "billingAccessBlockedTitle": "Subscription required",
+  "billingAccessBlockedMessage": "The free period has ended. To continue using the app, activate your monthly subscription.",
+  "billingAccessBlockedActivateAction": "Activate subscription"
 }

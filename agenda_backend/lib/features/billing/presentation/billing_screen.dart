@@ -167,6 +167,36 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
         controller: widget.scrollController,
         padding: const EdgeInsets.all(24),
         children: [
+          if (billing.accessBlocked) ...[
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: colorScheme.errorContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.lock_outline,
+                      color: colorScheme.onErrorContainer,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        context.l10n.billingAccessBlockedMessage,
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ],
           Text(
             context.l10n.billingTitle,
             style: theme.textTheme.headlineSmall?.copyWith(
