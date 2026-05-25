@@ -54,6 +54,27 @@ final class BusinessBillingSubscriptionRepository
         return $this->findByBusinessId($businessId) ?? throw new \RuntimeException('Unable to create billing subscription');
     }
 
+    // Usato quando il superadmin riabilita billing: crea il record se assente,
+    // oppure lo porta a inactive se era not_required (reset dopo disattivazione).
+    // Non tocca stati runtime come active, past_due, pending_checkout.
+    public function activateOrCreate(int $businessId): BillingSubscription
+    {
+        $existing = $this->findByBusinessId($businessId);
+        if ($existing === null) {
+            $stmt = $this->db->getPdo()->prepare(
+                'INSERT INTO business_billing_subscription (business_id, status) VALUES (?, ?)'
+            );
+            $stmt->execute([$businessId, BillingSubscriptionStatus::INACTIVE]);
+        } elseif ($existing->status === BillingSubscriptionStatus::NOT_REQUIRED) {
+            $stmt = $this->db->getPdo()->prepare(
+                'UPDATE business_billing_subscription SET status = ? WHERE business_id = ?'
+            );
+            $stmt->execute([BillingSubscriptionStatus::INACTIVE, $businessId]);
+        }
+
+        return $this->findByBusinessId($businessId) ?? throw new \RuntimeException('Unable to load billing subscription');
+    }
+
     public function findOrCreateByBusinessIdForUpdate(int $businessId): BillingSubscription
     {
         $driver = $this->db->getPdo()->getAttribute(PDO::ATTR_DRIVER_NAME);

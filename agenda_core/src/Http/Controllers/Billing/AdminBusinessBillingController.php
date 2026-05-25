@@ -79,7 +79,7 @@ final class AdminBusinessBillingController
         if (!$config->billingEnabled) {
             $this->subscriptionRepository->markNotRequired($businessId);
         } else {
-            $this->subscriptionRepository->findOrCreateByBusinessId($businessId);
+            $this->subscriptionRepository->activateOrCreate($businessId);
         }
 
         $subscription = $this->subscriptionRepository->findByBusinessId($businessId);

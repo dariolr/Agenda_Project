@@ -608,6 +608,22 @@ class _AuthNotifier extends ChangeNotifier {
       if (previous == next) return;
       notifyListeners();
     });
+
+    // Riesegue i redirect quando billing carica o cambia (access_blocked).
+    _ref.listen(billingSubscriptionProvider, (previous, next) {
+      final prevBlocked = previous?.when(
+        data: (v) => v.accessBlocked,
+        loading: () => null,
+        error: (_, __) => null,
+      );
+      final nextBlocked = next.when(
+        data: (v) => v.accessBlocked,
+        loading: () => null,
+        error: (_, __) => null,
+      );
+      if (prevBlocked != nextBlocked) notifyListeners();
+    });
+
   }
 
   final Ref _ref;

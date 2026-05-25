@@ -44,7 +44,13 @@ class BillingRepository {
       'amount_cents': amountCents,
       'currency': currency,
       'provider_code': providerCode,
-      'activation_deadline_at': activationDeadlineAt?.toUtc().toIso8601String(),
+      'activation_deadline_at': activationDeadlineAt != null
+          ? DateTime.utc(
+              activationDeadlineAt.year,
+              activationDeadlineAt.month,
+              activationDeadlineAt.day,
+            ).toIso8601String()
+          : null,
       'notes': notes,
     });
   }
