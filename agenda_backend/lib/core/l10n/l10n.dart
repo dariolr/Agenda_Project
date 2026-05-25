@@ -13109,11 +13109,31 @@ class L10n {
     );
   }
 
+  /// `Subscription activation deadline`
+  String get billingActivationDeadlineLabel {
+    return Intl.message(
+      'Subscription activation deadline',
+      name: 'billingActivationDeadlineLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Connect gateways to collect online bookings`
   String get onlinePaymentsDescription {
     return Intl.message(
       'Connect gateways to collect online bookings',
       name: 'onlinePaymentsDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `If set, the business can use the app for free until this date. After that, they must activate the subscription to continue.`
+  String get billingActivationDeadlineHint {
+    return Intl.message(
+      'If set, the business can use the app for free until this date. After that, they must activate the subscription to continue.',
+      name: 'billingActivationDeadlineHint',
       desc: '',
       args: [],
     );
@@ -13129,11 +13149,31 @@ class L10n {
     );
   }
 
+  /// `Subscription required`
+  String get billingAccessBlockedTitle {
+    return Intl.message(
+      'Subscription required',
+      name: 'billingAccessBlockedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Connect PayPal`
   String get onlinePaymentsConnectPayPal {
     return Intl.message(
       'Connect PayPal',
       name: 'onlinePaymentsConnectPayPal',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The free period has ended. To continue using the app, activate your monthly subscription.`
+  String get billingAccessBlockedMessage {
+    return Intl.message(
+      'The free period has ended. To continue using the app, activate your monthly subscription.',
+      name: 'billingAccessBlockedMessage',
       desc: '',
       args: [],
     );
@@ -13359,6 +13399,16 @@ class L10n {
     return Intl.message(
       'The customer must complete the online payment to confirm the booking.',
       name: 'onlinePaymentRequiredDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Activate subscription`
+  String get billingAccessBlockedActivateAction {
+    return Intl.message(
+      'Activate subscription',
+      name: 'billingAccessBlockedActivateAction',
       desc: '',
       args: [],
     );

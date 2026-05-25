@@ -489,8 +489,23 @@ class MessageLookup extends MessageLookupByLibrary {
       "Weekly availability",
     ),
     "availabilityTitleFor": m0,
+    "billingAccessBlockedActivateAction": MessageLookupByLibrary.simpleMessage(
+      "Activate subscription",
+    ),
+    "billingAccessBlockedMessage": MessageLookupByLibrary.simpleMessage(
+      "The free period has ended. To continue using the app, activate your monthly subscription.",
+    ),
+    "billingAccessBlockedTitle": MessageLookupByLibrary.simpleMessage(
+      "Subscription required",
+    ),
     "billingActivateAction": MessageLookupByLibrary.simpleMessage(
       "Activate subscription",
+    ),
+    "billingActivationDeadlineHint": MessageLookupByLibrary.simpleMessage(
+      "If set, the business can use the app for free until this date. After that, they must activate the subscription to continue.",
+    ),
+    "billingActivationDeadlineLabel": MessageLookupByLibrary.simpleMessage(
+      "Subscription activation deadline",
     ),
     "billingActiveTitle": MessageLookupByLibrary.simpleMessage(
       "Subscription active",

@@ -9,6 +9,7 @@ import 'package:agenda_backend/features/auth/providers/current_business_user_pro
 import 'package:agenda_backend/features/booking_notifications/providers/booking_notifications_provider.dart';
 import 'package:agenda_backend/features/bookings_list/providers/bookings_list_provider.dart';
 import 'package:agenda_backend/features/class_events/presentation/class_events_screen.dart';
+import 'package:agenda_backend/features/billing/providers/billing_provider.dart';
 import 'package:agenda_backend/features/reports/providers/reports_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -116,10 +117,30 @@ class ScaffoldWithNavigation extends ConsumerStatefulWidget {
 }
 
 class _ScaffoldWithNavigationState
-    extends ConsumerState<ScaffoldWithNavigation> {
+    extends ConsumerState<ScaffoldWithNavigation>
+    with WidgetsBindingObserver {
   int? _lastShellIndex;
   int _lastMoreBranchIndex = 6;
   bool _altroHadBillingFromAgenda = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      ref.invalidate(billingSubscriptionProvider);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -206,6 +227,24 @@ class _ScaffoldWithNavigationState
     final isPast = agendaDate.isBefore(today);
     final user = ref.watch(authProvider).user;
     final isSuperadmin = user?.isSuperadmin ?? false;
+
+    // Forza navigazione alla schermata abbonamento se access_blocked diventa true.
+    if (!isSuperadmin) {
+      ref.listen(billingSubscriptionProvider, (previous, next) {
+        final wasBlocked = previous?.value?.accessBlocked ?? false;
+        final isBlocked = next.value?.accessBlocked ?? false;
+        if (!wasBlocked && isBlocked) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            final currentPath = GoRouterState.of(context).uri.path;
+            if (currentPath != '/altro/abbonamento') {
+              context.go('/altro/abbonamento');
+            }
+          });
+        }
+      });
+    }
+
     final showClientsNav = ref.watch(currentUserCanManageClientsProvider);
     final canCreateAgendaItems = ref.watch(
       currentUserCanManageBookingsProvider,

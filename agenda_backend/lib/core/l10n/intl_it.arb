@@ -2032,5 +2032,10 @@
   "onlinePaymentsAcceptanceEnabledDescription": "Disattiva per mettere in pausa i pagamenti online: i clienti non potranno completare prenotazioni che richiedono pagamento.",
   "onlinePaymentsAcceptanceDisabledDescription": "Attiva per permettere ai clienti di pagare online gli elementi che richiedono pagamento alla prenotazione.",
   "onlinePaymentRequiredLabel": "Pagamento online richiesto",
-  "onlinePaymentRequiredDescription": "Il cliente dovrà completare il pagamento online per confermare la prenotazione."
+  "onlinePaymentRequiredDescription": "Il cliente dovrà completare il pagamento online per confermare la prenotazione.",
+  "billingActivationDeadlineLabel": "Data limite attivazione abbonamento",
+  "billingActivationDeadlineHint": "Se impostata, il business potrà usare il gestionale gratuitamente fino a questa data. Dopo, dovrà attivare l'abbonamento per continuare.",
+  "billingAccessBlockedTitle": "Abbonamento richiesto",
+  "billingAccessBlockedMessage": "Il periodo gratuito è terminato. Per continuare a usare il gestionale, attiva l'abbonamento mensile.",
+  "billingAccessBlockedActivateAction": "Attiva abbonamento"
 }

@@ -24,3 +24,67 @@ composer install --no-dev --optimize-autoloader
 
 caffeinate -i -t 7200 & pmset displaysleepnow
 
+Prerequisiti
+Migrazione DB applicata (activation_deadline_at presente in business_billing_config)
+Backend PHP in esecuzione
+App Flutter avviata
+Scenario 1 — Data limite nel futuro (periodo gratuito)
+Accedi come superadmin → /businesses
+Apri "Gestisci abbonamento" su un business senza subscription attiva
+Attiva switch, imposta importo, seleziona una data futura (es. 1 luglio 2026)
+Salva
+Accedi come quel business
+Naviga liberamente nell'app → deve funzionare tutto normalmente
+Vai in /altro/abbonamento → vedi importo e CTA "Attiva abbonamento"
+Nessun blocco — la data non è ancora scaduta
+Scenario 2 — Data limite passata (blocco)
+Superadmin imposta data nel passato (es. ieri) e salva
+Accedi come quel business
+L'app deve reindirizzare automaticamente a /altro/abbonamento
+In cima alla schermata appare il banner rosso con il messaggio:
+Il periodo gratuito è terminato. Per continuare a usare il gestionale, attiva l'abbonamento mensile.
+
+Premi "Attiva abbonamento" → checkout Stripe
+Dopo pagamento completato → accesso ripristinato, banner scompare
+Scenario 3 — Nessuna data impostata
+Superadmin attiva billing senza impostare la data limite
+Business accede → nessun blocco, app funziona normalmente
+Appare solo il banner soft di avviso billing (se subscription non attiva)
+Scenario 4 — Disattivazione billing
+Superadmin disattiva lo switch → salva
+activation_deadline_at torna null
+Business accede → nessun blocco, voce abbonamento scompare da /altro
+Verifica campo API (opzionale)
+Chiama direttamente l'endpoint billing del business e verifica che la response contenga:
+
+
+{
+  "access_blocked": true,
+  "activation_deadline_at": "2026-05-23T00:00:00Z",
+  "billing_required": true,
+  "billing_active": false
+}
+Vuoi che avvii l'app direttamente?
+
+lo scenario 4 su che casistica?
+Lo scenario 4 si applica quando il superadmin vuole revocare completamente la richiesta di abbonamento per un business.
+
+Casistiche reali
+Business in periodo di prova che non vuole più pagare
+
+Il superadmin decide di non far pagare più quel business (es. accordo commerciale speciale, cliente VIP, prova estesa)
+Disattiva lo switch → il business non vede più nulla di billing, accesso libero a tempo indeterminato
+Errore di configurazione
+
+Il superadmin ha attivato billing per il business sbagliato
+Disattiva e il business non viene disturbato
+Business sospeso o chiuso
+
+Il business chiude l'attività
+Il superadmin disattiva il billing prima di sospendere l'account
+Migrazione o cambio piano
+
+Il superadmin vuole resettare la configurazione billing prima di reimpostarla diversamente (nuovo importo, nuova data)
+In tutti questi casi la logica è:
+
+billing_enabled = false → nessuna richiesta attiva → nessun blocco possibile → activation_deadline_at viene azzerata automaticamente

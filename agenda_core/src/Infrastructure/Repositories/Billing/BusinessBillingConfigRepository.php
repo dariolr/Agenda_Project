@@ -49,6 +49,16 @@ final class BusinessBillingConfigRepository
             ? substr(trim((string) $payload['notes']), 0, 255)
             : null;
 
+        $activationDeadlineAt = null;
+        if (!empty($payload['activation_deadline_at'])) {
+            try {
+                $dt = new \DateTimeImmutable((string) $payload['activation_deadline_at'], new \DateTimeZone('UTC'));
+                $activationDeadlineAt = $dt->format('Y-m-d H:i:s');
+            } catch (\Throwable) {
+                throw new \InvalidArgumentException('activation_deadline_at is not a valid date');
+            }
+        }
+
         if (!$enabled) {
             $data = [
                 0,
@@ -57,6 +67,7 @@ final class BusinessBillingConfigRepository
                 null,
                 null,
                 $currency !== '' ? $currency : 'EUR',
+                null,
                 null,
                 null,
                 $notes,
@@ -80,27 +91,38 @@ final class BusinessBillingConfigRepository
                 $currency !== '' ? $currency : 'EUR',
                 $providerCode,
                 $payload['provider_price_reference'] ?? null,
+                $activationDeadlineAt,
                 $notes,
             ];
         }
 
-        $stmt = $this->db->getPdo()->prepare(
-            'INSERT INTO business_billing_config
-                (business_id, billing_enabled, billing_mode, billing_interval_unit, billing_interval_count,
-                 amount_cents, currency, provider_code, provider_price_reference, notes)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE
-                billing_enabled = VALUES(billing_enabled),
-                billing_mode = VALUES(billing_mode),
-                billing_interval_unit = VALUES(billing_interval_unit),
-                billing_interval_count = VALUES(billing_interval_count),
-                amount_cents = VALUES(amount_cents),
-                currency = VALUES(currency),
-                provider_code = VALUES(provider_code),
-                provider_price_reference = VALUES(provider_price_reference),
-                notes = VALUES(notes)'
-        );
-        $stmt->execute(array_merge([$businessId], $data));
+        $existing = $this->findByBusinessId($businessId);
+
+        if ($existing === null) {
+            $stmt = $this->db->getPdo()->prepare(
+                'INSERT INTO business_billing_config
+                    (business_id, billing_enabled, billing_mode, billing_interval_unit, billing_interval_count,
+                     amount_cents, currency, provider_code, provider_price_reference, activation_deadline_at, notes)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            $stmt->execute(array_merge([$businessId], $data));
+        } else {
+            $stmt = $this->db->getPdo()->prepare(
+                'UPDATE business_billing_config SET
+                    billing_enabled = ?,
+                    billing_mode = ?,
+                    billing_interval_unit = ?,
+                    billing_interval_count = ?,
+                    amount_cents = ?,
+                    currency = ?,
+                    provider_code = ?,
+                    provider_price_reference = ?,
+                    activation_deadline_at = ?,
+                    notes = ?
+                 WHERE business_id = ?'
+            );
+            $stmt->execute(array_merge($data, [$businessId]));
+        }
 
         return $this->findByBusinessId($businessId) ?? throw new \RuntimeException('Unable to load billing config');
     }

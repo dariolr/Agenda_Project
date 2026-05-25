@@ -21,7 +21,9 @@ class BillingConfigViewModel {
     required this.checkoutState,
     required this.canStartCheckout,
     required this.canOpenPortal,
+    required this.accessBlocked,
     this.providerPriceReference,
+    this.activationDeadlineAt,
     this.notes,
   });
 
@@ -46,7 +48,9 @@ class BillingConfigViewModel {
   final String? checkoutState;
   final bool canStartCheckout;
   final bool canOpenPortal;
+  final bool accessBlocked;
   final String? providerPriceReference;
+  final DateTime? activationDeadlineAt;
   final String? notes;
 
   factory BillingConfigViewModel.fromJson(Map<String, dynamic> json) {
@@ -94,7 +98,11 @@ class BillingConfigViewModel {
           json['checkout_state'] as String? ?? json['checkoutState'] as String?,
       canStartCheckout: json['can_start_checkout'] as bool? ?? false,
       canOpenPortal: json['can_open_portal'] as bool? ?? false,
+      accessBlocked: json['access_blocked'] as bool? ?? false,
       providerPriceReference: json['provider_price_reference'] as String?,
+      activationDeadlineAt: _parseDate(
+        json['activation_deadline_at'] ?? json['activationDeadlineAt'],
+      ),
       notes: json['notes'] as String?,
     );
   }

@@ -2032,5 +2032,10 @@
   "onlinePaymentsAcceptanceEnabledDescription": "Disable to pause online payments: customers will not be able to complete bookings that require payment.",
   "onlinePaymentsAcceptanceDisabledDescription": "Enable to let customers pay online for items that require payment at booking time.",
   "onlinePaymentRequiredLabel": "Online payment required",
-  "onlinePaymentRequiredDescription": "The customer must complete the online payment to confirm the booking."
+  "onlinePaymentRequiredDescription": "The customer must complete the online payment to confirm the booking.",
+  "billingActivationDeadlineLabel": "Subscription activation deadline",
+  "billingActivationDeadlineHint": "If set, the business can use the app for free until this date. After that, they must activate the subscription to continue.",
+  "billingAccessBlockedTitle": "Subscription required",
+  "billingAccessBlockedMessage": "The free period has ended. To continue using the app, activate your monthly subscription.",
+  "billingAccessBlockedActivateAction": "Activate subscription"
 }

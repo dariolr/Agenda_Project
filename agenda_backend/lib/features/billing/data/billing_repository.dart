@@ -36,6 +36,7 @@ class BillingRepository {
     required int? amountCents,
     required String currency,
     required String? providerCode,
+    DateTime? activationDeadlineAt,
     String? notes,
   }) {
     return _api.updateAdminConfig(businessId, {
@@ -43,6 +44,13 @@ class BillingRepository {
       'amount_cents': amountCents,
       'currency': currency,
       'provider_code': providerCode,
+      'activation_deadline_at': activationDeadlineAt != null
+          ? DateTime.utc(
+              activationDeadlineAt.year,
+              activationDeadlineAt.month,
+              activationDeadlineAt.day,
+            ).toIso8601String()
+          : null,
       'notes': notes,
     });
   }

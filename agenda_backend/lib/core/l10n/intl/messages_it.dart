@@ -508,8 +508,23 @@ class MessageLookup extends MessageLookupByLibrary {
       "Disponibilità settimanale",
     ),
     "availabilityTitleFor": m0,
+    "billingAccessBlockedActivateAction": MessageLookupByLibrary.simpleMessage(
+      "Attiva abbonamento",
+    ),
+    "billingAccessBlockedMessage": MessageLookupByLibrary.simpleMessage(
+      "Il periodo gratuito è terminato. Per continuare a usare il gestionale, attiva l\'abbonamento mensile.",
+    ),
+    "billingAccessBlockedTitle": MessageLookupByLibrary.simpleMessage(
+      "Abbonamento richiesto",
+    ),
     "billingActivateAction": MessageLookupByLibrary.simpleMessage(
       "Attiva abbonamento",
+    ),
+    "billingActivationDeadlineHint": MessageLookupByLibrary.simpleMessage(
+      "Se impostata, il business potrà usare il gestionale gratuitamente fino a questa data. Dopo, dovrà attivare l\'abbonamento per continuare.",
+    ),
+    "billingActivationDeadlineLabel": MessageLookupByLibrary.simpleMessage(
+      "Data limite attivazione abbonamento",
     ),
     "billingActiveTitle": MessageLookupByLibrary.simpleMessage(
       "Abbonamento attivo",
