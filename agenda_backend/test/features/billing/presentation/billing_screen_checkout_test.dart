@@ -72,6 +72,7 @@ class _FailingBillingRepository implements BillingRepository {
     required String currency,
     required String? providerCode,
     String? notes,
+    DateTime? activationDeadlineAt,
   }) async {}
 }
 
@@ -97,6 +98,7 @@ const _inactiveBilling = BillingConfigViewModel(
   checkoutState: null,
   canStartCheckout: true,
   canOpenPortal: false,
+  accessBlocked: false,
 );
 
 void main() {
