@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Agenda\Infrastructure\Notifications;
 
 use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Repositories\BusinessWhatsappSettingsRepository;
+use Agenda\Infrastructure\Repositories\WhatsappRepository;
 use Agenda\Infrastructure\Support\Json;
+use Agenda\UseCases\Whatsapp\QueueWhatsappNotification;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -57,7 +60,7 @@ final class NotificationRepository
               :subject, :payload, :priority, :scheduled_at, :max_attempts, :business_id, :booking_id, :class_booking_id, "pending")'
         );
 
-        $stmt->execute([
+        $params = [
             'type' => $data['type'] ?? 'email',
             'channel' => $channel,
             'recipient_type' => $data['recipient_type'],
@@ -72,9 +75,17 @@ final class NotificationRepository
             'business_id' => $data['business_id'] ?? null,
             'booking_id' => $data['booking_id'] ?? null,
             'class_booking_id' => $data['class_booking_id'] ?? null,
+        ];
+        $stmt->execute($params);
+        $id = (int) $this->db->getPdo()->lastInsertId();
+
+        $this->queueWhatsappMirror([
+            ...$params,
+            'id' => $id,
+            'payload' => $data['payload'] ?? [],
         ]);
 
-        return (int) $this->db->getPdo()->lastInsertId();
+        return $id;
     }
 
     /**
@@ -268,7 +279,8 @@ final class NotificationRepository
                AND status = "pending"'
         );
         $stmt->execute(['booking_id' => $bookingId]);
-        
+        $this->deletePendingWhatsappBookingReminders($bookingId);
+
         return $stmt->rowCount();
     }
 
@@ -289,6 +301,7 @@ final class NotificationRepository
                AND nq.status = "pending"'
         );
         $stmt->execute(['rule_id' => $recurrenceRuleId]);
+        $this->deletePendingWhatsappBookingRemindersForRecurringSeries($recurrenceRuleId);
         
         return $stmt->rowCount();
     }
@@ -312,6 +325,7 @@ final class NotificationRepository
                AND nq.status = "pending"'
         );
         $stmt->execute(['rule_id' => $recurrenceRuleId, 'from_index' => $fromIndex]);
+        $this->deletePendingWhatsappBookingRemindersForFutureRecurrences($recurrenceRuleId, $fromIndex);
         
         return $stmt->rowCount();
     }
@@ -480,8 +494,62 @@ final class NotificationRepository
                AND status = "pending"'
         );
         $stmt->execute(['class_booking_id' => $classBookingId]);
+        $this->deletePendingWhatsappClassBookingReminders($classBookingId);
 
         return $stmt->rowCount();
+    }
+
+    private function queueWhatsappMirror(array $notification): void
+    {
+        try {
+            if (($notification['recipient_type'] ?? '') !== 'client') {
+                return;
+            }
+            $queue = new QueueWhatsappNotification(
+                $this->db,
+                new WhatsappRepository($this->db),
+                new BusinessWhatsappSettingsRepository($this->db)
+            );
+            $queue->queueFromNotificationRow($notification);
+        } catch (\Throwable $e) {
+            error_log('Failed to queue WhatsApp mirror notification: ' . $e->getMessage());
+        }
+    }
+
+    private function deletePendingWhatsappBookingReminders(int $bookingId): void
+    {
+        try {
+            (new WhatsappRepository($this->db))->deletePendingBookingReminders($bookingId);
+        } catch (\Throwable $e) {
+            error_log("Failed to delete WhatsApp booking reminders for booking {$bookingId}: " . $e->getMessage());
+        }
+    }
+
+    private function deletePendingWhatsappBookingRemindersForRecurringSeries(int $recurrenceRuleId): void
+    {
+        try {
+            (new WhatsappRepository($this->db))->deletePendingBookingRemindersForRecurringSeries($recurrenceRuleId);
+        } catch (\Throwable $e) {
+            error_log("Failed to delete WhatsApp booking reminders for recurrence rule {$recurrenceRuleId}: " . $e->getMessage());
+        }
+    }
+
+    private function deletePendingWhatsappBookingRemindersForFutureRecurrences(int $recurrenceRuleId, int $fromIndex): void
+    {
+        try {
+            (new WhatsappRepository($this->db))->deletePendingBookingRemindersForFutureRecurrences($recurrenceRuleId, $fromIndex);
+        } catch (\Throwable $e) {
+            error_log("Failed to delete future WhatsApp booking reminders for recurrence rule {$recurrenceRuleId}: " . $e->getMessage());
+        }
+    }
+
+    private function deletePendingWhatsappClassBookingReminders(int $classBookingId): void
+    {
+        try {
+            (new WhatsappRepository($this->db))->deletePendingClassBookingReminders($classBookingId);
+        } catch (\Throwable $e) {
+            error_log("Failed to delete WhatsApp class booking reminders for class booking {$classBookingId}: " . $e->getMessage());
+        }
     }
 
     /**

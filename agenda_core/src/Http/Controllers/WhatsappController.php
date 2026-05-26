@@ -7,6 +7,7 @@ namespace Agenda\Http\Controllers;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
+use Agenda\Infrastructure\Repositories\BusinessWhatsappSettingsRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\WhatsappRepository;
@@ -17,15 +18,16 @@ use Agenda\Infrastructure\Whatsapp\MetaWhatsAppEmbeddedSignupService;
 final class WhatsappController
 {
     /** @var string[] */
-    private const ALLOWED_CONFIG_STATUS = ['active', 'inactive', 'pending', 'error'];
+    private const ALLOWED_CONFIG_STATUS = ['active', 'inactive', 'pending', 'error', 'draft', 'suspended'];
     /** @var string[] */
-    private const ALLOWED_OUTBOX_STATUS = ['queued', 'sent', 'delivered', 'read', 'failed'];
+    private const ALLOWED_OUTBOX_STATUS = ['queued', 'processing', 'sent', 'delivered', 'read', 'failed', 'cancelled', 'skipped'];
 
     public function __construct(
         private readonly WhatsappRepository $whatsappRepo,
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
         private readonly LocationRepository $locationRepo,
+        private readonly BusinessWhatsappSettingsRepository $settingsRepo,
         private readonly TokenCipher $tokenCipher,
         private readonly MetaWhatsAppEmbeddedSignupService $metaEmbeddedSignupService,
     ) {}
@@ -36,9 +38,13 @@ final class WhatsappController
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'view', $request);
+        if ($availability !== null) {
+            return $availability;
+        }
 
         $configs = $this->whatsappRepo->getConfigsByBusinessId($businessId);
-        return Response::success(['configs' => $configs]);
+        return Response::success(['configs' => array_map([$this, 'formatConfig'], $configs)]);
     }
 
     public function configsStore(Request $request): Response
@@ -46,6 +52,10 @@ final class WhatsappController
         $businessId = (int) $request->getAttribute('business_id');
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'manage_config', $request);
+        if ($availability !== null) {
+            return $availability;
         }
 
         $body = $request->getBody() ?? [];
@@ -74,7 +84,7 @@ final class WhatsappController
         );
         $config = $this->whatsappRepo->findConfigById($businessId, $id);
 
-        return Response::created(['config' => $config ?? ['id' => $id]]);
+        return Response::created(['config' => $this->formatConfig($config ?? ['id' => $id])]);
     }
 
     public function configsUpdate(Request $request): Response
@@ -83,6 +93,10 @@ final class WhatsappController
         $configId = (int) $request->getAttribute('id');
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'manage_config', $request);
+        if ($availability !== null) {
+            return $availability;
         }
 
         $current = $this->whatsappRepo->findConfigById($businessId, $configId);
@@ -117,7 +131,7 @@ final class WhatsappController
         $this->whatsappRepo->updateConfig($businessId, $configId, $data);
         $updated = $this->whatsappRepo->findConfigById($businessId, $configId);
 
-        return Response::success(['config' => $updated ?? $current]);
+        return Response::success(['config' => $this->formatConfig($updated ?? $current)]);
     }
 
     public function configsDestroy(Request $request): Response
@@ -126,6 +140,10 @@ final class WhatsappController
         $configId = (int) $request->getAttribute('id');
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'manage_config', $request);
+        if ($availability !== null) {
+            return $availability;
         }
 
         $current = $this->whatsappRepo->findConfigById($businessId, $configId);
@@ -143,6 +161,10 @@ final class WhatsappController
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'view', $request);
+        if ($availability !== null) {
+            return $availability;
+        }
 
         $mappings = $this->whatsappRepo->getMappingsByBusinessId($businessId);
         return Response::success(['mappings' => $mappings]);
@@ -153,6 +175,10 @@ final class WhatsappController
         $businessId = (int) $request->getAttribute('business_id');
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'manage_mapping', $request);
+        if ($availability !== null) {
+            return $availability;
         }
 
         $body = $request->getBody() ?? [];
@@ -184,6 +210,10 @@ final class WhatsappController
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'manage_mapping', $request);
+        if ($availability !== null) {
+            return $availability;
+        }
 
         $mapping = $this->whatsappRepo->findMappingById($businessId, $mappingId);
         if ($mapping === null) {
@@ -199,6 +229,10 @@ final class WhatsappController
         $businessId = (int) $request->getAttribute('business_id');
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'view', $request);
+        if ($availability !== null) {
+            return $availability;
         }
 
         $status = $request->queryParam('status');
@@ -224,6 +258,10 @@ final class WhatsappController
         $businessId = (int) $request->getAttribute('business_id');
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'send_test', $request);
+        if ($availability !== null) {
+            return $availability;
         }
 
         $body = $request->getBody() ?? [];
@@ -287,6 +325,10 @@ final class WhatsappController
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'manage_config', $request);
+        if ($availability !== null) {
+            return $availability;
+        }
 
         $item = $this->whatsappRepo->findOutboxById($businessId, $outboxId);
         if ($item === null) {
@@ -313,6 +355,10 @@ final class WhatsappController
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'send_test', $request);
+        if ($availability !== null) {
+            return $availability;
+        }
 
         $item = $this->whatsappRepo->findOutboxById($businessId, $outboxId);
         if ($item === null) {
@@ -335,6 +381,10 @@ final class WhatsappController
         $outboxId = (int) $request->getAttribute('id');
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'view', $request);
+        if ($availability !== null) {
+            return $availability;
         }
 
         $item = $this->whatsappRepo->findOutboxById($businessId, $outboxId);
@@ -397,14 +447,24 @@ final class WhatsappController
         $templateApproved = $this->whatsappRepo->hasApprovedUtilityTemplate($businessId);
         $optInActive = $this->whatsappRepo->hasActiveOptIn($businessId);
 
-        return Response::success([
-            'checks' => [
-                'phone_number_active' => $phoneActive,
-                'webhook_verified' => $webhookVerified,
-                'template_approved' => $templateApproved,
-                'opt_in_active' => $optInActive,
-            ],
-        ]);
+        $settings = $this->settingsRepo->findByBusinessId($businessId);
+        $checks = $this->buildGoLiveResponse(
+            $businessId,
+            $settings,
+            $config,
+            $phoneActive,
+            $webhookVerified,
+            $templateApproved,
+            $optInActive
+        );
+        $blocking = $checks['blocking_reasons'] ?? [];
+        $this->settingsRepo->markGoLiveChecked(
+            $businessId,
+            $blocking === [] ? null : (string) $blocking[0],
+            $blocking === [] ? null : implode(', ', $blocking)
+        );
+
+        return Response::success(['checks' => $checks]);
     }
 
     public function optInStore(Request $request): Response
@@ -412,6 +472,10 @@ final class WhatsappController
         $businessId = (int) $request->getAttribute('business_id');
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'manage_optin', $request);
+        if ($availability !== null) {
+            return $availability;
         }
 
         $body = $request->getBody() ?? [];
@@ -428,19 +492,42 @@ final class WhatsappController
         ]);
     }
 
+    public function embeddedSignupState(Request $request): Response
+    {
+        $businessId = (int) $request->getAttribute('business_id');
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'onboard', $request);
+        if ($availability !== null) {
+            return $availability;
+        }
+
+        $redirectUri = trim((string) ($_ENV['META_EMBEDDED_SIGNUP_REDIRECT_URI'] ?? getenv('META_EMBEDDED_SIGNUP_REDIRECT_URI') ?? ''));
+        $state = $this->createEmbeddedSignupStateToken(
+            $businessId,
+            (int) $request->getAttribute('user_id'),
+            $redirectUri
+        );
+
+        return Response::success([
+            'state' => $state,
+            'app_id' => trim((string) ($_ENV['META_APP_ID'] ?? getenv('META_APP_ID') ?? '')),
+            'graph_version' => trim((string) ($_ENV['META_GRAPH_VERSION'] ?? getenv('META_GRAPH_VERSION') ?? 'v22.0')),
+            'redirect_uri' => $redirectUri,
+            'expires_in' => 900,
+        ]);
+    }
+
     public function embeddedSignupComplete(Request $request): Response
     {
         $businessId = (int) $request->getAttribute('business_id');
         if (!$this->hasBusinessAccess($request, $businessId)) {
             return Response::forbidden('You do not have access to this business', $request->traceId);
         }
-        if (!$this->isEmbeddedSignupEnabled($businessId)) {
-            return Response::error(
-                'Embedded signup non abilitato per questo business',
-                'whatsapp_embedded_signup_disabled',
-                403,
-                $request->traceId
-            );
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'onboard', $request);
+        if ($availability !== null) {
+            return $availability;
         }
 
         $body = $request->getBody() ?? [];
@@ -460,6 +547,9 @@ final class WhatsappController
         }
         if (array_key_exists('state', $body) && $state === '') {
             return Response::validationError('state non valido', $request->traceId);
+        }
+        if ($state === '' || !$this->validateEmbeddedSignupStateToken($state, $businessId, (int) $request->getAttribute('user_id'))) {
+            return Response::error('State Embedded Signup non valido o scaduto', 'whatsapp_embedded_signup_state_invalid', 409, $request->traceId);
         }
 
         try {
@@ -486,16 +576,18 @@ final class WhatsappController
             ? ((int) ($existing['is_default'] ?? 0) === 1)
             : count($configs) === 0;
 
+        $goLiveBeforeStatus = $this->computeGoLiveCheck($businessId, null);
         $id = $this->whatsappRepo->upsertConfigByPhoneNumberId(
             $businessId,
             (string) $meta['waba_id'],
             (string) $meta['phone_number_id'],
             $encryptedToken,
-            'active',
+            ($goLiveBeforeStatus['webhook'] && $goLiveBeforeStatus['template']) ? 'active' : 'pending',
             $isDefault,
             $meta['display_phone_number'] ?? null
         );
         $config = $this->whatsappRepo->findConfigById($businessId, $id);
+        $this->settingsRepo->updateStatus($businessId, ($config['status'] ?? '') === 'active' ? 'active' : 'pending_review');
 
         $autoMappedLocationIds = [];
         $activeLocations = $this->locationRepo->findByBusinessId($businessId);
@@ -526,7 +618,7 @@ final class WhatsappController
         }
 
         return Response::success([
-            'config' => $config ?? ['id' => $id],
+            'config' => $this->formatConfig($config ?? ['id' => $id]),
             'auto_mapped_location_ids' => $autoMappedLocationIds,
             'go_live_check' => $goLive,
             'next_steps' => $nextSteps,
@@ -540,12 +632,17 @@ final class WhatsappController
         $verifyToken = (string) ($request->queryParam('hub.verify_token') ?? '');
         $challenge = (string) ($request->queryParam('hub.challenge') ?? '');
         $expected = trim((string) ($_ENV['WHATSAPP_WEBHOOK_VERIFY_TOKEN'] ?? getenv('WHATSAPP_WEBHOOK_VERIFY_TOKEN') ?? ''));
+        if ($expected === '') {
+            $expected = trim((string) ($_ENV['META_WHATSAPP_WEBHOOK_VERIFY_TOKEN'] ?? getenv('META_WHATSAPP_WEBHOOK_VERIFY_TOKEN') ?? ''));
+        }
 
         if ($mode === 'subscribe' && $expected !== '' && hash_equals($expected, $verifyToken)) {
             return new Response(
                 200,
-                ['Content-Type' => 'text/plain; charset=UTF-8'],
-                $challenge !== '' ? $challenge : 'ok'
+                [],
+                null,
+                $challenge !== '' ? $challenge : 'ok',
+                'text/plain; charset=UTF-8'
             );
         }
 
@@ -557,6 +654,9 @@ final class WhatsappController
         $payload = $request->getBody() ?? [];
         if (!is_array($payload) || $payload === []) {
             return Response::validationError('payload obbligatorio', $request->traceId);
+        }
+        if (!$this->verifyWebhookSignature($request)) {
+            return Response::error('Webhook signature invalid', 'webhook_signature_invalid', 403, $request->traceId);
         }
 
         $phoneNumberId = $this->extractPhoneNumberIdFromWebhook($payload);
@@ -609,9 +709,113 @@ final class WhatsappController
         return $this->businessUserRepo->hasAccess((int) $userId, $businessId, false);
     }
 
+    private function assertWhatsappFeatureAvailableForBusiness(int $businessId, string $action, Request $request): ?Response
+    {
+        $settings = $this->settingsRepo->findByBusinessId($businessId);
+        $isSuperadmin = $this->userRepo->isSuperadmin((int) $request->getAttribute('user_id'));
+        $enabled = ((int) ($settings['whatsapp_enabled'] ?? 0)) === 1;
+        $activationAllowed = ((int) ($settings['activation_allowed'] ?? 0)) === 1;
+        $messagesEnabled = ((int) ($settings['messages_enabled'] ?? 0)) === 1;
+        $selfOnboarding = ((int) ($settings['allow_business_self_onboarding'] ?? 1)) === 1;
+        $mappingAllowed = ((int) ($settings['allow_location_mapping'] ?? 0)) === 1;
+        $role = $isSuperadmin
+            ? 'superadmin'
+            : $this->businessUserRepo->getRole((int) $request->getAttribute('user_id'), $businessId);
+
+        if ($action === 'view') {
+            return null;
+        }
+        if (!$isSuperadmin && !in_array((string) $role, ['owner', 'admin', 'manager'], true)) {
+            return Response::error('Permessi WhatsApp insufficienti', 'forbidden', 403, $request->traceId);
+        }
+        if (!$enabled && !$isSuperadmin) {
+            return Response::error('WhatsApp non abilitato per questo business', 'whatsapp_not_enabled', 403, $request->traceId);
+        }
+        if ($action === 'onboard' && (!$enabled || !$activationAllowed || !$selfOnboarding)) {
+            return Response::error('Attivazione WhatsApp non consentita', 'whatsapp_activation_not_allowed', 403, $request->traceId);
+        }
+        if ($action === 'send_real' && (!$enabled || !$messagesEnabled)) {
+            return Response::error('Invio messaggi WhatsApp disabilitato', 'whatsapp_messages_disabled', 403, $request->traceId);
+        }
+        if ($action === 'send_test' && !$messagesEnabled && !$isSuperadmin) {
+            return Response::error('Invio messaggi WhatsApp disabilitato', 'whatsapp_messages_disabled', 403, $request->traceId);
+        }
+        if ($action === 'manage_mapping' && !$mappingAllowed && !$isSuperadmin) {
+            return Response::error('Mapping sedi WhatsApp non consentito', 'whatsapp_mapping_not_allowed', 403, $request->traceId);
+        }
+
+        return null;
+    }
+
     private function buildProviderMessageId(int $outboxId): string
     {
         return 'wa_' . $outboxId . '_' . bin2hex(random_bytes(6));
+    }
+
+    private function createEmbeddedSignupStateToken(int $businessId, int $userId, string $redirectUri): string
+    {
+        $payload = [
+            'business_id' => $businessId,
+            'user_id' => $userId,
+            'nonce' => bin2hex(random_bytes(16)),
+            'redirect_uri' => $redirectUri,
+            'expires_at' => time() + 900,
+        ];
+        $encoded = $this->base64UrlEncode(Json::encode($payload));
+        $signature = hash_hmac('sha256', $encoded, $this->embeddedSignupStateSecret());
+
+        return $encoded . '.' . $signature;
+    }
+
+    private function validateEmbeddedSignupStateToken(string $state, int $businessId, int $userId): bool
+    {
+        $parts = explode('.', $state, 2);
+        if (count($parts) !== 2) {
+            return false;
+        }
+        [$encoded, $signature] = $parts;
+        $expected = hash_hmac('sha256', $encoded, $this->embeddedSignupStateSecret());
+        if (!hash_equals($expected, $signature)) {
+            return false;
+        }
+
+        $decoded = Json::decodeAssoc($this->base64UrlDecode($encoded));
+        if ($decoded === null) {
+            return false;
+        }
+
+        return (int) ($decoded['business_id'] ?? 0) === $businessId
+            && (int) ($decoded['user_id'] ?? 0) === $userId
+            && (int) ($decoded['expires_at'] ?? 0) >= time();
+    }
+
+    private function embeddedSignupStateSecret(): string
+    {
+        $secret = trim((string) ($_ENV['META_APP_SECRET'] ?? getenv('META_APP_SECRET') ?? ''));
+        if ($secret === '') {
+            $secret = trim((string) ($_ENV['APP_KEY'] ?? getenv('APP_KEY') ?? ''));
+        }
+        if ($secret === '') {
+            $secret = 'agenda-whatsapp-embedded-signup-state';
+        }
+
+        return $secret;
+    }
+
+    private function base64UrlEncode(string $value): string
+    {
+        return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    }
+
+    private function base64UrlDecode(string $value): string
+    {
+        $padding = strlen($value) % 4;
+        if ($padding > 0) {
+            $value .= str_repeat('=', 4 - $padding);
+        }
+
+        $decoded = base64_decode(strtr($value, '-_', '+/'), true);
+        return is_string($decoded) ? $decoded : '';
     }
 
     private function extractWebhookEventId(array $payload): ?string
@@ -740,6 +944,127 @@ final class WhatsappController
             'webhook' => $this->whatsappRepo->hasWebhookEventForBusiness($businessId),
             'template' => $this->whatsappRepo->hasApprovedUtilityTemplate($businessId),
             'optin' => $this->whatsappRepo->hasActiveOptIn($businessId),
+        ];
+    }
+
+    private function buildGoLiveResponse(
+        int $businessId,
+        array $settings,
+        ?array $config,
+        bool $phoneActive,
+        bool $webhookVerified,
+        bool $templateApproved,
+        bool $optInActive
+    ): array {
+        $featureEnabled = ((int) ($settings['whatsapp_enabled'] ?? 0)) === 1;
+        $activationAllowed = ((int) ($settings['activation_allowed'] ?? 0)) === 1;
+        $messagesEnabled = ((int) ($settings['messages_enabled'] ?? 0)) === 1;
+        $mappingAllowed = ((int) ($settings['allow_location_mapping'] ?? 0)) === 1;
+        $blocking = [];
+        $warnings = [];
+        $nextSteps = [];
+
+        if (!$featureEnabled) {
+            $blocking[] = 'whatsapp_not_enabled';
+            $nextSteps[] = 'superadmin_enable_whatsapp';
+        }
+        if (!$activationAllowed) {
+            $blocking[] = 'whatsapp_activation_not_allowed';
+            $nextSteps[] = 'allow_business_onboarding';
+        }
+        if ($config === null) {
+            $blocking[] = 'whatsapp_config_missing';
+            $nextSteps[] = 'connect_whatsapp_number';
+        }
+        if (!$phoneActive) {
+            $blocking[] = 'whatsapp_phone_number_not_active';
+            $nextSteps[] = 'complete_meta_review';
+        }
+        if (!$webhookVerified) {
+            $blocking[] = 'whatsapp_webhook_not_verified';
+            $nextSteps[] = 'configure_meta_webhook';
+        }
+        if (!$templateApproved) {
+            $blocking[] = 'whatsapp_template_not_approved';
+            $nextSteps[] = 'approve_utility_templates';
+        }
+        if (!$optInActive) {
+            $blocking[] = 'whatsapp_optin_required';
+            $nextSteps[] = 'collect_customer_opt_in';
+        }
+        if (!$messagesEnabled) {
+            $blocking[] = 'whatsapp_messages_disabled';
+            $nextSteps[] = 'enable_real_message_sending';
+        }
+        if (!$mappingAllowed && ($settings['default_channel_mode'] ?? '') === 'location_mapping') {
+            $warnings[] = 'location_mapping_mode_without_permission';
+        }
+
+        return [
+            'feature_enabled' => $featureEnabled,
+            'activation_allowed' => $activationAllowed,
+            'messages_enabled' => $messagesEnabled,
+            'business_config_present' => $config !== null,
+            'phone_number_present' => $config !== null && trim((string) ($config['phone_number_id'] ?? '')) !== '',
+            'phone_number_active' => $phoneActive,
+            'webhook_verified' => $webhookVerified,
+            'template_approved' => $templateApproved,
+            'templates_approved' => $templateApproved,
+            'opt_in_active' => $optInActive,
+            'opt_in_available' => $optInActive,
+            'location_mapping_valid' => $mappingAllowed || ($settings['default_channel_mode'] ?? '') !== 'location_mapping',
+            'can_send_real_messages' => $blocking === [] && $this->realSendEnabled(),
+            'blocking_reasons' => array_values(array_unique($blocking)),
+            'warnings' => array_values(array_unique($warnings)),
+            'next_steps' => array_values(array_unique($nextSteps)),
+            'business_id' => $businessId,
+        ];
+    }
+
+    private function realSendEnabled(): bool
+    {
+        $env = strtolower(trim((string) ($_ENV['APP_ENV'] ?? getenv('APP_ENV') ?? 'local')));
+        if ($env === 'demo') {
+            return false;
+        }
+        return in_array(
+            strtolower(trim((string) ($_ENV['WHATSAPP_REAL_SEND_ENABLED'] ?? getenv('WHATSAPP_REAL_SEND_ENABLED') ?? 'false'))),
+            ['1', 'true', 'yes', 'on'],
+            true
+        );
+    }
+
+    private function verifyWebhookSignature(Request $request): bool
+    {
+        $secret = trim((string) ($_ENV['META_WHATSAPP_WEBHOOK_APP_SECRET'] ?? getenv('META_WHATSAPP_WEBHOOK_APP_SECRET') ?? ''));
+        if ($secret === '') {
+            return true;
+        }
+        $header = (string) ($request->getHeader('x-hub-signature-256') ?? '');
+        if (!str_starts_with($header, 'sha256=')) {
+            return false;
+        }
+        $expected = 'sha256=' . hash_hmac('sha256', $request->rawBody, $secret);
+
+        return hash_equals($expected, $header);
+    }
+
+    /**
+     * @param array<string,mixed> $config
+     * @return array<string,mixed>
+     */
+    private function formatConfig(array $config): array
+    {
+        return [
+            'id' => isset($config['id']) ? (int) $config['id'] : 0,
+            'business_id' => isset($config['business_id']) ? (int) $config['business_id'] : null,
+            'waba_id' => $config['waba_id'] ?? null,
+            'phone_number_id' => $config['phone_number_id'] ?? null,
+            'display_phone_number' => $config['display_phone_number'] ?? null,
+            'status' => $config['status'] ?? 'pending',
+            'is_default' => ((int) ($config['is_default'] ?? 0)) === 1,
+            'created_at' => $config['created_at'] ?? null,
+            'updated_at' => $config['updated_at'] ?? null,
         ];
     }
 

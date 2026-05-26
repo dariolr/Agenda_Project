@@ -7,7 +7,10 @@ namespace Agenda\UseCases\Notifications;
 use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Notifications\CalendarICSGenerator;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
+use Agenda\Infrastructure\Repositories\BusinessWhatsappSettingsRepository;
+use Agenda\Infrastructure\Repositories\WhatsappRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
+use Agenda\UseCases\Whatsapp\QueueWhatsappNotification;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -59,6 +62,7 @@ final class QueueBookingCancellation
         if (!isset($booking['client_id']) || empty($booking['client_id'])) {
             return 0; // No client = no notification
         }
+        $this->queueWhatsapp($booking, 'booking_cancelled');
         
         $recipientType = 'client';
         $recipientId = (int) $booking['client_id'];
@@ -167,6 +171,19 @@ final class QueueBookingCancellation
             'business_id' => $booking['business_id'],
             'booking_id' => $booking['booking_id'],
         ]);
+    }
+
+    private function queueWhatsapp(array $booking, string $channel, ?string $scheduledAt = null): void
+    {
+        try {
+            (new QueueWhatsappNotification(
+                $this->db,
+                new WhatsappRepository($this->db),
+                new BusinessWhatsappSettingsRepository($this->db)
+            ))->execute($booking, $channel, $scheduledAt);
+        } catch (\Throwable $e) {
+            error_log("Failed to queue WhatsApp {$channel}: " . $e->getMessage());
+        }
     }
 
     private function getClientEmail(int $clientId): ?array

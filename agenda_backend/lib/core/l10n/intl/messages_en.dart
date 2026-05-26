@@ -3115,6 +3115,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "weeklyScheduleTitle": MessageLookupByLibrary.simpleMessage("Weekly"),
     "weeklyScheduleTotalHours": m91,
+    "whatsappActivationNotAllowed": MessageLookupByLibrary.simpleMessage(
+      "Self-service activation is not allowed yet.",
+    ),
     "whatsappAddConfig": MessageLookupByLibrary.simpleMessage(
       "New configuration",
     ),
@@ -3162,6 +3165,9 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("Session info version"),
     "whatsappEmbeddedSignupState": MessageLookupByLibrary.simpleMessage(
       "Anti-CSRF state",
+    ),
+    "whatsappEmbeddedSignupStateInvalid": MessageLookupByLibrary.simpleMessage(
+      "Unable to start the secure Meta session. Try again.",
     ),
     "whatsappEmbeddedSignupSuccessMessage": m92,
     "whatsappEmbeddedSignupSuccessTitle": MessageLookupByLibrary.simpleMessage(
@@ -3300,6 +3306,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappNoLocations": MessageLookupByLibrary.simpleMessage(
       "No active locations available.",
     ),
+    "whatsappNotEnabledForBusiness": MessageLookupByLibrary.simpleMessage(
+      "WhatsApp is not enabled for this business yet.",
+    ),
     "whatsappOutboxDelivered": MessageLookupByLibrary.simpleMessage(
       "Delivered",
     ),
@@ -3361,6 +3370,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappStatusError": MessageLookupByLibrary.simpleMessage("Error"),
     "whatsappStatusInactive": MessageLookupByLibrary.simpleMessage("Inactive"),
     "whatsappStatusPending": MessageLookupByLibrary.simpleMessage("Pending"),
+    "whatsappSuperadminMustEnable": MessageLookupByLibrary.simpleMessage(
+      "The superadmin must enable WhatsApp before you can connect a number.",
+    ),
     "whatsappTabTitle": MessageLookupByLibrary.simpleMessage("WhatsApp"),
     "whatsappTestSendTitle": MessageLookupByLibrary.simpleMessage(
       "Template test send",

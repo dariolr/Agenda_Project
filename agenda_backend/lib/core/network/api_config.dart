@@ -102,6 +102,14 @@ class ApiConfig {
 
   // ========== WHATSAPP INTEGRATION ENDPOINTS ==========
 
+  /// Governance WhatsApp per business
+  static String businessWhatsappSettings(int businessId) =>
+      '/v1/businesses/$businessId/whatsapp-settings';
+
+  /// Governance WhatsApp superadmin
+  static String adminBusinessWhatsappSettings(int businessId) =>
+      '/v1/admin/businesses/$businessId/whatsapp-settings';
+
   /// Configurazioni WhatsApp per business
   static String businessWhatsappConfigs(int businessId) =>
       '/v1/businesses/$businessId/whatsapp-configs';
@@ -149,6 +157,10 @@ class ApiConfig {
   /// Onboarding embedded signup completato
   static String whatsappEmbeddedSignupComplete(int businessId) =>
       '/v1/businesses/$businessId/whatsapp/embedded-signup/complete';
+
+  /// State sicuro server-side per Embedded Signup
+  static String whatsappEmbeddedSignupState(int businessId) =>
+      '/v1/businesses/$businessId/whatsapp/embedded-signup/state';
 
   // ========== CLASS EVENTS ENDPOINTS ==========
 

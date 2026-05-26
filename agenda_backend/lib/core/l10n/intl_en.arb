@@ -2010,5 +2010,9 @@
   "billingActivationDeadlineHint": "If set, the business can use the app for free until this date. After that, they must activate the subscription to continue.",
   "billingAccessBlockedTitle": "Subscription required",
   "billingAccessBlockedMessage": "The free period has ended. To continue using the app, activate your monthly subscription.",
-  "billingAccessBlockedActivateAction": "Activate subscription"
+  "billingAccessBlockedActivateAction": "Activate subscription",
+  "whatsappNotEnabledForBusiness": "WhatsApp is not enabled for this business yet.",
+  "whatsappSuperadminMustEnable": "The superadmin must enable WhatsApp before you can connect a number.",
+  "whatsappActivationNotAllowed": "Self-service activation is not allowed yet.",
+  "whatsappEmbeddedSignupStateInvalid": "Unable to start the secure Meta session. Try again."
 }

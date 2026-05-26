@@ -95,7 +95,7 @@ class MoreScreen extends ConsumerWidget {
           color: const Color(0xFF455A64),
           onTap: () => context.go(_withFromAltro('/altro/abbonamento')),
         ),
-      if (canManageSettings && isSuperadmin)
+      if (canManageSettings)
         _MoreItem(
           icon: Icons.chat_rounded,
           svgAssetPath: 'assets/icons/whatsapp.svg',

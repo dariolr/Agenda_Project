@@ -27,6 +27,7 @@ use Agenda\Http\Controllers\AppointmentsController;
 use Agenda\Http\Controllers\BookingNotificationsController;
 use Agenda\Http\Controllers\BookingDirectLinksController;
 use Agenda\Http\Controllers\BookingPaymentsController;
+use Agenda\Http\Controllers\BusinessWhatsappSettingsController;
 use Agenda\Http\Controllers\BusinessSyncController;
 use Agenda\Http\Controllers\LocationClosuresController;
 use Agenda\Http\Controllers\ClassEventsController;
@@ -55,6 +56,7 @@ use Agenda\Infrastructure\Repositories\BusinessPaymentMethodRepository;
 use Agenda\Infrastructure\Repositories\BusinessRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\BusinessInvitationRepository;
+use Agenda\Infrastructure\Repositories\BusinessWhatsappSettingsRepository;
 use Agenda\Infrastructure\Repositories\ClientAuthRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Repositories\LocationRepository;
@@ -159,10 +161,15 @@ final class Kernel
 
         // Admin/Superadmin endpoints
         $this->router->get('/v1/admin/businesses', AdminBusinessesController::class, 'index', ['auth']);
+        $this->router->get('/v1/admin/businesses/whatsapp-settings', BusinessWhatsappSettingsController::class, 'adminIndex', ['auth']);
         $this->router->post('/v1/admin/businesses', AdminBusinessesController::class, 'store', ['auth']);
         $this->router->put('/v1/admin/businesses/{id}', AdminBusinessesController::class, 'update', ['auth']);
         $this->router->delete('/v1/admin/businesses/{id}', AdminBusinessesController::class, 'destroy', ['auth']);
         $this->router->post('/v1/admin/businesses/{id}/resend-invite', AdminBusinessesController::class, 'resendInvite', ['auth']);
+        $this->router->put('/v1/admin/businesses/{business_id}/whatsapp-settings', BusinessWhatsappSettingsController::class, 'adminUpsert', ['auth']);
+        $this->router->post('/v1/admin/businesses/{business_id}/whatsapp-settings/suspend', BusinessWhatsappSettingsController::class, 'adminSuspend', ['auth']);
+        $this->router->post('/v1/admin/businesses/{business_id}/whatsapp-settings/resume', BusinessWhatsappSettingsController::class, 'adminResume', ['auth']);
+        $this->router->post('/v1/admin/businesses/{business_id}/whatsapp-settings/disable', BusinessWhatsappSettingsController::class, 'adminDisable', ['auth']);
         $this->router->get('/v1/admin/businesses/{businessId}/billing-config', AdminBusinessBillingController::class, 'show', ['auth']);
         $this->router->put('/v1/admin/businesses/{businessId}/billing-config', AdminBusinessBillingController::class, 'update', ['auth']);
         $this->router->patch('/v1/admin/users/{userId}', AuthController::class, 'updateUserAdmin', ['auth']);
@@ -355,6 +362,7 @@ final class Kernel
         // Bookings list (paginated with filters)
         $this->router->get('/v1/businesses/{business_id}/bookings/list', BookingsController::class, 'listAll', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/booking-notifications', BookingNotificationsController::class, 'index', ['auth']);
+        $this->router->get('/v1/businesses/{business_id}/whatsapp-settings', BusinessWhatsappSettingsController::class, 'show', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/whatsapp-configs', WhatsappController::class, 'configsIndex', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/whatsapp-configs', WhatsappController::class, 'configsStore', ['auth']);
         $this->router->put('/v1/businesses/{business_id}/whatsapp-configs/{id}', WhatsappController::class, 'configsUpdate', ['auth']);
@@ -373,6 +381,7 @@ final class Kernel
         $this->router->post('/v1/businesses/{business_id}/whatsapp/webhook', WhatsappController::class, 'webhook', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/whatsapp/go-live-check', WhatsappController::class, 'goLiveCheck', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/whatsapp/opt-in', WhatsappController::class, 'optInStore', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/whatsapp/embedded-signup/state', WhatsappController::class, 'embeddedSignupState', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/whatsapp/embedded-signup/complete', WhatsappController::class, 'embeddedSignupComplete', ['auth']);
 
         // Reports (admin/owner only)
@@ -480,6 +489,7 @@ final class Kernel
         $classEventRepo = new ClassEventRepository($this->db);
         $forgotPasswordRateLimitRepo = new ForgotPasswordRateLimitRepository($this->db);
         $whatsappRepo = new WhatsappRepository($this->db);
+        $businessWhatsappSettingsRepo = new BusinessWhatsappSettingsRepository($this->db);
         $billingConfigRepo = new BusinessBillingConfigRepository($this->db);
         $billingSubscriptionRepo = new BusinessBillingSubscriptionRepository($this->db);
         $billingEventRepo = new BillingProviderEventRepository($this->db);
@@ -554,6 +564,7 @@ final class Kernel
             BusinessBillingController::class => new BusinessBillingController($businessRepo, $businessUserRepo, $userRepo, $billingConfigRepo, $billingSubscriptionRepo, $billingProviderFactory),
             StripeWebhookController::class => new StripeWebhookController($billingProviderFactory, $billingSubscriptionRepo, $billingEventRepo),
             BookingNotificationsController::class => new BookingNotificationsController($notificationRepo, $businessUserRepo, $userRepo),
+            BusinessWhatsappSettingsController::class => new BusinessWhatsappSettingsController($businessRepo, $businessUserRepo, $userRepo, $businessWhatsappSettingsRepo),
             ClientsController::class => new ClientsController($clientRepo, $businessUserRepo, $userRepo, $bookingRepo),
             AppointmentsController::class => new AppointmentsController($bookingRepo, $createBooking, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $bookingAuditRepo, $notificationRepo, $this->db),
             AdminBusinessesController::class => new AdminBusinessesController($this->db, $businessRepo, $businessUserRepo, $userRepo),
@@ -586,6 +597,7 @@ final class Kernel
                 $businessUserRepo,
                 $userRepo,
                 $locationRepo,
+                $businessWhatsappSettingsRepo,
                 $tokenCipher,
                 $metaEmbeddedSignupService
             ),

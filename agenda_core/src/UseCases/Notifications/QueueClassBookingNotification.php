@@ -8,6 +8,9 @@ use Agenda\Infrastructure\Database\Connection;
 use Agenda\Infrastructure\Notifications\CalendarICSGenerator;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
+use Agenda\Infrastructure\Repositories\BusinessWhatsappSettingsRepository;
+use Agenda\Infrastructure\Repositories\WhatsappRepository;
+use Agenda\UseCases\Whatsapp\QueueWhatsappNotification;
 use DateTimeImmutable;
 use DateTimeZone;
 
@@ -80,6 +83,7 @@ final class QueueClassBookingNotification
         if ($clientId <= 0) {
             return 0;
         }
+        $this->queueWhatsapp($data, $channel, $scheduledAt);
 
         // Get client email
         $clientEmail = $this->getClientEmail($clientId);
@@ -143,6 +147,26 @@ final class QueueClassBookingNotification
             'business_id'       => $businessId,
             'class_booking_id'  => $classBookingId,
         ]);
+    }
+
+    private function queueWhatsapp(array $data, string $channel, ?string $scheduledAt = null): void
+    {
+        try {
+            (new QueueWhatsappNotification(
+                $this->db,
+                new WhatsappRepository($this->db),
+                new BusinessWhatsappSettingsRepository($this->db)
+            ))->execute([
+                ...$this->buildVariables($data, $this->resolveLocale($data)),
+                'business_id' => $data['business_id'] ?? null,
+                'class_booking_id' => $data['class_booking_id'] ?? null,
+                'client_id' => $data['customer_id'] ?? null,
+                'location_id' => $data['location_id'] ?? null,
+                'locale' => $this->resolveLocale($data),
+            ], $channel, $scheduledAt);
+        } catch (\Throwable $e) {
+            error_log("Failed to queue WhatsApp {$channel}: " . $e->getMessage());
+        }
     }
 
     // -------------------------------------------------------------------------

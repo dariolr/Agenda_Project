@@ -2010,5 +2010,9 @@
   "billingActivationDeadlineHint": "Se impostata, il business potrà usare il gestionale gratuitamente fino a questa data. Dopo, dovrà attivare l'abbonamento per continuare.",
   "billingAccessBlockedTitle": "Abbonamento richiesto",
   "billingAccessBlockedMessage": "Il periodo gratuito è terminato. Per continuare a usare il gestionale, attiva l'abbonamento mensile.",
-  "billingAccessBlockedActivateAction": "Attiva abbonamento"
+  "billingAccessBlockedActivateAction": "Attiva abbonamento",
+  "whatsappNotEnabledForBusiness": "WhatsApp non è ancora attivo per questo business.",
+  "whatsappSuperadminMustEnable": "Il superadmin deve abilitare WhatsApp prima che tu possa collegare un numero.",
+  "whatsappActivationNotAllowed": "Attivazione autonoma non ancora consentita.",
+  "whatsappEmbeddedSignupStateInvalid": "Impossibile avviare la sessione sicura Meta. Riprova."
 }

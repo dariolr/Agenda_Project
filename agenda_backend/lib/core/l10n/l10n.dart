@@ -13148,6 +13148,46 @@ class L10n {
       args: [],
     );
   }
+
+  /// `WhatsApp is not enabled for this business yet.`
+  String get whatsappNotEnabledForBusiness {
+    return Intl.message(
+      'WhatsApp is not enabled for this business yet.',
+      name: 'whatsappNotEnabledForBusiness',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The superadmin must enable WhatsApp before you can connect a number.`
+  String get whatsappSuperadminMustEnable {
+    return Intl.message(
+      'The superadmin must enable WhatsApp before you can connect a number.',
+      name: 'whatsappSuperadminMustEnable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Self-service activation is not allowed yet.`
+  String get whatsappActivationNotAllowed {
+    return Intl.message(
+      'Self-service activation is not allowed yet.',
+      name: 'whatsappActivationNotAllowed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unable to start the secure Meta session. Try again.`
+  String get whatsappEmbeddedSignupStateInvalid {
+    return Intl.message(
+      'Unable to start the secure Meta session. Try again.',
+      name: 'whatsappEmbeddedSignupStateInvalid',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

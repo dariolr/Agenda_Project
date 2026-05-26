@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -43,12 +40,6 @@ class _WhatsappBusinessScreenState
     await ref
         .read(whatsappIntegrationProvider.notifier)
         .loadBusinessWhatsappData(businessId);
-  }
-
-  String _generateSignupState() {
-    final random = Random.secure();
-    final bytes = List<int>.generate(18, (_) => random.nextInt(256));
-    return base64Url.encode(bytes).replaceAll('=', '');
   }
 
   Future<void> _completeEmbeddedSignup({
@@ -107,7 +98,12 @@ class _WhatsappBusinessScreenState
 
     try {
       setState(() => _isCompletingEmbeddedSignup = true);
-      final state = _generateSignupState();
+      final state = await ref
+          .read(whatsappIntegrationProvider.notifier)
+          .createEmbeddedSignupState(businessId);
+      if (state.isEmpty) {
+        throw StateError(l10n.whatsappEmbeddedSignupStateInvalid);
+      }
       final launchResult = await _embeddedSignupLauncher.launch(
         expectedState: state,
       );
@@ -145,6 +141,7 @@ class _WhatsappBusinessScreenState
     final theme = Theme.of(context);
     final businessId = ref.watch(currentBusinessIdProvider);
     final state = ref.watch(whatsappIntegrationProvider);
+    final settings = state.settings;
     final firstConfig = state.configs.isNotEmpty ? state.configs.first : null;
     final hasConfig = firstConfig != null;
 
@@ -153,6 +150,52 @@ class _WhatsappBusinessScreenState
         if (!mounted) return;
         _loadData(businessId);
       });
+    }
+
+    if (settings != null && !settings.whatsappEnabled) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/icons/whatsapp.svg',
+                      width: 42,
+                      height: 42,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xFF25D366),
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.whatsappNotEnabledForBusiness,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.whatsappSuperadminMustEnable,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
     }
 
     if (!hasConfig) {
@@ -203,7 +246,9 @@ class _WhatsappBusinessScreenState
                 SizedBox(
                   width: 280,
                   child: AppAsyncFilledButton(
-                    onPressed: _startEmbeddedSignupAutomatic,
+                    onPressed: settings?.canOnboard == true
+                        ? _startEmbeddedSignupAutomatic
+                        : null,
                     isLoading: _isCompletingEmbeddedSignup,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 22,
@@ -228,6 +273,16 @@ class _WhatsappBusinessScreenState
                     ),
                   ),
                 ),
+                if (settings != null && !settings.activationAllowed) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    l10n.whatsappActivationNotAllowed,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.error,
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
