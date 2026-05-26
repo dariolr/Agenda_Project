@@ -81,7 +81,6 @@ final class BusinessWhatsappSettingsController
     {
         return $this->adminStatusAction($request, 'suspended', [
             'messages_enabled' => false,
-            'activation_allowed' => false,
         ]);
     }
 
@@ -89,7 +88,6 @@ final class BusinessWhatsappSettingsController
     {
         return $this->adminStatusAction($request, 'enabled', [
             'whatsapp_enabled' => true,
-            'activation_allowed' => true,
         ]);
     }
 
@@ -169,9 +167,7 @@ final class BusinessWhatsappSettingsController
             'business_id' => (int) $row['business_id'],
             'provider_code' => (string) ($row['provider_code'] ?? 'meta'),
             'whatsapp_enabled' => ((int) ($row['whatsapp_enabled'] ?? 0)) === 1,
-            'activation_allowed' => ((int) ($row['activation_allowed'] ?? 0)) === 1,
             'messages_enabled' => ((int) ($row['messages_enabled'] ?? 0)) === 1,
-            'allow_business_self_onboarding' => ((int) ($row['allow_business_self_onboarding'] ?? 1)) === 1,
             'allow_location_mapping' => ((int) ($row['allow_location_mapping'] ?? 0)) === 1,
             'default_channel_mode' => (string) ($row['default_channel_mode'] ?? 'business_default'),
             'status' => (string) ($row['status'] ?? 'not_enabled'),

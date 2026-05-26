@@ -31,7 +31,7 @@ class _WhatsappBusinessScreenState
     _guideScrollController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _loadData(int businessId) async {
     if (businessId <= 0 || _lastLoadedBusinessId == businessId) {
       return;
@@ -273,16 +273,6 @@ class _WhatsappBusinessScreenState
                     ),
                   ),
                 ),
-                if (settings != null && !settings.activationAllowed) ...[
-                  const SizedBox(height: 12),
-                  Text(
-                    l10n.whatsappActivationNotAllowed,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.error,
-                    ),
-                  ),
-                ],
               ],
             ),
           ),

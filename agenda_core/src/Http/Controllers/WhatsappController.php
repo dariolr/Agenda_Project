@@ -714,9 +714,7 @@ final class WhatsappController
         $settings = $this->settingsRepo->findByBusinessId($businessId);
         $isSuperadmin = $this->userRepo->isSuperadmin((int) $request->getAttribute('user_id'));
         $enabled = ((int) ($settings['whatsapp_enabled'] ?? 0)) === 1;
-        $activationAllowed = ((int) ($settings['activation_allowed'] ?? 0)) === 1;
         $messagesEnabled = ((int) ($settings['messages_enabled'] ?? 0)) === 1;
-        $selfOnboarding = ((int) ($settings['allow_business_self_onboarding'] ?? 1)) === 1;
         $mappingAllowed = ((int) ($settings['allow_location_mapping'] ?? 0)) === 1;
         $role = $isSuperadmin
             ? 'superadmin'
@@ -731,7 +729,7 @@ final class WhatsappController
         if (!$enabled && !$isSuperadmin) {
             return Response::error('WhatsApp non abilitato per questo business', 'whatsapp_not_enabled', 403, $request->traceId);
         }
-        if ($action === 'onboard' && (!$enabled || !$activationAllowed || !$selfOnboarding)) {
+        if ($action === 'onboard' && !$enabled) {
             return Response::error('Attivazione WhatsApp non consentita', 'whatsapp_activation_not_allowed', 403, $request->traceId);
         }
         if ($action === 'send_real' && (!$enabled || !$messagesEnabled)) {
@@ -957,7 +955,6 @@ final class WhatsappController
         bool $optInActive
     ): array {
         $featureEnabled = ((int) ($settings['whatsapp_enabled'] ?? 0)) === 1;
-        $activationAllowed = ((int) ($settings['activation_allowed'] ?? 0)) === 1;
         $messagesEnabled = ((int) ($settings['messages_enabled'] ?? 0)) === 1;
         $mappingAllowed = ((int) ($settings['allow_location_mapping'] ?? 0)) === 1;
         $blocking = [];
@@ -967,10 +964,6 @@ final class WhatsappController
         if (!$featureEnabled) {
             $blocking[] = 'whatsapp_not_enabled';
             $nextSteps[] = 'superadmin_enable_whatsapp';
-        }
-        if (!$activationAllowed) {
-            $blocking[] = 'whatsapp_activation_not_allowed';
-            $nextSteps[] = 'allow_business_onboarding';
         }
         if ($config === null) {
             $blocking[] = 'whatsapp_config_missing';
@@ -1002,7 +995,6 @@ final class WhatsappController
 
         return [
             'feature_enabled' => $featureEnabled,
-            'activation_allowed' => $activationAllowed,
             'messages_enabled' => $messagesEnabled,
             'business_config_present' => $config !== null,
             'phone_number_present' => $config !== null && trim((string) ($config['phone_number_id'] ?? '')) !== '',

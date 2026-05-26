@@ -865,12 +865,17 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotificationsProviderBrevo": MessageLookupByLibrary.simpleMessage(
       "Brevo",
     ),
+    "bookingNotificationsProviderEmail": MessageLookupByLibrary.simpleMessage(
+      "Email",
+    ),
     "bookingNotificationsProviderMailgun": MessageLookupByLibrary.simpleMessage(
       "Mailgun",
     ),
     "bookingNotificationsProviderSmtp": MessageLookupByLibrary.simpleMessage(
       "SMTP",
     ),
+    "bookingNotificationsProviderWhatsapp":
+        MessageLookupByLibrary.simpleMessage("WhatsApp"),
     "bookingNotificationsSearchHint": MessageLookupByLibrary.simpleMessage(
       "Cliente, destinatario, oggetto",
     ),
@@ -1087,6 +1092,30 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "businessServiceColorPaletteLegacy": MessageLookupByLibrary.simpleMessage(
       "Originale",
+    ),
+    "businessWhatsappEnabledHelper": MessageLookupByLibrary.simpleMessage(
+      "Consente al business di usare l\'integrazione WhatsApp.",
+    ),
+    "businessWhatsappEnabledLabel": MessageLookupByLibrary.simpleMessage(
+      "Abilita WhatsApp per il business",
+    ),
+    "businessWhatsappLocationMappingHelper":
+        MessageLookupByLibrary.simpleMessage(
+          "Consente di associare numeri WhatsApp diversi alle singole location.",
+        ),
+    "businessWhatsappLocationMappingLabel":
+        MessageLookupByLibrary.simpleMessage("Abilita mapping location"),
+    "businessWhatsappMessagesEnabledHelper":
+        MessageLookupByLibrary.simpleMessage(
+          "Permette l\'accodamento e l\'invio dei messaggi WhatsApp automatici.",
+        ),
+    "businessWhatsappMessagesEnabledLabel":
+        MessageLookupByLibrary.simpleMessage("Abilita invio messaggi"),
+    "businessWhatsappSettingsDialogTitle": MessageLookupByLibrary.simpleMessage(
+      "Impostazioni WhatsApp",
+    ),
+    "businessWhatsappSettingsMenuItem": MessageLookupByLibrary.simpleMessage(
+      "WhatsApp",
     ),
     "cancelledBadge": MessageLookupByLibrary.simpleMessage("CANCELLATO"),
     "cannotDeleteCategoryContent": MessageLookupByLibrary.simpleMessage(
@@ -3233,9 +3262,6 @@ class MessageLookup extends MessageLookupByLibrary {
       "Orario settimanale",
     ),
     "weeklyScheduleTotalHours": m91,
-    "whatsappActivationNotAllowed": MessageLookupByLibrary.simpleMessage(
-      "Attivazione autonoma non ancora consentita.",
-    ),
     "whatsappAddConfig": MessageLookupByLibrary.simpleMessage(
       "Nuova configurazione",
     ),

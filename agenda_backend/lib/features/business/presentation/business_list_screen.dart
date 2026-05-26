@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/providers/form_factor_provider.dart';
@@ -7,7 +10,6 @@ import '../../../app/providers/desktop_rail_preference_provider.dart';
 import '../../../app/widgets/user_menu_button.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
-import '../../../core/models/location.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/initials_utils.dart';
 import '../../../core/widgets/feedback_dialog.dart';
@@ -18,6 +20,7 @@ import '../../billing/presentation/admin_business_billing_config_dialog.dart';
 import '../domain/business_sorting.dart';
 import '../providers/business_providers.dart';
 import '../providers/superadmin_selected_business_provider.dart';
+import 'dialogs/business_whatsapp_settings_dialog.dart';
 import 'dialogs/create_business_dialog.dart';
 import 'dialogs/edit_business_dialog.dart';
 
@@ -68,6 +71,8 @@ class BusinessListScreen extends ConsumerWidget {
                       _showSuspendDialog(context, ref, business),
                   onBilling: (business) =>
                       _showBillingDialog(context, ref, business),
+                  onWhatsapp: (business) =>
+                      _showWhatsappDialog(context, ref, business),
                   onDelete: (business) =>
                       _showDeleteDialog(context, ref, business),
                 ),
@@ -123,24 +128,30 @@ class BusinessListScreen extends ConsumerWidget {
     // 3) Invalida tutti i provider scoped al business precedente
     invalidateBusinessScopedProviders(ref);
     ref.invalidate(currentBusinessUserContextProvider);
-    // 4) Attendi le locations del nuovo business per evitare fetch con location stale
-    List<Location> locations = const [];
-    try {
-      locations = await ref.read(locationsAsyncProvider.future);
-    } catch (_) {
-      locations = const [];
+
+    // 4) Naviga subito: la selezione e' gia' persistita. Il caricamento sedi
+    // non deve bloccare il cambio business, altrimenti su mobile il tap sembra
+    // non produrre effetti quando la fetch resta in attesa o fallisce.
+    if (context.mounted) {
+      context.go('/agenda');
     }
-    // 5) Aggiorna la location selection se quella corrente non è valida per il nuovo business
-    if (locations.isNotEmpty) {
+
+    // 5) Aggiorna la location selection appena le sedi del nuovo business sono disponibili.
+    unawaited(_syncCurrentLocationForSelectedBusiness(ref));
+  }
+
+  Future<void> _syncCurrentLocationForSelectedBusiness(WidgetRef ref) async {
+    try {
+      final locations = await ref.read(locationsAsyncProvider.future);
+      if (locations.isEmpty) return;
+
       final currentLocationId = ref.read(currentLocationIdProvider);
       final hasCurrent = locations.any((l) => l.id == currentLocationId);
       if (!hasCurrent) {
         ref.read(currentLocationIdProvider.notifier).set(locations.first.id);
       }
-    }
-    // 6) Naviga all'agenda
-    if (context.mounted) {
-      context.go('/agenda');
+    } catch (_) {
+      // Non bloccare il cambio business per un errore temporaneo sulle sedi.
     }
   }
 
@@ -332,6 +343,21 @@ class BusinessListScreen extends ConsumerWidget {
     }
   }
 
+  Future<void> _showWhatsappDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Business business,
+  ) async {
+    final updated = await showBusinessWhatsappSettingsDialog(
+      context,
+      businessId: business.id,
+      businessName: business.name,
+    );
+    if (updated == true) {
+      ref.read(businessesRefreshProvider.notifier).refresh();
+    }
+  }
+
   Future<void> _executeSuspend(
     BuildContext context,
     WidgetRef ref,
@@ -487,6 +513,7 @@ class _BusinessList extends StatelessWidget {
     required this.onResendInvite,
     required this.onSuspend,
     required this.onBilling,
+    required this.onWhatsapp,
     required this.onDelete,
   });
 
@@ -496,6 +523,7 @@ class _BusinessList extends StatelessWidget {
   final void Function(Business) onResendInvite;
   final void Function(Business) onSuspend;
   final void Function(Business) onBilling;
+  final void Function(Business) onWhatsapp;
   final void Function(Business) onDelete;
 
   @override
@@ -559,6 +587,7 @@ class _BusinessList extends StatelessWidget {
               onResendInvite: () => onResendInvite(business),
               onSuspend: () => onSuspend(business),
               onBilling: () => onBilling(business),
+              onWhatsapp: () => onWhatsapp(business),
               onDelete: () => onDelete(business),
             );
           },
@@ -576,6 +605,7 @@ class _BusinessCard extends StatelessWidget {
     required this.onResendInvite,
     required this.onSuspend,
     required this.onBilling,
+    required this.onWhatsapp,
     required this.onDelete,
   });
 
@@ -585,6 +615,7 @@ class _BusinessCard extends StatelessWidget {
   final VoidCallback onResendInvite;
   final VoidCallback onSuspend;
   final VoidCallback onBilling;
+  final VoidCallback onWhatsapp;
   final VoidCallback onDelete;
 
   @override
@@ -728,6 +759,8 @@ class _BusinessCard extends StatelessWidget {
                       onSuspend();
                     case 'billing':
                       onBilling();
+                    case 'whatsapp':
+                      onWhatsapp();
                     case 'delete':
                       onDelete();
                   }
@@ -775,6 +808,25 @@ class _BusinessCard extends StatelessWidget {
                     child: ListTile(
                       leading: const Icon(Icons.workspace_premium_outlined),
                       title: Text(context.l10n.billingTitle),
+                      contentPadding: EdgeInsets.zero,
+                      dense: true,
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'whatsapp',
+                    child: ListTile(
+                      leading: SvgPicture.asset(
+                        'assets/icons/whatsapp.svg',
+                        width: 22,
+                        height: 22,
+                        colorFilter: const ColorFilter.mode(
+                          Color(0xFF25D366),
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                      title: Text(
+                        context.l10n.businessWhatsappSettingsMenuItem,
+                      ),
                       contentPadding: EdgeInsets.zero,
                       dense: true,
                     ),

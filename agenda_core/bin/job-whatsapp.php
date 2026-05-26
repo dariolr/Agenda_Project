@@ -52,6 +52,7 @@ $batch = isset($options['batch']) ? max(1, min(500, (int) $options['batch'])) : 
 $businessFilter = isset($options['business']) ? (int) $options['business'] : null;
 $dryRun = isset($options['dry-run']);
 $verbose = isset($options['verbose']);
+$enabledMessageTypes = ['booking_reminder'];
 
 $dotenv = Dotenv::createImmutable(__DIR__ . '/..');
 $dotenv->safeLoad();
@@ -66,37 +67,14 @@ try {
     exit(1);
 }
 
-/**
- * @return list<array<string,mixed>>
- */
-function fetchQueued(\PDO $pdo, int $batch, ?int $businessId): array
-{
-    $params = [];
-    $where = 'status = "queued" AND (scheduled_at IS NULL OR scheduled_at <= NOW())';
-    if ($businessId !== null && $businessId > 0) {
-        $where .= ' AND business_id = ?';
-        $params[] = $businessId;
-    }
-
-    $sql = "SELECT id, business_id, location_id, whatsapp_config_id, booking_id, class_booking_id, client_id,
-                   recipient_phone, recipient_phone_e164, template_name, template_language,
-                   template_payload, template_variables_json, message_type, max_attempts, attempts, scheduled_at
-            FROM whatsapp_outbox
-            WHERE {$where}
-            ORDER BY id ASC
-            LIMIT {$batch}";
-
-    $stmt = $pdo->prepare($sql);
-    $stmt->execute($params);
-
-    /** @var list<array{id:int,business_id:int,location_id:?int,whatsapp_config_id:?int,max_attempts:int,attempts:int,scheduled_at:?string}> $rows */
-    $rows = $stmt->fetchAll(\PDO::FETCH_ASSOC);
-    return $rows;
-}
-
 function providerMessageId(int $outboxId): string
 {
     return 'wa_worker_' . $outboxId . '_' . bin2hex(random_bytes(6));
+}
+
+function isMessageTypeEnabled(string $messageType, array $enabledMessageTypes): bool
+{
+    return in_array($messageType, $enabledMessageTypes, true);
 }
 
 function fetchApprovedTemplate(\PDO $pdo, int $businessId, string $templateName, string $language): ?array
@@ -198,7 +176,7 @@ if ($verbose) {
 
 $queued = [];
 try {
-    $queued = fetchQueued($pdo, $batch, $businessFilter);
+    $queued = $repo->getPendingOutbox($batch, $businessFilter);
 } catch (\Throwable $e) {
     fwrite(STDERR, "[whatsapp-worker] failed to read whatsapp_outbox: {$e->getMessage()}\n");
     exit(1);
@@ -240,6 +218,7 @@ foreach ($queued as $row) {
     $recipientPhone = trim((string) ($row['recipient_phone_e164'] ?? $row['recipient_phone'] ?? ''));
     $templateName = trim((string) ($row['template_name'] ?? ''));
     $templateLanguage = trim((string) ($row['template_language'] ?? 'it'));
+    $messageType = trim((string) ($row['message_type'] ?? ''));
     $maxAttempts = max(1, (int) ($row['max_attempts'] ?? 3));
     $attempts = (int) ($row['attempts'] ?? 0);
 
@@ -270,23 +249,14 @@ foreach ($queued as $row) {
             continue;
         }
 
-        if ($attempts >= $maxAttempts) {
-            if ($dryRun) {
-                if ($verbose) {
-                    echo "DRY-RUN FAIL(max attempts)\n";
-                }
-            } else {
-                $repo->updateOutboxStatus(
-                    $businessId,
-                    $id,
-                    'failed',
-                    'max_attempts_reached'
-                );
-                if ($verbose) {
-                    echo "FAILED(max attempts)\n";
-                }
+        if (!isMessageTypeEnabled($messageType, $enabledMessageTypes)) {
+            if (!$dryRun) {
+                $repo->updateOutboxStatus($businessId, $id, 'skipped', 'whatsapp_message_type_disabled');
             }
-            $failed++;
+            $skipped++;
+            if ($verbose) {
+                echo "SKIPPED(message type disabled: {$messageType})\n";
+            }
             continue;
         }
 
@@ -307,6 +277,14 @@ foreach ($queued as $row) {
                 }
             }
             $failed++;
+            continue;
+        }
+
+        if (!$dryRun && !$repo->markOutboxProcessing($businessId, $id)) {
+            $skipped++;
+            if ($verbose) {
+                echo "SKIPPED(already processing)\n";
+            }
             continue;
         }
 

@@ -8,8 +8,8 @@ use Agenda\Infrastructure\Database\Connection;
 
 final class BusinessWhatsappSettingsRepository
 {
-    private const SELECT_FIELDS = 'id, business_id, provider_code, whatsapp_enabled, activation_allowed,
-        messages_enabled, allow_business_self_onboarding, allow_location_mapping, default_channel_mode,
+    private const SELECT_FIELDS = 'id, business_id, provider_code, whatsapp_enabled, messages_enabled,
+        allow_location_mapping, default_channel_mode,
         status, last_go_live_check_at, last_error_code, last_error_message, enabled_by_user_id,
         enabled_at, disabled_at, notes, created_at, updated_at';
 
@@ -36,9 +36,7 @@ final class BusinessWhatsappSettingsRepository
             'business_id' => $businessId,
             'provider_code' => 'meta',
             'whatsapp_enabled' => 0,
-            'activation_allowed' => 0,
             'messages_enabled' => 0,
-            'allow_business_self_onboarding' => 1,
             'allow_location_mapping' => 0,
             'default_channel_mode' => 'business_default',
             'status' => 'not_enabled',
@@ -97,8 +95,8 @@ final class BusinessWhatsappSettingsRepository
         $whereSql = $where === [] ? '' : 'WHERE ' . implode(' AND ', $where);
 
         $sql = 'SELECT b.id AS business_id, b.name AS business_name, b.slug AS business_slug,
-                       s.id, s.provider_code, s.whatsapp_enabled, s.activation_allowed, s.messages_enabled,
-                       s.allow_business_self_onboarding, s.allow_location_mapping, s.default_channel_mode,
+                       s.id, s.provider_code, s.whatsapp_enabled, s.messages_enabled,
+                       s.allow_location_mapping, s.default_channel_mode,
                        s.status, s.last_go_live_check_at, s.last_error_code, s.last_error_message,
                        s.enabled_by_user_id, s.enabled_at, s.disabled_at, s.notes, s.created_at, s.updated_at,
                        c.id AS default_config_id, c.status AS default_config_status,
@@ -134,9 +132,6 @@ final class BusinessWhatsappSettingsRepository
         $whatsappEnabled = array_key_exists('whatsapp_enabled', $data)
             ? (bool) $data['whatsapp_enabled']
             : $wasEnabled;
-        $activationAllowed = array_key_exists('activation_allowed', $data)
-            ? (bool) $data['activation_allowed']
-            : ((int) ($current['activation_allowed'] ?? 0) === 1);
         $messagesEnabled = array_key_exists('messages_enabled', $data)
             ? (bool) $data['messages_enabled']
             : ((int) ($current['messages_enabled'] ?? 0) === 1);
@@ -147,7 +142,6 @@ final class BusinessWhatsappSettingsRepository
         }
 
         if (!$whatsappEnabled) {
-            $activationAllowed = false;
             $messagesEnabled = false;
             $status = 'not_enabled';
         } elseif ($status === 'not_enabled') {
@@ -161,15 +155,13 @@ final class BusinessWhatsappSettingsRepository
 
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO business_whatsapp_settings
-             (business_id, provider_code, whatsapp_enabled, activation_allowed, messages_enabled,
-              allow_business_self_onboarding, allow_location_mapping, default_channel_mode, status,
+             (business_id, provider_code, whatsapp_enabled, messages_enabled,
+              allow_location_mapping, default_channel_mode, status,
               enabled_by_user_id, enabled_at, disabled_at, notes)
-             VALUES (?, "meta", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             VALUES (?, "meta", ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                whatsapp_enabled = VALUES(whatsapp_enabled),
-               activation_allowed = VALUES(activation_allowed),
                messages_enabled = VALUES(messages_enabled),
-               allow_business_self_onboarding = VALUES(allow_business_self_onboarding),
                allow_location_mapping = VALUES(allow_location_mapping),
                default_channel_mode = VALUES(default_channel_mode),
                status = VALUES(status),
@@ -182,11 +174,7 @@ final class BusinessWhatsappSettingsRepository
         $stmt->execute([
             $businessId,
             $whatsappEnabled ? 1 : 0,
-            $activationAllowed ? 1 : 0,
             $messagesEnabled ? 1 : 0,
-            array_key_exists('allow_business_self_onboarding', $data)
-                ? ((bool) $data['allow_business_self_onboarding'] ? 1 : 0)
-                : (int) ($current['allow_business_self_onboarding'] ?? 1),
             array_key_exists('allow_location_mapping', $data)
                 ? ((bool) $data['allow_location_mapping'] ? 1 : 0)
                 : (int) ($current['allow_location_mapping'] ?? 0),

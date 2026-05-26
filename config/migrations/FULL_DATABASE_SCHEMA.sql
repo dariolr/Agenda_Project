@@ -187,9 +187,7 @@ CREATE TABLE `business_whatsapp_settings` (
   `business_id` int UNSIGNED NOT NULL,
   `provider_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'meta',
   `whatsapp_enabled` tinyint(1) NOT NULL DEFAULT '0',
-  `activation_allowed` tinyint(1) NOT NULL DEFAULT '0',
   `messages_enabled` tinyint(1) NOT NULL DEFAULT '0',
-  `allow_business_self_onboarding` tinyint(1) NOT NULL DEFAULT '1',
   `allow_location_mapping` tinyint(1) NOT NULL DEFAULT '0',
   `default_channel_mode` enum('disabled','business_default','location_mapping') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'business_default',
   `status` enum('not_enabled','enabled','onboarding','pending_review','active','suspended','error') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'not_enabled',
@@ -1402,7 +1400,7 @@ ALTER TABLE `whatsapp_business_config`
 ALTER TABLE `business_whatsapp_settings`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uniq_business_whatsapp_settings_business` (`business_id`),
-  ADD KEY `idx_bws_enabled_flags` (`whatsapp_enabled`,`activation_allowed`,`messages_enabled`),
+  ADD KEY `idx_bws_enabled_flags` (`whatsapp_enabled`,`messages_enabled`),
   ADD KEY `idx_bws_status` (`status`),
   ADD KEY `idx_bws_enabled_by_user` (`enabled_by_user_id`);
 

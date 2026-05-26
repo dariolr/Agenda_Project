@@ -357,6 +357,51 @@ final class WhatsappRepository
         return (int) $this->db->getPdo()->lastInsertId();
     }
 
+    public function getPendingOutbox(int $limit = 100, ?int $businessId = null): array
+    {
+        $params = [];
+        $where = [
+            'status = "queued"',
+            '(scheduled_at IS NULL OR scheduled_at <= NOW())',
+            'attempts < max_attempts',
+        ];
+        if ($businessId !== null && $businessId > 0) {
+            $where[] = 'business_id = ?';
+            $params[] = $businessId;
+        }
+
+        $safeLimit = max(1, min(500, $limit));
+        $sql = 'SELECT id, business_id, location_id, whatsapp_config_id, booking_id, class_booking_id, client_id,
+                       recipient_phone, recipient_phone_e164, template_name, template_language,
+                       template_payload, template_variables_json, message_type, max_attempts, attempts, scheduled_at
+                FROM whatsapp_outbox
+                WHERE ' . implode(' AND ', $where) . '
+                ORDER BY scheduled_at ASC, id ASC
+                LIMIT ' . $safeLimit;
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function markOutboxProcessing(int $businessId, int $outboxId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE whatsapp_outbox
+             SET status = "processing",
+                 attempts = attempts + 1,
+                 last_attempt_at = NOW(),
+                 updated_at = NOW()
+             WHERE business_id = ?
+               AND id = ?
+               AND status = "queued"
+               AND attempts < max_attempts'
+        );
+        $stmt->execute([$businessId, $outboxId]);
+
+        return $stmt->rowCount() === 1;
+    }
+
     public function findOutboxIdByDedupeKey(string $dedupeKey): ?int
     {
         if ($dedupeKey === '') {
@@ -454,7 +499,6 @@ final class WhatsappRepository
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE whatsapp_outbox
              SET status = "sent",
-                 attempts = attempts + 1,
                  provider_message_id = COALESCE(?, provider_message_id),
                  error_message = NULL,
                  provider_error_code = NULL,
@@ -524,7 +568,6 @@ final class WhatsappRepository
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE whatsapp_outbox
              SET status = ?,
-                 attempts = attempts + 1,
                  error_message = ?,
                  provider_error_code = ?,
                  provider_error_message = ?,

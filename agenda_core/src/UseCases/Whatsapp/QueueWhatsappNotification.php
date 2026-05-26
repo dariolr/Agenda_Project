@@ -13,6 +13,8 @@ use DateTimeZone;
 
 final class QueueWhatsappNotification
 {
+    private const ENABLED_MESSAGE_TYPES = ['booking_reminder'];
+
     public function __construct(
         private readonly Connection $db,
         private readonly WhatsappRepository $whatsappRepo,
@@ -37,6 +39,9 @@ final class QueueWhatsappNotification
 
         $messageType = $this->messageTypeForChannel($channel);
         if ($messageType === null) {
+            return 0;
+        }
+        if (!$this->isMessageTypeEnabled($messageType)) {
             return 0;
         }
 
@@ -209,6 +214,11 @@ final class QueueWhatsappNotification
             'class_booking_cancelled' => 'class_booking_cancellation',
             default => null,
         };
+    }
+
+    private function isMessageTypeEnabled(string $messageType): bool
+    {
+        return in_array($messageType, self::ENABLED_MESSAGE_TYPES, true);
     }
 
     private function resolveLocationId(array $data): int

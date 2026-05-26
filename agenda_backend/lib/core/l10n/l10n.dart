@@ -8564,6 +8564,26 @@ class L10n {
     );
   }
 
+  /// `Email`
+  String get bookingNotificationsProviderEmail {
+    return Intl.message(
+      'Email',
+      name: 'bookingNotificationsProviderEmail',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp`
+  String get bookingNotificationsProviderWhatsapp {
+    return Intl.message(
+      'WhatsApp',
+      name: 'bookingNotificationsProviderWhatsapp',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `SMTP`
   String get bookingNotificationsProviderSmtp {
     return Intl.message(
@@ -11574,6 +11594,86 @@ class L10n {
     );
   }
 
+  /// `WhatsApp`
+  String get businessWhatsappSettingsMenuItem {
+    return Intl.message(
+      'WhatsApp',
+      name: 'businessWhatsappSettingsMenuItem',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp settings`
+  String get businessWhatsappSettingsDialogTitle {
+    return Intl.message(
+      'WhatsApp settings',
+      name: 'businessWhatsappSettingsDialogTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enable WhatsApp for this business`
+  String get businessWhatsappEnabledLabel {
+    return Intl.message(
+      'Enable WhatsApp for this business',
+      name: 'businessWhatsappEnabledLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Allows the business to use the WhatsApp integration.`
+  String get businessWhatsappEnabledHelper {
+    return Intl.message(
+      'Allows the business to use the WhatsApp integration.',
+      name: 'businessWhatsappEnabledHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enable message sending`
+  String get businessWhatsappMessagesEnabledLabel {
+    return Intl.message(
+      'Enable message sending',
+      name: 'businessWhatsappMessagesEnabledLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Allows automatic WhatsApp messages to be queued and sent.`
+  String get businessWhatsappMessagesEnabledHelper {
+    return Intl.message(
+      'Allows automatic WhatsApp messages to be queued and sent.',
+      name: 'businessWhatsappMessagesEnabledHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enable location mapping`
+  String get businessWhatsappLocationMappingLabel {
+    return Intl.message(
+      'Enable location mapping',
+      name: 'businessWhatsappLocationMappingLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Allows different WhatsApp numbers to be assigned to individual locations.`
+  String get businessWhatsappLocationMappingHelper {
+    return Intl.message(
+      'Allows different WhatsApp numbers to be assigned to individual locations.',
+      name: 'businessWhatsappLocationMappingHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Outbox worker completed successfully.`
   String get whatsappWorkerCompleted {
     return Intl.message(
@@ -13164,16 +13264,6 @@ class L10n {
     return Intl.message(
       'The superadmin must enable WhatsApp before you can connect a number.',
       name: 'whatsappSuperadminMustEnable',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Self-service activation is not allowed yet.`
-  String get whatsappActivationNotAllowed {
-    return Intl.message(
-      'Self-service activation is not allowed yet.',
-      name: 'whatsappActivationNotAllowed',
       desc: '',
       args: [],
     );
