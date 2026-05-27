@@ -13276,13 +13276,33 @@ class L10n {
     );
   }
 
-  /// `The free period has ended. To continue using the app, activate your monthly subscription.`
+  /// `The free period has ended. To continue using the app, activate your subscription.`
   String get billingAccessBlockedMessage {
     return Intl.message(
-      'The free period has ended. To continue using the app, activate your monthly subscription.',
+      'The free period has ended. To continue using the app, activate your subscription.',
       name: 'billingAccessBlockedMessage',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `The free period ended on {date}. To continue using the app, activate your subscription.`
+  String billingAccessBlockedMessageWithDate(Object date) {
+    return Intl.message(
+      'The free period ended on $date. To continue using the app, activate your subscription.',
+      name: 'billingAccessBlockedMessageWithDate',
+      desc: '',
+      args: [date],
+    );
+  }
+
+  /// `Your free period ends on {date}.`
+  String billingActivationDeadlinePending(Object date) {
+    return Intl.message(
+      'Your free period ends on $date.',
+      name: 'billingActivationDeadlinePending',
+      desc: '',
+      args: [date],
     );
   }
 
