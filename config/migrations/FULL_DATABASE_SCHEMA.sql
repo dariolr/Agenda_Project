@@ -2374,6 +2374,7 @@ CREATE TABLE `business_billing_config` (
   `provider_code` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `provider_price_reference` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `activation_deadline_at` timestamp NULL DEFAULT NULL,
+  `billing_cycle_anchor_at` timestamp NULL DEFAULT NULL,
   `notes` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

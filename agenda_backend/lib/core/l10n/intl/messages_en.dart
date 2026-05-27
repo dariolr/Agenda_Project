@@ -509,6 +509,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Subscription activation deadline",
     ),
     "billingActivationDeadlinePending": m2,
+    "billingCycleAnchorHint": MessageLookupByLibrary.simpleMessage(
+      "If set and in the future, Stripe will use this date as the start of the first billing cycle.",
+    ),
+    "billingCycleAnchorLabel": MessageLookupByLibrary.simpleMessage(
+      "Billing cycle anchor (Stripe)",
+    ),
     "billingActiveTitle": MessageLookupByLibrary.simpleMessage(
       "Subscription active",
     ),

@@ -466,6 +466,7 @@ final class BusinessBillingControllerCheckoutTest extends TestCase
                 provider_code TEXT NULL,
                 provider_price_reference TEXT NULL,
                 activation_deadline_at TEXT NULL,
+                billing_cycle_anchor_at TEXT NULL,
                 notes TEXT NULL,
                 created_at TEXT NULL,
                 updated_at TEXT NULL

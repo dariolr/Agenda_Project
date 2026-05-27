@@ -528,6 +528,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Data limite attivazione abbonamento",
     ),
     "billingActivationDeadlinePending": m2,
+    "billingCycleAnchorHint": MessageLookupByLibrary.simpleMessage(
+      "Se impostata e futura, Stripe utilizzerà questa data come inizio del primo ciclo di fatturazione.",
+    ),
+    "billingCycleAnchorLabel": MessageLookupByLibrary.simpleMessage(
+      "Data ancoraggio ciclo (Stripe)",
+    ),
     "billingActiveTitle": MessageLookupByLibrary.simpleMessage(
       "Abbonamento attivo",
     ),

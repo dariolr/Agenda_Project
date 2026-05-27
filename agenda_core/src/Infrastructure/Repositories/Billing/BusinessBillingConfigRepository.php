@@ -59,6 +59,16 @@ final class BusinessBillingConfigRepository
             }
         }
 
+        $billingCycleAnchorAt = null;
+        if (!empty($payload['billing_cycle_anchor_at'])) {
+            try {
+                $dt = new \DateTimeImmutable((string) $payload['billing_cycle_anchor_at'], new \DateTimeZone('UTC'));
+                $billingCycleAnchorAt = $dt->format('Y-m-d H:i:s');
+            } catch (\Throwable) {
+                throw new \InvalidArgumentException('billing_cycle_anchor_at is not a valid date');
+            }
+        }
+
         if (!$enabled) {
             $data = [
                 0,
@@ -67,6 +77,7 @@ final class BusinessBillingConfigRepository
                 null,
                 null,
                 $currency !== '' ? $currency : 'EUR',
+                null,
                 null,
                 null,
                 null,
@@ -92,6 +103,7 @@ final class BusinessBillingConfigRepository
                 $providerCode,
                 $payload['provider_price_reference'] ?? null,
                 $activationDeadlineAt,
+                $billingCycleAnchorAt,
                 $notes,
             ];
         }
@@ -102,8 +114,9 @@ final class BusinessBillingConfigRepository
             $stmt = $this->db->getPdo()->prepare(
                 'INSERT INTO business_billing_config
                     (business_id, billing_enabled, billing_mode, billing_interval_unit, billing_interval_count,
-                     amount_cents, currency, provider_code, provider_price_reference, activation_deadline_at, notes)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                     amount_cents, currency, provider_code, provider_price_reference,
+                     activation_deadline_at, billing_cycle_anchor_at, notes)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
             );
             $stmt->execute(array_merge([$businessId], $data));
         } else {
@@ -118,6 +131,7 @@ final class BusinessBillingConfigRepository
                     provider_code = ?,
                     provider_price_reference = ?,
                     activation_deadline_at = ?,
+                    billing_cycle_anchor_at = ?,
                     notes = ?
                  WHERE business_id = ?'
             );

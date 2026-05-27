@@ -2012,6 +2012,8 @@
   "billingAgendaNoticeDismissTooltip": "Nascondi fino a domani",
   "billingActivationDeadlineLabel": "Data limite attivazione abbonamento",
   "billingActivationDeadlineHint": "Se impostata, il business potrà usare il gestionale gratuitamente fino a questa data. Dopo, dovrà attivare l'abbonamento per continuare.",
+  "billingCycleAnchorLabel": "Data ancoraggio ciclo (Stripe)",
+  "billingCycleAnchorHint": "Se impostata e futura, Stripe utilizzerà questa data come inizio del primo ciclo di fatturazione.",
   "billingAccessBlockedTitle": "Abbonamento richiesto",
   "billingAccessBlockedMessage": "Il periodo gratuito è terminato. Per continuare a usare il gestionale, attiva l'abbonamento.",
   "billingAccessBlockedMessageWithDate": "Il periodo gratuito è terminato il {date}. Per continuare a usare il gestionale, attiva l'abbonamento.",

@@ -18,6 +18,7 @@ final class BillingConfig
         public readonly ?string $providerCode,
         public readonly ?string $providerPriceReference,
         public readonly ?\DateTimeImmutable $activationDeadlineAt,
+        public readonly ?\DateTimeImmutable $billingCycleAnchorAt,
         public readonly ?string $notes,
         public readonly ?string $createdAt = null,
         public readonly ?string $updatedAt = null,
@@ -34,6 +35,15 @@ final class BillingConfig
             $activationDeadlineAt = $parsed instanceof \DateTimeImmutable ? $parsed : null;
         }
 
+        $billingCycleAnchorAt = null;
+        if (isset($row['billing_cycle_anchor_at']) && $row['billing_cycle_anchor_at'] !== null) {
+            $parsed = \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', (string) $row['billing_cycle_anchor_at'], new \DateTimeZone('UTC'));
+            if ($parsed === false) {
+                $parsed = new \DateTimeImmutable((string) $row['billing_cycle_anchor_at'], new \DateTimeZone('UTC'));
+            }
+            $billingCycleAnchorAt = $parsed instanceof \DateTimeImmutable ? $parsed : null;
+        }
+
         return new self(
             id: isset($row['id']) ? (int) $row['id'] : null,
             businessId: (int) $row['business_id'],
@@ -46,6 +56,7 @@ final class BillingConfig
             providerCode: $row['provider_code'] !== null ? (string) $row['provider_code'] : null,
             providerPriceReference: $row['provider_price_reference'] !== null ? (string) $row['provider_price_reference'] : null,
             activationDeadlineAt: $activationDeadlineAt,
+            billingCycleAnchorAt: $billingCycleAnchorAt,
             notes: $row['notes'] !== null ? (string) $row['notes'] : null,
             createdAt: $row['created_at'] ?? null,
             updatedAt: $row['updated_at'] ?? null,
@@ -67,6 +78,9 @@ final class BillingConfig
             'provider_price_reference' => $this->providerPriceReference,
             'activation_deadline_at' => $this->activationDeadlineAt !== null
                 ? $this->activationDeadlineAt->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z')
+                : null,
+            'billing_cycle_anchor_at' => $this->billingCycleAnchorAt !== null
+                ? $this->billingCycleAnchorAt->setTimezone(new \DateTimeZone('UTC'))->format('Y-m-d\TH:i:s\Z')
                 : null,
             'notes' => $this->notes,
             'created_at' => $this->createdAt,

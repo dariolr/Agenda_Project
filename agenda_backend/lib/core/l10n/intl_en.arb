@@ -2012,6 +2012,8 @@
   "billingAgendaNoticeDismissTooltip": "Hide until tomorrow",
   "billingActivationDeadlineLabel": "Subscription activation deadline",
   "billingActivationDeadlineHint": "If set, the business can use the app for free until this date. After that, they must activate the subscription to continue.",
+  "billingCycleAnchorLabel": "Billing cycle anchor (Stripe)",
+  "billingCycleAnchorHint": "If set and in the future, Stripe will use this date as the start of the first billing cycle.",
   "billingAccessBlockedTitle": "Subscription required",
   "billingAccessBlockedMessage": "The free period has ended. To continue using the app, activate your subscription.",
   "billingAccessBlockedMessageWithDate": "The free period ended on {date}. To continue using the app, activate your subscription.",

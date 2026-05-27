@@ -13266,6 +13266,26 @@ class L10n {
     );
   }
 
+  /// `Billing cycle anchor (Stripe)`
+  String get billingCycleAnchorLabel {
+    return Intl.message(
+      'Billing cycle anchor (Stripe)',
+      name: 'billingCycleAnchorLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `If set and in the future, Stripe will use this date as the start of the first billing cycle.`
+  String get billingCycleAnchorHint {
+    return Intl.message(
+      'If set and in the future, Stripe will use this date as the start of the first billing cycle.',
+      name: 'billingCycleAnchorHint',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Subscription required`
   String get billingAccessBlockedTitle {
     return Intl.message(
