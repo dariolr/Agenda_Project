@@ -45,6 +45,7 @@ class _AdminBusinessBillingConfigDialogState
   bool _enabled = false;
   String _currency = 'EUR';
   DateTime? _activationDeadlineAt;
+  DateTime? _billingCycleAnchorAt;
   bool _initialized = false;
   bool _saving = false;
 
@@ -79,6 +80,7 @@ class _AdminBusinessBillingConfigDialogState
                   ? ''
                   : (config.amountCents! / 100).toStringAsFixed(2);
               _activationDeadlineAt = config.activationDeadlineAt;
+              _billingCycleAnchorAt = config.billingCycleAnchorAt;
               _notesController.text = config.notes ?? '';
               _initialized = true;
             }
@@ -155,6 +157,34 @@ class _AdminBusinessBillingConfigDialogState
                   ),
                 ),
                 const SizedBox(height: 12),
+                InkWell(
+                  onTap: _enabled && !_saving ? () => _pickBillingCycleAnchorDate(context) : null,
+                  borderRadius: BorderRadius.circular(4),
+                  child: InputDecorator(
+                    decoration: InputDecoration(
+                      labelText: context.l10n.billingCycleAnchorLabel,
+                      helperText: context.l10n.billingCycleAnchorHint,
+                      border: const OutlineInputBorder(),
+                      suffixIcon: _billingCycleAnchorAt != null
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, size: 18),
+                              onPressed: _enabled && !_saving
+                                  ? () => setState(() => _billingCycleAnchorAt = null)
+                                  : null,
+                            )
+                          : const Icon(Icons.calendar_today, size: 18),
+                    ),
+                    child: Text(
+                      _billingCycleAnchorAt != null
+                          ? '${_billingCycleAnchorAt!.year.toString().padLeft(4, '0')}-'
+                            '${_billingCycleAnchorAt!.month.toString().padLeft(2, '0')}-'
+                            '${_billingCycleAnchorAt!.day.toString().padLeft(2, '0')}'
+                          : '',
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
                 TextField(
                   controller: _notesController,
                   enabled: !_saving,
@@ -219,6 +249,7 @@ class _AdminBusinessBillingConfigDialogState
             currency: _currency,
             providerCode: _enabled ? 'stripe' : null,
             activationDeadlineAt: _enabled ? _activationDeadlineAt : null,
+            billingCycleAnchorAt: _enabled ? _billingCycleAnchorAt : null,
             notes: _notesController.text.trim().isEmpty
                 ? null
                 : _notesController.text.trim(),
@@ -236,6 +267,20 @@ class _AdminBusinessBillingConfigDialogState
       }
     } finally {
       if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _pickBillingCycleAnchorDate(BuildContext context) async {
+    final now = DateTime.now();
+    final initial = _billingCycleAnchorAt ?? now.add(const Duration(days: 1));
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 5),
+    );
+    if (picked != null) {
+      setState(() => _billingCycleAnchorAt = picked);
     }
   }
 

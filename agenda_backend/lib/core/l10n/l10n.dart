@@ -8564,6 +8564,26 @@ class L10n {
     );
   }
 
+  /// `Email`
+  String get bookingNotificationsProviderEmail {
+    return Intl.message(
+      'Email',
+      name: 'bookingNotificationsProviderEmail',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp`
+  String get bookingNotificationsProviderWhatsapp {
+    return Intl.message(
+      'WhatsApp',
+      name: 'bookingNotificationsProviderWhatsapp',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `SMTP`
   String get bookingNotificationsProviderSmtp {
     return Intl.message(
@@ -10956,26 +10976,23 @@ class L10n {
     );
   }
 
-  /// `Onboarding completed. Next steps: {steps}`
-  String whatsappEmbeddedSignupSuccessMessage(Object steps) {
+  /// `The WhatsApp number has been connected successfully. WhatsApp reminders can now be used when message sending is enabled.`
+  String get whatsappEmbeddedSignupSuccessMessage {
     return Intl.message(
-      'Onboarding completed. Next steps: $steps',
+      'The WhatsApp number has been connected successfully. WhatsApp reminders can now be used when message sending is enabled.',
       name: 'whatsappEmbeddedSignupSuccessMessage',
       desc: '',
-      args: [steps],
+      args: [],
     );
   }
 
-  /// `Onboarding completed. Auto-mapped locations: {locations}. Next steps: {steps}`
-  String whatsappEmbeddedSignupSuccessWithMapping(
-    Object locations,
-    Object steps,
-  ) {
+  /// `The WhatsApp number has been connected successfully. The business locations have been linked to the number automatically. WhatsApp reminders can now be used when message sending is enabled.`
+  String get whatsappEmbeddedSignupSuccessWithMapping {
     return Intl.message(
-      'Onboarding completed. Auto-mapped locations: $locations. Next steps: $steps',
+      'The WhatsApp number has been connected successfully. The business locations have been linked to the number automatically. WhatsApp reminders can now be used when message sending is enabled.',
       name: 'whatsappEmbeddedSignupSuccessWithMapping',
       desc: '',
-      args: [locations, steps],
+      args: [],
     );
   }
 
@@ -11569,6 +11586,136 @@ class L10n {
     return Intl.message(
       'WhatsApp changes were saved successfully.',
       name: 'whatsappSavedSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp`
+  String get businessWhatsappSettingsMenuItem {
+    return Intl.message(
+      'WhatsApp',
+      name: 'businessWhatsappSettingsMenuItem',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp settings`
+  String get businessWhatsappSettingsDialogTitle {
+    return Intl.message(
+      'WhatsApp settings',
+      name: 'businessWhatsappSettingsDialogTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enable WhatsApp for this business`
+  String get businessWhatsappEnabledLabel {
+    return Intl.message(
+      'Enable WhatsApp for this business',
+      name: 'businessWhatsappEnabledLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Allows the business to use the WhatsApp integration.`
+  String get businessWhatsappEnabledHelper {
+    return Intl.message(
+      'Allows the business to use the WhatsApp integration.',
+      name: 'businessWhatsappEnabledHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enable message sending`
+  String get businessWhatsappMessagesEnabledLabel {
+    return Intl.message(
+      'Enable message sending',
+      name: 'businessWhatsappMessagesEnabledLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Allows automatic WhatsApp messages to be queued and sent.`
+  String get businessWhatsappMessagesEnabledHelper {
+    return Intl.message(
+      'Allows automatic WhatsApp messages to be queued and sent.',
+      name: 'businessWhatsappMessagesEnabledHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Enable location mapping`
+  String get businessWhatsappLocationMappingLabel {
+    return Intl.message(
+      'Enable location mapping',
+      name: 'businessWhatsappLocationMappingLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Allows different WhatsApp numbers to be assigned to individual locations.`
+  String get businessWhatsappLocationMappingHelper {
+    return Intl.message(
+      'Allows different WhatsApp numbers to be assigned to individual locations.',
+      name: 'businessWhatsappLocationMappingHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Existing clients`
+  String get businessWhatsappExistingClientsOptInPolicyLabel {
+    return Intl.message(
+      'Existing clients',
+      name: 'businessWhatsappExistingClientsOptInPolicyLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Require explicit consent`
+  String get businessWhatsappExistingClientsExplicitOnlyLabel {
+    return Intl.message(
+      'Require explicit consent',
+      name: 'businessWhatsappExistingClientsExplicitOnlyLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Send WhatsApp messages only to clients who gave consent in the app.`
+  String get businessWhatsappExistingClientsExplicitOnlyHelper {
+    return Intl.message(
+      'Send WhatsApp messages only to clients who gave consent in the app.',
+      name: 'businessWhatsappExistingClientsExplicitOnlyHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Consider existing clients consented`
+  String get businessWhatsappExistingClientsAssumeConsentedLabel {
+    return Intl.message(
+      'Consider existing clients consented',
+      name: 'businessWhatsappExistingClientsAssumeConsentedLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Use this only if the business declares it already has consent for existing clients. New clients will still need explicit consent.`
+  String get businessWhatsappExistingClientsAssumeConsentedHelper {
+    return Intl.message(
+      'Use this only if the business declares it already has consent for existing clients. New clients will still need explicit consent.',
+      name: 'businessWhatsappExistingClientsAssumeConsentedHelper',
       desc: '',
       args: [],
     );
@@ -13149,6 +13296,26 @@ class L10n {
     );
   }
 
+  /// `Billing cycle anchor (Stripe)`
+  String get billingCycleAnchorLabel {
+    return Intl.message(
+      'Billing cycle anchor (Stripe)',
+      name: 'billingCycleAnchorLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `If set and in the future, Stripe will use this date as the start of the first billing cycle.`
+  String get billingCycleAnchorHint {
+    return Intl.message(
+      'If set and in the future, Stripe will use this date as the start of the first billing cycle.',
+      name: 'billingCycleAnchorHint',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Subscription required`
   String get billingAccessBlockedTitle {
     return Intl.message(
@@ -13169,10 +13336,10 @@ class L10n {
     );
   }
 
-  /// `The free period has ended. To continue using the app, activate your monthly subscription.`
+  /// `The free period has ended. To continue using the app, activate your subscription.`
   String get billingAccessBlockedMessage {
     return Intl.message(
-      'The free period has ended. To continue using the app, activate your monthly subscription.',
+      'The free period has ended. To continue using the app, activate your subscription.',
       name: 'billingAccessBlockedMessage',
       desc: '',
       args: [],
@@ -13404,11 +13571,61 @@ class L10n {
     );
   }
 
+  /// `The free period ended on {date}. To continue using the app, activate your subscription.`
+  String billingAccessBlockedMessageWithDate(Object date) {
+    return Intl.message(
+      'The free period ended on $date. To continue using the app, activate your subscription.',
+      name: 'billingAccessBlockedMessageWithDate',
+      desc: '',
+      args: [date],
+    );
+  }
+
+  /// `Your free period ends on {date}.`
+  String billingActivationDeadlinePending(Object date) {
+    return Intl.message(
+      'Your free period ends on $date.',
+      name: 'billingActivationDeadlinePending',
+      desc: '',
+      args: [date],
+    );
+  }
+
   /// `Activate subscription`
   String get billingAccessBlockedActivateAction {
     return Intl.message(
       'Activate subscription',
       name: 'billingAccessBlockedActivateAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp is not enabled for this business yet.`
+  String get whatsappNotEnabledForBusiness {
+    return Intl.message(
+      'WhatsApp is not enabled for this business yet.',
+      name: 'whatsappNotEnabledForBusiness',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The superadmin must enable WhatsApp before you can connect a number.`
+  String get whatsappSuperadminMustEnable {
+    return Intl.message(
+      'The superadmin must enable WhatsApp before you can connect a number.',
+      name: 'whatsappSuperadminMustEnable',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unable to start the secure Meta session. Try again.`
+  String get whatsappEmbeddedSignupStateInvalid {
+    return Intl.message(
+      'Unable to start the secure Meta session. Try again.',
+      name: 'whatsappEmbeddedSignupStateInvalid',
       desc: '',
       args: [],
     );

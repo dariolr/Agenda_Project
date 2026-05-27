@@ -1,11 +1,9 @@
-import 'dart:convert';
-import 'dart:math';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '/core/l10n/l10_extension.dart';
+import '/core/network/api_client.dart';
 import '/core/services/whatsapp_embedded_signup_launcher.dart';
 import '/core/widgets/app_buttons.dart';
 import '/core/widgets/feedback_dialog.dart';
@@ -34,7 +32,7 @@ class _WhatsappBusinessScreenState
     _guideScrollController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _loadData(int businessId) async {
     if (businessId <= 0 || _lastLoadedBusinessId == businessId) {
       return;
@@ -43,12 +41,6 @@ class _WhatsappBusinessScreenState
     await ref
         .read(whatsappIntegrationProvider.notifier)
         .loadBusinessWhatsappData(businessId);
-  }
-
-  String _generateSignupState() {
-    final random = Random.secure();
-    final bytes = List<int>.generate(18, (_) => random.nextInt(256));
-    return base64Url.encode(bytes).replaceAll('=', '');
   }
 
   Future<void> _completeEmbeddedSignup({
@@ -86,17 +78,13 @@ class _WhatsappBusinessScreenState
             };
     });
 
-    final autoMapped = result.autoMappedLocationIds;
-    final nextSteps = result.nextSteps.join(', ');
+    final hasAutoMappedSingleLocation = result.autoMappedLocationIds.isNotEmpty;
     await FeedbackDialog.showSuccess(
       context,
       title: l10n.whatsappEmbeddedSignupSuccessTitle,
-      message: autoMapped.isEmpty
-          ? l10n.whatsappEmbeddedSignupSuccessMessage(nextSteps)
-          : l10n.whatsappEmbeddedSignupSuccessWithMapping(
-              autoMapped.join(', '),
-              nextSteps,
-            ),
+      message: hasAutoMappedSingleLocation
+          ? l10n.whatsappEmbeddedSignupSuccessWithMapping
+          : l10n.whatsappEmbeddedSignupSuccessMessage,
     );
   }
 
@@ -107,7 +95,12 @@ class _WhatsappBusinessScreenState
 
     try {
       setState(() => _isCompletingEmbeddedSignup = true);
-      final state = _generateSignupState();
+      final state = await ref
+          .read(whatsappIntegrationProvider.notifier)
+          .createEmbeddedSignupState(businessId);
+      if (state.isEmpty) {
+        throw StateError(l10n.whatsappEmbeddedSignupStateInvalid);
+      }
       final launchResult = await _embeddedSignupLauncher.launch(
         expectedState: state,
       );
@@ -129,7 +122,7 @@ class _WhatsappBusinessScreenState
         await FeedbackDialog.showError(
           context,
           title: l10n.errorTitle,
-          message: e.toString(),
+          message: _formatEmbeddedSignupError(e),
         );
       }
     } finally {
@@ -139,12 +132,37 @@ class _WhatsappBusinessScreenState
     }
   }
 
+  String _formatEmbeddedSignupError(Object error) {
+    if (error is! ApiException) {
+      return error.toString();
+    }
+
+    final reason = error.reason;
+    if (reason == null || reason.trim().isEmpty) {
+      return error.message;
+    }
+
+    final detail = switch (reason) {
+      'meta_app_not_configured' => 'app Meta non configurata sul server',
+      'meta_token_not_obtained' => 'token Meta non ottenuto',
+      'meta_phone_or_waba_not_accessible' =>
+        'account WhatsApp o numero non accessibile con i permessi concessi',
+      _ => reason,
+    };
+
+    if (error.message.contains(detail)) {
+      return error.message;
+    }
+    return '${error.message}\n\nDettaglio tecnico: $detail';
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final businessId = ref.watch(currentBusinessIdProvider);
     final state = ref.watch(whatsappIntegrationProvider);
+    final settings = state.settings;
     final firstConfig = state.configs.isNotEmpty ? state.configs.first : null;
     final hasConfig = firstConfig != null;
 
@@ -153,6 +171,52 @@ class _WhatsappBusinessScreenState
         if (!mounted) return;
         _loadData(businessId);
       });
+    }
+
+    if (settings != null && !settings.whatsappEnabled) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/icons/whatsapp.svg',
+                      width: 42,
+                      height: 42,
+                      colorFilter: const ColorFilter.mode(
+                        Color(0xFF25D366),
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.whatsappNotEnabledForBusiness,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.whatsappSuperadminMustEnable,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
     }
 
     if (!hasConfig) {
@@ -203,7 +267,9 @@ class _WhatsappBusinessScreenState
                 SizedBox(
                   width: 280,
                   child: AppAsyncFilledButton(
-                    onPressed: _startEmbeddedSignupAutomatic,
+                    onPressed: settings?.canOnboard == true
+                        ? _startEmbeddedSignupAutomatic
+                        : null,
                     isLoading: _isCompletingEmbeddedSignup,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 22,

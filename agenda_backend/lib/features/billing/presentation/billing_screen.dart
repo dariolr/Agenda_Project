@@ -189,9 +189,46 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        context.l10n.billingAccessBlockedMessage,
+                        billing.activationDeadlineAt != null
+                            ? context.l10n.billingAccessBlockedMessageWithDate(
+                                DtFmt.longDate(context, billing.activationDeadlineAt!),
+                              )
+                            : context.l10n.billingAccessBlockedMessage,
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: colorScheme.onErrorContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+          ] else if (!billing.accessBlocked &&
+              billing.activationDeadlineAt != null &&
+              billing.billingEnabled) ...[
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: colorScheme.tertiaryContainer,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: colorScheme.onTertiaryContainer,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        context.l10n.billingActivationDeadlinePending(
+                          DtFmt.longDate(context, billing.activationDeadlineAt!),
+                        ),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: colorScheme.onTertiaryContainer,
                         ),
                       ),
                     ),

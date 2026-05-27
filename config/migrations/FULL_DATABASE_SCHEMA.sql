@@ -179,6 +179,34 @@ CREATE TABLE `businesses` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `business_whatsapp_settings`
+--
+
+CREATE TABLE `business_whatsapp_settings` (
+  `id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `provider_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'meta',
+  `whatsapp_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `messages_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `allow_location_mapping` tinyint(1) NOT NULL DEFAULT '0',
+  `default_channel_mode` enum('disabled','business_default','location_mapping') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'business_default',
+  `existing_clients_opt_in_policy` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'explicit_only',
+  `existing_clients_opt_in_assumed_at` timestamp NULL DEFAULT NULL,
+  `status` enum('not_enabled','enabled','onboarding','pending_review','active','suspended','error') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'not_enabled',
+  `last_go_live_check_at` timestamp NULL DEFAULT NULL,
+  `last_error_code` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `last_error_message` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `enabled_by_user_id` int UNSIGNED DEFAULT NULL,
+  `enabled_at` timestamp NULL DEFAULT NULL,
+  `disabled_at` timestamp NULL DEFAULT NULL,
+  `notes` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `business_application_settings`
 --
 
@@ -582,12 +610,22 @@ CREATE TABLE `notification_templates` (
 CREATE TABLE `whatsapp_business_config` (
   `id` int UNSIGNED NOT NULL,
   `business_id` int UNSIGNED NOT NULL,
-  `waba_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `phone_number_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `provider_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'meta',
+  `display_name` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `waba_id` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `business_manager_id` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone_number_id` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `display_phone_number` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `access_token_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `status` enum('active','inactive','pending','error') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `access_token_encrypted` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `token_expires_at` timestamp NULL DEFAULT NULL,
+  `status` enum('draft','pending','active','inactive','suspended','error') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
   `is_default` tinyint(1) NOT NULL DEFAULT '0',
+  `webhook_verified_at` timestamp NULL DEFAULT NULL,
+  `last_health_check_at` timestamp NULL DEFAULT NULL,
+  `last_error_code` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `last_error_message` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `created_by_user_id` int UNSIGNED DEFAULT NULL,
+  `updated_by_user_id` int UNSIGNED DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -602,8 +640,13 @@ CREATE TABLE `whatsapp_client_optins` (
   `id` bigint UNSIGNED NOT NULL,
   `business_id` int UNSIGNED NOT NULL,
   `client_id` int UNSIGNED NOT NULL,
+  `phone_e164` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `opted_in` tinyint(1) NOT NULL DEFAULT '0',
   `opt_in` tinyint(1) NOT NULL DEFAULT '0',
   `source` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `consent_text` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `consented_at` timestamp NULL DEFAULT NULL,
+  `revoked_at` timestamp NULL DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -633,22 +676,33 @@ CREATE TABLE `whatsapp_outbox` (
   `id` int UNSIGNED NOT NULL,
   `business_id` int UNSIGNED NOT NULL,
   `booking_id` int UNSIGNED DEFAULT NULL,
+  `class_booking_id` int UNSIGNED DEFAULT NULL,
+  `client_id` int UNSIGNED DEFAULT NULL,
   `location_id` int UNSIGNED DEFAULT NULL,
   `whatsapp_config_id` int UNSIGNED DEFAULT NULL,
   `recipient_phone` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `recipient_phone_e164` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `template_name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `template_language` varchar(10) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'it',
   `template_payload` json DEFAULT NULL,
-  `status` enum('queued','sent','delivered','read','failed') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'queued',
+  `template_variables_json` json DEFAULT NULL,
+  `message_type` enum('booking_confirmation','booking_reminder','booking_cancellation','booking_reschedule','class_booking_confirmation','class_booking_reminder','class_booking_cancellation','test') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'test',
+  `status` enum('queued','processing','sent','delivered','read','failed','cancelled','skipped') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'queued',
   `attempts` int UNSIGNED NOT NULL DEFAULT '0',
   `max_attempts` int UNSIGNED NOT NULL DEFAULT '3',
-  `provider_message_id` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider_message_id` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `provider_error_code` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `provider_error_message` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `scheduled_at` datetime DEFAULT NULL,
+  `locked_at` timestamp NULL DEFAULT NULL,
+  `locked_by` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `last_attempt_at` datetime DEFAULT NULL,
   `sent_at` datetime DEFAULT NULL,
   `delivered_at` datetime DEFAULT NULL,
   `read_at` datetime DEFAULT NULL,
+  `failed_at` timestamp NULL DEFAULT NULL,
+  `dedupe_key` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -661,10 +715,16 @@ CREATE TABLE `whatsapp_outbox` (
 
 CREATE TABLE `whatsapp_templates` (
   `id` bigint UNSIGNED NOT NULL,
-  `business_id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED DEFAULT NULL,
+  `provider_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'meta',
   `template_name` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `language_code` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'it',
   `category` enum('marketing','utility','authentication','service') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'utility',
-  `status` enum('approved','pending','rejected','paused') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'pending',
+  `status` enum('draft','submitted','approved','rejected','disabled','pending','paused') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'draft',
+  `message_type` varchar(64) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `body_preview` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `variables_schema_json` json DEFAULT NULL,
+  `provider_template_id` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -677,8 +737,11 @@ CREATE TABLE `whatsapp_templates` (
 
 CREATE TABLE `whatsapp_webhook_events` (
   `id` bigint UNSIGNED NOT NULL,
+  `provider_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'meta',
   `event_id` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `business_id` int UNSIGNED NOT NULL,
+  `provider_event_id` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `phone_number_id` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `business_id` int UNSIGNED DEFAULT NULL,
   `payload_json` json NOT NULL,
   `processed_at` datetime NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
@@ -1433,7 +1496,19 @@ ALTER TABLE `whatsapp_business_config`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uq_bwc_business_phone` (`business_id`,`phone_number_id`),
   ADD KEY `idx_bwc_business_default` (`business_id`,`is_default`),
+  ADD KEY `idx_bwc_business_status_default` (`business_id`,`status`,`is_default`),
+  ADD KEY `idx_bwc_provider_phone` (`provider_code`,`phone_number_id`),
   ADD KEY `idx_bwc_status` (`status`);
+
+--
+-- Indici per le tabelle `business_whatsapp_settings`
+--
+ALTER TABLE `business_whatsapp_settings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_business_whatsapp_settings_business` (`business_id`),
+  ADD KEY `idx_bws_enabled_flags` (`whatsapp_enabled`,`messages_enabled`),
+  ADD KEY `idx_bws_status` (`status`),
+  ADD KEY `idx_bws_enabled_by_user` (`enabled_by_user_id`);
 
 --
 -- Indici per le tabelle `whatsapp_client_optins`
@@ -1441,6 +1516,7 @@ ALTER TABLE `whatsapp_business_config`
 ALTER TABLE `whatsapp_client_optins`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uq_cwo_business_client` (`business_id`,`client_id`),
+  ADD KEY `idx_cwo_business_client_phone` (`business_id`,`client_id`,`phone_e164`),
   ADD KEY `idx_cwo_optin` (`business_id`,`opt_in`);
 
 --
@@ -1458,15 +1534,18 @@ ALTER TABLE `whatsapp_location_mapping`
 ALTER TABLE `whatsapp_outbox`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uq_wo_provider_msg` (`provider_message_id`),
+  ADD UNIQUE KEY `uniq_whatsapp_outbox_dedupe_key` (`dedupe_key`),
   ADD KEY `idx_wo_business_status` (`business_id`,`status`),
-  ADD KEY `idx_wo_schedule` (`status`,`scheduled_at`);
+  ADD KEY `idx_wo_schedule` (`status`,`scheduled_at`),
+  ADD KEY `idx_wo_booking_type` (`booking_id`,`message_type`),
+  ADD KEY `idx_wo_class_booking_type` (`class_booking_id`,`message_type`);
 
 --
 -- Indici per le tabelle `whatsapp_templates`
 --
 ALTER TABLE `whatsapp_templates`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uq_wt_business_name` (`business_id`,`template_name`),
+  ADD UNIQUE KEY `uq_wt_business_name` (`business_id`,`template_name`,`language_code`),
   ADD KEY `idx_wt_business_status` (`business_id`,`status`),
   ADD KEY `idx_wt_business_category` (`business_id`,`category`);
 
@@ -1476,7 +1555,9 @@ ALTER TABLE `whatsapp_templates`
 ALTER TABLE `whatsapp_webhook_events`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uq_wwe_event_id` (`event_id`),
+  ADD UNIQUE KEY `uq_wwe_provider_event` (`provider_code`,`provider_event_id`),
   ADD KEY `idx_wwe_business` (`business_id`),
+  ADD KEY `idx_wwe_phone_number` (`phone_number_id`),
   ADD KEY `idx_wwe_processed` (`processed_at`);
 
 --
@@ -1813,6 +1894,12 @@ ALTER TABLE `whatsapp_business_config`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT per la tabella `business_whatsapp_settings`
+--
+ALTER TABLE `business_whatsapp_settings`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT per la tabella `whatsapp_client_optins`
 --
 ALTER TABLE `whatsapp_client_optins`
@@ -2134,6 +2221,13 @@ ALTER TABLE `whatsapp_business_config`
   ADD CONSTRAINT `fk_bwc_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE;
 
 --
+-- Limiti per la tabella `business_whatsapp_settings`
+--
+ALTER TABLE `business_whatsapp_settings`
+  ADD CONSTRAINT `fk_bws_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_bws_enabled_by_user` FOREIGN KEY (`enabled_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
 -- Limiti per la tabella `whatsapp_client_optins`
 --
 ALTER TABLE `whatsapp_client_optins`
@@ -2384,6 +2478,7 @@ CREATE TABLE `business_billing_config` (
   `provider_code` varchar(32) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `provider_price_reference` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `activation_deadline_at` timestamp NULL DEFAULT NULL,
+  `billing_cycle_anchor_at` timestamp NULL DEFAULT NULL,
   `notes` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

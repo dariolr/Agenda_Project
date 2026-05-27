@@ -132,6 +132,12 @@ final class StripeBillingProvider implements BillingProviderInterface
             'metadata' => ['business_id' => (string) $config->businessId],
         ];
 
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
+        if ($config->billingCycleAnchorAt !== null && $config->billingCycleAnchorAt > $now) {
+            $subscriptionData['billing_cycle_anchor'] = $config->billingCycleAnchorAt->getTimestamp();
+            $subscriptionData['proration_behavior'] = 'none';
+        }
+
         $session = $client->checkout->sessions->create([
             'mode' => 'subscription',
             'customer' => $subscription->providerCustomerId,

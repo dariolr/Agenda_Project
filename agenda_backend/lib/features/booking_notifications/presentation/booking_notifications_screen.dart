@@ -79,6 +79,7 @@ class _BookingNotificationsScreenState
         ]);
       }
       await _loadInitialData();
+      await _loadWhatsappDataIfPossible();
     });
   }
 
@@ -233,6 +234,16 @@ class _BookingNotificationsScreenState
           data: (businesses) => businesses,
           orElse: () => const <Business>[],
         );
+    final whatsappSettings = ref.watch(whatsappIntegrationProvider).settings;
+    final whatsappEnabledForActiveBusiness =
+        whatsappSettings?.whatsappEnabled == true &&
+        whatsappSettings?.messagesEnabled == true;
+    final showProviderFilter =
+        _canSelectBusiness || whatsappEnabledForActiveBusiness;
+    final showWhatsappProviderOption =
+        _canSelectBusiness ||
+        _selectedBusinessId == null ||
+        whatsappEnabledForActiveBusiness;
 
     ref.listen<BookingNotificationsState>(bookingNotificationsProvider, (
       prev,
@@ -255,9 +266,7 @@ class _BookingNotificationsScreenState
       if (next <= 0) return;
       if (previous == next) return;
       _loadInitialData();
-      if (selectedTabIndex == 1) {
-        _loadWhatsappDataIfPossible();
-      }
+      _loadWhatsappDataIfPossible();
     });
 
     return Scaffold(
@@ -313,7 +322,8 @@ class _BookingNotificationsScreenState
               selectedChannel: _selectedChannel,
               selectedProvider: _selectedProvider,
               showBusinessFilter: _canSelectBusiness,
-              showProviderFilter: _canSelectBusiness,
+              showProviderFilter: showProviderFilter,
+              showWhatsappProviderOption: showWhatsappProviderOption,
               selectedBusinessId: _selectedBusinessId,
               businesses: businesses,
               onSearchChanged: _onSearchChanged,
@@ -413,7 +423,7 @@ class _BookingNotificationsScreenState
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
     final showLastAttemptColumn = _canSelectBusiness;
-    final showProviderColumn = _canSelectBusiness;
+    final showProviderColumn = _showProviderColumn;
     final filters = ref.watch(bookingNotificationsFiltersProvider);
     final sortBy = filters.sortBy;
     final sortAscending = filters.sortOrder == 'asc';
@@ -550,7 +560,7 @@ class _BookingNotificationsScreenState
 
   DataRow _buildDataRow(BookingNotificationItem item) {
     final showLastAttemptColumn = _canSelectBusiness;
-    final showProviderColumn = _canSelectBusiness;
+    final showProviderColumn = _showProviderColumn;
     return DataRow(
       onSelectChanged: (_) => _showNotificationBody(item),
       cells: [
@@ -647,6 +657,13 @@ class _BookingNotificationsScreenState
 
   DataCell _tappableDataCell(BookingNotificationItem item, Widget child) {
     return DataCell(child, onTap: () => _showNotificationBody(item));
+  }
+
+  bool get _showProviderColumn {
+    final whatsappSettings = ref.watch(whatsappIntegrationProvider).settings;
+    return _canSelectBusiness ||
+        (whatsappSettings?.whatsappEnabled == true &&
+            whatsappSettings?.messagesEnabled == true);
   }
 
   void _onSortChanged(String sortBy, bool ascending) {
@@ -753,6 +770,12 @@ class _BookingNotificationsScreenState
   }
 
   Widget _buildCardList(BookingNotificationsState state) {
+    final whatsappSettings = ref.watch(whatsappIntegrationProvider).settings;
+    final showProvider =
+        _canSelectBusiness ||
+        (whatsappSettings?.whatsappEnabled == true &&
+            whatsappSettings?.messagesEnabled == true);
+
     return RefreshIndicator(
       onRefresh: _loadInitialData,
       child: ListView.builder(
@@ -771,7 +794,7 @@ class _BookingNotificationsScreenState
           final item = state.notifications[index];
           return _NotificationCard(
             notification: item,
-            showProvider: _canSelectBusiness,
+            showProvider: showProvider,
             onOpenBody: () => _showNotificationBody(item),
           );
         },
@@ -788,6 +811,7 @@ class _FiltersBar extends StatelessWidget {
     required this.selectedProvider,
     required this.showBusinessFilter,
     required this.showProviderFilter,
+    required this.showWhatsappProviderOption,
     required this.selectedBusinessId,
     required this.businesses,
     required this.onSearchChanged,
@@ -803,6 +827,7 @@ class _FiltersBar extends StatelessWidget {
   final String? selectedProvider;
   final bool showBusinessFilter;
   final bool showProviderFilter;
+  final bool showWhatsappProviderOption;
   final int? selectedBusinessId;
   final List<Business> businesses;
   final ValueChanged<String> onSearchChanged;
@@ -1004,19 +1029,20 @@ class _FiltersBar extends StatelessWidget {
                         ),
                       ),
                       DropdownMenuItem<String?>(
-                        value: 'smtp',
+                        value: 'email',
                         child: Text(
-                          l10n.bookingNotificationsProviderSmtp,
+                          l10n.bookingNotificationsProviderEmail,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
-                      DropdownMenuItem<String?>(
-                        value: 'brevo',
-                        child: Text(
-                          l10n.bookingNotificationsProviderBrevo,
-                          overflow: TextOverflow.ellipsis,
+                      if (showWhatsappProviderOption)
+                        DropdownMenuItem<String?>(
+                          value: 'whatsapp',
+                          child: Text(
+                            l10n.bookingNotificationsProviderWhatsapp,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                      ),
                     ],
                     onChanged: onProviderChanged,
                   ),
@@ -1242,6 +1268,10 @@ String _bookingNotificationProviderLabel(
 ) {
   final value = (provider ?? '').trim().toLowerCase();
   switch (value) {
+    case 'email':
+      return context.l10n.bookingNotificationsProviderEmail;
+    case 'whatsapp':
+      return context.l10n.bookingNotificationsProviderWhatsapp;
     case 'smtp':
       return context.l10n.bookingNotificationsProviderSmtp;
     case 'brevo':

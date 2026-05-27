@@ -24,6 +24,7 @@ class BillingConfigViewModel {
     required this.accessBlocked,
     this.providerPriceReference,
     this.activationDeadlineAt,
+    this.billingCycleAnchorAt,
     this.notes,
   });
 
@@ -51,6 +52,7 @@ class BillingConfigViewModel {
   final bool accessBlocked;
   final String? providerPriceReference;
   final DateTime? activationDeadlineAt;
+  final DateTime? billingCycleAnchorAt;
   final String? notes;
 
   factory BillingConfigViewModel.fromJson(Map<String, dynamic> json) {
@@ -102,6 +104,9 @@ class BillingConfigViewModel {
       providerPriceReference: json['provider_price_reference'] as String?,
       activationDeadlineAt: _parseDate(
         json['activation_deadline_at'] ?? json['activationDeadlineAt'],
+      ),
+      billingCycleAnchorAt: _parseDate(
+        json['billing_cycle_anchor_at'] ?? json['billingCycleAnchorAt'],
       ),
       notes: json['notes'] as String?,
     );

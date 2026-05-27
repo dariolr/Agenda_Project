@@ -73,6 +73,7 @@ class _FailingBillingRepository implements BillingRepository {
     required String? providerCode,
     String? notes,
     DateTime? activationDeadlineAt,
+    DateTime? billingCycleAnchorAt,
   }) async {}
 }
 

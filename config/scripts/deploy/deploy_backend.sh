@@ -61,7 +61,7 @@ DART_DEFINES=()
 FRONTEND_URL=""
 DEPLOY_PATH=""
 DEPLOY_SSH_ALIAS_FROM_FILE=""
-while IFS='=' read -r key value; do
+while IFS='=' read -r key value || [[ -n "${key:-}" ]]; do
   [[ -z "${key// }" ]] && continue
   [[ "$key" == \#* ]] && continue
 

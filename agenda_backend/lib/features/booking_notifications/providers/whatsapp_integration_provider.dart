@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '/core/models/whatsapp_location_mapping.dart';
+import '/core/models/business_whatsapp_settings.dart';
 import '/core/models/whatsapp_config.dart';
 import '/core/models/whatsapp_embedded_signup_result.dart';
 import '/core/models/whatsapp_go_live_check.dart';
@@ -12,6 +13,7 @@ class WhatsappIntegrationState {
   final List<WhatsappConfig> configs;
   final List<WhatsappLocationMapping> mappings;
   final List<WhatsappOutboxItem> outbox;
+  final BusinessWhatsappSettings? settings;
   final bool isLoading;
   final String? error;
 
@@ -19,6 +21,7 @@ class WhatsappIntegrationState {
     this.configs = const [],
     this.mappings = const [],
     this.outbox = const [],
+    this.settings,
     this.isLoading = false,
     this.error,
   });
@@ -27,6 +30,7 @@ class WhatsappIntegrationState {
     List<WhatsappConfig>? configs,
     List<WhatsappLocationMapping>? mappings,
     List<WhatsappOutboxItem>? outbox,
+    BusinessWhatsappSettings? settings,
     bool? isLoading,
     String? error,
     bool clearError = false,
@@ -35,6 +39,7 @@ class WhatsappIntegrationState {
       configs: configs ?? this.configs,
       mappings: mappings ?? this.mappings,
       outbox: outbox ?? this.outbox,
+      settings: settings ?? this.settings,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
     );
@@ -58,14 +63,16 @@ class WhatsappIntegrationNotifier extends Notifier<WhatsappIntegrationState> {
     state = state.copyWith(isLoading: true, clearError: true);
     try {
       final results = await Future.wait<dynamic>([
+        _api.getBusinessWhatsappSettings(businessId),
         _api.getBusinessWhatsappConfigs(businessId),
         _api.getWhatsappLocationMappings(businessId),
         _api.getWhatsappOutbox(businessId: businessId, limit: 100, offset: 0),
       ]);
       state = state.copyWith(
-        configs: results[0] as List<WhatsappConfig>,
-        mappings: results[1] as List<WhatsappLocationMapping>,
-        outbox: results[2] as List<WhatsappOutboxItem>,
+        settings: results[0] as BusinessWhatsappSettings,
+        configs: results[1] as List<WhatsappConfig>,
+        mappings: results[2] as List<WhatsappLocationMapping>,
+        outbox: results[3] as List<WhatsappOutboxItem>,
         isLoading: false,
       );
     } on ApiException catch (e) {
@@ -285,6 +292,13 @@ class WhatsappIntegrationNotifier extends Notifier<WhatsappIntegrationState> {
     );
     await loadBusinessWhatsappData(businessId);
     return result;
+  }
+
+  Future<String> createEmbeddedSignupState(int businessId) async {
+    final response = await _api.createWhatsappEmbeddedSignupState(
+      businessId: businessId,
+    );
+    return response['state']?.toString() ?? '';
   }
 
   String? _extractWebhookEventId(Map<String, dynamic> payload) {

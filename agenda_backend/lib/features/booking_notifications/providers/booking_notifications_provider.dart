@@ -198,9 +198,16 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
         offset: newOffset,
         pageSize: state.limit,
       );
-      final existing = <int>{for (final item in state.notifications) item.id};
+      final existing = <String>{
+        for (final item in state.notifications)
+          '${item.businessId}:${item.providerUsed ?? 'email'}:${item.id}',
+      };
       final appended = result.notifications
-          .where((item) => !existing.contains(item.id))
+          .where(
+            (item) => !existing.contains(
+              '${item.businessId}:${item.providerUsed ?? 'email'}:${item.id}',
+            ),
+          )
           .toList(growable: false);
       state = state.copyWith(
         notifications: [...state.notifications, ...appended],

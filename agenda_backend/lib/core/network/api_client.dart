@@ -9,6 +9,7 @@ import '/core/models/class_event.dart';
 import '/core/models/class_type.dart';
 import '/core/models/location_closure.dart';
 import '/core/models/whatsapp_config.dart';
+import '/core/models/business_whatsapp_settings.dart';
 import '/core/models/whatsapp_embedded_signup_result.dart';
 import '/core/models/whatsapp_go_live_check.dart';
 import '/core/models/whatsapp_location_mapping.dart';
@@ -3010,6 +3011,30 @@ class ApiClient {
         .toList();
   }
 
+  Future<BusinessWhatsappSettings> getBusinessWhatsappSettings(
+    int businessId,
+  ) async {
+    final response = await get(ApiConfig.businessWhatsappSettings(businessId));
+    final map = Map<String, dynamic>.from(
+      (response['settings'] as Map?) ?? response,
+    );
+    return BusinessWhatsappSettings.fromJson(map);
+  }
+
+  Future<BusinessWhatsappSettings> updateAdminBusinessWhatsappSettings({
+    required int businessId,
+    required Map<String, dynamic> payload,
+  }) async {
+    final response = await put(
+      ApiConfig.adminBusinessWhatsappSettings(businessId),
+      data: payload,
+    );
+    final map = Map<String, dynamic>.from(
+      (response['settings'] as Map?) ?? response,
+    );
+    return BusinessWhatsappSettings.fromJson(map);
+  }
+
   Future<WhatsappLocationMapping> upsertWhatsappLocationMapping({
     required int businessId,
     required int locationId,
@@ -3199,6 +3224,12 @@ class ApiClient {
       },
     );
     return WhatsappEmbeddedSignupResult.fromJson(response);
+  }
+
+  Future<Map<String, dynamic>> createWhatsappEmbeddedSignupState({
+    required int businessId,
+  }) async {
+    return await post(ApiConfig.whatsappEmbeddedSignupState(businessId));
   }
 
   // ==========================================================================

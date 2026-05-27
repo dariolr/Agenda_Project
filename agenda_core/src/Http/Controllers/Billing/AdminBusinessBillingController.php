@@ -50,7 +50,6 @@ final class AdminBusinessBillingController
         $body = $request->getBody() ?? [];
         $enabled = $this->parseBool($body['billing_enabled'] ?? false);
 
-        // Validate activation_deadline_at if provided
         $activationDeadlineAt = null;
         if (isset($body['activation_deadline_at']) && $body['activation_deadline_at'] !== null && $body['activation_deadline_at'] !== '') {
             try {
@@ -61,12 +60,23 @@ final class AdminBusinessBillingController
             }
         }
 
+        $billingCycleAnchorAt = null;
+        if (isset($body['billing_cycle_anchor_at']) && $body['billing_cycle_anchor_at'] !== null && $body['billing_cycle_anchor_at'] !== '') {
+            try {
+                $anchorDt = new \DateTimeImmutable((string) $body['billing_cycle_anchor_at'], new \DateTimeZone('UTC'));
+                $billingCycleAnchorAt = $anchorDt->format(\DateTimeInterface::ATOM);
+            } catch (\Throwable) {
+                return Response::validationError('billing_cycle_anchor_at is not a valid date', $request->traceId);
+            }
+        }
+
         $payload = [
             'billing_enabled' => $enabled,
             'amount_cents' => isset($body['amount_cents']) ? (int) $body['amount_cents'] : null,
             'currency' => 'EUR',
             'provider_code' => $enabled ? BillingProviderCode::STRIPE : null,
             'activation_deadline_at' => $activationDeadlineAt,
+            'billing_cycle_anchor_at' => $billingCycleAnchorAt,
             'notes' => $body['notes'] ?? null,
         ];
 
@@ -118,6 +128,7 @@ final class AdminBusinessBillingController
             'provider_code' => $config['provider_code'],
             'provider_price_reference' => $config['provider_price_reference'],
             'activation_deadline_at' => $config['activation_deadline_at'],
+            'billing_cycle_anchor_at' => $config['billing_cycle_anchor_at'],
             'notes' => $config['notes'],
             'subscription_status' => $subscription?->status,
             'current_period_end' => $subscription?->currentPeriodEnd,

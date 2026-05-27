@@ -287,7 +287,9 @@ final routerProvider = Provider<GoRouter>((ref) {
         if (path == '/altro/metodi-pagamento' && !canManageBusinessSettings) {
           return '/agenda';
         }
-        if (path == '/altro/whatsapp-business') return '/agenda';
+        if (path == '/altro/whatsapp-business' && !canManageBusinessSettings) {
+          return '/agenda';
+        }
         if (path == '/permessi' && !canManageOperators) return '/agenda';
         if (path.startsWith('/operatori/') && !canManageOperators) {
           return '/agenda';

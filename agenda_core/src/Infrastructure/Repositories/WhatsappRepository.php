@@ -322,27 +322,157 @@ final class WhatsappRepository
 
     public function createOutbox(array $data): int
     {
+        $dedupeKey = $data['dedupe_key'] ?? null;
+        if ($dedupeKey !== null && $this->findOutboxIdByDedupeKey((string) $dedupeKey) !== null) {
+            return (int) $this->findOutboxIdByDedupeKey((string) $dedupeKey);
+        }
+
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO whatsapp_outbox
-             (business_id, booking_id, location_id, whatsapp_config_id,
-              recipient_phone, template_name, template_language, template_payload,
-              status, attempts, max_attempts, scheduled_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, "queued", 0, ?, ?)'
+             (business_id, booking_id, class_booking_id, client_id, location_id, whatsapp_config_id,
+              recipient_phone, recipient_phone_e164, template_name, template_language, template_payload,
+              template_variables_json, message_type, status, attempts, max_attempts, scheduled_at, dedupe_key)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "queued", 0, ?, ?, ?)'
         );
+        $payload = Json::encode($data['template_payload'] ?? $data['template_variables'] ?? []);
         $stmt->execute([
             (int) $data['business_id'],
             $data['booking_id'] ?? null,
+            $data['class_booking_id'] ?? null,
+            $data['client_id'] ?? null,
             $data['location_id'] ?? null,
             $data['whatsapp_config_id'] ?? null,
-            (string) $data['recipient_phone'],
+            (string) ($data['recipient_phone'] ?? $data['recipient_phone_e164'] ?? ''),
+            (string) ($data['recipient_phone_e164'] ?? $data['recipient_phone'] ?? ''),
             (string) $data['template_name'],
             (string) ($data['template_language'] ?? 'it'),
-            Json::encode($data['template_payload'] ?? []),
+            $payload,
+            $payload,
+            (string) ($data['message_type'] ?? 'test'),
             (int) ($data['max_attempts'] ?? 3),
             $data['scheduled_at'] ?? null,
+            $dedupeKey,
         ]);
 
         return (int) $this->db->getPdo()->lastInsertId();
+    }
+
+    public function getPendingOutbox(int $limit = 100, ?int $businessId = null): array
+    {
+        $params = [];
+        $where = [
+            'status = "queued"',
+            '(scheduled_at IS NULL OR scheduled_at <= NOW())',
+            'attempts < max_attempts',
+        ];
+        if ($businessId !== null && $businessId > 0) {
+            $where[] = 'business_id = ?';
+            $params[] = $businessId;
+        }
+
+        $safeLimit = max(1, min(500, $limit));
+        $sql = 'SELECT id, business_id, location_id, whatsapp_config_id, booking_id, class_booking_id, client_id,
+                       recipient_phone, recipient_phone_e164, template_name, template_language,
+                       template_payload, template_variables_json, message_type, max_attempts, attempts, scheduled_at
+                FROM whatsapp_outbox
+                WHERE ' . implode(' AND ', $where) . '
+                ORDER BY scheduled_at ASC, id ASC
+                LIMIT ' . $safeLimit;
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function markOutboxProcessing(int $businessId, int $outboxId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE whatsapp_outbox
+             SET status = "processing",
+                 attempts = attempts + 1,
+                 last_attempt_at = NOW(),
+                 updated_at = NOW()
+             WHERE business_id = ?
+               AND id = ?
+               AND status = "queued"
+               AND attempts < max_attempts'
+        );
+        $stmt->execute([$businessId, $outboxId]);
+
+        return $stmt->rowCount() === 1;
+    }
+
+    public function findOutboxIdByDedupeKey(string $dedupeKey): ?int
+    {
+        if ($dedupeKey === '') {
+            return null;
+        }
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id FROM whatsapp_outbox WHERE dedupe_key = ? LIMIT 1'
+        );
+        $stmt->execute([$dedupeKey]);
+        $id = $stmt->fetchColumn();
+
+        return $id === false ? null : (int) $id;
+    }
+
+    public function deletePendingBookingReminders(int $bookingId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE whatsapp_outbox
+             SET status = "cancelled", updated_at = NOW()
+             WHERE booking_id = ?
+               AND message_type = "booking_reminder"
+               AND status IN ("queued", "processing")'
+        );
+        $stmt->execute([$bookingId]);
+
+        return $stmt->rowCount();
+    }
+
+    public function deletePendingBookingRemindersForRecurringSeries(int $recurrenceRuleId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE whatsapp_outbox wo
+             INNER JOIN bookings b ON wo.booking_id = b.id
+             SET wo.status = "cancelled", wo.updated_at = NOW()
+             WHERE b.recurrence_rule_id = ?
+               AND wo.message_type = "booking_reminder"
+               AND wo.status IN ("queued", "processing")'
+        );
+        $stmt->execute([$recurrenceRuleId]);
+
+        return $stmt->rowCount();
+    }
+
+    public function deletePendingBookingRemindersForFutureRecurrences(int $recurrenceRuleId, int $fromIndex): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE whatsapp_outbox wo
+             INNER JOIN bookings b ON wo.booking_id = b.id
+             SET wo.status = "cancelled", wo.updated_at = NOW()
+             WHERE b.recurrence_rule_id = ?
+               AND b.recurrence_index >= ?
+               AND wo.message_type = "booking_reminder"
+               AND wo.status IN ("queued", "processing")'
+        );
+        $stmt->execute([$recurrenceRuleId, $fromIndex]);
+
+        return $stmt->rowCount();
+    }
+
+    public function deletePendingClassBookingReminders(int $classBookingId): int
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE whatsapp_outbox
+             SET status = "cancelled", updated_at = NOW()
+             WHERE class_booking_id = ?
+               AND message_type = "class_booking_reminder"
+               AND status IN ("queued", "processing")'
+        );
+        $stmt->execute([$classBookingId]);
+
+        return $stmt->rowCount();
     }
 
     public function findOutboxById(int $businessId, int $outboxId): ?array
@@ -351,6 +481,7 @@ final class WhatsappRepository
             'SELECT id, business_id, booking_id, location_id, whatsapp_config_id,
                     recipient_phone, template_name, template_language, template_payload,
                     status, attempts, max_attempts, provider_message_id, error_message,
+                    provider_error_code, provider_error_message,
                     scheduled_at, last_attempt_at, sent_at, delivered_at, read_at,
                     created_at, updated_at
              FROM whatsapp_outbox
@@ -368,16 +499,22 @@ final class WhatsappRepository
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE whatsapp_outbox
              SET status = "sent",
-                 attempts = attempts + 1,
                  provider_message_id = COALESCE(?, provider_message_id),
                  error_message = NULL,
+                 provider_error_code = NULL,
+                 provider_error_message = NULL,
                  last_attempt_at = NOW(),
                  sent_at = NOW(),
                  updated_at = NOW()
              WHERE business_id = ? AND id = ?'
         );
 
-        return $stmt->execute([$providerMessageId, $businessId, $outboxId]);
+        $ok = $stmt->execute([$providerMessageId, $businessId, $outboxId]);
+        if ($ok) {
+            $this->createOutboxBookingEvent($businessId, $outboxId, 'booking_whatsapp_sent');
+        }
+
+        return $ok;
     }
 
     public function retryOutbox(int $businessId, int $outboxId): bool
@@ -408,6 +545,7 @@ final class WhatsappRepository
         $sql = 'UPDATE whatsapp_outbox
                 SET status = ?,
                     error_message = ?,
+                    provider_error_message = ?,
                     updated_at = NOW()';
         if ($timestampField !== null) {
             $sql .= ', ' . $timestampField . ' = NOW()';
@@ -416,7 +554,85 @@ final class WhatsappRepository
 
         $stmt = $this->db->getPdo()->prepare($sql);
 
-        return $stmt->execute([$status, $errorMessage, $businessId, $outboxId]);
+        return $stmt->execute([$status, $errorMessage, $errorMessage, $businessId, $outboxId]);
+    }
+
+    public function markOutboxSendFailure(
+        int $businessId,
+        int $outboxId,
+        string $status,
+        ?string $errorCode,
+        ?string $errorMessage,
+        ?string $scheduledAt = null
+    ): bool {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE whatsapp_outbox
+             SET status = ?,
+                 error_message = ?,
+                 provider_error_code = ?,
+                 provider_error_message = ?,
+                 scheduled_at = ?,
+                 last_attempt_at = NOW(),
+                 failed_at = CASE WHEN ? = "failed" THEN NOW() ELSE failed_at END,
+                 updated_at = NOW()
+             WHERE business_id = ? AND id = ?'
+        );
+
+        $ok = $stmt->execute([
+            $status,
+            $errorMessage,
+            $errorCode,
+            $errorMessage,
+            $scheduledAt,
+            $status,
+            $businessId,
+            $outboxId,
+        ]);
+        if ($ok && in_array($status, ['failed', 'skipped'], true)) {
+            $this->createOutboxBookingEvent(
+                $businessId,
+                $outboxId,
+                $status === 'skipped' ? 'booking_whatsapp_skipped' : 'booking_whatsapp_failed'
+            );
+        }
+
+        return $ok;
+    }
+
+    private function createOutboxBookingEvent(int $businessId, int $outboxId, string $eventType): void
+    {
+        try {
+            $stmt = $this->db->getPdo()->prepare(
+                'SELECT id, booking_id, message_type, status, recipient_phone_e164, provider_message_id,
+                        provider_error_code, provider_error_message, error_message
+                 FROM whatsapp_outbox
+                 WHERE business_id = ? AND id = ?
+                 LIMIT 1'
+            );
+            $stmt->execute([$businessId, $outboxId]);
+            $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+            if (!$row || empty($row['booking_id'])) {
+                return;
+            }
+
+            $payload = Json::encode([
+                'whatsapp_outbox_id' => (int) $row['id'],
+                'message_type' => $row['message_type'] ?? null,
+                'status' => $row['status'] ?? null,
+                'recipient_phone_e164' => $row['recipient_phone_e164'] ?? null,
+                'provider_message_id' => $row['provider_message_id'] ?? null,
+                'provider_error_code' => $row['provider_error_code'] ?? null,
+                'provider_error_message' => $row['provider_error_message'] ?? $row['error_message'] ?? null,
+            ]);
+
+            $insert = $this->db->getPdo()->prepare(
+                'INSERT INTO booking_events
+                 (booking_id, event_type, actor_type, actor_id, actor_name, payload_json, correlation_id, created_at)
+                 VALUES (?, ?, "system", NULL, "WhatsApp Worker", ?, NULL, NOW())'
+            );
+            $insert->execute([(int) $row['booking_id'], $eventType, $payload ?: '{}']);
+        } catch (\Throwable) {
+        }
     }
 
     public function updateOutboxStatusByProviderMessageId(
@@ -523,12 +739,16 @@ final class WhatsappRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT 1
              FROM whatsapp_templates
-             WHERE business_id = ? AND category = "utility" AND status = "approved"
+             WHERE (business_id = ? OR business_id IS NULL) AND category = "utility" AND status = "approved"
              LIMIT 1'
         );
         $stmt->execute([$businessId]);
 
-        return $stmt->fetchColumn() !== false;
+        if ($stmt->fetchColumn() !== false) {
+            return true;
+        }
+
+        return trim((string) ($_ENV['WHATSAPP_REMINDER_TEMPLATE_NAME'] ?? getenv('WHATSAPP_REMINDER_TEMPLATE_NAME') ?? 'promemoria_appuntamento_ita_24h')) !== '';
     }
 
     public function hasWebhookEventForBusiness(int $businessId): bool

@@ -164,6 +164,7 @@ final class BookingNotificationsController
      */
     private function buildNotificationHtmlBody(array $item): ?string
     {
+        $isWhatsapp = strtolower((string) ($item['provider_used'] ?? '')) === 'whatsapp';
         $payloadRaw = $item['payload'] ?? null;
         if (!is_string($payloadRaw) || trim($payloadRaw) === '') {
             return null;
@@ -178,6 +179,18 @@ final class BookingNotificationsController
         $variables = isset($payload['variables']) && is_array($payload['variables'])
             ? $payload['variables']
             : $payload;
+
+        if ($isWhatsapp) {
+            $parts = [];
+            foreach (['client_name', 'date', 'time', 'business_name', 'service', 'link'] as $key) {
+                $value = trim((string) ($variables[$key] ?? ''));
+                if ($value !== '') {
+                    $parts[] = $value;
+                }
+            }
+
+            return $parts !== [] ? implode("\n", $parts) : null;
+        }
 
         if (!isset($variables['year'])) {
             $variables['year'] = date('Y');

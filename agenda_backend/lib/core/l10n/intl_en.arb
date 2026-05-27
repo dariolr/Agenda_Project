@@ -1407,6 +1407,8 @@
   "bookingNotificationsStatusFailed": "Failed",
   "bookingNotificationsStatusSkipped": "Skipped",
   "bookingNotificationsTypeAll": "All types",
+  "bookingNotificationsProviderEmail": "Email",
+  "bookingNotificationsProviderWhatsapp": "WhatsApp",
   "bookingNotificationsProviderSmtp": "SMTP",
   "bookingNotificationsProviderBrevo": "Brevo",
   "bookingNotificationsProviderMailgun": "Mailgun",
@@ -1768,19 +1770,8 @@
   "whatsappEmbeddedSignupDisplayPhone": "Display phone number (+39...)",
   "whatsappEmbeddedSignupConfirm": "Complete connection",
   "whatsappEmbeddedSignupSuccessTitle": "WhatsApp connection completed",
-  "whatsappEmbeddedSignupSuccessMessage": "Onboarding completed. Next steps: {steps}",
-  "@whatsappEmbeddedSignupSuccessMessage": {
-    "placeholders": {
-      "steps": {}
-    }
-  },
-  "whatsappEmbeddedSignupSuccessWithMapping": "Onboarding completed. Auto-mapped locations: {locations}. Next steps: {steps}",
-  "@whatsappEmbeddedSignupSuccessWithMapping": {
-    "placeholders": {
-      "locations": {},
-      "steps": {}
-    }
-  },
+  "whatsappEmbeddedSignupSuccessMessage": "The WhatsApp number has been connected successfully. WhatsApp reminders can now be used when message sending is enabled.",
+  "whatsappEmbeddedSignupSuccessWithMapping": "The WhatsApp number has been connected successfully. The business locations have been linked to the number automatically. WhatsApp reminders can now be used when message sending is enabled.",
   "whatsappSelectBusinessHint": "Select one business to manage WhatsApp integration.",
   "whatsappRefresh": "Refresh",
   "whatsappRunWorker": "Run worker",
@@ -1842,6 +1833,19 @@
   "whatsappInvalidJson": "Template variables JSON is invalid.",
   "whatsappSavedSuccessTitle": "WhatsApp updated",
   "whatsappSavedSuccessMessage": "WhatsApp changes were saved successfully.",
+  "businessWhatsappSettingsMenuItem": "WhatsApp",
+  "businessWhatsappSettingsDialogTitle": "WhatsApp settings",
+  "businessWhatsappEnabledLabel": "Enable WhatsApp for this business",
+  "businessWhatsappEnabledHelper": "Allows the business to use the WhatsApp integration.",
+  "businessWhatsappMessagesEnabledLabel": "Enable message sending",
+  "businessWhatsappMessagesEnabledHelper": "Allows automatic WhatsApp messages to be queued and sent.",
+  "businessWhatsappLocationMappingLabel": "Enable location mapping",
+  "businessWhatsappLocationMappingHelper": "Allows different WhatsApp numbers to be assigned to individual locations.",
+  "businessWhatsappExistingClientsOptInPolicyLabel": "Existing clients",
+  "businessWhatsappExistingClientsExplicitOnlyLabel": "Require explicit consent",
+  "businessWhatsappExistingClientsExplicitOnlyHelper": "Send WhatsApp messages only to clients who gave consent in the app.",
+  "businessWhatsappExistingClientsAssumeConsentedLabel": "Consider existing clients consented",
+  "businessWhatsappExistingClientsAssumeConsentedHelper": "Use this only if the business declares it already has consent for existing clients. New clients will still need explicit consent.",
   "whatsappWorkerCompleted": "Outbox worker completed successfully.",
   "whatsappQueuedOnly": "Message queued successfully.",
   "whatsappQueuedAndSent": "Message queued and sent.",
@@ -2035,7 +2039,14 @@
   "onlinePaymentRequiredDescription": "The customer must complete the online payment to confirm the booking.",
   "billingActivationDeadlineLabel": "Subscription activation deadline",
   "billingActivationDeadlineHint": "If set, the business can use the app for free until this date. After that, they must activate the subscription to continue.",
+  "billingCycleAnchorLabel": "Billing cycle anchor (Stripe)",
+  "billingCycleAnchorHint": "If set and in the future, Stripe will use this date as the start of the first billing cycle.",
   "billingAccessBlockedTitle": "Subscription required",
-  "billingAccessBlockedMessage": "The free period has ended. To continue using the app, activate your monthly subscription.",
-  "billingAccessBlockedActivateAction": "Activate subscription"
+  "billingAccessBlockedMessage": "The free period has ended. To continue using the app, activate your subscription.",
+  "billingAccessBlockedMessageWithDate": "The free period ended on {date}. To continue using the app, activate your subscription.",
+  "billingActivationDeadlinePending": "Your free period ends on {date}.",
+  "billingAccessBlockedActivateAction": "Activate subscription",
+  "whatsappNotEnabledForBusiness": "WhatsApp is not enabled for this business yet.",
+  "whatsappSuperadminMustEnable": "The superadmin must enable WhatsApp before you can connect a number.",
+  "whatsappEmbeddedSignupStateInvalid": "Unable to start the secure Meta session. Try again."
 }
