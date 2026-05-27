@@ -1055,6 +1055,22 @@ class MessageLookup extends MessageLookupByLibrary {
     "businessWhatsappEnabledLabel": MessageLookupByLibrary.simpleMessage(
       "Enable WhatsApp for this business",
     ),
+    "businessWhatsappExistingClientsAssumeConsentedHelper":
+        MessageLookupByLibrary.simpleMessage(
+          "Use this only if the business declares it already has consent for existing clients. New clients will still need explicit consent.",
+        ),
+    "businessWhatsappExistingClientsAssumeConsentedLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Consider existing clients consented",
+        ),
+    "businessWhatsappExistingClientsExplicitOnlyHelper":
+        MessageLookupByLibrary.simpleMessage(
+          "Send WhatsApp messages only to clients who gave consent in the app.",
+        ),
+    "businessWhatsappExistingClientsExplicitOnlyLabel":
+        MessageLookupByLibrary.simpleMessage("Require explicit consent"),
+    "businessWhatsappExistingClientsOptInPolicyLabel":
+        MessageLookupByLibrary.simpleMessage("Existing clients"),
     "businessWhatsappLocationMappingHelper": MessageLookupByLibrary.simpleMessage(
       "Allows different WhatsApp numbers to be assigned to individual locations.",
     ),
@@ -3190,14 +3206,14 @@ class MessageLookup extends MessageLookupByLibrary {
       "Unable to start the secure Meta session. Try again.",
     ),
     "whatsappEmbeddedSignupSuccessMessage": MessageLookupByLibrary.simpleMessage(
-      "The WhatsApp number has been connected successfully. Before real messages are sent, the final checks will be completed: technical setup, message template, and customer consents.",
+      "The WhatsApp number has been connected successfully. WhatsApp reminders can now be used when message sending is enabled.",
     ),
     "whatsappEmbeddedSignupSuccessTitle": MessageLookupByLibrary.simpleMessage(
       "WhatsApp connection completed",
     ),
     "whatsappEmbeddedSignupSuccessWithMapping":
         MessageLookupByLibrary.simpleMessage(
-          "The WhatsApp number has been connected successfully. The business location has been linked to the WhatsApp number automatically. Before real messages are sent, the final checks will be completed: technical setup, message template, and customer consents.",
+          "The WhatsApp number has been connected successfully. The business locations have been linked to the number automatically. WhatsApp reminders can now be used when message sending is enabled.",
         ),
     "whatsappEmbeddedSignupTitle": MessageLookupByLibrary.simpleMessage(
       "Complete Meta onboarding",

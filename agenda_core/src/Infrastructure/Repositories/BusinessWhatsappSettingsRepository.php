@@ -9,12 +9,15 @@ use Agenda\Infrastructure\Database\Connection;
 final class BusinessWhatsappSettingsRepository
 {
     private const SELECT_FIELDS = 'id, business_id, provider_code, whatsapp_enabled, messages_enabled,
-        allow_location_mapping, default_channel_mode,
+        allow_location_mapping, default_channel_mode, existing_clients_opt_in_policy, existing_clients_opt_in_assumed_at,
         status, last_go_live_check_at, last_error_code, last_error_message, enabled_by_user_id,
         enabled_at, disabled_at, notes, created_at, updated_at';
 
     /** @var string[] */
     private const ALLOWED_CHANNEL_MODES = ['disabled', 'business_default', 'location_mapping'];
+
+    /** @var string[] */
+    private const ALLOWED_EXISTING_CLIENTS_OPT_IN_POLICIES = ['explicit_only', 'assume_existing_consented'];
 
     /** @var string[] */
     private const ALLOWED_STATUSES = [
@@ -39,6 +42,8 @@ final class BusinessWhatsappSettingsRepository
             'messages_enabled' => 0,
             'allow_location_mapping' => 0,
             'default_channel_mode' => 'business_default',
+            'existing_clients_opt_in_policy' => 'explicit_only',
+            'existing_clients_opt_in_assumed_at' => null,
             'status' => 'not_enabled',
             'last_go_live_check_at' => null,
             'last_error_code' => null,
@@ -97,6 +102,7 @@ final class BusinessWhatsappSettingsRepository
         $sql = 'SELECT b.id AS business_id, b.name AS business_name, b.slug AS business_slug,
                        s.id, s.provider_code, s.whatsapp_enabled, s.messages_enabled,
                        s.allow_location_mapping, s.default_channel_mode,
+                       s.existing_clients_opt_in_policy, s.existing_clients_opt_in_assumed_at,
                        s.status, s.last_go_live_check_at, s.last_error_code, s.last_error_message,
                        s.enabled_by_user_id, s.enabled_at, s.disabled_at, s.notes, s.created_at, s.updated_at,
                        c.id AS default_config_id, c.status AS default_config_status,
@@ -153,17 +159,35 @@ final class BusinessWhatsappSettingsRepository
             $channelMode = 'business_default';
         }
 
+        $currentExistingClientsOptInPolicy = (string) ($current['existing_clients_opt_in_policy'] ?? 'explicit_only');
+        $existingClientsOptInPolicy = (string) ($data['existing_clients_opt_in_policy'] ?? $currentExistingClientsOptInPolicy);
+        if (!in_array($existingClientsOptInPolicy, self::ALLOWED_EXISTING_CLIENTS_OPT_IN_POLICIES, true)) {
+            $existingClientsOptInPolicy = 'explicit_only';
+        }
+        $existingClientsOptInAssumedAt = $current['existing_clients_opt_in_assumed_at'] ?? null;
+        if ($existingClientsOptInPolicy === 'explicit_only') {
+            $existingClientsOptInAssumedAt = null;
+        } elseif (
+            $existingClientsOptInPolicy !== $currentExistingClientsOptInPolicy
+            || $existingClientsOptInAssumedAt === null
+        ) {
+            $existingClientsOptInAssumedAt = date('Y-m-d H:i:s');
+        }
+
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO business_whatsapp_settings
              (business_id, provider_code, whatsapp_enabled, messages_enabled,
-              allow_location_mapping, default_channel_mode, status,
+              allow_location_mapping, default_channel_mode,
+              existing_clients_opt_in_policy, existing_clients_opt_in_assumed_at, status,
               enabled_by_user_id, enabled_at, disabled_at, notes)
-             VALUES (?, "meta", ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             VALUES (?, "meta", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                whatsapp_enabled = VALUES(whatsapp_enabled),
                messages_enabled = VALUES(messages_enabled),
                allow_location_mapping = VALUES(allow_location_mapping),
                default_channel_mode = VALUES(default_channel_mode),
+               existing_clients_opt_in_policy = VALUES(existing_clients_opt_in_policy),
+               existing_clients_opt_in_assumed_at = VALUES(existing_clients_opt_in_assumed_at),
                status = VALUES(status),
                enabled_by_user_id = IF(VALUES(whatsapp_enabled) = 1 AND whatsapp_enabled = 0, VALUES(enabled_by_user_id), enabled_by_user_id),
                enabled_at = IF(VALUES(whatsapp_enabled) = 1 AND whatsapp_enabled = 0, NOW(), enabled_at),
@@ -179,6 +203,8 @@ final class BusinessWhatsappSettingsRepository
                 ? ((bool) $data['allow_location_mapping'] ? 1 : 0)
                 : (int) ($current['allow_location_mapping'] ?? 0),
             $channelMode,
+            $existingClientsOptInPolicy,
+            $existingClientsOptInAssumedAt,
             $status,
             $whatsappEnabled && !$wasEnabled ? $userId : ($current['enabled_by_user_id'] ?? null),
             $whatsappEnabled && !$wasEnabled ? date('Y-m-d H:i:s') : ($current['enabled_at'] ?? null),

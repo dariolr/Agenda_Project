@@ -50,7 +50,7 @@ final class QueueWhatsappNotification
             return 0;
         }
 
-        $phone = $this->resolvePhone($businessId, $clientId, $client);
+        $phone = $this->resolvePhone($businessId, $clientId, $client, $settings);
         if ($phone === null) {
             return 0;
         }
@@ -115,7 +115,7 @@ final class QueueWhatsappNotification
     private function loadClient(int $businessId, int $clientId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT id, first_name, last_name, phone
+            'SELECT id, first_name, last_name, phone, created_at
              FROM clients
              WHERE id = ? AND business_id = ? AND is_archived = 0
              LIMIT 1'
@@ -126,26 +126,56 @@ final class QueueWhatsappNotification
         return $row ?: null;
     }
 
-    private function resolvePhone(int $businessId, int $clientId, array $client): ?string
+    private function resolvePhone(int $businessId, int $clientId, array $client, array $settings): ?string
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT phone_e164
+            'SELECT phone_e164, opt_in, opted_in, revoked_at
              FROM whatsapp_client_optins
              WHERE business_id = ?
                AND client_id = ?
-               AND (opted_in = 1 OR opt_in = 1)
-               AND (revoked_at IS NULL)
              ORDER BY updated_at DESC, id DESC
              LIMIT 1'
         );
         $stmt->execute([$businessId, $clientId]);
-        $optinPhone = $stmt->fetchColumn();
+        $optIn = $stmt->fetch(\PDO::FETCH_ASSOC) ?: null;
 
-        $phone = is_string($optinPhone) && trim($optinPhone) !== ''
-            ? trim($optinPhone)
+        if ($optIn !== null && $optIn['revoked_at'] !== null) {
+            return null;
+        }
+
+        $hasExplicitOptIn = $optIn !== null
+            && (((int) ($optIn['opted_in'] ?? 0)) === 1 || ((int) ($optIn['opt_in'] ?? 0)) === 1);
+        $hasExplicitOptOut = $optIn !== null
+            && !$hasExplicitOptIn
+            && (((int) ($optIn['opted_in'] ?? 0)) === 0 || ((int) ($optIn['opt_in'] ?? 0)) === 0);
+
+        if (!$hasExplicitOptIn) {
+            if ($hasExplicitOptOut || !$this->allowsAssumedExistingClientOptIn($settings, $client)) {
+                return null;
+            }
+        }
+
+        $optInPhone = is_array($optIn) ? ($optIn['phone_e164'] ?? null) : null;
+        $phone = is_string($optInPhone) && trim($optInPhone) !== ''
+            ? trim($optInPhone)
             : $this->normalizePhone((string) ($client['phone'] ?? ''));
 
         return $this->isE164($phone) ? $phone : null;
+    }
+
+    private function allowsAssumedExistingClientOptIn(array $settings, array $client): bool
+    {
+        if (($settings['existing_clients_opt_in_policy'] ?? 'explicit_only') !== 'assume_existing_consented') {
+            return false;
+        }
+
+        $assumedAt = trim((string) ($settings['existing_clients_opt_in_assumed_at'] ?? ''));
+        $clientCreatedAt = trim((string) ($client['created_at'] ?? ''));
+        if ($assumedAt === '' || $clientCreatedAt === '') {
+            return false;
+        }
+
+        return strtotime($clientCreatedAt) <= strtotime($assumedAt);
     }
 
     private function normalizePhone(string $raw): string
@@ -199,7 +229,26 @@ final class QueueWhatsappNotification
         $stmt->execute([$businessId, $messageType, $messageType, $language, $language]);
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
 
-        return $row ?: null;
+        if ($row !== false) {
+            return $row;
+        }
+
+        if ($messageType === 'booking_reminder') {
+            return [
+                'business_id' => null,
+                'template_name' => $this->defaultReminderTemplateName(),
+                'language_code' => $language,
+            ];
+        }
+
+        return null;
+    }
+
+    private function defaultReminderTemplateName(): string
+    {
+        $name = trim((string) ($_ENV['WHATSAPP_REMINDER_TEMPLATE_NAME'] ?? getenv('WHATSAPP_REMINDER_TEMPLATE_NAME') ?? ''));
+
+        return $name !== '' ? $name : 'promemoria_appuntamento_ita_24h';
     }
 
     private function messageTypeForChannel(string $channel): ?string

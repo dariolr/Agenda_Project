@@ -5,6 +5,8 @@ class BusinessWhatsappSettings {
   final bool messagesEnabled;
   final bool allowLocationMapping;
   final String defaultChannelMode;
+  final String existingClientsOptInPolicy;
+  final String? existingClientsOptInAssumedAt;
   final String status;
   final String? lastGoLiveCheckAt;
   final String? lastErrorCode;
@@ -17,6 +19,8 @@ class BusinessWhatsappSettings {
     required this.messagesEnabled,
     required this.allowLocationMapping,
     required this.defaultChannelMode,
+    required this.existingClientsOptInPolicy,
+    this.existingClientsOptInAssumedAt,
     required this.status,
     this.lastGoLiveCheckAt,
     this.lastErrorCode,
@@ -36,6 +40,10 @@ class BusinessWhatsappSettings {
       allowLocationMapping: asBool(json['allow_location_mapping']),
       defaultChannelMode:
           json['default_channel_mode']?.toString() ?? 'business_default',
+      existingClientsOptInPolicy:
+          json['existing_clients_opt_in_policy']?.toString() ?? 'explicit_only',
+      existingClientsOptInAssumedAt: json['existing_clients_opt_in_assumed_at']
+          ?.toString(),
       status: json['status']?.toString() ?? 'not_enabled',
       lastGoLiveCheckAt: json['last_go_live_check_at']?.toString(),
       lastErrorCode: json['last_error_code']?.toString(),

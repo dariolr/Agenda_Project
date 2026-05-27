@@ -10976,20 +10976,20 @@ class L10n {
     );
   }
 
-  /// `The WhatsApp number has been connected successfully. Before real messages are sent, the final checks will be completed: technical setup, message template, and customer consents.`
+  /// `The WhatsApp number has been connected successfully. WhatsApp reminders can now be used when message sending is enabled.`
   String get whatsappEmbeddedSignupSuccessMessage {
     return Intl.message(
-      'The WhatsApp number has been connected successfully. Before real messages are sent, the final checks will be completed: technical setup, message template, and customer consents.',
+      'The WhatsApp number has been connected successfully. WhatsApp reminders can now be used when message sending is enabled.',
       name: 'whatsappEmbeddedSignupSuccessMessage',
       desc: '',
       args: [],
     );
   }
 
-  /// `The WhatsApp number has been connected successfully. The business location has been linked to the WhatsApp number automatically. Before real messages are sent, the final checks will be completed: technical setup, message template, and customer consents.`
+  /// `The WhatsApp number has been connected successfully. The business locations have been linked to the number automatically. WhatsApp reminders can now be used when message sending is enabled.`
   String get whatsappEmbeddedSignupSuccessWithMapping {
     return Intl.message(
-      'The WhatsApp number has been connected successfully. The business location has been linked to the WhatsApp number automatically. Before real messages are sent, the final checks will be completed: technical setup, message template, and customer consents.',
+      'The WhatsApp number has been connected successfully. The business locations have been linked to the number automatically. WhatsApp reminders can now be used when message sending is enabled.',
       name: 'whatsappEmbeddedSignupSuccessWithMapping',
       desc: '',
       args: [],
@@ -11666,6 +11666,56 @@ class L10n {
     return Intl.message(
       'Allows different WhatsApp numbers to be assigned to individual locations.',
       name: 'businessWhatsappLocationMappingHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Existing clients`
+  String get businessWhatsappExistingClientsOptInPolicyLabel {
+    return Intl.message(
+      'Existing clients',
+      name: 'businessWhatsappExistingClientsOptInPolicyLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Require explicit consent`
+  String get businessWhatsappExistingClientsExplicitOnlyLabel {
+    return Intl.message(
+      'Require explicit consent',
+      name: 'businessWhatsappExistingClientsExplicitOnlyLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Send WhatsApp messages only to clients who gave consent in the app.`
+  String get businessWhatsappExistingClientsExplicitOnlyHelper {
+    return Intl.message(
+      'Send WhatsApp messages only to clients who gave consent in the app.',
+      name: 'businessWhatsappExistingClientsExplicitOnlyHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Consider existing clients consented`
+  String get businessWhatsappExistingClientsAssumeConsentedLabel {
+    return Intl.message(
+      'Consider existing clients consented',
+      name: 'businessWhatsappExistingClientsAssumeConsentedLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Use this only if the business declares it already has consent for existing clients. New clients will still need explicit consent.`
+  String get businessWhatsappExistingClientsAssumeConsentedHelper {
+    return Intl.message(
+      'Use this only if the business declares it already has consent for existing clients. New clients will still need explicit consent.',
+      name: 'businessWhatsappExistingClientsAssumeConsentedHelper',
       desc: '',
       args: [],
     );

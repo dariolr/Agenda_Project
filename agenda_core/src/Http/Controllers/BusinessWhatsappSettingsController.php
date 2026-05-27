@@ -170,6 +170,8 @@ final class BusinessWhatsappSettingsController
             'messages_enabled' => ((int) ($row['messages_enabled'] ?? 0)) === 1,
             'allow_location_mapping' => ((int) ($row['allow_location_mapping'] ?? 0)) === 1,
             'default_channel_mode' => (string) ($row['default_channel_mode'] ?? 'business_default'),
+            'existing_clients_opt_in_policy' => (string) ($row['existing_clients_opt_in_policy'] ?? 'explicit_only'),
+            'existing_clients_opt_in_assumed_at' => $row['existing_clients_opt_in_assumed_at'] ?? null,
             'status' => (string) ($row['status'] ?? 'not_enabled'),
             'last_go_live_check_at' => $row['last_go_live_check_at'] ?? null,
             'last_error_code' => $row['last_error_code'] ?? null,

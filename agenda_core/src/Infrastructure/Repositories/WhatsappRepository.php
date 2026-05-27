@@ -739,12 +739,16 @@ final class WhatsappRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT 1
              FROM whatsapp_templates
-             WHERE business_id = ? AND category = "utility" AND status = "approved"
+             WHERE (business_id = ? OR business_id IS NULL) AND category = "utility" AND status = "approved"
              LIMIT 1'
         );
         $stmt->execute([$businessId]);
 
-        return $stmt->fetchColumn() !== false;
+        if ($stmt->fetchColumn() !== false) {
+            return true;
+        }
+
+        return trim((string) ($_ENV['WHATSAPP_REMINDER_TEMPLATE_NAME'] ?? getenv('WHATSAPP_REMINDER_TEMPLATE_NAME') ?? 'promemoria_appuntamento_ita_24h')) !== '';
     }
 
     public function hasWebhookEventForBusiness(int $businessId): bool

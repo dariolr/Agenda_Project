@@ -190,6 +190,8 @@ CREATE TABLE `business_whatsapp_settings` (
   `messages_enabled` tinyint(1) NOT NULL DEFAULT '0',
   `allow_location_mapping` tinyint(1) NOT NULL DEFAULT '0',
   `default_channel_mode` enum('disabled','business_default','location_mapping') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'business_default',
+  `existing_clients_opt_in_policy` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'explicit_only',
+  `existing_clients_opt_in_assumed_at` timestamp NULL DEFAULT NULL,
   `status` enum('not_enabled','enabled','onboarding','pending_review','active','suspended','error') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'not_enabled',
   `last_go_live_check_at` timestamp NULL DEFAULT NULL,
   `last_error_code` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,

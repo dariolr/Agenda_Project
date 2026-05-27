@@ -597,8 +597,8 @@ final class WhatsappController
 
         $autoMappedLocationIds = [];
         $activeLocations = $this->locationRepo->findByBusinessId($businessId);
-        if (count($activeLocations) === 1) {
-            $locationId = (int) ($activeLocations[0]['id'] ?? 0);
+        foreach ($activeLocations as $location) {
+            $locationId = (int) ($location['id'] ?? 0);
             if ($locationId > 0) {
                 $existingMapping = $this->whatsappRepo->findMappingByLocation($businessId, $locationId);
                 if ($existingMapping === null) {
@@ -619,10 +619,6 @@ final class WhatsappController
         if (!$goLive['optin']) {
             $nextSteps[] = 'collect_opt_in';
         }
-        if (count($activeLocations) > 1) {
-            $nextSteps[] = 'complete_location_mapping';
-        }
-
         return Response::success([
             'config' => $this->formatConfig($config ?? ['id' => $id]),
             'auto_mapped_location_ids' => $autoMappedLocationIds,
@@ -985,8 +981,18 @@ final class WhatsappController
             'phone' => $config !== null && ($config['status'] ?? '') === 'active',
             'webhook' => $this->whatsappRepo->hasWebhookEventForBusiness($businessId),
             'template' => $this->whatsappRepo->hasApprovedUtilityTemplate($businessId),
-            'optin' => $this->whatsappRepo->hasActiveOptIn($businessId),
+            'optin' => $this->hasWhatsappOptInCoverage($businessId),
         ];
+    }
+
+    private function hasWhatsappOptInCoverage(int $businessId): bool
+    {
+        $settings = $this->settingsRepo->findByBusinessId($businessId);
+        if (($settings['existing_clients_opt_in_policy'] ?? 'explicit_only') === 'assume_existing_consented') {
+            return true;
+        }
+
+        return $this->whatsappRepo->hasActiveOptIn($businessId);
     }
 
     private function buildGoLiveResponse(

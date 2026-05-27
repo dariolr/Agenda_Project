@@ -34,6 +34,7 @@ class _BusinessWhatsappSettingsDialogState
   bool _whatsappEnabled = false;
   bool _messagesEnabled = false;
   bool _allowLocationMapping = false;
+  String _existingClientsOptInPolicy = 'explicit_only';
 
   @override
   void initState() {
@@ -69,6 +70,7 @@ class _BusinessWhatsappSettingsDialogState
             settings.whatsappEnabled &&
             canUseLocationMapping &&
             settings.allowLocationMapping;
+        _existingClientsOptInPolicy = settings.existingClientsOptInPolicy;
         _isLoading = false;
       });
     } on ApiException catch (e) {
@@ -107,6 +109,9 @@ class _BusinessWhatsappSettingsDialogState
               'default_channel_mode': _allowLocationMapping
                   ? 'location_mapping'
                   : 'business_default',
+              'existing_clients_opt_in_policy': _whatsappEnabled
+                  ? _existingClientsOptInPolicy
+                  : 'explicit_only',
               'status': _whatsappEnabled ? 'enabled' : 'not_enabled',
             },
           );
@@ -135,6 +140,7 @@ class _BusinessWhatsappSettingsDialogState
       if (!value) {
         _messagesEnabled = false;
         _allowLocationMapping = false;
+        _existingClientsOptInPolicy = 'explicit_only';
       }
     });
   }
@@ -154,71 +160,113 @@ class _BusinessWhatsappSettingsDialogState
           title: Text(l10n.businessWhatsappSettingsDialogTitle),
           content: SizedBox(
             width: 520,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  widget.businessName,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                if (_error != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: colorScheme.errorContainer,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      _error!,
-                      style: TextStyle(color: colorScheme.onErrorContainer),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                SwitchListTile.adaptive(
-                  value: _whatsappEnabled,
-                  onChanged: _isLoading ? null : _setWhatsappEnabled,
-                  secondary: const Icon(Icons.chat_outlined),
-                  title: Text(l10n.businessWhatsappEnabledLabel),
-                  subtitle: Text(l10n.businessWhatsappEnabledHelper),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                SwitchListTile.adaptive(
-                  value: _messagesEnabled,
-                  onChanged: !_whatsappEnabled || _isLoading
-                      ? null
-                      : (value) => setState(() => _messagesEnabled = value),
-                  secondary: const Icon(Icons.schedule_send_outlined),
-                  title: Text(l10n.businessWhatsappMessagesEnabledLabel),
-                  subtitle: Text(l10n.businessWhatsappMessagesEnabledHelper),
-                  contentPadding: EdgeInsets.zero,
-                ),
-                if (canUseLocationMapping)
-                  SwitchListTile.adaptive(
-                    value: _allowLocationMapping,
-                    onChanged: !_whatsappEnabled || _isLoading
-                        ? null
-                        : (value) =>
-                              setState(() => _allowLocationMapping = value),
-                    secondary: const Icon(Icons.alt_route_outlined),
-                    title: Text(l10n.businessWhatsappLocationMappingLabel),
-                    subtitle: Text(l10n.businessWhatsappLocationMappingHelper),
-                    contentPadding: EdgeInsets.zero,
-                  ),
-                if (_settings != null) ...[
-                  const SizedBox(height: 8),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
                   Text(
-                    '${l10n.whatsappFieldStatus}: ${_settings!.status}',
-                    style: theme.textTheme.bodySmall?.copyWith(
+                    widget.businessName,
+                    style: theme.textTheme.titleSmall?.copyWith(
                       color: colorScheme.onSurfaceVariant,
                     ),
                   ),
+                  const SizedBox(height: 16),
+                  if (_error != null) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: colorScheme.errorContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        _error!,
+                        style: TextStyle(color: colorScheme.onErrorContainer),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  SwitchListTile.adaptive(
+                    value: _whatsappEnabled,
+                    onChanged: _isLoading ? null : _setWhatsappEnabled,
+                    secondary: const Icon(Icons.chat_outlined),
+                    title: Text(l10n.businessWhatsappEnabledLabel),
+                    subtitle: Text(l10n.businessWhatsappEnabledHelper),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  SwitchListTile.adaptive(
+                    value: _messagesEnabled,
+                    onChanged: !_whatsappEnabled || _isLoading
+                        ? null
+                        : (value) => setState(() => _messagesEnabled = value),
+                    secondary: const Icon(Icons.schedule_send_outlined),
+                    title: Text(l10n.businessWhatsappMessagesEnabledLabel),
+                    subtitle: Text(l10n.businessWhatsappMessagesEnabledHelper),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  if (canUseLocationMapping)
+                    SwitchListTile.adaptive(
+                      value: _allowLocationMapping,
+                      onChanged: !_whatsappEnabled || _isLoading
+                          ? null
+                          : (value) =>
+                                setState(() => _allowLocationMapping = value),
+                      secondary: const Icon(Icons.alt_route_outlined),
+                      title: Text(l10n.businessWhatsappLocationMappingLabel),
+                      subtitle: Text(
+                        l10n.businessWhatsappLocationMappingHelper,
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.businessWhatsappExistingClientsOptInPolicyLabel,
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: 4),
+                  RadioListTile<String>.adaptive(
+                    value: 'explicit_only',
+                    groupValue: _existingClientsOptInPolicy,
+                    onChanged: !_whatsappEnabled || _isLoading
+                        ? null
+                        : (value) => setState(
+                            () => _existingClientsOptInPolicy = value!,
+                          ),
+                    title: Text(
+                      l10n.businessWhatsappExistingClientsExplicitOnlyLabel,
+                    ),
+                    subtitle: Text(
+                      l10n.businessWhatsappExistingClientsExplicitOnlyHelper,
+                    ),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  RadioListTile<String>.adaptive(
+                    value: 'assume_existing_consented',
+                    groupValue: _existingClientsOptInPolicy,
+                    onChanged: !_whatsappEnabled || _isLoading
+                        ? null
+                        : (value) => setState(
+                            () => _existingClientsOptInPolicy = value!,
+                          ),
+                    title: Text(
+                      l10n.businessWhatsappExistingClientsAssumeConsentedLabel,
+                    ),
+                    subtitle: Text(
+                      l10n.businessWhatsappExistingClientsAssumeConsentedHelper,
+                    ),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                  if (_settings != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      '${l10n.whatsappFieldStatus}: ${_settings!.status}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
           actions: [

@@ -1094,6 +1094,22 @@ class MessageLookup extends MessageLookupByLibrary {
     "businessWhatsappEnabledLabel": MessageLookupByLibrary.simpleMessage(
       "Abilita WhatsApp per il business",
     ),
+    "businessWhatsappExistingClientsAssumeConsentedHelper":
+        MessageLookupByLibrary.simpleMessage(
+          "Usa questa opzione solo se il business dichiara di avere già il consenso dei clienti presenti. I nuovi clienti dovranno comunque dare consenso esplicito.",
+        ),
+    "businessWhatsappExistingClientsAssumeConsentedLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Considera consenzienti i clienti esistenti",
+        ),
+    "businessWhatsappExistingClientsExplicitOnlyHelper":
+        MessageLookupByLibrary.simpleMessage(
+          "Invia WhatsApp solo ai clienti che hanno dato consenso tramite l\'app.",
+        ),
+    "businessWhatsappExistingClientsExplicitOnlyLabel":
+        MessageLookupByLibrary.simpleMessage("Richiedi consenso esplicito"),
+    "businessWhatsappExistingClientsOptInPolicyLabel":
+        MessageLookupByLibrary.simpleMessage("Clienti già presenti"),
     "businessWhatsappLocationMappingHelper":
         MessageLookupByLibrary.simpleMessage(
           "Consente di associare numeri WhatsApp diversi alle singole location.",
@@ -3309,14 +3325,14 @@ class MessageLookup extends MessageLookupByLibrary {
       "Impossibile avviare la sessione sicura Meta. Riprova.",
     ),
     "whatsappEmbeddedSignupSuccessMessage": MessageLookupByLibrary.simpleMessage(
-      "Il numero WhatsApp è stato collegato correttamente. Prima dell\'invio reale verranno completati gli ultimi controlli: configurazione tecnica, modello messaggio e consensi clienti.",
+      "Il numero WhatsApp è stato collegato correttamente. Ora puoi usare i promemoria WhatsApp quando l\'invio messaggi è abilitato.",
     ),
     "whatsappEmbeddedSignupSuccessTitle": MessageLookupByLibrary.simpleMessage(
       "Connessione WhatsApp completata",
     ),
     "whatsappEmbeddedSignupSuccessWithMapping":
         MessageLookupByLibrary.simpleMessage(
-          "Il numero WhatsApp è stato collegato correttamente. La sede del business è stata associata automaticamente al numero WhatsApp. Prima dell\'invio reale verranno completati gli ultimi controlli: configurazione tecnica, modello messaggio e consensi clienti.",
+          "Il numero WhatsApp è stato collegato correttamente. Le sedi del business sono state associate automaticamente al numero. Ora puoi usare i promemoria WhatsApp quando l\'invio messaggi è abilitato.",
         ),
     "whatsappEmbeddedSignupTitle": MessageLookupByLibrary.simpleMessage(
       "Completa onboarding Meta",
