@@ -863,8 +863,6 @@
   "authLastName": "Cognome",
   "authPhone": "Telefono",
   "switchBusiness": "Cambia",
-  "superadminRailStartTopLabel": "Navigation rail dall'alto",
-  "superadminRailStartTopHelp": "Se attivo, su desktop la colonna di navigazione parte dal bordo superiore senza toolbar.",
   "profileTitle": "Profilo",
   "profileUpdateSuccess": "Profilo aggiornato con successo",
   "profileEmailChangeWarning": "Attenzione: cambiando email dovrai usarla per il login",

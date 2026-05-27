@@ -30,7 +30,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m3(currentPeriodEnd) =>
       "Abbonamento attivo fino al ${currentPeriodEnd}";
 
-  static String m4(businessName) => "Fatturazione \$${businessName}";
+  static String m4(businessName) => "Fatturazione ${businessName}";
 
   static String m5(url) =>
       "Il cliente potrà prenotare solo gli elementi disponibili in questa categoria. Se nella categoria ci sono elementi pubblici, vedrà solo quelli. Se non ci sono elementi pubblici, vedrà solo quelli disponibili tramite link diretto.\n\n${url}";
@@ -528,12 +528,6 @@ class MessageLookup extends MessageLookupByLibrary {
       "Data limite attivazione abbonamento",
     ),
     "billingActivationDeadlinePending": m2,
-    "billingCycleAnchorHint": MessageLookupByLibrary.simpleMessage(
-      "Se impostata e futura, Stripe utilizzerà questa data come inizio del primo ciclo di fatturazione.",
-    ),
-    "billingCycleAnchorLabel": MessageLookupByLibrary.simpleMessage(
-      "Data ancoraggio ciclo (Stripe)",
-    ),
     "billingActiveTitle": MessageLookupByLibrary.simpleMessage(
       "Abbonamento attivo",
     ),
@@ -595,6 +589,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "billingCurrentPeriodStartFieldLabel": MessageLookupByLibrary.simpleMessage(
       "current_period_start",
+    ),
+    "billingCycleAnchorHint": MessageLookupByLibrary.simpleMessage(
+      "Se impostata e futura, Stripe utilizzerà questa data come inizio del primo ciclo di fatturazione.",
+    ),
+    "billingCycleAnchorLabel": MessageLookupByLibrary.simpleMessage(
+      "Data ancoraggio ciclo (Stripe)",
     ),
     "billingDescription": MessageLookupByLibrary.simpleMessage(
       "Stato fatturazione e gestione abbonamento.",
@@ -2950,12 +2950,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "statusCancelled": MessageLookupByLibrary.simpleMessage("Cancellato"),
     "statusCompleted": MessageLookupByLibrary.simpleMessage("Completato"),
     "statusConfirmed": MessageLookupByLibrary.simpleMessage("Confermato"),
-    "superadminRailStartTopHelp": MessageLookupByLibrary.simpleMessage(
-      "Se attivo, su desktop la colonna di navigazione parte dal bordo superiore senza toolbar.",
-    ),
-    "superadminRailStartTopLabel": MessageLookupByLibrary.simpleMessage(
-      "Navigation rail dall\'alto",
-    ),
     "switchBusiness": MessageLookupByLibrary.simpleMessage("Cambia"),
     "teamAddStaff": MessageLookupByLibrary.simpleMessage("Aggiungi membro"),
     "teamChooseLocationSingleButton": MessageLookupByLibrary.simpleMessage(

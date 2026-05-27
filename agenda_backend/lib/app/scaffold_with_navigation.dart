@@ -1,5 +1,4 @@
 // Cleaned duplicate header
-import 'package:agenda_backend/app/providers/desktop_rail_preference_provider.dart';
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/app/widgets/agenda_control_components.dart';
 import 'package:agenda_backend/app/widgets/agenda_staff_filter_selector.dart';
@@ -303,11 +302,9 @@ class _ScaffoldWithNavigationState
           railTheme.unselectedIconTheme?.size ??
           railTheme.selectedIconTheme?.size ??
           36.0;
-      final showDesktopToolbar = !ref.watch(desktopRailStartsAtTopProvider);
-      final shouldPadAltroBack = !showDesktopToolbar && hasAltroBack;
+      final shouldPadAltroBack = hasAltroBack;
       final altroBackLeftPadding = shouldPadAltroBack ? 16.0 : 0.0;
-      final showDesktopAppBar = showDesktopToolbar && !isAltroRoot;
-      final showDesktopInlineTopBar = !showDesktopAppBar && !isAltroRoot;
+      final showDesktopInlineTopBar = !isAltroRoot;
       final agendaControlsLeftInset = hasAltroBack
           ? 0.0
           : showDesktopInlineTopBar
@@ -372,56 +369,7 @@ class _ScaffoldWithNavigationState
 
       return GlobalLoadingOverlay(
         child: Scaffold(
-          appBar: showDesktopAppBar
-              ? AppBar(
-                  leadingWidth: hasAltroBack ? railWidth : null,
-                  leading: hasAltroBack
-                      ? AppBackButton(
-                          onPressed: () => context.go(backTarget),
-                          showClose: showCloseBackButton,
-                          leftPadding: altroBackLeftPadding,
-                        )
-                      : null,
-                  titleSpacing: isAgenda ? 0 : NavigationToolbar.kMiddleSpacing,
-                  title:
-                      hideAltroSubsectionTitle || hideManagedAltroSectionTitle
-                      ? const SizedBox.shrink()
-                      : isAgenda
-                      ? Padding(
-                          padding: EdgeInsetsDirectional.only(
-                            start: agendaControlsLeftInset,
-                          ),
-                          child: const AgendaTopControls(),
-                        )
-                      : isMore
-                      ? Text(context.l10n.navMore)
-                      : isReport
-                      ? Text(context.l10n.reportsTitle)
-                      : isBookingsList
-                      ? Text(context.l10n.bookingsListTitle)
-                      : isMoreResources
-                      ? Text(context.l10n.resourcesTitle)
-                      : isMoreLocations
-                      ? Text(context.l10n.teamLocationsLabel)
-                      : isMorePaymentMethods
-                      ? Text(context.l10n.paymentMethodsTitle)
-                      : isMoreBilling
-                      ? Text(context.l10n.billingTitle)
-                      : isMoreWhatsappBusiness
-                      ? Text(context.l10n.moreWhatsappBusinessTitle)
-                      : isBookingNotifications
-                      ? Text(context.l10n.bookingNotificationsTitle)
-                      : isClosures
-                      ? Text(context.l10n.closuresTitle)
-                      : isPermessi
-                      ? Text(context.l10n.permissionsTitle)
-                      : const SizedBox.shrink(),
-                  centerTitle: false,
-                  toolbarHeight: 76,
-                  actionsPadding: const EdgeInsets.only(right: 6),
-                  actions: buildActions(),
-                )
-              : null,
+          appBar: null,
           body: Row(
             children: [
               Theme(
@@ -438,25 +386,21 @@ class _ScaffoldWithNavigationState
                     ref,
                     includeClients: showClientsNav,
                   ),
-                  // Quando la rail parte dall'alto, lascia lo spazio
-                  // equivalente a una voce menu prima della prima icona.
-                  leading: showDesktopToolbar
-                      ? null
-                      : SizedBox(
-                          width: railWidth,
-                          height: agendaToolbarHeight - 8,
-                          child: Align(
-                            alignment: Alignment.center,
-                            child: Image.asset(
-                              'assets/logo.png',
-                              width: railIconSize,
-                              height: railIconSize,
-                              fit: BoxFit.contain,
-                              errorBuilder: (_, __, ___) =>
-                                  const SizedBox.shrink(),
-                            ),
-                          ),
+                  leading: SizedBox(
+                      width: railWidth,
+                      height: agendaToolbarHeight - 8,
+                      child: Align(
+                        alignment: Alignment.center,
+                        child: Image.asset(
+                          'assets/logo.png',
+                          width: railIconSize,
+                          height: railIconSize,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) =>
+                              const SizedBox.shrink(),
                         ),
+                      ),
+                    ),
                   labelType: NavigationRailLabelType.none,
                   useIndicator: false, // disattiva highlight di sistema su tap
                   // BusinessSelector rimosso - superadmin usa /businesses
@@ -464,7 +408,7 @@ class _ScaffoldWithNavigationState
                 ),
               ),
               _RailDivider(
-                topInset: showDesktopAppBar ? layoutConfig.headerHeight : 0,
+                topInset: 0,
                 color: dividerColor,
                 thickness: dividerThickness,
               ),

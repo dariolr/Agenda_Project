@@ -30,7 +30,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m3(currentPeriodEnd) =>
       "Subscription active until ${currentPeriodEnd}";
 
-  static String m4(businessName) => "Billing \$${businessName}";
+  static String m4(businessName) => "Billing ${businessName}";
 
   static String m5(url) =>
       "The customer will only be able to book items available in this category. If the category contains public items, only those will be shown. If it contains no public items, items available only by direct link will be shown.\n\n${url}";
@@ -509,12 +509,6 @@ class MessageLookup extends MessageLookupByLibrary {
       "Subscription activation deadline",
     ),
     "billingActivationDeadlinePending": m2,
-    "billingCycleAnchorHint": MessageLookupByLibrary.simpleMessage(
-      "If set and in the future, Stripe will use this date as the start of the first billing cycle.",
-    ),
-    "billingCycleAnchorLabel": MessageLookupByLibrary.simpleMessage(
-      "Billing cycle anchor (Stripe)",
-    ),
     "billingActiveTitle": MessageLookupByLibrary.simpleMessage(
       "Subscription active",
     ),
@@ -576,6 +570,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "billingCurrentPeriodStartFieldLabel": MessageLookupByLibrary.simpleMessage(
       "current_period_start",
+    ),
+    "billingCycleAnchorHint": MessageLookupByLibrary.simpleMessage(
+      "If set and in the future, Stripe will use this date as the start of the first billing cycle.",
+    ),
+    "billingCycleAnchorLabel": MessageLookupByLibrary.simpleMessage(
+      "Billing cycle anchor (Stripe)",
     ),
     "billingDescription": MessageLookupByLibrary.simpleMessage(
       "Billing status and subscription management.",
@@ -2841,12 +2841,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "statusCancelled": MessageLookupByLibrary.simpleMessage("Cancelled"),
     "statusCompleted": MessageLookupByLibrary.simpleMessage("Completed"),
     "statusConfirmed": MessageLookupByLibrary.simpleMessage("Confirmed"),
-    "superadminRailStartTopHelp": MessageLookupByLibrary.simpleMessage(
-      "If enabled, on desktop the navigation rail starts from the top edge without toolbar.",
-    ),
-    "superadminRailStartTopLabel": MessageLookupByLibrary.simpleMessage(
-      "Rail starts at top",
-    ),
     "switchBusiness": MessageLookupByLibrary.simpleMessage("Switch"),
     "teamAddStaff": MessageLookupByLibrary.simpleMessage("Add team member"),
     "teamChooseLocationSingleButton": MessageLookupByLibrary.simpleMessage(

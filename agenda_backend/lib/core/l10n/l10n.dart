@@ -5696,26 +5696,6 @@ class L10n {
     return Intl.message('Switch', name: 'switchBusiness', desc: '', args: []);
   }
 
-  /// `Rail starts at top`
-  String get superadminRailStartTopLabel {
-    return Intl.message(
-      'Rail starts at top',
-      name: 'superadminRailStartTopLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `If enabled, on desktop the navigation rail starts from the top edge without toolbar.`
-  String get superadminRailStartTopHelp {
-    return Intl.message(
-      'If enabled, on desktop the navigation rail starts from the top edge without toolbar.',
-      name: 'superadminRailStartTopHelp',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Profile`
   String get profileTitle {
     return Intl.message('Profile', name: 'profileTitle', desc: '', args: []);
@@ -12274,7 +12254,7 @@ class L10n {
   /// `Billing ${businessName}`
   String billingAdminDialogTitle(Object businessName) {
     return Intl.message(
-      'Billing \$$businessName',
+      'Billing $businessName',
       name: 'billingAdminDialogTitle',
       desc: '',
       args: [businessName],

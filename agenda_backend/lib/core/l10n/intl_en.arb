@@ -863,8 +863,6 @@
   "authLastName": "Last Name",
   "authPhone": "Phone",
   "switchBusiness": "Switch",
-  "superadminRailStartTopLabel": "Rail starts at top",
-  "superadminRailStartTopHelp": "If enabled, on desktop the navigation rail starts from the top edge without toolbar.",
   "profileTitle": "Profile",
   "profileUpdateSuccess": "Profile updated successfully",
   "profileEmailChangeWarning": "Warning: changing email will update your login credentials",
