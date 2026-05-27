@@ -139,7 +139,7 @@ class AppEnvironmentConfig {
     final metaEmbeddedSignupRedirectUri =
         raw.metaEmbeddedSignupRedirectUri.trim();
     final metaEmbeddedSignupScopes = raw.metaEmbeddedSignupScopes.trim().isEmpty
-        ? 'business_management,whatsapp_business_management,whatsapp_business_messaging'
+        ? 'whatsapp_business_management,whatsapp_business_messaging'
         : raw.metaEmbeddedSignupScopes.trim();
 
     if (isDemo) {
@@ -263,7 +263,7 @@ class AppEnvironmentConfig {
         metaEmbeddedSignupScopes: String.fromEnvironment(
           'META_EMBEDDED_SIGNUP_SCOPES',
           defaultValue:
-              'business_management,whatsapp_business_management,whatsapp_business_messaging',
+              'whatsapp_business_management,whatsapp_business_messaging',
         ),
       );
 }

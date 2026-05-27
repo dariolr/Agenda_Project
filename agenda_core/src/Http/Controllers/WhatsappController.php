@@ -559,9 +559,15 @@ final class WhatsappController
                 $phoneNumberId !== '' ? $phoneNumberId : null,
                 $displayPhoneNumber
             );
-        } catch (\RuntimeException $e) {
+        } catch (\Throwable $e) {
+            $this->logAppError('MetaEmbeddedSignup complete failed', [
+                'business_id' => $businessId,
+                'user_id' => (int) $request->getAttribute('user_id'),
+                'trace_id' => $request->traceId ?? '-',
+                'reason' => $e->getMessage(),
+            ]);
             return Response::error(
-                'Impossibile completare la connessione Meta. Verifica permessi o riprova.',
+                'Impossibile completare la connessione Meta. Dettaglio: ' . $this->formatMetaEmbeddedSignupFailure($e->getMessage()),
                 'meta_embedded_signup_failed',
                 422,
                 $request->traceId,
@@ -624,6 +630,44 @@ final class WhatsappController
             'next_steps' => $nextSteps,
             'session_info_version' => $sessionInfoVersion,
         ]);
+    }
+
+    private function formatMetaEmbeddedSignupFailure(string $reason): string
+    {
+        if ($reason === 'meta_app_not_configured') {
+            return 'app Meta non configurata sul server';
+        }
+        if ($reason === 'meta_token_not_obtained') {
+            return 'token Meta non ottenuto';
+        }
+        if ($reason === 'meta_phone_or_waba_not_accessible') {
+            return 'account WhatsApp o numero non accessibile con i permessi concessi';
+        }
+
+        return $reason;
+    }
+
+    /**
+     * @param array<string,mixed> $context
+     */
+    private function logAppError(string $message, array $context): void
+    {
+        $file = __DIR__ . '/../../../logs/app.log';
+        $dir = dirname($file);
+        if (!is_dir($dir)) {
+            @mkdir($dir, 0755, true);
+        }
+
+        @file_put_contents(
+            $file,
+            sprintf(
+                "[%s] [ERROR] %s %s\n",
+                date('Y-m-d H:i:s'),
+                $message,
+                Json::encode($context)
+            ),
+            FILE_APPEND | LOCK_EX
+        );
     }
 
     public function webhookPublicVerify(Request $request): Response

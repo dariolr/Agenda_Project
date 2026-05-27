@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_web_libraries_in_flutter
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:html' as html;
 
 import '/core/environment/app_environment_config.dart';
@@ -21,20 +22,22 @@ Future<WhatsappEmbeddedSignupLaunchResult> launchWhatsappEmbeddedSignup({
     );
   }
 
-  final oauthUri = Uri.https('www.facebook.com', '/$graphVersion/dialog/oauth', {
-    'client_id': appId,
-    'redirect_uri': redirectUri,
-    'response_type': 'code',
-    'scope': scopes,
-    'state': expectedState,
-  });
+  final oauthUri =
+      Uri.https('www.facebook.com', '/$graphVersion/dialog/oauth', {
+        'client_id': appId,
+        'redirect_uri': redirectUri,
+        'response_type': 'code',
+        'scope': scopes,
+        'state': expectedState,
+      });
 
-  final popup = html.window.open(
-        oauthUri.toString(),
-        'meta_whatsapp_embedded_signup',
-        'width=640,height=760',
-      )
-      as html.WindowBase?;
+  final popup =
+      html.window.open(
+            oauthUri.toString(),
+            'meta_whatsapp_embedded_signup',
+            'width=640,height=760',
+          )
+          as html.WindowBase?;
 
   if (popup == null) {
     throw StateError(
@@ -45,13 +48,72 @@ Future<WhatsappEmbeddedSignupLaunchResult> launchWhatsappEmbeddedSignup({
   final completer = Completer<WhatsappEmbeddedSignupLaunchResult>();
   Timer? timer;
   Timer? timeout;
+  StreamSubscription<html.MessageEvent>? messageSubscription;
+  final expectedOrigin = Uri.parse(redirectUri).origin;
 
   void cleanup() {
     timer?.cancel();
     timeout?.cancel();
+    messageSubscription?.cancel();
   }
 
-  timeout = Timer(const Duration(minutes: 3), () {
+  void completeFromParams(Map<String, String> params) {
+    if (completer.isCompleted) return;
+
+    final error = params['error'] ?? params['error_reason'];
+    if (error != null && error.isNotEmpty) {
+      cleanup();
+      popup.close();
+      completer.completeError(
+        StateError('Meta ha restituito un errore: $error'),
+      );
+      return;
+    }
+
+    final code = (params['code'] ?? '').trim();
+    final returnedState = (params['state'] ?? '').trim();
+    if (code.isEmpty) {
+      cleanup();
+      popup.close();
+      completer.completeError(
+        StateError('Code non presente nel callback Meta.'),
+      );
+      return;
+    }
+    if (returnedState.isEmpty || returnedState != expectedState) {
+      cleanup();
+      popup.close();
+      completer.completeError(
+        StateError('State non valido nel callback Meta.'),
+      );
+      return;
+    }
+
+    cleanup();
+    popup.close();
+    completer.complete(
+      WhatsappEmbeddedSignupLaunchResult(code: code, state: returnedState),
+    );
+  }
+
+  messageSubscription = html.window.onMessage.listen((event) {
+    if (event.origin != expectedOrigin) return;
+
+    final data = event.data;
+    if (data is! String) return;
+
+    final decoded = jsonDecode(data);
+    if (decoded is! Map) return;
+    if (decoded['type'] != 'meta_whatsapp_embedded_signup_callback') return;
+
+    completeFromParams({
+      'code': decoded['code']?.toString() ?? '',
+      'state': decoded['state']?.toString() ?? '',
+      'error': decoded['error']?.toString() ?? '',
+    });
+  });
+
+  timeout = Timer(const Duration(minutes: 10), () {
     if (completer.isCompleted) return;
     cleanup();
     try {
@@ -89,36 +151,7 @@ Future<WhatsappEmbeddedSignupLaunchResult> launchWhatsappEmbeddedSignup({
         ..._fragmentToParams(uri.fragment),
       };
 
-      final error = params['error'] ?? params['error_reason'];
-      if (error != null && error.isNotEmpty) {
-        cleanup();
-        popup.close();
-        completer.completeError(
-          StateError('Meta ha restituito un errore: $error'),
-        );
-        return;
-      }
-
-      final code = (params['code'] ?? '').trim();
-      final returnedState = (params['state'] ?? '').trim();
-      if (code.isEmpty) {
-        cleanup();
-        popup.close();
-        completer.completeError(StateError('Code non presente nel callback Meta.'));
-        return;
-      }
-      if (returnedState.isEmpty || returnedState != expectedState) {
-        cleanup();
-        popup.close();
-        completer.completeError(StateError('State non valido nel callback Meta.'));
-        return;
-      }
-
-      cleanup();
-      popup.close();
-      completer.complete(
-        WhatsappEmbeddedSignupLaunchResult(code: code, state: returnedState),
-      );
+      completeFromParams(params);
     } catch (_) {
       // Cross-origin while in Meta flow is expected.
       // If popup has been closed, terminate immediately instead of waiting timeout.

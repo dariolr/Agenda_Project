@@ -10976,26 +10976,23 @@ class L10n {
     );
   }
 
-  /// `Onboarding completed. Next steps: {steps}`
-  String whatsappEmbeddedSignupSuccessMessage(Object steps) {
+  /// `The WhatsApp number has been connected successfully. Before real messages are sent, the final checks will be completed: technical setup, message template, and customer consents.`
+  String get whatsappEmbeddedSignupSuccessMessage {
     return Intl.message(
-      'Onboarding completed. Next steps: $steps',
+      'The WhatsApp number has been connected successfully. Before real messages are sent, the final checks will be completed: technical setup, message template, and customer consents.',
       name: 'whatsappEmbeddedSignupSuccessMessage',
       desc: '',
-      args: [steps],
+      args: [],
     );
   }
 
-  /// `Onboarding completed. Auto-mapped locations: {locations}. Next steps: {steps}`
-  String whatsappEmbeddedSignupSuccessWithMapping(
-    Object locations,
-    Object steps,
-  ) {
+  /// `The WhatsApp number has been connected successfully. The business location has been linked to the WhatsApp number automatically. Before real messages are sent, the final checks will be completed: technical setup, message template, and customer consents.`
+  String get whatsappEmbeddedSignupSuccessWithMapping {
     return Intl.message(
-      'Onboarding completed. Auto-mapped locations: $locations. Next steps: $steps',
+      'The WhatsApp number has been connected successfully. The business location has been linked to the WhatsApp number automatically. Before real messages are sent, the final checks will be completed: technical setup, message template, and customer consents.',
       name: 'whatsappEmbeddedSignupSuccessWithMapping',
       desc: '',
-      args: [locations, steps],
+      args: [],
     );
   }
 

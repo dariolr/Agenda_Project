@@ -27,7 +27,7 @@ void main() {
       metaGraphVersion: 'v21.0',
       metaEmbeddedSignupRedirectUri: '',
       metaEmbeddedSignupScopes:
-          'business_management,whatsapp_business_management,whatsapp_business_messaging',
+          'whatsapp_business_management,whatsapp_business_messaging',
     );
 
     final policy = EnvironmentPolicy(config);

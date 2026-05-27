@@ -22,7 +22,7 @@ void main() {
     String metaGraphVersion = 'v21.0',
     String metaEmbeddedSignupRedirectUri = '',
     String metaEmbeddedSignupScopes =
-        'business_management,whatsapp_business_management,whatsapp_business_messaging',
+        'whatsapp_business_management,whatsapp_business_messaging',
   }) {
     return AppEnvironmentRawConfig(
       appEnv: appEnv,

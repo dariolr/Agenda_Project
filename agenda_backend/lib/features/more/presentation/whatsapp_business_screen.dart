@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '/core/l10n/l10_extension.dart';
+import '/core/network/api_client.dart';
 import '/core/services/whatsapp_embedded_signup_launcher.dart';
 import '/core/widgets/app_buttons.dart';
 import '/core/widgets/feedback_dialog.dart';
@@ -77,17 +78,13 @@ class _WhatsappBusinessScreenState
             };
     });
 
-    final autoMapped = result.autoMappedLocationIds;
-    final nextSteps = result.nextSteps.join(', ');
+    final hasAutoMappedSingleLocation = result.autoMappedLocationIds.isNotEmpty;
     await FeedbackDialog.showSuccess(
       context,
       title: l10n.whatsappEmbeddedSignupSuccessTitle,
-      message: autoMapped.isEmpty
-          ? l10n.whatsappEmbeddedSignupSuccessMessage(nextSteps)
-          : l10n.whatsappEmbeddedSignupSuccessWithMapping(
-              autoMapped.join(', '),
-              nextSteps,
-            ),
+      message: hasAutoMappedSingleLocation
+          ? l10n.whatsappEmbeddedSignupSuccessWithMapping
+          : l10n.whatsappEmbeddedSignupSuccessMessage,
     );
   }
 
@@ -125,7 +122,7 @@ class _WhatsappBusinessScreenState
         await FeedbackDialog.showError(
           context,
           title: l10n.errorTitle,
-          message: e.toString(),
+          message: _formatEmbeddedSignupError(e),
         );
       }
     } finally {
@@ -133,6 +130,30 @@ class _WhatsappBusinessScreenState
         setState(() => _isCompletingEmbeddedSignup = false);
       }
     }
+  }
+
+  String _formatEmbeddedSignupError(Object error) {
+    if (error is! ApiException) {
+      return error.toString();
+    }
+
+    final reason = error.reason;
+    if (reason == null || reason.trim().isEmpty) {
+      return error.message;
+    }
+
+    final detail = switch (reason) {
+      'meta_app_not_configured' => 'app Meta non configurata sul server',
+      'meta_token_not_obtained' => 'token Meta non ottenuto',
+      'meta_phone_or_waba_not_accessible' =>
+        'account WhatsApp o numero non accessibile con i permessi concessi',
+      _ => reason,
+    };
+
+    if (error.message.contains(detail)) {
+      return error.message;
+    }
+    return '${error.message}\n\nDettaglio tecnico: $detail';
   }
 
   @override

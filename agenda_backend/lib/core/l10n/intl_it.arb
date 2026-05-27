@@ -1770,19 +1770,8 @@
   "whatsappEmbeddedSignupDisplayPhone": "Numero visualizzato (+39...)",
   "whatsappEmbeddedSignupConfirm": "Completa connessione",
   "whatsappEmbeddedSignupSuccessTitle": "Connessione WhatsApp completata",
-  "whatsappEmbeddedSignupSuccessMessage": "Onboarding completato. Prossimi step: {steps}",
-  "@whatsappEmbeddedSignupSuccessMessage": {
-    "placeholders": {
-      "steps": {}
-    }
-  },
-  "whatsappEmbeddedSignupSuccessWithMapping": "Onboarding completato. Sedi auto-mappate: {locations}. Prossimi step: {steps}",
-  "@whatsappEmbeddedSignupSuccessWithMapping": {
-    "placeholders": {
-      "locations": {},
-      "steps": {}
-    }
-  },
+  "whatsappEmbeddedSignupSuccessMessage": "Il numero WhatsApp è stato collegato correttamente. Prima dell'invio reale verranno completati gli ultimi controlli: configurazione tecnica, modello messaggio e consensi clienti.",
+  "whatsappEmbeddedSignupSuccessWithMapping": "Il numero WhatsApp è stato collegato correttamente. La sede del business è stata associata automaticamente al numero WhatsApp. Prima dell'invio reale verranno completati gli ultimi controlli: configurazione tecnica, modello messaggio e consensi clienti.",
   "whatsappSelectBusinessHint": "Seleziona un business per gestire l'integrazione WhatsApp.",
   "whatsappRefresh": "Aggiorna",
   "whatsappRunWorker": "Esegui worker",

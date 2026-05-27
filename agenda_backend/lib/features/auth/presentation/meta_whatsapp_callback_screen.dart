@@ -2,9 +2,25 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '/core/l10n/l10_extension.dart';
+import '/core/services/meta_whatsapp_callback_notifier.dart';
 
-class MetaWhatsappCallbackScreen extends StatelessWidget {
+class MetaWhatsappCallbackScreen extends StatefulWidget {
   const MetaWhatsappCallbackScreen({super.key});
+
+  @override
+  State<MetaWhatsappCallbackScreen> createState() =>
+      _MetaWhatsappCallbackScreenState();
+}
+
+class _MetaWhatsappCallbackScreenState
+    extends State<MetaWhatsappCallbackScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      notifyMetaWhatsappCallback();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {

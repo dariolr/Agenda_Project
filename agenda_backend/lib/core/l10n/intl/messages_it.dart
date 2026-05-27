@@ -234,11 +234,6 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m91(hours) => "${hours} ore totale";
 
-  static String m92(steps) => "Onboarding completato. Prossimi step: ${steps}";
-
-  static String m93(locations, steps) =>
-      "Onboarding completato. Sedi auto-mappate: ${locations}. Prossimi step: ${steps}";
-
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
     "actionApply": MessageLookupByLibrary.simpleMessage("Applica"),
@@ -3313,11 +3308,16 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappEmbeddedSignupStateInvalid": MessageLookupByLibrary.simpleMessage(
       "Impossibile avviare la sessione sicura Meta. Riprova.",
     ),
-    "whatsappEmbeddedSignupSuccessMessage": m92,
+    "whatsappEmbeddedSignupSuccessMessage": MessageLookupByLibrary.simpleMessage(
+      "Il numero WhatsApp è stato collegato correttamente. Prima dell\'invio reale verranno completati gli ultimi controlli: configurazione tecnica, modello messaggio e consensi clienti.",
+    ),
     "whatsappEmbeddedSignupSuccessTitle": MessageLookupByLibrary.simpleMessage(
       "Connessione WhatsApp completata",
     ),
-    "whatsappEmbeddedSignupSuccessWithMapping": m93,
+    "whatsappEmbeddedSignupSuccessWithMapping":
+        MessageLookupByLibrary.simpleMessage(
+          "Il numero WhatsApp è stato collegato correttamente. La sede del business è stata associata automaticamente al numero WhatsApp. Prima dell\'invio reale verranno completati gli ultimi controlli: configurazione tecnica, modello messaggio e consensi clienti.",
+        ),
     "whatsappEmbeddedSignupTitle": MessageLookupByLibrary.simpleMessage(
       "Completa onboarding Meta",
     ),

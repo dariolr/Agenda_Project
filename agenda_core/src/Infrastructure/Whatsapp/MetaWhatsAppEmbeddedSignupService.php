@@ -75,49 +75,31 @@ final class MetaWhatsAppEmbeddedSignupService
         ?string $preferredPhoneNumberId,
         ?string $preferredDisplayPhone
     ): array {
-        $url = 'https://graph.facebook.com/' . $this->graphVersion
-            . '/me/whatsapp_business_accounts?fields=id,phone_numbers{id,display_phone_number,verified_name}';
-        $accounts = $this->curlJsonRequest('GET', $url, $accessToken);
-        $items = $accounts['data'] ?? [];
-
         $resolvedWabaId = '';
         $resolvedPhoneId = '';
         $resolvedDisplay = null;
 
-        if (is_array($items)) {
-            foreach ($items as $account) {
-                if (!is_array($account)) {
+        $candidateWabaIds = $preferredWabaId !== null && $preferredWabaId !== ''
+            ? [$preferredWabaId]
+            : $this->resolveGrantedWabaIds($accessToken);
+
+        foreach ($candidateWabaIds as $wabaId) {
+            $phones = $this->fetchWabaPhoneNumbers($accessToken, $wabaId);
+            foreach ($phones as $phone) {
+                $phoneId = trim((string) ($phone['id'] ?? ''));
+                if ($phoneId === '') {
                     continue;
                 }
-                $wabaId = trim((string) ($account['id'] ?? ''));
-                if ($preferredWabaId !== null && $preferredWabaId !== '' && $wabaId !== $preferredWabaId) {
+                if ($preferredPhoneNumberId !== null && $preferredPhoneNumberId !== '' && $phoneId !== $preferredPhoneNumberId) {
                     continue;
                 }
 
-                $phones = $account['phone_numbers']['data'] ?? $account['phone_numbers'] ?? [];
-                if (!is_array($phones)) {
-                    continue;
-                }
-
-                foreach ($phones as $phone) {
-                    if (!is_array($phone)) {
-                        continue;
-                    }
-                    $phoneId = trim((string) ($phone['id'] ?? ''));
-                    if ($phoneId === '') {
-                        continue;
-                    }
-                    if ($preferredPhoneNumberId !== null && $preferredPhoneNumberId !== '' && $phoneId !== $preferredPhoneNumberId) {
-                        continue;
-                    }
-
-                    $resolvedWabaId = $wabaId;
-                    $resolvedPhoneId = $phoneId;
-                    $resolvedDisplay = isset($phone['display_phone_number'])
-                        ? (string) $phone['display_phone_number']
-                        : $preferredDisplayPhone;
-                    break 2;
-                }
+                $resolvedWabaId = $wabaId;
+                $resolvedPhoneId = $phoneId;
+                $resolvedDisplay = isset($phone['display_phone_number'])
+                    ? (string) $phone['display_phone_number']
+                    : $preferredDisplayPhone;
+                break 2;
             }
         }
 
@@ -140,6 +122,60 @@ final class MetaWhatsAppEmbeddedSignupService
             'phone_number_id' => $resolvedPhoneId,
             'display_phone_number' => $resolvedDisplay,
         ];
+    }
+
+    /**
+     * @return string[]
+     */
+    private function resolveGrantedWabaIds(string $accessToken): array
+    {
+        $appAccessToken = $this->appId . '|' . $this->appSecret;
+        $url = 'https://graph.facebook.com/' . $this->graphVersion . '/debug_token?' . http_build_query([
+            'input_token' => $accessToken,
+            'access_token' => $appAccessToken,
+        ]);
+        $debug = $this->curlJsonRequest('GET', $url, null);
+        $scopes = $debug['data']['granular_scopes'] ?? [];
+        if (!is_array($scopes)) {
+            return [];
+        }
+
+        $wabaIds = [];
+        foreach ($scopes as $scope) {
+            if (!is_array($scope)) {
+                continue;
+            }
+            $name = (string) ($scope['scope'] ?? '');
+            if (!in_array($name, ['whatsapp_business_management', 'whatsapp_business_messaging'], true)) {
+                continue;
+            }
+            $targets = $scope['target_ids'] ?? [];
+            if (!is_array($targets)) {
+                continue;
+            }
+            foreach ($targets as $targetId) {
+                $target = trim((string) $targetId);
+                if ($target !== '' && !in_array($target, $wabaIds, true)) {
+                    $wabaIds[] = $target;
+                }
+            }
+        }
+
+        return $wabaIds;
+    }
+
+    /**
+     * @return array<int,array<string,mixed>>
+     */
+    private function fetchWabaPhoneNumbers(string $accessToken, string $wabaId): array
+    {
+        $url = 'https://graph.facebook.com/' . $this->graphVersion
+            . '/' . rawurlencode($wabaId)
+            . '/phone_numbers?fields=id,display_phone_number,verified_name';
+        $result = $this->curlJsonRequest('GET', $url, $accessToken);
+        $items = $result['data'] ?? [];
+
+        return is_array($items) ? $items : [];
     }
 
     /**
