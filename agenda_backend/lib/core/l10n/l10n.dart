@@ -12251,7 +12251,7 @@ class L10n {
     );
   }
 
-  /// `Billing ${businessName}`
+  /// `Billing {businessName}`
   String billingAdminDialogTitle(Object businessName) {
     return Intl.message(
       'Billing $businessName',

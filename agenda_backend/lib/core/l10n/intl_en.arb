@@ -1900,7 +1900,7 @@
   "apiErrorDemoBlocked": "This action is blocked in demo mode.",
   "apiErrorDatabase": "Service temporarily unavailable. Please try again later.",
   "billingTitle": "Subscription",
-  "billingAdminDialogTitle": "Billing ${businessName}",
+  "billingAdminDialogTitle": "Billing {businessName}",
   "@billingAdminDialogTitle": {
     "placeholders": {
       "businessName": {}
