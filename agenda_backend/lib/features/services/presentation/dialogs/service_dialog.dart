@@ -668,9 +668,11 @@ Future<void> showServiceDialog(
       ref.read(serviceVariantsProvider.notifier).upsert(newVariant);
 
       // Aggiorna le associazioni staff-servizio nel database
-      // Calcola quali staff sono stati aggiunti/rimossi
-      final addedStaffIds = selectedStaffIds.difference(originalStaffIds);
-      final removedStaffIds = originalStaffIds.difference(selectedStaffIds);
+      // In creazione/duplicazione il nuovo servizio non ha ancora staff:
+      // il baseline è sempre vuoto, tutti i selezionati vanno aggiunti.
+      final baselineStaffIds = isEditing ? originalStaffIds : <int>{};
+      final addedStaffIds = selectedStaffIds.difference(baselineStaffIds);
+      final removedStaffIds = baselineStaffIds.difference(selectedStaffIds);
 
       // Aggiorna ogni staff modificato nel database
       final allStaff = ref.read(allStaffProvider).value ?? [];
@@ -1699,12 +1701,11 @@ Future<void> showServiceDialog(
             ),
             enabled: canEditDialog && !isFree,
             onChanged: canEditDialog
-                ? (_) {
-                    if (priceController.text.trim().isEmpty &&
-                        isPriceStartingFrom) {
-                      setState(() => isPriceStartingFrom = false);
+                ? (_) => setState(() {
+                    if (priceController.text.trim().isEmpty) {
+                      isPriceStartingFrom = false;
                     }
-                  }
+                  })
                 : null,
           ),
         ),

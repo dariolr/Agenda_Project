@@ -147,6 +147,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
   String? _preparedActionKey;
   String? _preparedExternalUrl;
   String? _prepareExternalLinkError;
+  String? _failedActionKey;
 
   @override
   Widget build(BuildContext context) {
@@ -509,7 +510,9 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
   }
 
   void _scheduleExternalLinkPreparation(_BillingExternalAction action) {
-    if (_preparedActionKey == action.key || _preparingActionKey == action.key) {
+    if (_preparedActionKey == action.key ||
+        _preparingActionKey == action.key ||
+        _failedActionKey == action.key) {
       return;
     }
 
@@ -525,7 +528,8 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
   }) async {
     if (!force &&
         (_preparedActionKey == action.key ||
-            _preparingActionKey == action.key)) {
+            _preparingActionKey == action.key ||
+            _failedActionKey == action.key)) {
       return;
     }
 
@@ -535,6 +539,7 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
       _preparedActionKey = null;
       _preparedExternalUrl = null;
       _prepareExternalLinkError = null;
+      _failedActionKey = null;
     });
 
     try {
@@ -573,6 +578,9 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
       if (mounted) {
         setState(() {
           _preparingExternalLink = false;
+          if (_prepareExternalLinkError != null) {
+            _failedActionKey = action.key;
+          }
           _preparingActionKey = null;
         });
       }

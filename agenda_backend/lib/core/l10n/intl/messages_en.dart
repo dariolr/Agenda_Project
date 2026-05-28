@@ -25,7 +25,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m1(date) =>
       "The free period ended on ${date}. To continue using the app, activate your subscription.";
 
-  static String m2(date) => "Your free period ends on ${date}.";
+  static String m2(date) => "The subscription will be active from ${date}.";
 
   static String m3(currentPeriodEnd) =>
       "Subscription active until ${currentPeriodEnd}";

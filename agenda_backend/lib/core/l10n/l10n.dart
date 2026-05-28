@@ -13296,10 +13296,10 @@ class L10n {
     );
   }
 
-  /// `Your free period ends on {date}.`
+  /// `The subscription will be active from {date}.`
   String billingActivationDeadlinePending(Object date) {
     return Intl.message(
-      'Your free period ends on $date.',
+      'The subscription will be active from $date.',
       name: 'billingActivationDeadlinePending',
       desc: '',
       args: [date],

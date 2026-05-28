@@ -44,6 +44,7 @@ import '../../providers/booking_payment_providers.dart';
 import '../../providers/bookings_provider.dart';
 import '../../providers/bookings_repository_provider.dart';
 import '../../providers/business_providers.dart';
+import '../../providers/agenda_scroll_request_provider.dart';
 import '../../providers/date_range_provider.dart';
 import '../../providers/layout_config_provider.dart';
 import '../../providers/location_providers.dart';
@@ -2647,6 +2648,20 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
         previousDate: widget.initial.startTime,
       );
       if (mounted) {
+        final currentAgendaDate = ref.read(agendaDateProvider);
+        final bookingDate = DateUtils.dateOnly(_date);
+        if (!DateUtils.isSameDay(currentAgendaDate, bookingDate)) {
+          final appointments = ref.read(appointmentsProvider).value ?? [];
+          final bookingAppointments = appointments
+              .where((a) => a.bookingId == widget.initial.bookingId)
+              .toList()
+            ..sort((a, b) => a.startTime.compareTo(b.startTime));
+          if (bookingAppointments.isNotEmpty) {
+            ref
+                .read(agendaScrollRequestProvider.notifier)
+                .request(bookingAppointments.first);
+          }
+        }
         Navigator.of(context).pop();
       }
     } catch (error) {

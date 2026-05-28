@@ -495,14 +495,6 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
           isBookableOnline: _onlineBookingVisibility.isBookableOnline,
           onlineVisibility: _onlineBookingVisibility.apiValue,
         );
-        if (mounted) {
-          setState(() => _isSaving = false);
-          await FeedbackDialog.showSuccess(
-            context,
-            title: l10n.servicePackageCreatedTitle,
-            message: l10n.servicePackageCreatedMessage,
-          );
-        }
       } else {
         await notifier.updatePackage(
           packageId: widget.package!.id,
@@ -520,17 +512,10 @@ class _ServicePackageDialogState extends ConsumerState<_ServicePackageDialog> {
           isBookableOnline: _onlineBookingVisibility.isBookableOnline,
           onlineVisibility: _onlineBookingVisibility.apiValue,
         );
-        if (mounted) {
-          setState(() => _isSaving = false);
-          await FeedbackDialog.showSuccess(
-            context,
-            title: l10n.servicePackageUpdatedTitle,
-            message: l10n.servicePackageUpdatedMessage,
-          );
-        }
       }
 
       if (mounted) {
+        setState(() => _isSaving = false);
         Navigator.of(context, rootNavigator: true).pop();
       }
     } catch (_) {

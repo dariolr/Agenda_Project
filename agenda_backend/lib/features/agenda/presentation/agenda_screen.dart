@@ -58,8 +58,8 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   late final ProviderSubscription<bool> _initialScrollSub;
   Timer? _pollingTimer;
 
-  /// Intervallo polling: 10 secondi in debug, 5 minuti in produzione
-  static const _pollingIntervalDebug = Duration(seconds: 10);
+  /// Intervallo polling: 10 minuti in debug, 5 minuti in produzione
+  static const _pollingIntervalDebug = Duration(minutes: 10);
   static const _pollingIntervalProd = Duration(minutes: 5);
   static const _pollingIntervalBusiness4Prod = Duration(minutes: 1);
 

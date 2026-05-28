@@ -289,45 +289,42 @@ class ClientFormState extends ConsumerState<ClientForm> {
       ),
     );
 
-    final contactActionsField = LabeledFormField(
-      label: l10n.clientContactsActionGroup,
-      child: Center(
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          spacing: AppSpacing.formFieldSpacing,
-          runSpacing: 8,
-          children: [
-            OutlinedButton.icon(
-              onPressed: canCall ? () => _openPhone(phoneValue) : null,
-              icon: const Icon(Icons.call_outlined, size: 18),
-              label: Text(l10n.formPhone),
+    final contactActionsField = Center(
+      child: Wrap(
+        alignment: WrapAlignment.center,
+        spacing: AppSpacing.formFieldSpacing,
+        runSpacing: 8,
+        children: [
+          OutlinedButton.icon(
+            onPressed: canCall ? () => _openPhone(phoneValue) : null,
+            icon: const Icon(Icons.call_outlined, size: 18),
+            label: Text(l10n.formPhone),
+          ),
+          OutlinedButton.icon(
+            onPressed: canEmail ? () => _openEmail(emailValue) : null,
+            icon: const Icon(Icons.email_outlined, size: 18),
+            label: Text(l10n.formEmail),
+          ),
+          OutlinedButton.icon(
+            onPressed: canWhatsApp
+                ? () => _openWhatsAppChat(phoneValue)
+                : null,
+            icon: Builder(
+              builder: (context) {
+                final iconColor = IconTheme.of(context).color;
+                return SvgPicture.asset(
+                  'assets/icons/whatsapp.svg',
+                  width: 18,
+                  height: 18,
+                  colorFilter: iconColor == null
+                      ? null
+                      : ColorFilter.mode(iconColor, BlendMode.srcIn),
+                );
+              },
             ),
-            OutlinedButton.icon(
-              onPressed: canEmail ? () => _openEmail(emailValue) : null,
-              icon: const Icon(Icons.email_outlined, size: 18),
-              label: Text(l10n.formEmail),
-            ),
-            OutlinedButton.icon(
-              onPressed: canWhatsApp
-                  ? () => _openWhatsAppChat(phoneValue)
-                  : null,
-              icon: Builder(
-                builder: (context) {
-                  final iconColor = IconTheme.of(context).color;
-                  return SvgPicture.asset(
-                    'assets/icons/whatsapp.svg',
-                    width: 18,
-                    height: 18,
-                    colorFilter: iconColor == null
-                        ? null
-                        : ColorFilter.mode(iconColor, BlendMode.srcIn),
-                  );
-                },
-              ),
-              label: Text(l10n.whatsappTabTitle),
-            ),
-          ],
-        ),
+            label: Text(l10n.whatsappTabTitle),
+          ),
+        ],
       ),
     );
 

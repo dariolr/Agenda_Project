@@ -902,9 +902,9 @@ TEXT,
                 </table>
                 
                 <p style="margin:0 0 20px;font-size:14px;color:#666;">
-                    Se non puoi presentarti, ti preghiamo di cancellare la prenotazione.
+                    {{cancellation_notice_html}}
                 </p>
-                
+
                 <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
                         <td style="text-align:center;">
@@ -938,7 +938,9 @@ Ti ricordiamo che hai un appuntamento DOMANI presso {{business_name}}.
 {{location_block_text}}• Quando: {{date}} alle {{time}}
 • Cosa: {{services}}
 
-Se non puoi presentarti, cancella la prenotazione: {{manage_url}}
+{{cancellation_notice_text}}
+
+Gestisci prenotazione: {{manage_url}}
 
 ---
 Il team di {{business_name}} | {{location_phone}}
@@ -995,9 +997,9 @@ TEXT,
                 </table>
                 
                 <p style="margin:0 0 20px;font-size:14px;color:#666;">
-                    If you cannot make it, please cancel your booking.
+                    {{cancellation_notice_html}}
                 </p>
-                
+
                 <table width="100%" cellpadding="0" cellspacing="0">
                     <tr>
                         <td style="text-align:center;">
@@ -1031,7 +1033,9 @@ This is a reminder that you have an appointment TOMORROW at {{business_name}}.
 {{location_block_text}}• When: {{date}} at {{time}}
 • What: {{services}}
 
-If you cannot make it, cancel your booking: {{manage_url}}
+{{cancellation_notice_text}}
+
+Manage booking: {{manage_url}}
 
 ---
 The {{business_name}} Team | {{location_phone}}
@@ -1082,7 +1086,7 @@ TEXT,
                     <tr>
                         <td style="padding:15px;background-color:#ffebee;border-radius:8px 8px 0 0;">
                             <span style="color:#c62828;font-weight:bold;">Vecchia data</span><br>
-                            <span style="color:#666;text-decoration:line-through;">{{old_date}} alle {{old_time}}</span>
+                            <span style="color:#666;font-size:13px;text-decoration:line-through;">{{old_date}} alle {{old_time}}</span>
                         </td>
                     </tr>
                     <tr>
@@ -1109,18 +1113,20 @@ TEXT,
                     <tr>
                         <td style="text-align:center;">
                             <a href="{{manage_url}}" style="display:inline-block;padding:14px 30px;background-color:#2196F3;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">
-                                Vedi Dettagli
+                                Gestisci Prenotazione
                             </a>
                         </td>
                     </tr>
                 </table>
-                
+
             </td>
         </tr>
         <tr>
             <td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
                 <p style="margin:0;font-size:12px;color:#999;">
-                    Il team di {{business_name}}
+                    Il team di {{business_name}}<br>
+                    {{location_address_line}}<br>
+                    {{location_phone}}
                 </p>
             </td>
         </tr>
@@ -1140,10 +1146,12 @@ La tua prenotazione presso {{business_name}} è stata modificata.
 
 {{location_block_text}}• Cosa: {{services}}
 
-Vedi dettagli: {{manage_url}}
+Gestisci prenotazione: {{manage_url}}
 
 ---
 Il team di {{business_name}}
+{{location_address_line}}
+{{location_phone}}
 TEXT,
             ],
             'en' => [
@@ -1178,7 +1186,7 @@ TEXT,
                     <tr>
                         <td style="padding:15px;background-color:#ffebee;border-radius:8px 8px 0 0;">
                             <span style="color:#c62828;font-weight:bold;">Previous date</span><br>
-                            <span style="color:#666;text-decoration:line-through;">{{old_date}} at {{old_time}}</span>
+                            <span style="color:#666;font-size:13px;text-decoration:line-through;">{{old_date}} at {{old_time}}</span>
                         </td>
                     </tr>
                     <tr>
@@ -1205,18 +1213,20 @@ TEXT,
                     <tr>
                         <td style="text-align:center;">
                             <a href="{{manage_url}}" style="display:inline-block;padding:14px 30px;background-color:#2196F3;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;">
-                                View Details
+                                Manage Booking
                             </a>
                         </td>
                     </tr>
                 </table>
-                
+
             </td>
         </tr>
         <tr>
             <td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
                 <p style="margin:0;font-size:12px;color:#999;">
-                    The {{business_name}} Team
+                    The {{business_name}} Team<br>
+                    {{location_address_line}}<br>
+                    {{location_phone}}
                 </p>
             </td>
         </tr>
@@ -1236,7 +1246,7 @@ Your booking at {{business_name}} has been rescheduled.
 
 {{location_block_text}}• What: {{services}}
 
-View details: {{manage_url}}
+Manage booking: {{manage_url}}
 
 ---
 The {{business_name}} Team

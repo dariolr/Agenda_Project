@@ -134,8 +134,7 @@ final class StripeBillingProvider implements BillingProviderInterface
 
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         if ($config->billingCycleAnchorAt !== null && $config->billingCycleAnchorAt > $now) {
-            $subscriptionData['billing_cycle_anchor'] = $config->billingCycleAnchorAt->getTimestamp();
-            $subscriptionData['proration_behavior'] = 'none';
+            $subscriptionData['trial_end'] = $config->billingCycleAnchorAt->getTimestamp();
         }
 
         $session = $client->checkout->sessions->create([

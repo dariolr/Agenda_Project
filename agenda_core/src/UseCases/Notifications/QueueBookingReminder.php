@@ -127,12 +127,29 @@ final class QueueBookingReminder
         }
         
         $scheduledAt = $startTime->modify("-{$hoursBefore} hours");
-        
+
         // Don't schedule if scheduled time is already past
         if ($scheduledAt <= $now) {
             return 0;
         }
         $this->queueWhatsapp($booking, 'booking_reminder', $scheduledAt->format('Y-m-d H:i:s'));
+
+        // Determine cancellation notice based on whether deadline has passed at send time
+        $cancellationHours = (int) ($booking['location_cancellation_hours'] ?? $booking['business_cancellation_hours'] ?? 0);
+        $cancelDeadline = $cancellationHours > 0 ? $startTime->modify("-{$cancellationHours} hours") : null;
+        $deadlinePassedAtSendTime = $cancelDeadline !== null && $scheduledAt >= $cancelDeadline;
+
+        if ($deadlinePassedAtSendTime) {
+            $cancellationNoticeHtml = $locale === 'en'
+                ? 'Your appointment is confirmed. For urgent needs, please contact us directly.'
+                : 'Il tuo appuntamento è confermato. Se hai necessità urgenti, contattaci direttamente.';
+            $cancellationNoticeText = $cancellationNoticeHtml;
+        } else {
+            $cancellationNoticeHtml = $locale === 'en'
+                ? 'If you cannot make it, please cancel your booking.'
+                : 'Se non puoi presentarti, ti preghiamo di cancellare la prenotazione.';
+            $cancellationNoticeText = $cancellationNoticeHtml;
+        }
 
         // Prepare variables
         $locationName = $booking['location_name'] ?? '';
@@ -175,6 +192,8 @@ final class QueueBookingReminder
             'manage_url' => $booking['manage_url'] ?? '#',
             'location_block_html' => $locationBlockHtml,
             'location_block_text' => $locationBlockText,
+            'cancellation_notice_html' => $cancellationNoticeHtml,
+            'cancellation_notice_text' => $cancellationNoticeText,
         ];
         if (!isset($variables['client_name']) || trim((string) $variables['client_name']) === '') {
             $variables['client_name'] = $recipientEmail['name'] ?? $strings['client_fallback'];
@@ -252,7 +271,9 @@ final class QueueBookingReminder
                 c.first_name as client_first_name,
                 MIN(bi.start_time) as start_time,
                 MAX(bi.end_time) as end_time,
-                GROUP_CONCAT(DISTINCT s.name SEPARATOR ", ") as services
+                GROUP_CONCAT(DISTINCT s.name SEPARATOR ", ") as services,
+                l.cancellation_hours as location_cancellation_hours,
+                bus.cancellation_hours as business_cancellation_hours
              FROM bookings b
              JOIN locations l ON b.location_id = l.id
              JOIN businesses bus ON l.business_id = bus.id
@@ -430,7 +451,9 @@ final class QueueBookingReminder
                 c.first_name as client_first_name,
                 MIN(bi.start_time) as start_time,
                 MAX(bi.end_time) as end_time,
-                GROUP_CONCAT(DISTINCT s.name SEPARATOR ", ") as services
+                GROUP_CONCAT(DISTINCT s.name SEPARATOR ", ") as services,
+                l.cancellation_hours as location_cancellation_hours,
+                bus.cancellation_hours as business_cancellation_hours
              FROM bookings b
              JOIN locations l ON b.location_id = l.id
              JOIN businesses bus ON l.business_id = bus.id

@@ -25,7 +25,7 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m1(date) =>
       "Il periodo gratuito è terminato il ${date}. Per continuare a usare il gestionale, attiva l\'abbonamento.";
 
-  static String m2(date) => "Il tuo periodo gratuito termina il ${date}.";
+  static String m2(date) => "L\'abbonamento sarà attivo dal ${date}.";
 
   static String m3(currentPeriodEnd) =>
       "Abbonamento attivo fino al ${currentPeriodEnd}";
