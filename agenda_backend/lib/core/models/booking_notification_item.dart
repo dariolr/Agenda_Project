@@ -8,6 +8,8 @@ class BookingNotificationItem {
   final int id;
   final int businessId;
   final int? bookingId;
+  final int? classBookingId;
+  final String bookingKind;
   final int? locationId;
   final String? locationName;
   final String? clientName;
@@ -33,6 +35,8 @@ class BookingNotificationItem {
     required this.id,
     required this.businessId,
     this.bookingId,
+    this.classBookingId,
+    this.bookingKind = 'service',
     this.locationId,
     this.locationName,
     this.clientName,
@@ -104,9 +108,29 @@ class BookingNotificationItem {
         return l10n.bookingNotificationsChannelCancelled;
       case 'booking_reminder':
         return l10n.bookingNotificationsChannelReminder;
+      case 'class_booking_confirmed':
+        return l10n.bookingNotificationsChannelClassConfirmed;
+      case 'class_booking_waitlisted':
+        return l10n.bookingNotificationsChannelClassWaitlisted;
+      case 'class_booking_promoted':
+        return l10n.bookingNotificationsChannelClassPromoted;
+      case 'class_booking_cancelled':
+        return l10n.bookingNotificationsChannelClassCancelled;
+      case 'class_booking_updated':
+        return l10n.bookingNotificationsChannelClassUpdated;
+      case 'class_booking_reminder':
+        return l10n.bookingNotificationsChannelClassReminder;
       default:
         return channel;
     }
+  }
+
+  bool get isClassBooking => bookingKind == 'class';
+
+  String bookingKindLabel(BuildContext context) {
+    return isClassBooking
+        ? context.l10n.bookingNotificationsKindClass
+        : context.l10n.bookingNotificationsKindService;
   }
 
   /// Alcuni reminder vengono marcati "failed" dal backend quando il booking è
@@ -303,6 +327,8 @@ class BookingNotificationItem {
       id: json['id'] as int,
       businessId: json['business_id'] as int,
       bookingId: json['booking_id'] as int?,
+      classBookingId: json['class_booking_id'] as int?,
+      bookingKind: json['booking_kind'] as String? ?? 'service',
       locationId: json['location_id'] as int?,
       locationName: json['location_name'] as String?,
       clientName: json['client_name'] as String?,
@@ -329,12 +355,14 @@ class BookingNotificationItem {
 
 class BookingNotificationsResult {
   final List<BookingNotificationItem> notifications;
+  final List<String> availableBookingKinds;
   final int total;
   final int limit;
   final int offset;
 
   const BookingNotificationsResult({
     required this.notifications,
+    this.availableBookingKinds = const [],
     required this.total,
     required this.limit,
     required this.offset,
@@ -350,6 +378,12 @@ class BookingNotificationsResult {
             (e) => BookingNotificationItem.fromJson(e as Map<String, dynamic>),
           )
           .toList(),
+      availableBookingKinds:
+          (json['available_booking_kinds'] as List<dynamic>? ?? const [])
+              .map((e) => e.toString())
+              .where((e) => e == 'service' || e == 'class')
+              .toSet()
+              .toList(growable: false),
       total: json['total'] as int? ?? 0,
       limit: json['limit'] as int? ?? 50,
       offset: json['offset'] as int? ?? 0,

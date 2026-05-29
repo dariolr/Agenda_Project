@@ -180,7 +180,7 @@ final class BusinessWhatsappSettingsRepository
               allow_location_mapping, default_channel_mode,
               existing_clients_opt_in_policy, existing_clients_opt_in_assumed_at, status,
               enabled_by_user_id, enabled_at, disabled_at, notes)
-             VALUES (?, "meta", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             VALUES (?, "meta", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                whatsapp_enabled = VALUES(whatsapp_enabled),
                messages_enabled = VALUES(messages_enabled),

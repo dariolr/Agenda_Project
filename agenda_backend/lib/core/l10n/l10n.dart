@@ -8464,6 +8464,16 @@ class L10n {
     );
   }
 
+  /// `Category`
+  String get bookingNotificationsFilterBookingKind {
+    return Intl.message(
+      'Category',
+      name: 'bookingNotificationsFilterBookingKind',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Provider`
   String get bookingNotificationsFilterProvider {
     return Intl.message(
@@ -8539,6 +8549,56 @@ class L10n {
     return Intl.message(
       'All types',
       name: 'bookingNotificationsTypeAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `All`
+  String get bookingNotificationsKindAll {
+    return Intl.message(
+      'All',
+      name: 'bookingNotificationsKindAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Appointment`
+  String get bookingNotificationsKindService {
+    return Intl.message(
+      'Appointment',
+      name: 'bookingNotificationsKindService',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Appointments`
+  String get bookingNotificationsKindServicePlural {
+    return Intl.message(
+      'Appointments',
+      name: 'bookingNotificationsKindServicePlural',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Event`
+  String get bookingNotificationsKindClass {
+    return Intl.message(
+      'Event',
+      name: 'bookingNotificationsKindClass',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Events`
+  String get bookingNotificationsKindClassPlural {
+    return Intl.message(
+      'Events',
+      name: 'bookingNotificationsKindClassPlural',
       desc: '',
       args: [],
     );
@@ -8639,6 +8699,76 @@ class L10n {
     return Intl.message(
       'Booking reminder',
       name: 'bookingNotificationsChannelReminder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Event confirmed`
+  String get bookingNotificationsChannelClassConfirmed {
+    return Intl.message(
+      'Event confirmed',
+      name: 'bookingNotificationsChannelClassConfirmed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Event waitlist`
+  String get bookingNotificationsChannelClassWaitlisted {
+    return Intl.message(
+      'Event waitlist',
+      name: 'bookingNotificationsChannelClassWaitlisted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Promoted from waitlist`
+  String get bookingNotificationsChannelClassPromoted {
+    return Intl.message(
+      'Promoted from waitlist',
+      name: 'bookingNotificationsChannelClassPromoted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Event cancelled`
+  String get bookingNotificationsChannelClassCancelled {
+    return Intl.message(
+      'Event cancelled',
+      name: 'bookingNotificationsChannelClassCancelled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Event updated`
+  String get bookingNotificationsChannelClassUpdated {
+    return Intl.message(
+      'Event updated',
+      name: 'bookingNotificationsChannelClassUpdated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Event reminder`
+  String get bookingNotificationsChannelClassReminder {
+    return Intl.message(
+      'Event reminder',
+      name: 'bookingNotificationsChannelClassReminder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Category`
+  String get bookingNotificationsFieldBookingKind {
+    return Intl.message(
+      'Category',
+      name: 'bookingNotificationsFieldBookingKind',
       desc: '',
       args: [],
     );
@@ -13296,10 +13426,10 @@ class L10n {
     );
   }
 
-  /// `The subscription will be active from {date}.`
+  /// `Subscription activation is required by {date}.`
   String billingActivationDeadlinePending(Object date) {
     return Intl.message(
-      'The subscription will be active from $date.',
+      'Subscription activation is required by $date.',
       name: 'billingActivationDeadlinePending',
       desc: '',
       args: [date],

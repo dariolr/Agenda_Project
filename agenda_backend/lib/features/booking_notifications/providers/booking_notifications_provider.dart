@@ -8,6 +8,7 @@ class BookingNotificationsFilters {
   final List<String>? status;
   final List<String>? channels;
   final List<String>? providers;
+  final String? bookingKind;
   final String sortBy;
   final String sortOrder;
 
@@ -16,6 +17,7 @@ class BookingNotificationsFilters {
     this.status,
     this.channels,
     this.providers,
+    this.bookingKind,
     this.sortBy = 'last_attempt',
     this.sortOrder = 'desc',
   });
@@ -29,6 +31,8 @@ class BookingNotificationsFilters {
     bool clearChannels = false,
     List<String>? providers,
     bool clearProviders = false,
+    String? bookingKind,
+    bool clearBookingKind = false,
     String? sortBy,
     String? sortOrder,
   }) {
@@ -37,6 +41,7 @@ class BookingNotificationsFilters {
       status: clearStatus ? null : (status ?? this.status),
       channels: clearChannels ? null : (channels ?? this.channels),
       providers: clearProviders ? null : (providers ?? this.providers),
+      bookingKind: clearBookingKind ? null : (bookingKind ?? this.bookingKind),
       sortBy: sortBy ?? this.sortBy,
       sortOrder: sortOrder ?? this.sortOrder,
     );
@@ -82,6 +87,13 @@ class BookingNotificationsFiltersNotifier
     );
   }
 
+  void setBookingKind(String? bookingKind) {
+    state = state.copyWith(
+      bookingKind: bookingKind,
+      clearBookingKind: bookingKind == null || bookingKind.isEmpty,
+    );
+  }
+
   void setSortBy(String sortBy) {
     state = state.copyWith(sortBy: sortBy);
   }
@@ -106,6 +118,7 @@ class BookingNotificationsState {
   final int total;
   final int offset;
   final int limit;
+  final List<String> availableBookingKinds;
   final bool isLoading;
   final bool isLoadingMore;
   final String? error;
@@ -115,6 +128,7 @@ class BookingNotificationsState {
     this.total = 0,
     this.offset = 0,
     this.limit = 50,
+    this.availableBookingKinds = const [],
     this.isLoading = false,
     this.isLoadingMore = false,
     this.error,
@@ -128,6 +142,7 @@ class BookingNotificationsState {
     int? total,
     int? offset,
     int? limit,
+    List<String>? availableBookingKinds,
     bool? isLoading,
     bool? isLoadingMore,
     String? error,
@@ -138,6 +153,8 @@ class BookingNotificationsState {
       total: total ?? this.total,
       offset: offset ?? this.offset,
       limit: limit ?? this.limit,
+      availableBookingKinds:
+          availableBookingKinds ?? this.availableBookingKinds,
       isLoading: isLoading ?? this.isLoading,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       error: clearError ? null : (error ?? this.error),
@@ -172,6 +189,7 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
       state = state.copyWith(
         notifications: result.notifications,
         total: result.total,
+        availableBookingKinds: result.availableBookingKinds,
         offset: 0,
         isLoading: false,
       );
@@ -212,6 +230,7 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
       state = state.copyWith(
         notifications: [...state.notifications, ...appended],
         total: result.total,
+        availableBookingKinds: result.availableBookingKinds,
         offset: newOffset,
         isLoadingMore: false,
       );
@@ -245,6 +264,7 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
         status: filters.status,
         channels: filters.channels,
         providers: filters.providers,
+        bookingKind: filters.bookingKind,
         sortBy: filters.sortBy,
         sortOrder: filters.sortOrder,
         limit: pageSize,
@@ -262,6 +282,7 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
           status: filters.status,
           channels: filters.channels,
           providers: filters.providers,
+          bookingKind: filters.bookingKind,
           sortBy: filters.sortBy,
           sortOrder: filters.sortOrder,
           limit: perBusinessLimit,
@@ -271,11 +292,17 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
     );
 
     var total = 0;
+    final availableBookingKinds = <String>[];
     final merged = <BookingNotificationItem>[];
     for (final response in responses) {
       final result = BookingNotificationsResult.fromJson(response);
       total += result.total;
       merged.addAll(result.notifications);
+      for (final kind in result.availableBookingKinds) {
+        if (!availableBookingKinds.contains(kind)) {
+          availableBookingKinds.add(kind);
+        }
+      }
     }
 
     merged.sort(
@@ -285,6 +312,7 @@ class BookingNotificationsNotifier extends Notifier<BookingNotificationsState> {
 
     return BookingNotificationsResult(
       notifications: visible,
+      availableBookingKinds: availableBookingKinds,
       total: total,
       limit: pageSize,
       offset: offset,

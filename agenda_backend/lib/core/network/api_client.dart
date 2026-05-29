@@ -1548,6 +1548,7 @@ class ApiClient {
     List<String>? status,
     List<String>? channels,
     List<String>? providers,
+    String? bookingKind,
     String? startDate,
     String? endDate,
     String sortBy =
@@ -1574,6 +1575,9 @@ class ApiClient {
     }
     if (providers != null && providers.isNotEmpty) {
       queryParameters['provider'] = providers.join(',');
+    }
+    if (bookingKind != null && bookingKind.isNotEmpty) {
+      queryParameters['booking_kind'] = bookingKind;
     }
     if (startDate != null) {
       queryParameters['start_date'] = startDate;

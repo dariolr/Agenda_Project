@@ -76,6 +76,13 @@ final class BookingNotificationsController
                 : $providerParam;
         }
 
+        if ($request->queryParam('booking_kind') !== null) {
+            $kindParam = (string) $request->queryParam('booking_kind');
+            $filters['booking_kind'] = strpos($kindParam, ',') !== false
+                ? array_values(array_filter(array_map('trim', explode(',', $kindParam))))
+                : $kindParam;
+        }
+
         if ($request->queryParam('start_date') !== null) {
             $filters['start_date'] = (string) $request->queryParam('start_date');
         }
@@ -112,6 +119,7 @@ final class BookingNotificationsController
             'total' => $result['total'],
             'limit' => $limit,
             'offset' => $offset,
+            'available_booking_kinds' => $result['available_booking_kinds'] ?? [],
         ]);
     }
 
@@ -134,6 +142,8 @@ final class BookingNotificationsController
         return [
             'id' => (int) $item['id'],
             'booking_id' => $item['booking_id'] !== null ? (int) $item['booking_id'] : null,
+            'class_booking_id' => $item['class_booking_id'] !== null ? (int) $item['class_booking_id'] : null,
+            'booking_kind' => (string) ($item['booking_kind'] ?? ($item['class_booking_id'] !== null ? 'class' : 'service')),
             'business_id' => (int) $item['business_id'],
             'location_id' => $item['location_id'] !== null ? (int) $item['location_id'] : null,
             'location_name' => $item['location_name'] ?? null,
@@ -210,6 +220,12 @@ final class BookingNotificationsController
             'booking_cancelled' => EmailTemplateRenderer::bookingCancelled($locale),
             'booking_reminder' => EmailTemplateRenderer::bookingReminder($locale),
             'booking_rescheduled' => EmailTemplateRenderer::bookingRescheduled($locale),
+            'class_booking_confirmed' => EmailTemplateRenderer::classBookingConfirmed($locale),
+            'class_booking_waitlisted' => EmailTemplateRenderer::classBookingWaitlisted($locale),
+            'class_booking_promoted' => EmailTemplateRenderer::classBookingPromoted($locale),
+            'class_booking_cancelled' => EmailTemplateRenderer::classBookingCancelled($locale),
+            'class_booking_updated' => EmailTemplateRenderer::classBookingUpdated($locale),
+            'class_booking_reminder' => EmailTemplateRenderer::classBookingReminder($locale),
             default => null,
         };
 

@@ -25,7 +25,8 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m1(date) =>
       "Il periodo gratuito è terminato il ${date}. Per continuare a usare il gestionale, attiva l\'abbonamento.";
 
-  static String m2(date) => "L\'abbonamento sarà attivo dal ${date}.";
+  static String m2(date) =>
+      "L\'attivazione dell abbonamento è richiesta entro il ${date}.";
 
   static String m3(currentPeriodEnd) =>
       "Abbonamento attivo fino al ${currentPeriodEnd}";
@@ -807,6 +808,18 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "bookingNotificationsChannelCancelled":
         MessageLookupByLibrary.simpleMessage("Prenotazione annullata"),
+    "bookingNotificationsChannelClassCancelled":
+        MessageLookupByLibrary.simpleMessage("Evento annullato"),
+    "bookingNotificationsChannelClassConfirmed":
+        MessageLookupByLibrary.simpleMessage("Evento confermato"),
+    "bookingNotificationsChannelClassPromoted":
+        MessageLookupByLibrary.simpleMessage("Promozione da lista d\'attesa"),
+    "bookingNotificationsChannelClassReminder":
+        MessageLookupByLibrary.simpleMessage("Promemoria evento"),
+    "bookingNotificationsChannelClassUpdated":
+        MessageLookupByLibrary.simpleMessage("Evento aggiornato"),
+    "bookingNotificationsChannelClassWaitlisted":
+        MessageLookupByLibrary.simpleMessage("Lista d\'attesa evento"),
     "bookingNotificationsChannelConfirmed":
         MessageLookupByLibrary.simpleMessage("Prenotazione creata"),
     "bookingNotificationsChannelReminder": MessageLookupByLibrary.simpleMessage(
@@ -825,6 +838,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotificationsFieldBody": MessageLookupByLibrary.simpleMessage(
       "Corpo",
     ),
+    "bookingNotificationsFieldBookingKind":
+        MessageLookupByLibrary.simpleMessage("Categoria"),
     "bookingNotificationsFieldClient": MessageLookupByLibrary.simpleMessage(
       "Cliente",
     ),
@@ -850,6 +865,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotificationsFieldType": MessageLookupByLibrary.simpleMessage(
       "Tipo",
     ),
+    "bookingNotificationsFilterBookingKind":
+        MessageLookupByLibrary.simpleMessage("Categoria"),
     "bookingNotificationsFilterProvider": MessageLookupByLibrary.simpleMessage(
       "Provider",
     ),
@@ -859,6 +876,20 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotificationsFilterType": MessageLookupByLibrary.simpleMessage(
       "Tipo",
     ),
+    "bookingNotificationsKindAll": MessageLookupByLibrary.simpleMessage(
+      "Tutti",
+    ),
+    "bookingNotificationsKindClass": MessageLookupByLibrary.simpleMessage(
+      "Evento",
+    ),
+    "bookingNotificationsKindClassPlural": MessageLookupByLibrary.simpleMessage(
+      "Eventi",
+    ),
+    "bookingNotificationsKindService": MessageLookupByLibrary.simpleMessage(
+      "Appuntamento",
+    ),
+    "bookingNotificationsKindServicePlural":
+        MessageLookupByLibrary.simpleMessage("Appuntamenti"),
     "bookingNotificationsLoadMore": MessageLookupByLibrary.simpleMessage(
       "Carica altre",
     ),

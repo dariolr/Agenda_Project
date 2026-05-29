@@ -48,6 +48,7 @@ class _BookingNotificationsScreenState
   String? _selectedStatus;
   String? _selectedChannel;
   String? _selectedProvider;
+  String? _selectedBookingKind;
   int? _selectedBusinessId;
   int _selectedTabIndex = 0;
 
@@ -62,6 +63,7 @@ class _BookingNotificationsScreenState
     _selectedStatus = existingFilters.status?.firstOrNull;
     _selectedChannel = existingFilters.channels?.firstOrNull;
     _selectedProvider = existingFilters.providers?.firstOrNull;
+    _selectedBookingKind = existingFilters.bookingKind;
     if (existingFilters.search?.isNotEmpty == true) {
       _searchController.text = existingFilters.search!;
     }
@@ -210,6 +212,19 @@ class _BookingNotificationsScreenState
         .loadNotificationsForBusinesses(_activeBusinessIds(_readBusinesses()));
   }
 
+  void _onBookingKindChanged(String? value) {
+    setState(() {
+      _selectedBookingKind = value;
+      _selectedChannel = null;
+    });
+    final filters = ref.read(bookingNotificationsFiltersProvider.notifier);
+    filters.setBookingKind(value);
+    filters.setChannels(null);
+    ref
+        .read(bookingNotificationsProvider.notifier)
+        .loadNotificationsForBusinesses(_activeBusinessIds(_readBusinesses()));
+  }
+
   void _onBusinessChanged(int? value) {
     setState(() => _selectedBusinessId = value);
     ref
@@ -244,6 +259,10 @@ class _BookingNotificationsScreenState
         _canSelectBusiness ||
         _selectedBusinessId == null ||
         whatsappEnabledForActiveBusiness;
+    final availableBookingKinds = state.availableBookingKinds;
+    final showBookingKindFilter =
+        availableBookingKinds.contains('service') &&
+        availableBookingKinds.contains('class');
 
     ref.listen<BookingNotificationsState>(bookingNotificationsProvider, (
       prev,
@@ -321,7 +340,10 @@ class _BookingNotificationsScreenState
               selectedStatus: _selectedStatus,
               selectedChannel: _selectedChannel,
               selectedProvider: _selectedProvider,
+              selectedBookingKind: _selectedBookingKind,
+              availableBookingKinds: availableBookingKinds,
               showBusinessFilter: _canSelectBusiness,
+              showBookingKindFilter: showBookingKindFilter,
               showProviderFilter: showProviderFilter,
               showWhatsappProviderOption: showWhatsappProviderOption,
               selectedBusinessId: _selectedBusinessId,
@@ -330,6 +352,7 @@ class _BookingNotificationsScreenState
               onStatusChanged: _onStatusChanged,
               onChannelChanged: _onChannelChanged,
               onProviderChanged: _onProviderChanged,
+              onBookingKindChanged: _onBookingKindChanged,
               onBusinessChanged: _onBusinessChanged,
             ),
             Padding(
@@ -424,6 +447,7 @@ class _BookingNotificationsScreenState
     final colorScheme = Theme.of(context).colorScheme;
     final showLastAttemptColumn = _canSelectBusiness;
     final showProviderColumn = _showProviderColumn;
+    final showBookingKindColumn = _showBookingKindColumn;
     final filters = ref.watch(bookingNotificationsFiltersProvider);
     final sortBy = filters.sortBy;
     final sortAscending = filters.sortOrder == 'asc';
@@ -431,7 +455,9 @@ class _BookingNotificationsScreenState
     final createdColumnIndex = colIndex++;
     final lastAttemptColumnIndex = showLastAttemptColumn ? colIndex++ : null;
     final sentColumnIndex = colIndex++;
-    colIndex += 3; // client, type, recipient
+    colIndex += 1; // client
+    if (showBookingKindColumn) colIndex++;
+    colIndex += 2; // type, recipient
     if (showProviderColumn) colIndex++;
     colIndex += 1; // status
     final appointmentColumnIndex = colIndex;
@@ -500,6 +526,12 @@ class _BookingNotificationsScreenState
                         DataColumn(
                           label: Text(l10n.bookingNotificationsFieldClient),
                         ),
+                        if (showBookingKindColumn)
+                          DataColumn(
+                            label: Text(
+                              l10n.bookingNotificationsFieldBookingKind,
+                            ),
+                          ),
                         DataColumn(
                           label: Text(l10n.bookingNotificationsFieldType),
                         ),
@@ -561,6 +593,7 @@ class _BookingNotificationsScreenState
   DataRow _buildDataRow(BookingNotificationItem item) {
     final showLastAttemptColumn = _canSelectBusiness;
     final showProviderColumn = _showProviderColumn;
+    final showBookingKindColumn = _showBookingKindColumn;
     return DataRow(
       onSelectChanged: (_) => _showNotificationBody(item),
       cells: [
@@ -590,6 +623,8 @@ class _BookingNotificationsScreenState
             ),
           ),
         ),
+        if (showBookingKindColumn)
+          _tappableDataCell(item, _BookingKindChip(item: item)),
         _tappableDataCell(
           item,
           SizedBox(
@@ -664,6 +699,11 @@ class _BookingNotificationsScreenState
     return _canSelectBusiness ||
         (whatsappSettings?.whatsappEnabled == true &&
             whatsappSettings?.messagesEnabled == true);
+  }
+
+  bool get _showBookingKindColumn {
+    final kinds = ref.watch(bookingNotificationsProvider).availableBookingKinds;
+    return kinds.contains('service') && kinds.contains('class');
   }
 
   void _onSortChanged(String sortBy, bool ascending) {
@@ -775,6 +815,7 @@ class _BookingNotificationsScreenState
         _canSelectBusiness ||
         (whatsappSettings?.whatsappEnabled == true &&
             whatsappSettings?.messagesEnabled == true);
+    final showBookingKind = _showBookingKindColumn;
 
     return RefreshIndicator(
       onRefresh: _loadInitialData,
@@ -795,6 +836,7 @@ class _BookingNotificationsScreenState
           return _NotificationCard(
             notification: item,
             showProvider: showProvider,
+            showBookingKind: showBookingKind,
             onOpenBody: () => _showNotificationBody(item),
           );
         },
@@ -809,7 +851,10 @@ class _FiltersBar extends StatelessWidget {
     required this.selectedStatus,
     required this.selectedChannel,
     required this.selectedProvider,
+    required this.selectedBookingKind,
+    required this.availableBookingKinds,
     required this.showBusinessFilter,
+    required this.showBookingKindFilter,
     required this.showProviderFilter,
     required this.showWhatsappProviderOption,
     required this.selectedBusinessId,
@@ -818,6 +863,7 @@ class _FiltersBar extends StatelessWidget {
     required this.onStatusChanged,
     required this.onChannelChanged,
     required this.onProviderChanged,
+    required this.onBookingKindChanged,
     required this.onBusinessChanged,
   });
 
@@ -825,7 +871,10 @@ class _FiltersBar extends StatelessWidget {
   final String? selectedStatus;
   final String? selectedChannel;
   final String? selectedProvider;
+  final String? selectedBookingKind;
+  final List<String> availableBookingKinds;
   final bool showBusinessFilter;
+  final bool showBookingKindFilter;
   final bool showProviderFilter;
   final bool showWhatsappProviderOption;
   final int? selectedBusinessId;
@@ -834,6 +883,7 @@ class _FiltersBar extends StatelessWidget {
   final ValueChanged<String?> onStatusChanged;
   final ValueChanged<String?> onChannelChanged;
   final ValueChanged<String?> onProviderChanged;
+  final ValueChanged<String?> onBookingKindChanged;
   final ValueChanged<int?> onBusinessChanged;
 
   @override
@@ -849,7 +899,15 @@ class _FiltersBar extends StatelessWidget {
           final businessWidth = availableWidth < 280 ? availableWidth : 260.0;
           final statusWidth = availableWidth < 240 ? availableWidth : 220.0;
           final typeWidth = availableWidth < 270 ? availableWidth : 250.0;
+          final kindWidth = availableWidth < 240 ? availableWidth : 220.0;
           final providerWidth = availableWidth < 240 ? availableWidth : 220.0;
+          final hasService =
+              availableBookingKinds.isEmpty ||
+              availableBookingKinds.contains('service') ||
+              selectedBookingKind == 'service';
+          final hasClass =
+              availableBookingKinds.contains('class') ||
+              selectedBookingKind == 'class';
 
           return Wrap(
             spacing: 12,
@@ -959,6 +1017,43 @@ class _FiltersBar extends StatelessWidget {
                   onChanged: onStatusChanged,
                 ),
               ),
+              if (showBookingKindFilter)
+                SizedBox(
+                  width: kindWidth,
+                  child: DropdownButtonFormField<String?>(
+                    value: selectedBookingKind,
+                    isExpanded: true,
+                    decoration: InputDecoration(
+                      labelText: l10n.bookingNotificationsFilterBookingKind,
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                    items: [
+                      DropdownMenuItem<String?>(
+                        value: null,
+                        child: Text(
+                          l10n.bookingNotificationsKindAll,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem<String?>(
+                        value: 'service',
+                        child: Text(
+                          l10n.bookingNotificationsKindServicePlural,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem<String?>(
+                        value: 'class',
+                        child: Text(
+                          l10n.bookingNotificationsKindClassPlural,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                    onChanged: onBookingKindChanged,
+                  ),
+                ),
               SizedBox(
                 width: typeWidth,
                 child: DropdownButtonFormField<String?>(
@@ -977,34 +1072,80 @@ class _FiltersBar extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    DropdownMenuItem<String?>(
-                      value: 'booking_confirmed',
-                      child: Text(
-                        l10n.bookingNotificationsChannelConfirmed,
-                        overflow: TextOverflow.ellipsis,
+                    if (hasService) ...[
+                      DropdownMenuItem<String?>(
+                        value: 'booking_confirmed',
+                        child: Text(
+                          l10n.bookingNotificationsChannelConfirmed,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'booking_rescheduled',
-                      child: Text(
-                        l10n.bookingNotificationsChannelRescheduled,
-                        overflow: TextOverflow.ellipsis,
+                      DropdownMenuItem<String?>(
+                        value: 'booking_rescheduled',
+                        child: Text(
+                          l10n.bookingNotificationsChannelRescheduled,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'booking_cancelled',
-                      child: Text(
-                        l10n.bookingNotificationsChannelCancelled,
-                        overflow: TextOverflow.ellipsis,
+                      DropdownMenuItem<String?>(
+                        value: 'booking_cancelled',
+                        child: Text(
+                          l10n.bookingNotificationsChannelCancelled,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    DropdownMenuItem<String?>(
-                      value: 'booking_reminder',
-                      child: Text(
-                        l10n.bookingNotificationsChannelReminder,
-                        overflow: TextOverflow.ellipsis,
+                      DropdownMenuItem<String?>(
+                        value: 'booking_reminder',
+                        child: Text(
+                          l10n.bookingNotificationsChannelReminder,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
+                    ],
+                    if (hasClass) ...[
+                      DropdownMenuItem<String?>(
+                        value: 'class_booking_confirmed',
+                        child: Text(
+                          l10n.bookingNotificationsChannelClassConfirmed,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem<String?>(
+                        value: 'class_booking_waitlisted',
+                        child: Text(
+                          l10n.bookingNotificationsChannelClassWaitlisted,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem<String?>(
+                        value: 'class_booking_promoted',
+                        child: Text(
+                          l10n.bookingNotificationsChannelClassPromoted,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem<String?>(
+                        value: 'class_booking_cancelled',
+                        child: Text(
+                          l10n.bookingNotificationsChannelClassCancelled,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem<String?>(
+                        value: 'class_booking_updated',
+                        child: Text(
+                          l10n.bookingNotificationsChannelClassUpdated,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      DropdownMenuItem<String?>(
+                        value: 'class_booking_reminder',
+                        child: Text(
+                          l10n.bookingNotificationsChannelClassReminder,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ],
                   onChanged: onChannelChanged,
                 ),
@@ -1059,11 +1200,13 @@ class _NotificationCard extends ConsumerWidget {
   const _NotificationCard({
     required this.notification,
     required this.showProvider,
+    required this.showBookingKind,
     required this.onOpenBody,
   });
 
   final BookingNotificationItem notification;
   final bool showProvider;
+  final bool showBookingKind;
   final VoidCallback onOpenBody;
 
   String _formatDateTime(
@@ -1113,6 +1256,10 @@ class _NotificationCard extends ConsumerWidget {
                 ],
               ),
               const SizedBox(height: 8),
+              if (showBookingKind) ...[
+                _BookingKindChip(item: notification),
+                const SizedBox(height: 8),
+              ],
               Text(
                 '${l10n.bookingNotificationsFieldType}: ${notification.channelLabel(context)}',
                 style: theme.textTheme.bodyMedium,
@@ -1255,6 +1402,36 @@ class _NotificationStatusChip extends StatelessWidget {
         item.statusLabel(context),
         style: theme.textTheme.labelMedium?.copyWith(
           color: item.statusColor,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+}
+
+class _BookingKindChip extends StatelessWidget {
+  const _BookingKindChip({required this.item});
+
+  final BookingNotificationItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final color = item.isClassBooking
+        ? colorScheme.tertiary
+        : colorScheme.primary;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text(
+        item.bookingKindLabel(context),
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: color,
           fontWeight: FontWeight.w600,
         ),
       ),
