@@ -25,6 +25,7 @@ import '../../agenda/providers/temp_drag_time_provider.dart';
 import '../../agenda/providers/time_blocks_provider.dart';
 import '../../agenda/providers/weekly_appointments_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
+import '../../booking_notifications/providers/whatsapp_integration_provider.dart';
 import '../../bookings_list/providers/bookings_list_provider.dart';
 import '../../class_events/providers/class_events_providers.dart';
 import '../../clients/providers/clients_providers.dart';
@@ -180,6 +181,9 @@ void invalidateBusinessScopedProviders(Object refObj) {
 
     // Business User Context (permessi location)
     ref.invalidate(currentBusinessUserContextProvider);
+
+    // WhatsApp integration
+    ref.invalidate(whatsappIntegrationProvider);
 
     // Bookings list filters e stato lista
     ref.invalidate(bookingsListFiltersProvider);

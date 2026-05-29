@@ -3026,6 +3026,20 @@ class ApiClient {
     return BusinessWhatsappSettings.fromJson(map);
   }
 
+  Future<BusinessWhatsappSettings> updateBusinessWhatsappSettings({
+    required int businessId,
+    required Map<String, dynamic> payload,
+  }) async {
+    final response = await put(
+      ApiConfig.businessWhatsappSettings(businessId),
+      data: payload,
+    );
+    final map = Map<String, dynamic>.from(
+      (response['settings'] as Map?) ?? response,
+    );
+    return BusinessWhatsappSettings.fromJson(map);
+  }
+
   Future<WhatsappLocationMapping> upsertWhatsappLocationMapping({
     required int businessId,
     required int locationId,

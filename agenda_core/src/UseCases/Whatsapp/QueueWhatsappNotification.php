@@ -33,6 +33,7 @@ final class QueueWhatsappNotification
         if (
             (int) ($settings['whatsapp_enabled'] ?? 0) !== 1
             || (int) ($settings['messages_enabled'] ?? 0) !== 1
+            || (int) ($settings['business_messages_enabled'] ?? 1) !== 1
         ) {
             return 0;
         }

@@ -71,7 +71,8 @@ final class BookingNotificationsRepositoryTest extends TestCase
             'CREATE TABLE business_whatsapp_settings (
                 business_id INTEGER NOT NULL,
                 whatsapp_enabled INTEGER NOT NULL DEFAULT 0,
-                messages_enabled INTEGER NOT NULL DEFAULT 0
+                messages_enabled INTEGER NOT NULL DEFAULT 0,
+                business_messages_enabled INTEGER NOT NULL DEFAULT 1
             )'
         );
         $this->pdo->exec(

@@ -907,6 +907,7 @@ final class NotificationRepository
              WHERE business_id = ?
                AND whatsapp_enabled = 1
                AND messages_enabled = 1
+               AND business_messages_enabled = 1
              LIMIT 1'
         );
         $stmt->execute([$businessId]);

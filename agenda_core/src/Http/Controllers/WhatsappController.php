@@ -755,6 +755,8 @@ final class WhatsappController
         $isSuperadmin = $this->userRepo->isSuperadmin((int) $request->getAttribute('user_id'));
         $enabled = ((int) ($settings['whatsapp_enabled'] ?? 0)) === 1;
         $messagesEnabled = ((int) ($settings['messages_enabled'] ?? 0)) === 1;
+        $businessMessagesEnabled = ((int) ($settings['business_messages_enabled'] ?? 1)) === 1;
+        $effectiveMessagesEnabled = $enabled && $messagesEnabled && $businessMessagesEnabled;
         $mappingAllowed = ((int) ($settings['allow_location_mapping'] ?? 0)) === 1;
         $role = $isSuperadmin
             ? 'superadmin'
@@ -772,10 +774,10 @@ final class WhatsappController
         if ($action === 'onboard' && !$enabled) {
             return Response::error('Attivazione WhatsApp non consentita', 'whatsapp_activation_not_allowed', 403, $request->traceId);
         }
-        if ($action === 'send_real' && (!$enabled || !$messagesEnabled)) {
+        if ($action === 'send_real' && !$effectiveMessagesEnabled) {
             return Response::error('Invio messaggi WhatsApp disabilitato', 'whatsapp_messages_disabled', 403, $request->traceId);
         }
-        if ($action === 'send_test' && !$messagesEnabled && !$isSuperadmin) {
+        if ($action === 'send_test' && !$effectiveMessagesEnabled && !$isSuperadmin) {
             return Response::error('Invio messaggi WhatsApp disabilitato', 'whatsapp_messages_disabled', 403, $request->traceId);
         }
         if ($action === 'manage_mapping' && !$mappingAllowed && !$isSuperadmin) {
@@ -1006,6 +1008,8 @@ final class WhatsappController
     ): array {
         $featureEnabled = ((int) ($settings['whatsapp_enabled'] ?? 0)) === 1;
         $messagesEnabled = ((int) ($settings['messages_enabled'] ?? 0)) === 1;
+        $businessMessagesEnabled = ((int) ($settings['business_messages_enabled'] ?? 1)) === 1;
+        $effectiveMessagesEnabled = $featureEnabled && $messagesEnabled && $businessMessagesEnabled;
         $mappingAllowed = ((int) ($settings['allow_location_mapping'] ?? 0)) === 1;
         $blocking = [];
         $warnings = [];
@@ -1035,7 +1039,7 @@ final class WhatsappController
             $blocking[] = 'whatsapp_optin_required';
             $nextSteps[] = 'collect_customer_opt_in';
         }
-        if (!$messagesEnabled) {
+        if (!$messagesEnabled || !$businessMessagesEnabled) {
             $blocking[] = 'whatsapp_messages_disabled';
             $nextSteps[] = 'enable_real_message_sending';
         }
@@ -1046,6 +1050,8 @@ final class WhatsappController
         return [
             'feature_enabled' => $featureEnabled,
             'messages_enabled' => $messagesEnabled,
+            'business_messages_enabled' => $businessMessagesEnabled,
+            'effective_messages_enabled' => $effectiveMessagesEnabled,
             'business_config_present' => $config !== null,
             'phone_number_present' => $config !== null && trim((string) ($config['phone_number_id'] ?? '')) !== '',
             'phone_number_active' => $phoneActive,

@@ -188,6 +188,7 @@ CREATE TABLE `business_whatsapp_settings` (
   `provider_code` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'meta',
   `whatsapp_enabled` tinyint(1) NOT NULL DEFAULT '0',
   `messages_enabled` tinyint(1) NOT NULL DEFAULT '0',
+  `business_messages_enabled` tinyint(1) NOT NULL DEFAULT '1',
   `allow_location_mapping` tinyint(1) NOT NULL DEFAULT '0',
   `default_channel_mode` enum('disabled','business_default','location_mapping') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'business_default',
   `existing_clients_opt_in_policy` varchar(32) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'explicit_only',
@@ -1403,6 +1404,7 @@ ALTER TABLE `business_whatsapp_settings`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uniq_business_whatsapp_settings_business` (`business_id`),
   ADD KEY `idx_bws_enabled_flags` (`whatsapp_enabled`,`messages_enabled`),
+  ADD KEY `idx_bws_effective_messages` (`whatsapp_enabled`,`messages_enabled`,`business_messages_enabled`),
   ADD KEY `idx_bws_status` (`status`),
   ADD KEY `idx_bws_enabled_by_user` (`enabled_by_user_id`);
 

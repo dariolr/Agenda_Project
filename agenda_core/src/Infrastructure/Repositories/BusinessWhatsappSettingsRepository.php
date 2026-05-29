@@ -9,6 +9,7 @@ use Agenda\Infrastructure\Database\Connection;
 final class BusinessWhatsappSettingsRepository
 {
     private const SELECT_FIELDS = 'id, business_id, provider_code, whatsapp_enabled, messages_enabled,
+        business_messages_enabled,
         allow_location_mapping, default_channel_mode, existing_clients_opt_in_policy, existing_clients_opt_in_assumed_at,
         status, last_go_live_check_at, last_error_code, last_error_message, enabled_by_user_id,
         enabled_at, disabled_at, notes, created_at, updated_at';
@@ -40,6 +41,7 @@ final class BusinessWhatsappSettingsRepository
             'provider_code' => 'meta',
             'whatsapp_enabled' => 0,
             'messages_enabled' => 0,
+            'business_messages_enabled' => 1,
             'allow_location_mapping' => 0,
             'default_channel_mode' => 'business_default',
             'existing_clients_opt_in_policy' => 'explicit_only',
@@ -101,6 +103,7 @@ final class BusinessWhatsappSettingsRepository
 
         $sql = 'SELECT b.id AS business_id, b.name AS business_name, b.slug AS business_slug,
                        s.id, s.provider_code, s.whatsapp_enabled, s.messages_enabled,
+                       s.business_messages_enabled,
                        s.allow_location_mapping, s.default_channel_mode,
                        s.existing_clients_opt_in_policy, s.existing_clients_opt_in_assumed_at,
                        s.status, s.last_go_live_check_at, s.last_error_code, s.last_error_message,
@@ -174,16 +177,21 @@ final class BusinessWhatsappSettingsRepository
             $existingClientsOptInAssumedAt = date('Y-m-d H:i:s');
         }
 
+        $businessMessagesEnabled = array_key_exists('business_messages_enabled', $data)
+            ? (bool) $data['business_messages_enabled']
+            : ((int) ($current['business_messages_enabled'] ?? 1) === 1);
+
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO business_whatsapp_settings
-             (business_id, provider_code, whatsapp_enabled, messages_enabled,
+             (business_id, provider_code, whatsapp_enabled, messages_enabled, business_messages_enabled,
               allow_location_mapping, default_channel_mode,
               existing_clients_opt_in_policy, existing_clients_opt_in_assumed_at, status,
               enabled_by_user_id, enabled_at, disabled_at, notes)
-             VALUES (?, "meta", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             VALUES (?, "meta", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE
                whatsapp_enabled = VALUES(whatsapp_enabled),
                messages_enabled = VALUES(messages_enabled),
+               business_messages_enabled = VALUES(business_messages_enabled),
                allow_location_mapping = VALUES(allow_location_mapping),
                default_channel_mode = VALUES(default_channel_mode),
                existing_clients_opt_in_policy = VALUES(existing_clients_opt_in_policy),
@@ -199,6 +207,7 @@ final class BusinessWhatsappSettingsRepository
             $businessId,
             $whatsappEnabled ? 1 : 0,
             $messagesEnabled ? 1 : 0,
+            $businessMessagesEnabled ? 1 : 0,
             array_key_exists('allow_location_mapping', $data)
                 ? ((bool) $data['allow_location_mapping'] ? 1 : 0)
                 : (int) ($current['allow_location_mapping'] ?? 0),
@@ -210,6 +219,39 @@ final class BusinessWhatsappSettingsRepository
             $whatsappEnabled && !$wasEnabled ? date('Y-m-d H:i:s') : ($current['enabled_at'] ?? null),
             $whatsappEnabled ? ($current['disabled_at'] ?? null) : date('Y-m-d H:i:s'),
             isset($data['notes']) ? mb_substr(trim((string) $data['notes']), 0, 500) : ($current['notes'] ?? null),
+        ]);
+
+        return $this->findByBusinessId($businessId);
+    }
+
+    public function updateBusinessMessageSending(int $businessId, bool $enabled): array
+    {
+        $current = $this->findByBusinessId($businessId);
+        $stmt = $this->db->getPdo()->prepare(
+            'INSERT INTO business_whatsapp_settings
+             (business_id, provider_code, whatsapp_enabled, messages_enabled, business_messages_enabled,
+              allow_location_mapping, default_channel_mode,
+              existing_clients_opt_in_policy, existing_clients_opt_in_assumed_at, status,
+              enabled_by_user_id, enabled_at, disabled_at, notes)
+             VALUES (?, "meta", ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+               business_messages_enabled = VALUES(business_messages_enabled),
+               updated_at = NOW()'
+        );
+        $stmt->execute([
+            $businessId,
+            (int) ($current['whatsapp_enabled'] ?? 0),
+            (int) ($current['messages_enabled'] ?? 0),
+            $enabled ? 1 : 0,
+            (int) ($current['allow_location_mapping'] ?? 0),
+            (string) ($current['default_channel_mode'] ?? 'business_default'),
+            (string) ($current['existing_clients_opt_in_policy'] ?? 'explicit_only'),
+            $current['existing_clients_opt_in_assumed_at'] ?? null,
+            (string) ($current['status'] ?? 'not_enabled'),
+            $current['enabled_by_user_id'] ?? null,
+            $current['enabled_at'] ?? null,
+            $current['disabled_at'] ?? null,
+            $current['notes'] ?? null,
         ]);
 
         return $this->findByBusinessId($businessId);

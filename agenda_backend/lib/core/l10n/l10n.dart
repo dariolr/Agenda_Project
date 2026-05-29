@@ -10876,10 +10876,10 @@ class L10n {
     );
   }
 
-  /// `Enable and configure WhatsApp messaging for booking confirmations, reminders, and notifications.`
+  /// `Enable and configure WhatsApp messaging for automatic notifications.`
   String get moreWhatsappBusinessDescription {
     return Intl.message(
-      'Enable and configure WhatsApp messaging for booking confirmations, reminders, and notifications.',
+      'Enable and configure WhatsApp messaging for automatic notifications.',
       name: 'moreWhatsappBusinessDescription',
       desc: '',
       args: [],
@@ -11391,6 +11391,16 @@ class L10n {
     );
   }
 
+  /// `WhatsApp number`
+  String get whatsappFieldDisplayPhoneNumber {
+    return Intl.message(
+      'WhatsApp number',
+      name: 'whatsappFieldDisplayPhoneNumber',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Access token`
   String get whatsappFieldAccessToken {
     return Intl.message(
@@ -11456,6 +11466,86 @@ class L10n {
     return Intl.message(
       'Error',
       name: 'whatsappStatusError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp messaging active`
+  String get whatsappMessagingActiveTitle {
+    return Intl.message(
+      'WhatsApp messaging active',
+      name: 'whatsappMessagingActiveTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp messaging is active for this business. Automatic messages can be sent when WhatsApp notifications are enabled.`
+  String get whatsappMessagingActiveMessage {
+    return Intl.message(
+      'WhatsApp messaging is active for this business. Automatic messages can be sent when WhatsApp notifications are enabled.',
+      name: 'whatsappMessagingActiveMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp message sending`
+  String get whatsappBusinessMessagesToggleTitle {
+    return Intl.message(
+      'WhatsApp message sending',
+      name: 'whatsappBusinessMessagesToggleTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Turn this off to pause automatic WhatsApp sends from the management system.`
+  String get whatsappBusinessMessagesToggleSubtitle {
+    return Intl.message(
+      'Turn this off to pause automatic WhatsApp sends from the management system.',
+      name: 'whatsappBusinessMessagesToggleSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Sending is disabled by the superadmin. This control cannot re-enable it.`
+  String get whatsappBusinessMessagesSuperadminDisabled {
+    return Intl.message(
+      'Sending is disabled by the superadmin. This control cannot re-enable it.',
+      name: 'whatsappBusinessMessagesSuperadminDisabled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Setting updated`
+  String get whatsappBusinessMessagesUpdatedTitle {
+    return Intl.message(
+      'Setting updated',
+      name: 'whatsappBusinessMessagesUpdatedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp message sending is active for this business.`
+  String get whatsappBusinessMessagesEnabledMessage {
+    return Intl.message(
+      'WhatsApp message sending is active for this business.',
+      name: 'whatsappBusinessMessagesEnabledMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp message sending has been disabled for this business.`
+  String get whatsappBusinessMessagesDisabledMessage {
+    return Intl.message(
+      'WhatsApp message sending has been disabled for this business.',
+      name: 'whatsappBusinessMessagesDisabledMessage',
       desc: '',
       args: [],
     );
@@ -13456,10 +13546,10 @@ class L10n {
     );
   }
 
-  /// `The superadmin must enable WhatsApp before you can connect a number.`
+  /// `Contact support to enable WhatsApp for this business.`
   String get whatsappSuperadminMustEnable {
     return Intl.message(
-      'The superadmin must enable WhatsApp before you can connect a number.',
+      'Contact support to enable WhatsApp for this business.',
       name: 'whatsappSuperadminMustEnable',
       desc: '',
       args: [],

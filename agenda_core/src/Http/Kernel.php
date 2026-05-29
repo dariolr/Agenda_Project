@@ -363,6 +363,7 @@ final class Kernel
         $this->router->get('/v1/businesses/{business_id}/bookings/list', BookingsController::class, 'listAll', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/booking-notifications', BookingNotificationsController::class, 'index', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/whatsapp-settings', BusinessWhatsappSettingsController::class, 'show', ['auth']);
+        $this->router->put('/v1/businesses/{business_id}/whatsapp-settings', BusinessWhatsappSettingsController::class, 'updateBusinessSettings', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/whatsapp-configs', WhatsappController::class, 'configsIndex', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/whatsapp-configs', WhatsappController::class, 'configsStore', ['auth']);
         $this->router->put('/v1/businesses/{business_id}/whatsapp-configs/{id}', WhatsappController::class, 'configsUpdate', ['auth']);

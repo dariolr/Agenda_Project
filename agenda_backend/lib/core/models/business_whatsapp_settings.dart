@@ -3,6 +3,8 @@ class BusinessWhatsappSettings {
   final int businessId;
   final bool whatsappEnabled;
   final bool messagesEnabled;
+  final bool businessMessagesEnabled;
+  final bool effectiveMessagesEnabled;
   final bool allowLocationMapping;
   final String defaultChannelMode;
   final String existingClientsOptInPolicy;
@@ -17,6 +19,8 @@ class BusinessWhatsappSettings {
     required this.businessId,
     required this.whatsappEnabled,
     required this.messagesEnabled,
+    required this.businessMessagesEnabled,
+    required this.effectiveMessagesEnabled,
     required this.allowLocationMapping,
     required this.defaultChannelMode,
     required this.existingClientsOptInPolicy,
@@ -28,6 +32,7 @@ class BusinessWhatsappSettings {
   });
 
   bool get canOnboard => whatsappEnabled;
+  bool get canSendMessages => effectiveMessagesEnabled;
 
   factory BusinessWhatsappSettings.fromJson(Map<String, dynamic> json) {
     bool asBool(dynamic value) => value == true || value == 1 || value == '1';
@@ -37,6 +42,13 @@ class BusinessWhatsappSettings {
       businessId: (json['business_id'] as num?)?.toInt() ?? 0,
       whatsappEnabled: asBool(json['whatsapp_enabled']),
       messagesEnabled: asBool(json['messages_enabled']),
+      businessMessagesEnabled: asBool(json['business_messages_enabled'] ?? 1),
+      effectiveMessagesEnabled: asBool(
+        json['effective_messages_enabled'] ??
+            (asBool(json['whatsapp_enabled']) &&
+                asBool(json['messages_enabled']) &&
+                asBool(json['business_messages_enabled'] ?? 1)),
+      ),
       allowLocationMapping: asBool(json['allow_location_mapping']),
       defaultChannelMode:
           json['default_channel_mode']?.toString() ?? 'business_default',

@@ -2017,7 +2017,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Gestisci operatori, sedi e orari di lavoro",
     ),
     "moreWhatsappBusinessDescription": MessageLookupByLibrary.simpleMessage(
-      "Abilita e configura la messaggistica WhatsApp per conferme, promemoria e notifiche prenotazioni.",
+      "Abilita e configura la messaggistica WhatsApp per notifiche prenotazioni automatiche.",
     ),
     "moreWhatsappBusinessGuidePlaceholderBody":
         MessageLookupByLibrary.simpleMessage(
@@ -3314,6 +3314,25 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappAddConfig": MessageLookupByLibrary.simpleMessage(
       "Nuova configurazione",
     ),
+    "whatsappBusinessMessagesDisabledMessage": MessageLookupByLibrary.simpleMessage(
+      "L\'invio dei messaggi WhatsApp è stato disabilitato per questo business.",
+    ),
+    "whatsappBusinessMessagesEnabledMessage":
+        MessageLookupByLibrary.simpleMessage(
+          "L\'invio dei messaggi WhatsApp è attivo per questo business.",
+        ),
+    "whatsappBusinessMessagesSuperadminDisabled":
+        MessageLookupByLibrary.simpleMessage(
+          "Invio disabilitato dal superadmin. Questo controllo non può riattivarlo.",
+        ),
+    "whatsappBusinessMessagesToggleSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Disattiva questo controllo per sospendere gli invii WhatsApp automatici dal gestionale.",
+    ),
+    "whatsappBusinessMessagesToggleTitle": MessageLookupByLibrary.simpleMessage(
+      "Invio messaggi WhatsApp",
+    ),
+    "whatsappBusinessMessagesUpdatedTitle":
+        MessageLookupByLibrary.simpleMessage("Impostazione aggiornata"),
     "whatsappCheckOptInActive": MessageLookupByLibrary.simpleMessage(
       "Opt-in clienti attivo",
     ),
@@ -3383,6 +3402,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappFieldClientId": MessageLookupByLibrary.simpleMessage("Client ID"),
     "whatsappFieldDefault": MessageLookupByLibrary.simpleMessage("Predefinita"),
+    "whatsappFieldDisplayPhoneNumber": MessageLookupByLibrary.simpleMessage(
+      "Numero WhatsApp",
+    ),
     "whatsappFieldLocation": MessageLookupByLibrary.simpleMessage("Location"),
     "whatsappFieldPhoneNumberId": MessageLookupByLibrary.simpleMessage(
       "Phone Number ID",
@@ -3494,6 +3516,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappLocationMappingTitle": MessageLookupByLibrary.simpleMessage(
       "Mapping location → numero",
     ),
+    "whatsappMessagingActiveMessage": MessageLookupByLibrary.simpleMessage(
+      "La messaggistica WhatsApp è attiva per questo business. I messaggi automatici possono essere inviati quando le notifiche WhatsApp sono abilitate.",
+    ),
+    "whatsappMessagingActiveTitle": MessageLookupByLibrary.simpleMessage(
+      "Messaggistica WhatsApp attiva",
+    ),
     "whatsappNoConfigs": MessageLookupByLibrary.simpleMessage(
       "Nessuna configurazione presente.",
     ),
@@ -3571,7 +3599,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappStatusInactive": MessageLookupByLibrary.simpleMessage("Inattiva"),
     "whatsappStatusPending": MessageLookupByLibrary.simpleMessage("In attesa"),
     "whatsappSuperadminMustEnable": MessageLookupByLibrary.simpleMessage(
-      "Il superadmin deve abilitare WhatsApp prima che tu possa collegare un numero.",
+      "Contattaci per attivare WhatsApp alle notifiche automatiche.",
     ),
     "whatsappTabTitle": MessageLookupByLibrary.simpleMessage("WhatsApp"),
     "whatsappTestSendTitle": MessageLookupByLibrary.simpleMessage(
