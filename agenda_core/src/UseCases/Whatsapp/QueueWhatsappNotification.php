@@ -60,7 +60,11 @@ final class QueueWhatsappNotification
         $config = $locationId > 0
             ? $this->whatsappRepo->findConfigForLocation($businessId, $locationId)
             : $this->findDefaultConfig($businessId);
-        if ($config === null || ($config['status'] ?? '') !== 'active') {
+        if (
+            $config === null
+            || ($config['status'] ?? '') !== 'active'
+            || trim((string) ($config['phone_number_id'] ?? '')) === ''
+        ) {
             return 0;
         }
 

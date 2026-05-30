@@ -11401,6 +11401,36 @@ class L10n {
     );
   }
 
+  /// `Copy value`
+  String get whatsappCopyTechnicalValueTooltip {
+    return Intl.message(
+      'Copy value',
+      name: 'whatsappCopyTechnicalValueTooltip',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Value copied`
+  String get whatsappTechnicalValueCopiedTitle {
+    return Intl.message(
+      'Value copied',
+      name: 'whatsappTechnicalValueCopiedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The technical value has been copied to the clipboard.`
+  String get whatsappTechnicalValueCopiedMessage {
+    return Intl.message(
+      'The technical value has been copied to the clipboard.',
+      name: 'whatsappTechnicalValueCopiedMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Access token`
   String get whatsappFieldAccessToken {
     return Intl.message(
@@ -11491,6 +11521,26 @@ class L10n {
     );
   }
 
+  /// `Meta connection no longer valid`
+  String get whatsappConnectionInvalidTitle {
+    return Intl.message(
+      'Meta connection no longer valid',
+      name: 'whatsappConnectionInvalidTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp is configured, but the Meta connection is no longer valid. Reconnect the account to resume message sending.`
+  String get whatsappConnectionInvalidMessage {
+    return Intl.message(
+      'WhatsApp is configured, but the Meta connection is no longer valid. Reconnect the account to resume message sending.',
+      name: 'whatsappConnectionInvalidMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `WhatsApp message sending`
   String get whatsappBusinessMessagesToggleTitle {
     return Intl.message(
@@ -11502,20 +11552,40 @@ class L10n {
   }
 
   /// `Turn this off to pause automatic WhatsApp sends from the management system.`
-  String get whatsappBusinessMessagesToggleSubtitle {
+  String get whatsappBusinessMessagesSuperadminEnabled {
     return Intl.message(
       'Turn this off to pause automatic WhatsApp sends from the management system.',
-      name: 'whatsappBusinessMessagesToggleSubtitle',
+      name: 'whatsappBusinessMessagesSuperadminEnabled',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sending is disabled by the superadmin. This control cannot re-enable it.`
+  /// `Turn this on to resume automatic WhatsApp sends from the management system.`
   String get whatsappBusinessMessagesSuperadminDisabled {
     return Intl.message(
-      'Sending is disabled by the superadmin. This control cannot re-enable it.',
+      'Turn this on to resume automatic WhatsApp sends from the management system.',
       name: 'whatsappBusinessMessagesSuperadminDisabled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `From the management system you can only pause WhatsApp message sending. To fully revoke the connection with the management system, manage the integration permissions directly from Meta Business.`
+  String get whatsappDisconnectMetaNotice {
+    return Intl.message(
+      'From the management system you can only pause WhatsApp message sending. To fully revoke the connection with the management system, manage the integration permissions directly from Meta Business.',
+      name: 'whatsappDisconnectMetaNotice',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Open Meta Business`
+  String get whatsappOpenMetaBusiness {
+    return Intl.message(
+      'Open Meta Business',
+      name: 'whatsappOpenMetaBusiness',
       desc: '',
       args: [],
     );

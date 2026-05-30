@@ -17,7 +17,8 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, created_at, updated_at
+                    access_token_encrypted, status, is_default, last_health_check_at,
+                    last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE business_id = ?
              ORDER BY is_default DESC, id DESC'
@@ -31,7 +32,8 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, created_at, updated_at
+                    access_token_encrypted, status, is_default, last_health_check_at,
+                    last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE business_id = ? AND id = ?
              LIMIT 1'
@@ -77,7 +79,8 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, created_at, updated_at
+                    access_token_encrypted, status, is_default, last_health_check_at,
+                    last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE business_id = ? AND phone_number_id = ?
              LIMIT 1'
@@ -92,7 +95,8 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, created_at, updated_at
+                    access_token_encrypted, status, is_default, last_health_check_at,
+                    last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE phone_number_id = ?
              ORDER BY id DESC
@@ -125,6 +129,9 @@ final class WhatsappRepository
                 'access_token_encrypted = ?',
                 'status = ?',
                 'is_default = ?',
+                'last_health_check_at = NULL',
+                'last_error_code = NULL',
+                'last_error_message = NULL',
                 'updated_at = NOW()',
             ];
             $params = [
@@ -178,6 +185,16 @@ final class WhatsappRepository
             $fields[] = 'status = ?';
             $params[] = $data['status'];
         }
+        if (
+            array_key_exists('waba_id', $data)
+            || array_key_exists('phone_number_id', $data)
+            || array_key_exists('access_token_encrypted', $data)
+            || (($data['status'] ?? null) === 'active')
+        ) {
+            $fields[] = 'last_health_check_at = NULL';
+            $fields[] = 'last_error_code = NULL';
+            $fields[] = 'last_error_message = NULL';
+        }
         if (array_key_exists('is_default', $data)) {
             if ((bool) $data['is_default']) {
                 $this->clearDefaultConfig($businessId);
@@ -200,6 +217,45 @@ final class WhatsappRepository
         );
 
         return $stmt->execute($params);
+    }
+
+    public function markConfigError(
+        int $businessId,
+        int $configId,
+        ?string $errorCode,
+        ?string $errorMessage
+    ): bool {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE whatsapp_business_config
+             SET status = "error",
+                 last_health_check_at = NOW(),
+                 last_error_code = ?,
+                 last_error_message = ?,
+                 updated_at = NOW()
+             WHERE business_id = ? AND id = ?'
+        );
+
+        return $stmt->execute([
+            $errorCode !== null ? mb_substr($errorCode, 0, 120) : null,
+            $errorMessage !== null ? mb_substr($errorMessage, 0, 500) : null,
+            $businessId,
+            $configId,
+        ]);
+    }
+
+    public function markConfigHealthy(int $businessId, int $configId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE whatsapp_business_config
+             SET status = "active",
+                 last_health_check_at = NOW(),
+                 last_error_code = NULL,
+                 last_error_message = NULL,
+                 updated_at = NOW()
+             WHERE business_id = ? AND id = ?'
+        );
+
+        return $stmt->execute([$businessId, $configId]);
     }
 
     public function deleteConfig(int $businessId, int $configId): bool
@@ -801,7 +857,8 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT c.id, c.business_id, c.waba_id, c.phone_number_id, c.display_phone_number,
-                    c.access_token_encrypted, c.status, c.is_default, c.created_at, c.updated_at
+                    c.access_token_encrypted, c.status, c.is_default, c.last_health_check_at,
+                    c.last_error_code, c.last_error_message, c.created_at, c.updated_at
              FROM whatsapp_location_mapping m
              JOIN whatsapp_business_config c ON c.id = m.whatsapp_config_id
              WHERE m.business_id = ? AND m.location_id = ?
@@ -815,7 +872,8 @@ final class WhatsappRepository
 
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, created_at, updated_at
+                    access_token_encrypted, status, is_default, last_health_check_at,
+                    last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE business_id = ? AND is_default = 1
              LIMIT 1'

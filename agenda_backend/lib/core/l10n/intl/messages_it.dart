@@ -26,7 +26,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Il periodo gratuito è terminato il ${date}. Per continuare a usare il gestionale, attiva l\'abbonamento.";
 
   static String m2(date) =>
-      "L\'attivazione dell abbonamento è richiesta entro il ${date}.";
+      "L\'attivazione dell abbonamento è richiesta entro: ${date}.";
 
   static String m3(currentPeriodEnd) =>
       "Abbonamento attivo fino al ${currentPeriodEnd}";
@@ -3323,11 +3323,12 @@ class MessageLookup extends MessageLookupByLibrary {
         ),
     "whatsappBusinessMessagesSuperadminDisabled":
         MessageLookupByLibrary.simpleMessage(
-          "Invio disabilitato dal superadmin. Questo controllo non può riattivarlo.",
+          "Attiva questo controllo per riprendere gli invii WhatsApp automatici dal gestionale.",
         ),
-    "whatsappBusinessMessagesToggleSubtitle": MessageLookupByLibrary.simpleMessage(
-      "Disattiva questo controllo per sospendere gli invii WhatsApp automatici dal gestionale.",
-    ),
+    "whatsappBusinessMessagesSuperadminEnabled":
+        MessageLookupByLibrary.simpleMessage(
+          "Disattiva questo controllo per sospendere gli invii WhatsApp automatici dal gestionale.",
+        ),
     "whatsappBusinessMessagesToggleTitle": MessageLookupByLibrary.simpleMessage(
       "Invio messaggi WhatsApp",
     ),
@@ -3351,6 +3352,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappConnectMeta": MessageLookupByLibrary.simpleMessage(
       "Connetti con Meta",
     ),
+    "whatsappConnectionInvalidMessage": MessageLookupByLibrary.simpleMessage(
+      "WhatsApp risulta configurato, ma il collegamento con Meta non è più valido. Ricollega l\'account per riprendere l\'invio dei messaggi.",
+    ),
+    "whatsappConnectionInvalidTitle": MessageLookupByLibrary.simpleMessage(
+      "Connessione Meta non più valida",
+    ),
+    "whatsappCopyTechnicalValueTooltip": MessageLookupByLibrary.simpleMessage(
+      "Copia valore",
+    ),
     "whatsappCreateLocationCta": MessageLookupByLibrary.simpleMessage(
       "Crea location",
     ),
@@ -3359,6 +3369,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappDeleteConfigTitle": MessageLookupByLibrary.simpleMessage(
       "Eliminare configurazione WhatsApp?",
+    ),
+    "whatsappDisconnectMetaNotice": MessageLookupByLibrary.simpleMessage(
+      "Dal gestionale puoi solo sospendere l\'invio dei messaggi WhatsApp. Per revocare completamente il collegamento con il gestionale devi gestire i permessi dell\'integrazione direttamente da Meta Business.",
     ),
     "whatsappEditConfig": MessageLookupByLibrary.simpleMessage(
       "Modifica configurazione",
@@ -3537,6 +3550,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappNotEnabledForBusiness": MessageLookupByLibrary.simpleMessage(
       "WhatsApp non è ancora attivo per questo business.",
     ),
+    "whatsappOpenMetaBusiness": MessageLookupByLibrary.simpleMessage(
+      "Apri Meta Business",
+    ),
     "whatsappOutboxDelivered": MessageLookupByLibrary.simpleMessage(
       "Consegnato",
     ),
@@ -3602,6 +3618,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Contattaci per attivare WhatsApp alle notifiche automatiche.",
     ),
     "whatsappTabTitle": MessageLookupByLibrary.simpleMessage("WhatsApp"),
+    "whatsappTechnicalValueCopiedMessage": MessageLookupByLibrary.simpleMessage(
+      "Il valore tecnico è stato copiato negli appunti.",
+    ),
+    "whatsappTechnicalValueCopiedTitle": MessageLookupByLibrary.simpleMessage(
+      "Valore copiato",
+    ),
     "whatsappTestSendTitle": MessageLookupByLibrary.simpleMessage(
       "Invio test template",
     ),

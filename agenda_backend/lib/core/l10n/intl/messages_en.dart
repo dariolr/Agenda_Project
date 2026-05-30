@@ -3202,11 +3202,12 @@ class MessageLookup extends MessageLookupByLibrary {
         ),
     "whatsappBusinessMessagesSuperadminDisabled":
         MessageLookupByLibrary.simpleMessage(
-          "Sending is disabled by the superadmin. This control cannot re-enable it.",
+          "Turn this on to resume automatic WhatsApp sends from the management system.",
         ),
-    "whatsappBusinessMessagesToggleSubtitle": MessageLookupByLibrary.simpleMessage(
-      "Turn this off to pause automatic WhatsApp sends from the management system.",
-    ),
+    "whatsappBusinessMessagesSuperadminEnabled":
+        MessageLookupByLibrary.simpleMessage(
+          "Turn this off to pause automatic WhatsApp sends from the management system.",
+        ),
     "whatsappBusinessMessagesToggleTitle": MessageLookupByLibrary.simpleMessage(
       "WhatsApp message sending",
     ),
@@ -3230,6 +3231,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappConnectMeta": MessageLookupByLibrary.simpleMessage(
       "Connect with Meta",
     ),
+    "whatsappConnectionInvalidMessage": MessageLookupByLibrary.simpleMessage(
+      "WhatsApp is configured, but the Meta connection is no longer valid. Reconnect the account to resume message sending.",
+    ),
+    "whatsappConnectionInvalidTitle": MessageLookupByLibrary.simpleMessage(
+      "Meta connection no longer valid",
+    ),
+    "whatsappCopyTechnicalValueTooltip": MessageLookupByLibrary.simpleMessage(
+      "Copy value",
+    ),
     "whatsappCreateLocationCta": MessageLookupByLibrary.simpleMessage(
       "Create location",
     ),
@@ -3238,6 +3248,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappDeleteConfigTitle": MessageLookupByLibrary.simpleMessage(
       "Delete WhatsApp configuration?",
+    ),
+    "whatsappDisconnectMetaNotice": MessageLookupByLibrary.simpleMessage(
+      "From the management system you can only pause WhatsApp message sending. To fully revoke the connection with the management system, manage the integration permissions directly from Meta Business.",
     ),
     "whatsappEditConfig": MessageLookupByLibrary.simpleMessage(
       "Edit configuration",
@@ -3414,6 +3427,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappNotEnabledForBusiness": MessageLookupByLibrary.simpleMessage(
       "WhatsApp is not enabled for this business yet.",
     ),
+    "whatsappOpenMetaBusiness": MessageLookupByLibrary.simpleMessage(
+      "Open Meta Business",
+    ),
     "whatsappOutboxDelivered": MessageLookupByLibrary.simpleMessage(
       "Delivered",
     ),
@@ -3479,6 +3495,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Contact support to enable WhatsApp for this business.",
     ),
     "whatsappTabTitle": MessageLookupByLibrary.simpleMessage("WhatsApp"),
+    "whatsappTechnicalValueCopiedMessage": MessageLookupByLibrary.simpleMessage(
+      "The technical value has been copied to the clipboard.",
+    ),
+    "whatsappTechnicalValueCopiedTitle": MessageLookupByLibrary.simpleMessage(
+      "Value copied",
+    ),
     "whatsappTestSendTitle": MessageLookupByLibrary.simpleMessage(
       "Template test send",
     ),

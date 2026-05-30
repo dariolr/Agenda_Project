@@ -297,6 +297,9 @@ final class WhatsappController
         if (($config['status'] ?? '') !== 'active') {
             return Response::success(['message' => null, 'skipped' => true, 'reason' => 'whatsapp_config_not_active']);
         }
+        if (trim((string) ($config['phone_number_id'] ?? '')) === '') {
+            return Response::success(['message' => null, 'skipped' => true, 'reason' => 'missing_phone_number_id']);
+        }
 
         // Ensure utility template presence to keep go-live check consistent.
         $this->whatsappRepo->createTemplateIfMissing($businessId, $templateName, 'utility', 'approved');
@@ -1111,6 +1114,10 @@ final class WhatsappController
             'display_phone_number' => $config['display_phone_number'] ?? null,
             'status' => $config['status'] ?? 'pending',
             'is_default' => ((int) ($config['is_default'] ?? 0)) === 1,
+            'last_health_check_at' => $config['last_health_check_at'] ?? null,
+            'last_error_code' => $config['last_error_code'] ?? null,
+            'last_error_message' => $config['last_error_message'] ?? null,
+            'requires_reconnect' => ($config['status'] ?? null) === 'error',
             'created_at' => $config['created_at'] ?? null,
             'updated_at' => $config['updated_at'] ?? null,
         ];

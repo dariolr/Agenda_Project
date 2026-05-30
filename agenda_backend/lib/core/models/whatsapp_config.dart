@@ -33,6 +33,10 @@ class WhatsappConfig {
   final String? accessTokenEncrypted;
   final WhatsappConfigStatus status;
   final bool isDefault;
+  final DateTime? lastHealthCheckAt;
+  final String? lastErrorCode;
+  final String? lastErrorMessage;
+  final bool requiresReconnect;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -45,11 +49,17 @@ class WhatsappConfig {
     this.accessTokenEncrypted,
     required this.status,
     this.isDefault = false,
+    this.lastHealthCheckAt,
+    this.lastErrorCode,
+    this.lastErrorMessage,
+    this.requiresReconnect = false,
     this.createdAt,
     this.updatedAt,
   });
 
   bool get isActive => status == WhatsappConfigStatus.active;
+  bool get isConnectionInvalid =>
+      requiresReconnect || status == WhatsappConfigStatus.error;
 
   factory WhatsappConfig.fromJson(Map<String, dynamic> json) {
     DateTime? parseDate(dynamic raw) {
@@ -66,6 +76,11 @@ class WhatsappConfig {
       accessTokenEncrypted: json['access_token_encrypted']?.toString(),
       status: whatsappConfigStatusFromString(json['status']?.toString()),
       isDefault: json['is_default'] == true || json['is_default'] == 1,
+      lastHealthCheckAt: parseDate(json['last_health_check_at']),
+      lastErrorCode: json['last_error_code']?.toString(),
+      lastErrorMessage: json['last_error_message']?.toString(),
+      requiresReconnect:
+          json['requires_reconnect'] == true || json['requires_reconnect'] == 1,
       createdAt: parseDate(json['created_at']),
       updatedAt: parseDate(json['updated_at']),
     );
@@ -81,6 +96,10 @@ class WhatsappConfig {
       'access_token_encrypted': accessTokenEncrypted,
       'status': whatsappConfigStatusToString(status),
       'is_default': isDefault,
+      'last_health_check_at': lastHealthCheckAt?.toIso8601String(),
+      'last_error_code': lastErrorCode,
+      'last_error_message': lastErrorMessage,
+      'requires_reconnect': requiresReconnect,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
