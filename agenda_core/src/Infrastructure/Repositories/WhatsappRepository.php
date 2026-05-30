@@ -260,12 +260,48 @@ final class WhatsappRepository
 
     public function deleteConfig(int $businessId, int $configId): bool
     {
-        $stmt = $this->db->getPdo()->prepare(
-            'DELETE FROM whatsapp_business_config
-             WHERE business_id = ? AND id = ?'
-        );
+        $pdo = $this->db->getPdo();
+        $startedTransaction = !$pdo->inTransaction();
+        if ($startedTransaction) {
+            $pdo->beginTransaction();
+        }
 
-        return $stmt->execute([$businessId, $configId]);
+        try {
+            $stmt = $pdo->prepare(
+                'UPDATE whatsapp_outbox
+                 SET status = "cancelled",
+                     error_message = "whatsapp_config_removed",
+                     provider_error_message = "whatsapp_config_removed",
+                     updated_at = NOW()
+                 WHERE business_id = ?
+                   AND whatsapp_config_id = ?
+                   AND status IN ("queued", "processing")'
+            );
+            $stmt->execute([$businessId, $configId]);
+
+            $stmt = $pdo->prepare(
+                'DELETE FROM whatsapp_location_mapping
+                 WHERE business_id = ? AND whatsapp_config_id = ?'
+            );
+            $stmt->execute([$businessId, $configId]);
+
+            $stmt = $pdo->prepare(
+                'DELETE FROM whatsapp_business_config
+                 WHERE business_id = ? AND id = ?'
+            );
+            $ok = $stmt->execute([$businessId, $configId]);
+
+            if ($startedTransaction) {
+                $pdo->commit();
+            }
+
+            return $ok;
+        } catch (\Throwable $e) {
+            if ($startedTransaction && $pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public function getMappingsByBusinessId(int $businessId): array

@@ -11401,10 +11401,10 @@ class L10n {
     );
   }
 
-  /// `Copy value`
+  /// `Copy`
   String get whatsappCopyTechnicalValueTooltip {
     return Intl.message(
-      'Copy value',
+      'Copy',
       name: 'whatsappCopyTechnicalValueTooltip',
       desc: '',
       args: [],
@@ -11571,21 +11571,31 @@ class L10n {
     );
   }
 
-  /// `From the management system you can only pause WhatsApp message sending. To fully revoke the connection with the management system, manage the integration permissions directly from Meta Business.`
-  String get whatsappDisconnectMetaNotice {
+  /// `Disconnect from Meta`
+  String get whatsappForgetLocalConfigAction {
     return Intl.message(
-      'From the management system you can only pause WhatsApp message sending. To fully revoke the connection with the management system, manage the integration permissions directly from Meta Business.',
-      name: 'whatsappDisconnectMetaNotice',
+      'Disconnect from Meta',
+      name: 'whatsappForgetLocalConfigAction',
       desc: '',
       args: [],
     );
   }
 
-  /// `Open Meta Business`
-  String get whatsappOpenMetaBusiness {
+  /// `Disconnect from Meta?`
+  String get whatsappForgetLocalConfigTitle {
     return Intl.message(
-      'Open Meta Business',
-      name: 'whatsappOpenMetaBusiness',
+      'Disconnect from Meta?',
+      name: 'whatsappForgetLocalConfigTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The management system will stop using this WhatsApp configuration and will cancel queued sends.\n\nTo fully revoke the permissions granted to the management system, complete the disconnection in Meta Business as well.`
+  String get whatsappForgetLocalConfigMessage {
+    return Intl.message(
+      'The management system will stop using this WhatsApp configuration and will cancel queued sends.\n\nTo fully revoke the permissions granted to the management system, complete the disconnection in Meta Business as well.',
+      name: 'whatsappForgetLocalConfigMessage',
       desc: '',
       args: [],
     );

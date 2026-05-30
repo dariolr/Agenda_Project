@@ -3359,7 +3359,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Connessione Meta non più valida",
     ),
     "whatsappCopyTechnicalValueTooltip": MessageLookupByLibrary.simpleMessage(
-      "Copia valore",
+      "Copia",
     ),
     "whatsappCreateLocationCta": MessageLookupByLibrary.simpleMessage(
       "Crea location",
@@ -3369,9 +3369,6 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappDeleteConfigTitle": MessageLookupByLibrary.simpleMessage(
       "Eliminare configurazione WhatsApp?",
-    ),
-    "whatsappDisconnectMetaNotice": MessageLookupByLibrary.simpleMessage(
-      "Dal gestionale puoi solo sospendere l\'invio dei messaggi WhatsApp. Per revocare completamente il collegamento con il gestionale devi gestire i permessi dell\'integrazione direttamente da Meta Business.",
     ),
     "whatsappEditConfig": MessageLookupByLibrary.simpleMessage(
       "Modifica configurazione",
@@ -3433,6 +3430,15 @@ class MessageLookup extends MessageLookupByLibrary {
       "Variabili template (JSON)",
     ),
     "whatsappFieldWabaId": MessageLookupByLibrary.simpleMessage("WABA ID"),
+    "whatsappForgetLocalConfigAction": MessageLookupByLibrary.simpleMessage(
+      "Disconnetti da Meta",
+    ),
+    "whatsappForgetLocalConfigMessage": MessageLookupByLibrary.simpleMessage(
+      "Il gestionale smetterà di usare questa configurazione WhatsApp e annullerà gli invii ancora in coda.\n\nPer revocare completamente i permessi concessi al gestionale devi completare la disconnessione anche da Meta Business.",
+    ),
+    "whatsappForgetLocalConfigTitle": MessageLookupByLibrary.simpleMessage(
+      "Disconnetti da Meta?",
+    ),
     "whatsappGoLiveCheck": MessageLookupByLibrary.simpleMessage(
       "Go-live check",
     ),
@@ -3549,9 +3555,6 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappNotEnabledForBusiness": MessageLookupByLibrary.simpleMessage(
       "WhatsApp non è ancora attivo per questo business.",
-    ),
-    "whatsappOpenMetaBusiness": MessageLookupByLibrary.simpleMessage(
-      "Apri Meta Business",
     ),
     "whatsappOutboxDelivered": MessageLookupByLibrary.simpleMessage(
       "Consegnato",

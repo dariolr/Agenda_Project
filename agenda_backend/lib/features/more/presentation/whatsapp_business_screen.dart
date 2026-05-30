@@ -29,7 +29,11 @@ class _WhatsappBusinessScreenState
   final ScrollController _guideScrollController = ScrollController();
   bool _isCompletingEmbeddedSignup = false;
   bool _isUpdatingBusinessMessages = false;
+  bool _isForgettingLocalConfig = false;
   int? _lastLoadedBusinessId;
+  static final Uri _metaBusinessUri = Uri.parse(
+    'https://business.facebook.com/settings',
+  );
 
   @override
   void dispose() {
@@ -171,6 +175,61 @@ class _WhatsappBusinessScreenState
     } finally {
       if (mounted) {
         setState(() => _isUpdatingBusinessMessages = false);
+      }
+    }
+  }
+
+  Future<void> _forgetLocalConfig(int configId) async {
+    final businessId = ref.read(currentBusinessIdProvider);
+    if (businessId <= 0 || configId <= 0) return;
+
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.whatsappForgetLocalConfigTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.whatsappForgetLocalConfigMessage),
+            const SizedBox(height: 16),
+            _MetaBusinessDialogLink(uri: _metaBusinessUri),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.actionDelete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isForgettingLocalConfig = true);
+    try {
+      await ref
+          .read(whatsappIntegrationProvider.notifier)
+          .deleteBusinessWhatsappConfig(
+            businessId: businessId,
+            configId: configId,
+          );
+    } catch (e) {
+      if (!mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: e.toString(),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isForgettingLocalConfig = false);
       }
     }
   }
@@ -525,77 +584,14 @@ class _WhatsappBusinessScreenState
                       isUpdating: _isUpdatingBusinessMessages,
                       onChanged: _setBusinessMessagesEnabled,
                     ),
-                  const SizedBox(height: 12),
-                  _WhatsappMetaDisconnectNotice(
-                    text: l10n.whatsappDisconnectMetaNotice,
-                    linkLabel: l10n.whatsappOpenMetaBusiness,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WhatsappMetaDisconnectNotice extends StatelessWidget {
-  const _WhatsappMetaDisconnectNotice({
-    required this.text,
-    required this.linkLabel,
-  });
-
-  static final Uri _metaBusinessUri = Uri.parse(
-    'https://business.facebook.com/settings',
-  );
-
-  final String text;
-  final String linkLabel;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerLowest,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.info_outline,
-            size: 18,
-            color: theme.colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  text,
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Center(
-                  child: SizedBox(
+                  const SizedBox(height: 22),
+                  SizedBox(
                     width: 280,
-                    child: AppFilledButton(
-                      onPressed: () {
-                        launchUrl(
-                          _metaBusinessUri,
-                          mode: LaunchMode.platformDefault,
-                          webOnlyWindowName: '_blank',
-                        );
-                      },
+                    child: AppAsyncFilledButton(
+                      onPressed: () => _forgetLocalConfig(firstConfig.id),
+                      isLoading: _isForgettingLocalConfig,
+                      backgroundColor: theme.colorScheme.error,
+                      foregroundColor: theme.colorScheme.onError,
                       padding: const EdgeInsets.symmetric(
                         horizontal: 22,
                         vertical: 14,
@@ -609,21 +605,23 @@ class _WhatsappMetaDisconnectNotice extends StatelessWidget {
                             width: 18,
                             height: 18,
                             colorFilter: ColorFilter.mode(
-                              theme.colorScheme.onPrimary,
+                              theme.colorScheme.onError,
                               BlendMode.srcIn,
                             ),
                           ),
                           const SizedBox(width: 8),
-                          Flexible(child: Text(linkLabel)),
+                          Flexible(
+                            child: Text(l10n.whatsappForgetLocalConfigAction),
+                          ),
                         ],
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -689,6 +687,67 @@ class _WhatsappBusinessMessagesSwitch extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           AppSwitch(value: value, onChanged: enabled ? onChanged : null),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetaBusinessDialogLink extends StatelessWidget {
+  const _MetaBusinessDialogLink({required this.uri});
+
+  final Uri uri;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final url = uri.toString();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: () {
+                launchUrl(
+                  uri,
+                  mode: LaunchMode.platformDefault,
+                  webOnlyWindowName: '_blank',
+                );
+              },
+              child: Text(
+                url,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  decoration: TextDecoration.underline,
+                  decorationColor: theme.colorScheme.primary,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Tooltip(
+            message: l10n.whatsappCopyTechnicalValueTooltip,
+            child: IconButton(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: url));
+              },
+              icon: const Icon(Icons.copy_outlined, size: 18),
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+              padding: EdgeInsets.zero,
+            ),
+          ),
         ],
       ),
     );

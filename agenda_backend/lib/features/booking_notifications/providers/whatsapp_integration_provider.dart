@@ -160,6 +160,17 @@ class WhatsappIntegrationNotifier extends Notifier<WhatsappIntegrationState> {
     await loadBusinessWhatsappData(businessId);
   }
 
+  Future<void> deleteBusinessWhatsappConfig({
+    required int businessId,
+    required int configId,
+  }) async {
+    await _api.deleteBusinessWhatsappConfig(
+      businessId: businessId,
+      configId: configId,
+    );
+    await loadBusinessWhatsappData(businessId);
+  }
+
   Future<WhatsappOutboxItem?> enqueueTemplateMessage({
     required int businessId,
     required int locationId,

@@ -3238,7 +3238,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Meta connection no longer valid",
     ),
     "whatsappCopyTechnicalValueTooltip": MessageLookupByLibrary.simpleMessage(
-      "Copy value",
+      "Copy",
     ),
     "whatsappCreateLocationCta": MessageLookupByLibrary.simpleMessage(
       "Create location",
@@ -3248,9 +3248,6 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappDeleteConfigTitle": MessageLookupByLibrary.simpleMessage(
       "Delete WhatsApp configuration?",
-    ),
-    "whatsappDisconnectMetaNotice": MessageLookupByLibrary.simpleMessage(
-      "From the management system you can only pause WhatsApp message sending. To fully revoke the connection with the management system, manage the integration permissions directly from Meta Business.",
     ),
     "whatsappEditConfig": MessageLookupByLibrary.simpleMessage(
       "Edit configuration",
@@ -3312,6 +3309,15 @@ class MessageLookup extends MessageLookupByLibrary {
       "Template variables (JSON)",
     ),
     "whatsappFieldWabaId": MessageLookupByLibrary.simpleMessage("WABA ID"),
+    "whatsappForgetLocalConfigAction": MessageLookupByLibrary.simpleMessage(
+      "Disconnect from Meta",
+    ),
+    "whatsappForgetLocalConfigMessage": MessageLookupByLibrary.simpleMessage(
+      "The management system will stop using this WhatsApp configuration and will cancel queued sends.\n\nTo fully revoke the permissions granted to the management system, complete the disconnection in Meta Business as well.",
+    ),
+    "whatsappForgetLocalConfigTitle": MessageLookupByLibrary.simpleMessage(
+      "Disconnect from Meta?",
+    ),
     "whatsappGoLiveCheck": MessageLookupByLibrary.simpleMessage(
       "Go-live check",
     ),
@@ -3426,9 +3432,6 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappNotEnabledForBusiness": MessageLookupByLibrary.simpleMessage(
       "WhatsApp is not enabled for this business yet.",
-    ),
-    "whatsappOpenMetaBusiness": MessageLookupByLibrary.simpleMessage(
-      "Open Meta Business",
     ),
     "whatsappOutboxDelivered": MessageLookupByLibrary.simpleMessage(
       "Delivered",
