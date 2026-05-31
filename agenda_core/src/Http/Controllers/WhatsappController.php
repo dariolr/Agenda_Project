@@ -585,13 +585,12 @@ final class WhatsappController
             ? ((int) ($existing['is_default'] ?? 0) === 1)
             : count($configs) === 0;
 
-        $goLiveBeforeStatus = $this->computeGoLiveCheck($businessId, null);
         $id = $this->whatsappRepo->upsertConfigByPhoneNumberId(
             $businessId,
             (string) $meta['waba_id'],
             (string) $meta['phone_number_id'],
             $encryptedToken,
-            ($goLiveBeforeStatus['webhook'] && $goLiveBeforeStatus['template']) ? 'active' : 'pending',
+            'active',
             $isDefault,
             $meta['display_phone_number'] ?? null
         );
@@ -1031,7 +1030,7 @@ final class WhatsappController
             $nextSteps[] = 'complete_meta_review';
         }
         if (!$webhookVerified) {
-            $blocking[] = 'whatsapp_webhook_not_verified';
+            $warnings[] = 'whatsapp_webhook_not_verified';
             $nextSteps[] = 'configure_meta_webhook';
         }
         if (!$templateApproved) {

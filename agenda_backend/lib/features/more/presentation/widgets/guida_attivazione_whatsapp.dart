@@ -39,10 +39,10 @@ class GuidaAttivazioneWhatsApp extends StatelessWidget {
           l10n.whatsappGuideNeedPaymentCard,
           emphasizePrefix: true,
         ),
-        _buildPuntoElenco(
+        /*_buildPuntoElenco(
           l10n.whatsappGuideNeedVat,
           emphasizePrefix: true,
-        ),
+        ),*/
         const SizedBox(height: 18),
         _buildTitolo(l10n.whatsappGuidePaymentsTitle),
         Text(
@@ -57,33 +57,15 @@ class GuidaAttivazioneWhatsApp extends StatelessWidget {
         ),
         const SizedBox(height: 24),
         _buildTitolo(l10n.whatsappGuideManageNumberTitle),
-        _buildPuntoElenco(
-          l10n.whatsappGuideManageNumberNewSim,
-        ),
-        _buildPuntoElenco(
-          l10n.whatsappGuideManageNumberLandline,
-        ),
-        _buildPuntoElenco(
-          l10n.whatsappGuideManageNumberCurrent,
-        ),
+        _buildPuntoElenco(l10n.whatsappGuideManageNumberNewSim),
+        _buildPuntoElenco(l10n.whatsappGuideManageNumberLandline),
+        _buildPuntoElenco(l10n.whatsappGuideManageNumberCurrent),
         const SizedBox(height: 24),
         _buildTitolo(l10n.whatsappGuideStepsTitle),
-        _buildPassaggio(
-          1,
-          l10n.whatsappGuideStep1,
-        ),
-        _buildPassaggio(
-          2,
-          l10n.whatsappGuideStep2,
-        ),
-        _buildPassaggio(
-          3,
-          l10n.whatsappGuideStep3,
-        ),
-        _buildPassaggio(
-          4,
-          l10n.whatsappGuideStep4,
-        ),
+        _buildPassaggio(1, l10n.whatsappGuideStep1),
+        _buildPassaggio(2, l10n.whatsappGuideStep2),
+        _buildPassaggio(3, l10n.whatsappGuideStep3),
+        _buildPassaggio(4, l10n.whatsappGuideStep4),
         const SizedBox(height: 24),
         Container(
           padding: const EdgeInsets.all(15),
@@ -103,9 +85,7 @@ class GuidaAttivazioneWhatsApp extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 5),
-              Text(
-                l10n.whatsappGuideTipBody,
-              ),
+              Text(l10n.whatsappGuideTipBody),
             ],
           ),
         ),
@@ -128,7 +108,9 @@ class GuidaAttivazioneWhatsApp extends StatelessWidget {
     final splitIndex = testo.indexOf(':');
     final hasPrefix = emphasizePrefix && splitIndex > 0;
     final prefix = hasPrefix ? testo.substring(0, splitIndex).trim() : '';
-    final suffix = hasPrefix ? testo.substring(splitIndex + 1).trimLeft() : testo;
+    final suffix = hasPrefix
+        ? testo.substring(splitIndex + 1).trimLeft()
+        : testo;
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
@@ -190,5 +172,4 @@ class GuidaAttivazioneWhatsApp extends StatelessWidget {
       ),
     );
   }
-
 }

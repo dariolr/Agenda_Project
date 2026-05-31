@@ -3509,7 +3509,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Accedi con l\'account della tua pagina Facebook (quello che gestisce la pagina del negozio, non quello del tuo profilo personale).",
     ),
     "whatsappGuideStep3": MessageLookupByLibrary.simpleMessage(
-      "Segui le istruzioni per inserire nome attività (quello che vedranno i tuoi clienti), i dati della carta e Partita IVA.",
+      "Segui le istruzioni per inserire nome attività (quello che vedranno i tuoi clienti), ed eventuali altri dettagli richiesti da Meta.",
     ),
     "whatsappGuideStep4": MessageLookupByLibrary.simpleMessage(
       "Quando ricevi il codice tramite SMS o chiamata, dovrai inserirlo nel gestionale per completare il collegamento, prendine nota.",
