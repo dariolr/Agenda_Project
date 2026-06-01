@@ -152,6 +152,17 @@ final class WhatsappController
         }
 
         $this->whatsappRepo->deleteConfig($businessId, $configId);
+        $remainingConfigs = $this->whatsappRepo->getConfigsByBusinessId($businessId);
+        $status = 'enabled';
+        foreach ($remainingConfigs as $config) {
+            if (($config['status'] ?? '') === 'active') {
+                $status = 'active';
+                break;
+            }
+            $status = 'pending_review';
+        }
+        $this->settingsRepo->updateStatus($businessId, $status);
+
         return Response::success(['deleted' => true]);
     }
 

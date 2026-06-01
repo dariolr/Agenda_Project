@@ -113,7 +113,8 @@ class _WhatsappBusinessScreenState
     } catch (e) {
       if (!mounted) return;
       final message = e.toString().toLowerCase();
-      final isUserCancelled = message.contains('popup chiuso');
+      final isUserCancelled =
+          message.contains('popup chiuso') || message.contains('access_denied');
       if (!isUserCancelled) {
         await FeedbackDialog.showError(
           context,
