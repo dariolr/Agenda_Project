@@ -22,6 +22,7 @@ class AppEnvironmentRawConfig {
     required this.metaAppId,
     required this.metaGraphVersion,
     required this.metaEmbeddedSignupRedirectUri,
+    required this.metaEmbeddedSignupConfigId,
     required this.metaEmbeddedSignupScopes,
   });
 
@@ -42,6 +43,7 @@ class AppEnvironmentRawConfig {
   final String metaAppId;
   final String metaGraphVersion;
   final String metaEmbeddedSignupRedirectUri;
+  final String metaEmbeddedSignupConfigId;
   final String metaEmbeddedSignupScopes;
 }
 
@@ -69,6 +71,7 @@ class AppEnvironmentConfig {
     required this.metaAppId,
     required this.metaGraphVersion,
     required this.metaEmbeddedSignupRedirectUri,
+    required this.metaEmbeddedSignupConfigId,
     required this.metaEmbeddedSignupScopes,
   });
 
@@ -95,6 +98,7 @@ class AppEnvironmentConfig {
   final String metaAppId;
   final String metaGraphVersion;
   final String metaEmbeddedSignupRedirectUri;
+  final String metaEmbeddedSignupConfigId;
   final String metaEmbeddedSignupScopes;
 
   static late final AppEnvironmentConfig current;
@@ -146,8 +150,9 @@ class AppEnvironmentConfig {
     final metaGraphVersion = raw.metaGraphVersion.trim().isEmpty
         ? 'v21.0'
         : raw.metaGraphVersion.trim();
-    final metaEmbeddedSignupRedirectUri =
-        raw.metaEmbeddedSignupRedirectUri.trim();
+    final metaEmbeddedSignupRedirectUri = raw.metaEmbeddedSignupRedirectUri
+        .trim();
+    final metaEmbeddedSignupConfigId = raw.metaEmbeddedSignupConfigId.trim();
     final metaEmbeddedSignupScopes = raw.metaEmbeddedSignupScopes.trim().isEmpty
         ? 'whatsapp_business_management,whatsapp_business_messaging'
         : raw.metaEmbeddedSignupScopes.trim();
@@ -232,6 +237,7 @@ class AppEnvironmentConfig {
       metaAppId: metaAppId,
       metaGraphVersion: metaGraphVersion,
       metaEmbeddedSignupRedirectUri: metaEmbeddedSignupRedirectUri,
+      metaEmbeddedSignupConfigId: metaEmbeddedSignupConfigId,
       metaEmbeddedSignupScopes: metaEmbeddedSignupScopes,
     );
   }
@@ -303,6 +309,10 @@ class AppEnvironmentConfig {
         ),
         metaEmbeddedSignupRedirectUri: String.fromEnvironment(
           'META_EMBEDDED_SIGNUP_REDIRECT_URI',
+          defaultValue: '',
+        ),
+        metaEmbeddedSignupConfigId: String.fromEnvironment(
+          'META_EMBEDDED_SIGNUP_CONFIG_ID',
           defaultValue: '',
         ),
         metaEmbeddedSignupScopes: String.fromEnvironment(

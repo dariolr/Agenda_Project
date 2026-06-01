@@ -280,8 +280,6 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
     final startTime = booking.firstStartTime;
     if (startTime == null) return;
 
-    ref.read(agendaDateProvider.notifier).set(startTime);
-
     final currentLocationId = ref.read(currentLocationIdProvider);
     final targetLocationId = booking.locationId;
     if (targetLocationId > 0 && targetLocationId != currentLocationId) {
@@ -291,6 +289,11 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
         ref.read(currentLocationIdProvider.notifier).set(targetLocationId);
       }
     }
+
+    // La data va impostata DOPO il cambio location: AgendaDateNotifier.build()
+    // guarda currentLocationIdProvider, quindi il cambio location lo fa rieseguire
+    // sovrascrivendo la data. Impostandola dopo, l'override è definitivo.
+    ref.read(agendaDateProvider.notifier).set(startTime);
 
     context.go('/agenda');
   }

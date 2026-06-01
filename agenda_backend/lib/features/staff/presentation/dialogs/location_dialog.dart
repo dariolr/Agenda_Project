@@ -58,6 +58,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
   final Map<String, TextEditingController> _nomenclatureControllers = {};
   final _maxBookingAdvanceDaysController = TextEditingController();
   bool _isActive = true;
+  bool _onlineBookingEnabled = true;
   int _minBookingNoticeHours = 1;
   int _maxBookingAdvanceDays = 90;
   int? _cancellationHours;
@@ -408,6 +409,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
         summaryCtrl.text = legacyMany;
       }
       _isActive = widget.initial!.isActive;
+      _onlineBookingEnabled = widget.initial!.onlineBookingEnabled;
       _minBookingNoticeHours = widget.initial!.minBookingNoticeHours;
       _maxBookingAdvanceDays = widget.initial!.maxBookingAdvanceDays;
       _maxBookingAdvanceDaysController.text = _maxBookingAdvanceDays.toString();
@@ -463,6 +465,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
             ? lastBookingLocale
             : null;
         _isActive = lastLocation.isActive;
+        _onlineBookingEnabled = lastLocation.onlineBookingEnabled;
         _minBookingNoticeHours = lastLocation.minBookingNoticeHours;
         _maxBookingAdvanceDays = lastLocation.maxBookingAdvanceDays;
         _maxBookingAdvanceDaysController.text = _maxBookingAdvanceDays.toString();
@@ -701,16 +704,16 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           ),
           const SizedBox(height: 12),
           SwitchListTile.adaptive(
-            title: Text(l10n.teamLocationIsActiveLabel),
+            title: Text(l10n.teamLocationOnlineBookingEnabledLabel),
             subtitle: Text(
-              l10n.teamLocationIsActiveHint,
+              l10n.teamLocationOnlineBookingEnabledHint,
               style: Theme.of(context).textTheme.bodySmall,
             ),
-            value: _isActive,
-            onChanged: (v) => setState(() => _isActive = v),
+            value: _onlineBookingEnabled,
+            onChanged: (v) => setState(() => _onlineBookingEnabled = v),
             contentPadding: EdgeInsets.zero,
           ),
-          if (_isActive) ...[
+          if (_onlineBookingEnabled) ...[
             if (isSuperadmin) ...[
               const SizedBox(height: AppSpacing.formRowSpacing),
               bookingDefaultLocaleField,
@@ -1234,6 +1237,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           timezone: timezone,
           bookingDefaultLocale: bookingDefaultLocale,
           isActive: _isActive,
+          onlineBookingEnabled: _onlineBookingEnabled,
           minBookingNoticeHours: _minBookingNoticeHours,
           maxBookingAdvanceDays: _maxBookingAdvanceDays,
           bookingTextOverrides: bookingTextOverrides,
@@ -1257,6 +1261,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           timezone: timezone,
           bookingDefaultLocale: bookingDefaultLocale,
           isActive: _isActive,
+          onlineBookingEnabled: _onlineBookingEnabled,
           minBookingNoticeHours: _minBookingNoticeHours,
           maxBookingAdvanceDays: _maxBookingAdvanceDays,
           bookingTextOverrides: bookingTextOverrides,

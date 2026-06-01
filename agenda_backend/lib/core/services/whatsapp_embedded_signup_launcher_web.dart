@@ -13,23 +13,35 @@ Future<WhatsappEmbeddedSignupLaunchResult> launchWhatsappEmbeddedSignup({
   final env = AppEnvironmentConfig.current;
   final appId = env.metaAppId.trim();
   final redirectUri = env.metaEmbeddedSignupRedirectUri.trim();
+  final configId = env.metaEmbeddedSignupConfigId.trim();
   final graphVersion = env.metaGraphVersion.trim();
   final scopes = env.metaEmbeddedSignupScopes.trim();
 
-  if (appId.isEmpty || redirectUri.isEmpty) {
+  if (appId.isEmpty || redirectUri.isEmpty || configId.isEmpty) {
     throw StateError(
-      'META_APP_ID o META_EMBEDDED_SIGNUP_REDIRECT_URI non configurati nel frontend.',
+      'META_APP_ID, META_EMBEDDED_SIGNUP_REDIRECT_URI o '
+      'META_EMBEDDED_SIGNUP_CONFIG_ID non configurati nel frontend.',
     );
   }
 
-  final oauthUri =
-      Uri.https('www.facebook.com', '/$graphVersion/dialog/oauth', {
-        'client_id': appId,
-        'redirect_uri': redirectUri,
-        'response_type': 'code',
-        'scope': scopes,
-        'state': expectedState,
-      });
+  final oauthUri = Uri.https(
+    'www.facebook.com',
+    '/$graphVersion/dialog/oauth',
+    {
+      'client_id': appId,
+      'redirect_uri': redirectUri,
+      'response_type': 'code',
+      'override_default_response_type': 'true',
+      'config_id': configId,
+      'extras': jsonEncode({
+        'setup': <String, String>{},
+        'featureType': '',
+        'sessionInfoVersion': '3',
+      }),
+      'scope': scopes,
+      'state': expectedState,
+    },
+  );
 
   final popup =
       html.window.open(
@@ -50,6 +62,10 @@ Future<WhatsappEmbeddedSignupLaunchResult> launchWhatsappEmbeddedSignup({
   Timer? timeout;
   StreamSubscription<html.MessageEvent>? messageSubscription;
   final expectedOrigin = Uri.parse(redirectUri).origin;
+  int? sessionInfoVersion;
+  String? wabaId;
+  String? phoneNumberId;
+  String? displayPhoneNumber;
 
   void cleanup() {
     timer?.cancel();
@@ -92,25 +108,54 @@ Future<WhatsappEmbeddedSignupLaunchResult> launchWhatsappEmbeddedSignup({
     cleanup();
     popup.close();
     completer.complete(
-      WhatsappEmbeddedSignupLaunchResult(code: code, state: returnedState),
+      WhatsappEmbeddedSignupLaunchResult(
+        code: code,
+        state: returnedState,
+        sessionInfoVersion: sessionInfoVersion,
+        wabaId: wabaId,
+        phoneNumberId: phoneNumberId,
+        displayPhoneNumber: displayPhoneNumber,
+      ),
     );
   }
 
   messageSubscription = html.window.onMessage.listen((event) {
-    if (event.origin != expectedOrigin) return;
-
     final data = event.data;
     if (data is! String) return;
 
-    final decoded = jsonDecode(data);
+    final dynamic decoded;
+    try {
+      decoded = jsonDecode(data);
+    } catch (_) {
+      return;
+    }
     if (decoded is! Map) return;
-    if (decoded['type'] != 'meta_whatsapp_embedded_signup_callback') return;
 
-    completeFromParams({
-      'code': decoded['code']?.toString() ?? '',
-      'state': decoded['state']?.toString() ?? '',
-      'error': decoded['error']?.toString() ?? '',
-    });
+    if (event.origin == expectedOrigin &&
+        decoded['type'] == 'meta_whatsapp_embedded_signup_callback') {
+      completeFromParams({
+        'code': decoded['code']?.toString() ?? '',
+        'state': decoded['state']?.toString() ?? '',
+        'error': decoded['error']?.toString() ?? '',
+      });
+      return;
+    }
+
+    if (!_isMetaOrigin(event.origin) ||
+        decoded['type'] != 'WA_EMBEDDED_SIGNUP' ||
+        decoded['event'] != 'FINISH') {
+      return;
+    }
+
+    final sessionData = decoded['data'];
+    if (sessionData is! Map) return;
+
+    wabaId = _nonEmptyString(sessionData['waba_id']);
+    phoneNumberId = _nonEmptyString(sessionData['phone_number_id']);
+    displayPhoneNumber = _nonEmptyString(sessionData['display_phone_number']);
+    sessionInfoVersion = int.tryParse(
+      (decoded['version'] ?? sessionData['version'] ?? '').toString(),
+    );
   });
 
   timeout = Timer(const Duration(minutes: 10), () {
@@ -167,6 +212,16 @@ Future<WhatsappEmbeddedSignupLaunchResult> launchWhatsappEmbeddedSignup({
   });
 
   return completer.future;
+}
+
+bool _isMetaOrigin(String origin) {
+  final host = Uri.tryParse(origin)?.host.toLowerCase() ?? '';
+  return host == 'facebook.com' || host.endsWith('.facebook.com');
+}
+
+String? _nonEmptyString(Object? value) {
+  final normalized = value?.toString().trim() ?? '';
+  return normalized.isEmpty ? null : normalized;
 }
 
 Map<String, String> _fragmentToParams(String fragment) {

@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '/core/l10n/l10_extension.dart';
 import '/core/network/api_client.dart';
 import '/core/services/whatsapp_embedded_signup_launcher.dart';
 import '/core/widgets/app_buttons.dart';
+import '/core/widgets/app_switch.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/business_providers.dart';
+import '/features/auth/providers/auth_provider.dart';
 import '/features/booking_notifications/providers/whatsapp_integration_provider.dart';
 import '/features/more/presentation/widgets/guida_attivazione_whatsapp.dart';
 
@@ -24,8 +28,12 @@ class _WhatsappBusinessScreenState
   final _embeddedSignupLauncher = WhatsappEmbeddedSignupLauncher();
   final ScrollController _guideScrollController = ScrollController();
   bool _isCompletingEmbeddedSignup = false;
+  bool _isUpdatingBusinessMessages = false;
+  bool _isForgettingLocalConfig = false;
   int? _lastLoadedBusinessId;
-  Map<String, bool>? _lastGoLiveChecks;
+  static final Uri _metaBusinessUri = Uri.parse(
+    'https://business.facebook.com/settings',
+  );
 
   @override
   void dispose() {
@@ -66,18 +74,6 @@ class _WhatsappBusinessScreenState
         );
 
     if (!mounted) return;
-    final check = result.goLiveCheck;
-    setState(() {
-      _lastGoLiveChecks = check == null
-          ? null
-          : {
-              'phone': check.phoneNumberActive,
-              'webhook': check.webhookVerified,
-              'template': check.templateApproved,
-              'optin': check.optInActive,
-            };
-    });
-
     final hasAutoMappedSingleLocation = result.autoMappedLocationIds.isNotEmpty;
     await FeedbackDialog.showSuccess(
       context,
@@ -117,7 +113,8 @@ class _WhatsappBusinessScreenState
     } catch (e) {
       if (!mounted) return;
       final message = e.toString().toLowerCase();
-      final isUserCancelled = message.contains('popup chiuso');
+      final isUserCancelled =
+          message.contains('popup chiuso') || message.contains('access_denied');
       if (!isUserCancelled) {
         await FeedbackDialog.showError(
           context,
@@ -156,21 +153,171 @@ class _WhatsappBusinessScreenState
     return '${error.message}\n\nDettaglio tecnico: $detail';
   }
 
+  Future<void> _setBusinessMessagesEnabled(bool enabled) async {
+    final businessId = ref.read(currentBusinessIdProvider);
+    if (businessId <= 0) return;
+
+    final l10n = context.l10n;
+    setState(() => _isUpdatingBusinessMessages = true);
+    try {
+      await ref
+          .read(whatsappIntegrationProvider.notifier)
+          .updateBusinessMessageSending(
+            businessId: businessId,
+            enabled: enabled,
+          );
+    } catch (e) {
+      if (!mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: e.toString(),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isUpdatingBusinessMessages = false);
+      }
+    }
+  }
+
+  Future<void> _forgetLocalConfig(int configId) async {
+    final businessId = ref.read(currentBusinessIdProvider);
+    if (businessId <= 0 || configId <= 0) return;
+
+    final l10n = context.l10n;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(l10n.whatsappForgetLocalConfigTitle),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(l10n.whatsappForgetLocalConfigMessage),
+            const SizedBox(height: 16),
+            _MetaBusinessDialogLink(uri: _metaBusinessUri),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(l10n.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(l10n.actionDelete),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isForgettingLocalConfig = true);
+    try {
+      await ref
+          .read(whatsappIntegrationProvider.notifier)
+          .deleteBusinessWhatsappConfig(
+            businessId: businessId,
+            configId: configId,
+          );
+    } catch (e) {
+      if (!mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: l10n.errorTitle,
+        message: e.toString(),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isForgettingLocalConfig = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final businessId = ref.watch(currentBusinessIdProvider);
+    final isSuperadmin = ref.watch(
+      authProvider.select((state) => state.user?.isSuperadmin ?? false),
+    );
     final state = ref.watch(whatsappIntegrationProvider);
     final settings = state.settings;
     final firstConfig = state.configs.isNotEmpty ? state.configs.first : null;
-    final hasConfig = firstConfig != null;
+    final displayPhoneNumber = firstConfig?.displayPhoneNumber?.trim();
+    final showBusinessMessagesSwitch =
+        isSuperadmin || (settings?.messagesEnabled ?? false);
 
-    if (businessId > 0 && _lastLoadedBusinessId != businessId) {
+    if (businessId <= 0) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final hasResolvedBusinessData =
+        state.loadedBusinessId == businessId &&
+        !state.isLoading &&
+        (state.settings != null || state.error != null);
+
+    if (_lastLoadedBusinessId != businessId) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         _loadData(businessId);
       });
+    }
+
+    if (!hasResolvedBusinessData) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.error != null) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 560),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.error_outline,
+                      size: 40,
+                      color: theme.colorScheme.error,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.errorTitle,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      state.error!,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    FilledButton(
+                      onPressed: () {
+                        _lastLoadedBusinessId = null;
+                        _loadData(businessId);
+                      },
+                      child: Text(l10n.actionRetry),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
     }
 
     if (settings != null && !settings.whatsappEnabled) {
@@ -219,7 +366,7 @@ class _WhatsappBusinessScreenState
       );
     }
 
-    if (!hasConfig) {
+    if (firstConfig == null) {
       return Padding(
         padding: const EdgeInsets.all(24),
         child: Center(
@@ -301,62 +448,372 @@ class _WhatsappBusinessScreenState
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-      children: [
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
+    if (firstConfig.isConnectionInvalid || firstConfig.phoneNumberId.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 720),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/icons/whatsapp.svg',
+                      width: 42,
+                      height: 42,
+                      colorFilter: ColorFilter.mode(
+                        theme.colorScheme.error,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      l10n.whatsappConnectionInvalidTitle,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      l10n.whatsappConnectionInvalidMessage,
+                      textAlign: TextAlign.center,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (isSuperadmin &&
+                        (firstConfig.lastErrorMessage?.isNotEmpty ??
+                            false)) ...[
+                      const SizedBox(height: 12),
+                      _WhatsappConfigField(
+                        label: l10n.whatsappStatusError,
+                        value: firstConfig.lastErrorMessage!,
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    SizedBox(
+                      width: 280,
+                      child: AppAsyncFilledButton(
+                        onPressed: settings?.canOnboard == true
+                            ? _startEmbeddedSignupAutomatic
+                            : null,
+                        isLoading: _isCompletingEmbeddedSignup,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 22,
+                          vertical: 14,
+                        ),
+                        child: Text(l10n.whatsappReconnectMeta),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 720),
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SvgPicture.asset(
+                    'assets/icons/whatsapp.svg',
+                    width: 42,
+                    height: 42,
+                    colorFilter: const ColorFilter.mode(
+                      Color(0xFF25D366),
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    l10n.whatsappMessagingActiveTitle,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    l10n.whatsappMessagingActiveMessage,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  if (isSuperadmin) ...[
+                    if (displayPhoneNumber != null &&
+                        displayPhoneNumber.isNotEmpty) ...[
+                      _WhatsappConfigField(
+                        label: l10n.whatsappFieldDisplayPhoneNumber,
+                        value: displayPhoneNumber,
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                    _WhatsappConfigField(
+                      label: l10n.whatsappFieldPhoneNumberId,
+                      value: firstConfig.phoneNumberId,
+                    ),
+                    const SizedBox(height: 8),
+                    _WhatsappConfigField(
+                      label: l10n.whatsappFieldWabaId,
+                      value: firstConfig.wabaId,
+                    ),
+                    const SizedBox(height: 18),
+                  ],
+                  if (showBusinessMessagesSwitch)
+                    _WhatsappBusinessMessagesSwitch(
+                      value: settings?.businessMessagesEnabled ?? true,
+                      enabled:
+                          (settings?.whatsappEnabled ?? false) &&
+                          (settings?.messagesEnabled ?? false) &&
+                          !_isUpdatingBusinessMessages,
+                      isUpdating: _isUpdatingBusinessMessages,
+                      onChanged: _setBusinessMessagesEnabled,
+                    ),
+                  const SizedBox(height: 22),
+                  SizedBox(
+                    width: 280,
+                    child: AppAsyncFilledButton(
+                      onPressed: () => _forgetLocalConfig(firstConfig.id),
+                      isLoading: _isForgettingLocalConfig,
+                      backgroundColor: theme.colorScheme.error,
+                      foregroundColor: theme.colorScheme.onError,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 22,
+                        vertical: 14,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          SvgPicture.asset(
+                            'assets/icons/meta.svg',
+                            width: 18,
+                            height: 18,
+                            colorFilter: ColorFilter.mode(
+                              theme.colorScheme.onError,
+                              BlendMode.srcIn,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(l10n.whatsappForgetLocalConfigAction),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _WhatsappBusinessMessagesSwitch extends StatelessWidget {
+  const _WhatsappBusinessMessagesSwitch({
+    required this.value,
+    required this.enabled,
+    required this.isUpdating,
+    required this.onChanged,
+  });
+
+  final bool value;
+  final bool enabled;
+  final bool isUpdating;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          isUpdating
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Icon(Icons.mark_chat_read_outlined),
+          const SizedBox(width: 12),
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l10n.moreWhatsappBusinessTitle,
-                  style: theme.textTheme.titleMedium?.copyWith(
+                  l10n.whatsappBusinessMessagesToggleTitle,
+                  style: theme.textTheme.bodyMedium?.copyWith(
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 2),
                 Text(
-                  l10n.moreWhatsappBusinessDescription,
-                  style: theme.textTheme.bodyMedium?.copyWith(
+                  value
+                      ? l10n.whatsappBusinessMessagesSuperadminEnabled
+                      : l10n.whatsappBusinessMessagesSuperadminDisabled,
+                  style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
             ),
           ),
-        ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.whatsappPanelTitle,
-                  style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+          const SizedBox(width: 12),
+          AppSwitch(value: value, onChanged: enabled ? onChanged : null),
+        ],
+      ),
+    );
+  }
+}
+
+class _MetaBusinessDialogLink extends StatelessWidget {
+  const _MetaBusinessDialogLink({required this.uri});
+
+  final Uri uri;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final url = uri.toString();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: InkWell(
+              onTap: () {
+                launchUrl(
+                  uri,
+                  mode: LaunchMode.platformDefault,
+                  webOnlyWindowName: '_blank',
+                );
+              },
+              child: Text(
+                url,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.primary,
+                  decoration: TextDecoration.underline,
+                  decorationColor: theme.colorScheme.primary,
                 ),
-                const SizedBox(height: 10),
-                Text(
-                  '${l10n.whatsappFieldPhoneNumberId}: ${firstConfig.phoneNumberId}',
-                ),
-                if (_lastGoLiveChecks != null) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    '${l10n.whatsappGoLiveCheck}: '
-                    '${(_lastGoLiveChecks!['phone'] == true && _lastGoLiveChecks!['webhook'] == true && _lastGoLiveChecks!['template'] == true && _lastGoLiveChecks!['optin'] == true) ? l10n.whatsappGoLiveReady : l10n.whatsappGoLiveNotReady}',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
-              ],
+              ),
             ),
           ),
-        ),
-      ],
+          const SizedBox(width: 8),
+          Tooltip(
+            message: l10n.whatsappCopyTechnicalValueTooltip,
+            child: IconButton(
+              onPressed: () async {
+                await Clipboard.setData(ClipboardData(text: url));
+              },
+              icon: const Icon(Icons.copy_outlined, size: 18),
+              visualDensity: VisualDensity.compact,
+              constraints: const BoxConstraints.tightFor(width: 32, height: 32),
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _WhatsappConfigField extends StatelessWidget {
+  const _WhatsappConfigField({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  label,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              Tooltip(
+                message: l10n.whatsappCopyTechnicalValueTooltip,
+                child: IconButton(
+                  onPressed: () async {
+                    await Clipboard.setData(ClipboardData(text: value));
+                  },
+                  icon: const Icon(Icons.copy_outlined, size: 18),
+                  visualDensity: VisualDensity.compact,
+                  constraints: const BoxConstraints.tightFor(
+                    width: 32,
+                    height: 32,
+                  ),
+                  padding: EdgeInsets.zero,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 2),
+          SelectableText(
+            value,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

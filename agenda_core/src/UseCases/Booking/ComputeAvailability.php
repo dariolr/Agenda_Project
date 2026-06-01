@@ -258,7 +258,7 @@ final class ComputeAvailability
         }
         
         $minGapMinutes = $this->currentLocationSlotSettings['min_gap_minutes'];
-        
+
         if (empty($slots) || $minGapMinutes <= 0) {
             return $slots;
         }
@@ -268,14 +268,24 @@ final class ComputeAvailability
                 return $slots;
             }
         }
-        
+
+        // La soglia effettiva scala con l'intervallo tra gli slot: con intervalli
+        // grandi (es. 40 min) un buco di metà intervallo è strutturalmente
+        // inevitabile e non va filtrato. Con intervalli piccoli (es. 15 min)
+        // si usa il valore configurato così com'è.
+        $slotIntervalMinutes = $this->getSlotIntervalMinutes();
+        $effectiveMinGap = min($minGapMinutes, intdiv($slotIntervalMinutes, 2));
+
+        if ($effectiveMinGap <= 0) {
+            return $slots;
+        }
+
         // Get the date from first slot
         $firstSlot = $slots[0];
         $firstSlotTime = new DateTimeImmutable($firstSlot['start_time'], $timezone);
-        $dateStr = $firstSlotTime->format('Y-m-d');
         $dayStart = $firstSlotTime->setTime(0, 0, 0);
         $dayEnd = $firstSlotTime->setTime(23, 59, 59);
-        
+
         // Get all occupied slots for this location on this date (all staff)
         $occupiedSlots = $this->bookingRepository->getOccupiedSlotsForLocation(
             $locationId,
@@ -283,52 +293,47 @@ final class ComputeAvailability
             $dayEnd,
             $this->currentExcludeBookingId
         );
-        
+
         // Convert occupied slots to DateTimeImmutable
         $occupiedIntervals = array_map(fn($slot) => [
             'start' => new DateTimeImmutable($slot['start_time'], $timezone),
             'end' => new DateTimeImmutable($slot['end_time'], $timezone),
         ], $occupiedSlots);
-        
+
         // Filter slots
         $filteredSlots = [];
-        
+
         foreach ($slots as $slot) {
             $slotStart = new DateTimeImmutable($slot['start_time'], $timezone);
             $slotEnd = new DateTimeImmutable($slot['end_time'], $timezone);
-            
-            // Check if this slot creates a problematic gap
+
             $createsSmallGap = false;
-            
+
             foreach ($occupiedIntervals as $occupied) {
                 // Gap PRIMA dello slot: distanza tra fine occupied e inizio slot
-                // Se occupied finisce prima del nostro slot
                 if ($occupied['end'] <= $slotStart) {
                     $gapMinutes = ($slotStart->getTimestamp() - $occupied['end']->getTimestamp()) / 60;
-                    // Gap piccolo ma non zero (gap zero = adiacente = ok)
-                    if ($gapMinutes > 0 && $gapMinutes < $minGapMinutes) {
+                    if ($gapMinutes > 0 && $gapMinutes < $effectiveMinGap) {
                         $createsSmallGap = true;
                         break;
                     }
                 }
-                
+
                 // Gap DOPO lo slot: distanza tra fine slot e inizio occupied
-                // Se occupied inizia dopo il nostro slot
                 if ($slotEnd <= $occupied['start']) {
                     $gapMinutes = ($occupied['start']->getTimestamp() - $slotEnd->getTimestamp()) / 60;
-                    // Gap piccolo ma non zero (gap zero = adiacente = ok)
-                    if ($gapMinutes > 0 && $gapMinutes < $minGapMinutes) {
+                    if ($gapMinutes > 0 && $gapMinutes < $effectiveMinGap) {
                         $createsSmallGap = true;
                         break;
                     }
                 }
             }
-            
+
             if (!$createsSmallGap) {
                 $filteredSlots[] = $slot;
             }
         }
-        
+
         return $filteredSlots;
     }
 
@@ -506,11 +511,6 @@ final class ComputeAvailability
         foreach ($occupied as $occ) {
             $opportunisticStart = $occ['end'];
             
-            // Skip se è già allineato all'intervallo slot configurato
-            if ($this->isAlignedToSlotInterval($opportunisticStart, $slotIntervalMinutes)) {
-                continue;
-            }
-            
             // Skip se è prima del minimo tempo di prenotazione
             if ($opportunisticStart <= $minBookingTime) {
                 continue;
@@ -550,12 +550,7 @@ final class ComputeAvailability
         foreach ($occupied as $occ) {
             $opportunisticEnd = $occ['start'];
             $opportunisticStart = $opportunisticEnd->modify("-{$durationMinutes} minutes");
-            
-            // Skip se è già allineato all'intervallo slot configurato
-            if ($this->isAlignedToSlotInterval($opportunisticStart, $slotIntervalMinutes)) {
-                continue;
-            }
-            
+
             // Skip se è prima del minimo tempo di prenotazione
             if ($opportunisticStart <= $minBookingTime) {
                 continue;

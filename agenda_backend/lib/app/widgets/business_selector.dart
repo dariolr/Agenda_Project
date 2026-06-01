@@ -31,6 +31,7 @@ class BusinessSelector extends ConsumerWidget {
         onChanged: (id) {
           ref.read(currentBusinessIdProvider.notifier).selectByUser(id);
           ref.read(superadminSelectedBusinessProvider.notifier).select(id);
+          invalidateBusinessScopedProviders(ref);
         },
       ),
       loading: () => const Padding(

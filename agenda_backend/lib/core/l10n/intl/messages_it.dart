@@ -25,12 +25,13 @@ class MessageLookup extends MessageLookupByLibrary {
   static String m1(date) =>
       "Il periodo gratuito è terminato il ${date}. Per continuare a usare il gestionale, attiva l\'abbonamento.";
 
-  static String m2(date) => "Il tuo periodo gratuito termina il ${date}.";
+  static String m2(date) =>
+      "L\'attivazione dell abbonamento è richiesta entro: ${date}.";
 
   static String m3(currentPeriodEnd) =>
       "Abbonamento attivo fino al ${currentPeriodEnd}";
 
-  static String m4(businessName) => "Fatturazione \$${businessName}";
+  static String m4(businessName) => "Fatturazione ${businessName}";
 
   static String m5(url) =>
       "Il cliente potrà prenotare solo gli elementi disponibili in questa categoria. Se nella categoria ci sono elementi pubblici, vedrà solo quelli. Se non ci sono elementi pubblici, vedrà solo quelli disponibili tramite link diretto.\n\n${url}";
@@ -413,7 +414,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Lo slot orario selezionato non è più disponibile.",
     ),
     "apiErrorStaffHasFutureBookings": MessageLookupByLibrary.simpleMessage(
-      "Impossibile eliminare il membro del team: esistono prenotazioni o lezioni future associate.",
+      "Impossibile eliminare il membro del team: esistono prenotazioni future associate a questo operatore.",
     ),
     "apiErrorTokenExpired": MessageLookupByLibrary.simpleMessage(
       "La sessione è scaduta. Accedi di nuovo.",
@@ -528,12 +529,6 @@ class MessageLookup extends MessageLookupByLibrary {
       "Data limite attivazione abbonamento",
     ),
     "billingActivationDeadlinePending": m2,
-    "billingCycleAnchorHint": MessageLookupByLibrary.simpleMessage(
-      "Se impostata e futura, Stripe utilizzerà questa data come inizio del primo ciclo di fatturazione.",
-    ),
-    "billingCycleAnchorLabel": MessageLookupByLibrary.simpleMessage(
-      "Data ancoraggio ciclo (Stripe)",
-    ),
     "billingActiveTitle": MessageLookupByLibrary.simpleMessage(
       "Abbonamento attivo",
     ),
@@ -595,6 +590,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "billingCurrentPeriodStartFieldLabel": MessageLookupByLibrary.simpleMessage(
       "current_period_start",
+    ),
+    "billingCycleAnchorHint": MessageLookupByLibrary.simpleMessage(
+      "Se impostata e futura, Stripe utilizzerà questa data come inizio del primo ciclo di fatturazione.",
+    ),
+    "billingCycleAnchorLabel": MessageLookupByLibrary.simpleMessage(
+      "Data ancoraggio ciclo (Stripe)",
     ),
     "billingDescription": MessageLookupByLibrary.simpleMessage(
       "Stato fatturazione e gestione abbonamento.",
@@ -807,6 +808,18 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "bookingNotificationsChannelCancelled":
         MessageLookupByLibrary.simpleMessage("Prenotazione annullata"),
+    "bookingNotificationsChannelClassCancelled":
+        MessageLookupByLibrary.simpleMessage("Evento annullato"),
+    "bookingNotificationsChannelClassConfirmed":
+        MessageLookupByLibrary.simpleMessage("Evento confermato"),
+    "bookingNotificationsChannelClassPromoted":
+        MessageLookupByLibrary.simpleMessage("Promozione da lista d\'attesa"),
+    "bookingNotificationsChannelClassReminder":
+        MessageLookupByLibrary.simpleMessage("Promemoria evento"),
+    "bookingNotificationsChannelClassUpdated":
+        MessageLookupByLibrary.simpleMessage("Evento aggiornato"),
+    "bookingNotificationsChannelClassWaitlisted":
+        MessageLookupByLibrary.simpleMessage("Lista d\'attesa evento"),
     "bookingNotificationsChannelConfirmed":
         MessageLookupByLibrary.simpleMessage("Prenotazione creata"),
     "bookingNotificationsChannelReminder": MessageLookupByLibrary.simpleMessage(
@@ -825,6 +838,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotificationsFieldBody": MessageLookupByLibrary.simpleMessage(
       "Corpo",
     ),
+    "bookingNotificationsFieldBookingKind":
+        MessageLookupByLibrary.simpleMessage("Categoria"),
     "bookingNotificationsFieldClient": MessageLookupByLibrary.simpleMessage(
       "Cliente",
     ),
@@ -850,6 +865,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotificationsFieldType": MessageLookupByLibrary.simpleMessage(
       "Tipo",
     ),
+    "bookingNotificationsFilterBookingKind":
+        MessageLookupByLibrary.simpleMessage("Categoria"),
     "bookingNotificationsFilterProvider": MessageLookupByLibrary.simpleMessage(
       "Provider",
     ),
@@ -859,6 +876,20 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingNotificationsFilterType": MessageLookupByLibrary.simpleMessage(
       "Tipo",
     ),
+    "bookingNotificationsKindAll": MessageLookupByLibrary.simpleMessage(
+      "Tutti",
+    ),
+    "bookingNotificationsKindClass": MessageLookupByLibrary.simpleMessage(
+      "Evento",
+    ),
+    "bookingNotificationsKindClassPlural": MessageLookupByLibrary.simpleMessage(
+      "Eventi",
+    ),
+    "bookingNotificationsKindService": MessageLookupByLibrary.simpleMessage(
+      "Appuntamento",
+    ),
+    "bookingNotificationsKindServicePlural":
+        MessageLookupByLibrary.simpleMessage("Appuntamenti"),
     "bookingNotificationsLoadMore": MessageLookupByLibrary.simpleMessage(
       "Carica altre",
     ),
@@ -1986,7 +2017,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Gestisci operatori, sedi e orari di lavoro",
     ),
     "moreWhatsappBusinessDescription": MessageLookupByLibrary.simpleMessage(
-      "Abilita e configura la messaggistica WhatsApp per conferme, promemoria e notifiche prenotazioni.",
+      "Abilita e configura la messaggistica WhatsApp per notifiche prenotazioni automatiche.",
     ),
     "moreWhatsappBusinessGuidePlaceholderBody":
         MessageLookupByLibrary.simpleMessage(
@@ -3027,12 +3058,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "statusCancelled": MessageLookupByLibrary.simpleMessage("Cancellato"),
     "statusCompleted": MessageLookupByLibrary.simpleMessage("Completato"),
     "statusConfirmed": MessageLookupByLibrary.simpleMessage("Confermato"),
-    "superadminRailStartTopHelp": MessageLookupByLibrary.simpleMessage(
-      "Se attivo, su desktop la colonna di navigazione parte dal bordo superiore senza toolbar.",
-    ),
-    "superadminRailStartTopLabel": MessageLookupByLibrary.simpleMessage(
-      "Navigation rail dall\'alto",
-    ),
     "switchBusiness": MessageLookupByLibrary.simpleMessage("Cambia"),
     "teamAddStaff": MessageLookupByLibrary.simpleMessage("Aggiungi membro"),
     "teamChooseLocationSingleButton": MessageLookupByLibrary.simpleMessage(
@@ -3245,6 +3270,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationNomenclatureValueLabel": MessageLookupByLibrary.simpleMessage(
       "Testo personalizzato",
     ),
+    "teamLocationOnlineBookingEnabledHint": MessageLookupByLibrary.simpleMessage(
+      "Se disattivata, la sede non sarà prenotabile online. Rimane visibile e operativa nel gestionale.",
+    ),
+    "teamLocationOnlineBookingEnabledLabel":
+        MessageLookupByLibrary.simpleMessage("Prenotazione online"),
     "teamLocationOnlineBookingSettingsSection":
         MessageLookupByLibrary.simpleMessage(
           "Configurazione prenotazione online per questa sede",
@@ -3327,6 +3357,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Abilitato alle prenotazioni online",
     ),
     "teamStaffColorLabel": MessageLookupByLibrary.simpleMessage("Colore"),
+    "teamStaffHasFutureBookingsQuestion": MessageLookupByLibrary.simpleMessage(
+      "Vuoi visualizzare le prenotazioni future associate a questo operatore?",
+    ),
     "teamStaffLabel": MessageLookupByLibrary.simpleMessage("Team"),
     "teamStaffLocationsLabel": MessageLookupByLibrary.simpleMessage(
       "Sedi associate",
@@ -3336,6 +3369,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "teamStaffNameLabel": MessageLookupByLibrary.simpleMessage("Nome"),
     "teamStaffSurnameLabel": MessageLookupByLibrary.simpleMessage("Cognome"),
+    "teamStaffViewFutureBookings": MessageLookupByLibrary.simpleMessage(
+      "Visualizza prenotazioni",
+    ),
     "validationInvalidEmail": MessageLookupByLibrary.simpleMessage(
       "Email non valida",
     ),
@@ -3366,6 +3402,26 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappAddConfig": MessageLookupByLibrary.simpleMessage(
       "Nuova configurazione",
     ),
+    "whatsappBusinessMessagesDisabledMessage": MessageLookupByLibrary.simpleMessage(
+      "L\'invio dei messaggi WhatsApp è stato disabilitato per questo business.",
+    ),
+    "whatsappBusinessMessagesEnabledMessage":
+        MessageLookupByLibrary.simpleMessage(
+          "L\'invio dei messaggi WhatsApp è attivo per questo business.",
+        ),
+    "whatsappBusinessMessagesSuperadminDisabled":
+        MessageLookupByLibrary.simpleMessage(
+          "Attiva questo controllo per riprendere gli invii WhatsApp automatici dal gestionale.",
+        ),
+    "whatsappBusinessMessagesSuperadminEnabled":
+        MessageLookupByLibrary.simpleMessage(
+          "Disattiva questo controllo per sospendere gli invii WhatsApp automatici dal gestionale.",
+        ),
+    "whatsappBusinessMessagesToggleTitle": MessageLookupByLibrary.simpleMessage(
+      "Invio messaggi WhatsApp",
+    ),
+    "whatsappBusinessMessagesUpdatedTitle":
+        MessageLookupByLibrary.simpleMessage("Impostazione aggiornata"),
     "whatsappCheckOptInActive": MessageLookupByLibrary.simpleMessage(
       "Opt-in clienti attivo",
     ),
@@ -3383,6 +3439,15 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappConnectMeta": MessageLookupByLibrary.simpleMessage(
       "Connetti con Meta",
+    ),
+    "whatsappConnectionInvalidMessage": MessageLookupByLibrary.simpleMessage(
+      "WhatsApp risulta configurato, ma il collegamento con Meta non è più valido. Ricollega l\'account per riprendere l\'invio dei messaggi.",
+    ),
+    "whatsappConnectionInvalidTitle": MessageLookupByLibrary.simpleMessage(
+      "Connessione Meta non più valida",
+    ),
+    "whatsappCopyTechnicalValueTooltip": MessageLookupByLibrary.simpleMessage(
+      "Copia",
     ),
     "whatsappCreateLocationCta": MessageLookupByLibrary.simpleMessage(
       "Crea location",
@@ -3435,6 +3500,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappFieldClientId": MessageLookupByLibrary.simpleMessage("Client ID"),
     "whatsappFieldDefault": MessageLookupByLibrary.simpleMessage("Predefinita"),
+    "whatsappFieldDisplayPhoneNumber": MessageLookupByLibrary.simpleMessage(
+      "Numero WhatsApp",
+    ),
     "whatsappFieldLocation": MessageLookupByLibrary.simpleMessage("Location"),
     "whatsappFieldPhoneNumberId": MessageLookupByLibrary.simpleMessage(
       "Phone Number ID",
@@ -3450,6 +3518,15 @@ class MessageLookup extends MessageLookupByLibrary {
       "Variabili template (JSON)",
     ),
     "whatsappFieldWabaId": MessageLookupByLibrary.simpleMessage("WABA ID"),
+    "whatsappForgetLocalConfigAction": MessageLookupByLibrary.simpleMessage(
+      "Disconnetti da Meta",
+    ),
+    "whatsappForgetLocalConfigMessage": MessageLookupByLibrary.simpleMessage(
+      "Il gestionale smetterà di usare questa configurazione WhatsApp e annullerà gli invii ancora in coda.\n\nPer revocare completamente i permessi concessi al gestionale devi completare la disconnessione anche da Meta Business.",
+    ),
+    "whatsappForgetLocalConfigTitle": MessageLookupByLibrary.simpleMessage(
+      "Disconnetti da Meta?",
+    ),
     "whatsappGoLiveCheck": MessageLookupByLibrary.simpleMessage(
       "Go-live check",
     ),
@@ -3520,7 +3597,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Accedi con l\'account della tua pagina Facebook (quello che gestisce la pagina del negozio, non quello del tuo profilo personale).",
     ),
     "whatsappGuideStep3": MessageLookupByLibrary.simpleMessage(
-      "Segui le istruzioni per inserire nome attività (quello che vedranno i tuoi clienti), i dati della carta e Partita IVA.",
+      "Segui le istruzioni per inserire nome attività (quello che vedranno i tuoi clienti), ed eventuali altri dettagli richiesti da Meta.",
     ),
     "whatsappGuideStep4": MessageLookupByLibrary.simpleMessage(
       "Quando ricevi il codice tramite SMS o chiamata, dovrai inserirlo nel gestionale per completare il collegamento, prendine nota.",
@@ -3545,6 +3622,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappLocationMappingTitle": MessageLookupByLibrary.simpleMessage(
       "Mapping location → numero",
+    ),
+    "whatsappMessagingActiveMessage": MessageLookupByLibrary.simpleMessage(
+      "La messaggistica WhatsApp è attiva per questo business. I messaggi automatici possono essere inviati quando le notifiche WhatsApp sono abilitate.",
+    ),
+    "whatsappMessagingActiveTitle": MessageLookupByLibrary.simpleMessage(
+      "Messaggistica WhatsApp attiva",
     ),
     "whatsappNoConfigs": MessageLookupByLibrary.simpleMessage(
       "Nessuna configurazione presente.",
@@ -3623,9 +3706,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappStatusInactive": MessageLookupByLibrary.simpleMessage("Inattiva"),
     "whatsappStatusPending": MessageLookupByLibrary.simpleMessage("In attesa"),
     "whatsappSuperadminMustEnable": MessageLookupByLibrary.simpleMessage(
-      "Il superadmin deve abilitare WhatsApp prima che tu possa collegare un numero.",
+      "Contattaci per attivare WhatsApp alle notifiche automatiche.",
     ),
     "whatsappTabTitle": MessageLookupByLibrary.simpleMessage("WhatsApp"),
+    "whatsappTechnicalValueCopiedMessage": MessageLookupByLibrary.simpleMessage(
+      "Il valore tecnico è stato copiato negli appunti.",
+    ),
+    "whatsappTechnicalValueCopiedTitle": MessageLookupByLibrary.simpleMessage(
+      "Valore copiato",
+    ),
     "whatsappTestSendTitle": MessageLookupByLibrary.simpleMessage(
       "Invio test template",
     ),

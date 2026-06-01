@@ -152,6 +152,17 @@ final class WhatsappController
         }
 
         $this->whatsappRepo->deleteConfig($businessId, $configId);
+        $remainingConfigs = $this->whatsappRepo->getConfigsByBusinessId($businessId);
+        $status = 'enabled';
+        foreach ($remainingConfigs as $config) {
+            if (($config['status'] ?? '') === 'active') {
+                $status = 'active';
+                break;
+            }
+            $status = 'pending_review';
+        }
+        $this->settingsRepo->updateStatus($businessId, $status);
+
         return Response::success(['deleted' => true]);
     }
 
@@ -296,6 +307,9 @@ final class WhatsappController
         }
         if (($config['status'] ?? '') !== 'active') {
             return Response::success(['message' => null, 'skipped' => true, 'reason' => 'whatsapp_config_not_active']);
+        }
+        if (trim((string) ($config['phone_number_id'] ?? '')) === '') {
+            return Response::success(['message' => null, 'skipped' => true, 'reason' => 'missing_phone_number_id']);
         }
 
         // Ensure utility template presence to keep go-live check consistent.
@@ -582,13 +596,12 @@ final class WhatsappController
             ? ((int) ($existing['is_default'] ?? 0) === 1)
             : count($configs) === 0;
 
-        $goLiveBeforeStatus = $this->computeGoLiveCheck($businessId, null);
         $id = $this->whatsappRepo->upsertConfigByPhoneNumberId(
             $businessId,
             (string) $meta['waba_id'],
             (string) $meta['phone_number_id'],
             $encryptedToken,
-            ($goLiveBeforeStatus['webhook'] && $goLiveBeforeStatus['template']) ? 'active' : 'pending',
+            'active',
             $isDefault,
             $meta['display_phone_number'] ?? null
         );
@@ -755,6 +768,8 @@ final class WhatsappController
         $isSuperadmin = $this->userRepo->isSuperadmin((int) $request->getAttribute('user_id'));
         $enabled = ((int) ($settings['whatsapp_enabled'] ?? 0)) === 1;
         $messagesEnabled = ((int) ($settings['messages_enabled'] ?? 0)) === 1;
+        $businessMessagesEnabled = ((int) ($settings['business_messages_enabled'] ?? 1)) === 1;
+        $effectiveMessagesEnabled = $enabled && $messagesEnabled && $businessMessagesEnabled;
         $mappingAllowed = ((int) ($settings['allow_location_mapping'] ?? 0)) === 1;
         $role = $isSuperadmin
             ? 'superadmin'
@@ -772,10 +787,10 @@ final class WhatsappController
         if ($action === 'onboard' && !$enabled) {
             return Response::error('Attivazione WhatsApp non consentita', 'whatsapp_activation_not_allowed', 403, $request->traceId);
         }
-        if ($action === 'send_real' && (!$enabled || !$messagesEnabled)) {
+        if ($action === 'send_real' && !$effectiveMessagesEnabled) {
             return Response::error('Invio messaggi WhatsApp disabilitato', 'whatsapp_messages_disabled', 403, $request->traceId);
         }
-        if ($action === 'send_test' && !$messagesEnabled && !$isSuperadmin) {
+        if ($action === 'send_test' && !$effectiveMessagesEnabled && !$isSuperadmin) {
             return Response::error('Invio messaggi WhatsApp disabilitato', 'whatsapp_messages_disabled', 403, $request->traceId);
         }
         if ($action === 'manage_mapping' && !$mappingAllowed && !$isSuperadmin) {
@@ -1006,6 +1021,8 @@ final class WhatsappController
     ): array {
         $featureEnabled = ((int) ($settings['whatsapp_enabled'] ?? 0)) === 1;
         $messagesEnabled = ((int) ($settings['messages_enabled'] ?? 0)) === 1;
+        $businessMessagesEnabled = ((int) ($settings['business_messages_enabled'] ?? 1)) === 1;
+        $effectiveMessagesEnabled = $featureEnabled && $messagesEnabled && $businessMessagesEnabled;
         $mappingAllowed = ((int) ($settings['allow_location_mapping'] ?? 0)) === 1;
         $blocking = [];
         $warnings = [];
@@ -1024,7 +1041,7 @@ final class WhatsappController
             $nextSteps[] = 'complete_meta_review';
         }
         if (!$webhookVerified) {
-            $blocking[] = 'whatsapp_webhook_not_verified';
+            $warnings[] = 'whatsapp_webhook_not_verified';
             $nextSteps[] = 'configure_meta_webhook';
         }
         if (!$templateApproved) {
@@ -1035,7 +1052,7 @@ final class WhatsappController
             $blocking[] = 'whatsapp_optin_required';
             $nextSteps[] = 'collect_customer_opt_in';
         }
-        if (!$messagesEnabled) {
+        if (!$messagesEnabled || !$businessMessagesEnabled) {
             $blocking[] = 'whatsapp_messages_disabled';
             $nextSteps[] = 'enable_real_message_sending';
         }
@@ -1046,6 +1063,8 @@ final class WhatsappController
         return [
             'feature_enabled' => $featureEnabled,
             'messages_enabled' => $messagesEnabled,
+            'business_messages_enabled' => $businessMessagesEnabled,
+            'effective_messages_enabled' => $effectiveMessagesEnabled,
             'business_config_present' => $config !== null,
             'phone_number_present' => $config !== null && trim((string) ($config['phone_number_id'] ?? '')) !== '',
             'phone_number_active' => $phoneActive,
@@ -1105,6 +1124,10 @@ final class WhatsappController
             'display_phone_number' => $config['display_phone_number'] ?? null,
             'status' => $config['status'] ?? 'pending',
             'is_default' => ((int) ($config['is_default'] ?? 0)) === 1,
+            'last_health_check_at' => $config['last_health_check_at'] ?? null,
+            'last_error_code' => $config['last_error_code'] ?? null,
+            'last_error_message' => $config['last_error_message'] ?? null,
+            'requires_reconnect' => ($config['status'] ?? null) === 'error',
             'created_at' => $config['created_at'] ?? null,
             'updated_at' => $config['updated_at'] ?? null,
         ];

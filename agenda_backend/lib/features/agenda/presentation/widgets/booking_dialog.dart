@@ -57,6 +57,7 @@ import '../../providers/layout_config_provider.dart';
 import '../../providers/location_providers.dart';
 import '../../providers/staff_slot_availability_provider.dart';
 import '../../providers/tenant_time_provider.dart';
+import '../../providers/agenda_scroll_request_provider.dart';
 import '../../providers/weekly_appointments_provider.dart';
 import '../../utils/week_range.dart';
 import '../utils/recurrence_flow_utils.dart';
@@ -2236,6 +2237,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         ? (clientsById[_clientId]?.name ?? _customClientName)
         : _customClientName;
 
+    Appointment? savedAppointment;
     try {
       // Se ricorrenza attiva, usa endpoint ricorrente
       if (_recurrenceConfig != null) {
@@ -2245,7 +2247,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           clientName: clientName,
         );
       } else {
-        await _createSingleBooking(
+        savedAppointment = await _createSingleBooking(
           location: location,
           validItems: validItems,
           clientName: clientName,
@@ -2270,10 +2272,13 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     }
 
     if (!mounted) return;
+    if (savedAppointment != null) {
+      ref.read(agendaScrollRequestProvider.notifier).request(savedAppointment);
+    }
     Navigator.of(context).pop();
   }
 
-  Future<void> _createSingleBooking({
+  Future<Appointment?> _createSingleBooking({
     required dynamic location,
     required List<ServiceItemData> validItems,
     required String clientName,
@@ -2358,11 +2363,23 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       referenceTotalCents: referenceTotalCents,
     );
 
-    // Refresh appointments per caricare i nuovi
+    // Cambia data agenda prima del reload così gli appuntamenti vengono caricati per la data corretta
+    final currentAgendaDate = ref.read(agendaDateProvider);
+    final bookingDate = DateUtils.dateOnly(_date);
+    if (!DateUtils.isSameDay(currentAgendaDate, bookingDate)) {
+      ref.read(agendaDateProvider.notifier).set(bookingDate);
+    }
+
     ref.invalidate(appointmentsProvider);
     _invalidateWeeklyAppointmentsCaches(changedDate: _date);
     await ref.read(appointmentsProvider.future);
 
+    final appointments = ref.read(appointmentsProvider).value ?? [];
+    final bookingAppointments = appointments
+        .where((a) => a.bookingId == bookingResponse.id)
+        .toList()
+      ..sort((a, b) => a.startTime.compareTo(b.startTime));
+    return bookingAppointments.isNotEmpty ? bookingAppointments.first : null;
   }
 
   Future<void> _persistPendingPaymentIfNeeded(

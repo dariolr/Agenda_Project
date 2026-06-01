@@ -1433,11 +1433,31 @@ class L10n {
     );
   }
 
-  /// `Cannot delete this team member: future bookings or classes are assigned to them.`
+  /// `Cannot delete this team member: future bookings are assigned to this member.`
   String get apiErrorStaffHasFutureBookings {
     return Intl.message(
-      'Cannot delete this team member: future bookings or classes are assigned to them.',
+      'Cannot delete this team member: future bookings are assigned to this member.',
       name: 'apiErrorStaffHasFutureBookings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Would you like to view the future bookings assigned to this team member?`
+  String get teamStaffHasFutureBookingsQuestion {
+    return Intl.message(
+      'Would you like to view the future bookings assigned to this team member?',
+      name: 'teamStaffHasFutureBookingsQuestion',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `View bookings`
+  String get teamStaffViewFutureBookings {
+    return Intl.message(
+      'View bookings',
+      name: 'teamStaffViewFutureBookings',
       desc: '',
       args: [],
     );
@@ -1968,6 +1988,26 @@ class L10n {
     return Intl.message(
       'If disabled, the location will not be visible to customers',
       name: 'teamLocationIsActiveHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Online booking`
+  String get teamLocationOnlineBookingEnabledLabel {
+    return Intl.message(
+      'Online booking',
+      name: 'teamLocationOnlineBookingEnabledLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `If disabled, this location cannot be booked online. It remains visible and operational in the management panel.`
+  String get teamLocationOnlineBookingEnabledHint {
+    return Intl.message(
+      'If disabled, this location cannot be booked online. It remains visible and operational in the management panel.',
+      name: 'teamLocationOnlineBookingEnabledHint',
       desc: '',
       args: [],
     );
@@ -5696,26 +5736,6 @@ class L10n {
     return Intl.message('Switch', name: 'switchBusiness', desc: '', args: []);
   }
 
-  /// `Rail starts at top`
-  String get superadminRailStartTopLabel {
-    return Intl.message(
-      'Rail starts at top',
-      name: 'superadminRailStartTopLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `If enabled, on desktop the navigation rail starts from the top edge without toolbar.`
-  String get superadminRailStartTopHelp {
-    return Intl.message(
-      'If enabled, on desktop the navigation rail starts from the top edge without toolbar.',
-      name: 'superadminRailStartTopHelp',
-      desc: '',
-      args: [],
-    );
-  }
-
   /// `Profile`
   String get profileTitle {
     return Intl.message('Profile', name: 'profileTitle', desc: '', args: []);
@@ -8484,6 +8504,16 @@ class L10n {
     );
   }
 
+  /// `Category`
+  String get bookingNotificationsFilterBookingKind {
+    return Intl.message(
+      'Category',
+      name: 'bookingNotificationsFilterBookingKind',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Provider`
   String get bookingNotificationsFilterProvider {
     return Intl.message(
@@ -8559,6 +8589,56 @@ class L10n {
     return Intl.message(
       'All types',
       name: 'bookingNotificationsTypeAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `All`
+  String get bookingNotificationsKindAll {
+    return Intl.message(
+      'All',
+      name: 'bookingNotificationsKindAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Appointment`
+  String get bookingNotificationsKindService {
+    return Intl.message(
+      'Appointment',
+      name: 'bookingNotificationsKindService',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Appointments`
+  String get bookingNotificationsKindServicePlural {
+    return Intl.message(
+      'Appointments',
+      name: 'bookingNotificationsKindServicePlural',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Event`
+  String get bookingNotificationsKindClass {
+    return Intl.message(
+      'Event',
+      name: 'bookingNotificationsKindClass',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Events`
+  String get bookingNotificationsKindClassPlural {
+    return Intl.message(
+      'Events',
+      name: 'bookingNotificationsKindClassPlural',
       desc: '',
       args: [],
     );
@@ -8659,6 +8739,76 @@ class L10n {
     return Intl.message(
       'Booking reminder',
       name: 'bookingNotificationsChannelReminder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Event confirmed`
+  String get bookingNotificationsChannelClassConfirmed {
+    return Intl.message(
+      'Event confirmed',
+      name: 'bookingNotificationsChannelClassConfirmed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Event waitlist`
+  String get bookingNotificationsChannelClassWaitlisted {
+    return Intl.message(
+      'Event waitlist',
+      name: 'bookingNotificationsChannelClassWaitlisted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Promoted from waitlist`
+  String get bookingNotificationsChannelClassPromoted {
+    return Intl.message(
+      'Promoted from waitlist',
+      name: 'bookingNotificationsChannelClassPromoted',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Event cancelled`
+  String get bookingNotificationsChannelClassCancelled {
+    return Intl.message(
+      'Event cancelled',
+      name: 'bookingNotificationsChannelClassCancelled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Event updated`
+  String get bookingNotificationsChannelClassUpdated {
+    return Intl.message(
+      'Event updated',
+      name: 'bookingNotificationsChannelClassUpdated',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Event reminder`
+  String get bookingNotificationsChannelClassReminder {
+    return Intl.message(
+      'Event reminder',
+      name: 'bookingNotificationsChannelClassReminder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Category`
+  String get bookingNotificationsFieldBookingKind {
+    return Intl.message(
+      'Category',
+      name: 'bookingNotificationsFieldBookingKind',
       desc: '',
       args: [],
     );
@@ -10766,10 +10916,10 @@ class L10n {
     );
   }
 
-  /// `Enable and configure WhatsApp messaging for booking confirmations, reminders, and notifications.`
+  /// `Enable and configure WhatsApp messaging for automatic notifications.`
   String get moreWhatsappBusinessDescription {
     return Intl.message(
-      'Enable and configure WhatsApp messaging for booking confirmations, reminders, and notifications.',
+      'Enable and configure WhatsApp messaging for automatic notifications.',
       name: 'moreWhatsappBusinessDescription',
       desc: '',
       args: [],
@@ -11281,6 +11431,46 @@ class L10n {
     );
   }
 
+  /// `WhatsApp number`
+  String get whatsappFieldDisplayPhoneNumber {
+    return Intl.message(
+      'WhatsApp number',
+      name: 'whatsappFieldDisplayPhoneNumber',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Copy`
+  String get whatsappCopyTechnicalValueTooltip {
+    return Intl.message(
+      'Copy',
+      name: 'whatsappCopyTechnicalValueTooltip',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Value copied`
+  String get whatsappTechnicalValueCopiedTitle {
+    return Intl.message(
+      'Value copied',
+      name: 'whatsappTechnicalValueCopiedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The technical value has been copied to the clipboard.`
+  String get whatsappTechnicalValueCopiedMessage {
+    return Intl.message(
+      'The technical value has been copied to the clipboard.',
+      name: 'whatsappTechnicalValueCopiedMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Access token`
   String get whatsappFieldAccessToken {
     return Intl.message(
@@ -11346,6 +11536,136 @@ class L10n {
     return Intl.message(
       'Error',
       name: 'whatsappStatusError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp messaging active`
+  String get whatsappMessagingActiveTitle {
+    return Intl.message(
+      'WhatsApp messaging active',
+      name: 'whatsappMessagingActiveTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp messaging is active for this business. Automatic messages can be sent when WhatsApp notifications are enabled.`
+  String get whatsappMessagingActiveMessage {
+    return Intl.message(
+      'WhatsApp messaging is active for this business. Automatic messages can be sent when WhatsApp notifications are enabled.',
+      name: 'whatsappMessagingActiveMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Meta connection no longer valid`
+  String get whatsappConnectionInvalidTitle {
+    return Intl.message(
+      'Meta connection no longer valid',
+      name: 'whatsappConnectionInvalidTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp is configured, but the Meta connection is no longer valid. Reconnect the account to resume message sending.`
+  String get whatsappConnectionInvalidMessage {
+    return Intl.message(
+      'WhatsApp is configured, but the Meta connection is no longer valid. Reconnect the account to resume message sending.',
+      name: 'whatsappConnectionInvalidMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp message sending`
+  String get whatsappBusinessMessagesToggleTitle {
+    return Intl.message(
+      'WhatsApp message sending',
+      name: 'whatsappBusinessMessagesToggleTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Turn this off to pause automatic WhatsApp sends from the management system.`
+  String get whatsappBusinessMessagesSuperadminEnabled {
+    return Intl.message(
+      'Turn this off to pause automatic WhatsApp sends from the management system.',
+      name: 'whatsappBusinessMessagesSuperadminEnabled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Turn this on to resume automatic WhatsApp sends from the management system.`
+  String get whatsappBusinessMessagesSuperadminDisabled {
+    return Intl.message(
+      'Turn this on to resume automatic WhatsApp sends from the management system.',
+      name: 'whatsappBusinessMessagesSuperadminDisabled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Disconnect from Meta`
+  String get whatsappForgetLocalConfigAction {
+    return Intl.message(
+      'Disconnect from Meta',
+      name: 'whatsappForgetLocalConfigAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Disconnect from Meta?`
+  String get whatsappForgetLocalConfigTitle {
+    return Intl.message(
+      'Disconnect from Meta?',
+      name: 'whatsappForgetLocalConfigTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The management system will stop using this WhatsApp configuration and will cancel queued sends.\n\nTo fully revoke the permissions granted to the management system, complete the disconnection in Meta Business as well.`
+  String get whatsappForgetLocalConfigMessage {
+    return Intl.message(
+      'The management system will stop using this WhatsApp configuration and will cancel queued sends.\n\nTo fully revoke the permissions granted to the management system, complete the disconnection in Meta Business as well.',
+      name: 'whatsappForgetLocalConfigMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Setting updated`
+  String get whatsappBusinessMessagesUpdatedTitle {
+    return Intl.message(
+      'Setting updated',
+      name: 'whatsappBusinessMessagesUpdatedTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp message sending is active for this business.`
+  String get whatsappBusinessMessagesEnabledMessage {
+    return Intl.message(
+      'WhatsApp message sending is active for this business.',
+      name: 'whatsappBusinessMessagesEnabledMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `WhatsApp message sending has been disabled for this business.`
+  String get whatsappBusinessMessagesDisabledMessage {
+    return Intl.message(
+      'WhatsApp message sending has been disabled for this business.',
+      name: 'whatsappBusinessMessagesDisabledMessage',
       desc: '',
       args: [],
     );
@@ -12271,10 +12591,10 @@ class L10n {
     );
   }
 
-  /// `Billing ${businessName}`
+  /// `Billing {businessName}`
   String billingAdminDialogTitle(Object businessName) {
     return Intl.message(
-      'Billing \$$businessName',
+      'Billing $businessName',
       name: 'billingAdminDialogTitle',
       desc: '',
       args: [businessName],
@@ -13581,10 +13901,10 @@ class L10n {
     );
   }
 
-  /// `Your free period ends on {date}.`
+  /// `Subscription activation is required by {date}.`
   String billingActivationDeadlinePending(Object date) {
     return Intl.message(
-      'Your free period ends on $date.',
+      'Subscription activation is required by $date.',
       name: 'billingActivationDeadlinePending',
       desc: '',
       args: [date],
@@ -13611,10 +13931,10 @@ class L10n {
     );
   }
 
-  /// `The superadmin must enable WhatsApp before you can connect a number.`
+  /// `Contact support to enable WhatsApp for this business.`
   String get whatsappSuperadminMustEnable {
     return Intl.message(
-      'The superadmin must enable WhatsApp before you can connect a number.',
+      'Contact support to enable WhatsApp for this business.',
       name: 'whatsappSuperadminMustEnable',
       desc: '',
       args: [],

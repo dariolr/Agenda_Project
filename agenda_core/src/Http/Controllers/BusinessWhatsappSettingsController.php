@@ -57,6 +57,34 @@ final class BusinessWhatsappSettingsController
         ]);
     }
 
+    public function updateBusinessSettings(Request $request): Response
+    {
+        $businessId = (int) $request->getAttribute('business_id');
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::error('Accesso non consentito', 'forbidden', 403, $request->traceId);
+        }
+
+        $userId = (int) $request->getAttribute('user_id');
+        if (!$this->isSuperadmin($request)) {
+            $role = (string) $this->businessUserRepo->getRole($userId, $businessId);
+            if (!in_array($role, ['owner', 'admin', 'manager'], true)) {
+                return Response::error('Permessi WhatsApp insufficienti', 'forbidden', 403, $request->traceId);
+            }
+        }
+
+        $body = $request->getBody() ?? [];
+        if (!array_key_exists('business_messages_enabled', $body)) {
+            return Response::validationError('business_messages_enabled obbligatorio', $request->traceId);
+        }
+
+        $settings = $this->settingsRepo->updateBusinessMessageSending(
+            $businessId,
+            (bool) $body['business_messages_enabled']
+        );
+
+        return Response::success(['settings' => $this->formatSettings($settings, $this->isSuperadmin($request))]);
+    }
+
     public function adminUpsert(Request $request): Response
     {
         if (!$this->isSuperadmin($request)) {
@@ -168,6 +196,10 @@ final class BusinessWhatsappSettingsController
             'provider_code' => (string) ($row['provider_code'] ?? 'meta'),
             'whatsapp_enabled' => ((int) ($row['whatsapp_enabled'] ?? 0)) === 1,
             'messages_enabled' => ((int) ($row['messages_enabled'] ?? 0)) === 1,
+            'business_messages_enabled' => ((int) ($row['business_messages_enabled'] ?? 1)) === 1,
+            'effective_messages_enabled' => ((int) ($row['whatsapp_enabled'] ?? 0)) === 1
+                && ((int) ($row['messages_enabled'] ?? 0)) === 1
+                && ((int) ($row['business_messages_enabled'] ?? 1)) === 1,
             'allow_location_mapping' => ((int) ($row['allow_location_mapping'] ?? 0)) === 1,
             'default_channel_mode' => (string) ($row['default_channel_mode'] ?? 'business_default'),
             'existing_clients_opt_in_policy' => (string) ($row['existing_clients_opt_in_policy'] ?? 'explicit_only'),

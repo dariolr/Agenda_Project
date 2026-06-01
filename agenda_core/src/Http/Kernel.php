@@ -381,6 +381,7 @@ final class Kernel
         $this->router->get('/v1/businesses/{business_id}/bookings/list', BookingsController::class, 'listAll', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/booking-notifications', BookingNotificationsController::class, 'index', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/whatsapp-settings', BusinessWhatsappSettingsController::class, 'show', ['auth']);
+        $this->router->put('/v1/businesses/{business_id}/whatsapp-settings', BusinessWhatsappSettingsController::class, 'updateBusinessSettings', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/whatsapp-configs', WhatsappController::class, 'configsIndex', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/whatsapp-configs', WhatsappController::class, 'configsStore', ['auth']);
         $this->router->put('/v1/businesses/{business_id}/whatsapp-configs/{id}', WhatsappController::class, 'configsUpdate', ['auth']);
@@ -471,7 +472,7 @@ final class Kernel
             'auth' => new AuthMiddleware($jwtService),
             'customer_auth' => new CustomerAuthMiddleware($jwtService),
             'location_path' => new LocationContextMiddleware($locationRepo, 'path'),
-            'location_query' => new LocationContextMiddleware($locationRepo, 'query'),
+            'location_query' => new LocationContextMiddleware($locationRepo, 'query', true),
             'location_access' => new LocationAccessMiddleware($businessUserRepo, $userRepo),
             'idempotency' => new IdempotencyMiddleware(),
             'business_access' => new BusinessAccessMiddleware($businessUserRepo, $userRepo, 'attribute'),

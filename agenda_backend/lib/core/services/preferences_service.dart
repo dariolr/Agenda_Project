@@ -130,8 +130,6 @@ class PrefsKeys {
   static const legacyAgendaDate = 'agenda_date';
   static const legacyAgendaViewMode = 'agenda_view_mode';
 
-  /// Preferenza globale UI: rail desktop dall'alto o sotto toolbar.
-  static const desktopRailStartsAtTop = 'desktop_rail_starts_at_top';
   static const adminLocaleCode = 'admin_locale_code';
 }
 
@@ -597,18 +595,6 @@ class PreferencesService {
   }
 
   // ============================================
-  // Desktop Rail Position
-  // ============================================
-
-  bool getDesktopRailStartsAtTop() {
-    return _prefs.getBool(PrefsKeys.desktopRailStartsAtTop) ?? true;
-  }
-
-  Future<void> setDesktopRailStartsAtTop(bool value) async {
-    await _prefs.setBool(PrefsKeys.desktopRailStartsAtTop, value);
-  }
-
-  // ============================================
   // Admin Locale
   // ============================================
 
@@ -782,7 +768,6 @@ class PreferencesService {
           key.startsWith('last_visited_route_user_') ||
           key.startsWith('last_visited_route_updated_at_user_') ||
           key.startsWith('current_location_id') ||
-          key == PrefsKeys.desktopRailStartsAtTop ||
           key == PrefsKeys.adminLocaleCode) {
         await _prefs.remove(key);
       }

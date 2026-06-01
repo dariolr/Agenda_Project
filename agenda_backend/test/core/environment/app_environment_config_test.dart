@@ -21,6 +21,7 @@ void main() {
     String metaAppId = '',
     String metaGraphVersion = 'v21.0',
     String metaEmbeddedSignupRedirectUri = '',
+    String metaEmbeddedSignupConfigId = '',
     String metaEmbeddedSignupScopes =
         'whatsapp_business_management,whatsapp_business_messaging',
   }) {
@@ -42,6 +43,7 @@ void main() {
       metaAppId: metaAppId,
       metaGraphVersion: metaGraphVersion,
       metaEmbeddedSignupRedirectUri: metaEmbeddedSignupRedirectUri,
+      metaEmbeddedSignupConfigId: metaEmbeddedSignupConfigId,
       metaEmbeddedSignupScopes: metaEmbeddedSignupScopes,
     );
   }

@@ -475,6 +475,7 @@ final class BookingDirectLinkRepository
             AND s.is_active = 1
             AND sv.is_active = 1
             AND l.is_active = 1
+            AND l.online_booking_enabled = 1
             AND sv.is_bookable_online = 1
             AND sv.online_visibility = ?";
 
@@ -503,6 +504,7 @@ final class BookingDirectLinkRepository
             AND sp.is_active = 1
             AND sp.is_broken = 0
             AND l.is_active = 1
+            AND l.online_booking_enabled = 1
             AND sp.is_bookable_online = 1
             AND sp.online_visibility = ?";
 
@@ -539,6 +541,7 @@ final class BookingDirectLinkRepository
             AND ce.is_bookable_online = 1
             AND ce.online_visibility = ?
             AND l.is_active = 1
+            AND l.online_booking_enabled = 1
             AND ce.starts_at > ?
             AND (ce.booking_open_at IS NULL OR ce.booking_open_at <= ?)
             AND (ce.booking_close_at IS NULL OR ce.booking_close_at > ?)";
@@ -635,7 +638,8 @@ final class BookingDirectLinkRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT sv.*, s.business_id, s.name, s.description, s.category_id,
                     s.is_active AS service_is_active,
-                    l.is_active AS location_is_active
+                    l.is_active AS location_is_active,
+                    l.online_booking_enabled AS location_online_booking_enabled
              FROM service_variants sv
              INNER JOIN services s ON s.id = sv.service_id
              INNER JOIN locations l ON l.id = sv.location_id
@@ -651,7 +655,7 @@ final class BookingDirectLinkRepository
     private function loadServicePackage(int $businessId, int $targetId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT sp.*, l.is_active AS location_is_active
+            'SELECT sp.*, l.is_active AS location_is_active, l.online_booking_enabled AS location_online_booking_enabled
              FROM service_packages sp
              INNER JOIN locations l ON l.id = sp.location_id
              WHERE sp.id = ?
@@ -666,7 +670,7 @@ final class BookingDirectLinkRepository
     private function loadClassEvent(int $businessId, int $targetId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT ce.*, ct.name AS name, l.is_active AS location_is_active, l.timezone AS location_timezone
+            'SELECT ce.*, ct.name AS name, l.is_active AS location_is_active, l.online_booking_enabled AS location_online_booking_enabled, l.timezone AS location_timezone
              FROM class_events ce
              LEFT JOIN class_types ct ON ct.id = ce.class_type_id AND ct.business_id = ce.business_id
              INNER JOIN locations l ON l.id = ce.location_id

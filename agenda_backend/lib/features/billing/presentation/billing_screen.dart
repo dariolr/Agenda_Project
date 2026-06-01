@@ -534,7 +534,8 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
   }) async {
     if (!force &&
         (_preparedActionKey == action.key ||
-            _preparingActionKey == action.key)) {
+            _preparingActionKey == action.key ||
+            _failedActionKey == action.key)) {
       return;
     }
 
@@ -581,6 +582,9 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
       if (mounted) {
         setState(() {
           _preparingExternalLink = false;
+          if (_prepareExternalLinkError != null) {
+            _failedActionKey = action.key;
+          }
           _preparingActionKey = null;
         });
       }

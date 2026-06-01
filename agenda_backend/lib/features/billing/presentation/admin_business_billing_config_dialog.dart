@@ -88,7 +88,7 @@ class _AdminBusinessBillingConfigDialogState
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                SwitchListTile(
+                SwitchListTile.adaptive(
                   value: _enabled,
                   onChanged: _saving
                       ? null
@@ -130,7 +130,9 @@ class _AdminBusinessBillingConfigDialogState
                 ),
                 const SizedBox(height: 12),
                 InkWell(
-                  onTap: _enabled && !_saving ? () => _pickAnchorDate(context) : null,
+                  onTap: _enabled && !_saving
+                      ? () => _pickAnchorDate(context)
+                      : null,
                   borderRadius: BorderRadius.circular(4),
                   child: InputDecorator(
                     decoration: InputDecoration(
@@ -141,7 +143,9 @@ class _AdminBusinessBillingConfigDialogState
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 18),
                               onPressed: _enabled && !_saving
-                                  ? () => setState(() => _activationDeadlineAt = null)
+                                  ? () => setState(
+                                      () => _activationDeadlineAt = null,
+                                    )
                                   : null,
                             )
                           : const Icon(Icons.calendar_today, size: 18),
@@ -149,8 +153,8 @@ class _AdminBusinessBillingConfigDialogState
                     child: Text(
                       _activationDeadlineAt != null
                           ? '${_activationDeadlineAt!.year.toString().padLeft(4, '0')}-'
-                            '${_activationDeadlineAt!.month.toString().padLeft(2, '0')}-'
-                            '${_activationDeadlineAt!.day.toString().padLeft(2, '0')}'
+                                '${_activationDeadlineAt!.month.toString().padLeft(2, '0')}-'
+                                '${_activationDeadlineAt!.day.toString().padLeft(2, '0')}'
                           : '',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),
@@ -158,7 +162,9 @@ class _AdminBusinessBillingConfigDialogState
                 ),
                 const SizedBox(height: 12),
                 InkWell(
-                  onTap: _enabled && !_saving ? () => _pickBillingCycleAnchorDate(context) : null,
+                  onTap: _enabled && !_saving
+                      ? () => _pickBillingCycleAnchorDate(context)
+                      : null,
                   borderRadius: BorderRadius.circular(4),
                   child: InputDecorator(
                     decoration: InputDecoration(
@@ -169,7 +175,9 @@ class _AdminBusinessBillingConfigDialogState
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 18),
                               onPressed: _enabled && !_saving
-                                  ? () => setState(() => _billingCycleAnchorAt = null)
+                                  ? () => setState(
+                                      () => _billingCycleAnchorAt = null,
+                                    )
                                   : null,
                             )
                           : const Icon(Icons.calendar_today, size: 18),
@@ -177,8 +185,8 @@ class _AdminBusinessBillingConfigDialogState
                     child: Text(
                       _billingCycleAnchorAt != null
                           ? '${_billingCycleAnchorAt!.year.toString().padLeft(4, '0')}-'
-                            '${_billingCycleAnchorAt!.month.toString().padLeft(2, '0')}-'
-                            '${_billingCycleAnchorAt!.day.toString().padLeft(2, '0')}'
+                                '${_billingCycleAnchorAt!.month.toString().padLeft(2, '0')}-'
+                                '${_billingCycleAnchorAt!.day.toString().padLeft(2, '0')}'
                           : '',
                       style: Theme.of(context).textTheme.bodyMedium,
                     ),

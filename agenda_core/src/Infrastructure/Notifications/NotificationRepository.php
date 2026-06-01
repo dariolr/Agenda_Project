@@ -557,7 +557,7 @@ final class NotificationRepository
      *
      * @param int $businessId
      * @param array<string, mixed> $filters
-     * @return array{notifications: array<int, array<string, mixed>>, total: int}
+     * @return array{notifications: array<int, array<string, mixed>>, total: int, available_booking_kinds: list<string>}
      */
     public function findBookingNotificationsWithFilters(
         int $businessId,
@@ -574,6 +574,8 @@ final class NotificationRepository
         $safeOffset = max(0, $offset);
 
         $providerFilters = $this->stringListFilter($filters['provider'] ?? null);
+        $kindFilters = $this->bookingKindFilters($filters['booking_kind'] ?? null);
+        $availableBookingKinds = $this->availableBookingKinds($businessId);
         $includeEmail = $providerFilters === []
             || in_array('email', $providerFilters, true)
             || count(array_diff($providerFilters, ['whatsapp'])) > 0;
@@ -585,7 +587,7 @@ final class NotificationRepository
         $params = [];
         $countParams = [];
 
-        if ($includeEmail) {
+        if ($includeEmail && ($kindFilters === [] || in_array('service', $kindFilters, true))) {
             [$emailSelect, $emailCount, $emailParams] = $this->bookingEmailNotificationsSql(
                 $businessId,
                 $filters,
@@ -597,7 +599,19 @@ final class NotificationRepository
             $countParams = array_merge($countParams, $emailParams);
         }
 
-        if ($includeWhatsapp) {
+        if ($includeEmail && ($kindFilters === [] || in_array('class', $kindFilters, true))) {
+            [$classEmailSelect, $classEmailCount, $classEmailParams] = $this->classBookingEmailNotificationsSql(
+                $businessId,
+                $filters,
+                $providerFilters
+            );
+            $selects[] = $classEmailSelect;
+            $countSelects[] = $classEmailCount;
+            $params = array_merge($params, $classEmailParams);
+            $countParams = array_merge($countParams, $classEmailParams);
+        }
+
+        if ($includeWhatsapp && ($kindFilters === [] || in_array('service', $kindFilters, true))) {
             [$whatsappSelect, $whatsappCount, $whatsappParams] = $this->bookingWhatsappNotificationsSql(
                 $businessId,
                 $filters
@@ -608,8 +622,23 @@ final class NotificationRepository
             $countParams = array_merge($countParams, $whatsappParams);
         }
 
+        if ($includeWhatsapp && ($kindFilters === [] || in_array('class', $kindFilters, true))) {
+            [$classWhatsappSelect, $classWhatsappCount, $classWhatsappParams] = $this->classBookingWhatsappNotificationsSql(
+                $businessId,
+                $filters
+            );
+            $selects[] = $classWhatsappSelect;
+            $countSelects[] = $classWhatsappCount;
+            $params = array_merge($params, $classWhatsappParams);
+            $countParams = array_merge($countParams, $classWhatsappParams);
+        }
+
         if ($selects === []) {
-            return ['notifications' => [], 'total' => 0];
+            return [
+                'notifications' => [],
+                'total' => 0,
+                'available_booking_kinds' => $availableBookingKinds,
+            ];
         }
 
         $orderByColumn = match ($sortBy) {
@@ -636,6 +665,7 @@ final class NotificationRepository
         return [
             'notifications' => $notifications,
             'total' => $total,
+            'available_booking_kinds' => $availableBookingKinds,
         ];
     }
 
@@ -648,7 +678,7 @@ final class NotificationRepository
         $params = [$businessId];
 
         $this->appendListWhere($where, $params, 'nq.status', $filters['status'] ?? null);
-        $this->appendListWhere($where, $params, 'nq.channel', $filters['channel'] ?? null);
+        $this->appendChannelWhere($where, $params, 'nq.channel', $filters['channel'] ?? null, 'service');
 
         $emailProviderFilters = array_values(array_filter(
             $providerFilters,
@@ -684,10 +714,63 @@ final class NotificationRepository
                    nq.subject, nq.payload, nq.status, nq.priority, nq.attempts, nq.max_attempts,
                    nq.scheduled_at, nq.last_attempt_at, nq.sent_at, nq.failed_at, nq.error_message,
                    COALESCE(NULLIF(nq.provider_used, ""), "email") AS provider_used,
-                   nq.business_id, nq.booking_id, nq.created_at, nq.updated_at,
+                   nq.business_id, nq.booking_id, NULL AS class_booking_id, "service" AS booking_kind,
+                   nq.created_at, nq.updated_at,
                    b.location_id, l.name AS location_name, b.client_name AS booking_client_name,
                    c.first_name AS client_first_name, c.last_name AS client_last_name,
                    bi_range.first_start_time, bi_range.last_end_time
+        ' . $from . $whereClause;
+
+        return [$select, 'SELECT COUNT(*) AS total ' . $from . $whereClause, $params];
+    }
+
+    /**
+     * @return array{0:string,1:string,2:array<int,mixed>}
+     */
+    private function classBookingEmailNotificationsSql(int $businessId, array $filters, array $providerFilters): array
+    {
+        $where = ['nq.business_id = ?', 'nq.class_booking_id IS NOT NULL'];
+        $params = [$businessId];
+
+        $this->appendListWhere($where, $params, 'nq.status', $filters['status'] ?? null);
+        $this->appendChannelWhere($where, $params, 'nq.channel', $filters['channel'] ?? null, 'class');
+
+        $emailProviderFilters = array_values(array_filter(
+            $providerFilters,
+            static fn(string $provider): bool => !in_array($provider, ['email', 'whatsapp'], true)
+        ));
+        if ($emailProviderFilters !== []) {
+            $this->appendListWhere($where, $params, 'nq.provider_used', $emailProviderFilters);
+        }
+
+        if (!empty($filters['search'])) {
+            $search = '%' . trim((string) $filters['search']) . '%';
+            $where[] = '(nq.recipient_name LIKE ? OR nq.recipient_email LIKE ? OR nq.subject LIKE ? OR ct.name LIKE ? OR c.first_name LIKE ? OR c.last_name LIKE ?)';
+            array_push($params, $search, $search, $search, $search, $search, $search);
+        }
+        $this->appendDateWhere($where, $params, 'nq.created_at', $filters);
+
+        $whereClause = ' WHERE ' . implode(' AND ', $where);
+        $from = '
+            FROM notification_queue nq
+            LEFT JOIN class_bookings cb ON nq.class_booking_id = cb.id
+            LEFT JOIN class_events ce ON cb.class_event_id = ce.id
+            LEFT JOIN class_types ct ON ce.class_type_id = ct.id
+            LEFT JOIN clients c ON cb.customer_id = c.id
+            LEFT JOIN locations l ON ce.location_id = l.id
+        ';
+
+        $select = '
+            SELECT nq.id, "email" AS transport, nq.id AS source_id, nq.type, nq.channel,
+                   nq.recipient_type, nq.recipient_id, nq.recipient_email, nq.recipient_name,
+                   nq.subject, nq.payload, nq.status, nq.priority, nq.attempts, nq.max_attempts,
+                   nq.scheduled_at, nq.last_attempt_at, nq.sent_at, nq.failed_at, nq.error_message,
+                   COALESCE(NULLIF(nq.provider_used, ""), "email") AS provider_used,
+                   nq.business_id, NULL AS booking_id, nq.class_booking_id, "class" AS booking_kind,
+                   nq.created_at, nq.updated_at,
+                   ce.location_id, l.name AS location_name, ct.name AS booking_client_name,
+                   c.first_name AS client_first_name, c.last_name AS client_last_name,
+                   ce.starts_at AS first_start_time, ce.ends_at AS last_end_time
         ' . $from . $whereClause;
 
         return [$select, 'SELECT COUNT(*) AS total ' . $from . $whereClause, $params];
@@ -709,7 +792,7 @@ final class NotificationRepository
             }
             $this->appendListWhere($where, $params, 'wo.status', $mapped);
         }
-        $this->appendListWhere($where, $params, 'wo.message_type', $filters['channel'] ?? null);
+        $this->appendWhatsappChannelWhere($where, $params, 'wo.message_type', $filters['channel'] ?? null, 'service');
 
         if (!empty($filters['search'])) {
             $search = '%' . trim((string) $filters['search']) . '%';
@@ -746,10 +829,71 @@ final class NotificationRepository
                    CASE wo.status WHEN "queued" THEN "pending" WHEN "cancelled" THEN "skipped" ELSE wo.status END AS status,
                    5 AS priority, wo.attempts, wo.max_attempts, wo.scheduled_at, wo.last_attempt_at,
                    wo.sent_at, wo.failed_at, COALESCE(wo.provider_error_message, wo.error_message) AS error_message,
-                   "whatsapp" AS provider_used, wo.business_id, wo.booking_id, wo.created_at, wo.updated_at,
+                   "whatsapp" AS provider_used, wo.business_id, wo.booking_id, NULL AS class_booking_id,
+                   "service" AS booking_kind, wo.created_at, wo.updated_at,
                    b.location_id, l.name AS location_name, b.client_name AS booking_client_name,
                    c.first_name AS client_first_name, c.last_name AS client_last_name,
                    bi_range.first_start_time, bi_range.last_end_time
+        ' . $from . $whereClause;
+
+        return [$select, 'SELECT COUNT(*) AS total ' . $from . $whereClause, $params];
+    }
+
+    /**
+     * @return array{0:string,1:string,2:array<int,mixed>}
+     */
+    private function classBookingWhatsappNotificationsSql(int $businessId, array $filters): array
+    {
+        $where = ['wo.business_id = ?', 'wo.class_booking_id IS NOT NULL'];
+        $params = [$businessId];
+
+        $statuses = $this->stringListFilter($filters['status'] ?? null);
+        if ($statuses !== []) {
+            $mapped = [];
+            foreach ($statuses as $status) {
+                $mapped[] = $status === 'pending' ? 'queued' : $status;
+            }
+            $this->appendListWhere($where, $params, 'wo.status', $mapped);
+        }
+        $this->appendWhatsappChannelWhere($where, $params, 'wo.message_type', $filters['channel'] ?? null, 'class');
+
+        if (!empty($filters['search'])) {
+            $search = '%' . trim((string) $filters['search']) . '%';
+            $where[] = '(wo.recipient_phone_e164 LIKE ? OR wo.recipient_phone LIKE ? OR wo.template_name LIKE ? OR ct.name LIKE ? OR c.first_name LIKE ? OR c.last_name LIKE ?)';
+            array_push($params, $search, $search, $search, $search, $search, $search);
+        }
+        $this->appendDateWhere($where, $params, 'wo.created_at', $filters);
+
+        $whereClause = ' WHERE ' . implode(' AND ', $where);
+        $from = '
+            FROM whatsapp_outbox wo
+            LEFT JOIN class_bookings cb ON wo.class_booking_id = cb.id
+            LEFT JOIN class_events ce ON cb.class_event_id = ce.id
+            LEFT JOIN class_types ct ON ce.class_type_id = ct.id
+            LEFT JOIN clients c ON cb.customer_id = c.id
+            LEFT JOIN locations l ON ce.location_id = l.id
+        ';
+
+        $select = '
+            SELECT -wo.id AS id, "whatsapp" AS transport, wo.id AS source_id, "whatsapp" AS type,
+                   CASE wo.message_type
+                       WHEN "class_booking_confirmation" THEN "class_booking_confirmed"
+                       WHEN "class_booking_cancellation" THEN "class_booking_cancelled"
+                       WHEN "class_booking_reminder" THEN "class_booking_reminder"
+                       ELSE wo.message_type
+                   END AS channel,
+                   "client" AS recipient_type, wo.client_id AS recipient_id,
+                   COALESCE(NULLIF(wo.recipient_phone_e164, ""), wo.recipient_phone) AS recipient_email,
+                   CONCAT_WS(" ", c.first_name, c.last_name) AS recipient_name,
+                   wo.template_name AS subject, COALESCE(wo.template_variables_json, wo.template_payload) AS payload,
+                   CASE wo.status WHEN "queued" THEN "pending" WHEN "cancelled" THEN "skipped" ELSE wo.status END AS status,
+                   5 AS priority, wo.attempts, wo.max_attempts, wo.scheduled_at, wo.last_attempt_at,
+                   wo.sent_at, wo.failed_at, COALESCE(wo.provider_error_message, wo.error_message) AS error_message,
+                   "whatsapp" AS provider_used, wo.business_id, NULL AS booking_id, wo.class_booking_id,
+                   "class" AS booking_kind, wo.created_at, wo.updated_at,
+                   ce.location_id, l.name AS location_name, ct.name AS booking_client_name,
+                   c.first_name AS client_first_name, c.last_name AS client_last_name,
+                   ce.starts_at AS first_start_time, ce.ends_at AS last_end_time
         ' . $from . $whereClause;
 
         return [$select, 'SELECT COUNT(*) AS total ' . $from . $whereClause, $params];
@@ -763,11 +907,142 @@ final class NotificationRepository
              WHERE business_id = ?
                AND whatsapp_enabled = 1
                AND messages_enabled = 1
+               AND business_messages_enabled = 1
              LIMIT 1'
         );
         $stmt->execute([$businessId]);
 
         return $stmt->fetchColumn() !== false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function availableBookingKinds(int $businessId): array
+    {
+        $kinds = [];
+
+        $serviceStmt = $this->db->getPdo()->prepare(
+            'SELECT 1
+             FROM services s
+             JOIN service_variants sv ON sv.service_id = s.id AND sv.is_active = 1
+             WHERE s.business_id = ?
+               AND s.is_active = 1
+             LIMIT 1'
+        );
+        $serviceStmt->execute([$businessId]);
+        if ($serviceStmt->fetchColumn() !== false) {
+            $kinds[] = 'service';
+        }
+
+        $classStmt = $this->db->getPdo()->prepare(
+            'SELECT 1
+             FROM class_types
+             WHERE business_id = ?
+               AND is_active = 1
+             LIMIT 1'
+        );
+        $classStmt->execute([$businessId]);
+        if ($classStmt->fetchColumn() !== false) {
+            $kinds[] = 'class';
+        }
+
+        return $kinds;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function bookingKindFilters(mixed $value): array
+    {
+        return array_values(array_intersect(
+            $this->stringListFilter($value),
+            ['service', 'class']
+        ));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function channelFiltersForKind(mixed $value, string $kind): array
+    {
+        $channels = $this->stringListFilter($value);
+        if ($channels === []) {
+            return [];
+        }
+
+        $prefix = $kind === 'class' ? 'class_booking_' : 'booking_';
+        return array_values(array_filter(
+            $channels,
+            static fn(string $channel): bool => str_starts_with($channel, $prefix)
+        ));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function whatsappMessageTypeFilters(mixed $value, string $kind): array
+    {
+        $channels = $this->channelFiltersForKind($value, $kind);
+        if ($channels === []) {
+            return [];
+        }
+
+        $map = [
+            'booking_confirmed' => 'booking_confirmation',
+            'booking_cancelled' => 'booking_cancellation',
+            'booking_rescheduled' => 'booking_reschedule',
+            'booking_reminder' => 'booking_reminder',
+            'class_booking_confirmed' => 'class_booking_confirmation',
+            'class_booking_promoted' => 'class_booking_confirmation',
+            'class_booking_cancelled' => 'class_booking_cancellation',
+            'class_booking_reminder' => 'class_booking_reminder',
+        ];
+
+        return array_values(array_unique(array_filter(array_map(
+            static fn(string $channel): ?string => $map[$channel] ?? null,
+            $channels
+        ))));
+    }
+
+    /**
+     * @param list<string> $where
+     * @param list<mixed> $params
+     */
+    private function appendChannelWhere(array &$where, array &$params, string $column, mixed $value, string $kind): void
+    {
+        $requested = $this->stringListFilter($value);
+        if ($requested === []) {
+            return;
+        }
+
+        $channels = $this->channelFiltersForKind($requested, $kind);
+        if ($channels === []) {
+            $where[] = '1 = 0';
+            return;
+        }
+
+        $this->appendListWhere($where, $params, $column, $channels);
+    }
+
+    /**
+     * @param list<string> $where
+     * @param list<mixed> $params
+     */
+    private function appendWhatsappChannelWhere(array &$where, array &$params, string $column, mixed $value, string $kind): void
+    {
+        $requested = $this->stringListFilter($value);
+        if ($requested === []) {
+            return;
+        }
+
+        $messageTypes = $this->whatsappMessageTypeFilters($requested, $kind);
+        if ($messageTypes === []) {
+            $where[] = '1 = 0';
+            return;
+        }
+
+        $this->appendListWhere($where, $params, $column, $messageTypes);
     }
 
     /**

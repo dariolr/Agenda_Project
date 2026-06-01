@@ -133,7 +133,7 @@ class PhoneInputFieldState extends State<PhoneInputField> {
       defaultPrefix: widget.defaultPrefix,
     );
     _selectedPrefix = prefix;
-    _controller = TextEditingController(text: _formatNumber(number));
+    _controller = TextEditingController(text: number);
   }
 
   @override
@@ -154,20 +154,6 @@ class PhoneInputFieldState extends State<PhoneInputField> {
 
   /// Ritorna il prefisso selezionato
   String get prefix => _selectedPrefix;
-
-  String _formatNumber(String number) {
-    final digits = number.replaceAll(RegExp(r'\s+'), '');
-    if (digits.isEmpty) return '';
-
-    final buffer = StringBuffer();
-    for (var i = 0; i < digits.length; i++) {
-      if (i == 3 || i == 6) {
-        buffer.write(' ');
-      }
-      buffer.write(digits[i]);
-    }
-    return buffer.toString();
-  }
 
   void _notifyChange() {
     widget.onChanged?.call(fullPhone);
@@ -192,8 +178,7 @@ class PhoneInputFieldState extends State<PhoneInputField> {
       keyboardType: TextInputType.phone,
       textInputAction: widget.textInputAction,
       inputFormatters: [
-        FilteringTextInputFormatter.allow(RegExp(r'[0-9\s]')),
-        _PhoneNumberFormatter(),
+        FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
       ],
       onChanged: (_) => _notifyChange(),
       validator:
@@ -228,68 +213,41 @@ class _PrefixDropdown extends StatelessWidget {
       orElse: () => kPhonePrefixes.first,
     );
 
-    return Padding(
-      padding: const EdgeInsets.only(left: 12),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          value: currentPrefix.code,
-          isDense: true,
-          items: kPhonePrefixes.map((p) {
-            return DropdownMenuItem<String>(
-              value: p.code,
-              child: Text(
-                '${p.flag} ${p.code}',
-                style: const TextStyle(fontSize: 14),
-              ),
-            );
-          }).toList(),
-          onChanged: (value) {
-            if (value != null) {
-              onChanged(value);
-            }
-          },
-          selectedItemBuilder: (context) {
-            return kPhonePrefixes.map((p) {
-              return Center(
+    return ExcludeFocus(
+      child: Padding(
+        padding: const EdgeInsets.only(left: 12),
+        child: DropdownButtonHideUnderline(
+          child: DropdownButton<String>(
+            value: currentPrefix.code,
+            isDense: true,
+            items: kPhonePrefixes.map((p) {
+              return DropdownMenuItem<String>(
+                value: p.code,
                 child: Text(
                   '${p.flag} ${p.code}',
                   style: const TextStyle(fontSize: 14),
                 ),
               );
-            }).toList();
-          },
+            }).toList(),
+            onChanged: (value) {
+              if (value != null) {
+                onChanged(value);
+              }
+            },
+            selectedItemBuilder: (context) {
+              return kPhonePrefixes.map((p) {
+                return Center(
+                  child: Text(
+                    '${p.flag} ${p.code}',
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                );
+              }).toList();
+            },
+          ),
         ),
       ),
     );
   }
 }
 
-/// Formatta il numero di telefono aggiungendo spazi per leggibilità
-class _PhoneNumberFormatter extends TextInputFormatter {
-  @override
-  TextEditingValue formatEditUpdate(
-    TextEditingValue oldValue,
-    TextEditingValue newValue,
-  ) {
-    final digitsOnly = newValue.text.replaceAll(RegExp(r'\s+'), '');
-
-    if (digitsOnly.isEmpty) {
-      return newValue.copyWith(text: '');
-    }
-
-    final buffer = StringBuffer();
-    for (var i = 0; i < digitsOnly.length; i++) {
-      if (i == 3 || i == 6) {
-        buffer.write(' ');
-      }
-      buffer.write(digitsOnly[i]);
-    }
-
-    final formatted = buffer.toString();
-
-    return TextEditingValue(
-      text: formatted,
-      selection: TextSelection.collapsed(offset: formatted.length),
-    );
-  }
-}

@@ -1554,6 +1554,7 @@ class ApiClient {
     List<String>? status,
     List<String>? channels,
     List<String>? providers,
+    String? bookingKind,
     String? startDate,
     String? endDate,
     String sortBy =
@@ -1580,6 +1581,9 @@ class ApiClient {
     }
     if (providers != null && providers.isNotEmpty) {
       queryParameters['provider'] = providers.join(',');
+    }
+    if (bookingKind != null && bookingKind.isNotEmpty) {
+      queryParameters['booking_kind'] = bookingKind;
     }
     if (startDate != null) {
       queryParameters['start_date'] = startDate;
@@ -1803,6 +1807,7 @@ class ApiClient {
     bool? showPriceToCustomer,
     bool? showDurationToCustomer,
     bool? isActive,
+    bool? onlineBookingEnabled,
   }) async {
     final response = await post(
       '/v1/businesses/$businessId/locations',
@@ -1832,6 +1837,8 @@ class ApiClient {
         if (showDurationToCustomer != null)
           'show_duration_to_customer': showDurationToCustomer,
         if (isActive != null) 'is_active': isActive,
+        if (onlineBookingEnabled != null)
+          'online_booking_enabled': onlineBookingEnabled,
       },
     );
     final location = response['location'];
@@ -1867,6 +1874,7 @@ class ApiClient {
     String? slotDisplayMode,
     int? minGapMinutes,
     bool? isActive,
+    bool? onlineBookingEnabled,
   }) async {
     final response = await put(
       '/v1/locations/$locationId',
@@ -1901,6 +1909,8 @@ class ApiClient {
         if (slotDisplayMode != null) 'slot_display_mode': slotDisplayMode,
         if (minGapMinutes != null) 'min_gap_minutes': minGapMinutes,
         if (isActive != null) 'is_active': isActive,
+        if (onlineBookingEnabled != null)
+          'online_booking_enabled': onlineBookingEnabled,
       },
     );
     final location = response['location'];
@@ -3027,6 +3037,20 @@ class ApiClient {
   }) async {
     final response = await put(
       ApiConfig.adminBusinessWhatsappSettings(businessId),
+      data: payload,
+    );
+    final map = Map<String, dynamic>.from(
+      (response['settings'] as Map?) ?? response,
+    );
+    return BusinessWhatsappSettings.fromJson(map);
+  }
+
+  Future<BusinessWhatsappSettings> updateBusinessWhatsappSettings({
+    required int businessId,
+    required Map<String, dynamic> payload,
+  }) async {
+    final response = await put(
+      ApiConfig.businessWhatsappSettings(businessId),
       data: payload,
     );
     final map = Map<String, dynamic>.from(

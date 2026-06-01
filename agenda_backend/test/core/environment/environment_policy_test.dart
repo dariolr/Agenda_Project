@@ -27,6 +27,7 @@ void main() {
       metaAppId: '',
       metaGraphVersion: 'v21.0',
       metaEmbeddedSignupRedirectUri: '',
+      metaEmbeddedSignupConfigId: '',
       metaEmbeddedSignupScopes:
           'whatsapp_business_management,whatsapp_business_messaging',
     );

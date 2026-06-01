@@ -33,6 +33,7 @@ final class QueueWhatsappNotification
         if (
             (int) ($settings['whatsapp_enabled'] ?? 0) !== 1
             || (int) ($settings['messages_enabled'] ?? 0) !== 1
+            || (int) ($settings['business_messages_enabled'] ?? 1) !== 1
         ) {
             return 0;
         }
@@ -59,7 +60,11 @@ final class QueueWhatsappNotification
         $config = $locationId > 0
             ? $this->whatsappRepo->findConfigForLocation($businessId, $locationId)
             : $this->findDefaultConfig($businessId);
-        if ($config === null || ($config['status'] ?? '') !== 'active') {
+        if (
+            $config === null
+            || ($config['status'] ?? '') !== 'active'
+            || trim((string) ($config['phone_number_id'] ?? '')) === ''
+        ) {
             return 0;
         }
 

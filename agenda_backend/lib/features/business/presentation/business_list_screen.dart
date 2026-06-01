@@ -5,8 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../app/providers/form_factor_provider.dart';
-import '../../../app/providers/desktop_rail_preference_provider.dart';
 import '../../../app/widgets/user_menu_button.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
@@ -34,8 +32,6 @@ class BusinessListScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final businessesAsync = ref.watch(businessesProvider);
-    final formFactor = ref.watch(formFactorProvider);
-    final isDesktop = formFactor == AppFormFactor.desktop;
 
     return Scaffold(
       appBar: AppBar(
@@ -57,8 +53,7 @@ class BusinessListScreen extends ConsumerWidget {
           final orderedBusinesses = sortBusinessesForSelection(businesses);
           return Column(
             children: [
-              if (isDesktop) const _DesktopRailPositionToggle(),
-              Expanded(
+Expanded(
                 child: _BusinessList(
                   businesses: orderedBusinesses,
                   onSelect: (business) =>
@@ -480,30 +475,6 @@ class BusinessListScreen extends ConsumerWidget {
   }
 }
 
-class _DesktopRailPositionToggle extends ConsumerWidget {
-  const _DesktopRailPositionToggle();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final value = ref.watch(desktopRailStartsAtTopProvider);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
-      child: Card(
-        margin: EdgeInsets.zero,
-        child: SwitchListTile.adaptive(
-          value: value,
-          onChanged: (value) =>
-              ref.read(desktopRailStartsAtTopProvider.notifier).set(value),
-          title: Text(context.l10n.superadminRailStartTopLabel),
-          subtitle: Text(context.l10n.superadminRailStartTopHelp),
-          secondary: const Icon(Icons.view_sidebar_outlined),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-        ),
-      ),
-    );
-  }
-}
 
 class _BusinessList extends StatelessWidget {
   const _BusinessList({

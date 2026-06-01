@@ -77,6 +77,33 @@ function isMessageTypeEnabled(string $messageType, array $enabledMessageTypes): 
     return in_array($messageType, $enabledMessageTypes, true);
 }
 
+function isMetaConnectionInvalidError(?string $errorCode, ?string $errorMessage): bool
+{
+    $code = trim((string) $errorCode);
+    $message = strtolower(trim((string) $errorMessage));
+
+    if (in_array($code, ['10', '190', '200', '294'], true)) {
+        return true;
+    }
+
+    foreach ([
+        'access token',
+        'token has expired',
+        'invalid oauth',
+        'permission',
+        'permissions',
+        'does not have access',
+        'unsupported post request',
+        'object with id',
+    ] as $needle) {
+        if ($message !== '' && str_contains($message, $needle)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function fetchApprovedTemplate(\PDO $pdo, int $businessId, string $templateName, string $language): ?array
 {
     $stmt = $pdo->prepare(
@@ -248,6 +275,16 @@ foreach ($queued as $row) {
             }
             continue;
         }
+        if (((int) ($settings['business_messages_enabled'] ?? 1)) !== 1) {
+            if (!$dryRun) {
+                $repo->updateOutboxStatus($businessId, $id, 'failed', 'whatsapp_messages_disabled');
+            }
+            $failed++;
+            if ($verbose) {
+                echo "FAILED(business messages disabled)\n";
+            }
+            continue;
+        }
 
         if (!isMessageTypeEnabled($messageType, $enabledMessageTypes)) {
             if (!$dryRun) {
@@ -330,6 +367,18 @@ foreach ($queued as $row) {
             continue;
         }
 
+        if (trim((string) ($config['phone_number_id'] ?? '')) === '') {
+            if (!$dryRun) {
+                $repo->markConfigError($businessId, (int) $config['id'], 'missing_phone_number_id', 'Missing WhatsApp phone number id');
+                $repo->updateOutboxStatus($businessId, $id, 'failed', 'missing_phone_number_id');
+            }
+            $failed++;
+            if ($verbose) {
+                echo "FAILED(missing phone number id)\n";
+            }
+            continue;
+        }
+
         if (!preg_match('/^\+[1-9]\d{7,14}$/', $recipientPhone)) {
             if (!$dryRun) {
                 $repo->updateOutboxStatus($businessId, $id, 'failed', 'invalid_whatsapp_phone');
@@ -396,13 +445,18 @@ foreach ($queued as $row) {
         );
         if (!$result['success']) {
             $attemptsAfter = $attempts + 1;
-            $isRetryable = in_array((string) ($result['error_code'] ?? ''), ['429', '500', '502', '503', '504'], true);
+            $errorCode = (string) ($result['error_code'] ?? 'meta_send_failed');
+            $errorMessage = (string) ($result['error_message'] ?? $result['error_code'] ?? 'meta_send_failed');
+            if (isMetaConnectionInvalidError($errorCode, $errorMessage)) {
+                $repo->markConfigError($businessId, (int) $config['id'], $errorCode, $errorMessage);
+            }
+            $isRetryable = in_array($errorCode, ['429', '500', '502', '503', '504'], true);
             $repo->markOutboxSendFailure(
                 $businessId,
                 $id,
                 ($isRetryable && $attemptsAfter < $maxAttempts) ? 'queued' : 'failed',
-                (string) ($result['error_code'] ?? 'meta_send_failed'),
-                (string) ($result['error_message'] ?? $result['error_code'] ?? 'meta_send_failed'),
+                $errorCode,
+                $errorMessage,
                 ($isRetryable && $attemptsAfter < $maxAttempts)
                     ? (new DateTimeImmutable('+' . min(60, 5 * $attemptsAfter) . ' minutes'))->format('Y-m-d H:i:s')
                     : null
@@ -418,6 +472,7 @@ foreach ($queued as $row) {
             continue;
         }
 
+        $repo->markConfigHealthy($businessId, (int) $config['id']);
         $repo->markOutboxSent($businessId, $id, $result['provider_message_id'] ?? providerMessageId($id));
         if ($verbose) {
             echo "SENT\n";

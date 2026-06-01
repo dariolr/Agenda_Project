@@ -27,6 +27,7 @@ class Location {
   final int minGapMinutes;
   final bool isDefault;
   final bool isActive;
+  final bool onlineBookingEnabled;
   final int sortOrder;
 
   const Location({
@@ -58,6 +59,7 @@ class Location {
     this.minGapMinutes = 30,
     this.isDefault = false,
     this.isActive = true,
+    this.onlineBookingEnabled = true,
     this.sortOrder = 0,
   });
 
@@ -90,6 +92,7 @@ class Location {
     int? minGapMinutes,
     bool? isDefault,
     bool? isActive,
+    bool? onlineBookingEnabled,
     int? sortOrder,
   }) {
     return Location(
@@ -128,6 +131,7 @@ class Location {
       minGapMinutes: minGapMinutes ?? this.minGapMinutes,
       isDefault: isDefault ?? this.isDefault,
       isActive: isActive ?? this.isActive,
+      onlineBookingEnabled: onlineBookingEnabled ?? this.onlineBookingEnabled,
       sortOrder: sortOrder ?? this.sortOrder,
     );
   }
@@ -168,6 +172,7 @@ class Location {
       minGapMinutes: json['min_gap_minutes'] as int? ?? 30,
       isDefault: json['is_default'] as bool? ?? false,
       isActive: json['is_active'] as bool? ?? true,
+      onlineBookingEnabled: json['online_booking_enabled'] as bool? ?? true,
       sortOrder: json['sort_order'] as int? ?? 0,
     );
   }
@@ -204,6 +209,7 @@ class Location {
       'min_gap_minutes': minGapMinutes,
       'is_default': isDefault,
       'is_active': isActive,
+      'online_booking_enabled': onlineBookingEnabled,
     };
   }
 }
