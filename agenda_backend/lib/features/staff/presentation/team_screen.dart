@@ -4,7 +4,9 @@ import 'package:agenda_backend/app/providers/form_factor_provider.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/location.dart';
 import 'package:agenda_backend/core/models/staff.dart';
+import 'package:agenda_backend/core/network/api_client.dart' show ApiException;
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
+import 'package:agenda_backend/core/widgets/feedback_dialog.dart';
 import 'package:agenda_backend/core/widgets/reorder_toggle_button.dart';
 import 'package:agenda_backend/core/widgets/reorder_toggle_panel.dart';
 import 'package:flutter/material.dart';
@@ -12,7 +14,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../agenda/providers/location_providers.dart';
+import '../../agenda/providers/tenant_time_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
+import '../../bookings_list/providers/bookings_list_filter_provider.dart';
+import '../../bookings_list/providers/bookings_list_provider.dart';
 import '../providers/staff_providers.dart';
 import '../providers/staff_reorder_provider.dart';
 import '../providers/staff_sorted_providers.dart';
@@ -442,9 +447,51 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
               cancelLabel: context.l10n.actionCancel,
             );
             if (confirmed == true) {
-              await ref
-                  .read(allStaffProvider.notifier)
-                  .deleteStaffApi(staff.id);
+              try {
+                await ref
+                    .read(allStaffProvider.notifier)
+                    .deleteStaffApi(staff.id);
+              } catch (e) {
+                if (!context.mounted) return;
+                final isConflict = e is ApiException && e.isConflict;
+                if (isConflict) {
+                  final viewBookings = await showConfirmDialog(
+                    context,
+                    title: Text(context.l10n.errorTitle),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(context.l10n.apiErrorStaffHasFutureBookings),
+                        const SizedBox(height: 12),
+                        Text(context.l10n.teamStaffHasFutureBookingsQuestion),
+                      ],
+                    ),
+                    confirmLabel: context.l10n.teamStaffViewFutureBookings,
+                    cancelLabel: context.l10n.actionCancel,
+                  );
+                  if (viewBookings == true && context.mounted) {
+                    final today = ref.read(tenantTodayProvider);
+                    final farFuture = DateTime(today.year + 2, today.month, today.day);
+                    ref
+                        .read(bookingsListFilterProvider.notifier)
+                        .setDateRange(today, farFuture);
+                    ref
+                        .read(bookingsListFiltersProvider.notifier)
+                        .setStaffId(staff.id);
+                    ref
+                        .read(bookingsListFiltersProvider.notifier)
+                        .setStatus(['confirmed']);
+                    context.go('/prenotazioni');
+                  }
+                } else {
+                  FeedbackDialog.showError(
+                    context,
+                    title: context.l10n.errorTitle,
+                    message: e.toString(),
+                  );
+                }
+              }
             }
           },
         );

@@ -414,7 +414,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Lo slot orario selezionato non è più disponibile.",
     ),
     "apiErrorStaffHasFutureBookings": MessageLookupByLibrary.simpleMessage(
-      "Impossibile eliminare il membro del team: esistono prenotazioni o lezioni future associate.",
+      "Impossibile eliminare il membro del team: esistono prenotazioni future associate a questo operatore.",
     ),
     "apiErrorTokenExpired": MessageLookupByLibrary.simpleMessage(
       "La sessione è scaduta. Accedi di nuovo.",
@@ -3134,12 +3134,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationIsActiveLabel": MessageLookupByLibrary.simpleMessage(
       "Sede attiva",
     ),
-    "teamLocationOnlineBookingEnabledHint": MessageLookupByLibrary.simpleMessage(
-      "Se disattivata, la sede non sarà prenotabile online. Rimane visibile e operativa nel gestionale.",
-    ),
-    "teamLocationOnlineBookingEnabledLabel": MessageLookupByLibrary.simpleMessage(
-      "Prenotazione online",
-    ),
     "teamLocationLabel": MessageLookupByLibrary.simpleMessage("Sede"),
     "teamLocationLocationDisplayHint": MessageLookupByLibrary.simpleMessage(
       "Es. Sede, Luogo, Sala",
@@ -3199,6 +3193,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationNomenclatureValueLabel": MessageLookupByLibrary.simpleMessage(
       "Testo personalizzato",
     ),
+    "teamLocationOnlineBookingEnabledHint": MessageLookupByLibrary.simpleMessage(
+      "Se disattivata, la sede non sarà prenotabile online. Rimane visibile e operativa nel gestionale.",
+    ),
+    "teamLocationOnlineBookingEnabledLabel":
+        MessageLookupByLibrary.simpleMessage("Prenotazione online"),
     "teamLocationOnlineBookingSettingsSection":
         MessageLookupByLibrary.simpleMessage(
           "Configurazione prenotazione online per questa sede",
@@ -3281,6 +3280,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Abilitato alle prenotazioni online",
     ),
     "teamStaffColorLabel": MessageLookupByLibrary.simpleMessage("Colore"),
+    "teamStaffHasFutureBookingsQuestion": MessageLookupByLibrary.simpleMessage(
+      "Vuoi visualizzare le prenotazioni future associate a questo operatore?",
+    ),
     "teamStaffLabel": MessageLookupByLibrary.simpleMessage("Team"),
     "teamStaffLocationsLabel": MessageLookupByLibrary.simpleMessage(
       "Sedi associate",
@@ -3290,6 +3292,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "teamStaffNameLabel": MessageLookupByLibrary.simpleMessage("Nome"),
     "teamStaffSurnameLabel": MessageLookupByLibrary.simpleMessage("Cognome"),
+    "teamStaffViewFutureBookings": MessageLookupByLibrary.simpleMessage(
+      "Visualizza prenotazioni",
+    ),
     "validationInvalidEmail": MessageLookupByLibrary.simpleMessage(
       "Email non valida",
     ),

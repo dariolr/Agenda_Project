@@ -1433,11 +1433,31 @@ class L10n {
     );
   }
 
-  /// `Cannot delete this team member: future bookings or classes are assigned to them.`
+  /// `Cannot delete this team member: future bookings are assigned to this member.`
   String get apiErrorStaffHasFutureBookings {
     return Intl.message(
-      'Cannot delete this team member: future bookings or classes are assigned to them.',
+      'Cannot delete this team member: future bookings are assigned to this member.',
       name: 'apiErrorStaffHasFutureBookings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Would you like to view the future bookings assigned to this team member?`
+  String get teamStaffHasFutureBookingsQuestion {
+    return Intl.message(
+      'Would you like to view the future bookings assigned to this team member?',
+      name: 'teamStaffHasFutureBookingsQuestion',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `View bookings`
+  String get teamStaffViewFutureBookings {
+    return Intl.message(
+      'View bookings',
+      name: 'teamStaffViewFutureBookings',
       desc: '',
       args: [],
     );

@@ -398,7 +398,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "The selected time slot is no longer available.",
     ),
     "apiErrorStaffHasFutureBookings": MessageLookupByLibrary.simpleMessage(
-      "Cannot delete this team member: future bookings or classes are assigned to them.",
+      "Cannot delete this team member: future bookings are assigned to this member.",
     ),
     "apiErrorTokenExpired": MessageLookupByLibrary.simpleMessage(
       "Your session has expired. Please sign in again.",
@@ -3016,12 +3016,6 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationIsActiveLabel": MessageLookupByLibrary.simpleMessage(
       "Location active",
     ),
-    "teamLocationOnlineBookingEnabledHint": MessageLookupByLibrary.simpleMessage(
-      "If disabled, this location cannot be booked online. It remains visible and operational in the management panel.",
-    ),
-    "teamLocationOnlineBookingEnabledLabel": MessageLookupByLibrary.simpleMessage(
-      "Online booking",
-    ),
     "teamLocationLabel": MessageLookupByLibrary.simpleMessage("Location"),
     "teamLocationLocationDisplayHint": MessageLookupByLibrary.simpleMessage(
       "E.g. Location, Place, Room",
@@ -3081,6 +3075,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationNomenclatureValueLabel": MessageLookupByLibrary.simpleMessage(
       "Custom text",
     ),
+    "teamLocationOnlineBookingEnabledHint": MessageLookupByLibrary.simpleMessage(
+      "If disabled, this location cannot be booked online. It remains visible and operational in the management panel.",
+    ),
+    "teamLocationOnlineBookingEnabledLabel":
+        MessageLookupByLibrary.simpleMessage("Online booking"),
     "teamLocationOnlineBookingSettingsSection":
         MessageLookupByLibrary.simpleMessage(
           "Online booking configuration for this location",
@@ -3163,6 +3162,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Enabled for online bookings",
     ),
     "teamStaffColorLabel": MessageLookupByLibrary.simpleMessage("Color"),
+    "teamStaffHasFutureBookingsQuestion": MessageLookupByLibrary.simpleMessage(
+      "Would you like to view the future bookings assigned to this team member?",
+    ),
     "teamStaffLabel": MessageLookupByLibrary.simpleMessage("Team"),
     "teamStaffLocationsLabel": MessageLookupByLibrary.simpleMessage(
       "Assigned locations",
@@ -3172,6 +3174,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "teamStaffNameLabel": MessageLookupByLibrary.simpleMessage("First name"),
     "teamStaffSurnameLabel": MessageLookupByLibrary.simpleMessage("Last name"),
+    "teamStaffViewFutureBookings": MessageLookupByLibrary.simpleMessage(
+      "View bookings",
+    ),
     "validationInvalidEmail": MessageLookupByLibrary.simpleMessage(
       "Invalid email",
     ),
