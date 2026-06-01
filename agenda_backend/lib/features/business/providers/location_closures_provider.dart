@@ -5,7 +5,6 @@ import '/core/network/network_providers.dart';
 import '/features/agenda/providers/business_providers.dart';
 import '/features/agenda/providers/location_providers.dart';
 import '/features/agenda/providers/tenant_time_provider.dart';
-import '/features/auth/providers/current_business_user_provider.dart';
 
 /// Provider per gestire le chiusure di un business (multi-location)
 final locationClosuresProvider =
@@ -16,10 +15,11 @@ final locationClosuresProvider =
 class LocationClosuresNotifier extends AsyncNotifier<List<LocationClosure>> {
   @override
   Future<List<LocationClosure>> build() async {
-    final canManageSettings = ref.watch(canManageBusinessSettingsProvider);
-    if (!canManageSettings) {
-      return [];
-    }
+    // Le chiusure vengono caricate per tutti gli utenti autenticati:
+    // servono in lettura anche a staff e manager per visualizzare
+    // correttamente i giorni chiusi nell'agenda.
+    // Il controllo canManageSettings si applica solo alle operazioni
+    // di scrittura (add/update/delete), non al caricamento.
     return _loadClosures();
   }
 
@@ -40,11 +40,6 @@ class LocationClosuresNotifier extends AsyncNotifier<List<LocationClosure>> {
   }
 
   Future<void> refresh() async {
-    final canManageSettings = ref.read(canManageBusinessSettingsProvider);
-    if (!canManageSettings) {
-      state = const AsyncValue.data([]);
-      return;
-    }
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() => _loadClosures());
   }
