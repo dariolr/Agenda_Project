@@ -27,6 +27,7 @@ import 'package:agenda_backend/features/services/providers/services_provider.dar
 import 'package:agenda_backend/features/staff/providers/availability_exceptions_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_planning_provider.dart';
 import 'package:agenda_backend/features/class_events/providers/class_events_providers.dart';
+import 'package:agenda_backend/core/models/staff.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -56,6 +57,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   late final ProviderSubscription<int> _locationSub;
   late final ProviderSubscription<int> _businessIdSub;
   late final ProviderSubscription<bool> _initialScrollSub;
+  late final ProviderSubscription<List<Staff>> _filteredStaffSub;
   Timer? _pollingTimer;
 
   /// Intervallo polling: 10 minuti in debug, 5 minuti in produzione
@@ -137,6 +139,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     _locationSub.close();
     _businessIdSub.close();
     _initialScrollSub.close();
+    _filteredStaffSub.close();
     _timelineController.dispose();
     _hourColumnController.dispose();
     super.dispose();
@@ -317,6 +320,28 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     ) {
       if (prev == next) return;
       _restartPollingTimerForBusiness(next);
+    });
+
+    // Quando lo staff passa da vuoto a non-vuoto (es. cambio filtro da
+    // "team di turno" senza disponibilità a "tutto il team"), il flag
+    // _agendaViewportReady potrebbe essere rimasto false perché AgendaDay
+    // non chiama onVerticalOffsetChanged con staffList vuota. Se lo scroll
+    // iniziale era già stato fatto, sblocchiamo il viewport nel frame successivo.
+    _filteredStaffSub = ref.listenManual<List<Staff>>(filteredStaffProvider, (
+      prev,
+      next,
+    ) {
+      if (!mounted) return;
+      if ((prev?.isEmpty ?? true) && next.isNotEmpty && !_agendaViewportReady) {
+        final initialScrollDone = ref.read(initialScrollDoneProvider);
+        if (!initialScrollDone) return;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _agendaViewportReady) return;
+          setState(() {
+            _agendaViewportReady = true;
+          });
+        });
+      }
     });
   }
 
