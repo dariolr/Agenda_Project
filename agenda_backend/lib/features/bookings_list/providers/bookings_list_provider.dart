@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '/core/models/booking_list_item.dart';
 import '/core/network/network_providers.dart';
 import '../../agenda/providers/tenant_time_provider.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 
 /// Stato per i filtri della lista prenotazioni
 class BookingsListFilters {
@@ -332,7 +333,7 @@ class BookingsListNotifier extends Notifier<BookingsListState> {
         locationIds: filters.locationIds,
         staffId: filters.staffId,
         staffIds: filters.staffIds,
-        serviceIds: filters.serviceIds,
+        serviceIds: _effectiveServiceIds(filters.serviceIds),
         clientSearch: filters.clientSearch,
         status: filters.status,
         source: filters.source,
@@ -398,7 +399,7 @@ class BookingsListNotifier extends Notifier<BookingsListState> {
         locationIds: filters.locationIds,
         staffId: filters.staffId,
         staffIds: filters.staffIds,
-        serviceIds: filters.serviceIds,
+        serviceIds: _effectiveServiceIds(filters.serviceIds),
         clientSearch: filters.clientSearch,
         status: filters.status,
         source: filters.source,
@@ -421,6 +422,20 @@ class BookingsListNotifier extends Notifier<BookingsListState> {
     } catch (e) {
       state = state.copyWith(isLoadingMore: false, error: e.toString());
     }
+  }
+
+  /// Calcola i serviceIds effettivi intersecando filtro utente e restrizione sistema.
+  /// - Se l'operatore non ha restrizioni → usa il filtro utente così com'è.
+  /// - Se l'operatore ha restrizioni → usa l'intersezione con il filtro utente
+  ///   (o la lista di sistema se l'utente non ha selezionato nulla).
+  List<int>? _effectiveServiceIds(List<int>? userSelected) {
+    final systemAllowed = ref.read(allowedServiceIdsProvider);
+    if (systemAllowed == null) return userSelected;
+    if (userSelected == null || userSelected.isEmpty) return systemAllowed;
+    final intersection = userSelected
+        .where(systemAllowed.contains)
+        .toList();
+    return intersection.isEmpty ? [-1] : intersection; // -1 forza lista vuota
   }
 
   /// Ricarica dopo cancellazione

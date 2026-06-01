@@ -170,21 +170,29 @@ final filteredStaffProvider = Provider<List<Staff>>((ref) {
     return allStaff.where((s) => s.id == currentUserStaffId).toList();
   }
 
-  // Altrimenti applica i filtri normali
+  // Filtro per sottoinsieme di servizi: mostra solo staff che eseguono
+  // almeno uno dei servizi consentiti all'operatore.
+  final allowedServiceIds = ref.watch(allowedServiceIdsProvider);
+  List<Staff> visibleStaff = allStaff;
+  if (allowedServiceIds != null) {
+    visibleStaff = allStaff
+        .where((s) => s.serviceIds.any(allowedServiceIds.contains))
+        .toList();
+  }
+
+  // Applica i filtri normali (allTeam / onDutyTeam / custom) sul sottoinsieme visibile
   final mode = ref.watch(staffFilterModeProvider);
   final selectedIds = ref.watch(selectedStaffIdsProvider);
   final onDutyIds = ref.watch(onDutyStaffIdsProvider);
 
   switch (mode) {
     case StaffFilterMode.allTeam:
-      return allStaff;
+      return visibleStaff;
 
     case StaffFilterMode.onDutyTeam:
-      // Restituisce solo lo staff di turno (anche lista vuota se nessuno è di turno)
-      return allStaff.where((s) => onDutyIds.contains(s.id)).toList();
+      return visibleStaff.where((s) => onDutyIds.contains(s.id)).toList();
 
     case StaffFilterMode.custom:
-      // Restituisce solo gli staff selezionati (anche lista vuota se nessuno selezionato)
-      return allStaff.where((s) => selectedIds.contains(s.id)).toList();
+      return visibleStaff.where((s) => selectedIds.contains(s.id)).toList();
   }
 });

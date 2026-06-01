@@ -15,6 +15,10 @@ import '../../../core/widgets/app_dialogs.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
+import '../../staff/providers/staff_providers.dart';
+import 'dialogs/invite_operator_dialog.dart';
+import '../../class_events/providers/class_events_providers.dart';
+import '../../services/providers/services_provider.dart';
 import '../providers/business_users_provider.dart';
 import 'dialogs/role_selection_dialog.dart';
 
@@ -295,7 +299,9 @@ class _InvitationTile extends ConsumerWidget {
         ? PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (value) {
-              if (value == 'resend') {
+              if (value == 'edit') {
+                _editInvitation(context, ref);
+              } else if (value == 'resend') {
                 _resendInvitation(context, ref);
               } else if (value == 'revoke') {
                 _confirmRevoke(context, ref);
@@ -305,6 +311,24 @@ class _InvitationTile extends ConsumerWidget {
             },
             itemBuilder: (context) {
               final entries = <PopupMenuEntry<String>>[];
+              if (canResend) {
+                entries.add(
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Row(
+                      children: [
+                        const Icon(Icons.edit_outlined, size: 20),
+                        const SizedBox(width: 12),
+                        Text(
+                          Localizations.localeOf(context).languageCode == 'it'
+                              ? 'Modifica'
+                              : 'Edit',
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
               if (canResend) {
                 entries.add(
                   PopupMenuItem(
@@ -441,6 +465,44 @@ class _InvitationTile extends ConsumerWidget {
       'expired' => l10n.operatorsInviteStatusExpired,
       _ => status,
     };
+  }
+
+  void _editInvitation(BuildContext context, WidgetRef ref) {
+    // Il backend revoca automaticamente il vecchio invito pendente per la
+    // stessa email quando viene creato uno nuovo.
+    final formFactor = ref.read(formFactorProvider);
+
+    if (formFactor == AppFormFactor.mobile ||
+        formFactor == AppFormFactor.tablet) {
+      AppBottomSheet.show(
+        context: context,
+        heightFactor: null,
+        builder: (ctx) => InviteOperatorSheet(
+          businessId: businessId,
+          initialEmail: invitation.email,
+          initialRole: invitation.role,
+          initialStaffId: invitation.staffId,
+          initialScopeType: invitation.scopeType,
+          initialLocationIds: invitation.locationIds,
+          initialServiceIds: invitation.allowedServiceIds,
+          initialClassTypeIds: invitation.allowedClassTypeIds,
+        ),
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (ctx) => InviteOperatorDialog(
+          businessId: businessId,
+          initialEmail: invitation.email,
+          initialRole: invitation.role,
+          initialStaffId: invitation.staffId,
+          initialScopeType: invitation.scopeType,
+          initialLocationIds: invitation.locationIds,
+          initialServiceIds: invitation.allowedServiceIds,
+          initialClassTypeIds: invitation.allowedClassTypeIds,
+        ),
+      );
+    }
   }
 
   void _confirmDelete(BuildContext context, WidgetRef ref) {
@@ -662,6 +724,59 @@ class _UserTile extends ConsumerWidget {
   ) {
     final formFactor = ref.read(formFactorProvider);
     final currentLocationIds = user.locationIds.toSet();
+    final currentServiceIds = user.allowedServiceIds.toSet();
+    final currentClassTypeIds = user.allowedClassTypeIds.toSet();
+
+    // Servizi, lezioni e staff per il filtro
+    final services = ref.read(servicesProvider).asData?.value ?? [];
+    final classTypes = ref.read(classTypesProvider).asData?.value ?? [];
+    final allStaff = ref.read(allStaffProvider).value ?? [];
+
+    Future<void> handleSave({
+      required BuildContext dialogContext,
+      required String role,
+      required String scopeType,
+      required List<int> locationIds,
+      required List<int> allowedServiceIds,
+      required List<int> allowedClassTypeIds,
+    }) async {
+      Navigator.of(dialogContext).pop();
+      final selectedLocationIds =
+          scopeType == 'locations' ? locationIds.toSet() : <int>{};
+      final newServiceIds = allowedServiceIds.toSet();
+      final newClassTypeIds = allowedClassTypeIds.toSet();
+      final hasChanges =
+          role != user.role ||
+          scopeType != user.scopeType ||
+          !setEquals(selectedLocationIds, currentLocationIds) ||
+          !setEquals(newServiceIds, currentServiceIds) ||
+          !setEquals(newClassTypeIds, currentClassTypeIds);
+      if (!hasChanges) return;
+      final ok = await ref
+          .read(businessUsersProvider(businessId).notifier)
+          .updateUser(
+            userId: user.userId,
+            role: role,
+            scopeType: scopeType,
+            locationIds: scopeType == 'locations'
+                ? selectedLocationIds.toList()
+                : <int>[],
+            allowedServiceIds: allowedServiceIds,
+            allowedClassTypeIds: allowedClassTypeIds,
+          );
+      if (!context.mounted || ok) return;
+      final isIt = Localizations.localeOf(context).languageCode == 'it';
+      final message =
+          ref.read(businessUsersProvider(businessId)).error ??
+          (isIt
+              ? 'Impossibile aggiornare i permessi dell\'operatore.'
+              : 'Unable to update operator permissions.');
+      FeedbackDialog.showError(
+        context,
+        title: context.l10n.errorTitle,
+        message: message,
+      );
+    }
 
     if (formFactor == AppFormFactor.mobile ||
         formFactor == AppFormFactor.tablet) {
@@ -672,49 +787,29 @@ class _UserTile extends ConsumerWidget {
           currentRole: user.role,
           currentScopeType: user.scopeType,
           currentLocationIds: user.locationIds,
+          currentServiceIds: user.allowedServiceIds,
+          currentClassTypeIds: user.allowedClassTypeIds,
           locations: locations,
+          services: services,
+          classTypes: classTypes,
+          linkedStaffId: user.staffId,
+          staffList: allStaff,
           userName: user.fullName,
           userEmail: user.email,
-          onSave:
-              ({
-                required String role,
-                required String scopeType,
-                required List<int> locationIds,
-              }) async {
-                Navigator.of(ctx).pop();
-                final selectedLocationIds = scopeType == 'locations'
-                    ? locationIds.toSet()
-                    : <int>{};
-                final hasChanges =
-                    role != user.role ||
-                    scopeType != user.scopeType ||
-                    !setEquals(selectedLocationIds, currentLocationIds);
-                if (hasChanges) {
-                  final ok = await ref
-                      .read(businessUsersProvider(businessId).notifier)
-                      .updateUser(
-                        userId: user.userId,
-                        role: role,
-                        scopeType: scopeType,
-                        locationIds: scopeType == 'locations'
-                            ? selectedLocationIds.toList()
-                            : <int>[],
-                      );
-                  if (!context.mounted || ok) return;
-                  final isIt =
-                      Localizations.localeOf(context).languageCode == 'it';
-                  final message =
-                      ref.read(businessUsersProvider(businessId)).error ??
-                      (isIt
-                          ? 'Impossibile aggiornare i permessi dell\'operatore.'
-                          : 'Unable to update operator permissions.');
-                  FeedbackDialog.showError(
-                    context,
-                    title: context.l10n.errorTitle,
-                    message: message,
-                  );
-                }
-              },
+          onSave: ({
+            required String role,
+            required String scopeType,
+            required List<int> locationIds,
+            required List<int> allowedServiceIds,
+            required List<int> allowedClassTypeIds,
+          }) => handleSave(
+            dialogContext: ctx,
+            role: role,
+            scopeType: scopeType,
+            locationIds: locationIds,
+            allowedServiceIds: allowedServiceIds,
+            allowedClassTypeIds: allowedClassTypeIds,
+          ),
         ),
       );
     } else {
@@ -724,49 +819,29 @@ class _UserTile extends ConsumerWidget {
           currentRole: user.role,
           currentScopeType: user.scopeType,
           currentLocationIds: user.locationIds,
+          currentServiceIds: user.allowedServiceIds,
+          currentClassTypeIds: user.allowedClassTypeIds,
           locations: locations,
+          services: services,
+          classTypes: classTypes,
+          linkedStaffId: user.staffId,
+          staffList: allStaff,
           userName: user.fullName,
           userEmail: user.email,
-          onSave:
-              ({
-                required String role,
-                required String scopeType,
-                required List<int> locationIds,
-              }) async {
-                Navigator.of(ctx).pop();
-                final selectedLocationIds = scopeType == 'locations'
-                    ? locationIds.toSet()
-                    : <int>{};
-                final hasChanges =
-                    role != user.role ||
-                    scopeType != user.scopeType ||
-                    !setEquals(selectedLocationIds, currentLocationIds);
-                if (hasChanges) {
-                  final ok = await ref
-                      .read(businessUsersProvider(businessId).notifier)
-                      .updateUser(
-                        userId: user.userId,
-                        role: role,
-                        scopeType: scopeType,
-                        locationIds: scopeType == 'locations'
-                            ? selectedLocationIds.toList()
-                            : <int>[],
-                      );
-                  if (!context.mounted || ok) return;
-                  final isIt =
-                      Localizations.localeOf(context).languageCode == 'it';
-                  final message =
-                      ref.read(businessUsersProvider(businessId)).error ??
-                      (isIt
-                          ? 'Impossibile aggiornare i permessi dell\'operatore.'
-                          : 'Unable to update operator permissions.');
-                  FeedbackDialog.showError(
-                    context,
-                    title: context.l10n.errorTitle,
-                    message: message,
-                  );
-                }
-              },
+          onSave: ({
+            required String role,
+            required String scopeType,
+            required List<int> locationIds,
+            required List<int> allowedServiceIds,
+            required List<int> allowedClassTypeIds,
+          }) => handleSave(
+            dialogContext: ctx,
+            role: role,
+            scopeType: scopeType,
+            locationIds: locationIds,
+            allowedServiceIds: allowedServiceIds,
+            allowedClassTypeIds: allowedClassTypeIds,
+          ),
         ),
       );
     }

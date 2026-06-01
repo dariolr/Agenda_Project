@@ -67,10 +67,26 @@ final class BusinessInvitationRepository
         }
 
         $invitationId = (int) $this->db->getPdo()->lastInsertId();
-        
+
         // Set locations if scope_type=locations
         if ($scopeType === 'locations' && !empty($locationIds)) {
             $this->setLocationIds($invitationId, $locationIds);
+        }
+
+        // Store service/class-type filters as JSON columns
+        $svcIds = array_values(array_map('intval', (array) ($data['allowed_service_ids'] ?? [])));
+        $ctIds  = array_values(array_map('intval', (array) ($data['allowed_class_type_ids'] ?? [])));
+        if (!empty($svcIds) || !empty($ctIds)) {
+            $this->db->getPdo()->prepare(
+                'UPDATE business_invitations SET
+                    allowed_service_ids = ?,
+                    allowed_class_type_ids = ?
+                 WHERE id = ?'
+            )->execute([
+                empty($svcIds) ? null : json_encode($svcIds),
+                empty($ctIds)  ? null : json_encode($ctIds),
+                $invitationId,
+            ]);
         }
 
         return [
@@ -89,10 +105,10 @@ final class BusinessInvitationRepository
             ? 'i.staff_id'
             : 'NULL AS staff_id';
         $stmt = $this->db->getPdo()->prepare(
-            "SELECT 
-                i.id, i.business_id, i.email, i.role, i.scope_type, {$staffSelect}, i.token, 
+            "SELECT
+                i.id, i.business_id, i.email, i.role, i.scope_type, {$staffSelect}, i.token,
                 i.expires_at, i.status, i.accepted_by, i.accepted_at,
-                i.invited_by, i.created_at,
+                i.invited_by, i.allowed_service_ids, i.allowed_class_type_ids, i.created_at,
                 b.name as business_name, b.slug as business_slug
              FROM business_invitations i
              JOIN businesses b ON i.business_id = b.id
@@ -111,6 +127,8 @@ final class BusinessInvitationRepository
         } else {
             $result['location_ids'] = [];
         }
+        $result['allowed_service_ids']    = $this->decodeJsonIds($result['allowed_service_ids'] ?? null);
+        $result['allowed_class_type_ids'] = $this->decodeJsonIds($result['allowed_class_type_ids'] ?? null);
 
         return $result;
     }
@@ -135,6 +153,8 @@ final class BusinessInvitationRepository
         } else {
             $result['location_ids'] = [];
         }
+        $result['allowed_service_ids']    = $this->decodeJsonIds($result['allowed_service_ids'] ?? null);
+        $result['allowed_class_type_ids'] = $this->decodeJsonIds($result['allowed_class_type_ids'] ?? null);
 
         return $result;
     }
@@ -191,9 +211,9 @@ final class BusinessInvitationRepository
             ? 'i.staff_id'
             : 'NULL AS staff_id';
         $stmt = $this->db->getPdo()->prepare(
-            "SELECT 
-                i.id, i.email, i.role, i.scope_type, {$staffSelect}, i.token, i.expires_at, 
-                i.status, i.invited_by, i.created_at,
+            "SELECT
+                i.id, i.email, i.role, i.scope_type, {$staffSelect}, i.token, i.expires_at,
+                i.status, i.invited_by, i.allowed_service_ids, i.allowed_class_type_ids, i.created_at,
                 u.first_name as inviter_first_name, u.last_name as inviter_last_name
              FROM business_invitations i
              LEFT JOIN users u ON i.invited_by = u.id
@@ -205,13 +225,15 @@ final class BusinessInvitationRepository
 
         $invitations = $stmt->fetchAll();
         
-        // Fetch location_ids for invitations with scope_type=locations
+        // Fetch location_ids and service/class-type filters
         foreach ($invitations as &$inv) {
             if ($inv['scope_type'] === 'locations') {
                 $inv['location_ids'] = $this->getLocationIds((int)$inv['id']);
             } else {
                 $inv['location_ids'] = [];
             }
+            $inv['allowed_service_ids']    = $this->decodeJsonIds($inv['allowed_service_ids'] ?? null);
+            $inv['allowed_class_type_ids'] = $this->decodeJsonIds($inv['allowed_class_type_ids'] ?? null);
         }
 
         return $invitations;
@@ -226,9 +248,9 @@ final class BusinessInvitationRepository
             ? 'i.staff_id'
             : 'NULL AS staff_id';
         $stmt = $this->db->getPdo()->prepare(
-            "SELECT 
-                i.id, i.email, i.role, i.scope_type, {$staffSelect}, i.token, i.expires_at, 
-                i.status, i.accepted_at, i.invited_by, i.created_at,
+            "SELECT
+                i.id, i.email, i.role, i.scope_type, {$staffSelect}, i.token, i.expires_at,
+                i.status, i.accepted_at, i.invited_by, i.allowed_service_ids, i.allowed_class_type_ids, i.created_at,
                 u.first_name as inviter_first_name, u.last_name as inviter_last_name
              FROM business_invitations i
              LEFT JOIN users u ON i.invited_by = u.id
@@ -245,6 +267,8 @@ final class BusinessInvitationRepository
             } else {
                 $inv['location_ids'] = [];
             }
+            $inv['allowed_service_ids']    = $this->decodeJsonIds($inv['allowed_service_ids'] ?? null);
+            $inv['allowed_class_type_ids'] = $this->decodeJsonIds($inv['allowed_class_type_ids'] ?? null);
         }
 
         return $invitations;
@@ -373,6 +397,14 @@ final class BusinessInvitationRepository
         $this->hasStaffIdColumn = (bool) $stmt->fetch();
 
         return $this->hasStaffIdColumn;
+    }
+
+    private function decodeJsonIds(mixed $raw): ?array
+    {
+        if ($raw === null) return null;
+        $decoded = is_string($raw) ? json_decode($raw, true) : $raw;
+        if (!is_array($decoded) || empty($decoded)) return null;
+        return array_values(array_map('intval', $decoded));
     }
 
     // ========== LOCATION MANAGEMENT ==========

@@ -10,8 +10,11 @@ import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
 import '../../../agenda/providers/location_providers.dart';
+import '../../../class_events/providers/class_events_providers.dart';
+import '../../../services/providers/services_provider.dart';
 import '../../../staff/providers/staff_providers.dart';
 import '../../providers/business_users_provider.dart';
+import 'role_selection_dialog.dart' show ServiceFilterSection;
 
 String _resolveInviteErrorMessage(
   BuildContext context,
@@ -57,9 +60,26 @@ String _resolveInviteErrorMessage(
 
 /// Dialog per invitare un nuovo operatore (desktop).
 class InviteOperatorDialog extends ConsumerStatefulWidget {
-  const InviteOperatorDialog({super.key, required this.businessId});
+  const InviteOperatorDialog({
+    super.key,
+    required this.businessId,
+    this.initialEmail,
+    this.initialRole,
+    this.initialStaffId,
+    this.initialScopeType,
+    this.initialLocationIds,
+    this.initialServiceIds,
+    this.initialClassTypeIds,
+  });
 
   final int businessId;
+  final String? initialEmail;
+  final String? initialRole;
+  final int? initialStaffId;
+  final String? initialScopeType;
+  final List<int>? initialLocationIds;
+  final List<int>? initialServiceIds;
+  final List<int>? initialClassTypeIds;
 
   @override
   ConsumerState<InviteOperatorDialog> createState() =>
@@ -68,12 +88,26 @@ class InviteOperatorDialog extends ConsumerStatefulWidget {
 
 class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  String _selectedRole = 'staff';
-  String _selectedScopeType = 'locations';
-  final Set<int> _selectedLocationIds = {};
-  int? _selectedStaffId;
+  late final TextEditingController _emailController;
+  late String _selectedRole;
+  late String _selectedScopeType;
+  late Set<int> _selectedLocationIds;
+  late Set<int> _selectedServiceIds;
+  late Set<int> _selectedClassTypeIds;
+  late int? _selectedStaffId;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController = TextEditingController(text: widget.initialEmail ?? '');
+    _selectedRole = widget.initialRole ?? 'staff';
+    _selectedScopeType = widget.initialScopeType ?? 'locations';
+    _selectedLocationIds = (widget.initialLocationIds ?? []).toSet();
+    _selectedServiceIds = (widget.initialServiceIds ?? []).toSet();
+    _selectedClassTypeIds = (widget.initialClassTypeIds ?? []).toSet();
+    _selectedStaffId = widget.initialStaffId;
+  }
 
   @override
   void dispose() {
@@ -88,6 +122,21 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
     _ensureDefaultSingleLocationForStaff(locations);
     final allStaff = ref.watch(allStaffProvider).value ?? const <Staff>[];
     final availableStaff = _availableStaff(allStaff);
+    final allServices = ref.watch(servicesProvider).asData?.value ?? [];
+    final classTypes = ref.watch(classTypesProvider).asData?.value ?? [];
+
+    // Per ruolo staff: mostra solo i servizi dello staff selezionato
+    final selectedStaff = _selectedRole == 'staff' && _selectedStaffId != null
+        ? allStaff.where((s) => s.id == _selectedStaffId).firstOrNull
+        : null;
+    final services = selectedStaff != null
+        ? allServices.where((s) => selectedStaff.serviceIds.contains(s.id)).toList()
+        : allServices;
+
+    // Filtro visibile: per staff solo dopo selezione, per altri ruoli sempre
+    final showServiceFilter = _selectedRole != 'staff'
+        ? (services.isNotEmpty || classTypes.isNotEmpty)
+        : (selectedStaff != null && (services.isNotEmpty || classTypes.isNotEmpty));
 
     return AppFormDialog(
       title: Text(l10n.operatorsInviteTitle),
@@ -210,6 +259,21 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
                         _selectedLocationIds.isNotEmpty,
                     onChanged: (staffId) =>
                         setState(() => _selectedStaffId = staffId),
+                  ),
+                ],
+                if (showServiceFilter) ...[
+                  const SizedBox(height: 24),
+                  const AppDivider(),
+                  const SizedBox(height: 16),
+                  ServiceFilterSection(
+                    services: services,
+                    classTypes: classTypes,
+                    selectedServiceIds: _selectedServiceIds,
+                    selectedClassTypeIds: _selectedClassTypeIds,
+                    onServicesChanged: (ids) =>
+                        setState(() => _selectedServiceIds = ids),
+                    onClassTypesChanged: (ids) =>
+                        setState(() => _selectedClassTypeIds = ids),
                   ),
                 ],
               ],
@@ -340,6 +404,12 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
           locationIds: _selectedScopeType == 'locations'
               ? _selectedLocationIds.toList()
               : null,
+          allowedServiceIds: _selectedServiceIds.isNotEmpty
+              ? _selectedServiceIds.toList()
+              : null,
+          allowedClassTypeIds: _selectedClassTypeIds.isNotEmpty
+              ? _selectedClassTypeIds.toList()
+              : null,
         );
 
     if (!mounted) return;
@@ -381,9 +451,26 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
 
 /// Bottom sheet per invitare un nuovo operatore (mobile/tablet).
 class InviteOperatorSheet extends ConsumerStatefulWidget {
-  const InviteOperatorSheet({super.key, required this.businessId});
+  const InviteOperatorSheet({
+    super.key,
+    required this.businessId,
+    this.initialEmail,
+    this.initialRole,
+    this.initialStaffId,
+    this.initialScopeType,
+    this.initialLocationIds,
+    this.initialServiceIds,
+    this.initialClassTypeIds,
+  });
 
   final int businessId;
+  final String? initialEmail;
+  final String? initialRole;
+  final int? initialStaffId;
+  final String? initialScopeType;
+  final List<int>? initialLocationIds;
+  final List<int>? initialServiceIds;
+  final List<int>? initialClassTypeIds;
 
   @override
   ConsumerState<InviteOperatorSheet> createState() =>
@@ -392,12 +479,26 @@ class InviteOperatorSheet extends ConsumerStatefulWidget {
 
 class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  String _selectedRole = 'staff';
-  String _selectedScopeType = 'locations';
-  final Set<int> _selectedLocationIds = {};
-  int? _selectedStaffId;
+  late final TextEditingController _emailController;
+  late String _selectedRole;
+  late String _selectedScopeType;
+  late Set<int> _selectedLocationIds;
+  late Set<int> _selectedServiceIds;
+  late Set<int> _selectedClassTypeIds;
+  late int? _selectedStaffId;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailController = TextEditingController(text: widget.initialEmail ?? '');
+    _selectedRole = widget.initialRole ?? 'staff';
+    _selectedScopeType = widget.initialScopeType ?? 'locations';
+    _selectedLocationIds = (widget.initialLocationIds ?? []).toSet();
+    _selectedServiceIds = (widget.initialServiceIds ?? []).toSet();
+    _selectedClassTypeIds = (widget.initialClassTypeIds ?? []).toSet();
+    _selectedStaffId = widget.initialStaffId;
+  }
 
   @override
   void dispose() {
@@ -412,6 +513,18 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
     _ensureDefaultSingleLocationForStaff(locations);
     final allStaff = ref.watch(allStaffProvider).value ?? const <Staff>[];
     final availableStaff = _availableStaff(allStaff);
+    final allServices = ref.watch(servicesProvider).asData?.value ?? [];
+    final classTypes = ref.watch(classTypesProvider).asData?.value ?? [];
+
+    final selectedStaff = _selectedRole == 'staff' && _selectedStaffId != null
+        ? allStaff.where((s) => s.id == _selectedStaffId).firstOrNull
+        : null;
+    final services = selectedStaff != null
+        ? allServices.where((s) => selectedStaff.serviceIds.contains(s.id)).toList()
+        : allServices;
+    final showServiceFilter = _selectedRole != 'staff'
+        ? (services.isNotEmpty || classTypes.isNotEmpty)
+        : (selectedStaff != null && (services.isNotEmpty || classTypes.isNotEmpty));
 
     return Material(
       color: Theme.of(context).colorScheme.surface,
@@ -543,6 +656,21 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
                             _selectedLocationIds.isNotEmpty,
                         onChanged: (staffId) =>
                             setState(() => _selectedStaffId = staffId),
+                      ),
+                    ],
+                    if (showServiceFilter) ...[
+                      const SizedBox(height: 24),
+                      const AppDivider(),
+                      const SizedBox(height: 16),
+                      ServiceFilterSection(
+                        services: services,
+                        classTypes: classTypes,
+                        selectedServiceIds: _selectedServiceIds,
+                        selectedClassTypeIds: _selectedClassTypeIds,
+                        onServicesChanged: (ids) =>
+                            setState(() => _selectedServiceIds = ids),
+                        onClassTypesChanged: (ids) =>
+                            setState(() => _selectedClassTypeIds = ids),
                       ),
                     ],
                   ],
@@ -686,6 +814,12 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
           scopeType: _selectedScopeType,
           locationIds: _selectedScopeType == 'locations'
               ? _selectedLocationIds.toList()
+              : null,
+          allowedServiceIds: _selectedServiceIds.isNotEmpty
+              ? _selectedServiceIds.toList()
+              : null,
+          allowedClassTypeIds: _selectedClassTypeIds.isNotEmpty
+              ? _selectedClassTypeIds.toList()
               : null,
         );
 

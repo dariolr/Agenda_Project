@@ -238,6 +238,8 @@ CREATE TABLE `business_invitations` (
   `accepted_by` int UNSIGNED DEFAULT NULL,
   `accepted_at` timestamp NULL DEFAULT NULL,
   `invited_by` int UNSIGNED NOT NULL,
+  `allowed_service_ids` json DEFAULT NULL,
+  `allowed_class_type_ids` json DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -254,6 +256,7 @@ CREATE TABLE `business_invitation_locations` (
   `location_id` int UNSIGNED NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Location assegnate a inviti con scope_type=locations';
+
 
 -- --------------------------------------------------------
 
@@ -273,6 +276,8 @@ CREATE TABLE `business_users` (
   `can_manage_services` tinyint(1) NOT NULL DEFAULT '0',
   `can_manage_staff` tinyint(1) NOT NULL DEFAULT '0',
   `can_view_reports` tinyint(1) NOT NULL DEFAULT '0',
+  `allowed_service_ids` json DEFAULT NULL COMMENT 'NULL = nessun filtro. Array di service_id visibili.',
+  `allowed_class_type_ids` json DEFAULT NULL COMMENT 'NULL = nessun filtro. Array di class_type_id visibili.',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `invited_by` int UNSIGNED DEFAULT NULL,
   `invited_at` timestamp NULL DEFAULT NULL,
@@ -293,6 +298,42 @@ CREATE TABLE `business_user_locations` (
   `location_id` int UNSIGNED NOT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Location assegnate a utenti con scope_type=locations';
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `business_user_services`
+--
+
+CREATE TABLE `business_user_services` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `business_user_id` int UNSIGNED NOT NULL,
+  `service_id` int UNSIGNED NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_bus_svc` (`business_user_id`,`service_id`),
+  KEY `idx_bus_svc_user` (`business_user_id`),
+  CONSTRAINT `fk_bus_svc_user` FOREIGN KEY (`business_user_id`) REFERENCES `business_users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_bus_svc_service` FOREIGN KEY (`service_id`) REFERENCES `services` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Servizi visibili agli operatori con filtro per sottoinsieme di servizi';
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `business_user_class_types`
+--
+
+CREATE TABLE `business_user_class_types` (
+  `id` int UNSIGNED NOT NULL AUTO_INCREMENT,
+  `business_user_id` int UNSIGNED NOT NULL,
+  `class_type_id` int UNSIGNED NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_bus_ct` (`business_user_id`,`class_type_id`),
+  KEY `idx_bus_ct_user` (`business_user_id`),
+  CONSTRAINT `fk_bus_ct_user` FOREIGN KEY (`business_user_id`) REFERENCES `business_users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_bus_ct_class_type` FOREIGN KEY (`class_type_id`) REFERENCES `class_types` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tipi lezione visibili agli operatori con filtro per sottoinsieme di servizi';
 
 -- --------------------------------------------------------
 

@@ -49,10 +49,11 @@ final class BusinessUserRepository
     public function findByUserAndBusiness(int $userId, int $businessId): ?array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT 
+            'SELECT
                 bu.id, bu.business_id, bu.user_id, bu.role, bu.scope_type, bu.staff_id,
                 bu.can_manage_bookings, bu.can_manage_clients,
                 bu.can_manage_services, bu.can_manage_staff, bu.can_view_reports,
+                bu.allowed_service_ids, bu.allowed_class_type_ids,
                 bu.is_active, bu.invited_by, bu.invited_at, bu.accepted_at,
                 bu.created_at, bu.updated_at
              FROM business_users bu
@@ -64,13 +65,17 @@ final class BusinessUserRepository
         if (!$result) {
             return null;
         }
-        
+
         // Fetch location_ids if scope_type=locations
         if ($result['scope_type'] === 'locations') {
             $result['location_ids'] = $this->getLocationIds((int)$result['id']);
         } else {
             $result['location_ids'] = [];
         }
+
+        // Decode JSON filter columns (NULL = no restriction)
+        $result['allowed_service_ids']    = $this->decodeJsonIds($result['allowed_service_ids']);
+        $result['allowed_class_type_ids'] = $this->decodeJsonIds($result['allowed_class_type_ids']);
 
         return $result;
     }
@@ -195,13 +200,15 @@ final class BusinessUserRepository
 
         $users = $stmt->fetchAll();
         
-        // Fetch location_ids for users with scope_type=locations
+        // Fetch location_ids and decode JSON filter columns for each user
         foreach ($users as &$user) {
             if ($user['scope_type'] === 'locations') {
                 $user['location_ids'] = $this->getLocationIds((int)$user['id']);
             } else {
                 $user['location_ids'] = [];
             }
+            $user['allowed_service_ids']    = $this->decodeJsonIds($user['allowed_service_ids'] ?? null);
+            $user['allowed_class_type_ids'] = $this->decodeJsonIds($user['allowed_class_type_ids'] ?? null);
         }
 
         return $users;
@@ -325,6 +332,22 @@ final class BusinessUserRepository
         // Set locations if scope_type=locations
         if ($scopeType === 'locations' && !empty($locationIds)) {
             $this->setLocationIds($businessUserId, $locationIds);
+        }
+
+        // Apply service/class-type filters if provided (JSON columns)
+        if (!empty($data['allowed_service_ids']) || !empty($data['allowed_class_type_ids'])) {
+            $svcIds = array_values(array_map('intval', (array) ($data['allowed_service_ids'] ?? [])));
+            $ctIds  = array_values(array_map('intval', (array) ($data['allowed_class_type_ids'] ?? [])));
+            $this->db->getPdo()->prepare(
+                'UPDATE business_users SET
+                    allowed_service_ids = ?,
+                    allowed_class_type_ids = ?
+                 WHERE id = ?'
+            )->execute([
+                empty($svcIds) ? null : json_encode($svcIds),
+                empty($ctIds)  ? null : json_encode($ctIds),
+                $businessUserId,
+            ]);
         }
 
         return $businessUserId;
@@ -455,6 +478,18 @@ final class BusinessUserRepository
             }
         }
 
+        // JSON filter columns — aggiungono direttamente a $fields/$params
+        if (array_key_exists('allowed_service_ids', $data)) {
+            $fields[] = 'allowed_service_ids = ?';
+            $svcIds = array_values(array_map('intval', (array) $data['allowed_service_ids']));
+            $params[] = empty($svcIds) ? null : json_encode($svcIds);
+        }
+        if (array_key_exists('allowed_class_type_ids', $data)) {
+            $fields[] = 'allowed_class_type_ids = ?';
+            $ctIds = array_values(array_map('intval', (array) $data['allowed_class_type_ids']));
+            $params[] = empty($ctIds) ? null : json_encode($ctIds);
+        }
+
         if (empty($fields)) {
             // Still need to handle location_ids even if no other fields
             if (array_key_exists('location_ids', $data)) {
@@ -472,16 +507,14 @@ final class BusinessUserRepository
         $sql = 'UPDATE business_users SET ' . implode(', ', $fields) . ' WHERE id = ?';
         $stmt = $this->db->getPdo()->prepare($sql);
         $result = $stmt->execute($params);
-        
+
         // Handle location_ids
         if (array_key_exists('location_ids', $data)) {
             $scopeType = $data['scope_type'] ?? null;
-            // Get current scope_type if not provided
             if ($scopeType === null) {
                 $current = $this->findById($id);
                 $scopeType = $current['scope_type'] ?? 'business';
             }
-            
             if ($scopeType === 'locations') {
                 $this->setLocationIds($id, $data['location_ids']);
             } else {
@@ -490,8 +523,6 @@ final class BusinessUserRepository
         }
 
         return $result;
-
-        return $stmt->execute($params);
     }
 
     /**
@@ -647,6 +678,20 @@ final class BusinessUserRepository
                 $stmt->execute([$businessUserId, (int)$locationId]);
             }
         }
+    }
+
+    // ── Service / class-type filter helpers ──────────────────────────────────
+
+    /**
+     * Decodifica una colonna JSON ids in array di interi.
+     * NULL (nessun filtro) → null; JSON vuoto → []; altrimenti → array di int.
+     */
+    private function decodeJsonIds(mixed $raw): ?array
+    {
+        if ($raw === null) return null;
+        $decoded = is_string($raw) ? json_decode($raw, true) : $raw;
+        if (!is_array($decoded) || empty($decoded)) return null;
+        return array_values(array_map('intval', $decoded));
     }
 
     /**

@@ -10,6 +10,7 @@ import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/date_range_provider.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../../agenda/providers/tenant_time_provider.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import '../../services/providers/service_categories_provider.dart';
 import '../../services/providers/services_repository_provider.dart';
 import '../data/class_events_repository.dart';
@@ -159,13 +160,14 @@ final classEventsForCurrentLocationDayProvider =
       final location = ref.watch(currentLocationProvider);
       final date = ref.watch(agendaDateProvider);
       final timezone = ref.watch(effectiveTenantTimezoneProvider);
+      final allowedClassTypeIds = ref.watch(allowedClassTypeIdsProvider);
 
       if (businessId <= 0 || location.id <= 0) return const [];
 
       final fromLocal = DateTime(date.year, date.month, date.day);
       final toLocal = fromLocal.add(const Duration(days: 1));
 
-      return ref.watch(
+      final events = await ref.watch(
         classEventsForRangeProvider(
           ClassEventsRangeRequest(
             businessId: businessId,
@@ -175,6 +177,11 @@ final classEventsForCurrentLocationDayProvider =
           ),
         ).future,
       );
+
+      if (allowedClassTypeIds == null) return events;
+      return events
+          .where((e) => allowedClassTypeIds.contains(e.classTypeId))
+          .toList();
     });
 
 final classEventsForLocationDayProvider =
@@ -208,6 +215,7 @@ final classEventsForLocationWeekProvider =
       if (params.businessId <= 0 || params.locationId <= 0) return const [];
 
       final timezone = ref.watch(effectiveTenantTimezoneProvider);
+      final allowedClassTypeIds = ref.watch(allowedClassTypeIdsProvider);
       final weekStart = DateTime(
         params.weekStart.year,
         params.weekStart.month,
@@ -215,7 +223,7 @@ final classEventsForLocationWeekProvider =
       );
       final weekEnd = weekStart.add(const Duration(days: 7));
 
-      return ref.watch(
+      final events = await ref.watch(
         classEventsForRangeProvider(
           ClassEventsRangeRequest(
             businessId: params.businessId,
@@ -225,6 +233,11 @@ final classEventsForLocationWeekProvider =
           ),
         ).future,
       );
+
+      if (allowedClassTypeIds == null) return events;
+      return events
+          .where((e) => allowedClassTypeIds.contains(e.classTypeId))
+          .toList();
     });
 
 final upcomingClassEventsByTypeProvider =

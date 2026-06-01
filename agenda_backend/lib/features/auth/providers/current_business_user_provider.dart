@@ -16,6 +16,10 @@ class BusinessUserContext {
   final String role;
   final String scopeType;
   final List<int> locationIds;
+  /// Servizi visibili: lista vuota = nessun filtro (vede tutto).
+  final List<int> allowedServiceIds;
+  /// Tipi lezione visibili: lista vuota = nessun filtro.
+  final List<int> allowedClassTypeIds;
   final int? staffId;
   final bool isSuperadmin;
   final bool canManageBookings;
@@ -30,6 +34,8 @@ class BusinessUserContext {
     required this.role,
     required this.scopeType,
     required this.locationIds,
+    this.allowedServiceIds = const [],
+    this.allowedClassTypeIds = const [],
     required this.staffId,
     required this.isSuperadmin,
     required this.canManageBookings,
@@ -47,6 +53,12 @@ class BusinessUserContext {
 
   /// Indica se l'utente è uno staff (ruolo staff con staffId associato).
   bool get isStaffRole => role == 'staff' && staffId != null;
+
+  /// True se l'operatore ha un filtro su sottoinsieme di servizi attivo.
+  bool get hasServiceFilter => allowedServiceIds.isNotEmpty;
+
+  /// True se l'operatore ha un filtro su sottoinsieme di tipi lezione attivo.
+  bool get hasClassTypeFilter => allowedClassTypeIds.isNotEmpty;
 
   factory BusinessUserContext.fromJson(Map<String, dynamic> json) {
     final role = (json['role'] as String? ?? 'staff').trim().toLowerCase();
@@ -98,6 +110,16 @@ class BusinessUserContext {
       scopeType: json['scope_type'] as String? ?? 'business',
       locationIds:
           (json['location_ids'] as List<dynamic>?)
+              ?.map((e) => e as int)
+              .toList() ??
+          [],
+      allowedServiceIds:
+          (json['allowed_service_ids'] as List<dynamic>?)
+              ?.map((e) => e as int)
+              .toList() ??
+          [],
+      allowedClassTypeIds:
+          (json['allowed_class_type_ids'] as List<dynamic>?)
               ?.map((e) => e as int)
               .toList() ??
           [],
@@ -219,6 +241,39 @@ final allowedLocationIdsProvider = Provider<List<int>?>((ref) {
 
   // Scope locations = ritorna la lista specifica
   return context.locationIds;
+});
+
+/// Servizi visibili all'operatore corrente.
+/// Ritorna null se non c'è filtro (vede tutto).
+/// Ritorna una lista (anche vuota) se il filtro è attivo.
+final allowedServiceIdsProvider = Provider<List<int>?>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
+  final contextAsync = ref.watch(currentBusinessUserContextProvider);
+  final context = contextAsync.when(
+    data: (data) => data,
+    loading: () => null,
+    error: (_, __) => null,
+  );
+
+  if (!_isContextForCurrentBusiness(context, currentBusinessId)) return null;
+  if (!context!.hasServiceFilter) return null;
+  return context.allowedServiceIds;
+});
+
+/// Tipi lezione visibili all'operatore corrente.
+/// Ritorna null se non c'è filtro (vede tutto).
+final allowedClassTypeIdsProvider = Provider<List<int>?>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
+  final contextAsync = ref.watch(currentBusinessUserContextProvider);
+  final context = contextAsync.when(
+    data: (data) => data,
+    loading: () => null,
+    error: (_, __) => null,
+  );
+
+  if (!_isContextForCurrentBusiness(context, currentBusinessId)) return null;
+  if (!context!.hasClassTypeFilter) return null;
+  return context.allowedClassTypeIds;
 });
 
 // ============================================================================

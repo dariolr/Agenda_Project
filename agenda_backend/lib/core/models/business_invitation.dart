@@ -5,9 +5,10 @@ class BusinessInvitation {
   final String email;
   final String role;
   final int? staffId;
-  final String scopeType; // 'business' o 'locations'
-  final List<int>
-  locationIds; // IDs delle location accessibili (se scopeType='locations')
+  final String scopeType;
+  final List<int> locationIds;
+  final List<int> allowedServiceIds;
+  final List<int> allowedClassTypeIds;
   final String? token;
   final String status;
   final DateTime? acceptedAt;
@@ -23,6 +24,8 @@ class BusinessInvitation {
     this.staffId,
     this.scopeType = 'business',
     this.locationIds = const [],
+    this.allowedServiceIds = const [],
+    this.allowedClassTypeIds = const [],
     this.token,
     this.status = 'pending',
     this.acceptedAt,
@@ -67,6 +70,8 @@ class BusinessInvitation {
     int? staffId,
     String? scopeType,
     List<int>? locationIds,
+    List<int>? allowedServiceIds,
+    List<int>? allowedClassTypeIds,
     String? token,
     String? status,
     DateTime? acceptedAt,
@@ -81,6 +86,8 @@ class BusinessInvitation {
     staffId: staffId ?? this.staffId,
     scopeType: scopeType ?? this.scopeType,
     locationIds: locationIds ?? this.locationIds,
+    allowedServiceIds: allowedServiceIds ?? this.allowedServiceIds,
+    allowedClassTypeIds: allowedClassTypeIds ?? this.allowedClassTypeIds,
     token: token ?? this.token,
     status: status ?? this.status,
     acceptedAt: acceptedAt ?? this.acceptedAt,
@@ -101,6 +108,18 @@ class BusinessInvitation {
       scopeType: json['scope_type'] as String? ?? 'business',
       locationIds:
           (json['location_ids'] as List<dynamic>?)
+              ?.map(_asInt)
+              .where((e) => e > 0)
+              .toList() ??
+          [],
+      allowedServiceIds:
+          (json['allowed_service_ids'] as List<dynamic>?)
+              ?.map(_asInt)
+              .where((e) => e > 0)
+              .toList() ??
+          [],
+      allowedClassTypeIds:
+          (json['allowed_class_type_ids'] as List<dynamic>?)
               ?.map(_asInt)
               .where((e) => e > 0)
               .toList() ??

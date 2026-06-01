@@ -6,8 +6,11 @@ class BusinessUser {
   final String role;
   final int? staffId;
   final String scopeType; // 'business' o 'locations'
-  final List<int>
-  locationIds; // IDs delle location accessibili (se scopeType='locations')
+  final List<int> locationIds; // IDs delle location accessibili (se scopeType='locations')
+  /// Servizi visibili: lista vuota = nessun filtro.
+  final List<int> allowedServiceIds;
+  /// Tipi lezione visibili: lista vuota = nessun filtro.
+  final List<int> allowedClassTypeIds;
   final String email;
   final String firstName;
   final String lastName;
@@ -24,6 +27,8 @@ class BusinessUser {
     this.staffId,
     this.scopeType = 'business',
     this.locationIds = const [],
+    this.allowedServiceIds = const [],
+    this.allowedClassTypeIds = const [],
     required this.email,
     required this.firstName,
     required this.lastName,
@@ -66,6 +71,8 @@ class BusinessUser {
     int? staffId,
     String? scopeType,
     List<int>? locationIds,
+    List<int>? allowedServiceIds,
+    List<int>? allowedClassTypeIds,
     String? email,
     String? firstName,
     String? lastName,
@@ -81,6 +88,8 @@ class BusinessUser {
     staffId: staffId ?? this.staffId,
     scopeType: scopeType ?? this.scopeType,
     locationIds: locationIds ?? this.locationIds,
+    allowedServiceIds: allowedServiceIds ?? this.allowedServiceIds,
+    allowedClassTypeIds: allowedClassTypeIds ?? this.allowedClassTypeIds,
     email: email ?? this.email,
     firstName: firstName ?? this.firstName,
     lastName: lastName ?? this.lastName,
@@ -99,6 +108,18 @@ class BusinessUser {
     scopeType: json['scope_type'] as String? ?? 'business',
     locationIds:
         (json['location_ids'] as List<dynamic>?)
+            ?.map(_asInt)
+            .where((e) => e > 0)
+            .toList() ??
+        [],
+    allowedServiceIds:
+        (json['allowed_service_ids'] as List<dynamic>?)
+            ?.map(_asInt)
+            .where((e) => e > 0)
+            .toList() ??
+        [],
+    allowedClassTypeIds:
+        (json['allowed_class_type_ids'] as List<dynamic>?)
             ?.map(_asInt)
             .where((e) => e > 0)
             .toList() ??

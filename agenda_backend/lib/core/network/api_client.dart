@@ -2345,6 +2345,8 @@ class ApiClient {
     String? scopeType,
     List<int>? locationIds,
     int? staffId,
+    List<int>? allowedServiceIds,
+    List<int>? allowedClassTypeIds,
   }) async {
     final data = <String, dynamic>{'role': role};
     if (scopeType != null) data['scope_type'] = scopeType;
@@ -2354,6 +2356,12 @@ class ApiClient {
     } else if (role != 'staff') {
       // Clear staff link when moving away from staff role.
       data['staff_id'] = null;
+    }
+    if (allowedServiceIds != null) {
+      data['allowed_service_ids'] = allowedServiceIds;
+    }
+    if (allowedClassTypeIds != null) {
+      data['allowed_class_type_ids'] = allowedClassTypeIds;
     }
 
     final response = await patch(
@@ -2407,6 +2415,8 @@ class ApiClient {
     String scopeType = 'business',
     List<int>? locationIds,
     int? staffId,
+    List<int>? allowedServiceIds,
+    List<int>? allowedClassTypeIds,
   }) async {
     final data = <String, dynamic>{
       'email': email,
@@ -2418,6 +2428,12 @@ class ApiClient {
     }
     if (staffId != null) {
       data['staff_id'] = staffId;
+    }
+    if (allowedServiceIds != null) {
+      data['allowed_service_ids'] = allowedServiceIds;
+    }
+    if (allowedClassTypeIds != null) {
+      data['allowed_class_type_ids'] = allowedClassTypeIds;
     }
 
     final response = await post(

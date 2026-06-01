@@ -1010,6 +1010,8 @@ final appointmentsForCurrentLocationProvider = Provider<List<Appointment>>((
   final canViewAll = ref.watch(canViewAllAppointmentsProvider);
   final currentUserStaffId = ref.watch(currentUserStaffIdProvider);
   final showCancelled = ref.watch(effectiveShowCancelledAppointmentsProvider);
+  // Filtro per sottoinsieme di servizi (null = nessun filtro)
+  final allowedServiceIds = ref.watch(allowedServiceIdsProvider);
 
   return [
     for (final appt in appointments)
@@ -1017,10 +1019,13 @@ final appointmentsForCurrentLocationProvider = Provider<List<Appointment>>((
           !appt.endTime.isBefore(dayStart) &&
           appt.startTime.isBefore(dayEnd) &&
           (showCancelled || !appt.isCancelled) &&
-          // Se può vedere tutto, mostra. Altrimenti solo i propri
+          // Filtro ruolo: staff vede solo i propri
           (canViewAll ||
               currentUserStaffId == null ||
-              appt.staffId == currentUserStaffId))
+              appt.staffId == currentUserStaffId) &&
+          // Filtro servizi: mostra solo i servizi consentiti all'operatore
+          (allowedServiceIds == null ||
+              allowedServiceIds.contains(appt.serviceId)))
         appt,
   ];
 });

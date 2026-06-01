@@ -110,6 +110,8 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
     String? scopeType,
     List<int>? locationIds,
     int? staffId,
+    List<int>? allowedServiceIds,
+    List<int>? allowedClassTypeIds,
   }) async {
     final globalLoading = ref.read(globalLoadingProvider.notifier);
     globalLoading.show();
@@ -122,6 +124,8 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
         scopeType: scopeType,
         locationIds: locationIds,
         staffId: staffId,
+        allowedServiceIds: allowedServiceIds,
+        allowedClassTypeIds: allowedClassTypeIds,
       );
       // Always reload from API after update to keep scope/location state aligned
       // with server-side rules and avoid stale local UI.
@@ -170,6 +174,8 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
     String scopeType = 'business',
     List<int>? locationIds,
     int? staffId,
+    List<int>? allowedServiceIds,
+    List<int>? allowedClassTypeIds,
   }) async {
     final globalLoading = ref.read(globalLoadingProvider.notifier);
     globalLoading.show();
@@ -182,6 +188,8 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
         scopeType: scopeType,
         locationIds: locationIds,
         staffId: staffId,
+        allowedServiceIds: allowedServiceIds,
+        allowedClassTypeIds: allowedClassTypeIds,
       );
       if (ref.mounted) {
         state = state.copyWith(

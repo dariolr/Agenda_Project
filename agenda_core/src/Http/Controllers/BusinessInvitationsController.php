@@ -254,6 +254,8 @@ final class BusinessInvitationsController
             'staff_id' => $staffId,
             'scope_type' => $scopeType,
             'location_ids' => $locationIds,
+            'allowed_service_ids' => array_map('intval', (array) ($body['allowed_service_ids'] ?? [])),
+            'allowed_class_type_ids' => array_map('intval', (array) ($body['allowed_class_type_ids'] ?? [])),
             'invited_by' => $userId,
         ]);
 
@@ -424,13 +426,15 @@ final class BusinessInvitationsController
         // Accept invitation and create business_user
         $this->invitationRepo->accept((int) $invitation['id'], $userId);
         
-        $businessUserId = $this->businessUserRepo->create([
+        $this->businessUserRepo->create([
             'business_id' => (int) $invitation['business_id'],
             'user_id' => $userId,
             'role' => $invitation['role'],
             'staff_id' => isset($invitation['staff_id']) && $invitation['staff_id'] !== null ? (int) $invitation['staff_id'] : null,
             'scope_type' => $invitation['scope_type'],
             'location_ids' => $invitation['location_ids'] ?? [],
+            'allowed_service_ids' => $invitation['allowed_service_ids'] ?? [],
+            'allowed_class_type_ids' => $invitation['allowed_class_type_ids'] ?? [],
             'invited_by' => (int) $invitation['invited_by'],
             'invited_at' => $invitation['created_at'],
             'accepted_at' => date('Y-m-d H:i:s'),
@@ -502,6 +506,8 @@ final class BusinessInvitationsController
             'staff_id' => isset($invitation['staff_id']) && $invitation['staff_id'] !== null ? (int) $invitation['staff_id'] : null,
             'scope_type' => $invitation['scope_type'],
             'location_ids' => $invitation['location_ids'] ?? [],
+            'allowed_service_ids' => $invitation['allowed_service_ids'] ?? [],
+            'allowed_class_type_ids' => $invitation['allowed_class_type_ids'] ?? [],
             'invited_by' => (int) $invitation['invited_by'],
             'invited_at' => $invitation['created_at'],
             'accepted_at' => date('Y-m-d H:i:s'),
@@ -615,6 +621,8 @@ final class BusinessInvitationsController
             'staff_id' => isset($invitation['staff_id']) && $invitation['staff_id'] !== null ? (int) $invitation['staff_id'] : null,
             'scope_type' => $invitation['scope_type'],
             'location_ids' => $invitation['location_ids'] ?? [],
+            'allowed_service_ids' => $invitation['allowed_service_ids'] ?? [],
+            'allowed_class_type_ids' => $invitation['allowed_class_type_ids'] ?? [],
             'invited_by' => (int) $invitation['invited_by'],
             'invited_at' => $invitation['created_at'],
             'accepted_at' => date('Y-m-d H:i:s'),

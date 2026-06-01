@@ -272,6 +272,14 @@ final class BusinessUsersController
             $updateData['location_ids'] = $body['location_ids'];
         }
 
+        // Handle service/class-type filter lists (independent of scope_type)
+        if (array_key_exists('allowed_service_ids', $body)) {
+            $updateData['allowed_service_ids'] = array_map('intval', (array) $body['allowed_service_ids']);
+        }
+        if (array_key_exists('allowed_class_type_ids', $body)) {
+            $updateData['allowed_class_type_ids'] = array_map('intval', (array) $body['allowed_class_type_ids']);
+        }
+
         // Enforce single-location assignment for staff when using locations scope.
         $effectiveRole = $updateData['role'] ?? $businessUser['role'];
         $effectiveScopeType = $updateData['scope_type'] ?? ($businessUser['scope_type'] ?? 'business');
@@ -405,6 +413,8 @@ final class BusinessUsersController
             'role' => $businessUser['role'],
             'scope_type' => $businessUser['scope_type'] ?? 'business',
             'location_ids' => array_map('intval', $businessUser['location_ids'] ?? []),
+            'allowed_service_ids' => array_map('intval', $businessUser['allowed_service_ids'] ?? []),
+            'allowed_class_type_ids' => array_map('intval', $businessUser['allowed_class_type_ids'] ?? []),
             'is_superadmin' => false,
             'permissions' => [
                 'can_manage_bookings' => (bool) $businessUser['can_manage_bookings'],
@@ -467,6 +477,8 @@ final class BusinessUsersController
             'role' => $row['role'],
             'scope_type' => $row['scope_type'] ?? 'business',
             'location_ids' => array_map('intval', $row['location_ids'] ?? []),
+            'allowed_service_ids' => array_map('intval', $row['allowed_service_ids'] ?? []),
+            'allowed_class_type_ids' => array_map('intval', $row['allowed_class_type_ids'] ?? []),
             'staff_id' => $row['staff_id'] ? (int) $row['staff_id'] : null,
             'permissions' => [
                 'can_manage_bookings' => (bool) $row['can_manage_bookings'],

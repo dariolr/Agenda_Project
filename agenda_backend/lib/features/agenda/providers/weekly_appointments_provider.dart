@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/models/appointment.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import 'bookings_provider.dart';
 import 'bookings_repository_provider.dart';
 
@@ -105,7 +106,13 @@ final weeklyAppointmentsProvider =
         }
       }
 
-      final appointments = appointmentsById.values.toList()
+      final allowedServiceIds = ref.read(allowedServiceIdsProvider);
+
+      final appointments = appointmentsById.values
+          .where((a) =>
+              allowedServiceIds == null ||
+              allowedServiceIds.contains(a.serviceId))
+          .toList()
         ..sort((a, b) => a.startTime.compareTo(b.startTime));
 
       return WeeklyAppointmentsResult(

@@ -1,16 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:agenda_backend/core/widgets/app_dividers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/l10n/l10_extension.dart';
+import '../../../../core/models/class_type.dart';
 import '../../../../core/models/location.dart';
+import '../../../../core/models/service.dart';
+import '../../../../core/models/staff.dart';
+
 import '../../../../core/widgets/app_dialogs.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
+import '../../../services/providers/service_categories_provider.dart';
 
 typedef RoleScopeSaveCallback =
     Future<void> Function({
       required String role,
       required String scopeType,
       required List<int> locationIds,
+      required List<int> allowedServiceIds,
+      required List<int> allowedClassTypeIds,
     });
 
 /// Dialog per selezionare un ruolo (desktop).
@@ -24,6 +32,12 @@ class RoleSelectionDialog extends StatefulWidget {
     required this.userName,
     required this.userEmail,
     required this.onSave,
+    this.currentServiceIds = const [],
+    this.currentClassTypeIds = const [],
+    this.services = const [],
+    this.classTypes = const [],
+    this.linkedStaffId,
+    this.staffList = const [],
   });
 
   final String currentRole;
@@ -33,6 +47,13 @@ class RoleSelectionDialog extends StatefulWidget {
   final String userName;
   final String userEmail;
   final RoleScopeSaveCallback onSave;
+  final List<int> currentServiceIds;
+  final List<int> currentClassTypeIds;
+  final List<Service> services;
+  final List<ClassType> classTypes;
+  /// Staff collegato all'operatore (solo per role=staff)
+  final int? linkedStaffId;
+  final List<Staff> staffList;
 
   @override
   State<RoleSelectionDialog> createState() => _RoleSelectionDialogState();
@@ -42,6 +63,8 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
   late String _selectedRole;
   late String _selectedScopeType;
   late Set<int> _selectedLocationIds;
+  late Set<int> _selectedServiceIds;
+  late Set<int> _selectedClassTypeIds;
 
   @override
   void initState() {
@@ -51,6 +74,8 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
         ? widget.currentScopeType
         : 'business';
     _selectedLocationIds = widget.currentLocationIds.toSet();
+    _selectedServiceIds = widget.currentServiceIds.toSet();
+    _selectedClassTypeIds = widget.currentClassTypeIds.toSet();
     _enforceSingleLocationForStaff();
   }
 
@@ -65,9 +90,29 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
     }
   }
 
+  List<Service> _filteredServices() {
+    if (_selectedRole != 'staff') return widget.services;
+    final staff = widget.staffList
+        .where((s) => s.id == widget.linkedStaffId)
+        .firstOrNull;
+    if (staff == null) return [];
+    return widget.services
+        .where((s) => staff.serviceIds.contains(s.id))
+        .toList();
+  }
+
+  bool _showServiceFilter(List<Service> filtered) {
+    if (_selectedRole != 'staff') {
+      return widget.services.isNotEmpty || widget.classTypes.isNotEmpty;
+    }
+    return widget.linkedStaffId != null &&
+        (filtered.isNotEmpty || widget.classTypes.isNotEmpty);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final filteredServices = _filteredServices();
 
     return AppFormDialog(
       title: Text(l10n.operatorsEditRole),
@@ -131,6 +176,21 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
               ),
             ],
           ],
+          if (_showServiceFilter(filteredServices)) ...[
+            const SizedBox(height: 24),
+            const AppDivider(),
+            const SizedBox(height: 16),
+            ServiceFilterSection(
+              services: filteredServices,
+              classTypes: widget.classTypes,
+              selectedServiceIds: _selectedServiceIds,
+              selectedClassTypeIds: _selectedClassTypeIds,
+              onServicesChanged: (ids) =>
+                  setState(() => _selectedServiceIds = ids),
+              onClassTypesChanged: (ids) =>
+                  setState(() => _selectedClassTypeIds = ids),
+            ),
+          ],
         ],
       ),
       actions: [
@@ -166,6 +226,8 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
               role: _selectedRole,
               scopeType: _selectedScopeType,
               locationIds: _selectedLocationIds.toList(),
+              allowedServiceIds: _selectedServiceIds.toList(),
+              allowedClassTypeIds: _selectedClassTypeIds.toList(),
             );
           },
           child: Text(l10n.actionSave),
@@ -186,6 +248,12 @@ class RoleSelectionSheet extends StatefulWidget {
     required this.userName,
     required this.userEmail,
     required this.onSave,
+    this.currentServiceIds = const [],
+    this.currentClassTypeIds = const [],
+    this.services = const [],
+    this.classTypes = const [],
+    this.linkedStaffId,
+    this.staffList = const [],
   });
 
   final String currentRole;
@@ -195,6 +263,12 @@ class RoleSelectionSheet extends StatefulWidget {
   final String userName;
   final String userEmail;
   final RoleScopeSaveCallback onSave;
+  final List<int> currentServiceIds;
+  final List<int> currentClassTypeIds;
+  final List<Service> services;
+  final List<ClassType> classTypes;
+  final int? linkedStaffId;
+  final List<Staff> staffList;
 
   @override
   State<RoleSelectionSheet> createState() => _RoleSelectionSheetState();
@@ -204,6 +278,8 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
   late String _selectedRole;
   late String _selectedScopeType;
   late Set<int> _selectedLocationIds;
+  late Set<int> _selectedServiceIds;
+  late Set<int> _selectedClassTypeIds;
 
   @override
   void initState() {
@@ -213,6 +289,8 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
         ? widget.currentScopeType
         : 'business';
     _selectedLocationIds = widget.currentLocationIds.toSet();
+    _selectedServiceIds = widget.currentServiceIds.toSet();
+    _selectedClassTypeIds = widget.currentClassTypeIds.toSet();
     _enforceSingleLocationForStaff();
   }
 
@@ -227,9 +305,29 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
     }
   }
 
+  List<Service> _filteredServices() {
+    if (_selectedRole != 'staff') return widget.services;
+    final staff = widget.staffList
+        .where((s) => s.id == widget.linkedStaffId)
+        .firstOrNull;
+    if (staff == null) return [];
+    return widget.services
+        .where((s) => staff.serviceIds.contains(s.id))
+        .toList();
+  }
+
+  bool _showServiceFilter(List<Service> filtered) {
+    if (_selectedRole != 'staff') {
+      return widget.services.isNotEmpty || widget.classTypes.isNotEmpty;
+    }
+    return widget.linkedStaffId != null &&
+        (filtered.isNotEmpty || widget.classTypes.isNotEmpty);
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final filteredServices = _filteredServices();
 
     return SingleChildScrollView(
       child: Column(
@@ -298,6 +396,21 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
               ),
             ],
           ],
+          if (_showServiceFilter(filteredServices)) ...[
+            const SizedBox(height: 24),
+            const AppDivider(),
+            const SizedBox(height: 16),
+            ServiceFilterSection(
+              services: filteredServices,
+              classTypes: widget.classTypes,
+              selectedServiceIds: _selectedServiceIds,
+              selectedClassTypeIds: _selectedClassTypeIds,
+              onServicesChanged: (ids) =>
+                  setState(() => _selectedServiceIds = ids),
+              onClassTypesChanged: (ids) =>
+                  setState(() => _selectedClassTypeIds = ids),
+            ),
+          ],
           const SizedBox(height: 16),
           Row(
             children: [
@@ -338,6 +451,8 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
                       role: _selectedRole,
                       scopeType: _selectedScopeType,
                       locationIds: _selectedLocationIds.toList(),
+                      allowedServiceIds: _selectedServiceIds.toList(),
+                      allowedClassTypeIds: _selectedClassTypeIds.toList(),
                     );
                   },
                   child: Text(l10n.actionSave),
@@ -671,6 +786,187 @@ class _LocationCheckboxTile extends StatelessWidget {
       secondary: const Icon(Icons.store_outlined),
       controlAffinity: ListTileControlAffinity.trailing,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    );
+  }
+}
+
+/// Sezione che permette di limitare la visibilità dell'operatore
+/// a un sottoinsieme di servizi e/o tipi lezione, raggruppati per categoria.
+/// Lista vuota = nessun filtro (vede tutto).
+class ServiceFilterSection extends ConsumerWidget {
+  const ServiceFilterSection({
+    super.key,
+    required this.services,
+    required this.classTypes,
+    required this.selectedServiceIds,
+    required this.selectedClassTypeIds,
+    required this.onServicesChanged,
+    required this.onClassTypesChanged,
+  });
+
+  final List<Service> services;
+  final List<ClassType> classTypes;
+  final Set<int> selectedServiceIds;
+  final Set<int> selectedClassTypeIds;
+  final ValueChanged<Set<int>> onServicesChanged;
+  final ValueChanged<Set<int>> onClassTypesChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final isIt = Localizations.localeOf(context).languageCode == 'it';
+    final categories = ref.watch(serviceCategoriesProvider);
+
+    // Costruisce mappa categoryId → nome categoria
+    final categoryNames = <int, String>{
+      for (final c in categories) c.id: c.name,
+    };
+
+    // Raggruppa servizi per categoria
+    final servicesByCategory = <int?, List<Service>>{};
+    for (final s in services) {
+      final catId = s.categoryId == 0 ? null : s.categoryId;
+      servicesByCategory.putIfAbsent(catId, () => []).add(s);
+    }
+
+    // Raggruppa lezioni per categoria (serviceCategoryId)
+    final classTypesByCategory = <int?, List<ClassType>>{};
+    for (final ct in classTypes) {
+      classTypesByCategory
+          .putIfAbsent(ct.serviceCategoryId, () => [])
+          .add(ct);
+    }
+
+    // Unione dei categoryId presenti (servizi + lezioni), ordina: categorie note
+    // prima (nell'ordine del provider), poi null in fondo
+    final allCategoryIds = <int?>{
+      ...servicesByCategory.keys,
+      ...classTypesByCategory.keys,
+    }.toList()
+      ..sort((a, b) {
+        if (a == null) return 1;
+        if (b == null) return -1;
+        final ia = categories.indexWhere((c) => c.id == a);
+        final ib = categories.indexWhere((c) => c.id == b);
+        return ia.compareTo(ib);
+      });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(Icons.filter_list, size: 18, color: colorScheme.primary),
+            const SizedBox(width: 8),
+            Text(
+              isIt ? 'Filtro visibilità servizi' : 'Service visibility filter',
+              style: theme.textTheme.titleSmall,
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          isIt
+              ? 'Lascia tutto deselezionato per accesso completo. Seleziona uno o più voci per limitare la visibilità.'
+              : 'Leave everything unselected for full access. Select one or more items to restrict visibility.',
+          style: theme.textTheme.bodySmall
+              ?.copyWith(color: colorScheme.onSurfaceVariant),
+        ),
+        for (final catId in allCategoryIds) ...[
+          const SizedBox(height: 12),
+          // Header categoria
+          Text(
+            catId == null
+                ? (isIt ? 'Senza categoria' : 'No category')
+                : (categoryNames[catId] ?? ''),
+            style: theme.textTheme.labelMedium
+                ?.copyWith(color: colorScheme.onSurfaceVariant),
+          ),
+          const SizedBox(height: 4),
+          Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: colorScheme.outlineVariant),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Column(
+              children: [
+                // Servizi della categoria
+                for (final s in servicesByCategory[catId] ?? []) ...[
+                  if ((servicesByCategory[catId]?.first.id ?? 0) != s.id ||
+                      true) // divisore prima di ogni voce tranne la prima
+                    Builder(builder: (ctx) {
+                      final idx = [
+                        ...(servicesByCategory[catId] ?? []),
+                        ...(classTypesByCategory[catId] ?? []),
+                      ].indexWhere((e) => e is Service && e.id == s.id);
+                      return Column(children: [
+                        if (idx > 0) const AppDivider(height: 1),
+                        CheckboxListTile(
+                          dense: true,
+                          title: Text(s.name,
+                              style: theme.textTheme.bodyMedium),
+                          value: selectedServiceIds.contains(s.id),
+                          onChanged: (checked) {
+                            final next = Set<int>.from(selectedServiceIds);
+                            checked == true
+                                ? next.add(s.id)
+                                : next.remove(s.id);
+                            onServicesChanged(next);
+                          },
+                          controlAffinity:
+                              ListTileControlAffinity.trailing,
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ]);
+                    }),
+                ],
+                // Lezioni della categoria
+                for (final ct in classTypesByCategory[catId] ?? []) ...[
+                  Builder(builder: (ctx) {
+                    final servicesInCat =
+                        servicesByCategory[catId] ?? [];
+                    final classTypesInCat =
+                        classTypesByCategory[catId] ?? [];
+                    final allItems = [
+                      ...servicesInCat,
+                      ...classTypesInCat,
+                    ];
+                    final idx = allItems.indexWhere(
+                        (e) => e is ClassType && e.id == ct.id);
+                    return Column(children: [
+                      if (idx > 0) const AppDivider(height: 1),
+                      CheckboxListTile(
+                        dense: true,
+                        title: Text(ct.name,
+                            style: theme.textTheme.bodyMedium),
+                        secondary: Icon(Icons.sports_martial_arts,
+                            size: 18,
+                            color: colorScheme.onSurfaceVariant),
+                        value:
+                            selectedClassTypeIds.contains(ct.id),
+                        onChanged: (checked) {
+                          final next =
+                              Set<int>.from(selectedClassTypeIds);
+                          checked == true
+                              ? next.add(ct.id)
+                              : next.remove(ct.id);
+                          onClassTypesChanged(next);
+                        },
+                        controlAffinity:
+                            ListTileControlAffinity.trailing,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ]);
+                  }),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
