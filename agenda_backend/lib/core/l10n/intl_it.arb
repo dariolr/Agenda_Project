@@ -269,6 +269,8 @@
   "teamLocationLocationDisplayHint": "Es. Sede, Luogo, Sala",
   "teamLocationIsActiveLabel": "Sede attiva",
   "teamLocationIsActiveHint": "Se disattivata, la sede non sarà visibile ai clienti",
+  "teamLocationOnlineBookingEnabledLabel": "Prenotazione online",
+  "teamLocationOnlineBookingEnabledHint": "Se disattivata, la sede non sarà prenotabile online. Rimane visibile e operativa nel gestionale.",
   "teamLocationBookingLimitsSection": "Limiti prenotazione online",
   "teamLocationAllowCustomerChooseStaffLabel": "Consenti ai clienti di scegliere il fornitore dei servizi",
   "teamLocationAllowCustomerChooseStaffHint": "Se disattivato, il sistema assegna automaticamente il fornitore dei servizi",

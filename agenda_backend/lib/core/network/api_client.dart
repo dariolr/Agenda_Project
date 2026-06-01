@@ -1801,6 +1801,7 @@ class ApiClient {
     bool? showPriceToCustomer,
     bool? showDurationToCustomer,
     bool? isActive,
+    bool? onlineBookingEnabled,
   }) async {
     final response = await post(
       '/v1/businesses/$businessId/locations',
@@ -1830,6 +1831,8 @@ class ApiClient {
         if (showDurationToCustomer != null)
           'show_duration_to_customer': showDurationToCustomer,
         if (isActive != null) 'is_active': isActive,
+        if (onlineBookingEnabled != null)
+          'online_booking_enabled': onlineBookingEnabled,
       },
     );
     final location = response['location'];
@@ -1865,6 +1868,7 @@ class ApiClient {
     String? slotDisplayMode,
     int? minGapMinutes,
     bool? isActive,
+    bool? onlineBookingEnabled,
   }) async {
     final response = await put(
       '/v1/locations/$locationId',
@@ -1899,6 +1903,8 @@ class ApiClient {
         if (slotDisplayMode != null) 'slot_display_mode': slotDisplayMode,
         if (minGapMinutes != null) 'min_gap_minutes': minGapMinutes,
         if (isActive != null) 'is_active': isActive,
+        if (onlineBookingEnabled != null)
+          'online_booking_enabled': onlineBookingEnabled,
       },
     );
     final location = response['location'];

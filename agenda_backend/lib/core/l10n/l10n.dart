@@ -1973,6 +1973,26 @@ class L10n {
     );
   }
 
+  /// `Online booking`
+  String get teamLocationOnlineBookingEnabledLabel {
+    return Intl.message(
+      'Online booking',
+      name: 'teamLocationOnlineBookingEnabledLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `If disabled, this location cannot be booked online. It remains visible and operational in the management panel.`
+  String get teamLocationOnlineBookingEnabledHint {
+    return Intl.message(
+      'If disabled, this location cannot be booked online. It remains visible and operational in the management panel.',
+      name: 'teamLocationOnlineBookingEnabledHint',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Online booking limits`
   String get teamLocationBookingLimitsSection {
     return Intl.message(

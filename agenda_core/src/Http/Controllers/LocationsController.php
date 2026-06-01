@@ -193,6 +193,7 @@ final class LocationsController
             'is_default' => (bool) $row['is_default'],
             'sort_order' => (int) ($row['sort_order'] ?? 0),
             'is_active' => (bool) $row['is_active'],
+            'online_booking_enabled' => (bool) ($row['online_booking_enabled'] ?? true),
             'created_at' => $row['created_at'],
             'updated_at' => $row['updated_at'],
         ];
@@ -318,6 +319,7 @@ final class LocationsController
             'booking_text_overrides_json' => $bookingTextOverridesJson,
             'staff_icon_key' => $staffIconKey ?? 'person',
             'is_active' => $body['is_active'] ?? true,
+            'online_booking_enabled' => $body['online_booking_enabled'] ?? true,
         ]);
 
         $location = $this->locationRepo->findById($locationId);
@@ -359,6 +361,9 @@ final class LocationsController
             'phone' => array_key_exists('phone', $body) ? $body['phone'] : $location['phone'],
             'email' => array_key_exists('email', $body) ? $body['email'] : $location['email'],
             'is_active' => array_key_exists('is_active', $body) ? $body['is_active'] : $location['is_active'],
+            'online_booking_enabled' => array_key_exists('online_booking_enabled', $body)
+                ? (bool) $body['online_booking_enabled']
+                : (bool) $location['online_booking_enabled'],
         ];
 
         if (array_key_exists('country', $body)) {

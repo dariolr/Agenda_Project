@@ -269,6 +269,8 @@
   "teamLocationLocationDisplayHint": "E.g. Location, Place, Room",
   "teamLocationIsActiveLabel": "Location active",
   "teamLocationIsActiveHint": "If disabled, the location will not be visible to customers",
+  "teamLocationOnlineBookingEnabledLabel": "Online booking",
+  "teamLocationOnlineBookingEnabledHint": "If disabled, this location cannot be booked online. It remains visible and operational in the management panel.",
   "teamLocationBookingLimitsSection": "Online booking limits",
   "teamLocationAllowCustomerChooseStaffLabel": "Allow customers to choose the service provider",
   "teamLocationAllowCustomerChooseStaffHint": "If disabled, the system assigns the service provider automatically",

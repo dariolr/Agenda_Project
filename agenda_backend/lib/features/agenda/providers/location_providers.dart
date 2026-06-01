@@ -134,6 +134,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
     bool? showPriceToCustomer,
     bool? showDurationToCustomer,
     bool? isActive,
+    bool? onlineBookingEnabled,
   }) async {
     final business = ref.read(currentBusinessProvider);
     final repository = ref.read(locationsRepositoryProvider);
@@ -156,6 +157,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
       showPriceToCustomer: showPriceToCustomer,
       showDurationToCustomer: showDurationToCustomer,
       isActive: isActive,
+      onlineBookingEnabled: onlineBookingEnabled,
     );
     state = [...state, location];
     return location;
@@ -184,6 +186,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
     String? slotDisplayMode,
     int? minGapMinutes,
     bool? isActive,
+    bool? onlineBookingEnabled,
   }) async {
     final repository = ref.read(locationsRepositoryProvider);
     final updated = await repository.update(
@@ -208,6 +211,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
       slotDisplayMode: slotDisplayMode,
       minGapMinutes: minGapMinutes,
       isActive: isActive,
+      onlineBookingEnabled: onlineBookingEnabled,
     );
     state = [
       for (final l in state)

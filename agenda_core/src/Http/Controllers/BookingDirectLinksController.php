@@ -179,6 +179,7 @@ final class BookingDirectLinksController
                 (int) ($target['is_active'] ?? 0) === 1
                 && (int) ($target['service_is_active'] ?? 0) === 1
                 && (int) ($target['location_is_active'] ?? 0) === 1
+                && (int) ($target['location_online_booking_enabled'] ?? 0) === 1
                 && (int) ($target['is_bookable_online'] ?? 0) === 1,
             BookingDirectLinkRepository::TARGET_SERVICE_PACKAGE =>
                 in_array((string) ($target['online_visibility'] ?? 'public'), ['public', 'direct_link'], true)
@@ -186,6 +187,7 @@ final class BookingDirectLinksController
                 (int) ($target['is_active'] ?? 0) === 1
                 && (int) ($target['is_broken'] ?? 0) === 0
                 && (int) ($target['location_is_active'] ?? 0) === 1
+                && (int) ($target['location_online_booking_enabled'] ?? 0) === 1
                 && (int) ($target['is_bookable_online'] ?? 0) === 1,
             BookingDirectLinkRepository::TARGET_CLASS_EVENT =>
                 in_array((string) ($target['online_visibility'] ?? 'public'), ['public', 'direct_link'], true)
@@ -193,6 +195,7 @@ final class BookingDirectLinksController
                 (string) ($target['status'] ?? '') === 'SCHEDULED'
                 && (string) ($target['visibility'] ?? '') === 'PUBLIC'
                 && (int) ($target['location_is_active'] ?? 0) === 1
+                && (int) ($target['location_online_booking_enabled'] ?? 0) === 1
                 && (int) ($target['is_bookable_online'] ?? 0) === 1
                 && $this->classEventWindowIsOpen($target),
             BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY => true,

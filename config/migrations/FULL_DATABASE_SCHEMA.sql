@@ -500,6 +500,7 @@ CREATE TABLE `locations` (
   `is_default` tinyint(1) NOT NULL DEFAULT '0',
   `sort_order` int NOT NULL DEFAULT '0',
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `online_booking_enabled` tinyint(1) NOT NULL DEFAULT '1' COMMENT 'Se 0, la sede non è prenotabile online (ma rimane attiva nel gestionale)',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `online_booking_slot_interval_minutes` int UNSIGNED NOT NULL DEFAULT '15' COMMENT 'Intervallo tra slot mostrati ai clienti online (minuti)',

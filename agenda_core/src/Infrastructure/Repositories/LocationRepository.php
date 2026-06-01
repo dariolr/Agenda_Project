@@ -20,7 +20,7 @@ final class LocationRepository
                     l.booking_default_locale,
                     l.allow_customer_choose_staff, l.allow_multi_service_booking,
                     l.show_price_to_customer, l.show_duration_to_customer,
-                    l.is_default, l.is_active, l.created_at, l.updated_at,
+                    l.is_default, l.is_active, l.online_booking_enabled, l.created_at, l.updated_at,
                     l.cancellation_hours,
                     l.online_booking_slot_interval_minutes, l.slot_display_mode, l.min_gap_minutes,
                     l.min_booking_notice_hours, l.max_booking_advance_days,
@@ -55,12 +55,12 @@ final class LocationRepository
                     l.min_booking_notice_hours, l.max_booking_advance_days,
                     l.booking_text_overrides_json,
                     l.staff_icon_key,
-                    l.is_default, l.sort_order, l.is_active, l.created_at, l.updated_at
+                    l.is_default, l.sort_order, l.is_active, l.online_booking_enabled, l.created_at, l.updated_at
              FROM locations l
              WHERE l.business_id = ?';
-        
+
         if (!$includeInactive) {
-            $sql .= ' AND l.is_active = 1';
+            $sql .= ' AND l.is_active = 1 AND l.online_booking_enabled = 1';
         }
         
         $sql .= ' ORDER BY l.sort_order ASC, l.name ASC';
@@ -140,9 +140,9 @@ final class LocationRepository
                     l.show_price_to_customer, l.show_duration_to_customer,
                     l.booking_text_overrides_json,
                     l.staff_icon_key,
-                    l.is_default, l.is_active, l.created_at, l.updated_at
+                    l.is_default, l.is_active, l.online_booking_enabled, l.created_at, l.updated_at
              FROM locations l
-             WHERE l.business_id = ? AND l.is_default = 1 AND l.is_active = 1
+             WHERE l.business_id = ? AND l.is_default = 1 AND l.is_active = 1 AND l.online_booking_enabled = 1
              LIMIT 1'
         );
         $stmt->execute([$businessId]);
@@ -161,9 +161,9 @@ final class LocationRepository
                     l.show_price_to_customer, l.show_duration_to_customer,
                     l.booking_text_overrides_json,
                     l.staff_icon_key,
-                    l.is_default, l.is_active, l.created_at, l.updated_at
+                    l.is_default, l.is_active, l.online_booking_enabled, l.created_at, l.updated_at
              FROM locations l
-             WHERE l.business_id = ? AND l.is_active = 1
+             WHERE l.business_id = ? AND l.is_active = 1 AND l.online_booking_enabled = 1
              ORDER BY l.id ASC
              LIMIT 1'
         );
@@ -176,6 +176,7 @@ final class LocationRepository
     public function create(int $businessId, string $name, array $data = []): int
     {
         $isActive = $data['is_active'] ?? 1;
+        $onlineBookingEnabled = $data['online_booking_enabled'] ?? 1;
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO locations (
                 business_id, name, address, country, phone, email, timezone, booking_default_locale,
@@ -184,8 +185,8 @@ final class LocationRepository
                 booking_text_overrides_json,
                 staff_icon_key,
                 show_price_to_customer, show_duration_to_customer,
-                is_active
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                is_active, online_booking_enabled
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $businessId,
@@ -206,6 +207,7 @@ final class LocationRepository
             isset($data['show_price_to_customer']) ? ($data['show_price_to_customer'] ? 1 : 0) : 1,
             isset($data['show_duration_to_customer']) ? ($data['show_duration_to_customer'] ? 1 : 0) : 1,
             $isActive ? 1 : 0,
+            $onlineBookingEnabled ? 1 : 0,
         ]);
 
         return (int) $this->db->getPdo()->lastInsertId();
@@ -243,6 +245,11 @@ final class LocationRepository
         if (array_key_exists('is_active', $data)) {
             $fields[] = 'is_active = ?';
             $values[] = $data['is_active'] ? 1 : 0;
+        }
+
+        if (array_key_exists('online_booking_enabled', $data)) {
+            $fields[] = 'online_booking_enabled = ?';
+            $values[] = $data['online_booking_enabled'] ? 1 : 0;
         }
 
         if (array_key_exists('allow_customer_choose_staff', $data)) {

@@ -3134,6 +3134,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationIsActiveLabel": MessageLookupByLibrary.simpleMessage(
       "Sede attiva",
     ),
+    "teamLocationOnlineBookingEnabledHint": MessageLookupByLibrary.simpleMessage(
+      "Se disattivata, la sede non sarà prenotabile online. Rimane visibile e operativa nel gestionale.",
+    ),
+    "teamLocationOnlineBookingEnabledLabel": MessageLookupByLibrary.simpleMessage(
+      "Prenotazione online",
+    ),
     "teamLocationLabel": MessageLookupByLibrary.simpleMessage("Sede"),
     "teamLocationLocationDisplayHint": MessageLookupByLibrary.simpleMessage(
       "Es. Sede, Luogo, Sala",

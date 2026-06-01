@@ -13,6 +13,7 @@ final class LocationContextMiddleware implements MiddlewareInterface
     public function __construct(
         private readonly LocationRepository $locationRepo,
         private readonly string $source, // 'path' or 'query'
+        private readonly bool $checkOnlineBookable = false,
     ) {}
 
     public function handle(Request $request): ?Response
@@ -31,6 +32,10 @@ final class LocationContextMiddleware implements MiddlewareInterface
 
         if (!$location['is_active']) {
             return Response::notFound('Location is not active', $request->traceId);
+        }
+
+        if ($this->checkOnlineBookable && !$location['online_booking_enabled']) {
+            return Response::notFound('Location is not available for online booking', $request->traceId);
         }
 
         // Inject business_id and location_id into request context

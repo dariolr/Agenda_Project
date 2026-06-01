@@ -3016,6 +3016,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationIsActiveLabel": MessageLookupByLibrary.simpleMessage(
       "Location active",
     ),
+    "teamLocationOnlineBookingEnabledHint": MessageLookupByLibrary.simpleMessage(
+      "If disabled, this location cannot be booked online. It remains visible and operational in the management panel.",
+    ),
+    "teamLocationOnlineBookingEnabledLabel": MessageLookupByLibrary.simpleMessage(
+      "Online booking",
+    ),
     "teamLocationLabel": MessageLookupByLibrary.simpleMessage("Location"),
     "teamLocationLocationDisplayHint": MessageLookupByLibrary.simpleMessage(
       "E.g. Location, Place, Room",

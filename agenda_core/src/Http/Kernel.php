@@ -454,7 +454,7 @@ final class Kernel
             'auth' => new AuthMiddleware($jwtService),
             'customer_auth' => new CustomerAuthMiddleware($jwtService),
             'location_path' => new LocationContextMiddleware($locationRepo, 'path'),
-            'location_query' => new LocationContextMiddleware($locationRepo, 'query'),
+            'location_query' => new LocationContextMiddleware($locationRepo, 'query', true),
             'location_access' => new LocationAccessMiddleware($businessUserRepo, $userRepo),
             'idempotency' => new IdempotencyMiddleware(),
             'business_access' => new BusinessAccessMiddleware($businessUserRepo, $userRepo, 'attribute'),

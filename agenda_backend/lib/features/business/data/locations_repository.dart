@@ -31,6 +31,7 @@ class LocationsRepository {
     bool? showPriceToCustomer,
     bool? showDurationToCustomer,
     bool? isActive,
+    bool? onlineBookingEnabled,
   }) async {
     final data = await _apiClient.createLocation(
       businessId: businessId,
@@ -51,6 +52,7 @@ class LocationsRepository {
       showPriceToCustomer: showPriceToCustomer,
       showDurationToCustomer: showDurationToCustomer,
       isActive: isActive,
+      onlineBookingEnabled: onlineBookingEnabled,
     );
     return Location.fromJson(data);
   }
@@ -77,6 +79,7 @@ class LocationsRepository {
     String? slotDisplayMode,
     int? minGapMinutes,
     bool? isActive,
+    bool? onlineBookingEnabled,
   }) async {
     final data = await _apiClient.updateLocation(
       locationId: locationId,
@@ -100,6 +103,7 @@ class LocationsRepository {
       slotDisplayMode: slotDisplayMode,
       minGapMinutes: minGapMinutes,
       isActive: isActive,
+      onlineBookingEnabled: onlineBookingEnabled,
     );
     return Location.fromJson(data);
   }
