@@ -29,8 +29,8 @@ class BusinessSelector extends ConsumerWidget {
         businesses: sortBusinessesForSelection(businesses),
         currentBusinessId: currentBusinessId,
         onChanged: (id) {
-          ref.read(currentBusinessIdProvider.notifier).selectByUser(id);
           ref.read(superadminSelectedBusinessProvider.notifier).select(id);
+          ref.read(currentBusinessIdProvider.notifier).selectByUser(id);
           invalidateBusinessScopedProviders(ref);
         },
       ),

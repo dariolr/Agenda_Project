@@ -53,7 +53,7 @@ class BusinessListScreen extends ConsumerWidget {
           final orderedBusinesses = sortBusinessesForSelection(businesses);
           return Column(
             children: [
-Expanded(
+              Expanded(
                 child: _BusinessList(
                   businesses: orderedBusinesses,
                   onSelect: (business) =>
@@ -116,11 +116,11 @@ Expanded(
     WidgetRef ref,
     Business business,
   ) async {
-    // 1) Imposta il business corrente
-    ref.read(currentBusinessIdProvider.notifier).selectByUser(business.id);
-    // 2) Segna che il superadmin ha selezionato un business
+    // 1) Aggiorna la source of truth del superadmin.
     ref.read(superadminSelectedBusinessProvider.notifier).select(business.id);
-    // 3) Invalida tutti i provider scoped al business precedente
+    // 2) Allinea subito il business corrente usato dai provider della shell.
+    ref.read(currentBusinessIdProvider.notifier).selectByUser(business.id);
+    // 3) Invalida tutti i provider scoped al business precedente.
     invalidateBusinessScopedProviders(ref);
     ref.invalidate(currentBusinessUserContextProvider);
 
@@ -474,7 +474,6 @@ Expanded(
     }
   }
 }
-
 
 class _BusinessList extends StatelessWidget {
   const _BusinessList({

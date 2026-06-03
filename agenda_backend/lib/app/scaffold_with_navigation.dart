@@ -75,6 +75,10 @@ int resolveMoreCompactBranchTarget({
   return 6; // Fallback: root "Altro"
 }
 
+bool shouldRememberMoreCompactBranchLocation(String currentPath) {
+  return currentPath == '/altro' || currentPath.startsWith('/altro/');
+}
+
 Widget _buildAddButtonContent({
   required bool showLabelEffective,
   required bool compact,
@@ -115,8 +119,7 @@ class ScaffoldWithNavigation extends ConsumerStatefulWidget {
       _ScaffoldWithNavigationState();
 }
 
-class _ScaffoldWithNavigationState
-    extends ConsumerState<ScaffoldWithNavigation>
+class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
     with WidgetsBindingObserver {
   int? _lastShellIndex;
   int _lastMoreBranchIndex = 6;
@@ -208,8 +211,9 @@ class _ScaffoldWithNavigationState
             isMoreLocations ||
             isMorePaymentMethods ||
             isMoreWhatsappBusiness);
-    final backTarget =
-        (isReport || isMoreBilling) && fromAgendaEntry ? '/agenda' : '/altro';
+    final backTarget = (isReport || isMoreBilling) && fromAgendaEntry
+        ? '/agenda'
+        : '/altro';
     final showCloseBackButton =
         fromAltroEntry || ((isReport || isMoreBilling) && fromAgendaEntry);
     if (isMoreBilling && fromAgendaEntry) {
@@ -266,7 +270,6 @@ class _ScaffoldWithNavigationState
       currentIndex,
       includeClients: showClientsNav,
       currentPath: currentPath,
-      fromAltroEntry: fromAltroEntry,
     );
 
     // Per mobile e desktop usiamo destinazioni compatte con "Altro" (o "Profilo" per viewer)
@@ -387,20 +390,19 @@ class _ScaffoldWithNavigationState
                     includeClients: showClientsNav,
                   ),
                   leading: SizedBox(
-                      width: railWidth,
-                      height: agendaToolbarHeight - 8,
-                      child: Align(
-                        alignment: Alignment.center,
-                        child: Image.asset(
-                          'assets/logo.png',
-                          width: railIconSize,
-                          height: railIconSize,
-                          fit: BoxFit.contain,
-                          errorBuilder: (_, __, ___) =>
-                              const SizedBox.shrink(),
-                        ),
+                    width: railWidth,
+                    height: agendaToolbarHeight - 8,
+                    child: Align(
+                      alignment: Alignment.center,
+                      child: Image.asset(
+                        'assets/logo.png',
+                        width: railIconSize,
+                        height: railIconSize,
+                        fit: BoxFit.contain,
+                        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
                       ),
                     ),
+                  ),
                   labelType: NavigationRailLabelType.none,
                   useIndicator: false, // disattiva highlight di sistema su tap
                   // BusinessSelector rimosso - superadmin usa /businesses
@@ -671,12 +673,8 @@ class _ScaffoldWithNavigationState
     int currentIndex, {
     required bool includeClients,
     required String currentPath,
-    required bool fromAltroEntry,
   }) {
-    final isInsideAltroPath =
-        currentPath == '/altro' || currentPath.startsWith('/altro/');
-    final shouldRememberAsMoreSubFeature = isInsideAltroPath || fromAltroEntry;
-    if (!shouldRememberAsMoreSubFeature) return;
+    if (!shouldRememberMoreCompactBranchLocation(currentPath)) return;
 
     // "Altro" compatto include tutti i branch non mappati su Agenda/Clienti.
     if (_isMoreCompactBranch(currentIndex, includeClients: includeClients)) {
