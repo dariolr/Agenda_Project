@@ -3005,11 +3005,20 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
   @override
   void initState() {
     super.initState();
-    // Auto-focus sul campo di ricerca dopo il primo build
+    _scheduleSearchFocus();
+  }
+
+  void _scheduleSearchFocus() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _searchFocusNode.requestFocus();
-      }
+      if (!mounted) return;
+      _searchFocusNode.requestFocus();
+      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+    });
+
+    Future<void>.delayed(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      _searchFocusNode.requestFocus();
+      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
     });
   }
 
@@ -3053,6 +3062,7 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
                   TextField(
                     controller: _searchController,
                     focusNode: _searchFocusNode,
+                    autofocus: true,
                     decoration: InputDecoration(
                       hintText: l10n.searchClientPlaceholder,
                       prefixIcon: const Icon(Icons.search, size: 20),

@@ -574,6 +574,16 @@ final class UpdateBooking
         if (empty($changedFields)) {
             return;
         }
+
+        // A pure status transition to cancelled is represented by booking_cancelled
+        // in the cancellation flow. Logging it as booking_updated creates a
+        // duplicate audit entry for the same user action.
+        if (
+            $changedFields === ['status']
+            && ($after['status'] ?? null) === 'cancelled'
+        ) {
+            return;
+        }
         
         try {
             // Resolve actor name for denormalization

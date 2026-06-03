@@ -16,6 +16,8 @@ final class BookingNotificationsRepositoryTest extends TestCase
 
     protected function setUp(): void
     {
+        $_ENV['NOTIFICATION_TEST_MODE'] = 'false';
+
         $this->pdo = new PDO('sqlite::memory:');
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         $this->createSchema();
@@ -65,14 +67,91 @@ final class BookingNotificationsRepositoryTest extends TestCase
         $this->assertSame('class', $result['notifications'][0]['booking_kind']);
     }
 
+    public function testQueueSkipsInvalidRecipientEmailBeforeSending(): void
+    {
+        $id = $this->repository->queue([
+            'type' => 'email',
+            'channel' => 'booking_confirmed',
+            'recipient_type' => 'client',
+            'recipient_id' => 30,
+            'recipient_email' => 'ada@example..com',
+            'recipient_name' => 'Ada Lovelace',
+            'subject' => 'Booking',
+            'payload' => ['variables' => ['client_name' => 'Ada']],
+            'business_id' => 42,
+            'booking_id' => 100,
+        ]);
+
+        $stmt = $this->pdo->prepare('SELECT status, attempts, recipient_email, error_message FROM notification_queue WHERE id = ?');
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $this->assertSame('skipped', $row['status']);
+        $this->assertSame(0, (int) $row['attempts']);
+        $this->assertSame('ada@example..com', $row['recipient_email']);
+        $this->assertSame('Invalid recipient email: ada@example..com', $row['error_message']);
+
+        $event = $this->pdo
+            ->query('SELECT event_type, actor_type, actor_name, payload_json FROM booking_events ORDER BY id DESC LIMIT 1')
+            ->fetch(PDO::FETCH_ASSOC);
+
+        $this->assertSame('booking_notification_skipped', $event['event_type']);
+        $this->assertSame('system', $event['actor_type']);
+        $this->assertSame('Notification Queue', $event['actor_name']);
+
+        $payload = json_decode((string) $event['payload_json'], true);
+        $this->assertSame($id, (int) $payload['notification_id']);
+        $this->assertSame('ada@example..com', $payload['recipient_email']);
+        $this->assertSame('Invalid recipient email: ada@example..com', $payload['reason']);
+    }
+
+    public function testQueueKeepsValidRecipientEmailPending(): void
+    {
+        $id = $this->repository->queue([
+            'type' => 'email',
+            'channel' => 'booking_confirmed',
+            'recipient_type' => 'client',
+            'recipient_id' => 30,
+            'recipient_email' => 'ada@example.com',
+            'recipient_name' => 'Ada Lovelace',
+            'subject' => 'Booking',
+            'payload' => ['variables' => ['client_name' => 'Ada']],
+            'business_id' => 42,
+            'booking_id' => 100,
+        ]);
+
+        $stmt = $this->pdo->prepare('SELECT status, error_message FROM notification_queue WHERE id = ?');
+        $stmt->execute([$id]);
+        $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        $this->assertSame('pending', $row['status']);
+        $this->assertNull($row['error_message']);
+    }
+
     private function createSchema(): void
     {
         $this->pdo->exec(
             'CREATE TABLE business_whatsapp_settings (
+                id INTEGER PRIMARY KEY,
                 business_id INTEGER NOT NULL,
+                provider_code TEXT,
                 whatsapp_enabled INTEGER NOT NULL DEFAULT 0,
                 messages_enabled INTEGER NOT NULL DEFAULT 0,
-                business_messages_enabled INTEGER NOT NULL DEFAULT 1
+                business_messages_enabled INTEGER NOT NULL DEFAULT 1,
+                allow_location_mapping INTEGER NOT NULL DEFAULT 0,
+                default_channel_mode TEXT,
+                existing_clients_opt_in_policy TEXT,
+                existing_clients_opt_in_assumed_at TEXT,
+                status TEXT,
+                last_go_live_check_at TEXT,
+                last_error_code TEXT,
+                last_error_message TEXT,
+                enabled_by_user_id INTEGER,
+                enabled_at TEXT,
+                disabled_at TEXT,
+                notes TEXT,
+                created_at TEXT,
+                updated_at TEXT
             )'
         );
         $this->pdo->exec(
@@ -107,7 +186,8 @@ final class BookingNotificationsRepositoryTest extends TestCase
         $this->pdo->exec(
             'CREATE TABLE locations (
                 id INTEGER PRIMARY KEY,
-                name TEXT
+                name TEXT,
+                timezone TEXT
             )'
         );
         $this->pdo->exec(
@@ -173,6 +253,19 @@ final class BookingNotificationsRepositoryTest extends TestCase
                 updated_at TEXT
             )'
         );
+        $this->pdo->exec(
+            'CREATE TABLE booking_events (
+                id INTEGER PRIMARY KEY,
+                booking_id INTEGER NOT NULL,
+                event_type TEXT NOT NULL,
+                actor_type TEXT NOT NULL,
+                actor_id INTEGER,
+                actor_name TEXT,
+                payload_json TEXT NOT NULL,
+                correlation_id TEXT,
+                created_at TEXT
+            )'
+        );
     }
 
     private function seedData(): void
@@ -181,7 +274,7 @@ final class BookingNotificationsRepositoryTest extends TestCase
         $this->pdo->exec('INSERT INTO service_variants (id, service_id, is_active) VALUES (11, 10, 1)');
         $this->pdo->exec('INSERT INTO class_types (id, business_id, name, is_active) VALUES (20, 42, "Pilates", 1)');
         $this->pdo->exec('INSERT INTO clients (id, first_name, last_name) VALUES (30, "Ada", "Lovelace")');
-        $this->pdo->exec('INSERT INTO locations (id, name) VALUES (40, "Studio")');
+        $this->pdo->exec('INSERT INTO locations (id, name, timezone) VALUES (40, "Studio", "Europe/Rome")');
         $this->pdo->exec('INSERT INTO bookings (id, business_id, client_id, location_id, client_name) VALUES (100, 42, 30, 40, "Ada Lovelace")');
         $this->pdo->exec('INSERT INTO booking_items (id, booking_id, start_time, end_time) VALUES (101, 100, "2026-05-28 10:00:00", "2026-05-28 11:00:00")');
         $this->pdo->exec('INSERT INTO class_events (id, business_id, class_type_id, location_id, starts_at, ends_at) VALUES (150, 42, 20, 40, "2026-05-28 12:00:00", "2026-05-28 13:00:00")');

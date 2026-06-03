@@ -6250,6 +6250,16 @@ class L10n {
     );
   }
 
+  /// `Email not sent of type: {type}`
+  String bookingHistoryEventNotificationSkippedTitle(Object type) {
+    return Intl.message(
+      'Email not sent of type: $type',
+      name: 'bookingHistoryEventNotificationSkippedTitle',
+      desc: '',
+      args: [type],
+    );
+  }
+
   /// `Service added`
   String get bookingHistoryEventItemAdded {
     return Intl.message(
@@ -6387,6 +6397,26 @@ class L10n {
       name: 'bookingHistoryNotificationSentAt',
       desc: '',
       args: [dateTime],
+    );
+  }
+
+  /// `Skipped at: {dateTime}`
+  String bookingHistoryNotificationSkippedAt(Object dateTime) {
+    return Intl.message(
+      'Skipped at: $dateTime',
+      name: 'bookingHistoryNotificationSkippedAt',
+      desc: '',
+      args: [dateTime],
+    );
+  }
+
+  /// `Reason: {reason}`
+  String bookingHistoryNotificationSkipReason(Object reason) {
+    return Intl.message(
+      'Reason: $reason',
+      name: 'bookingHistoryNotificationSkipReason',
+      desc: '',
+      args: [reason],
     );
   }
 

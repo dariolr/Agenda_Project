@@ -223,8 +223,17 @@ class _EventTile extends StatelessWidget {
     // Build user-friendly description based on event type and payload
     final description = _buildDescription(eventType, payload, locale, l10n);
     final isNotificationSent = eventType == 'booking_notification_sent';
+    final isNotificationSkipped = eventType == 'booking_notification_skipped';
     final recipientEmail =
         (payload['recipient_email'] as String?)?.trim() ?? '';
+    final String timeLabel;
+    if (isNotificationSent) {
+      timeLabel = l10n.bookingHistoryNotificationSentAt(formattedDate);
+    } else if (isNotificationSkipped) {
+      timeLabel = l10n.bookingHistoryNotificationSkippedAt(formattedDate);
+    } else {
+      timeLabel = '$formattedDate • $actorLabel';
+    }
 
     return ListTile(
       leading: CircleAvatar(
@@ -240,7 +249,8 @@ class _EventTile extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 4),
               child: Text(description, style: theme.textTheme.bodySmall),
             ),
-          if (isNotificationSent && recipientEmail.isNotEmpty)
+          if ((isNotificationSent || isNotificationSkipped) &&
+              recipientEmail.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(bottom: 2),
               child: Text(
@@ -249,16 +259,15 @@ class _EventTile extends StatelessWidget {
               ),
             ),
           Text(
-            isNotificationSent
-                ? l10n.bookingHistoryNotificationSentAt(formattedDate)
-                : '$formattedDate • $actorLabel',
+            timeLabel,
             style: theme.textTheme.bodySmall?.copyWith(color: theme.hintColor),
           ),
         ],
       ),
       isThreeLine:
           description != null ||
-          (isNotificationSent && recipientEmail.isNotEmpty),
+          ((isNotificationSent || isNotificationSkipped) &&
+              recipientEmail.isNotEmpty),
     );
   }
 
@@ -275,6 +284,8 @@ class _EventTile extends StatelessWidget {
         return _describeBookingCreated(payload, locale);
       case 'booking_notification_sent':
         return null;
+      case 'booking_notification_skipped':
+        return _describeNotificationSkipped(payload, l10n);
       case 'booking_cancelled':
         return _describeBookingCancelled(payload, locale);
       case 'booking_item_added':
@@ -288,6 +299,18 @@ class _EventTile extends StatelessWidget {
       default:
         return null;
     }
+  }
+
+  String? _describeNotificationSkipped(
+    Map<String, dynamic> payload,
+    dynamic l10n,
+  ) {
+    final reason = (payload['reason'] as String?)?.trim();
+    if (reason == null || reason.isEmpty) {
+      return null;
+    }
+
+    return l10n.bookingHistoryNotificationSkipReason(reason);
   }
 
   String? _describeAppointmentUpdate(
@@ -625,6 +648,15 @@ class _EventTile extends StatelessWidget {
           Icons.mail_outline,
           Colors.lightBlue,
           l10n.bookingHistoryEventNotificationSentTitle(
+            _notificationChannelLabel(channel, l10n),
+          ),
+        );
+      case 'booking_notification_skipped':
+        final channel = ((payload['channel'] as String?) ?? '').trim();
+        return (
+          Icons.mark_email_unread_outlined,
+          Colors.deepOrange,
+          l10n.bookingHistoryEventNotificationSkippedTitle(
             _notificationChannelLabel(channel, l10n),
           ),
         );

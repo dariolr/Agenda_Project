@@ -51,17 +51,29 @@ final class NotificationRepository
             $data['recipient_email'] = $testEmail;
         }
 
+        $type = (string) ($data['type'] ?? 'email');
+        $invalidRecipientReason = $this->invalidRecipientEmailReason($type, $data['recipient_email'] ?? null);
+        if ($type === 'email' && isset($data['recipient_email'])) {
+            $data['recipient_email'] = trim((string) $data['recipient_email']);
+        }
+        $status = $invalidRecipientReason === null ? 'pending' : 'skipped';
+        $failedAt = $invalidRecipientReason === null
+            ? null
+            : $this->resolveCurrentTimeForOptionalBooking($data['booking_id'] ?? null)->format('Y-m-d H:i:s');
+
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO notification_queue
              (type, channel, recipient_type, recipient_id, recipient_email, recipient_name,
-              subject, payload, priority, scheduled_at, max_attempts, business_id, booking_id, class_booking_id, status)
+              subject, payload, priority, scheduled_at, max_attempts, business_id, booking_id, class_booking_id,
+              status, failed_at, error_message)
              VALUES
              (:type, :channel, :recipient_type, :recipient_id, :recipient_email, :recipient_name,
-              :subject, :payload, :priority, :scheduled_at, :max_attempts, :business_id, :booking_id, :class_booking_id, "pending")'
+              :subject, :payload, :priority, :scheduled_at, :max_attempts, :business_id, :booking_id, :class_booking_id,
+              :status, :failed_at, :error_message)'
         );
 
         $params = [
-            'type' => $data['type'] ?? 'email',
+            'type' => $type,
             'channel' => $channel,
             'recipient_type' => $data['recipient_type'],
             'recipient_id' => $data['recipient_id'],
@@ -75,6 +87,9 @@ final class NotificationRepository
             'business_id' => $data['business_id'] ?? null,
             'booking_id' => $data['booking_id'] ?? null,
             'class_booking_id' => $data['class_booking_id'] ?? null,
+            'status' => $status,
+            'failed_at' => $failedAt,
+            'error_message' => $invalidRecipientReason,
         ];
         $stmt->execute($params);
         $id = (int) $this->db->getPdo()->lastInsertId();
@@ -84,6 +99,10 @@ final class NotificationRepository
             'id' => $id,
             'payload' => $data['payload'] ?? [],
         ]);
+
+        if ($invalidRecipientReason !== null) {
+            $this->createBookingNotificationSkippedEvent($id, $invalidRecipientReason);
+        }
 
         return $id;
     }
@@ -384,6 +403,77 @@ final class NotificationRepository
     }
 
     /**
+     * Writes booking audit event for notifications skipped before send attempt.
+     */
+    private function createBookingNotificationSkippedEvent(int $notificationId, string $reason): void
+    {
+        try {
+            $stmt = $this->db->getPdo()->prepare(
+                'SELECT id, booking_id, channel, recipient_email, subject
+                 FROM notification_queue
+                 WHERE id = :id
+                 LIMIT 1'
+            );
+            $stmt->execute(['id' => $notificationId]);
+            $notification = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+            if (!$notification) {
+                return;
+            }
+
+            $bookingId = isset($notification['booking_id']) ? (int) $notification['booking_id'] : 0;
+            if ($bookingId <= 0) {
+                return;
+            }
+
+            $createdAt = $this->resolveCurrentTimeForBooking($bookingId);
+            $payload = Json::encode([
+                'notification_id' => (int) ($notification['id'] ?? $notificationId),
+                'channel' => (string) ($notification['channel'] ?? ''),
+                'recipient_email' => $notification['recipient_email'] ?? null,
+                'subject' => $notification['subject'] ?? null,
+                'reason' => $reason,
+                'skipped_at' => $createdAt->format('Y-m-d H:i:s'),
+            ]);
+
+            $insert = $this->db->getPdo()->prepare(
+                'INSERT INTO booking_events
+                 (booking_id, event_type, actor_type, actor_id, actor_name, payload_json, correlation_id, created_at)
+                 VALUES
+                 (:booking_id, :event_type, :actor_type, NULL, :actor_name, :payload_json, NULL, :created_at)'
+            );
+            $insert->execute([
+                'booking_id' => $bookingId,
+                'event_type' => 'booking_notification_skipped',
+                'actor_type' => 'system',
+                'actor_name' => 'Notification Queue',
+                'payload_json' => $payload ?: '{}',
+                'created_at' => $createdAt->format('Y-m-d H:i:s'),
+            ]);
+        } catch (\Throwable $e) {
+            error_log("Failed to create booking_notification_skipped event for notification {$notificationId}: " . $e->getMessage());
+        }
+    }
+
+    private function invalidRecipientEmailReason(string $type, mixed $email): ?string
+    {
+        if ($type !== 'email') {
+            return null;
+        }
+
+        $normalized = trim((string) $email);
+        if ($normalized === '') {
+            return 'Invalid recipient email: empty address';
+        }
+
+        if (!filter_var($normalized, FILTER_VALIDATE_EMAIL)) {
+            return "Invalid recipient email: {$normalized}";
+        }
+
+        return null;
+    }
+
+    /**
      * Reminder candidates are considered ready inside a configurable look-ahead
      * window using the booking location timezone.
      *
@@ -428,6 +518,15 @@ final class NotificationRepository
         $timezoneName = (string) ($stmt->fetchColumn() ?: 'Europe/Rome');
 
         return new DateTimeImmutable('now', $this->safeTimezone($timezoneName));
+    }
+
+    private function resolveCurrentTimeForOptionalBooking(mixed $bookingId): DateTimeImmutable
+    {
+        if (!is_numeric($bookingId) || (int) $bookingId <= 0) {
+            return new DateTimeImmutable('now', new DateTimeZone('Europe/Rome'));
+        }
+
+        return $this->resolveCurrentTimeForBooking((int) $bookingId);
     }
 
     private function safeTimezone(string $timezoneName): DateTimeZone

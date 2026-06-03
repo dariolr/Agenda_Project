@@ -1735,9 +1735,18 @@ class _BookingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final colorScheme = Theme.of(context).colorScheme;
+    final dividerColor = colorScheme.outline.withOpacity(0.2);
+    final footerBackgroundColor = colorScheme.outline.withOpacity(0.04);
+    const dividerThickness = 1.0;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: dividerColor, width: dividerThickness),
+      ),
       child: InkWell(
         onTap: booking.status != 'cancelled' ? onView : null,
         borderRadius: BorderRadius.circular(12),
@@ -1745,7 +1754,7 @@ class _BookingCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(
-              padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -1833,14 +1842,14 @@ class _BookingCard extends StatelessWidget {
                 ],
               ),
             ),
-            Divider(
-              height: 16,
-              indent: 0,
-              endIndent: 0,
-              color: Theme.of(context).colorScheme.outline.withOpacity(0.2),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+            Container(
+              decoration: BoxDecoration(
+                color: footerBackgroundColor,
+                border: Border(
+                  top: BorderSide(color: dividerColor, width: dividerThickness),
+                ),
+              ),
+              padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -1867,10 +1876,7 @@ class _BookingCard extends StatelessWidget {
                         ),
                       if (canManageBookings && booking.status != 'cancelled')
                         IconButton(
-                          icon: Icon(
-                            Icons.cancel,
-                            color: Theme.of(context).colorScheme.error,
-                          ),
+                          icon: Icon(Icons.cancel, color: colorScheme.error),
                           onPressed: onCancel,
                           tooltip: l10n.bookingsListActionCancel,
                           iconSize: 20,

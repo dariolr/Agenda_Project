@@ -950,7 +950,11 @@ final class BookingRepository
             $applied = $this->centsFromPriceValue($data['applied_price_cents']);
             $data['price'] = $applied !== null ? $applied / 100 : 0;
         }
-        if (array_key_exists('price', $data) && !array_key_exists('list_price_cents', $data)) {
+        if (
+            array_key_exists('price', $data)
+            && !array_key_exists('list_price_cents', $data)
+            && !array_key_exists('applied_price_cents', $data)
+        ) {
             $data['list_price_cents'] = $this->centsFromPriceValue($data['price']);
         }
 

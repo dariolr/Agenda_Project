@@ -195,6 +195,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           durationMinutes: baseDuration,
           blockedExtraMinutes: blockedExtraMinutes,
           processingExtraMinutes: processingExtraMinutes,
+          listPrice: appointment.listPrice,
           price: appointment.price, // Prezzo personalizzato
         ),
       );
@@ -2378,6 +2379,7 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
             serviceName: serviceName,
             startTime: start,
             endTime: end,
+            listPrice: item.listPrice ?? selectedVariant.price,
             price: effectivePrice,
             extraMinutes: extraMinutes,
             extraMinutesType: extraMinutesType,
@@ -3084,11 +3086,20 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
   @override
   void initState() {
     super.initState();
-    // Auto-focus sul campo di ricerca dopo il primo build
+    _scheduleSearchFocus();
+  }
+
+  void _scheduleSearchFocus() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _searchFocusNode.requestFocus();
-      }
+      if (!mounted) return;
+      _searchFocusNode.requestFocus();
+      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
+    });
+
+    Future<void>.delayed(const Duration(milliseconds: 300), () {
+      if (!mounted) return;
+      _searchFocusNode.requestFocus();
+      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
     });
   }
 
@@ -3130,6 +3141,7 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
                 TextField(
                   controller: _searchController,
                   focusNode: _searchFocusNode,
+                  autofocus: true,
                   decoration: InputDecoration(
                     hintText: l10n.searchClientPlaceholder,
                     prefixIcon: const Icon(Icons.search, size: 20),

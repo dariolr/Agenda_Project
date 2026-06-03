@@ -25,8 +25,14 @@ final class EmailTemplateRenderer
             $template = str_replace('{{' . $key . '}}', (string) $value, $template);
         }
         $template = self::cleanupOptionalContactLines($template);
+        $template = self::cleanupUnresolvedPlaceholders($template);
         $template = self::appendPoweredByBlock($template);
         return $template;
+    }
+
+    private static function cleanupUnresolvedPlaceholders(string $template): string
+    {
+        return preg_replace('/\{\{[a-zA-Z0-9_]+\}\}/', '', $template) ?? $template;
     }
 
     private static function cleanupOptionalContactLines(string $template): string

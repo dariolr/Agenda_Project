@@ -1014,6 +1014,12 @@
       "type": {}
     }
   },
+  "bookingHistoryEventNotificationSkippedTitle": "Email not sent of type: {type}",
+  "@bookingHistoryEventNotificationSkippedTitle": {
+    "placeholders": {
+      "type": {}
+    }
+  },
   "bookingHistoryEventItemAdded": "Service added",
   "bookingHistoryEventItemDeleted": "Service removed",
   "bookingHistoryEventAppointmentUpdated": "Appointment updated",
@@ -1041,6 +1047,18 @@
   "@bookingHistoryNotificationSentAt": {
     "placeholders": {
       "dateTime": {}
+    }
+  },
+  "bookingHistoryNotificationSkippedAt": "Skipped at: {dateTime}",
+  "@bookingHistoryNotificationSkippedAt": {
+    "placeholders": {
+      "dateTime": {}
+    }
+  },
+  "bookingHistoryNotificationSkipReason": "Reason: {reason}",
+  "@bookingHistoryNotificationSkipReason": {
+    "placeholders": {
+      "reason": {}
     }
   },
   "bookingHistoryNotificationSubject": "Subject: {subject}",

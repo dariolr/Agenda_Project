@@ -97,6 +97,8 @@ DateTime _roundToNearestFiveMinutes(DateTime dt) {
   ).add(Duration(minutes: roundedMinutes));
 }
 
+int _toCents(double value) => (value * 100).round();
+
 class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
   @override
   Future<List<Appointment>> build() async {
@@ -654,6 +656,9 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
         extraBlockedMinutes: updated.extraBlockedMinutes,
         extraProcessingMinutes: updated.extraProcessingMinutes,
         price: updated.price,
+        appliedPriceCents: updated.price != null
+            ? _toCents(updated.price!)
+            : null,
         priceExplicitlySet: true,
       );
     } catch (_) {

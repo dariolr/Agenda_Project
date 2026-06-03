@@ -33,4 +33,15 @@ final class EmailTemplateRendererTest extends TestCase
 
         $this->assertSame("Il team di Romeo Lab\n", $rendered);
     }
+
+    public function testUnresolvedPlaceholdersAreRemovedFromRenderedOutput(): void
+    {
+        $template = '<p>{{cancellation_notice_html}}</p><a href="{{manage_url}}">Gestisci</a>';
+
+        $rendered = EmailTemplateRenderer::render($template, [
+            'manage_url' => 'https://example.test/manage',
+        ]);
+
+        $this->assertSame('<p></p><a href="https://example.test/manage">Gestisci</a>', $rendered);
+    }
 }

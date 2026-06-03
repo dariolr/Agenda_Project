@@ -441,26 +441,15 @@ function renderTemplate(string $channel, array $payload): array
 {
     // Extract variables from payload (may be nested under 'variables')
     $variables = $payload['variables'] ?? $payload;
-    
+
     // Add year if not present
     if (!isset($variables['year'])) {
         $variables['year'] = date('Y');
     }
-    if (!isset($variables['recurring_schedule_html'])) {
-        $variables['recurring_schedule_html'] = '';
-    }
-    if (!isset($variables['recurring_schedule_text'])) {
-        $variables['recurring_schedule_text'] = '';
-    }
-    if (!isset($variables['recurring_cancellation_policy_html'])) {
-        $variables['recurring_cancellation_policy_html'] = '';
-    }
-    if (!isset($variables['recurring_cancellation_policy_text'])) {
-        $variables['recurring_cancellation_policy_text'] = '';
-    }
     
     // Get locale from variables, default to 'it'
     $locale = $variables['locale'] ?? 'it';
+    $variables = withDefaultTemplateVariables($variables, $locale);
     
     // Get template based on channel
     switch ($channel) {
@@ -518,6 +507,45 @@ function renderTemplate(string $channel, array $payload): array
         'html' => EmailTemplateRenderer::render($template['html'], $variables),
         'text' => EmailTemplateRenderer::render($template['text'], $variables),
     ];
+}
+
+/**
+ * Add safe defaults for optional template blocks so old queued notifications
+ * cannot leak raw placeholders in customer emails.
+ */
+function withDefaultTemplateVariables(array $variables, string $locale): array
+{
+    $isEnglish = EmailTemplateRenderer::normalizeLocale($locale) === 'en';
+    $cancellationNotice = $isEnglish
+        ? 'If you cannot make it, please contact us directly.'
+        : 'Se non puoi presentarti, contattaci direttamente.';
+
+    $defaults = [
+        'location_block_html' => '',
+        'location_block_text' => '',
+        'total_row_html' => '',
+        'total_row_text' => '',
+        'recurring_schedule_html' => '',
+        'recurring_schedule_text' => '',
+        'recurring_cancellation_policy_html' => '',
+        'recurring_cancellation_policy_text' => '',
+        'cancellation_notice_html' => $cancellationNotice,
+        'cancellation_notice_text' => $cancellationNotice,
+        'cancel_policy_html' => '',
+        'cancel_policy_text' => '',
+        'price_row_html' => '',
+        'price_row_text' => '',
+        'location_address_line' => '',
+        'location_phone' => '',
+    ];
+
+    foreach ($defaults as $key => $value) {
+        if (!isset($variables[$key])) {
+            $variables[$key] = $value;
+        }
+    }
+
+    return $variables;
 }
 
 function normalizeEmail(?string $email): ?string

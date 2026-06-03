@@ -949,6 +949,7 @@ class ApiClient {
     int? extraBlockedMinutes,
     int? extraProcessingMinutes,
     double? price,
+    int? appliedPriceCents,
     bool priceExplicitlySet = false,
     bool notifyClient = true,
     bool notifyClientDecisionByOperator = false,
@@ -977,6 +978,9 @@ class ApiClient {
     }
     if (priceExplicitlySet) {
       data['price'] = price;
+    }
+    if (appliedPriceCents != null) {
+      data['applied_price_cents'] = appliedPriceCents;
     }
     data['notify_client'] = notifyClient;
     data['notify_client_decision_by_operator'] = notifyClientDecisionByOperator;
