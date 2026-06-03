@@ -844,14 +844,15 @@ class _ScaffoldWithNavigationState
 
   void _goToBusinessSwitcher(BuildContext context, WidgetRef ref) {
     final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
-    invalidateBusinessScopedProviders(ref);
     if (isSuperadmin) {
       ref
           .read(superadminSelectedBusinessProvider.notifier)
           .showBusinessPickerOnNextLogin();
+      invalidateBusinessScopedProviders(ref);
       context.go('/businesses');
       return;
     }
+    invalidateBusinessScopedProviders(ref);
     context.go('/my-businesses?switch=1');
   }
 

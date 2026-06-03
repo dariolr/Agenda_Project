@@ -146,8 +146,8 @@ final class QueueBookingReminder
             $cancellationNoticeText = $cancellationNoticeHtml;
         } else {
             $cancellationNoticeHtml = $locale === 'en'
-                ? 'If you cannot make it, please cancel your booking.'
-                : 'Se non puoi presentarti, ti preghiamo di cancellare la prenotazione.';
+                ? 'If you cannot make it, please contact us directly.'
+                : 'Se non puoi presentarti, ti preghiamo di contattarci al più presto.';
             $cancellationNoticeText = $cancellationNoticeHtml;
         }
 

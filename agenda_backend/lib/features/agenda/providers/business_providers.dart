@@ -59,7 +59,14 @@ class CurrentBusinessId extends Notifier<int> {
     // prima dell'inizializzazione del provider.
     ref.listen(superadminSelectedBusinessProvider, (previous, next) {
       if (!isSuperadmin) return;
-      if (next != null && state != next) {
+      if (next == null) {
+        if (state != 0) {
+          _lastKnownBusinessId = 0;
+          state = 0;
+        }
+        return;
+      }
+      if (state != next) {
         _lastKnownBusinessId = next;
         state = next;
       }
