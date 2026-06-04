@@ -422,6 +422,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
     final l10n = context.l10n;
     final allStatuses = {
       'confirmed': l10n.bookingsListStatusConfirmed,
+      'arrived': l10n.bookingsListStatusArrived,
       'completed': l10n.bookingsListStatusCompleted,
       'cancelled': l10n.bookingsListStatusCancelled,
       'no_show': l10n.bookingsListStatusNoShow,
@@ -1653,20 +1654,23 @@ class _StatusChip extends StatelessWidget {
 
     switch (status) {
       case 'confirmed':
-        backgroundColor = Colors.green.shade100;
-        textColor = Colors.green.shade800;
+        backgroundColor = Colors.blue.shade100;
+        textColor = Colors.blue.shade800;
+      case 'arrived':
+        backgroundColor = Colors.amber.shade100;
+        textColor = Colors.amber.shade800;
       case 'cancelled':
         backgroundColor = Colors.red.shade100;
         textColor = Colors.red.shade800;
       case 'completed':
-        backgroundColor = Colors.blue.shade100;
-        textColor = Colors.blue.shade800;
+        backgroundColor = Colors.green.shade100;
+        textColor = Colors.green.shade800;
       case 'no_show':
-        backgroundColor = Colors.orange.shade100;
-        textColor = Colors.orange.shade800;
+        backgroundColor = Colors.redAccent.shade100;
+        textColor = Colors.redAccent.shade700;
       case 'pending':
-        backgroundColor = Colors.amber.shade100;
-        textColor = Colors.amber.shade800;
+        backgroundColor = Colors.grey.shade200;
+        textColor = Colors.grey.shade800;
       case 'replaced':
         backgroundColor = Colors.grey.shade200;
         textColor = Colors.grey.shade800;
@@ -1679,6 +1683,8 @@ class _StatusChip extends StatelessWidget {
     switch (status) {
       case 'confirmed':
         label = context.l10n.bookingsListStatusConfirmed;
+      case 'arrived':
+        label = context.l10n.bookingsListStatusArrived;
       case 'cancelled':
         label = context.l10n.bookingsListStatusCancelled;
       case 'completed':

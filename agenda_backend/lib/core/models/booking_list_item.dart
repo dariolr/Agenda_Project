@@ -71,6 +71,8 @@ class BookingListItem {
     switch (status) {
       case 'confirmed':
         return l10n.bookingsListStatusConfirmed;
+      case 'arrived':
+        return l10n.bookingsListStatusArrived;
       case 'cancelled':
         return l10n.bookingsListStatusCancelled;
       case 'completed':
@@ -106,17 +108,19 @@ class BookingListItem {
   Color get statusColor {
     switch (status) {
       case 'confirmed':
-        return Colors.green;
+        return Colors.blue;
+      case 'arrived':
+        return Colors.amber;
       case 'cancelled':
         return Colors.red;
       case 'completed':
-        return Colors.blue;
+        return Colors.green;
       case 'no_show':
-        return Colors.orange;
+        return Colors.redAccent;
       case 'pending':
-        return Colors.amber;
-      default:
         return Colors.grey;
+      default:
+        return Colors.black;
     }
   }
 

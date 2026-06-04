@@ -1353,6 +1353,7 @@
   "bookingsListActionCancel": "Cancella",
   "bookingsListActionView": "Dettagli",
   "bookingsListStatusConfirmed": "Confermato",
+  "bookingsListStatusArrived": "Arrivato",
   "bookingsListStatusCancelled": "Cancellato",
   "bookingsListStatusCompleted": "Completato",
   "bookingsListStatusNoShow": "No show",

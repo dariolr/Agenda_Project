@@ -399,7 +399,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
   }
 
   List<String> _availableStatusOptions() {
-    return const <String>['confirmed', 'completed', 'no_show'];
+    return const <String>['confirmed', 'arrived', 'completed', 'no_show'];
   }
 
   String _statusLabel(BuildContext context, String status) {
@@ -411,6 +411,8 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         return l10n.statusCancelled;
       case 'pending':
         return l10n.bookingsListStatusPending;
+      case 'arrived':
+        return l10n.bookingsListStatusArrived;
       case 'completed':
         return l10n.statusCompleted;
       case 'no_show':

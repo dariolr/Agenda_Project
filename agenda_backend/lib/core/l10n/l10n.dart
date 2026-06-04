@@ -8140,6 +8140,16 @@ class L10n {
     );
   }
 
+  /// `Arrived`
+  String get bookingsListStatusArrived {
+    return Intl.message(
+      'Arrived',
+      name: 'bookingsListStatusArrived',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Cancelled`
   String get bookingsListStatusCancelled {
     return Intl.message(

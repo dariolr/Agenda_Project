@@ -874,7 +874,13 @@ final class BookingRepository
                     s.name AS service_name,
                     sv.color_hex AS service_color_hex,
                     st.name AS staff_name, st.surname AS staff_surname,
-                    CONCAT(st.name, ' ', st.surname) AS staff_full_name
+                    CONCAT(st.name, ' ', st.surname) AS staff_full_name,
+                    CASE
+                        WHEN pay.booking_id IS NULL THEN NULL
+                        WHEN (pay.paid_cents = 0 AND pay.discount_cents = 0) THEN 'unpaid'
+                        WHEN (pay.total_due_cents - pay.paid_cents - pay.discount_cents) <= 0 THEN 'paid'
+                        ELSE 'partial'
+                    END AS payment_status
              FROM booking_items bi
              JOIN bookings b ON bi.booking_id = b.id
              LEFT JOIN (
@@ -887,6 +893,19 @@ final class BookingRepository
              LEFT JOIN service_variants sv ON bi.service_variant_id = sv.id
              LEFT JOIN services s ON bi.service_id = s.id
              LEFT JOIN staff st ON bi.staff_id = st.id
+             LEFT JOIN (
+                 SELECT bp.booking_id, bp.total_due_cents,
+                        COALESCE(SUM(CASE WHEN bpl.type != 'discount' THEN bpl.amount_cents ELSE 0 END), 0) AS paid_cents,
+                        COALESCE(SUM(CASE WHEN bpl.type = 'discount' THEN bpl.amount_cents ELSE 0 END), 0) AS discount_cents
+                 FROM booking_payments bp
+                 INNER JOIN (
+                     SELECT booking_id, MAX(id) AS latest_id
+                     FROM booking_payments
+                     GROUP BY booking_id
+                 ) latest ON bp.id = latest.latest_id
+                 LEFT JOIN booking_payment_lines bpl ON bpl.booking_payment_id = bp.id
+                 GROUP BY bp.booking_id, bp.total_due_cents
+             ) pay ON pay.booking_id = b.id
              WHERE b.location_id = ?
                AND bi.start_time >= ?
                AND bi.start_time <= ?
@@ -920,13 +939,32 @@ final class BookingRepository
                     NULLIF(TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, ''))), '') AS client_full_name,
                     s.name AS service_name,
                     sv.color_hex AS service_color_hex,
-                    CONCAT(st.name, ' ', st.surname) AS staff_name
+                    CONCAT(st.name, ' ', st.surname) AS staff_name,
+                    CASE
+                        WHEN pay.booking_id IS NULL THEN NULL
+                        WHEN (pay.paid_cents = 0 AND pay.discount_cents = 0) THEN 'unpaid'
+                        WHEN (pay.total_due_cents - pay.paid_cents - pay.discount_cents) <= 0 THEN 'paid'
+                        ELSE 'partial'
+                    END AS payment_status
              FROM booking_items bi
              JOIN bookings b ON bi.booking_id = b.id
              LEFT JOIN clients c ON b.client_id = c.id
              LEFT JOIN service_variants sv ON bi.service_variant_id = sv.id
              LEFT JOIN services s ON sv.service_id = s.id
              LEFT JOIN staff st ON bi.staff_id = st.id
+             LEFT JOIN (
+                 SELECT bp.booking_id, bp.total_due_cents,
+                        COALESCE(SUM(CASE WHEN bpl.type != 'discount' THEN bpl.amount_cents ELSE 0 END), 0) AS paid_cents,
+                        COALESCE(SUM(CASE WHEN bpl.type = 'discount' THEN bpl.amount_cents ELSE 0 END), 0) AS discount_cents
+                 FROM booking_payments bp
+                 INNER JOIN (
+                     SELECT booking_id, MAX(id) AS latest_id
+                     FROM booking_payments
+                     GROUP BY booking_id
+                 ) latest ON bp.id = latest.latest_id
+                 LEFT JOIN booking_payment_lines bpl ON bpl.booking_payment_id = bp.id
+                 GROUP BY bp.booking_id, bp.total_due_cents
+             ) pay ON pay.booking_id = b.id
              WHERE bi.id = ?"
         );
         $stmt->execute([$appointmentId]);

@@ -160,7 +160,7 @@ final class UpdateBooking
         // Altrimenti update normale (status/notes/client_id)
         // Valida status se presente (operatori possono usare qualsiasi status)
         if (isset($data['status']) && !$isOperator) {
-            $allowedStatuses = ['pending', 'confirmed', 'cancelled', 'completed', 'no_show'];
+            $allowedStatuses = ['pending', 'confirmed', 'arrived', 'cancelled', 'completed', 'no_show'];
             if (!in_array($data['status'], $allowedStatuses, true)) {
                 throw BookingException::validationError(
                     'Invalid status. Allowed: ' . implode(', ', $allowedStatuses)

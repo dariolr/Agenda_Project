@@ -112,6 +112,7 @@ class BookingsListFilters {
 
   static const List<String> allStatuses = [
     'confirmed',
+    'arrived',
     'completed',
     'cancelled',
     'no_show',

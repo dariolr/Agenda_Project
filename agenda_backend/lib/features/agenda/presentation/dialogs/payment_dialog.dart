@@ -491,6 +491,12 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
         await _setBookingCompleted(bookingId);
       }
       ref.invalidate(bookingPaymentProvider(bookingId));
+      final newPaymentStatus = saved.computed.balanceCents <= 0
+          ? 'paid'
+          : (saved.computed.totalPaidCents > 0 || saved.computed.totalDiscountCents > 0
+              ? 'partial'
+              : 'unpaid');
+      ref.read(appointmentsProvider.notifier).updatePaymentStatus(bookingId, newPaymentStatus);
       if (!mounted) return;
       _applyBookingPayment(saved);
       Navigator.of(context).pop(saved);

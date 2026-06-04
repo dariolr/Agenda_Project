@@ -989,7 +989,7 @@ final class ReportsController
                 WHERE bi.staff_id = ? 
                 AND b.business_id = ?
                 AND DATE(bi.start_time) >= ? AND DATE(bi.start_time) <= ?
-                AND b.status IN ('confirmed', 'completed')";
+                AND b.status IN ('confirmed', 'arrived', 'completed')";
             $workedParams = [$staffId, $businessId, $startDate, $endDate];
 
             if (!empty($locationIds)) {

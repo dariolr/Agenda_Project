@@ -588,6 +588,8 @@ final class AppointmentsController
             'recurrence_rule_id' => isset($appointment['recurrence_rule_id']) ? (int) $appointment['recurrence_rule_id'] : null,
             'recurrence_index' => isset($appointment['recurrence_index']) ? (int) $appointment['recurrence_index'] : null,
             'recurrence_total' => isset($appointment['recurrence_total']) ? (int) $appointment['recurrence_total'] : null,
+            // Payment status: paid / partial / unpaid
+            'payment_status' => $appointment['payment_status'] ?? null,
         ];
     }
 

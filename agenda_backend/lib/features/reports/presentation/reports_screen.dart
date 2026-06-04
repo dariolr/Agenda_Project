@@ -52,6 +52,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     with SingleTickerProviderStateMixin {
   static const List<String> _allReportStatuses = <String>[
     'confirmed',
+    'arrived',
     'completed',
     'cancelled',
     'no_show',
@@ -60,7 +61,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
   final Set<int> _selectedLocationIds = {};
   final Set<int> _selectedStaffIds = {};
   final Set<int> _selectedServiceIds = {};
-  Set<String> _selectedStatuses = {'confirmed', 'completed'};
+  Set<String> _selectedStatuses = {'confirmed', 'arrived', 'completed'};
 
   late final TabController _tabController;
   ProviderSubscription<AgendaReportLaunchRequest?>? _agendaReportLaunchSub;
@@ -654,6 +655,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen>
     final l10n = context.l10n;
     final allStatuses = {
       'confirmed': l10n.statusConfirmed,
+      'arrived': l10n.bookingsListStatusArrived,
       'completed': l10n.statusCompleted,
       'cancelled': l10n.statusCancelled,
       'no_show': l10n.bookingsListStatusNoShow,

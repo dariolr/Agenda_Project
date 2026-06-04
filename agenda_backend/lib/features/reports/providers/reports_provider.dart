@@ -15,6 +15,7 @@ class ReportParams {
     this.serviceIds = const [],
     this.statuses = const [
       'confirmed',
+      'arrived',
       'completed',
     ],
   });

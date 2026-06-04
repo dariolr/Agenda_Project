@@ -23,6 +23,7 @@ String? _bookingStatusFromJson(Map<String, dynamic> json) {
   const allowed = <String>{
     'pending',
     'confirmed',
+    'arrived',
     'cancelled',
     'completed',
     'no_show',
@@ -62,6 +63,8 @@ class Appointment {
   final int? recurrenceRuleId;
   final int? recurrenceIndex;
   final int? recurrenceTotal;
+  // Stato pagamento calcolato: paid / partial / unpaid
+  final String? paymentStatus;
 
   const Appointment({
     required this.id,
@@ -91,6 +94,7 @@ class Appointment {
     this.recurrenceRuleId,
     this.recurrenceIndex,
     this.recurrenceTotal,
+    this.paymentStatus,
   });
 
   /// Returns true if this appointment's booking was cancelled
@@ -135,6 +139,7 @@ class Appointment {
     recurrenceRuleId: json['recurrence_rule_id'] as int?,
     recurrenceIndex: json['recurrence_index'] as int?,
     recurrenceTotal: json['recurrence_total'] as int?,
+    paymentStatus: json['payment_status'] as String?,
   );
 
   Appointment copyWith({
@@ -165,6 +170,7 @@ class Appointment {
     int? recurrenceRuleId,
     int? recurrenceIndex,
     int? recurrenceTotal,
+    String? paymentStatus,
   }) {
     return Appointment(
       id: id ?? this.id,
@@ -195,6 +201,7 @@ class Appointment {
       recurrenceRuleId: recurrenceRuleId ?? this.recurrenceRuleId,
       recurrenceIndex: recurrenceIndex ?? this.recurrenceIndex,
       recurrenceTotal: recurrenceTotal ?? this.recurrenceTotal,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
     );
   }
 

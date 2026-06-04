@@ -204,6 +204,18 @@ class AppointmentsNotifier extends AsyncNotifier<List<Appointment>> {
     return merged;
   }
 
+  /// Aggiorna il paymentStatus degli appuntamenti di un booking nello stato locale,
+  /// senza nessuna chiamata API.
+  void updatePaymentStatus(int bookingId, String paymentStatus) {
+    final current = state.value;
+    if (current == null) return;
+    state = AsyncData(
+      current.map((a) => a.bookingId == bookingId
+          ? a.copyWith(paymentStatus: paymentStatus)
+          : a).toList(),
+    );
+  }
+
   /// Restituisce gli appointments associati a un client specifico,
   /// unendo giorno corrente e settimana visibile.
   List<Appointment> getByClientId(int clientId) {

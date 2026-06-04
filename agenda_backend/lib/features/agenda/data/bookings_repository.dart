@@ -348,6 +348,7 @@ class BookingsRepository {
       recurrenceRuleId: json['recurrence_rule_id'] as int?,
       recurrenceIndex: json['recurrence_index'] as int?,
       recurrenceTotal: json['recurrence_total'] as int?,
+      paymentStatus: json['payment_status'] as String?,
     );
   }
 

@@ -1098,6 +1098,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingsListSourceOnline": MessageLookupByLibrary.simpleMessage("Online"),
     "bookingsListSourcePhone": MessageLookupByLibrary.simpleMessage("Telefono"),
     "bookingsListSourceWalkIn": MessageLookupByLibrary.simpleMessage("Walk-in"),
+    "bookingsListStatusArrived": MessageLookupByLibrary.simpleMessage(
+      "Arrivato",
+    ),
     "bookingsListStatusCancelled": MessageLookupByLibrary.simpleMessage(
       "Cancellato",
     ),

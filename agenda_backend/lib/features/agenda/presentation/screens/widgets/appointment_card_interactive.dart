@@ -108,18 +108,33 @@ class _AppointmentCardInteractiveState
     if (status == null) return null;
 
     switch (status) {
-      case 'completed':
+      case 'arrived':
         return _CardStatusVisual(
-          borderColor: Colors.green.shade800,
-          fillColor: Colors.green.shade500,
-          fillHighlightColor: Colors.green.shade200,
+          borderColor: Colors.amber.shade800,
+          fillColor: Colors.amber.shade500,
+          fillHighlightColor: Colors.amber.shade200,
+          label: context.l10n.bookingsListStatusArrived,
+        );
+      case 'completed':
+        final payment = widget.appointment.paymentStatus;
+        final (fillC, highlightC, borderC) = switch (payment) {
+          'paid'    => (Colors.green.shade500,  Colors.green.shade200,  Colors.green.shade800),
+          'partial' => (Colors.orange.shade500, Colors.orange.shade200, Colors.orange.shade800),
+          'unpaid'  => (Colors.red.shade500,    Colors.red.shade200,    Colors.red.shade800),
+          _         => (Colors.blue.shade500,   Colors.blue.shade200,   Colors.blue.shade800),
+        };
+        return _CardStatusVisual(
+          borderColor: borderC,
+          fillColor: fillC,
+          fillHighlightColor: highlightC,
           label: context.l10n.statusCompleted,
+          isSquare: true,
         );
       case 'no_show':
         return _CardStatusVisual(
-          borderColor: Colors.red.shade800,
-          fillColor: Colors.red.shade500,
-          fillHighlightColor: Colors.red.shade200,
+          borderColor: Colors.redAccent.shade700,
+          fillColor: Colors.redAccent,
+          fillHighlightColor: Colors.redAccent.shade100,
           label: context.l10n.bookingsListStatusNoShow,
         );
       default:
@@ -1240,7 +1255,10 @@ class _AppointmentCardInteractiveState
                     statusVisual.fillColor,
                   ],
                 ),
-                shape: BoxShape.circle,
+                shape: statusVisual.isSquare ? BoxShape.rectangle : BoxShape.circle,
+                borderRadius: statusVisual.isSquare
+                    ? BorderRadius.circular(3)
+                    : null,
                 border: Border.all(color: statusVisual.borderColor, width: 1.4),
               ),
             ),
@@ -2368,10 +2386,12 @@ class _CardStatusVisual {
     required this.fillColor,
     required this.fillHighlightColor,
     required this.label,
+    this.isSquare = false,
   });
 
   final Color borderColor;
   final Color fillColor;
   final Color fillHighlightColor;
   final String label;
+  final bool isSquare;
 }
