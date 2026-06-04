@@ -2241,6 +2241,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "paymentRequired": MessageLookupByLibrary.simpleMessage(
       "Total appointments",
     ),
+    "paymentStatusPaid": MessageLookupByLibrary.simpleMessage("Paid"),
+    "paymentStatusPartial": MessageLookupByLibrary.simpleMessage(
+      "Partially paid",
+    ),
+    "paymentStatusUnpaid": MessageLookupByLibrary.simpleMessage("Unpaid"),
     "paymentTotalCost": MessageLookupByLibrary.simpleMessage("Booking cost"),
     "paymentTotalPaid": MessageLookupByLibrary.simpleMessage("Paid amount"),
     "paymentTotalToCollect": MessageLookupByLibrary.simpleMessage(
@@ -2629,7 +2634,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "No resources configured for this location",
     ),
     "resourcesEmptyHint": MessageLookupByLibrary.simpleMessage(
-      "Resources are equipment or spaces (e.g., cabins, beds) that can be associated with services",
+      "Resources are equipment or spaces (e.g., cabins, beds) that can be requested by services",
     ),
     "resourcesTitle": MessageLookupByLibrary.simpleMessage("Resources"),
     "searchClientPlaceholder": MessageLookupByLibrary.simpleMessage(

@@ -7205,6 +7205,31 @@ class L10n {
     );
   }
 
+  /// `Paid`
+  String get paymentStatusPaid {
+    return Intl.message('Paid', name: 'paymentStatusPaid', desc: '', args: []);
+  }
+
+  /// `Partially paid`
+  String get paymentStatusPartial {
+    return Intl.message(
+      'Partially paid',
+      name: 'paymentStatusPartial',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unpaid`
+  String get paymentStatusUnpaid {
+    return Intl.message(
+      'Unpaid',
+      name: 'paymentStatusUnpaid',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Cancelled`
   String get statusCancelled {
     return Intl.message(
@@ -7690,10 +7715,10 @@ class L10n {
     );
   }
 
-  /// `Resources are equipment or spaces (e.g., cabins, beds) that can be associated with services`
+  /// `Resources are equipment or spaces (e.g., cabins, beds) that can be requested by services`
   String get resourcesEmptyHint {
     return Intl.message(
-      'Resources are equipment or spaces (e.g., cabins, beds) that can be associated with services',
+      'Resources are equipment or spaces (e.g., cabins, beds) that can be requested by services',
       name: 'resourcesEmptyHint',
       desc: '',
       args: [],

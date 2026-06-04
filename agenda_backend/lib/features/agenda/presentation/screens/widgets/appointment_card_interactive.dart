@@ -123,11 +123,20 @@ class _AppointmentCardInteractiveState
           'unpaid'  => (Colors.red.shade500,    Colors.red.shade200,    Colors.red.shade800),
           _         => (Colors.blue.shade500,   Colors.blue.shade200,   Colors.blue.shade800),
         };
+        final paymentLabel = switch (payment) {
+          'paid'    => context.l10n.paymentStatusPaid,
+          'partial' => context.l10n.paymentStatusPartial,
+          'unpaid'  => context.l10n.paymentStatusUnpaid,
+          _         => null,
+        };
+        final tooltipLabel = paymentLabel != null
+            ? '${context.l10n.statusCompleted} · $paymentLabel'
+            : context.l10n.statusCompleted;
         return _CardStatusVisual(
           borderColor: borderC,
           fillColor: fillC,
           fillHighlightColor: highlightC,
-          label: context.l10n.statusCompleted,
+          label: tooltipLabel,
           isSquare: true,
         );
       case 'no_show':

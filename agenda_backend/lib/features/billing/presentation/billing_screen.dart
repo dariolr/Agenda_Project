@@ -203,7 +203,8 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
             const SizedBox(height: 20),
           ] else if (!billing.accessBlocked &&
               billing.activationDeadlineAt != null &&
-              billing.billingEnabled) ...[
+              billing.billingEnabled &&
+              billing.status != 'active') ...[
             DecoratedBox(
               decoration: BoxDecoration(
                 color: colorScheme.tertiaryContainer,
