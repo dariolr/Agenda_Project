@@ -1940,6 +1940,7 @@
   "actionYes": "Sì",
   "actionNo": "No",
   "agendaDisplaySettingsColumnWidthLabel": "Larghezza minima colonne",
+  "agendaDisplaySettingsMobileColumnsLabel": "Colonne visibili",
   "agendaDisplaySettingsSlotHeightLabel": "Altezza slot agenda",
   "apiErrorInvalidCredentials": "Email o password non valide.",
   "apiErrorInvalidRefreshToken": "La sessione non è più valida. Accedi di nuovo.",

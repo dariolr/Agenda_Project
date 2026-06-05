@@ -25,6 +25,7 @@ class ResponsiveLayout {
     required LayoutConfig config,
     double? availableWidth,
     double columnWidthScale = 1.0,
+    int mobileMaxColumns = 3,
   }) {
     final screenWidth = availableWidth ?? MediaQuery.of(context).size.width;
     final container = ProviderScope.containerOf(context, listen: false);
@@ -34,7 +35,7 @@ class ResponsiveLayout {
     // 📐 Calcolo larghezza colonne staff
     // ──────────────────────────────────────────────
     final dynamicMaxVisible = formFactor == AppFormFactor.mobile
-        ? 3 // Permette fino a 3 colonne su mobile
+        ? mobileMaxColumns.clamp(1, 3)
         : config.computeMaxVisibleStaff(screenWidth, formFactor: formFactor);
     final visibleStaff = staffCount.clamp(1, dynamicMaxVisible);
 

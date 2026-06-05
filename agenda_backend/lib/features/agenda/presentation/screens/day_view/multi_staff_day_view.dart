@@ -524,12 +524,14 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
             : MediaQuery.of(context).size.width;
 
         final columnWidthScale = ref.watch(agendaColumnWidthScaleProvider);
+        final mobileMaxColumns = ref.watch(agendaMobileMaxColumnsProvider);
         final layout = ResponsiveLayout.of(
           context,
           staffCount: widget.staffList.length,
           config: layoutConfig,
           availableWidth: availableWidth,
           columnWidthScale: columnWidthScale,
+          mobileMaxColumns: mobileMaxColumns,
         );
 
         final totalHeight = layoutConfig.totalHeight;

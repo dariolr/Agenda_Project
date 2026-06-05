@@ -20,6 +20,7 @@ class AgendaDisplaySettings {
     this.cardTextScale = 1.0,
     this.slotHeightScale = 1.0,
     this.columnWidthScale = 1.0,
+    this.mobileMaxColumns = 3,
     this.cardColorOpacity = 1.0,
     this.extraMinutesBandIntensity = 0.5,
     this.hoverUnrelatedCardDimIntensity = 0.0,
@@ -33,6 +34,7 @@ class AgendaDisplaySettings {
   final double cardTextScale;
   final double slotHeightScale;
   final double columnWidthScale;
+  final int mobileMaxColumns;
   final double cardColorOpacity;
   final double extraMinutesBandIntensity;
   final double hoverUnrelatedCardDimIntensity;
@@ -46,6 +48,7 @@ class AgendaDisplaySettings {
     double? cardTextScale,
     double? slotHeightScale,
     double? columnWidthScale,
+    int? mobileMaxColumns,
     double? cardColorOpacity,
     double? extraMinutesBandIntensity,
     double? hoverUnrelatedCardDimIntensity,
@@ -61,6 +64,7 @@ class AgendaDisplaySettings {
       cardTextScale: cardTextScale ?? this.cardTextScale,
       slotHeightScale: slotHeightScale ?? this.slotHeightScale,
       columnWidthScale: columnWidthScale ?? this.columnWidthScale,
+      mobileMaxColumns: mobileMaxColumns ?? this.mobileMaxColumns,
       cardColorOpacity: cardColorOpacity ?? this.cardColorOpacity,
       extraMinutesBandIntensity:
           extraMinutesBandIntensity ?? this.extraMinutesBandIntensity,
@@ -89,6 +93,8 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
   static const _maxSlotHeightScale = 1.6;
   static const _minColumnWidthScale = 0.75;
   static const _maxColumnWidthScale = 2.5;
+  static const _minMobileMaxColumns = 1;
+  static const _maxMobileMaxColumns = 3;
   static const _minCardOpacity = 0.3;
   static const _maxCardOpacity = 1.0;
   static const _minExtraMinutesBandIntensity = 0.0;
@@ -113,10 +119,14 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
     final columnWidthScale = prefs
         .getAgendaColumnWidthScale(businessId, locationId: locationId)
         .clamp(_minColumnWidthScale, _maxColumnWidthScale);
+    final mobileMaxColumns = prefs
+        .getAgendaMobileMaxColumns(businessId, locationId: locationId)
+        .clamp(_minMobileMaxColumns, _maxMobileMaxColumns);
     return AgendaDisplaySettings(
       cardTextScale: scale,
       slotHeightScale: slotHeightScale,
       columnWidthScale: columnWidthScale,
+      mobileMaxColumns: mobileMaxColumns,
       cardColorOpacity: prefs
           .getAgendaCardColorOpacity(businessId, locationId: locationId)
           .clamp(_minCardOpacity, _maxCardOpacity),
@@ -170,6 +180,17 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
     await ref
         .read(preferencesServiceProvider)
         .setAgendaCardTextScale(businessId, next, locationId: locationId);
+  }
+
+  Future<void> setMobileMaxColumns(int value) async {
+    final businessId = _businessId();
+    final locationId = _locationId();
+    if (businessId <= 0 || locationId <= 0) return;
+    final next = value.clamp(_minMobileMaxColumns, _maxMobileMaxColumns);
+    state = state.copyWith(mobileMaxColumns: next);
+    await ref
+        .read(preferencesServiceProvider)
+        .setAgendaMobileMaxColumns(businessId, next, locationId: locationId);
   }
 
   Future<void> setColumnWidthScale(double value) async {
@@ -334,6 +355,11 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
       1.0,
       locationId: locationId,
     );
+    await prefs.setAgendaMobileMaxColumns(
+      businessId,
+      3,
+      locationId: locationId,
+    );
     await prefs.setAgendaCardColorOpacity(
       businessId,
       1.0,
@@ -411,6 +437,12 @@ final agendaHoverUnrelatedCardDimIntensityProvider = Provider<double>((ref) {
 
 final agendaUseRoundedCardCornersProvider = Provider<bool>((ref) {
   return false;
+});
+
+final agendaMobileMaxColumnsProvider = Provider<int>((ref) {
+  return ref.watch(
+    agendaDisplaySettingsProvider.select((s) => s.mobileMaxColumns),
+  );
 });
 
 final agendaColumnWidthScaleProvider = Provider<double>((ref) {

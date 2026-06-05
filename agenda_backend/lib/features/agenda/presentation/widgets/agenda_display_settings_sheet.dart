@@ -13,6 +13,7 @@ import 'package:agenda_backend/features/agenda/providers/date_range_provider.dar
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/weekly_appointments_provider.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
+import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -45,6 +46,7 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
     ).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600);
     final formFactor = ref.watch(formFactorProvider);
     final isDesktop = formFactor == AppFormFactor.desktop;
+    final isMobile = formFactor == AppFormFactor.mobile;
     final settings = ref.watch(agendaDisplaySettingsProvider);
     final showPrices = ref.watch(effectiveShowAppointmentPriceInCardProvider);
     // final showCancelled = ref.watch(effectiveShowCancelledAppointmentsProvider);
@@ -54,6 +56,7 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
     final location = ref.watch(currentLocationProvider);
     final business = ref.watch(currentBusinessProvider);
     final services = ref.watch(servicesProvider).value ?? const [];
+    final staffCount = ref.watch(staffForCurrentLocationProvider).length;
     final hasAnyServiceWithAdditionalTime = services.any(
       (service) =>
           (service.processingTime ?? 0) > 0 || (service.blockedTime ?? 0) > 0,
@@ -165,7 +168,25 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
               Text('${(settings.slotHeightScale * 100).round()}%'),
             ],
           ),
-          if (isDesktop) ...[
+          if (isMobile && staffCount > 1) ...[
+            const SizedBox(height: _sectionSpacing),
+            Text(
+              context.l10n.agendaDisplaySettingsMobileColumnsLabel,
+              style: settingLabelStyle,
+            ),
+            const SizedBox(height: 8),
+            SegmentedButton<int>(
+              segments: [
+                for (int i = 1; i <= staffCount.clamp(1, 3); i++)
+                  ButtonSegment<int>(value: i, label: Text('$i')),
+              ],
+              selected: {settings.mobileMaxColumns.clamp(1, staffCount.clamp(1, 3))},
+              onSelectionChanged: (selection) =>
+                  ref.read(agendaDisplaySettingsProvider.notifier)
+                      .setMobileMaxColumns(selection.first),
+            ),
+          ],
+          if (!isMobile) ...[
             const SizedBox(height: _sectionSpacing),
             Text(
               context.l10n.agendaDisplaySettingsColumnWidthLabel,

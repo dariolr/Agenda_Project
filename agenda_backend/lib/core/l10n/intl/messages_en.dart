@@ -316,6 +316,8 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage(
           "Unrelated card dimming intensity (desktop hover)",
         ),
+    "agendaDisplaySettingsMobileColumnsLabel":
+        MessageLookupByLibrary.simpleMessage("Visible columns"),
     "agendaDisplaySettingsResetDefaultsAction":
         MessageLookupByLibrary.simpleMessage("Reset defaults"),
     "agendaDisplaySettingsServiceColorsLabel":

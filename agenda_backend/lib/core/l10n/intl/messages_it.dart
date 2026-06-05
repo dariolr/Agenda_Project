@@ -326,6 +326,8 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage(
           "Intensità del colore su appuntamenti diversi da quelli selezionati",
         ),
+    "agendaDisplaySettingsMobileColumnsLabel":
+        MessageLookupByLibrary.simpleMessage("Colonne visibili"),
     "agendaDisplaySettingsResetDefaultsAction":
         MessageLookupByLibrary.simpleMessage("Ripristina default"),
     "agendaDisplaySettingsServiceColorsLabel":

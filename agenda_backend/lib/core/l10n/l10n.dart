@@ -12496,6 +12496,16 @@ class L10n {
     );
   }
 
+  /// `Visible columns`
+  String get agendaDisplaySettingsMobileColumnsLabel {
+    return Intl.message(
+      'Visible columns',
+      name: 'agendaDisplaySettingsMobileColumnsLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Agenda slot height`
   String get agendaDisplaySettingsSlotHeightLabel {
     return Intl.message(

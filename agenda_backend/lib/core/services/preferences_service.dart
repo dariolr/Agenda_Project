@@ -76,6 +76,12 @@ class PrefsKeys {
     required int locationId,
   }) => 'agenda_column_width_scale_${_scope(businessId, locationId)}';
 
+  /// Numero massimo di colonne visibili su mobile (scope business + location)
+  static String agendaMobileMaxColumns(
+    int businessId, {
+    required int locationId,
+  }) => 'agenda_mobile_max_columns_${_scope(businessId, locationId)}';
+
   /// Intensità de-enfasi card non correlate durante hover (scope business + location)
   static String agendaHoverUnrelatedCardDimIntensity(
     int businessId, {
@@ -461,6 +467,24 @@ class PreferencesService {
     await _prefs.setDouble(
       PrefsKeys.agendaColumnWidthScale(businessId, locationId: locationId),
       scale,
+    );
+  }
+
+  int getAgendaMobileMaxColumns(int businessId, {required int locationId}) {
+    final value = _prefs.getInt(
+      PrefsKeys.agendaMobileMaxColumns(businessId, locationId: locationId),
+    );
+    return value ?? 3;
+  }
+
+  Future<void> setAgendaMobileMaxColumns(
+    int businessId,
+    int count, {
+    required int locationId,
+  }) async {
+    await _prefs.setInt(
+      PrefsKeys.agendaMobileMaxColumns(businessId, locationId: locationId),
+      count,
     );
   }
 
