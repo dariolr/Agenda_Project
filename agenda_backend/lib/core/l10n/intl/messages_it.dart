@@ -316,7 +316,7 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("Larghezza minima colonne"),
     "agendaDisplaySettingsExpandStaffColumnsOnOverlapLabel":
         MessageLookupByLibrary.simpleMessage(
-          "Ridimensiona colonne staff in base agli appuntamenti in esso sovrapposti",
+          "Ridimensiona colonne staff in base agli appuntamenti sovrapposti",
         ),
     "agendaDisplaySettingsExtraMinutesBandIntensityLabel":
         MessageLookupByLibrary.simpleMessage(
@@ -327,7 +327,9 @@ class MessageLookup extends MessageLookupByLibrary {
           "Intensità del colore su appuntamenti diversi da quelli selezionati",
         ),
     "agendaDisplaySettingsMobileColumnsLabel":
-        MessageLookupByLibrary.simpleMessage("Colonne visibili"),
+        MessageLookupByLibrary.simpleMessage(
+          "Colonne visibili contemporaneamente",
+        ),
     "agendaDisplaySettingsResetDefaultsAction":
         MessageLookupByLibrary.simpleMessage("Ripristina default"),
     "agendaDisplaySettingsServiceColorsLabel":

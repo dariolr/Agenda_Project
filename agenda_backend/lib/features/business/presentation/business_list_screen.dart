@@ -111,11 +111,11 @@ class BusinessListScreen extends ConsumerWidget {
     );
   }
 
-  Future<void> _selectBusiness(
+  void _selectBusiness(
     BuildContext context,
     WidgetRef ref,
     Business business,
-  ) async {
+  ) {
     // 1) Aggiorna la source of truth del superadmin.
     ref.read(superadminSelectedBusinessProvider.notifier).select(business.id);
     // 2) Allinea subito il business corrente usato dai provider della shell.
@@ -124,12 +124,17 @@ class BusinessListScreen extends ConsumerWidget {
     invalidateBusinessScopedProviders(ref);
     ref.invalidate(currentBusinessUserContextProvider);
 
-    // 4) Naviga subito: la selezione e' gia' persistita. Il caricamento sedi
-    // non deve bloccare il cambio business, altrimenti su mobile il tap sembra
-    // non produrre effetti quando la fetch resta in attesa o fallisce.
-    if (context.mounted) {
-      context.go('/agenda');
-    }
+    // 4) Naviga al frame successivo: GoRouter 16 processa i redirect in modo
+    // sincrono al cambio di stato (notifyListeners). Chiamare context.go nello
+    // stesso frame dei cambi di stato può causare un conflitto dove GoRouter
+    // ri-conferma /businesses prima di processare la navigazione verso /agenda.
+    // Con addPostFrameCallback tutti i redirect pending del frame corrente sono
+    // già stati risolti quando la navigazione parte.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        context.go('/agenda');
+      }
+    });
 
     // 5) Aggiorna la location selection appena le sedi del nuovo business sono disponibili.
     unawaited(_syncCurrentLocationForSelectedBusiness(ref));
