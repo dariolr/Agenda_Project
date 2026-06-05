@@ -1450,6 +1450,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
             .where(
               (appointment) =>
                   appointment.staffId == staffId &&
+                  !appointment.isCancelled &&
                   (widget.existing == null ||
                       appointment.bookingId != widget.existing!.id),
             )

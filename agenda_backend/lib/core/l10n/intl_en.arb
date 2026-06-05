@@ -1939,6 +1939,7 @@
   "whatsappGuideTipBody": "If you use a dedicated SIM, remember to do a small top-up at least once per year to keep the number active. Also keep Meta payment methods updated and ensure there is always available balance; otherwise Meta may suspend the service.",
   "actionYes": "Yes",
   "actionNo": "No",
+  "agendaDisplaySettingsColumnWidthLabel": "Minimum column width",
   "agendaDisplaySettingsSlotHeightLabel": "Agenda slot height",
   "apiErrorInvalidCredentials": "Invalid email or password.",
   "apiErrorInvalidRefreshToken": "Your session is no longer valid. Please sign in again.",

@@ -312,9 +312,11 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("Intensità colori appuntamenti"),
     "agendaDisplaySettingsCardTextZoomLabel":
         MessageLookupByLibrary.simpleMessage("Zoom testo"),
+    "agendaDisplaySettingsColumnWidthLabel":
+        MessageLookupByLibrary.simpleMessage("Larghezza minima colonne"),
     "agendaDisplaySettingsExpandStaffColumnsOnOverlapLabel":
         MessageLookupByLibrary.simpleMessage(
-          "Ridimensiona colonne staff in base agli appuntamenti sovrapposti",
+          "Ridimensiona colonne staff in base agli appuntamenti in esso sovrapposti",
         ),
     "agendaDisplaySettingsExtraMinutesBandIntensityLabel":
         MessageLookupByLibrary.simpleMessage(

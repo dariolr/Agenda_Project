@@ -19,6 +19,7 @@ class AgendaDisplaySettings {
   const AgendaDisplaySettings({
     this.cardTextScale = 1.0,
     this.slotHeightScale = 1.0,
+    this.columnWidthScale = 1.0,
     this.cardColorOpacity = 1.0,
     this.extraMinutesBandIntensity = 0.5,
     this.hoverUnrelatedCardDimIntensity = 0.0,
@@ -31,6 +32,7 @@ class AgendaDisplaySettings {
 
   final double cardTextScale;
   final double slotHeightScale;
+  final double columnWidthScale;
   final double cardColorOpacity;
   final double extraMinutesBandIntensity;
   final double hoverUnrelatedCardDimIntensity;
@@ -43,6 +45,7 @@ class AgendaDisplaySettings {
   AgendaDisplaySettings copyWith({
     double? cardTextScale,
     double? slotHeightScale,
+    double? columnWidthScale,
     double? cardColorOpacity,
     double? extraMinutesBandIntensity,
     double? hoverUnrelatedCardDimIntensity,
@@ -57,6 +60,7 @@ class AgendaDisplaySettings {
     return AgendaDisplaySettings(
       cardTextScale: cardTextScale ?? this.cardTextScale,
       slotHeightScale: slotHeightScale ?? this.slotHeightScale,
+      columnWidthScale: columnWidthScale ?? this.columnWidthScale,
       cardColorOpacity: cardColorOpacity ?? this.cardColorOpacity,
       extraMinutesBandIntensity:
           extraMinutesBandIntensity ?? this.extraMinutesBandIntensity,
@@ -83,6 +87,8 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
   static const _maxTextScale = 1.5;
   static const _minSlotHeightScale = 0.6;
   static const _maxSlotHeightScale = 1.6;
+  static const _minColumnWidthScale = 0.75;
+  static const _maxColumnWidthScale = 2.5;
   static const _minCardOpacity = 0.3;
   static const _maxCardOpacity = 1.0;
   static const _minExtraMinutesBandIntensity = 0.0;
@@ -104,9 +110,13 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
     final slotHeightScale = prefs
         .getAgendaSlotHeightScale(businessId, locationId: locationId)
         .clamp(_minSlotHeightScale, _maxSlotHeightScale);
+    final columnWidthScale = prefs
+        .getAgendaColumnWidthScale(businessId, locationId: locationId)
+        .clamp(_minColumnWidthScale, _maxColumnWidthScale);
     return AgendaDisplaySettings(
       cardTextScale: scale,
       slotHeightScale: slotHeightScale,
+      columnWidthScale: columnWidthScale,
       cardColorOpacity: prefs
           .getAgendaCardColorOpacity(businessId, locationId: locationId)
           .clamp(_minCardOpacity, _maxCardOpacity),
@@ -160,6 +170,17 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
     await ref
         .read(preferencesServiceProvider)
         .setAgendaCardTextScale(businessId, next, locationId: locationId);
+  }
+
+  Future<void> setColumnWidthScale(double value) async {
+    final businessId = _businessId();
+    final locationId = _locationId();
+    if (businessId <= 0 || locationId <= 0) return;
+    final next = value.clamp(_minColumnWidthScale, _maxColumnWidthScale);
+    state = state.copyWith(columnWidthScale: next);
+    await ref
+        .read(preferencesServiceProvider)
+        .setAgendaColumnWidthScale(businessId, next, locationId: locationId);
   }
 
   Future<void> setSlotHeightScale(double value) async {
@@ -308,6 +329,11 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
       1.0,
       locationId: locationId,
     );
+    await prefs.setAgendaColumnWidthScale(
+      businessId,
+      1.0,
+      locationId: locationId,
+    );
     await prefs.setAgendaCardColorOpacity(
       businessId,
       1.0,
@@ -385,6 +411,12 @@ final agendaHoverUnrelatedCardDimIntensityProvider = Provider<double>((ref) {
 
 final agendaUseRoundedCardCornersProvider = Provider<bool>((ref) {
   return false;
+});
+
+final agendaColumnWidthScaleProvider = Provider<double>((ref) {
+  return ref.watch(
+    agendaDisplaySettingsProvider.select((s) => s.columnWidthScale),
+  );
 });
 
 final agendaExpandStaffColumnsOnOverlapProvider = Provider<bool>((ref) {

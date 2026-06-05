@@ -24,7 +24,7 @@ class LayoutConfig {
   static const double cardVerticalGap = 1;
   static const double borderRadius = cardBorderRadiusNormal;
   static const double borderWidth = 1;
-  static const int maxVisibleStaff = 6;
+  static const int maxVisibleStaff = 30;
 
   /// Larghezza della fascia laterale per il pulsante "+" sugli slot occupati
   static const double addButtonStripWidth = 28;

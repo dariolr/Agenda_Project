@@ -24,6 +24,7 @@ class ResponsiveLayout {
     required int staffCount,
     required LayoutConfig config,
     double? availableWidth,
+    double columnWidthScale = 1.0,
   }) {
     final screenWidth = availableWidth ?? MediaQuery.of(context).size.width;
     final container = ProviderScope.containerOf(context, listen: false);
@@ -46,9 +47,12 @@ class ResponsiveLayout {
     final snappedColumnWidth = devicePixelRatio > 0
         ? (columnWidth * devicePixelRatio).floorToDouble() / devicePixelRatio
         : columnWidth;
-    final minWidth = formFactor == AppFormFactor.mobile
+    final baseMinWidth = formFactor == AppFormFactor.mobile
         ? LayoutConfig.minColumnWidthMobile
         : LayoutConfig.minColumnWidthDesktop;
+    final minWidth = formFactor == AppFormFactor.mobile
+        ? baseMinWidth
+        : baseMinWidth * columnWidthScale;
     final resolvedColumnWidth = math.max(snappedColumnWidth, minWidth);
 
     return ResponsiveLayout(

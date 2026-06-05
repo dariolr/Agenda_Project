@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/models/appointment.dart';
@@ -88,9 +89,41 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
     initialOffset: widget.initialScrollOffset,
   );
 
+  // Larghezza colonna corrente — aggiornata nel build per usarla nel handler.
+  double _colWidth = LayoutConfig.minColumnWidthDesktop;
+
+  bool _onHorizontalArrowKey(KeyEvent event) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) return false;
+    if (event.logicalKey != LogicalKeyboardKey.arrowLeft &&
+        event.logicalKey != LogicalKeyboardKey.arrowRight) {
+      return false;
+    }
+    // Non consumare se un campo testo ha il focus.
+    final primaryFocus = FocusManager.instance.primaryFocus;
+    if (primaryFocus?.context != null &&
+        primaryFocus!.context!.findAncestorWidgetOfExactType<EditableText>() !=
+            null) {
+      return false;
+    }
+    final hCtrl = ref.read(agendaScrollProvider(_scrollKey)).horizontalScrollCtrl;
+    if (!hCtrl.hasClients) return false;
+    final max = hCtrl.position.maxScrollExtent;
+    if (max <= 0) return false;
+    final delta = event.logicalKey == LogicalKeyboardKey.arrowLeft
+        ? -_colWidth
+        : _colWidth;
+    hCtrl.animateTo(
+      (hCtrl.offset + delta).clamp(0.0, max),
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeOut,
+    );
+    return true;
+  }
+
   @override
   void initState() {
     super.initState();
+    HardwareKeyboard.instance.addHandler(_onHorizontalArrowKey);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       ref.read(dragLayerLinkProvider.notifier).set(_dragLayerLink);
@@ -440,6 +473,7 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
 
     _clearBodyBox();
 
+    HardwareKeyboard.instance.removeHandler(_onHorizontalArrowKey);
     _headerHCtrl.dispose();
     super.dispose();
   }
@@ -489,11 +523,13 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
             ? constraints.maxWidth
             : MediaQuery.of(context).size.width;
 
+        final columnWidthScale = ref.watch(agendaColumnWidthScaleProvider);
         final layout = ResponsiveLayout.of(
           context,
           staffCount: widget.staffList.length,
           config: layoutConfig,
           availableWidth: availableWidth,
+          columnWidthScale: columnWidthScale,
         );
 
         final totalHeight = layoutConfig.totalHeight;
@@ -512,6 +548,8 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
           expandColumnsOnOverlap: expandColumnsOnOverlap,
           appointments: appointments,
         );
+
+        _colWidth = layout.columnWidth;
 
         return Stack(
           clipBehavior: Clip.none,

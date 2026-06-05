@@ -70,6 +70,12 @@ class PrefsKeys {
     required int locationId,
   }) => 'agenda_slot_height_scale_${_scope(businessId, locationId)}';
 
+  /// Larghezza minima colonne staff (scala, scope business + location)
+  static String agendaColumnWidthScale(
+    int businessId, {
+    required int locationId,
+  }) => 'agenda_column_width_scale_${_scope(businessId, locationId)}';
+
   /// Intensità de-enfasi card non correlate durante hover (scope business + location)
   static String agendaHoverUnrelatedCardDimIntensity(
     int businessId, {
@@ -436,6 +442,24 @@ class PreferencesService {
   }) async {
     await _prefs.setDouble(
       PrefsKeys.agendaSlotHeightScale(businessId, locationId: locationId),
+      scale,
+    );
+  }
+
+  double getAgendaColumnWidthScale(int businessId, {required int locationId}) {
+    final value = _prefs.getDouble(
+      PrefsKeys.agendaColumnWidthScale(businessId, locationId: locationId),
+    );
+    return value ?? 1.0;
+  }
+
+  Future<void> setAgendaColumnWidthScale(
+    int businessId,
+    double scale, {
+    required int locationId,
+  }) async {
+    await _prefs.setDouble(
+      PrefsKeys.agendaColumnWidthScale(businessId, locationId: locationId),
       scale,
     );
   }

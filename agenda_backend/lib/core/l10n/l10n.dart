@@ -12486,6 +12486,16 @@ class L10n {
     return Intl.message('No', name: 'actionNo', desc: '', args: []);
   }
 
+  /// `Minimum column width`
+  String get agendaDisplaySettingsColumnWidthLabel {
+    return Intl.message(
+      'Minimum column width',
+      name: 'agendaDisplaySettingsColumnWidthLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Agenda slot height`
   String get agendaDisplaySettingsSlotHeightLabel {
     return Intl.message(

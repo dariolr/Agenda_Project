@@ -165,6 +165,44 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
               Text('${(settings.slotHeightScale * 100).round()}%'),
             ],
           ),
+          if (isDesktop) ...[
+            const SizedBox(height: _sectionSpacing),
+            Text(
+              context.l10n.agendaDisplaySettingsColumnWidthLabel,
+              style: settingLabelStyle,
+            ),
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () {
+                    notifier.setColumnWidthScale(
+                      settings.columnWidthScale - 0.125,
+                    );
+                  },
+                  icon: const Icon(Icons.remove),
+                ),
+                Expanded(
+                  child: Slider(
+                    min: 0.75,
+                    max: 2.5,
+                    divisions: 14,
+                    value: settings.columnWidthScale,
+                    onChanged: notifier.setColumnWidthScale,
+                  ),
+                ),
+                IconButton(
+                  onPressed: () {
+                    notifier.setColumnWidthScale(
+                      settings.columnWidthScale + 0.125,
+                    );
+                  },
+                  icon: const Icon(Icons.add),
+                ),
+                const SizedBox(width: 6),
+                Text('${(settings.columnWidthScale * 100).round()}%'),
+              ],
+            ),
+          ],
           const SizedBox(height: _sectionSpacing),
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
