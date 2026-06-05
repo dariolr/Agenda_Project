@@ -102,6 +102,7 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
   }
 
   bool _showServiceFilter(List<Service> filtered) {
+    if (_selectedRole == 'admin' || _selectedRole == 'owner') return false;
     if (_selectedRole != 'staff') {
       return widget.services.isNotEmpty || widget.classTypes.isNotEmpty;
     }
@@ -317,6 +318,7 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
   }
 
   bool _showServiceFilter(List<Service> filtered) {
+    if (_selectedRole == 'admin' || _selectedRole == 'owner') return false;
     if (_selectedRole != 'staff') {
       return widget.services.isNotEmpty || widget.classTypes.isNotEmpty;
     }

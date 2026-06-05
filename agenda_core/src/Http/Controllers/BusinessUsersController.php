@@ -90,7 +90,7 @@ final class BusinessUsersController
 
         // Validate required fields
         if (empty($body['user_id'])) {
-            return Response::validationError(['user_id is required'], $request->traceId);
+            return Response::validationError('user_id is required', $request->traceId);
         }
         
         $targetUserId = (int) $body['user_id'];
@@ -99,7 +99,7 @@ final class BusinessUsersController
         // Validate role
         if (!in_array($role, ['staff', 'manager', 'viewer', 'admin'], true)) {
             return Response::validationError(
-                ['role must be staff, manager, viewer, or admin'],
+                'role must be staff, manager, viewer, or admin',
                 $request->traceId
             );
         }
@@ -107,13 +107,13 @@ final class BusinessUsersController
         // Check if user exists
         $targetUser = $this->userRepo->findById($targetUserId);
         if ($targetUser === null) {
-            return Response::validationError(['user_id' => 'User not found'], $request->traceId);
+            return Response::validationError('User not found', $request->traceId);
         }
 
         // Check if already has access
         if ($this->businessUserRepo->hasAccess($targetUserId, $businessId)) {
             return Response::validationError(
-                ['user_id' => 'User already has access to this business'],
+                'User already has access to this business',
                 $request->traceId
             );
         }
@@ -205,7 +205,7 @@ final class BusinessUsersController
             
             if (!in_array($newRole, ['staff', 'manager', 'viewer', 'admin'], true)) {
                 return Response::validationError(
-                    ['role must be staff, manager, viewer, or admin'],
+                    'role must be staff, manager, viewer, or admin',
                     $request->traceId
                 );
             }
@@ -248,7 +248,7 @@ final class BusinessUsersController
             $scopeType = $body['scope_type'];
             if (!in_array($scopeType, ['business', 'locations'], true)) {
                 return Response::validationError(
-                    ['scope_type must be business or locations'],
+                    'scope_type must be business or locations',
                     $request->traceId
                 );
             }
@@ -258,7 +258,7 @@ final class BusinessUsersController
             if ($scopeType === 'locations') {
                 if (!isset($body['location_ids']) || empty($body['location_ids'])) {
                     return Response::validationError(
-                        ['location_ids required when scope_type is locations'],
+                        'location_ids required when scope_type is locations',
                         $request->traceId
                     );
                 }
@@ -288,13 +288,13 @@ final class BusinessUsersController
         $normalizedEffectiveLocationIds = array_values(array_filter($normalizedEffectiveLocationIds, fn(int $id): bool => $id > 0));
         if ($effectiveRole === 'staff' && $effectiveScopeType === 'locations' && count($normalizedEffectiveLocationIds) > 1) {
             return Response::validationError(
-                ['staff role supports only one location when scope_type is locations'],
+                'staff role supports only one location when scope_type is locations',
                 $request->traceId
             );
         }
 
         if (empty($updateData)) {
-            return Response::validationError(['No fields to update'], $request->traceId);
+            return Response::validationError('No fields to update', $request->traceId);
         }
 
         $this->businessUserRepo->update($businessUser['id'], $updateData);

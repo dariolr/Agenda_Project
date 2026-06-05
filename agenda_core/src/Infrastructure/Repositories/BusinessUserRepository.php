@@ -182,17 +182,18 @@ final class BusinessUserRepository
     public function findUsersByBusinessId(int $businessId): array
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT 
+            'SELECT
                 bu.id, bu.user_id, bu.role, bu.scope_type, bu.staff_id,
                 bu.can_manage_bookings, bu.can_manage_clients,
                 bu.can_manage_services, bu.can_manage_staff, bu.can_view_reports,
+                bu.allowed_service_ids, bu.allowed_class_type_ids,
                 bu.is_active, bu.invited_by, bu.invited_at, bu.accepted_at,
                 bu.created_at,
                 u.email, u.first_name, u.last_name, u.phone as user_phone
              FROM business_users bu
              JOIN users u ON bu.user_id = u.id
              WHERE bu.business_id = ? AND bu.is_active = 1 AND u.is_active = 1
-             ORDER BY 
+             ORDER BY
                 FIELD(bu.role, "owner", "admin", "manager", "staff"),
                 u.first_name ASC'
         );
