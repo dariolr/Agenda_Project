@@ -267,6 +267,8 @@ class _ServiceItemCardState extends ConsumerState<ServiceItemCard> {
               staffId: item.staffId,
               blockedExtraMinutes: variant?.blockedTime ?? 0,
               processingExtraMinutes: variant?.processingTime ?? 0,
+              listPrice: variant?.price,
+              price: variant?.price,
             ),
           );
         }

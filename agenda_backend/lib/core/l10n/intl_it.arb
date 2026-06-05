@@ -1359,7 +1359,7 @@
   "bookingsListStatusArrived": "Arrivato",
   "bookingsListStatusCancelled": "Cancellato",
   "bookingsListStatusCompleted": "Completato",
-  "bookingsListStatusNoShow": "No show",
+  "bookingsListStatusNoShow": "Mancata presentazione",
   "bookingsListStatusPending": "In attesa",
   "bookingsListStatusReplaced": "Sostituito",
   "bookingsListSourceOnline": "Online",

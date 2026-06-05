@@ -1110,7 +1110,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingsListStatusConfirmed": MessageLookupByLibrary.simpleMessage(
       "Confermato",
     ),
-    "bookingsListStatusNoShow": MessageLookupByLibrary.simpleMessage("No show"),
+    "bookingsListStatusNoShow": MessageLookupByLibrary.simpleMessage(
+      "Mancata presentazione",
+    ),
     "bookingsListStatusPending": MessageLookupByLibrary.simpleMessage(
       "In attesa",
     ),

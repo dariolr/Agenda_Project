@@ -121,25 +121,61 @@ class PhoneInputField extends StatefulWidget {
   State<PhoneInputField> createState() => PhoneInputFieldState();
 }
 
-class PhoneInputFieldState extends State<PhoneInputField> {
+class PhoneInputFieldState extends State<PhoneInputField>
+    with WidgetsBindingObserver {
   late String _selectedPrefix;
   late final TextEditingController _controller;
+
+  // Backup usato per ripristinare il testo su piattaforme (es. Chrome/Windows)
+  // dove il browser può azzerare il campo attivo durante le transizioni
+  // di lifecycle (alt-tab, cambio applicazione).
+  String _backupText = '';
+  bool _isBackground = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     final (prefix, number) = parsePhoneWithPrefix(
       widget.initialPhone,
       defaultPrefix: widget.defaultPrefix,
     );
     _selectedPrefix = prefix;
     _controller = TextEditingController(text: number);
+    _backupText = number;
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.hidden ||
+        state == AppLifecycleState.paused) {
+      _isBackground = true;
+      _backupText = _controller.text;
+    } else if (state == AppLifecycleState.resumed) {
+      final backup = _backupText;
+      _isBackground = false;
+      // Su alcuni browser (Chrome/Windows) il cambio finestra può azzerare
+      // il controller del campo con focus. Il postFrameCallback garantisce
+      // che eventuali eventi DOM arrivati durante il resume siano già stati
+      // processati prima del ripristino.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        if (_controller.text != backup) {
+          _controller.value = TextEditingValue(
+            text: backup,
+            selection: TextSelection.collapsed(offset: backup.length),
+          );
+        }
+      });
+    }
   }
 
   /// Ritorna il numero di telefono completo (prefisso + numero)
@@ -157,6 +193,13 @@ class PhoneInputFieldState extends State<PhoneInputField> {
 
   void _notifyChange() {
     widget.onChanged?.call(fullPhone);
+  }
+
+  void _onTextChanged(String value) {
+    if (!_isBackground) {
+      _backupText = value;
+    }
+    _notifyChange();
   }
 
   @override
@@ -180,7 +223,7 @@ class PhoneInputFieldState extends State<PhoneInputField> {
       inputFormatters: [
         FilteringTextInputFormatter.allow(RegExp(r'[0-9]')),
       ],
-      onChanged: (_) => _notifyChange(),
+      onChanged: _onTextChanged,
       validator:
           widget.validator ??
           (v) {
