@@ -1,7 +1,7 @@
 <?php
 const FRESHA_CONFIG = array (
-  'business_id' => 12,
-  'location_id' => 12,
+  'business_id' => 21,
+  'location_id' => 26,
   'csv_clients' => 'export_customer_list.csv',
   'csv_services' => 'export_service_list.csv',
   'csv_staff' => '',

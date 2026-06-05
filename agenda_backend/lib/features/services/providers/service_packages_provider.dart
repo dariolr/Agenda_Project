@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/models/service_package.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../../auth/providers/auth_provider.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import 'service_packages_repository_provider.dart';
 
 Set<int> _keyToLocationIds(String key) {
@@ -41,7 +42,14 @@ class ServicePackagesNotifier extends AsyncNotifier<List<ServicePackage>> {
     }
 
     final repository = ref.watch(servicePackagesRepositoryProvider);
-    return repository.getPackages(locationId: location.id);
+    final packages = await repository.getPackages(locationId: location.id);
+    // Filtro visibilità operatore: null = nessun filtro, [] = bloccato, [..] = solo pacchetti
+    // i cui servizi sono tutti consentiti.
+    final allowedIds = ref.watch(allowedServiceIdsProvider);
+    if (allowedIds == null) return packages;
+    return packages
+        .where((p) => p.items.every((item) => allowedIds.contains(item.serviceId)))
+        .toList();
   }
 
   Future<void> refresh() async {

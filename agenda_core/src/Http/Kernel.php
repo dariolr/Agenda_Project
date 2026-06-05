@@ -254,9 +254,6 @@ final class Kernel
         $this->router->patch('/v1/businesses/{business_id}/users/{target_user_id}', BusinessUsersController::class, 'update', ['auth']);
         $this->router->delete('/v1/businesses/{business_id}/users/{target_user_id}', BusinessUsersController::class, 'destroy', ['auth']);
 
-        // Current user's business context (for permissions)
-        $this->router->get('/v1/me/business/{business_id}', BusinessUsersController::class, 'meContext', ['auth']);
-
         // Business Invitations
         $this->router->get('/v1/businesses/{business_id}/invitations', BusinessInvitationsController::class, 'index', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/invitations', BusinessInvitationsController::class, 'store', ['auth']);

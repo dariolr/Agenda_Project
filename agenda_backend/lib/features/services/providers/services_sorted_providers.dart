@@ -4,10 +4,39 @@ import '../../../core/models/class_type.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/models/service_package.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import '../../class_events/providers/class_events_providers.dart';
 import 'service_categories_provider.dart';
 import 'service_packages_provider.dart';
 import 'services_provider.dart';
+
+/// Servizi visibili all'operatore corrente.
+/// Null filter (admin/owner) → tutti i servizi. Filter attivo → solo consentiti.
+final filteredServicesProvider = Provider<List<Service>>((ref) {
+  final services = ref.watch(servicesProvider).value ?? const <Service>[];
+  final allowedIds = ref.watch(allowedServiceIdsProvider);
+  if (allowedIds == null) return services;
+  return services.where((s) => allowedIds.contains(s.id)).toList();
+});
+
+/// Tipi lezione visibili all'operatore corrente.
+final filteredClassTypesProvider = Provider<List<ClassType>>((ref) {
+  final classTypes = ref.watch(classTypesProvider).value ?? const <ClassType>[];
+  final allowedIds = ref.watch(allowedClassTypeIdsProvider);
+  if (allowedIds == null) return classTypes;
+  return classTypes.where((ct) => allowedIds.contains(ct.id)).toList();
+});
+
+/// Pacchetti visibili all'operatore corrente.
+/// Un pacchetto è visibile solo se TUTTI i suoi servizi sono consentiti.
+final filteredServicePackagesProvider = Provider<List<ServicePackage>>((ref) {
+  final packages = ref.watch(servicePackagesProvider).value ?? const <ServicePackage>[];
+  final allowedIds = ref.watch(allowedServiceIdsProvider);
+  if (allowedIds == null) return packages;
+  return packages
+      .where((p) => p.items.every((item) => allowedIds.contains(item.serviceId)))
+      .toList();
+});
 
 class ServiceCategoryEntry {
   final Service? service;

@@ -12,7 +12,6 @@ use Agenda\Infrastructure\Repositories\BusinessRepository;
 use Agenda\Infrastructure\Repositories\BusinessInvitationRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
-use Agenda\Domain\Exceptions\AuthException;
 
 /**
  * Controller for managing business operators (users with access to a business).
@@ -280,6 +279,24 @@ final class BusinessUsersController
             $updateData['allowed_class_type_ids'] = array_map('intval', (array) $body['allowed_class_type_ids']);
         }
 
+        // Enforce mutual exclusion: a filter on services/class-types is incompatible
+        // with can_manage_services. Compute effective values after this update and reject
+        // if the combination is invalid. This prevents crafted API calls from creating
+        // an inconsistent state that the UI already prevents.
+        $effectiveServiceIds     = $updateData['allowed_service_ids']
+            ?? ($businessUser['allowed_service_ids'] ?? []);
+        $effectiveClassTypeIds   = $updateData['allowed_class_type_ids']
+            ?? ($businessUser['allowed_class_type_ids'] ?? []);
+        $effectiveCanManageSvc   = $updateData['can_manage_services']
+            ?? (bool) ($businessUser['can_manage_services'] ?? false);
+
+        if ($effectiveCanManageSvc && (count($effectiveServiceIds) > 0 || count($effectiveClassTypeIds) > 0)) {
+            return Response::validationError(
+                'can_manage_services cannot be true when allowed_service_ids or allowed_class_type_ids is set',
+                $request->traceId
+            );
+        }
+
         // Enforce single-location assignment for staff when using locations scope.
         $effectiveRole = $updateData['role'] ?? $businessUser['role'];
         $effectiveScopeType = $updateData['scope_type'] ?? ($businessUser['scope_type'] ?? 'business');
@@ -413,6 +430,7 @@ final class BusinessUsersController
             'role' => $businessUser['role'],
             'scope_type' => $businessUser['scope_type'] ?? 'business',
             'location_ids' => array_map('intval', $businessUser['location_ids'] ?? []),
+            'staff_id' => isset($businessUser['staff_id']) ? (int) $businessUser['staff_id'] : null,
             'allowed_service_ids' => array_map('intval', $businessUser['allowed_service_ids'] ?? []),
             'allowed_class_type_ids' => array_map('intval', $businessUser['allowed_class_type_ids'] ?? []),
             'is_superadmin' => false,

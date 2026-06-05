@@ -136,7 +136,10 @@ class ServicesNotifier extends AsyncNotifier<List<Service>> {
           .setCategories(result.categories);
     }
 
-    return result.services;
+    // Filtro visibilità operatore: null = nessun filtro (admin/owner), [] = bloccato, [..] = solo consentiti.
+    final allowedIds = ref.watch(allowedServiceIdsProvider);
+    if (allowedIds == null) return result.services;
+    return result.services.where((s) => allowedIds.contains(s.id)).toList();
   }
 
   /// Ricarica servizi e categorie dall'API

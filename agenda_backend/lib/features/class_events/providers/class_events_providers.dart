@@ -101,7 +101,11 @@ final classTypesProvider = FutureProvider<List<ClassType>>((ref) async {
   final businessId = ref.watch(currentBusinessIdProvider);
   if (businessId <= 0) return const [];
   final repo = ref.watch(classEventsRepositoryProvider);
-  return repo.listClassTypes(businessId: businessId);
+  final types = await repo.listClassTypes(businessId: businessId);
+  // Filtro visibilità operatore: null = nessun filtro, [] = bloccato, [..] = solo consentiti.
+  final allowedIds = ref.watch(allowedClassTypeIdsProvider);
+  if (allowedIds == null) return types;
+  return types.where((ct) => allowedIds.contains(ct.id)).toList();
 });
 
 final classTypesWithInactiveProvider = FutureProvider<List<ClassType>>((

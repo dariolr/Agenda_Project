@@ -244,8 +244,9 @@ final allowedLocationIdsProvider = Provider<List<int>?>((ref) {
 });
 
 /// Servizi visibili all'operatore corrente.
-/// Ritorna null se non c'è filtro (vede tutto).
-/// Ritorna una lista (anche vuota) se il filtro è attivo.
+/// Semantica combinata: se almeno uno dei due filtri è attivo, entrambi vengono
+/// considerati restrittivi. null = nessun filtro attivo (accesso completo).
+/// [] = filtro attivo ma nessun servizio consentito. [1,2] = solo quelli.
 final allowedServiceIdsProvider = Provider<List<int>?>((ref) {
   final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
@@ -256,12 +257,17 @@ final allowedServiceIdsProvider = Provider<List<int>?>((ref) {
   );
 
   if (!_isContextForCurrentBusiness(context, currentBusinessId)) return null;
-  if (!context!.hasServiceFilter) return null;
+  // Nessun filtro attivo su nessuno dei due → accesso completo
+  if (!context!.hasServiceFilter && !context.hasClassTypeFilter) return null;
+  // Filtro lezioni attivo ma nessun servizio esplicitamente consentito → bloccato
+  if (!context.hasServiceFilter) return const [];
   return context.allowedServiceIds;
 });
 
 /// Tipi lezione visibili all'operatore corrente.
-/// Ritorna null se non c'è filtro (vede tutto).
+/// Semantica combinata: se almeno uno dei due filtri è attivo, entrambi vengono
+/// considerati restrittivi. null = nessun filtro attivo (accesso completo).
+/// [] = filtro attivo ma nessun tipo lezione consentito. [A,B] = solo quelli.
 final allowedClassTypeIdsProvider = Provider<List<int>?>((ref) {
   final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
@@ -272,7 +278,10 @@ final allowedClassTypeIdsProvider = Provider<List<int>?>((ref) {
   );
 
   if (!_isContextForCurrentBusiness(context, currentBusinessId)) return null;
-  if (!context!.hasClassTypeFilter) return null;
+  // Nessun filtro attivo su nessuno dei due → accesso completo
+  if (!context!.hasServiceFilter && !context.hasClassTypeFilter) return null;
+  // Filtro servizi attivo ma nessun tipo lezione esplicitamente consentito → bloccato
+  if (!context.hasClassTypeFilter) return const [];
   return context.allowedClassTypeIds;
 });
 

@@ -370,7 +370,7 @@ final class AuthController
             $user = $this->updateProfile->execute((int) $userId, $body);
             return Response::success($user, 200);
         } catch (ValidationException $e) {
-            return Response::error($e->getMessage(), 'validation_error', 422, $e->getErrors());
+            return Response::error($e->getMessage(), 'validation_error', 422, null, $e->getErrors());
         }
     }
 
@@ -401,7 +401,7 @@ final class AuthController
             $user = $this->updateProfile->execute($targetUserId, $body);
             return Response::success($user, 200);
         } catch (ValidationException $e) {
-            return Response::error($e->getMessage(), 'validation_error', 422, $e->getErrors());
+            return Response::error($e->getMessage(), 'validation_error', 422, null, $e->getErrors());
         }
     }
 
@@ -497,8 +497,10 @@ final class AuthController
                 'business_id' => $businessId,
                 'role' => $businessUser['role'],
                 'scope_type' => $businessUser['scope_type'] ?? 'business',
-                'location_ids' => $businessUser['location_ids'] ?? [],
+                'location_ids' => array_map('intval', $businessUser['location_ids'] ?? []),
                 'staff_id' => $businessUser['staff_id'] ?? null,
+                'allowed_service_ids' => array_map('intval', $businessUser['allowed_service_ids'] ?? []),
+                'allowed_class_type_ids' => array_map('intval', $businessUser['allowed_class_type_ids'] ?? []),
                 'permissions' => [
                     'can_manage_bookings' => (bool) ($businessUser['can_manage_bookings'] ?? false),
                     'can_manage_clients' => (bool) ($businessUser['can_manage_clients'] ?? false),

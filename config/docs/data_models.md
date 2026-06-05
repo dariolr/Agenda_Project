@@ -88,6 +88,8 @@ Associa utenti a businesses con ruoli e permessi.
 - role (enum: owner, admin, manager, staff, viewer)
 - staff_id (optional, link a staff record)
 - scope_type (`business` | `locations`)
+- allowed_service_ids (JSON array, optional — vedi Filter Semantics)
+- allowed_class_type_ids (JSON array, optional — vedi Filter Semantics)
 - can_manage_bookings
 - can_manage_clients
 - can_manage_services
@@ -110,6 +112,16 @@ Associa utenti a businesses con ruoli e permessi.
 **Scope Semantics:**
 - `scope_type=business`: accesso a tutte le sedi del business.
 - `scope_type=locations`: accesso limitato alle sedi assegnate in `business_user_locations`.
+
+**Filter Semantics (allowed_service_ids / allowed_class_type_ids):**
+I due filtri hanno semantica combinata: se almeno uno è impostato, entrambi sono restrittivi.
+- Entrambi vuoti/NULL → nessun filtro, accesso completo a servizi e tipi lezione.
+- Solo `allowed_service_ids` impostato → l'operatore vede solo quei servizi; nessun tipo lezione.
+- Solo `allowed_class_type_ids` impostato → l'operatore vede solo quei tipi lezione; nessun servizio.
+- Entrambi impostati → l'operatore vede solo i servizi e i tipi lezione esplicitamente elencati.
+
+Vincolo backend: `can_manage_services = true` è incompatibile con filtri attivi.
+Admin e owner non possono ricevere filtri (la UI lo impedisce; il backend lo valida).
 
 **Unique Constraint:** `(business_id, user_id)`
 
