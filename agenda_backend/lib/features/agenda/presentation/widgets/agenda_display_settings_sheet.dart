@@ -13,6 +13,7 @@ import 'package:agenda_backend/features/agenda/providers/date_range_provider.dar
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/weekly_appointments_provider.dart';
 import 'package:agenda_backend/features/services/providers/services_provider.dart';
+import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,8 +37,7 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
   const _AgendaDisplaySettingsSheetContent();
   static const double _titleToFirstSettingSpacing = 52;
   static const double _sectionSpacing = 30;
-  static const double _radioGroupTopSpacing = 10;
-  static const double _radioItemSpacing = 4;
+
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -57,6 +57,7 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
     final business = ref.watch(currentBusinessProvider);
     final services = ref.watch(servicesProvider).value ?? const [];
     final staffCount = ref.watch(staffForCurrentLocationProvider).length;
+    final isAdminOrManager = ref.watch(canViewPricesProvider);
     final hasAnyServiceWithAdditionalTime = services.any(
       (service) =>
           (service.processingTime ?? 0) > 0 || (service.blockedTime ?? 0) > 0,
@@ -89,6 +90,7 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
     final notifier = ref.read(agendaDisplaySettingsProvider.notifier);
     final hoverUnrelatedVisualIntensity =
         (1.0 - settings.hoverUnrelatedCardDimIntensity).clamp(0.0, 1.0);
+    final columnWidthSliderHasEffect = !isMobile && staffCount > 1;
 
     return AppFormScaffold(
       title: Text(context.l10n.agendaDisplaySettingsSuperadminTitle),
@@ -105,6 +107,18 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: _titleToFirstSettingSpacing),
+          if (isAdminOrManager) ...[
+            SwitchListTile.adaptive(
+              contentPadding: EdgeInsets.zero,
+              title: Text(
+                context.l10n.agendaDisplaySettingsShowPricesLabel,
+                style: settingLabelStyle,
+              ),
+              value: showPrices,
+              onChanged: notifier.setShowPricesOverride,
+            ),
+            const SizedBox(height: _sectionSpacing),
+          ],
           Text(
             context.l10n.agendaDisplaySettingsCardTextZoomLabel,
             style: settingLabelStyle,
@@ -186,7 +200,7 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
                       .setMobileMaxColumns(selection.first),
             ),
           ],
-          if (!isMobile) ...[
+          if (columnWidthSliderHasEffect) ...[
             const SizedBox(height: _sectionSpacing),
             Text(
               context.l10n.agendaDisplaySettingsColumnWidthLabel,
@@ -228,16 +242,6 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
           SwitchListTile.adaptive(
             contentPadding: EdgeInsets.zero,
             title: Text(
-              context.l10n.agendaDisplaySettingsShowPricesLabel,
-              style: settingLabelStyle,
-            ),
-            value: showPrices,
-            onChanged: notifier.setShowPricesOverride,
-          ),
-          const SizedBox(height: _sectionSpacing),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            title: Text(
               context
                   .l10n
                   .agendaDisplaySettingsExpandStaffColumnsOnOverlapLabel,
@@ -257,39 +261,29 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
           //   onChanged: notifier.setShowCancelledAppointments,
           // ),
           const SizedBox(height: _sectionSpacing),
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              context.l10n.agendaDisplaySettingsServiceColorsLabel,
-              style: settingLabelStyle,
-            ),
+          Text(
+            context.l10n.agendaDisplaySettingsServiceColorsLabel,
+            style: settingLabelStyle,
           ),
-          const SizedBox(height: _radioGroupTopSpacing),
-          RadioListTile<AgendaCardColorSource>(
-            contentPadding: EdgeInsets.zero,
-            value: AgendaCardColorSource.services,
-            groupValue: cardColorSource,
-            title: Text(
-              context.l10n.servicesTabLabel,
-              style: settingLabelStyle,
-            ),
-            onChanged: notifier.setCardColorSourceOverride,
-          ),
-          const SizedBox(height: _radioItemSpacing),
-          RadioListTile<AgendaCardColorSource>(
-            contentPadding: EdgeInsets.zero,
-            value: AgendaCardColorSource.team,
-            groupValue: cardColorSource,
-            title: Text(context.l10n.teamStaffLabel, style: settingLabelStyle),
-            onChanged: notifier.setCardColorSourceOverride,
-          ),
-          const SizedBox(height: _radioItemSpacing),
-          RadioListTile<AgendaCardColorSource>(
-            contentPadding: EdgeInsets.zero,
-            value: AgendaCardColorSource.clients,
-            groupValue: cardColorSource,
-            title: Text(context.l10n.navClients, style: settingLabelStyle),
-            onChanged: notifier.setCardColorSourceOverride,
+          const SizedBox(height: 8),
+          SegmentedButton<AgendaCardColorSource>(
+            segments: [
+              ButtonSegment(
+                value: AgendaCardColorSource.services,
+                label: Text(context.l10n.servicesTabLabel),
+              ),
+              ButtonSegment(
+                value: AgendaCardColorSource.team,
+                label: Text(context.l10n.teamStaffLabel),
+              ),
+              ButtonSegment(
+                value: AgendaCardColorSource.clients,
+                label: Text(context.l10n.navClients),
+              ),
+            ],
+            selected: {cardColorSource},
+            onSelectionChanged: (selection) =>
+                notifier.setCardColorSourceOverride(selection.first),
           ),
           const SizedBox(height: _sectionSpacing),
           Text(

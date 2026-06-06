@@ -34,27 +34,23 @@ class ResponsiveLayout {
     // ──────────────────────────────────────────────
     // 📐 Calcolo larghezza colonne staff
     // ──────────────────────────────────────────────
+    final effectiveMinWidth = formFactor == AppFormFactor.mobile
+        ? LayoutConfig.minColumnWidthMobile
+        : LayoutConfig.minColumnWidthDesktop * columnWidthScale;
+
     final dynamicMaxVisible = formFactor == AppFormFactor.mobile
         ? mobileMaxColumns.clamp(1, 3)
-        : config.computeMaxVisibleStaff(screenWidth, formFactor: formFactor);
+        : (screenWidth / effectiveMinWidth)
+              .floor()
+              .clamp(1, LayoutConfig.maxVisibleStaff);
     final visibleStaff = staffCount.clamp(1, dynamicMaxVisible);
 
-    final columnWidth = config.computeAdaptiveColumnWidth(
-      contentWidth: screenWidth,
-      visibleStaffCount: visibleStaff,
-      formFactor: formFactor,
-    );
+    final idealWidth = screenWidth / visibleStaff;
     final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
-    final snappedColumnWidth = devicePixelRatio > 0
-        ? (columnWidth * devicePixelRatio).floorToDouble() / devicePixelRatio
-        : columnWidth;
-    final baseMinWidth = formFactor == AppFormFactor.mobile
-        ? LayoutConfig.minColumnWidthMobile
-        : LayoutConfig.minColumnWidthDesktop;
-    final minWidth = formFactor == AppFormFactor.mobile
-        ? baseMinWidth
-        : baseMinWidth * columnWidthScale;
-    final resolvedColumnWidth = math.max(snappedColumnWidth, minWidth);
+    final snappedIdealWidth = devicePixelRatio > 0
+        ? (idealWidth * devicePixelRatio).floorToDouble() / devicePixelRatio
+        : idealWidth;
+    final resolvedColumnWidth = math.max(snappedIdealWidth, effectiveMinWidth);
 
     return ResponsiveLayout(
       columnWidth: resolvedColumnWidth,

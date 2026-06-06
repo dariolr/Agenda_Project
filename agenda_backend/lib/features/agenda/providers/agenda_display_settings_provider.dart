@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/services/preferences_service.dart';
 import '../domain/agenda_card_color_source.dart';
+import '../../auth/providers/current_business_user_provider.dart' show canViewPricesProvider;
 import 'business_providers.dart';
 import 'layout_config_provider.dart';
 import 'location_providers.dart';
@@ -458,6 +459,7 @@ final agendaExpandStaffColumnsOnOverlapProvider = Provider<bool>((ref) {
 });
 
 final effectiveShowAppointmentPriceInCardProvider = Provider<bool>((ref) {
+  if (!ref.watch(canViewPricesProvider)) return false;
   final businessShowPrice = ref
       .watch(currentBusinessProvider)
       .showAppointmentPriceInCard;

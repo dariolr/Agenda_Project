@@ -12206,10 +12206,10 @@ class L10n {
     );
   }
 
-  /// `Resize staff columns based on overlapping appointments`
+  /// `Expand columns when appointments overlap`
   String get agendaDisplaySettingsExpandStaffColumnsOnOverlapLabel {
     return Intl.message(
-      'Resize staff columns based on overlapping appointments',
+      'Expand columns when appointments overlap',
       name: 'agendaDisplaySettingsExpandStaffColumnsOnOverlapLabel',
       desc: '',
       args: [],
@@ -12236,10 +12236,10 @@ class L10n {
     );
   }
 
-  /// `Card colors from:`
+  /// `Appointment color based on:`
   String get agendaDisplaySettingsServiceColorsLabel {
     return Intl.message(
-      'Card colors from:',
+      'Appointment color based on:',
       name: 'agendaDisplaySettingsServiceColorsLabel',
       desc: '',
       args: [],

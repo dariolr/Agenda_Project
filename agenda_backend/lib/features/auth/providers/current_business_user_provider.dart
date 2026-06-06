@@ -303,6 +303,14 @@ final currentUserRoleProvider = Provider<String>((ref) {
   );
 });
 
+final canViewPricesProvider = Provider<bool>((ref) {
+  final role = ref.watch(currentUserRoleProvider);
+  return role == 'owner' ||
+      role == 'admin' ||
+      role == 'manager' ||
+      role == 'superadmin';
+});
+
 /// Verifica se l'utente corrente è admin o owner.
 /// Admin può gestire altri operatori.
 final canManageOperatorsProvider = Provider<bool>((ref) {
