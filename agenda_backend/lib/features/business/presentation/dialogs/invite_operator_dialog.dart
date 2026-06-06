@@ -14,7 +14,7 @@ import '../../../class_events/providers/class_events_providers.dart';
 import '../../../services/providers/services_provider.dart';
 import '../../../staff/providers/staff_providers.dart';
 import '../../providers/business_users_provider.dart';
-import 'role_selection_dialog.dart' show ServiceFilterSection;
+import 'role_selection_dialog.dart' show AccessMode, ServiceFilterSection;
 
 String _resolveInviteErrorMessage(
   BuildContext context,
@@ -92,10 +92,24 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
   late String _selectedRole;
   late String _selectedScopeType;
   late Set<int> _selectedLocationIds;
+  late AccessMode _serviceMode;
+  late AccessMode _classTypeMode;
   late Set<int> _selectedServiceIds;
   late Set<int> _selectedClassTypeIds;
   late int? _selectedStaffId;
   bool _isLoading = false;
+
+  static AccessMode _modeFromList(List<int>? ids) {
+    if (ids == null) return AccessMode.all;
+    if (ids.isEmpty) return AccessMode.none;
+    return AccessMode.selected;
+  }
+
+  List<int>? _resolveFilter(AccessMode mode, Set<int> selected) => switch (mode) {
+    AccessMode.all => null,
+    AccessMode.none => const [],
+    AccessMode.selected => selected.toList(),
+  };
 
   @override
   void initState() {
@@ -104,8 +118,10 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
     _selectedRole = widget.initialRole ?? 'staff';
     _selectedScopeType = widget.initialScopeType ?? 'locations';
     _selectedLocationIds = (widget.initialLocationIds ?? []).toSet();
-    _selectedServiceIds = (widget.initialServiceIds ?? []).toSet();
-    _selectedClassTypeIds = (widget.initialClassTypeIds ?? []).toSet();
+    _serviceMode = _modeFromList(widget.initialServiceIds);
+    _classTypeMode = _modeFromList(widget.initialClassTypeIds);
+    _selectedServiceIds = widget.initialServiceIds?.toSet() ?? {};
+    _selectedClassTypeIds = widget.initialClassTypeIds?.toSet() ?? {};
     _selectedStaffId = widget.initialStaffId;
   }
 
@@ -268,8 +284,18 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
                   ServiceFilterSection(
                     services: services,
                     classTypes: classTypes,
+                    serviceMode: _serviceMode,
+                    classTypeMode: _classTypeMode,
                     selectedServiceIds: _selectedServiceIds,
                     selectedClassTypeIds: _selectedClassTypeIds,
+                    onServiceModeChanged: (mode) => setState(() {
+                      _serviceMode = mode;
+                      if (mode != AccessMode.selected) _selectedServiceIds = {};
+                    }),
+                    onClassTypeModeChanged: (mode) => setState(() {
+                      _classTypeMode = mode;
+                      if (mode != AccessMode.selected) _selectedClassTypeIds = {};
+                    }),
                     onServicesChanged: (ids) =>
                         setState(() => _selectedServiceIds = ids),
                     onClassTypesChanged: (ids) =>
@@ -404,12 +430,8 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
           locationIds: _selectedScopeType == 'locations'
               ? _selectedLocationIds.toList()
               : null,
-          allowedServiceIds: _selectedServiceIds.isNotEmpty
-              ? _selectedServiceIds.toList()
-              : null,
-          allowedClassTypeIds: _selectedClassTypeIds.isNotEmpty
-              ? _selectedClassTypeIds.toList()
-              : null,
+          allowedServiceIds: _resolveFilter(_serviceMode, _selectedServiceIds),
+          allowedClassTypeIds: _resolveFilter(_classTypeMode, _selectedClassTypeIds),
         );
 
     if (!mounted) return;
@@ -483,10 +505,24 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
   late String _selectedRole;
   late String _selectedScopeType;
   late Set<int> _selectedLocationIds;
+  late AccessMode _serviceMode;
+  late AccessMode _classTypeMode;
   late Set<int> _selectedServiceIds;
   late Set<int> _selectedClassTypeIds;
   late int? _selectedStaffId;
   bool _isLoading = false;
+
+  static AccessMode _modeFromList(List<int>? ids) {
+    if (ids == null) return AccessMode.all;
+    if (ids.isEmpty) return AccessMode.none;
+    return AccessMode.selected;
+  }
+
+  List<int>? _resolveFilter(AccessMode mode, Set<int> selected) => switch (mode) {
+    AccessMode.all => null,
+    AccessMode.none => const [],
+    AccessMode.selected => selected.toList(),
+  };
 
   @override
   void initState() {
@@ -495,8 +531,10 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
     _selectedRole = widget.initialRole ?? 'staff';
     _selectedScopeType = widget.initialScopeType ?? 'locations';
     _selectedLocationIds = (widget.initialLocationIds ?? []).toSet();
-    _selectedServiceIds = (widget.initialServiceIds ?? []).toSet();
-    _selectedClassTypeIds = (widget.initialClassTypeIds ?? []).toSet();
+    _serviceMode = _modeFromList(widget.initialServiceIds);
+    _classTypeMode = _modeFromList(widget.initialClassTypeIds);
+    _selectedServiceIds = widget.initialServiceIds?.toSet() ?? {};
+    _selectedClassTypeIds = widget.initialClassTypeIds?.toSet() ?? {};
     _selectedStaffId = widget.initialStaffId;
   }
 
@@ -665,8 +703,18 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
                       ServiceFilterSection(
                         services: services,
                         classTypes: classTypes,
+                        serviceMode: _serviceMode,
+                        classTypeMode: _classTypeMode,
                         selectedServiceIds: _selectedServiceIds,
                         selectedClassTypeIds: _selectedClassTypeIds,
+                        onServiceModeChanged: (mode) => setState(() {
+                          _serviceMode = mode;
+                          if (mode != AccessMode.selected) _selectedServiceIds = {};
+                        }),
+                        onClassTypeModeChanged: (mode) => setState(() {
+                          _classTypeMode = mode;
+                          if (mode != AccessMode.selected) _selectedClassTypeIds = {};
+                        }),
                         onServicesChanged: (ids) =>
                             setState(() => _selectedServiceIds = ids),
                         onClassTypesChanged: (ids) =>
@@ -815,12 +863,8 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
           locationIds: _selectedScopeType == 'locations'
               ? _selectedLocationIds.toList()
               : null,
-          allowedServiceIds: _selectedServiceIds.isNotEmpty
-              ? _selectedServiceIds.toList()
-              : null,
-          allowedClassTypeIds: _selectedClassTypeIds.isNotEmpty
-              ? _selectedClassTypeIds.toList()
-              : null,
+          allowedServiceIds: _resolveFilter(_serviceMode, _selectedServiceIds),
+          allowedClassTypeIds: _resolveFilter(_classTypeMode, _selectedClassTypeIds),
         );
 
     if (!mounted) return;

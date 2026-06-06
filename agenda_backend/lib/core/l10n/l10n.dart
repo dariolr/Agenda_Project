@@ -13770,6 +13770,46 @@ class L10n {
       args: [],
     );
   }
+
+  /// `None`
+  String get operatorsAccessNone {
+    return Intl.message(
+      'None',
+      name: 'operatorsAccessNone',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Selected only`
+  String get operatorsAccessSelected {
+    return Intl.message(
+      'Selected only',
+      name: 'operatorsAccessSelected',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accessible services`
+  String get operatorsAccessibleServices {
+    return Intl.message(
+      'Accessible services',
+      name: 'operatorsAccessibleServices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accessible class types`
+  String get operatorsAccessibleClassTypes {
+    return Intl.message(
+      'Accessible class types',
+      name: 'operatorsAccessibleClassTypes',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

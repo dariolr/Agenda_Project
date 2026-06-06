@@ -335,18 +335,18 @@ final class BusinessUserRepository
             $this->setLocationIds($businessUserId, $locationIds);
         }
 
-        // Apply service/class-type filters if provided (JSON columns)
-        if (!empty($data['allowed_service_ids']) || !empty($data['allowed_class_type_ids'])) {
-            $svcIds = array_values(array_map('intval', (array) ($data['allowed_service_ids'] ?? [])));
-            $ctIds  = array_values(array_map('intval', (array) ($data['allowed_class_type_ids'] ?? [])));
+        // Apply service/class-type filters if provided (null=Tutti, []=Nessuno, [..]=Solo selezionati)
+        if (array_key_exists('allowed_service_ids', $data) || array_key_exists('allowed_class_type_ids', $data)) {
+            $svcVal = array_key_exists('allowed_service_ids', $data) ? $data['allowed_service_ids'] : null;
+            $ctVal  = array_key_exists('allowed_class_type_ids', $data) ? $data['allowed_class_type_ids'] : null;
             $this->db->getPdo()->prepare(
                 'UPDATE business_users SET
                     allowed_service_ids = ?,
                     allowed_class_type_ids = ?
                  WHERE id = ?'
             )->execute([
-                empty($svcIds) ? null : json_encode($svcIds),
-                empty($ctIds)  ? null : json_encode($ctIds),
+                $svcVal === null ? null : json_encode(array_values(array_map('intval', (array) $svcVal))),
+                $ctVal  === null ? null : json_encode(array_values(array_map('intval', (array) $ctVal))),
                 $businessUserId,
             ]);
         }
@@ -479,16 +479,16 @@ final class BusinessUserRepository
             }
         }
 
-        // JSON filter columns — aggiungono direttamente a $fields/$params
+        // JSON filter columns — null=Tutti (NULL in DB), []=Nessuno ('[]' in DB), [1,2]=Solo selezionati
         if (array_key_exists('allowed_service_ids', $data)) {
             $fields[] = 'allowed_service_ids = ?';
-            $svcIds = array_values(array_map('intval', (array) $data['allowed_service_ids']));
-            $params[] = empty($svcIds) ? null : json_encode($svcIds);
+            $val = $data['allowed_service_ids'];
+            $params[] = $val === null ? null : json_encode(array_values(array_map('intval', (array) $val)));
         }
         if (array_key_exists('allowed_class_type_ids', $data)) {
             $fields[] = 'allowed_class_type_ids = ?';
-            $ctIds = array_values(array_map('intval', (array) $data['allowed_class_type_ids']));
-            $params[] = empty($ctIds) ? null : json_encode($ctIds);
+            $val = $data['allowed_class_type_ids'];
+            $params[] = $val === null ? null : json_encode(array_values(array_map('intval', (array) $val)));
         }
 
         if (empty($fields)) {
@@ -691,7 +691,8 @@ final class BusinessUserRepository
     {
         if ($raw === null) return null;
         $decoded = is_string($raw) ? json_decode($raw, true) : $raw;
-        if (!is_array($decoded) || empty($decoded)) return null;
+        if (!is_array($decoded)) return null;
+        if (empty($decoded)) return [];  // [] in DB → Nessuno (distinto da NULL = Tutti)
         return array_values(array_map('intval', $decoded));
     }
 

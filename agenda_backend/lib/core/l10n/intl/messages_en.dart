@@ -2055,6 +2055,16 @@ class MessageLookup extends MessageLookupByLibrary {
       "Visible on the public booking page",
     ),
     "operatorsAcceptedOn": m51,
+    "operatorsAccessNone": MessageLookupByLibrary.simpleMessage("None"),
+    "operatorsAccessSelected": MessageLookupByLibrary.simpleMessage(
+      "Selected only",
+    ),
+    "operatorsAccessibleClassTypes": MessageLookupByLibrary.simpleMessage(
+      "Accessible class types",
+    ),
+    "operatorsAccessibleServices": MessageLookupByLibrary.simpleMessage(
+      "Accessible services",
+    ),
     "operatorsDeleteInvite": MessageLookupByLibrary.simpleMessage(
       "Delete invite",
     ),

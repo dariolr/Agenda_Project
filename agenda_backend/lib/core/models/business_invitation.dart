@@ -7,8 +7,10 @@ class BusinessInvitation {
   final int? staffId;
   final String scopeType;
   final List<int> locationIds;
-  final List<int> allowedServiceIds;
-  final List<int> allowedClassTypeIds;
+  /// null = Tutti, [] = Nessuno, [1,2] = Solo selezionati.
+  final List<int>? allowedServiceIds;
+  /// null = Tutti, [] = Nessuno, [1,2] = Solo selezionati.
+  final List<int>? allowedClassTypeIds;
   final String? token;
   final String status;
   final DateTime? acceptedAt;
@@ -24,8 +26,8 @@ class BusinessInvitation {
     this.staffId,
     this.scopeType = 'business',
     this.locationIds = const [],
-    this.allowedServiceIds = const [],
-    this.allowedClassTypeIds = const [],
+    this.allowedServiceIds,
+    this.allowedClassTypeIds,
     this.token,
     this.status = 'pending',
     this.acceptedAt,
@@ -116,14 +118,12 @@ class BusinessInvitation {
           (json['allowed_service_ids'] as List<dynamic>?)
               ?.map(_asInt)
               .where((e) => e > 0)
-              .toList() ??
-          [],
+              .toList(),
       allowedClassTypeIds:
           (json['allowed_class_type_ids'] as List<dynamic>?)
               ?.map(_asInt)
               .where((e) => e > 0)
-              .toList() ??
-          [],
+              .toList(),
       token: json['token'] as String?,
       status:
           json['effective_status'] as String? ??

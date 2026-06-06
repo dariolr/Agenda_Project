@@ -7,10 +7,10 @@ class BusinessUser {
   final int? staffId;
   final String scopeType; // 'business' o 'locations'
   final List<int> locationIds; // IDs delle location accessibili (se scopeType='locations')
-  /// Servizi visibili: lista vuota = nessun filtro.
-  final List<int> allowedServiceIds;
-  /// Tipi lezione visibili: lista vuota = nessun filtro.
-  final List<int> allowedClassTypeIds;
+  /// null = Tutti, [] = Nessuno, [1,2] = Solo selezionati.
+  final List<int>? allowedServiceIds;
+  /// null = Tutti, [] = Nessuno, [1,2] = Solo selezionati.
+  final List<int>? allowedClassTypeIds;
   final String email;
   final String firstName;
   final String lastName;
@@ -27,8 +27,8 @@ class BusinessUser {
     this.staffId,
     this.scopeType = 'business',
     this.locationIds = const [],
-    this.allowedServiceIds = const [],
-    this.allowedClassTypeIds = const [],
+    this.allowedServiceIds,
+    this.allowedClassTypeIds,
     required this.email,
     required this.firstName,
     required this.lastName,
@@ -116,14 +116,12 @@ class BusinessUser {
         (json['allowed_service_ids'] as List<dynamic>?)
             ?.map(_asInt)
             .where((e) => e > 0)
-            .toList() ??
-        [],
+            .toList(),
     allowedClassTypeIds:
         (json['allowed_class_type_ids'] as List<dynamic>?)
             ?.map(_asInt)
             .where((e) => e > 0)
-            .toList() ??
-        [],
+            .toList(),
     email: json['email'] as String? ?? json['user']?['email'] as String? ?? '',
     firstName:
         json['first_name'] as String? ??

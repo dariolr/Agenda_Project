@@ -724,8 +724,8 @@ class _UserTile extends ConsumerWidget {
   ) {
     final formFactor = ref.read(formFactorProvider);
     final currentLocationIds = user.locationIds.toSet();
-    final currentServiceIds = user.allowedServiceIds.toSet();
-    final currentClassTypeIds = user.allowedClassTypeIds.toSet();
+    final currentServiceIds = user.allowedServiceIds;
+    final currentClassTypeIds = user.allowedClassTypeIds;
 
     // Servizi, lezioni e staff per il filtro
     final services = ref.read(servicesProvider).asData?.value ?? [];
@@ -737,20 +737,23 @@ class _UserTile extends ConsumerWidget {
       required String role,
       required String scopeType,
       required List<int> locationIds,
-      required List<int> allowedServiceIds,
-      required List<int> allowedClassTypeIds,
+      required List<int>? allowedServiceIds,
+      required List<int>? allowedClassTypeIds,
     }) async {
       Navigator.of(dialogContext).pop();
       final selectedLocationIds =
           scopeType == 'locations' ? locationIds.toSet() : <int>{};
-      final newServiceIds = allowedServiceIds.toSet();
-      final newClassTypeIds = allowedClassTypeIds.toSet();
+      bool listChanged(List<int>? a, List<int>? b) {
+        if (a == null && b == null) return false;
+        if (a == null || b == null) return true;
+        return !setEquals(a.toSet(), b.toSet());
+      }
       final hasChanges =
           role != user.role ||
           scopeType != user.scopeType ||
           !setEquals(selectedLocationIds, currentLocationIds) ||
-          !setEquals(newServiceIds, currentServiceIds) ||
-          !setEquals(newClassTypeIds, currentClassTypeIds);
+          listChanged(allowedServiceIds, currentServiceIds) ||
+          listChanged(allowedClassTypeIds, currentClassTypeIds);
       if (!hasChanges) return;
       final ok = await ref
           .read(businessUsersProvider(businessId).notifier)
@@ -800,8 +803,8 @@ class _UserTile extends ConsumerWidget {
             required String role,
             required String scopeType,
             required List<int> locationIds,
-            required List<int> allowedServiceIds,
-            required List<int> allowedClassTypeIds,
+            required List<int>? allowedServiceIds,
+            required List<int>? allowedClassTypeIds,
           }) => handleSave(
             dialogContext: ctx,
             role: role,
@@ -832,8 +835,8 @@ class _UserTile extends ConsumerWidget {
             required String role,
             required String scopeType,
             required List<int> locationIds,
-            required List<int> allowedServiceIds,
-            required List<int> allowedClassTypeIds,
+            required List<int>? allowedServiceIds,
+            required List<int>? allowedClassTypeIds,
           }) => handleSave(
             dialogContext: ctx,
             role: role,

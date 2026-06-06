@@ -499,8 +499,8 @@ final class AuthController
                 'scope_type' => $businessUser['scope_type'] ?? 'business',
                 'location_ids' => array_map('intval', $businessUser['location_ids'] ?? []),
                 'staff_id' => $businessUser['staff_id'] ?? null,
-                'allowed_service_ids' => array_map('intval', $businessUser['allowed_service_ids'] ?? []),
-                'allowed_class_type_ids' => array_map('intval', $businessUser['allowed_class_type_ids'] ?? []),
+                'allowed_service_ids' => $businessUser['allowed_service_ids'],
+                'allowed_class_type_ids' => $businessUser['allowed_class_type_ids'],
                 'permissions' => [
                     'can_manage_bookings' => (bool) ($businessUser['can_manage_bookings'] ?? false),
                     'can_manage_clients' => (bool) ($businessUser['can_manage_clients'] ?? false),

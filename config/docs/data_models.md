@@ -106,7 +106,7 @@ Associa utenti a businesses con ruoli e permessi.
 - `owner`: Full control, can delete business, manage all users
 - `admin`: Full control except delete business, can manage users
 - `manager`: Operativita completa sul perimetro assegnato (business intero o sedi assegnate)
-- `staff`: Operativita sul solo staff associato (`staff_id`)
+- `staff`: Operativita limitata al membro del team associato (`staff_id`). Può schedulare eventi lezione e gestire appuntamenti solo per il proprio `staff_id`. I filtri `allowed_service_ids` / `allowed_class_type_ids` restringono ulteriormente quali servizi/tipi lezione può gestire.
 - `viewer`: Sola lettura (agenda/prenotazioni/staff/servizi nel perimetro assegnato)
 
 **Scope Semantics:**
@@ -114,14 +114,22 @@ Associa utenti a businesses con ruoli e permessi.
 - `scope_type=locations`: accesso limitato alle sedi assegnate in `business_user_locations`.
 
 **Filter Semantics (allowed_service_ids / allowed_class_type_ids):**
-I due filtri hanno semantica combinata: se almeno uno è impostato, entrambi sono restrittivi.
-- Entrambi vuoti/NULL → nessun filtro, accesso completo a servizi e tipi lezione.
-- Solo `allowed_service_ids` impostato → l'operatore vede solo quei servizi; nessun tipo lezione.
-- Solo `allowed_class_type_ids` impostato → l'operatore vede solo quei tipi lezione; nessun servizio.
-- Entrambi impostati → l'operatore vede solo i servizi e i tipi lezione esplicitamente elencati.
+I due filtri sono **indipendenti** e seguono una semantica a 3 stati ciascuno:
+- `null` → **Tutti**: nessun filtro, accesso completo a tutti i servizi/tipi lezione.
+- `[]` → **Nessuno**: nessun accesso (zero servizi/tipi lezione visibili e gestibili).
+- `[1, 2, ...]` → **Solo selezionati**: accesso limitato agli id esplicitamente elencati.
 
-Vincolo backend: `can_manage_services = true` è incompatibile con filtri attivi.
-Admin e owner non possono ricevere filtri (la UI lo impedisce; il backend lo valida).
+I due filtri si applicano in modo ortogonale: impostare uno non influenza l'altro.
+
+**Effetti del filtro:**
+- Visibilità nell'agenda (lato Flutter — filtro applicato client-side)
+- Autorizzazione a creare/modificare/cancellare eventi del tipo corrispondente (lato backend)
+- Per `allowed_service_ids`: validato anche su creazione e modifica appuntamenti
+
+**Nota — filtro lettura backend:** gli endpoint di lettura (lista servizi, lista eventi lezione) non applicano ancora il filtro lato SQL. Il filtraggio avviene client-side. Questo è un punto aperto da completare.
+
+**Relazione con `can_manage_services`:**
+`can_manage_services` controlla la gestione della **configurazione** (creare/modificare/eliminare tipi di servizio e tipi di lezione). È ortogonale ai filtri: un operatore con filtri attivi ha `can_manage_services = false` per default, ma può comunque schedulare eventi per i tipi a cui ha accesso.
 
 **Unique Constraint:** `(business_id, user_id)`
 

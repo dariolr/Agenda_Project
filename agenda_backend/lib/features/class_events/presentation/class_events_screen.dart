@@ -1392,9 +1392,14 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           ? initialLocationId
           : filteredLocations.first.id;
     }
-    final staff = _staffForSelectedLocation(
-      staffAsync.value ?? const <Staff>[],
-    );
+    final linkedStaffId = ref.watch(currentUserStaffIdProvider);
+    final staff = () {
+      final all = _staffForSelectedLocation(staffAsync.value ?? const <Staff>[]);
+      if (linkedStaffId != null) {
+        return all.where((s) => s.id == linkedStaffId).toList();
+      }
+      return all;
+    }();
     final staffNameById = {
       for (final member in allStaff) member.id: member.displayName,
     };

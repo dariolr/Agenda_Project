@@ -2361,12 +2361,9 @@ class ApiClient {
       // Clear staff link when moving away from staff role.
       data['staff_id'] = null;
     }
-    if (allowedServiceIds != null) {
-      data['allowed_service_ids'] = allowedServiceIds;
-    }
-    if (allowedClassTypeIds != null) {
-      data['allowed_class_type_ids'] = allowedClassTypeIds;
-    }
+    // Invia sempre i campi filtro: null=Tutti, []=Nessuno, [..]=Solo selezionati.
+    data['allowed_service_ids'] = allowedServiceIds;
+    data['allowed_class_type_ids'] = allowedClassTypeIds;
 
     final response = await patch(
       ApiConfig.businessUser(businessId, userId),
@@ -2433,12 +2430,9 @@ class ApiClient {
     if (staffId != null) {
       data['staff_id'] = staffId;
     }
-    if (allowedServiceIds != null) {
-      data['allowed_service_ids'] = allowedServiceIds;
-    }
-    if (allowedClassTypeIds != null) {
-      data['allowed_class_type_ids'] = allowedClassTypeIds;
-    }
+    // Invia sempre i campi filtro: null=Tutti, []=Nessuno, [..]=Solo selezionati.
+    data['allowed_service_ids'] = allowedServiceIds;
+    data['allowed_class_type_ids'] = allowedClassTypeIds;
 
     final response = await post(
       ApiConfig.businessInvitations(businessId),

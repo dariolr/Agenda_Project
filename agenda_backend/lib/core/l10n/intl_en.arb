@@ -2077,5 +2077,9 @@
   "billingAccessBlockedActivateAction": "Activate subscription",
   "whatsappNotEnabledForBusiness": "WhatsApp is not enabled for this business yet.",
   "whatsappSuperadminMustEnable": "Contact support to enable WhatsApp for this business.",
-  "whatsappEmbeddedSignupStateInvalid": "Unable to start the secure Meta session. Try again."
+  "whatsappEmbeddedSignupStateInvalid": "Unable to start the secure Meta session. Try again.",
+  "operatorsAccessNone": "None",
+  "operatorsAccessSelected": "Selected only",
+  "operatorsAccessibleServices": "Accessible services",
+  "operatorsAccessibleClassTypes": "Accessible class types"
 }

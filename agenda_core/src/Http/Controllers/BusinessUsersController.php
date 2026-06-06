@@ -271,26 +271,31 @@ final class BusinessUsersController
             $updateData['location_ids'] = $body['location_ids'];
         }
 
-        // Handle service/class-type filter lists (independent of scope_type)
+        // Handle service/class-type filter lists: null=Tutti, []=Nessuno, [1,2]=Solo selezionati
         if (array_key_exists('allowed_service_ids', $body)) {
-            $updateData['allowed_service_ids'] = array_map('intval', (array) $body['allowed_service_ids']);
+            $val = $body['allowed_service_ids'];
+            $updateData['allowed_service_ids'] = ($val === null) ? null : array_map('intval', (array) $val);
         }
         if (array_key_exists('allowed_class_type_ids', $body)) {
-            $updateData['allowed_class_type_ids'] = array_map('intval', (array) $body['allowed_class_type_ids']);
+            $val = $body['allowed_class_type_ids'];
+            $updateData['allowed_class_type_ids'] = ($val === null) ? null : array_map('intval', (array) $val);
         }
 
         // Enforce mutual exclusion: a filter on services/class-types is incompatible
         // with can_manage_services. Compute effective values after this update and reject
         // if the combination is invalid. This prevents crafted API calls from creating
         // an inconsistent state that the UI already prevents.
-        $effectiveServiceIds     = $updateData['allowed_service_ids']
-            ?? ($businessUser['allowed_service_ids'] ?? []);
-        $effectiveClassTypeIds   = $updateData['allowed_class_type_ids']
-            ?? ($businessUser['allowed_class_type_ids'] ?? []);
-        $effectiveCanManageSvc   = $updateData['can_manage_services']
+        $effectiveServiceIds   = array_key_exists('allowed_service_ids', $updateData)
+            ? $updateData['allowed_service_ids']
+            : ($businessUser['allowed_service_ids'] ?? null);
+        $effectiveClassTypeIds = array_key_exists('allowed_class_type_ids', $updateData)
+            ? $updateData['allowed_class_type_ids']
+            : ($businessUser['allowed_class_type_ids'] ?? null);
+        $effectiveCanManageSvc = $updateData['can_manage_services']
             ?? (bool) ($businessUser['can_manage_services'] ?? false);
 
-        if ($effectiveCanManageSvc && (count($effectiveServiceIds) > 0 || count($effectiveClassTypeIds) > 0)) {
+        // Filtro attivo = non-null (null=Tutti, []=Nessuno, [..]=Solo selezionati)
+        if ($effectiveCanManageSvc && ($effectiveServiceIds !== null || $effectiveClassTypeIds !== null)) {
             return Response::validationError(
                 'can_manage_services cannot be true when allowed_service_ids or allowed_class_type_ids is set',
                 $request->traceId
@@ -431,8 +436,8 @@ final class BusinessUsersController
             'scope_type' => $businessUser['scope_type'] ?? 'business',
             'location_ids' => array_map('intval', $businessUser['location_ids'] ?? []),
             'staff_id' => isset($businessUser['staff_id']) ? (int) $businessUser['staff_id'] : null,
-            'allowed_service_ids' => array_map('intval', $businessUser['allowed_service_ids'] ?? []),
-            'allowed_class_type_ids' => array_map('intval', $businessUser['allowed_class_type_ids'] ?? []),
+            'allowed_service_ids' => $businessUser['allowed_service_ids'],
+            'allowed_class_type_ids' => $businessUser['allowed_class_type_ids'],
             'is_superadmin' => false,
             'permissions' => [
                 'can_manage_bookings' => (bool) $businessUser['can_manage_bookings'],
@@ -495,8 +500,8 @@ final class BusinessUsersController
             'role' => $row['role'],
             'scope_type' => $row['scope_type'] ?? 'business',
             'location_ids' => array_map('intval', $row['location_ids'] ?? []),
-            'allowed_service_ids' => array_map('intval', $row['allowed_service_ids'] ?? []),
-            'allowed_class_type_ids' => array_map('intval', $row['allowed_class_type_ids'] ?? []),
+            'allowed_service_ids' => $row['allowed_service_ids'],
+            'allowed_class_type_ids' => $row['allowed_class_type_ids'],
             'staff_id' => $row['staff_id'] ? (int) $row['staff_id'] : null,
             'permissions' => [
                 'can_manage_bookings' => (bool) $row['can_manage_bookings'],

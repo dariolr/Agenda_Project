@@ -16,10 +16,10 @@ class BusinessUserContext {
   final String role;
   final String scopeType;
   final List<int> locationIds;
-  /// Servizi visibili: lista vuota = nessun filtro (vede tutto).
-  final List<int> allowedServiceIds;
-  /// Tipi lezione visibili: lista vuota = nessun filtro.
-  final List<int> allowedClassTypeIds;
+  /// null = Tutti, [] = Nessuno, [1,2] = Solo selezionati.
+  final List<int>? allowedServiceIds;
+  /// null = Tutti, [] = Nessuno, [1,2] = Solo selezionati.
+  final List<int>? allowedClassTypeIds;
   final int? staffId;
   final bool isSuperadmin;
   final bool canManageBookings;
@@ -34,8 +34,8 @@ class BusinessUserContext {
     required this.role,
     required this.scopeType,
     required this.locationIds,
-    this.allowedServiceIds = const [],
-    this.allowedClassTypeIds = const [],
+    this.allowedServiceIds,
+    this.allowedClassTypeIds,
     required this.staffId,
     required this.isSuperadmin,
     required this.canManageBookings,
@@ -54,11 +54,11 @@ class BusinessUserContext {
   /// Indica se l'utente è uno staff (ruolo staff con staffId associato).
   bool get isStaffRole => role == 'staff' && staffId != null;
 
-  /// True se l'operatore ha un filtro su sottoinsieme di servizi attivo.
-  bool get hasServiceFilter => allowedServiceIds.isNotEmpty;
+  /// True se l'operatore ha un filtro attivo (null=Tutti = nessun filtro).
+  bool get hasServiceFilter => allowedServiceIds != null;
 
-  /// True se l'operatore ha un filtro su sottoinsieme di tipi lezione attivo.
-  bool get hasClassTypeFilter => allowedClassTypeIds.isNotEmpty;
+  /// True se l'operatore ha un filtro attivo (null=Tutti = nessun filtro).
+  bool get hasClassTypeFilter => allowedClassTypeIds != null;
 
   factory BusinessUserContext.fromJson(Map<String, dynamic> json) {
     final role = (json['role'] as String? ?? 'staff').trim().toLowerCase();
@@ -116,13 +116,11 @@ class BusinessUserContext {
       allowedServiceIds:
           (json['allowed_service_ids'] as List<dynamic>?)
               ?.map((e) => e as int)
-              .toList() ??
-          [],
+              .toList(),
       allowedClassTypeIds:
           (json['allowed_class_type_ids'] as List<dynamic>?)
               ?.map((e) => e as int)
-              .toList() ??
-          [],
+              .toList(),
       staffId: json['staff_id'] as int?,
       isSuperadmin: json['is_superadmin'] as bool? ?? false,
       canManageBookings: canManageBookings,
@@ -244,9 +242,7 @@ final allowedLocationIdsProvider = Provider<List<int>?>((ref) {
 });
 
 /// Servizi visibili all'operatore corrente.
-/// Semantica combinata: se almeno uno dei due filtri è attivo, entrambi vengono
-/// considerati restrittivi. null = nessun filtro attivo (accesso completo).
-/// [] = filtro attivo ma nessun servizio consentito. [1,2] = solo quelli.
+/// null = Tutti, [] = Nessuno, [1,2] = Solo selezionati.
 final allowedServiceIdsProvider = Provider<List<int>?>((ref) {
   final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
@@ -257,17 +253,11 @@ final allowedServiceIdsProvider = Provider<List<int>?>((ref) {
   );
 
   if (!_isContextForCurrentBusiness(context, currentBusinessId)) return null;
-  // Nessun filtro attivo su nessuno dei due → accesso completo
-  if (!context!.hasServiceFilter && !context.hasClassTypeFilter) return null;
-  // Filtro lezioni attivo ma nessun servizio esplicitamente consentito → bloccato
-  if (!context.hasServiceFilter) return const [];
-  return context.allowedServiceIds;
+  return context!.allowedServiceIds;
 });
 
 /// Tipi lezione visibili all'operatore corrente.
-/// Semantica combinata: se almeno uno dei due filtri è attivo, entrambi vengono
-/// considerati restrittivi. null = nessun filtro attivo (accesso completo).
-/// [] = filtro attivo ma nessun tipo lezione consentito. [A,B] = solo quelli.
+/// null = Tutti, [] = Nessuno, [A,B] = Solo selezionati.
 final allowedClassTypeIdsProvider = Provider<List<int>?>((ref) {
   final currentBusinessId = ref.watch(currentBusinessIdProvider);
   final contextAsync = ref.watch(currentBusinessUserContextProvider);
@@ -278,11 +268,7 @@ final allowedClassTypeIdsProvider = Provider<List<int>?>((ref) {
   );
 
   if (!_isContextForCurrentBusiness(context, currentBusinessId)) return null;
-  // Nessun filtro attivo su nessuno dei due → accesso completo
-  if (!context!.hasServiceFilter && !context.hasClassTypeFilter) return null;
-  // Filtro servizi attivo ma nessun tipo lezione esplicitamente consentito → bloccato
-  if (!context.hasClassTypeFilter) return const [];
-  return context.allowedClassTypeIds;
+  return context!.allowedClassTypeIds;
 });
 
 // ============================================================================

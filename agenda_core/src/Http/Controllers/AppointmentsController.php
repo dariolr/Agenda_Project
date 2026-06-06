@@ -93,6 +93,29 @@ final class AppointmentsController
     }
 
     /**
+     * Returns null if service access is unrestricted, or a forbidden Response if denied.
+     */
+    private function validateServiceAccess(Request $request, int $businessId, int $serviceId): ?Response
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null || $this->userRepo->isSuperadmin((int) $userId)) {
+            return null;
+        }
+        $businessUser = $this->businessUserRepo->findByUserAndBusiness((int) $userId, $businessId);
+        if ($businessUser === null) {
+            return null;
+        }
+        $allowed = $businessUser['allowed_service_ids']; // null=Tutti, []=Nessuno, [..]=selezionati
+        if ($allowed === null) {
+            return null;
+        }
+        if (empty($allowed) || !in_array($serviceId, $allowed, true)) {
+            return Response::forbidden('Service not accessible for this operator', $request->traceId);
+        }
+        return null;
+    }
+
+    /**
      * GET /v1/locations/{location_id}/appointments?date=YYYY-MM-DD
      * Returns all booking_items (appointments) for a specific location and date
      */
@@ -208,6 +231,12 @@ final class AppointmentsController
             if (isset($body['staff_id']) && (int) $body['staff_id'] !== $forcedStaffId) {
                 return Response::forbidden('Staff operators can only assign appointments to themselves');
             }
+        }
+
+        $effectiveServiceId = isset($body['service_id']) ? (int) $body['service_id'] : (int) $appointment['service_id'];
+        $serviceAccessError = $this->validateServiceAccess($request, $businessId, $effectiveServiceId);
+        if ($serviceAccessError !== null) {
+            return $serviceAccessError;
         }
 
         // Update appointment fields
@@ -379,6 +408,11 @@ final class AppointmentsController
             return Response::badRequest('staff_id, service_id, start_time, and end_time are required', $request->traceId);
         }
 
+        $serviceAccessError = $this->validateServiceAccess($request, $businessId, (int) $body['service_id']);
+        if ($serviceAccessError !== null) {
+            return $serviceAccessError;
+        }
+
         // Create the booking item
         $itemData = [
             'location_id' => $locationId,
@@ -447,9 +481,7 @@ final class AppointmentsController
         $beforeState = $this->captureBookingState($booking);
         
         // Update booking status to 'cancelled' to preserve history
-        $this->bookingRepo->updateBooking($bookingId, [
-            'status' => 'cancelled',
-        ]);
+        $this->bookingRepo->updateBooking($bookingId, status: 'cancelled');
         
         // Delete pending reminders for this booking
         if ($this->notificationRepo !== null) {

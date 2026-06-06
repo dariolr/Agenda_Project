@@ -2077,5 +2077,9 @@
   "billingAccessBlockedActivateAction": "Attiva abbonamento",
   "whatsappNotEnabledForBusiness": "WhatsApp non è ancora attivo per questo business.",
   "whatsappSuperadminMustEnable": "Contattaci per attivare WhatsApp alle notifiche automatiche.",
-  "whatsappEmbeddedSignupStateInvalid": "Impossibile avviare la sessione sicura Meta. Riprova."
+  "whatsappEmbeddedSignupStateInvalid": "Impossibile avviare la sessione sicura Meta. Riprova.",
+  "operatorsAccessNone": "Nessuno",
+  "operatorsAccessSelected": "Solo selezionati",
+  "operatorsAccessibleServices": "Servizi accessibili",
+  "operatorsAccessibleClassTypes": "Tipi lezione accessibili"
 }

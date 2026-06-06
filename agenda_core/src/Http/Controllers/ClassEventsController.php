@@ -438,11 +438,12 @@ final class ClassEventsController
         if ($userId === null) {
             return Response::unauthorized('Authentication required', $request->traceId);
         }
-        if (!$this->canManage($userId, $businessId)) {
-            return Response::forbidden('Access denied', $request->traceId);
-        }
 
         $body = $request->getBody() ?? [];
+        $classTypeId = isset($body['class_type_id']) ? (int) $body['class_type_id'] : 0;
+        if (!$this->canScheduleClassType($userId, $businessId, $classTypeId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
         $onlineVisibility = $this->validatedOnlineVisibility($body, $request);
         if ($onlineVisibility instanceof Response) {
             return $onlineVisibility;
@@ -461,6 +462,10 @@ final class ClassEventsController
         $classTypeId = (int) $body['class_type_id'];
         $locationId = (int) $body['location_id'];
         $staffId = (int) $staffIdInput;
+        $linkedStaffId = $this->getLinkedStaffId($userId, $businessId);
+        if ($linkedStaffId !== null && $staffId !== $linkedStaffId) {
+            return Response::forbidden('Staff operators can only schedule events for themselves', $request->traceId);
+        }
         if (!$this->classEventRepo->classTypeExists($businessId, $classTypeId)) {
             return Response::error('class_type_id not found for this business', 'validation_error', 400, $request->traceId);
         }
@@ -540,7 +545,12 @@ final class ClassEventsController
         if ($userId === null) {
             return Response::unauthorized('Authentication required', $request->traceId);
         }
-        if (!$this->canManage($userId, $businessId)) {
+
+        $currentEvent = $this->classEventRepo->findById($businessId, $classEventId, null);
+        if ($currentEvent === null) {
+            return Response::notFound('Class event not found', $request->traceId);
+        }
+        if (!$this->canScheduleClassType($userId, $businessId, (int) $currentEvent['class_type_id'])) {
             return Response::forbidden('Access denied', $request->traceId);
         }
 
@@ -556,11 +566,6 @@ final class ClassEventsController
         $validationError = $this->validateCreateOrUpdate($body, false);
         if ($validationError !== null) {
             return Response::error($validationError, 'validation_error', 400, $request->traceId);
-        }
-
-        $currentEvent = $this->classEventRepo->findById($businessId, $classEventId, null);
-        if ($currentEvent === null) {
-            return Response::notFound('Class event not found', $request->traceId);
         }
 
         $payload = [];
@@ -589,6 +594,12 @@ final class ClassEventsController
         }
         if (array_key_exists('instructor_staff_id', $body)) {
             $payload['staff_id'] = $body['instructor_staff_id'];
+        }
+        if (array_key_exists('staff_id', $payload)) {
+            $linkedStaffId = $this->getLinkedStaffId($userId, $businessId);
+            if ($linkedStaffId !== null && (int) $payload['staff_id'] !== $linkedStaffId) {
+                return Response::forbidden('Staff operators can only schedule events for themselves', $request->traceId);
+            }
         }
         if (isset($payload['status'])) {
             $payload['status'] = strtoupper((string) $payload['status']);
@@ -707,13 +718,13 @@ final class ClassEventsController
         if ($userId === null) {
             return Response::unauthorized('Authentication required', $request->traceId);
         }
-        if (!$this->canManage($userId, $businessId)) {
-            return Response::forbidden('Access denied', $request->traceId);
-        }
 
         $event = $this->classEventRepo->findById($businessId, $classEventId, null);
         if ($event === null) {
             return Response::notFound('Class event not found', $request->traceId);
+        }
+        if (!$this->canScheduleClassType($userId, $businessId, (int) $event['class_type_id'])) {
+            return Response::forbidden('Access denied', $request->traceId);
         }
         $locationScopeError = $this->requireLocationScope($request, $businessId, [(int) $event['location_id']]);
         if ($locationScopeError !== null) {
@@ -744,13 +755,13 @@ final class ClassEventsController
         if ($userId === null) {
             return Response::unauthorized('Authentication required', $request->traceId);
         }
-        if (!$this->canManage($userId, $businessId)) {
-            return Response::forbidden('Access denied', $request->traceId);
-        }
 
         $event = $this->classEventRepo->findById($businessId, $classEventId, null);
         if ($event === null) {
             return Response::notFound('Class event not found', $request->traceId);
+        }
+        if (!$this->canScheduleClassType($userId, $businessId, (int) $event['class_type_id'])) {
+            return Response::forbidden('Access denied', $request->traceId);
         }
         $locationScopeError = $this->requireLocationScope($request, $businessId, [(int) $event['location_id']]);
         if ($locationScopeError !== null) {
@@ -773,13 +784,13 @@ final class ClassEventsController
         if ($userId === null) {
             return Response::unauthorized('Authentication required', $request->traceId);
         }
-        if (!$this->canManage($userId, $businessId)) {
-            return Response::forbidden('Access denied', $request->traceId);
-        }
 
         $event = $this->classEventRepo->findById($businessId, $classEventId, null);
         if ($event === null) {
             return Response::notFound('Class event not found', $request->traceId);
+        }
+        if (!$this->canScheduleClassType($userId, $businessId, (int) $event['class_type_id'])) {
+            return Response::forbidden('Access denied', $request->traceId);
         }
         $locationScopeError = $this->requireLocationScope($request, $businessId, [(int) $event['location_id']]);
         if ($locationScopeError !== null) {
@@ -901,13 +912,13 @@ final class ClassEventsController
         if ($userId === null) {
             return Response::unauthorized('Authentication required', $request->traceId);
         }
-        if (!$this->canManage($userId, $businessId)) {
-            return Response::forbidden('Access denied', $request->traceId);
-        }
 
         $event = $this->classEventRepo->findById($businessId, $classEventId, null);
         if ($event === null) {
             return Response::notFound('Class event not found', $request->traceId);
+        }
+        if (!$this->canScheduleClassType($userId, $businessId, (int) $event['class_type_id'])) {
+            return Response::forbidden('Access denied', $request->traceId);
         }
         $locationScopeError = $this->requireLocationScope($request, $businessId, [(int) $event['location_id']]);
         if ($locationScopeError !== null) {
@@ -973,13 +984,13 @@ final class ClassEventsController
         if ($userId === null) {
             return Response::unauthorized('Authentication required', $request->traceId);
         }
-        if (!$this->canManage($userId, $businessId)) {
-            return Response::forbidden('Access denied', $request->traceId);
-        }
 
         $event = $this->classEventRepo->findById($businessId, $classEventId, null);
         if ($event === null) {
             return Response::notFound('Class event not found', $request->traceId);
+        }
+        if (!$this->canScheduleClassType($userId, $businessId, (int) $event['class_type_id'])) {
+            return Response::forbidden('Access denied', $request->traceId);
         }
         $locationScopeError = $this->requireLocationScope($request, $businessId, [(int) $event['location_id']]);
         if ($locationScopeError !== null) {
@@ -1323,6 +1334,41 @@ final class ClassEventsController
             return true;
         }
         return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_services', false);
+    }
+
+    private function getLinkedStaffId(int $userId, int $businessId): ?int
+    {
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return null;
+        }
+        $businessUser = $this->businessUserRepo->findByUserAndBusiness($userId, $businessId);
+        if ($businessUser === null || ($businessUser['role'] ?? null) !== 'staff') {
+            return null;
+        }
+        $staffId = isset($businessUser['staff_id']) ? (int) $businessUser['staff_id'] : 0;
+        return $staffId > 0 ? $staffId : null;
+    }
+
+    private function canScheduleClassType(int $userId, int $businessId, int $classTypeId): bool
+    {
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return true;
+        }
+        if ($this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_services', false)) {
+            return true;
+        }
+        $businessUser = $this->businessUserRepo->findByUserAndBusiness($userId, $businessId);
+        if ($businessUser === null || !($businessUser['is_active'] ?? false)) {
+            return false;
+        }
+        $allowed = $businessUser['allowed_class_type_ids']; // null=Tutti, []=Nessuno, [..]=selezionati
+        if ($allowed === null) {
+            return true;
+        }
+        if (empty($allowed)) {
+            return false;
+        }
+        return in_array($classTypeId, $allowed, true);
     }
 
     private function canManageLocation(int $userId, int $businessId, int $locationId): bool

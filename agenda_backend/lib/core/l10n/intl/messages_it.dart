@@ -2131,6 +2131,16 @@ class MessageLookup extends MessageLookupByLibrary {
       "Visibile nella pagina pubblica",
     ),
     "operatorsAcceptedOn": m51,
+    "operatorsAccessNone": MessageLookupByLibrary.simpleMessage("Nessuno"),
+    "operatorsAccessSelected": MessageLookupByLibrary.simpleMessage(
+      "Solo selezionati",
+    ),
+    "operatorsAccessibleClassTypes": MessageLookupByLibrary.simpleMessage(
+      "Tipi lezione accessibili",
+    ),
+    "operatorsAccessibleServices": MessageLookupByLibrary.simpleMessage(
+      "Servizi accessibili",
+    ),
     "operatorsDeleteInvite": MessageLookupByLibrary.simpleMessage(
       "Elimina invito",
     ),
