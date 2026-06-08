@@ -188,6 +188,11 @@ function formatServiceName($name) {
     return mb_convert_case($name, MB_CASE_TITLE, 'UTF-8');
 }
 
+function parseOnlineBooking($value) {
+    $normalized = mb_strtolower(trim((string) $value), 'UTF-8');
+    return in_array($normalized, ['abilitati', 'enabled'], true) ? 1 : 0;
+}
+
 // Inserisci servizi
 echo "\nInserimento servizi...\n";
 $stmtService = $pdo->prepare("INSERT INTO services (business_id, category_id, name, description, sort_order, is_active) VALUES (?, ?, ?, ?, ?, 1)");
@@ -203,7 +208,7 @@ foreach ($services as $idx => $row) {
     [$processingTime, $blockedTime] = parseSupplementaryTimes($row[3] ?? '');
     $description = trim($row[5]) ?: null;
     $categoryOriginalName = trim($row[6]);
-    $isBookableOnline = (trim($row[9]) === 'Abilitati') ? 1 : 0;
+    $isBookableOnline = parseOnlineBooking($row[9] ?? '');
     
     // Check "- From" per prezzo a partire da (prima della formattazione)
     $isPriceFrom = 0;
