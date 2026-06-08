@@ -133,20 +133,6 @@ final class LocationClosuresController
             }
         }
 
-        // Check for overlaps
-        $overlappingLocations = $this->closureRepo->findOverlappingLocations($locationIds, $startDate, $endDate);
-        if (!empty($overlappingLocations)) {
-            $locationNames = [];
-            foreach ($overlappingLocations as $locId) {
-                $loc = $this->locationRepo->findById($locId);
-                $locationNames[] = $loc['name'] ?? "ID $locId";
-            }
-            return Response::conflict(
-                'This closure period overlaps with existing closures for locations: ' . implode(', ', $locationNames),
-                $request->traceId
-            );
-        }
-
         $id = $this->closureRepo->create($businessId, $locationIds, $startDate, $endDate, $reason);
         $closure = $this->closureRepo->findById($id);
 
@@ -226,20 +212,6 @@ final class LocationClosuresController
             if (!$location || (int)$location['business_id'] !== $businessId) {
                 return Response::badRequest("Location $locId does not belong to this business", $request->traceId);
             }
-        }
-
-        // Check for overlaps (excluding current closure)
-        $overlappingLocations = $this->closureRepo->findOverlappingLocations($locationIds, $startDate, $endDate, $closureId);
-        if (!empty($overlappingLocations)) {
-            $locationNames = [];
-            foreach ($overlappingLocations as $locId) {
-                $loc = $this->locationRepo->findById($locId);
-                $locationNames[] = $loc['name'] ?? "ID $locId";
-            }
-            return Response::conflict(
-                'This closure period overlaps with existing closures for locations: ' . implode(', ', $locationNames),
-                $request->traceId
-            );
         }
 
         $this->closureRepo->update($closureId, $locationIds, $startDate, $endDate, $reason);
