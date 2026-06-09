@@ -1184,11 +1184,14 @@ class _WeeklyClassEventTile extends ConsumerWidget {
 
     return GestureDetector(
       onTap: canManageBookings
-          ? () => showCreateClassEventDialog(
-              context,
-              ref,
-              initialEvent: classEvent,
-            )
+          ? () {
+              ref.invalidate(classEventParticipantsProvider(classEvent.id));
+              showCreateClassEventDialog(
+                context,
+                ref,
+                initialEvent: classEvent,
+              );
+            }
           : null,
       child: SizedBox(
         height: tileHeight,

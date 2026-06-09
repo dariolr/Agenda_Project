@@ -34,13 +34,6 @@ class BookingsListScreen extends ConsumerStatefulWidget {
 }
 
 class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
-  static const List<String> _allBookingStatuses = <String>[
-    'confirmed',
-    'completed',
-    'cancelled',
-    'no_show',
-  ];
-
   final _scrollController = ScrollController();
   final _horizontalScrollController = ScrollController();
   final _clientSearchController = TextEditingController();
@@ -50,7 +43,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
   final Set<int> _selectedLocationIds = {};
   final Set<int> _selectedStaffIds = {};
   final Set<int> _selectedServiceIds = {};
-  Set<String> _selectedStatuses = _allBookingStatuses.toSet();
+  Set<String> _selectedStatuses = BookingsListFilters.allStatuses.toSet();
   bool _onlineOnly = false;
 
   List<Staff> _staffScopedByLocations({
@@ -490,7 +483,7 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
         _selectedLocationIds.clear();
         _selectedStaffIds.clear();
         _selectedServiceIds.clear();
-        _selectedStatuses = _allBookingStatuses.toSet();
+        _selectedStatuses = BookingsListFilters.allStatuses.toSet();
         _onlineOnly = false;
         _clientSearchController.clear();
       });
@@ -641,7 +634,9 @@ class _BookingsListScreenState extends ConsumerState<BookingsListScreen> {
               _buildFilterChip(
                 context,
                 label: l10n.reportsFilterStatus,
-                selected: _selectedStatuses.length < _allBookingStatuses.length,
+                selected:
+                    _selectedStatuses.length <
+                    BookingsListFilters.allStatuses.length,
                 onTap: () => _showStatusFilter(context),
               ),
               _buildFilterChip(

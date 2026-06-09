@@ -13371,6 +13371,86 @@ class L10n {
     );
   }
 
+  /// `List view`
+  String get classEventsParticipantsListOpen {
+    return Intl.message(
+      'List view',
+      name: 'classEventsParticipantsListOpen',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Participants list`
+  String get classEventsParticipantsListTitle {
+    return Intl.message(
+      'Participants list',
+      name: 'classEventsParticipantsListTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Booking date`
+  String get classEventsParticipantsSortRegistration {
+    return Intl.message(
+      'Booking date',
+      name: 'classEventsParticipantsSortRegistration',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `First name`
+  String get classEventsParticipantsSortFirstName {
+    return Intl.message(
+      'First name',
+      name: 'classEventsParticipantsSortFirstName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Last name`
+  String get classEventsParticipantsSortLastName {
+    return Intl.message(
+      'Last name',
+      name: 'classEventsParticipantsSortLastName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Booked at`
+  String get classEventsParticipantBookedAt {
+    return Intl.message(
+      'Booked at',
+      name: 'classEventsParticipantBookedAt',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Booking note`
+  String get classEventsParticipantBookingNote {
+    return Intl.message(
+      'Booking note',
+      name: 'classEventsParticipantBookingNote',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Client note`
+  String get classEventsParticipantClientNote {
+    return Intl.message(
+      'Client note',
+      name: 'classEventsParticipantClientNote',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Waitlist disabled — enable it if needed`
   String get classEventsWaitlistDisabledHint {
     return Intl.message(

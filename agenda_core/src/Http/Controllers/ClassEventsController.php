@@ -1317,6 +1317,7 @@ final class ClassEventsController
             'can_cancel_until'     => $canCancelUntil,
             'booked_at'            => $row['booked_at']    ?? null,
             'cancelled_at'         => $row['cancelled_at'] ?? null,
+            'notes'                => $row['notes']        ?? null,
         ];
     }
 
@@ -1757,6 +1758,7 @@ final class ClassEventsController
             'notes' => $row['notes'] ?? null,
             'customer_first_name' => $row['customer_first_name'] ?? null,
             'customer_last_name' => $row['customer_last_name'] ?? null,
+            'customer_notes' => $row['customer_notes'] ?? null,
             'location_timezone' => $locationTimezone,
         ];
     }

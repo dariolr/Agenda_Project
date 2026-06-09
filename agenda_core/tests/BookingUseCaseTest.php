@@ -103,6 +103,20 @@ final class BookingUseCaseTest extends TestCase
         );
     }
 
+    public function testRecurringBookingVisibleEndIncludesBlockedExtra(): void
+    {
+        $itemStart = new DateTimeImmutable('2026-06-10 10:00:00');
+        $serviceDuration = 50;
+        $blockedExtra = 30;
+        $visibleEnd = $itemStart->modify('+' . ($serviceDuration + $blockedExtra) . ' minutes');
+
+        $this->assertSame('2026-06-10 11:20:00', $visibleEnd->format('Y-m-d H:i:s'));
+        $this->assertSame(
+            50,
+            ((int) (($visibleEnd->getTimestamp() - $itemStart->getTimestamp()) / 60)) - $blockedExtra
+        );
+    }
+
     // ==================== Conflict Detection Tests ====================
 
     public function testConflictDetection(): void

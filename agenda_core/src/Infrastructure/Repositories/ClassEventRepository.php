@@ -612,7 +612,8 @@ final class ClassEventRepository
                 cb.*,
                 l.timezone AS location_timezone,
                 c.first_name AS customer_first_name,
-                c.last_name AS customer_last_name
+                c.last_name AS customer_last_name,
+                c.notes AS customer_notes
             FROM class_bookings cb
             INNER JOIN class_events ce
               ON ce.id = cb.class_event_id

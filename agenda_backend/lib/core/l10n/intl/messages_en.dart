@@ -1238,6 +1238,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "classEventsNotifyParticipantsTitle": MessageLookupByLibrary.simpleMessage(
       "Send email to participants?",
     ),
+    "classEventsParticipantBookedAt": MessageLookupByLibrary.simpleMessage(
+      "Booked at",
+    ),
+    "classEventsParticipantBookingNote": MessageLookupByLibrary.simpleMessage(
+      "Booking note",
+    ),
+    "classEventsParticipantClientNote": MessageLookupByLibrary.simpleMessage(
+      "Client note",
+    ),
     "classEventsParticipantCustomer": m26,
     "classEventsParticipantsAddConfirmed": MessageLookupByLibrary.simpleMessage(
       "Add participant",
@@ -1254,6 +1263,12 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("No confirmed participants"),
     "classEventsParticipantsEmptyWaitlist":
         MessageLookupByLibrary.simpleMessage("Nobody in waitlist"),
+    "classEventsParticipantsListOpen": MessageLookupByLibrary.simpleMessage(
+      "List view",
+    ),
+    "classEventsParticipantsListTitle": MessageLookupByLibrary.simpleMessage(
+      "Participants list",
+    ),
     "classEventsParticipantsLoadError": MessageLookupByLibrary.simpleMessage(
       "Unable to load participants",
     ),
@@ -1268,6 +1283,13 @@ class MessageLookup extends MessageLookupByLibrary {
     "classEventsParticipantsRemoveAction": MessageLookupByLibrary.simpleMessage(
       "Remove",
     ),
+    "classEventsParticipantsSortFirstName":
+        MessageLookupByLibrary.simpleMessage("First name"),
+    "classEventsParticipantsSortLastName": MessageLookupByLibrary.simpleMessage(
+      "Last name",
+    ),
+    "classEventsParticipantsSortRegistration":
+        MessageLookupByLibrary.simpleMessage("Booking date"),
     "classEventsParticipantsTitle": MessageLookupByLibrary.simpleMessage(
       "Participants",
     ),

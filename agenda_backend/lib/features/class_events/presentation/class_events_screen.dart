@@ -80,6 +80,39 @@ Color? _tryParseHexColor(String? hex) {
   }
 }
 
+enum _ClassParticipantsSortMode { registration, firstName, lastName }
+
+class _ParticipantListItem {
+  const _ParticipantListItem({
+    required this.customerId,
+    required this.displayName,
+    required this.status,
+    required this.stagedOrder,
+    this.waitlistPosition,
+    this.bookedAtUtc,
+    this.bookedAtLocal,
+    this.bookingNote,
+    this.customerNote,
+    this.customerFirstName,
+    this.customerLastName,
+  });
+
+  final int customerId;
+  final String displayName;
+  final String status;
+  final int stagedOrder;
+  final int? waitlistPosition;
+  final DateTime? bookedAtUtc;
+  final DateTime? bookedAtLocal;
+  final String? bookingNote;
+  final String? customerNote;
+  final String? customerFirstName;
+  final String? customerLastName;
+
+  bool get isConfirmed => status == 'confirmed';
+  bool get isWaitlisted => status == 'waitlisted';
+}
+
 class _MiniInfoPill extends StatelessWidget {
   const _MiniInfoPill({required this.label, this.isMuted = false});
 
@@ -1352,7 +1385,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     final participantsAsync = classEventId == null
         ? const AsyncData<List<ClassBooking>>(<ClassBooking>[])
         : ref.watch(classEventParticipantsProvider(classEventId));
-    if (!_participantsInitialized && participantsAsync.hasValue) {
+    if (!_participantsInitialized &&
+        !participantsAsync.isLoading &&
+        participantsAsync.hasValue) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && !_participantsInitialized) {
           _initStagedParticipants(participantsAsync.value!);
@@ -1394,7 +1429,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
     }
     final linkedStaffId = ref.watch(currentUserStaffIdProvider);
     final staff = () {
-      final all = _staffForSelectedLocation(staffAsync.value ?? const <Staff>[]);
+      final all = _staffForSelectedLocation(
+        staffAsync.value ?? const <Staff>[],
+      );
       if (linkedStaffId != null) {
         return all.where((s) => s.id == linkedStaffId).toList();
       }
@@ -1540,7 +1577,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
               ],
 
               // ── sede (solo creazione, se multipla e non bloccata) ──
-              if (!isEditMode && filteredLocations.length > 1 && !widget.lockLocation) ...[
+              if (!isEditMode &&
+                  filteredLocations.length > 1 &&
+                  !widget.lockLocation) ...[
                 DropdownButtonFormField<int>(
                   value: _locationId,
                   decoration: InputDecoration(
@@ -2025,6 +2064,27 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
                   style: theme.textTheme.titleSmall,
                 ),
               ),
+              if (_participantsInitialized)
+                AppOutlinedActionButton(
+                  onPressed: isActionLoading
+                      ? null
+                      : () => _openParticipantsListDialog(
+                          participantsAsync.value ?? const <ClassBooking>[],
+                        ),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 12,
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.format_list_bulleted, size: 18),
+                      const SizedBox(width: 6),
+                      Text(l10n.classEventsParticipantsListOpen),
+                    ],
+                  ),
+                ),
+              if (_participantsInitialized) const SizedBox(width: 8),
               AppOutlinedActionButton(
                 onPressed: isActionLoading
                     ? null
@@ -2106,6 +2166,46 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           ],
         ],
       ),
+    );
+  }
+
+  Future<void> _openParticipantsListDialog(List<ClassBooking> bookings) {
+    final bookingByCustomerId = {
+      for (final booking in bookings) booking.customerId: booking,
+    };
+    final clientsById = ref.read(clientsByIdProvider);
+    final staged = _stagedParticipants ?? const <_StagedParticipant>[];
+    final items = staged.indexed.map(((int, _StagedParticipant) entry) {
+      final (index, participant) = entry;
+      final booking = bookingByCustomerId[participant.customerId];
+      final client = clientsById[participant.customerId];
+      final displayName = participant.displayName.trim().isNotEmpty
+          ? participant.displayName.trim()
+          : (client?.name.trim().isNotEmpty == true
+                ? client!.name.trim()
+                : context.l10n.classEventsParticipantCustomer(
+                    participant.customerId,
+                  ));
+
+      return _ParticipantListItem(
+        customerId: participant.customerId,
+        displayName: displayName,
+        status: participant.status,
+        stagedOrder: index,
+        waitlistPosition: booking?.waitlistPosition,
+        bookedAtUtc: booking?.bookedAtUtc,
+        bookedAtLocal: booking?.bookedAtLocal,
+        bookingNote: booking?.notes,
+        customerNote: booking?.customerNotes ?? client?.notes,
+        customerFirstName: booking?.customerFirstName ?? client?.firstName,
+        customerLastName: booking?.customerLastName ?? client?.lastName,
+      );
+    }).toList();
+
+    return AppForm.show<void>(
+      context: context,
+      heightFactor: 0.92,
+      builder: (_) => _ClassEventParticipantsListDialog(items: items),
     );
   }
 
@@ -3631,6 +3731,345 @@ class _ScheduleTimeField extends StatelessWidget {
   }
 }
 
+class _ClassEventParticipantsListDialog extends ConsumerStatefulWidget {
+  const _ClassEventParticipantsListDialog({required this.items});
+
+  final List<_ParticipantListItem> items;
+
+  @override
+  ConsumerState<_ClassEventParticipantsListDialog> createState() =>
+      _ClassEventParticipantsListDialogState();
+}
+
+class _ClassEventParticipantsListDialogState
+    extends ConsumerState<_ClassEventParticipantsListDialog> {
+  _ClassParticipantsSortMode _sortMode =
+      _ClassParticipantsSortMode.registration;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final confirmed = _sortedItems(widget.items.where((b) => b.isConfirmed));
+    final waitlist = _sortedItems(widget.items.where((b) => b.isWaitlisted));
+    final totalCount = confirmed.length + waitlist.length;
+
+    return AppFormScaffold(
+      title: Text(l10n.classEventsParticipantsListTitle),
+      dialogMaxWidth: 760,
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.center,
+            child: SegmentedButton<_ClassParticipantsSortMode>(
+              segments: [
+                ButtonSegment(
+                  value: _ClassParticipantsSortMode.registration,
+                  label: Text(l10n.classEventsParticipantsSortRegistration),
+                ),
+                ButtonSegment(
+                  value: _ClassParticipantsSortMode.firstName,
+                  label: Text(l10n.classEventsParticipantsSortFirstName),
+                ),
+                ButtonSegment(
+                  value: _ClassParticipantsSortMode.lastName,
+                  label: Text(l10n.classEventsParticipantsSortLastName),
+                ),
+              ],
+              selected: {_sortMode},
+              onSelectionChanged: (selection) {
+                setState(() => _sortMode = selection.first);
+              },
+            ),
+          ),
+          const SizedBox(height: 48),
+          if (totalCount == 0)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                l10n.classEventsParticipantsEmptyConfirmed,
+                textAlign: TextAlign.center,
+              ),
+            )
+          else
+            SizedBox(
+              height: MediaQuery.sizeOf(context).height * 0.58,
+              child: ListView(
+                children: [
+                  _ParticipantListSection(
+                    title: l10n.classEventsParticipantsConfirmedTitle,
+                    emptyLabel: l10n.classEventsParticipantsEmptyConfirmed,
+                    bookings: confirmed,
+                    showWaitlistPosition: false,
+                  ),
+                  const SizedBox(height: 40),
+                  _ParticipantListSection(
+                    title: l10n.classEventsParticipantsWaitlistTitle,
+                    emptyLabel: l10n.classEventsParticipantsEmptyWaitlist,
+                    bookings: waitlist,
+                    showWaitlistPosition: true,
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+      actions: [
+        AppOutlinedActionButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.actionClose),
+        ),
+      ],
+    );
+  }
+
+  List<_ParticipantListItem> _sortedItems(
+    Iterable<_ParticipantListItem> items,
+  ) {
+    final sorted = [...items];
+    switch (_sortMode) {
+      case _ClassParticipantsSortMode.registration:
+        sorted.sort((a, b) {
+          final byBookedAt = _registrationSortKey(
+            a,
+          ).compareTo(_registrationSortKey(b));
+          if (byBookedAt != 0) return byBookedAt;
+          return a.stagedOrder.compareTo(b.stagedOrder);
+        });
+      case _ClassParticipantsSortMode.firstName:
+        sorted.sort((a, b) {
+          final byName = _firstNameSortKey(a).compareTo(_firstNameSortKey(b));
+          if (byName != 0) return byName;
+          return a.stagedOrder.compareTo(b.stagedOrder);
+        });
+      case _ClassParticipantsSortMode.lastName:
+        sorted.sort((a, b) {
+          final byName = _lastNameSortKey(a).compareTo(_lastNameSortKey(b));
+          if (byName != 0) return byName;
+          return a.stagedOrder.compareTo(b.stagedOrder);
+        });
+    }
+    return sorted;
+  }
+
+  int _registrationSortKey(_ParticipantListItem item) {
+    return item.bookedAtUtc?.microsecondsSinceEpoch ??
+        (1 << 62) + item.stagedOrder;
+  }
+
+  String _firstNameSortKey(_ParticipantListItem item) {
+    final first = item.customerFirstName?.trim().toLowerCase() ?? '';
+    final last = item.customerLastName?.trim().toLowerCase() ?? '';
+    final fallback = item.displayName.trim().toLowerCase();
+    return '$first $last $fallback'.trim();
+  }
+
+  String _lastNameSortKey(_ParticipantListItem item) {
+    final last = item.customerLastName?.trim().toLowerCase() ?? '';
+    final first = item.customerFirstName?.trim().toLowerCase() ?? '';
+    final fallback = item.displayName.trim().toLowerCase();
+    return '$last $first $fallback'.trim();
+  }
+}
+
+class _ParticipantListSection extends ConsumerWidget {
+  const _ParticipantListSection({
+    required this.title,
+    required this.emptyLabel,
+    required this.bookings,
+    required this.showWaitlistPosition,
+  });
+
+  final String title;
+  final String emptyLabel;
+  final List<_ParticipantListItem> bookings;
+  final bool showWaitlistPosition;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final clientsById = ref.watch(clientsByIdProvider);
+    final theme = Theme.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            '$title (${bookings.length})',
+            style: theme.textTheme.titleSmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+        if (bookings.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Text(emptyLabel, style: theme.textTheme.bodySmall),
+          )
+        else
+          ...bookings.indexed.map(((int, _ParticipantListItem) entry) {
+            final (index, item) = entry;
+            final client = clientsById[item.customerId];
+            final displayName = item.displayName;
+            final initials = displayName.trim().isNotEmpty
+                ? initialsFromName(displayName, maxChars: 2)
+                : '?';
+            final bookingNote = item.bookingNote?.trim();
+            final clientNote = item.customerNote?.trim().isNotEmpty == true
+                ? item.customerNote!.trim()
+                : client?.notes?.trim();
+            final bookedAt = item.bookedAtLocal != null
+                ? _formatBookedAt(context, item.bookedAtLocal!)
+                : null;
+            final waitlistPosition = item.waitlistPosition != null
+                ? item.waitlistPosition!
+                : index + 1;
+            final rowColor = index.isEven
+                ? colorScheme.surface
+                : colorScheme.surfaceVariant.withOpacity(0.28);
+
+            return Column(
+              children: [
+                ColoredBox(
+                  color: rowColor,
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 10,
+                    ),
+                    leading: ClientCircleAvatar(
+                      height: 36,
+                      clientColorHex: client?.colorHex,
+                      initials: initials,
+                    ),
+                    title: Text(
+                      displayName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    subtitle: _ParticipantNotesSubtitle(
+                      bookingNote: bookingNote,
+                      clientNote: clientNote,
+                    ),
+                    trailing: _ParticipantTrailing(
+                      bookedAt: bookedAt,
+                      waitlistPosition: showWaitlistPosition
+                          ? waitlistPosition
+                          : null,
+                    ),
+                  ),
+                ),
+                if (index < bookings.length - 1) const AppDivider(height: 1),
+              ],
+            );
+          }),
+      ],
+    );
+  }
+
+  String _formatBookedAt(BuildContext context, DateTime bookedAt) {
+    final locale = DtFmt.localeTag(context);
+    final date = DateFormat.yMd(locale).format(bookedAt);
+    final time = DtFmt.hm(context, bookedAt.hour, bookedAt.minute);
+    return '$date $time';
+  }
+}
+
+class _ParticipantNotesSubtitle extends StatelessWidget {
+  const _ParticipantNotesSubtitle({
+    required this.bookingNote,
+    required this.clientNote,
+  });
+
+  final String? bookingNote;
+  final String? clientNote;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final notes = <Widget>[
+      if (bookingNote != null && bookingNote!.isNotEmpty)
+        Text(
+          '${l10n.classEventsParticipantBookingNote}: $bookingNote',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+      if (clientNote != null && clientNote!.isNotEmpty)
+        Text(
+          '${l10n.classEventsParticipantClientNote}: $clientNote',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+    ];
+
+    if (notes.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: DefaultTextStyle(
+        style:
+            theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ) ??
+            TextStyle(color: theme.colorScheme.onSurfaceVariant),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: notes,
+        ),
+      ),
+    );
+  }
+}
+
+class _ParticipantTrailing extends StatelessWidget {
+  const _ParticipantTrailing({
+    required this.bookedAt,
+    required this.waitlistPosition,
+  });
+
+  final String? bookedAt;
+  final int? waitlistPosition;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final hasBookedAt = bookedAt != null && bookedAt!.isNotEmpty;
+
+    if (!hasBookedAt && waitlistPosition == null) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        if (hasBookedAt)
+          Text(
+            bookedAt!,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: colorScheme.onSurfaceVariant,
+            ),
+            textAlign: TextAlign.right,
+          ),
+        if (waitlistPosition != null) ...[
+          const SizedBox(height: 4),
+          Chip(
+            label: Text('#$waitlistPosition'),
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
+      ],
+    );
+  }
+}
+
 class _ScheduleTimeGridPicker extends StatefulWidget {
   const _ScheduleTimeGridPicker({
     required this.initial,
@@ -3695,9 +4134,7 @@ class _ScheduleTimeGridPickerState extends State<_ScheduleTimeGridPicker> {
 
     final viewportHeight = _scrollController.position.viewportDimension;
     final targetOffset =
-        (targetRow * rowHeight) -
-        (viewportHeight / 2) +
-        (rowHeight / 2);
+        (targetRow * rowHeight) - (viewportHeight / 2) + (rowHeight / 2);
     final maxScroll = _scrollController.position.maxScrollExtent;
     final clampedOffset = targetOffset.clamp(0.0, maxScroll);
 

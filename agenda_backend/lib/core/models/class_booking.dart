@@ -6,10 +6,12 @@ class ClassBooking {
   final String status;
   final int? waitlistPosition;
   final DateTime bookedAtUtc;
+  final DateTime? bookedAtLocal;
   final DateTime? cancelledAtUtc;
   final DateTime? checkedInAtUtc;
   final String? paymentStatus;
   final String? notes;
+  final String? customerNotes;
   final String? customerFirstName;
   final String? customerLastName;
 
@@ -20,11 +22,13 @@ class ClassBooking {
     required this.customerId,
     required this.status,
     required this.bookedAtUtc,
+    this.bookedAtLocal,
     this.waitlistPosition,
     this.cancelledAtUtc,
     this.checkedInAtUtc,
     this.paymentStatus,
     this.notes,
+    this.customerNotes,
     this.customerFirstName,
     this.customerLastName,
   });
@@ -56,6 +60,11 @@ class ClassBooking {
       bookedAtUtc: DateTime.parse(
         (json['booked_at'] ?? json['booked_at_utc']) as String,
       ),
+      bookedAtLocal: json['booked_at_local'] != null
+          ? DateTime.parse(
+              (json['booked_at_local'] as String).replaceFirst(' ', 'T'),
+            )
+          : null,
       cancelledAtUtc: (json['cancelled_at'] ?? json['cancelled_at_utc']) != null
           ? DateTime.parse(
               (json['cancelled_at'] ?? json['cancelled_at_utc']) as String,
@@ -69,6 +78,7 @@ class ClassBooking {
           : null,
       paymentStatus: json['payment_status'] as String?,
       notes: json['notes'] as String?,
+      customerNotes: json['customer_notes'] as String?,
       customerFirstName: json['customer_first_name'] as String?,
       customerLastName: json['customer_last_name'] as String?,
     );

@@ -998,11 +998,10 @@ class _SingleStaffWeekTimelineColumnState
         child: GestureDetector(
           behavior: HitTestBehavior.opaque,
           onTap: canManageBookings
-              ? () => showCreateClassEventDialog(
-                  context,
-                  ref,
-                  initialEvent: event,
-                )
+              ? () {
+                  ref.invalidate(classEventParticipantsProvider(event.id));
+                  showCreateClassEventDialog(context, ref, initialEvent: event);
+                }
               : null,
           child: Container(
             padding: const EdgeInsets.all(8),

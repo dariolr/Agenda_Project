@@ -1,4 +1,3 @@
-
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -507,8 +506,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final staffAppointments = allAppointments
         .where((a) => a.staffId == widget.staff.id)
         .toList();
-    final classEventsAsync = ref.watch(classEventsForCurrentLocationDayProvider);
-    final allClassEvents = (classEventsAsync.isLoading && !classEventsAsync.hasValue)
+    final classEventsAsync = ref.watch(
+      classEventsForCurrentLocationDayProvider,
+    );
+    final allClassEvents =
+        (classEventsAsync.isLoading && !classEventsAsync.hasValue)
         ? const <ClassEvent>[]
         : (classEventsAsync.value ?? const <ClassEvent>[]);
     final classTypes = ref.watch(classTypesProvider).value ?? const [];
@@ -697,10 +699,8 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                   blocks: staffBlocks,
                   minutesPerSlot: layoutConfig.minutesPerSlot,
                 ),
-                onLongPressStart: (dt, details) => _handleSlotLongPress(
-                  dt: dt,
-                  details: details,
-                ),
+                onLongPressStart: (dt, details) =>
+                    _handleSlotLongPress(dt: dt, details: details),
               );
             }
 
@@ -782,7 +782,9 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
       onWillAcceptWithDetails: (details) {
         if (!canManageBookings) return false;
         final data = details.data;
-        if (data is! Appointment && data is! _ClassEventDragData && data is! TimeBlock) {
+        if (data is! Appointment &&
+            data is! _ClassEventDragData &&
+            data is! TimeBlock) {
           return false;
         }
         setState(() => _isHighlighted = true);
@@ -876,10 +878,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           final rawMinutes = layoutConfig.minutesFromHeight(
             (localPointer.dy - dragOffsetY).clamp(0.0, double.infinity),
           );
-          final roundedMinutes = (((rawMinutes / slotStepMinutes).round() *
-                      slotStepMinutes)
-                  .clamp(0, math.max(totalMinutes - durationMinutes, 0)))
-              .toInt();
+          final roundedMinutes =
+              (((rawMinutes / slotStepMinutes).round() * slotStepMinutes).clamp(
+                0,
+                math.max(totalMinutes - durationMinutes, 0),
+              )).toInt();
           final dayStart = DateTime(
             agendaDate.year,
             agendaDate.month,
@@ -893,11 +896,13 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           ref.read(dragSessionProvider.notifier).markHandled();
 
           try {
-            await ref.read(timeBlocksProvider.notifier).moveBlock(
-              blockId: block.id,
-              newStart: newStart,
-              newEnd: newEnd,
-            );
+            await ref
+                .read(timeBlocksProvider.notifier)
+                .moveBlock(
+                  blockId: block.id,
+                  newStart: newStart,
+                  newEnd: newEnd,
+                );
           } catch (_) {
             if (!context.mounted) return;
             await FeedbackDialog.showError(
@@ -1386,11 +1391,16 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
                   )
                 : null,
             onTap: canManageBookings
-                ? () => showCreateClassEventDialog(
-                    context,
-                    ref,
-                    initialEvent: classEvent,
-                  )
+                ? () {
+                    ref.invalidate(
+                      classEventParticipantsProvider(classEvent.id),
+                    );
+                    showCreateClassEventDialog(
+                      context,
+                      ref,
+                      initialEvent: classEvent,
+                    );
+                  }
                 : null,
             child: Builder(
               builder: (cardContext) {
@@ -2221,7 +2231,6 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     required DateTime dt,
     required LongPressStartDetails details,
   }) async {
-
     final location = ref.read(currentLocationProvider);
     final services = ref.read(servicesProvider).value ?? const [];
     final classTypes = ref.read(classTypesProvider).value ?? const [];
@@ -2252,10 +2261,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             value: 'class_schedule',
             child: Text(l10n.classEventsNewScheduleButton),
           ),
-        AdaptiveDropdownItem(
-          value: 'block',
-          child: Text(l10n.agendaAddBlock),
-        ),
+        AdaptiveDropdownItem(value: 'block', child: Text(l10n.agendaAddBlock)),
       ],
     );
 

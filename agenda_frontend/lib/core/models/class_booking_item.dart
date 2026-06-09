@@ -21,6 +21,7 @@ class ClassBookingItem {
   final String? currency;
   final bool canCancel;
   final DateTime? canCancelUntil; // UTC
+  final String? notes;
 
   const ClassBookingItem({
     required this.id,
@@ -43,6 +44,7 @@ class ClassBookingItem {
     this.currency,
     required this.canCancel,
     this.canCancelUntil,
+    this.notes,
   });
 
   factory ClassBookingItem.fromJson(Map<String, dynamic> json) {
@@ -69,6 +71,7 @@ class ClassBookingItem {
       canCancelUntil: json['can_cancel_until'] != null
           ? DateTime.parse(json['can_cancel_until'] as String)
           : null,
+      notes: json['notes'] as String?,
     );
   }
 

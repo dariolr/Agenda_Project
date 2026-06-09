@@ -102,7 +102,7 @@ final class CreateRecurringBooking
         }
 
         if ($clientId === null) {
-            throw BookingException::invalidClient('client_id is required for recurring bookings');
+            throw BookingException::validationError('client_id is required for recurring bookings');
         }
 
         if ($recurrenceData === null || !isset($recurrenceData['frequency'])) {
@@ -140,7 +140,7 @@ final class CreateRecurringBooking
         // Validate client
         $client = $this->clientRepository->findById($clientId);
         if (!$client) {
-            throw BookingException::invalidClient("Client with ID {$clientId} not found");
+            throw BookingException::invalidClient((int) $clientId);
         }
 
         $itemTemplates = $this->buildItemTemplates(
@@ -278,7 +278,8 @@ final class CreateRecurringBooking
                     $serviceDuration = (int) $template['duration_minutes'];
                     $processingMinutes = (int) $template['processing_extra_minutes'];
                     $blockedMinutes = (int) $template['blocked_extra_minutes'];
-                    $serviceEnd = $itemStart->modify("+{$serviceDuration} minutes");
+                    $visibleDuration = $serviceDuration + $blockedMinutes;
+                    $serviceEnd = $itemStart->modify("+{$visibleDuration} minutes");
                     $this->bookingRepository->addBookingItem($bookingId, [
                         'location_id' => $locationId,
                         'service_id' => (int) $template['service_id'],

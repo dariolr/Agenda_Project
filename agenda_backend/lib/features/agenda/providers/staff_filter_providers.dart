@@ -66,9 +66,22 @@ class SelectedStaffIdsNotifier extends Notifier<Set<int>> {
     // Carica da preferenze salvate
     final prefs = ref.watch(preferencesServiceProvider);
     final saved = prefs.getSelectedStaffIds(businessId, locationId: locationId);
+    if (locationId <= 0) return saved.toSet();
 
-    // Valida gli ID contro lo staff esistente nella location corrente
-    final allStaff = ref.watch(staffForCurrentLocationProvider);
+    // Valida gli ID contro lo staff esistente nella location corrente senza
+    // dipendere da staffForCurrentLocationProvider, perché altri provider
+    // dell'agenda leggono selectedStaffIdsProvider nello stesso bootstrap.
+    final staffAsync = ref.watch(allStaffProvider);
+
+    // Durante il bootstrap lo staff può essere temporaneamente vuoto:
+    // non cancellare le preferenze salvate finché la lista reale non è pronta.
+    if (!staffAsync.hasValue) {
+      return saved.toSet();
+    }
+
+    final allStaff = (staffAsync.value ?? const <Staff>[])
+        .where((staff) => staff.worksAtLocation(locationId))
+        .toList();
     final validIds = allStaff.map((s) => s.id).toSet();
 
     // Filtra solo gli ID che esistono ancora
@@ -104,11 +117,9 @@ class SelectedStaffIdsNotifier extends Notifier<Set<int>> {
   // Versione async per cleanup
   void _saveAsync(int businessId, int locationId, Set<int> ids) {
     if (locationId <= 0) return;
-    ref.read(preferencesServiceProvider).setSelectedStaffIds(
-          businessId,
-          ids,
-          locationId: locationId,
-        );
+    ref
+        .read(preferencesServiceProvider)
+        .setSelectedStaffIds(businessId, ids, locationId: locationId);
   }
 
   void toggle(int staffId) {

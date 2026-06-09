@@ -385,6 +385,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
             _agendaViewportReady = false;
           });
         }
+        ref.invalidate(classEventsForRangeProvider);
         ref.invalidate(classEventsForCurrentLocationDayProvider);
 
         final calendarMode = ref.read(calendarViewModeProvider);

@@ -1057,6 +1057,28 @@ class _ClassBookingCardState extends ConsumerState<_ClassBookingCard> {
               ),
             ],
 
+            // Note (se presenti)
+            if (booking.notes?.trim().isNotEmpty ?? false) ...[
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.sticky_note_2_outlined,
+                    size: 18,
+                    color: rowIconColor,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      booking.notes!.trim(),
+                      style: theme.textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+
             // Azioni per prenotazioni future non cancellate
             if (isFutureNotStarted && booking.canCancel) ...[
               const SizedBox(height: 16),
