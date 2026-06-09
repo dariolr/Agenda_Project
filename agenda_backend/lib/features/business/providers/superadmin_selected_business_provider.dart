@@ -62,6 +62,17 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
     prefs.setSuperadminShowBusinessPickerOnLogin(false);
   }
 
+  /// Cambio business esplicito dall'utente: aggiorna lo stato e attende la
+  /// persistenza delle preferenze prima di restituire il controllo.
+  /// Usare al posto di [select] quando il chiamante deve coordinare
+  /// invalidazioni Riverpod e navigazione GoRouter dopo la scrittura.
+  Future<void> switchBusiness(int businessId) async {
+    state = businessId;
+    final prefs = ref.read(preferencesServiceProvider);
+    await prefs.setSuperadminLastBusinessId(businessId);
+    await prefs.setSuperadminShowBusinessPickerOnLogin(false);
+  }
+
   /// Pulisce la selezione e invalida tutti i provider relativi al business.
   void clear() {
     state = null;

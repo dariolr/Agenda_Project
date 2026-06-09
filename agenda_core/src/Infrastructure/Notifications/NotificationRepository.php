@@ -561,15 +561,21 @@ final class NotificationRepository
 
     /**
      * Check if a class booking notification was already sent recently (deduplication).
+     *
+     * Returns false (allow send) if the class booking was re-booked (booked_at updated)
+     * after the last sent notification — this covers the cancel-then-re-add scenario.
+     * Both booked_at and created_at are stored in UTC, so the comparison is safe.
      */
     public function wasRecentlySentForClassBooking(string $channel, int $classBookingId, int $withinMinutes = 60): bool
     {
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT 1 FROM notification_queue
-             WHERE channel = :channel
-               AND class_booking_id = :class_booking_id
-               AND status = "sent"
-               AND sent_at > DATE_SUB(NOW(), INTERVAL :minutes MINUTE)
+            'SELECT nq.created_at
+             FROM notification_queue nq
+             WHERE nq.channel = :channel
+               AND nq.class_booking_id = :class_booking_id
+               AND nq.status = "sent"
+               AND nq.sent_at > DATE_SUB(NOW(), INTERVAL :minutes MINUTE)
+             ORDER BY nq.sent_at DESC
              LIMIT 1'
         );
         $stmt->execute([
@@ -578,7 +584,23 @@ final class NotificationRepository
             'minutes' => $withinMinutes,
         ]);
 
-        return $stmt->fetch() !== false;
+        $row = $stmt->fetch();
+        if ($row === false) {
+            return false;
+        }
+
+        // booked_at (UTC) vs created_at (UTC): se il booking è stato rinnovato
+        // dopo la creazione dell'ultima notifica, è un nuovo evento → permetti re-invio.
+        $bookedAtStmt = $this->db->getPdo()->prepare(
+            'SELECT booked_at FROM class_bookings WHERE id = :id LIMIT 1'
+        );
+        $bookedAtStmt->execute(['id' => $classBookingId]);
+        $booking = $bookedAtStmt->fetch();
+        if ($booking && !empty($booking['booked_at']) && $booking['booked_at'] > $row['created_at']) {
+            return false;
+        }
+
+        return true;
     }
 
     /**

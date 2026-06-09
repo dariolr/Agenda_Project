@@ -56,9 +56,7 @@ class _InvitationAcceptScreenState
     final isAuthenticated = authState.isAuthenticated;
     final isEmailMismatch = _isEmailMismatch(authState);
     final business = _invitation?['business'];
-    final businessName = business is Map<String, dynamic>
-        ? (business['name'] as String?)
-        : null;
+    final businessName = business is Map ? (business['name'] as String?) : null;
     final role = (_invitation?['role'] as String?) ?? '';
     final email = (_invitation?['email'] as String?) ?? '';
     final invitedUserExists = _invitation?['user_exists'] as bool?;
@@ -456,7 +454,7 @@ class _InvitationAcceptScreenState
 
       if (!mounted) return;
       setState(() {
-        _invitation = data;
+        _invitation = _normalizeInvitationPayload(data);
         _isLoading = false;
       });
       _syncEmailMismatchMessage();
@@ -477,6 +475,14 @@ class _InvitationAcceptScreenState
         _isLoading = false;
       });
     }
+  }
+
+  Map<String, dynamic> _normalizeInvitationPayload(Map<String, dynamic> data) {
+    final nested = data['data'];
+    if (nested is Map) {
+      return Map<String, dynamic>.from(nested);
+    }
+    return data;
   }
 
   void _syncEmailMismatchMessage() {

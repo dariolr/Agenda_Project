@@ -197,7 +197,8 @@ final class QueueClassBookingNotification
                  l.timezone             AS location_timezone,
                  l.booking_default_locale AS location_locale,
                  bus.name               AS business_name,
-                 bus.email              AS business_email
+                 bus.email              AS business_email,
+                 bus.slug               AS business_slug
              FROM class_bookings cb
              INNER JOIN class_events ce
                  ON ce.id = cb.class_event_id AND ce.business_id = cb.business_id
@@ -326,6 +327,7 @@ final class QueueClassBookingNotification
             'location_block_text'=> $locationBlockText,
             'cancel_policy_html' => $cancelPolicyHtml,
             'cancel_policy_text' => $cancelPolicyText,
+            'manage_url'         => rtrim($_ENV['FRONTEND_URL'] ?? getenv('FRONTEND_URL') ?: 'https://prenota.romeolab.it', '/') . '/' . ($data['business_slug'] ?? '') . '/my-bookings',
             'locale'             => $locale,
             'sender_name'        => (string) ($data['business_name'] ?? ''),
             'sender_email'       => (string) ($data['business_email'] ?? ''),

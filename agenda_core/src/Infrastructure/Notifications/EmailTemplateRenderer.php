@@ -1848,6 +1848,11 @@ TEXT,
             </td></tr>
         </table>
         {{cancel_policy_html}}
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+            <tr><td style="text-align:center;">
+                <a href="{{manage_url}}" style="display:inline-block;padding:12px 28px;background-color:#4CAF50;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">Le mie prenotazioni</a>
+            </td></tr>
+        </table>
     </td></tr>
     <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
         <p style="margin:0;font-size:12px;color:#999;">Il team di {{business_name}}<br>{{location_address_line}}<br>{{location_phone}}</p>
@@ -1866,6 +1871,8 @@ Il tuo posto per {{class_type_name}} presso {{business_name}} è confermato.
 • Lezione: {{class_type_name}}
 {{price_row_text}}
 {{cancel_policy_text}}
+Le mie prenotazioni: {{manage_url}}
+
 ---
 Il team di {{business_name}}
 {{location_address_line}} {{location_phone}}
@@ -1902,6 +1909,11 @@ TEXT,
             </td></tr>
         </table>
         {{cancel_policy_html}}
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+            <tr><td style="text-align:center;">
+                <a href="{{manage_url}}" style="display:inline-block;padding:12px 28px;background-color:#4CAF50;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">My Bookings</a>
+            </td></tr>
+        </table>
     </td></tr>
     <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
         <p style="margin:0;font-size:12px;color:#999;">The {{business_name}} team<br>{{location_address_line}}<br>{{location_phone}}</p>
@@ -1920,6 +1932,8 @@ Your spot for {{class_type_name}} at {{business_name}} is confirmed.
 • Class: {{class_type_name}}
 {{price_row_text}}
 {{cancel_policy_text}}
+My Bookings: {{manage_url}}
+
 ---
 The {{business_name}} team
 {{location_address_line}} {{location_phone}}
@@ -1967,6 +1981,11 @@ TEXT,
             </td></tr>
         </table>
         <p style="margin:0;font-size:14px;color:#666;">Puoi annullare la tua iscrizione in lista d'attesa in qualsiasi momento.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+            <tr><td style="text-align:center;">
+                <a href="{{manage_url}}" style="display:inline-block;padding:12px 28px;background-color:#FF9800;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">Le mie prenotazioni</a>
+            </td></tr>
+        </table>
     </td></tr>
     <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
         <p style="margin:0;font-size:12px;color:#999;">Il team di {{business_name}}<br>{{location_address_line}}<br>{{location_phone}}</p>
@@ -1987,6 +2006,7 @@ Ti avviseremo subito se si libera un posto.
 • Posizione in lista: {{waitlist_position}}
 
 Puoi annullare la tua iscrizione in lista d'attesa in qualsiasi momento.
+Le mie prenotazioni: {{manage_url}}
 
 ---
 Il team di {{business_name}}
@@ -2027,6 +2047,11 @@ TEXT,
             </td></tr>
         </table>
         <p style="margin:0;font-size:14px;color:#666;">You can cancel your waitlist registration at any time.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+            <tr><td style="text-align:center;">
+                <a href="{{manage_url}}" style="display:inline-block;padding:12px 28px;background-color:#FF9800;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">My Bookings</a>
+            </td></tr>
+        </table>
     </td></tr>
     <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
         <p style="margin:0;font-size:12px;color:#999;">The {{business_name}} team<br>{{location_address_line}}<br>{{location_phone}}</p>
@@ -2047,6 +2072,7 @@ We'll notify you as soon as a spot opens up.
 • Waitlist position: {{waitlist_position}}
 
 You can cancel your waitlist registration at any time.
+My Bookings: {{manage_url}}
 
 ---
 The {{business_name}} team
@@ -2092,6 +2118,11 @@ TEXT,
             </td></tr>
         </table>
         {{cancel_policy_html}}
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+            <tr><td style="text-align:center;">
+                <a href="{{manage_url}}" style="display:inline-block;padding:12px 28px;background-color:#4CAF50;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">Le mie prenotazioni</a>
+            </td></tr>
+        </table>
     </td></tr>
     <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
         <p style="margin:0;font-size:12px;color:#999;">Il team di {{business_name}}<br>{{location_address_line}}<br>{{location_phone}}</p>
@@ -2110,6 +2141,8 @@ Si è liberato un posto! Il tuo posto per {{class_type_name}} presso {{business_
 • Lezione: {{class_type_name}}
 {{price_row_text}}
 {{cancel_policy_text}}
+Le mie prenotazioni: {{manage_url}}
+
 ---
 Il team di {{business_name}}
 {{location_address_line}} {{location_phone}}
@@ -2146,6 +2179,11 @@ TEXT,
             </td></tr>
         </table>
         {{cancel_policy_html}}
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+            <tr><td style="text-align:center;">
+                <a href="{{manage_url}}" style="display:inline-block;padding:12px 28px;background-color:#4CAF50;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">My Bookings</a>
+            </td></tr>
+        </table>
     </td></tr>
     <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
         <p style="margin:0;font-size:12px;color:#999;">The {{business_name}} team<br>{{location_address_line}}<br>{{location_phone}}</p>
@@ -2164,6 +2202,8 @@ A spot opened up! Your place in {{class_type_name}} at {{business_name}} is now 
 • Class: {{class_type_name}}
 {{price_row_text}}
 {{cancel_policy_text}}
+My Bookings: {{manage_url}}
+
 ---
 The {{business_name}} team
 {{location_address_line}} {{location_phone}}
@@ -2208,6 +2248,11 @@ TEXT,
             </td></tr>
         </table>
         <p style="margin:0;font-size:14px;color:#666;">Per informazioni contatta <strong>{{business_name}}</strong>.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+            <tr><td style="text-align:center;">
+                <a href="{{manage_url}}" style="display:inline-block;padding:12px 28px;background-color:#1976D2;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">Le mie prenotazioni</a>
+            </td></tr>
+        </table>
     </td></tr>
     <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
         <p style="margin:0;font-size:12px;color:#999;">Il team di {{business_name}}<br>{{location_address_line}}<br>{{location_phone}}</p>
@@ -2226,6 +2271,7 @@ La programmazione di {{class_type_name}} presso {{business_name}} è stata aggio
 • Evento: {{class_type_name}}
 {{price_row_text}}
 Per informazioni contatta {{business_name}}.
+Le mie prenotazioni: {{manage_url}}
 
 ---
 Il team di {{business_name}}
@@ -2263,6 +2309,11 @@ TEXT,
             </td></tr>
         </table>
         <p style="margin:0;font-size:14px;color:#666;">For information, please contact <strong>{{business_name}}</strong>.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+            <tr><td style="text-align:center;">
+                <a href="{{manage_url}}" style="display:inline-block;padding:12px 28px;background-color:#1976D2;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">My Bookings</a>
+            </td></tr>
+        </table>
     </td></tr>
     <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
         <p style="margin:0;font-size:12px;color:#999;">The {{business_name}} team<br>{{location_address_line}}<br>{{location_phone}}</p>
@@ -2281,6 +2332,7 @@ The schedule for {{class_type_name}} at {{business_name}} has been updated.
 • Event: {{class_type_name}}
 {{price_row_text}}
 For information, please contact {{business_name}}.
+My Bookings: {{manage_url}}
 
 ---
 The {{business_name}} team
@@ -2325,6 +2377,11 @@ TEXT,
             </td></tr>
         </table>
         <p style="margin:0;font-size:14px;color:#666;">Per informazioni contatta <strong>{{business_name}}</strong>.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+            <tr><td style="text-align:center;">
+                <a href="{{manage_url}}" style="display:inline-block;padding:12px 28px;background-color:#757575;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">Le mie prenotazioni</a>
+            </td></tr>
+        </table>
     </td></tr>
     <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
         <p style="margin:0;font-size:12px;color:#999;">Il team di {{business_name}}<br>{{location_address_line}}<br>{{location_phone}}</p>
@@ -2343,6 +2400,7 @@ La tua prenotazione per {{class_type_name}} presso {{business_name}} è stata an
 • Lezione: {{class_type_name}}
 
 Per informazioni contatta {{business_name}}.
+Le mie prenotazioni: {{manage_url}}
 
 ---
 Il team di {{business_name}}
@@ -2378,6 +2436,11 @@ TEXT,
             </td></tr>
         </table>
         <p style="margin:0;font-size:14px;color:#666;">For any questions please contact <strong>{{business_name}}</strong>.</p>
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+            <tr><td style="text-align:center;">
+                <a href="{{manage_url}}" style="display:inline-block;padding:12px 28px;background-color:#757575;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">My Bookings</a>
+            </td></tr>
+        </table>
     </td></tr>
     <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
         <p style="margin:0;font-size:12px;color:#999;">The {{business_name}} team<br>{{location_address_line}}<br>{{location_phone}}</p>
@@ -2396,6 +2459,7 @@ Your booking for {{class_type_name}} at {{business_name}} has been cancelled.
 • Class: {{class_type_name}}
 
 For any questions please contact {{business_name}}.
+My Bookings: {{manage_url}}
 
 ---
 The {{business_name}} team
@@ -2440,6 +2504,11 @@ TEXT,
             </td></tr>
         </table>
         {{cancel_policy_html}}
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+            <tr><td style="text-align:center;">
+                <a href="{{manage_url}}" style="display:inline-block;padding:12px 28px;background-color:#2196F3;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">Le mie prenotazioni</a>
+            </td></tr>
+        </table>
     </td></tr>
     <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
         <p style="margin:0;font-size:12px;color:#999;">Il team di {{business_name}}<br>{{location_address_line}}<br>{{location_phone}}</p>
@@ -2458,6 +2527,8 @@ Ti ricordiamo che hai prenotato {{class_type_name}} presso {{business_name}}.
 • Lezione: {{class_type_name}}
 
 {{cancel_policy_text}}
+Le mie prenotazioni: {{manage_url}}
+
 ---
 Il team di {{business_name}}
 {{location_address_line}} {{location_phone}}
@@ -2493,6 +2564,11 @@ TEXT,
             </td></tr>
         </table>
         {{cancel_policy_html}}
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;">
+            <tr><td style="text-align:center;">
+                <a href="{{manage_url}}" style="display:inline-block;padding:12px 28px;background-color:#2196F3;color:#ffffff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:15px;">My Bookings</a>
+            </td></tr>
+        </table>
     </td></tr>
     <tr><td style="padding:20px 30px;background-color:#f5f5f5;text-align:center;">
         <p style="margin:0;font-size:12px;color:#999;">The {{business_name}} team<br>{{location_address_line}}<br>{{location_phone}}</p>
@@ -2511,6 +2587,8 @@ This is a reminder that you have {{class_type_name}} at {{business_name}}.
 • Class: {{class_type_name}}
 
 {{cancel_policy_text}}
+My Bookings: {{manage_url}}
+
 ---
 The {{business_name}} team
 {{location_address_line}} {{location_phone}}

@@ -406,8 +406,10 @@ final class BusinessInvitationsController
         // Verify email matches
         $user = $this->userRepo->findById($userId);
         if (strtolower($user['email']) !== strtolower($invitation['email'])) {
-            return Response::forbidden(
+            return Response::error(
                 'This invitation was sent to a different email address',
+                'invitation_different_email',
+                403,
                 $request->traceId
             );
         }

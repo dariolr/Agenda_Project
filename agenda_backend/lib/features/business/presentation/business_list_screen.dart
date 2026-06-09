@@ -111,30 +111,29 @@ class BusinessListScreen extends ConsumerWidget {
     );
   }
 
-  void _selectBusiness(
+  Future<void> _selectBusiness(
     BuildContext context,
     WidgetRef ref,
     Business business,
-  ) {
-    // 1) Aggiorna la source of truth del superadmin.
-    ref.read(superadminSelectedBusinessProvider.notifier).select(business.id);
-    // 2) Allinea subito il business corrente usato dai provider della shell.
+  ) async {
+    // 1) Aggiorna lo stato e attende la persistenza completa delle preferenze.
+    //    L'await garantisce che superadminLastBusinessId e
+    //    superadminShowBusinessPickerOnLogin(false) siano su disco prima che
+    //    le invalidazioni Riverpod e la navigazione partano.
+    await ref
+        .read(superadminSelectedBusinessProvider.notifier)
+        .switchBusiness(business.id);
+
+    // 2) Allinea il business corrente usato dai provider della shell.
     ref.read(currentBusinessIdProvider.notifier).selectByUser(business.id);
     // 3) Invalida tutti i provider scoped al business precedente.
     invalidateBusinessScopedProviders(ref);
     ref.invalidate(currentBusinessUserContextProvider);
 
-    // 4) Naviga al frame successivo: GoRouter 16 processa i redirect in modo
-    // sincrono al cambio di stato (notifyListeners). Chiamare context.go nello
-    // stesso frame dei cambi di stato può causare un conflitto dove GoRouter
-    // ri-conferma /businesses prima di processare la navigazione verso /agenda.
-    // Con addPostFrameCallback tutti i redirect pending del frame corrente sono
-    // già stati risolti quando la navigazione parte.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (context.mounted) {
-        context.go('/agenda');
-      }
-    });
+    // 4) Naviga verso l'agenda se il widget è ancora montato.
+    if (context.mounted) {
+      context.go('/agenda');
+    }
 
     // 5) Aggiorna la location selection appena le sedi del nuovo business sono disponibili.
     unawaited(_syncCurrentLocationForSelectedBusiness(ref));
