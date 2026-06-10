@@ -337,6 +337,7 @@ class BookingsRepository {
       pricingSource: json['pricing_source'] as String?,
       bookingSource: json['source'] as String?,
       bookingStatus: bookingStatus,
+      clientNotes: json['client_notes'] as String?,
       extraMinutes: json['extra_blocked_minutes'] as int?,
       extraMinutesType:
           (json['extra_blocked_minutes'] as int?) != null &&

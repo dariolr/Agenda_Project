@@ -714,9 +714,10 @@ class _AppointmentCardInteractiveState
     final booking = ref.watch(bookingsProvider)[widget.appointment.bookingId];
     final clientsById = ref.watch(clientsByIdProvider);
     final bookingNotes = booking?.notes?.trim();
-    final clientNotes = widget.appointment.clientId != null
-        ? clientsById[widget.appointment.clientId!]?.notes?.trim()
-        : null;
+    final clientNotes = widget.appointment.clientNotes?.trim() ??
+        (widget.appointment.clientId != null
+            ? clientsById[widget.appointment.clientId!]?.notes?.trim()
+            : null);
     final clientColorHex = widget.appointment.clientId != null
         ? clientsById[widget.appointment.clientId!]?.colorHex?.trim()
         : null;

@@ -37,6 +37,7 @@ import '../features/staff/presentation/staff_week_overview_screen.dart';
 import '../features/staff/presentation/team_screen.dart';
 import '../core/services/preferences_service.dart';
 import 'scaffold_with_navigation.dart';
+import 'providers/router_debug_log_provider.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final rootNavigatorKeyProvider = Provider<GlobalKey<NavigatorState>>(
@@ -131,7 +132,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isLoggingIn = state.matchedLocation == '/login';
       final isOnBusinessList = state.matchedLocation == '/businesses';
       final isOnSuperadminBookingNotifications =
-          state.matchedLocation == '/businesses/notifiche-prenotazioni';
+          state.uri.path.startsWith('/businesses/notifiche-prenotazioni');
       final isOnUserBusinessSwitch = state.matchedLocation == '/my-businesses';
       final isOnChangePassword = state.matchedLocation == '/change-password';
       final isMetaWhatsappCallbackPage =
@@ -157,6 +158,35 @@ final routerProvider = Provider<GoRouter>((ref) {
       final authenticatedUserId = authenticatedUser?.id;
       final currentLocation = _toLocationString(state.uri);
       final prefs = ref.read(preferencesServiceProvider);
+
+      // [DEBUG] Helper locale per loggare i redirect del router (solo kDebugMode).
+      void rlog(String reason, [String? to]) {
+        if (!kDebugMode) return;
+        final now = DateTime.now();
+        final hms =
+            '${now.hour.toString().padLeft(2, '0')}'
+            ':${now.minute.toString().padLeft(2, '0')}'
+            ':${now.second.toString().padLeft(2, '0')}'
+            '.${now.millisecond.toString().padLeft(3, '0')}';
+        final toStr = to != null ? ' →$to' : '';
+        final saBiz = superadminSelectedBusiness?.toString() ?? 'null';
+        final line =
+            '[$hms] ${state.uri.path}$toStr | $reason'
+            ' | auth=$isAuthenticated sa=$isSuperadmin'
+            ' | saBiz=$saBiz bizId=$currentBusinessId'
+            ' | match=${state.matchedLocation}';
+        ref.read(routerDebugLogProvider.notifier).addLine(line);
+      }
+
+      // [DEBUG] Log di valutazione per path rilevanti (nessun rumore su altri path).
+      if (kDebugMode &&
+          (state.uri.path == '/businesses' ||
+              state.uri.path.startsWith(
+                '/businesses/notifiche-prenotazioni',
+              ) ||
+              state.uri.path == '/agenda')) {
+        rlog('eval_relevant_path');
+      }
 
       // Durante il caricamento iniziale, non fare redirect
       if (isInitialOrLoading) {
@@ -185,6 +215,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Se non loggato e non su pagina pubblica, vai al login
       if (!isAuthenticated && !isPublicPage) {
+        if (kDebugMode) rlog('not_authenticated_private_route', '/login');
         return '/login';
       }
 
@@ -192,6 +223,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isAuthenticated && isLoggingIn) {
         final redirect = state.uri.queryParameters['redirect'];
         if (redirect != null && redirect.startsWith('/')) {
+          if (kDebugMode) rlog('login_authenticated_redirect_param', redirect);
           return redirect;
         }
         if (authenticatedUserId != null) {
@@ -201,11 +233,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
           if (savedLocation != null && _isRestorableLocation(savedLocation)) {
             if (isSuperadmin && superadminSelectedBusiness == null) {
+              if (kDebugMode) rlog('login_authenticated_superadmin_no_business', '/businesses');
               return '/businesses';
             }
             if (!isSuperadmin && currentBusinessId <= 0) {
+              if (kDebugMode) rlog('login_authenticated_no_current_business', '/my-businesses');
               return '/my-businesses';
             }
+            if (kDebugMode) rlog('login_authenticated_restore_saved_location', savedLocation);
             return savedLocation;
           }
         }
@@ -214,23 +249,32 @@ final routerProvider = Provider<GoRouter>((ref) {
         // - altrimenti va alla lista business admin
         // - utenti normali: selettore personale
         if (isSuperadmin) {
-          return superadminSelectedBusiness != null ? '/agenda' : '/businesses';
+          if (superadminSelectedBusiness != null) {
+            if (kDebugMode) rlog('login_authenticated_superadmin_has_business', '/agenda');
+            return '/agenda';
+          }
+          if (kDebugMode) rlog('login_authenticated_superadmin_no_business_default', '/businesses');
+          return '/businesses';
         }
+        if (kDebugMode) rlog('login_non_superadmin_default', '/my-businesses');
         return '/my-businesses';
       }
 
       // Business list admin solo per superadmin.
       if (isAuthenticated && !isSuperadmin && isOnBusinessList) {
+        if (kDebugMode) rlog('non_superadmin_on_businesses', '/my-businesses');
         return '/my-businesses';
       }
       if (isAuthenticated &&
           !isSuperadmin &&
           isOnSuperadminBookingNotifications) {
+        if (kDebugMode) rlog('non_superadmin_on_superadmin_booking_notifications', '/agenda');
         return '/agenda';
       }
 
       // Se superadmin va alla schermata switch user, riporta alla lista admin.
       if (isAuthenticated && isSuperadmin && isOnUserBusinessSwitch) {
+        if (kDebugMode) rlog('superadmin_on_my_businesses', '/businesses');
         return '/businesses';
       }
 
@@ -243,6 +287,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isAuthenticated && !isSuperadmin && isOnUserBusinessSwitch) {
         final isExplicitSwitch = state.uri.queryParameters['switch'] == '1';
         if (!isExplicitSwitch && currentBusinessId > 0) {
+          if (kDebugMode) rlog('non_superadmin_user_business_switch_without_switch_param', '/agenda');
           return '/agenda';
         }
       }
@@ -257,6 +302,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           !isOnUserBusinessSwitch &&
           !isOnChangePassword &&
           !isLoggingIn) {
+        if (kDebugMode) rlog('superadmin_no_selected_business_guard', '/businesses');
         return '/businesses';
       }
 
@@ -269,6 +315,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             billing.accessBlocked &&
             !isOnBillingScreen &&
             !isOnMyBusinesses) {
+          if (kDebugMode) rlog('billing_access_blocked', '/altro/abbonamento');
           return '/altro/abbonamento';
         }
       }
@@ -276,21 +323,48 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Route guard by explicit permissions.
       if (isAuthenticated && !isSuperadmin) {
         final path = state.uri.path;
-        if (path == '/clienti' && !canManageClients) return '/agenda';
-        if (path == '/servizi' && !canViewServices) return '/agenda';
-        if (path == '/staff' && !canViewStaff) return '/agenda';
-        if (path == '/staff-availability' && !canViewStaff) return '/agenda';
-        if (path == '/report' && !canViewReports) return '/agenda';
-        if (path == '/chiusure' && !canManageBusinessSettings) return '/agenda';
-        if (path == '/altro/classi' && !canAccessClassEvents) return '/agenda';
+        if (path == '/clienti' && !canManageClients) {
+          if (kDebugMode) rlog('permission_guard_clients', '/agenda');
+          return '/agenda';
+        }
+        if (path == '/servizi' && !canViewServices) {
+          if (kDebugMode) rlog('permission_guard_services', '/agenda');
+          return '/agenda';
+        }
+        if (path == '/staff' && !canViewStaff) {
+          if (kDebugMode) rlog('permission_guard_staff', '/agenda');
+          return '/agenda';
+        }
+        if (path == '/staff-availability' && !canViewStaff) {
+          if (kDebugMode) rlog('permission_guard_staff_availability', '/agenda');
+          return '/agenda';
+        }
+        if (path == '/report' && !canViewReports) {
+          if (kDebugMode) rlog('permission_guard_reports', '/agenda');
+          return '/agenda';
+        }
+        if (path == '/chiusure' && !canManageBusinessSettings) {
+          if (kDebugMode) rlog('permission_guard_closures', '/agenda');
+          return '/agenda';
+        }
+        if (path == '/altro/classi' && !canAccessClassEvents) {
+          if (kDebugMode) rlog('permission_guard_class_events', '/agenda');
+          return '/agenda';
+        }
         if (path == '/altro/metodi-pagamento' && !canManageBusinessSettings) {
+          if (kDebugMode) rlog('permission_guard_payment_methods', '/agenda');
           return '/agenda';
         }
         if (path == '/altro/whatsapp-business' && !canManageBusinessSettings) {
+          if (kDebugMode) rlog('permission_guard_whatsapp_business', '/agenda');
           return '/agenda';
         }
-        if (path == '/permessi' && !canManageOperators) return '/agenda';
+        if (path == '/permessi' && !canManageOperators) {
+          if (kDebugMode) rlog('permission_guard_permissions', '/agenda');
+          return '/agenda';
+        }
         if (path.startsWith('/operatori/') && !canManageOperators) {
+          if (kDebugMode) rlog('permission_guard_operators', '/agenda');
           return '/agenda';
         }
       }

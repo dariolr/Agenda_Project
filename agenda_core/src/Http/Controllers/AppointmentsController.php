@@ -610,6 +610,7 @@ final class AppointmentsController
             // Include booking info if joined
             'booking_status' => $appointment['booking_status'] ?? null,
             'booking_notes' => $appointment['booking_notes'] ?? null,
+            'client_notes' => $appointment['client_notes'] ?? null,
             'source' => $appointment['source'] ?? null,
             'client_id' => isset($appointment['client_id']) ? (int) $appointment['client_id'] : null,
             'client_name' => $clientName,

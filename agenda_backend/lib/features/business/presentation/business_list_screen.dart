@@ -1,11 +1,13 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:go_router/go_router.dart';
 
+import '../../../app/providers/router_debug_log_provider.dart';
 import '../../../app/widgets/user_menu_button.dart';
+import '../../../core/services/same_tab_redirect.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
 import '../../../core/network/api_client.dart';
@@ -38,9 +40,20 @@ class BusinessListScreen extends ConsumerWidget {
         title: const Text('Seleziona Business'),
         centerTitle: true,
         actions: [
+          if (kDebugMode)
+            IconButton(
+              tooltip: 'Router Debug Log',
+              onPressed: () => _showDebugLogPanel(context, ref),
+              icon: const Text(
+                'LOG',
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ),
           IconButton(
             tooltip: context.l10n.bookingNotificationsTitle,
-            onPressed: () => context.go('/businesses/notifiche-prenotazioni'),
+            onPressed: () => unawaited(
+              redirectInCurrentTab('/businesses/notifiche-prenotazioni'),
+            ),
             icon: const Icon(Icons.notifications_active_outlined),
           ),
           // Menu utente (profilo, cambia password, logout)
@@ -57,7 +70,7 @@ class BusinessListScreen extends ConsumerWidget {
                 child: _BusinessList(
                   businesses: orderedBusinesses,
                   onSelect: (business) =>
-                      _selectBusiness(context, ref, business),
+                      _selectBusiness(ref, business),
                   onEdit: (business) =>
                       _showEditBusinessDialog(context, ref, business),
                   onResendInvite: (business) =>
@@ -112,14 +125,10 @@ class BusinessListScreen extends ConsumerWidget {
   }
 
   Future<void> _selectBusiness(
-    BuildContext context,
     WidgetRef ref,
     Business business,
   ) async {
     // 1) Aggiorna lo stato e attende la persistenza completa delle preferenze.
-    //    L'await garantisce che superadminLastBusinessId e
-    //    superadminShowBusinessPickerOnLogin(false) siano su disco prima che
-    //    le invalidazioni Riverpod e la navigazione partano.
     await ref
         .read(superadminSelectedBusinessProvider.notifier)
         .switchBusiness(business.id);
@@ -130,13 +139,85 @@ class BusinessListScreen extends ConsumerWidget {
     invalidateBusinessScopedProviders(ref);
     ref.invalidate(currentBusinessUserContextProvider);
 
-    // 4) Naviga verso l'agenda se il widget è ancora montato.
-    if (context.mounted) {
-      context.go('/agenda');
-    }
+    // 4) Hard navigation diagnostica: bypassa completamente GoRouter SPA per
+    //    verificare se il bug mobile/PWA dipende dalla navigazione in-app.
+    //    Il timestamp evita cache del browser sulla stessa rotta.
+    final ts = DateTime.now().millisecondsSinceEpoch;
+    await redirectInCurrentTab('/agenda?business_switch=$ts');
 
     // 5) Aggiorna la location selection appena le sedi del nuovo business sono disponibili.
     unawaited(_syncCurrentLocationForSelectedBusiness(ref));
+  }
+
+  void _showDebugLogPanel(BuildContext context, WidgetRef ref) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Consumer(
+        builder: (_, innerRef, __) {
+          final logs = innerRef.watch(routerDebugLogProvider);
+          return ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.75,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Router Debug Log',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () =>
+                            innerRef.read(routerDebugLogProvider.notifier).clear(),
+                        child: const Text('Clear'),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                Flexible(
+                  child: logs.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.all(32),
+                          child: Text('No logs yet'),
+                        )
+                      : ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: logs.length,
+                          itemBuilder: (_, i) => Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 2,
+                            ),
+                            child: SelectableText(
+                              logs[i],
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
   }
 
   Future<void> _syncCurrentLocationForSelectedBusiness(WidgetRef ref) async {

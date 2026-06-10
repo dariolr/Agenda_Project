@@ -53,6 +53,7 @@ class Appointment {
   final String? bookingSource;
   final String? bookingStatus; // pending, confirmed, replaced, cancelled
   final String? bookingNotes;
+  final String? clientNotes;
   // Legacy single extra fields (kept for backward compatibility)
   final int? extraMinutes;
   final ExtraMinutesType? extraMinutesType;
@@ -87,6 +88,7 @@ class Appointment {
     this.bookingSource,
     this.bookingStatus,
     this.bookingNotes,
+    this.clientNotes,
     this.extraMinutes,
     this.extraMinutesType,
     this.extraBlockedMinutes,
@@ -132,6 +134,7 @@ class Appointment {
     bookingSource: json['source'] as String?,
     bookingStatus: _bookingStatusFromJson(json),
     bookingNotes: (json['booking_notes'] ?? json['notes']) as String?,
+    clientNotes: json['client_notes'] as String?,
     extraMinutes: json['extra_minutes'] as int?,
     extraMinutesType: _extraMinutesTypeFromJson(json['extra_minutes_type']),
     extraBlockedMinutes: json['extra_blocked_minutes'] as int?,
@@ -163,6 +166,7 @@ class Appointment {
     String? bookingSource,
     String? bookingStatus,
     String? bookingNotes,
+    String? clientNotes,
     int? extraMinutes,
     ExtraMinutesType? extraMinutesType,
     int? extraBlockedMinutes,
@@ -193,6 +197,7 @@ class Appointment {
       bookingSource: bookingSource ?? this.bookingSource,
       bookingStatus: bookingStatus ?? this.bookingStatus,
       bookingNotes: bookingNotes ?? this.bookingNotes,
+      clientNotes: clientNotes ?? this.clientNotes,
       extraMinutes: extraMinutes ?? this.extraMinutes,
       extraMinutesType: extraMinutesType ?? this.extraMinutesType,
       extraBlockedMinutes: extraBlockedMinutes ?? this.extraBlockedMinutes,
