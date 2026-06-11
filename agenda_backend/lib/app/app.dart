@@ -20,6 +20,7 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final themeConfig = ref.watch(themeNotifierProvider);
     final router = ref.watch(routerProvider);
+    debugPrint('[MyApp.build] router.hashCode=${router.hashCode}');
     final appLocale = ref.watch(appLocaleProvider);
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,

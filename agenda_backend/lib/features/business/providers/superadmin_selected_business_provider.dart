@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/providers/router_debug_log_provider.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../agenda/providers/agenda_bootstrap_provider.dart';
 import '../../agenda/providers/agenda_display_settings_provider.dart';
@@ -44,21 +45,19 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
   @override
   int? build() {
     final prefs = ref.read(preferencesServiceProvider);
-    // Se richiesto esplicitamente, al login mostra il selettore business
-    // invece di entrare automaticamente nell'ultimo business visitato.
-    if (prefs.getSuperadminShowBusinessPickerOnLogin()) {
-      return null;
-    }
-    // Altrimenti carica l'ultimo business salvato dalle preferenze.
-    return prefs.getSuperadminLastBusinessId();
+    final picker = prefs.getSuperadminShowBusinessPickerOnLogin();
+    final lastId = prefs.getSuperadminLastBusinessId();
+    final result = picker ? null : lastId;
+    ref.read(routerDebugLogProvider.notifier).addLine(
+      'saBiz.build() picker=$picker lastId=$lastId → $result',
+    );
+    return result;
   }
 
   void select(int businessId) {
     state = businessId;
     final prefs = ref.read(preferencesServiceProvider);
-    // Salva nelle preferenze per accesso rapido al prossimo login.
     prefs.setSuperadminLastBusinessId(businessId);
-    // Dopo una selezione esplicita, non forzare più il picker al login.
     prefs.setSuperadminShowBusinessPickerOnLogin(false);
   }
 
@@ -75,14 +74,16 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
 
   /// Pulisce la selezione e invalida tutti i provider relativi al business.
   void clear() {
+    ref.read(routerDebugLogProvider.notifier).addLine('saBiz.clear() called');
     state = null;
-    // NON rimuoviamo dalle preferenze: l'utente può tornare con "Cambia Business"
-    // ma al prossimo login verrà comunque portato all'ultimo business
   }
 
   /// Mostra la lista business al prossimo login del superadmin.
   /// Mantiene comunque l'ultimo business salvato per uso successivo.
   void showBusinessPickerOnNextLogin() {
+    ref.read(routerDebugLogProvider.notifier).addLine(
+      'saBiz.showBusinessPickerOnNextLogin() called',
+    );
     state = null;
     ref
         .read(preferencesServiceProvider)
@@ -92,6 +93,9 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
   /// Pulisce completamente la selezione, anche dalle preferenze.
   /// Da usare al logout o se il business viene eliminato.
   void clearCompletely() {
+    ref.read(routerDebugLogProvider.notifier).addLine(
+      'saBiz.clearCompletely() called',
+    );
     state = null;
     final prefs = ref.read(preferencesServiceProvider);
     prefs.clearSuperadminLastBusinessId();

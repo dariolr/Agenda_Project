@@ -1,16 +1,16 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../app/providers/router_debug_log_provider.dart';
 import '../../../app/widgets/user_menu_button.dart';
-import '../../../core/services/same_tab_redirect.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
 import '../../../core/network/api_client.dart';
+import '../../../core/services/same_tab_redirect.dart';
 import '../../../core/utils/initials_utils.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
@@ -29,8 +29,19 @@ import 'dialogs/edit_business_dialog.dart';
 class BusinessListScreen extends ConsumerWidget {
   const BusinessListScreen({super.key});
 
+  // ── Cambia solo questo bool per passare da una modalità all'altra ──
+  static const bool _hardNavActive = false;
+  static const int _taskNumber = 16;
+  static const String _navMode = _hardNavActive
+      ? 'Task $_taskNumber · Hard nav (window.location)'
+      : 'Task $_taskNumber · GoRouter.go (in-app)';
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    debugPrint('[BusinessListScreen.build] hashCode=$hashCode');
+    ref
+        .read(routerDebugLogProvider.notifier)
+        .addLine('BizList.build #$hashCode');
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final businessesAsync = ref.watch(businessesProvider);
@@ -39,16 +50,32 @@ class BusinessListScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('Seleziona Business'),
         centerTitle: true,
-        actions: [
-          if (kDebugMode)
-            IconButton(
-              tooltip: 'Router Debug Log',
-              onPressed: () => _showDebugLogPanel(context, ref),
-              icon: const Text(
-                'LOG',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(20),
+          child: Container(
+            width: double.infinity,
+            color: Colors.orange.shade100,
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Text(
+              _navMode,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 11,
+                color: Colors.orange.shade900,
+                fontWeight: FontWeight.w500,
               ),
             ),
+          ),
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Router Debug Log',
+            onPressed: () => _showDebugLogPanel(context, ref),
+            icon: const Text(
+              'LOG',
+              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+            ),
+          ),
           IconButton(
             tooltip: context.l10n.bookingNotificationsTitle,
             onPressed: () => unawaited(
@@ -70,7 +97,7 @@ class BusinessListScreen extends ConsumerWidget {
                 child: _BusinessList(
                   businesses: orderedBusinesses,
                   onSelect: (business) =>
-                      _selectBusiness(ref, business),
+                      _selectBusiness(context, ref, business),
                   onEdit: (business) =>
                       _showEditBusinessDialog(context, ref, business),
                   onResendInvite: (business) =>
@@ -125,25 +152,46 @@ class BusinessListScreen extends ConsumerWidget {
   }
 
   Future<void> _selectBusiness(
+    BuildContext context,
     WidgetRef ref,
     Business business,
   ) async {
+    ref
+        .read(routerDebugLogProvider.notifier)
+        .addLine('select→ biz=${business.id}');
+
     // 1) Aggiorna lo stato e attende la persistenza completa delle preferenze.
     await ref
         .read(superadminSelectedBusinessProvider.notifier)
         .switchBusiness(business.id);
+    ref
+        .read(routerDebugLogProvider.notifier)
+        .addLine('switchBusiness done biz=${business.id}');
 
     // 2) Allinea il business corrente usato dai provider della shell.
     ref.read(currentBusinessIdProvider.notifier).selectByUser(business.id);
-    // 3) Invalida tutti i provider scoped al business precedente.
+
+    // 3) Navigazione verso /agenda — modalità controllata da _hardNavActive.
+    if (_hardNavActive) {
+      final ts = DateTime.now().millisecondsSinceEpoch;
+      await redirectInCurrentTab('/agenda?business_switch=$ts');
+    } else {
+      if (context.mounted) {
+        GoRouter.of(context).go('/agenda');
+      }
+      ref
+          .read(routerDebugLogProvider.notifier)
+          .addLine('go(/agenda) called biz=${business.id}');
+    }
+
+    // 4) Invalida i provider scoped al business precedente DOPO la navigazione,
+    // per evitare che le notifiche di invalidation triggherino il redirect guard
+    // prima che GoRouter abbia registrato la nuova location /agenda.
     invalidateBusinessScopedProviders(ref);
     ref.invalidate(currentBusinessUserContextProvider);
-
-    // 4) Hard navigation diagnostica: bypassa completamente GoRouter SPA per
-    //    verificare se il bug mobile/PWA dipende dalla navigazione in-app.
-    //    Il timestamp evita cache del browser sulla stessa rotta.
-    final ts = DateTime.now().millisecondsSinceEpoch;
-    await redirectInCurrentTab('/agenda?business_switch=$ts');
+    ref
+        .read(routerDebugLogProvider.notifier)
+        .addLine('invalidate done biz=${business.id}');
 
     // 5) Aggiorna la location selection appena le sedi del nuovo business sono disponibili.
     unawaited(_syncCurrentLocationForSelectedBusiness(ref));
@@ -176,8 +224,9 @@ class BusinessListScreen extends ConsumerWidget {
                       ),
                       const Spacer(),
                       TextButton(
-                        onPressed: () =>
-                            innerRef.read(routerDebugLogProvider.notifier).clear(),
+                        onPressed: () => innerRef
+                            .read(routerDebugLogProvider.notifier)
+                            .clear(),
                         child: const Text('Clear'),
                       ),
                       IconButton(

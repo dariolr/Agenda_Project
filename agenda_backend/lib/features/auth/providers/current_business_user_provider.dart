@@ -381,19 +381,52 @@ final currentUserCanManageBookingsProvider = Provider<bool>((ref) {
 });
 
 /// Verifica se l'utente corrente può gestire clienti.
-final currentUserCanManageClientsProvider = Provider<bool>((ref) {
-  final currentBusinessId = ref.watch(currentBusinessIdProvider);
-  final contextAsync = ref.watch(currentBusinessUserContextProvider);
-  return contextAsync.when(
-    data: (data) {
-      if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
-      if (data!.isSuperadmin) return true;
-      return data.canManageClients;
-    },
-    loading: () => false,
-    error: (_, __) => false,
-  );
-});
+/// Durante il loading di [currentBusinessUserContextProvider] (es. cambio business),
+/// mantiene l'ultimo valore noto invece di collassare a false.
+/// Questo evita che [showClientsNav] oscilli 4↔5 items nel nav bar,
+/// che causerebbe callback spurii da BottomNavigationBar/NavigationRail.
+class _CanManageClientsNotifier extends Notifier<bool> {
+  bool _lastKnownValue = false;
+
+  @override
+  bool build() {
+    final businessId = ref.watch(currentBusinessIdProvider);
+
+    // Aggiorna lo state solo quando arrivano dati reali; ignora il loading
+    // in modo che lo state non ritorni mai a false per effetto di un reload.
+    ref.listen<AsyncValue<BusinessUserContext?>>(
+      currentBusinessUserContextProvider,
+      (_, next) {
+        if (next.isLoading) return;
+        next.whenData((data) {
+          final v = _isContextForCurrentBusiness(data, businessId) &&
+              ((data?.isSuperadmin ?? false) || (data?.canManageClients ?? false));
+          _lastKnownValue = v;
+          if (state != v) state = v;
+        });
+      },
+    );
+
+    // Valore iniziale: se il context è già caricato usa quello,
+    // altrimenti mantieni l'ultimo valore noto (stabile durante reload).
+    final ctx = ref.read(currentBusinessUserContextProvider);
+    return ctx.when(
+      data: (data) {
+        final v = _isContextForCurrentBusiness(data, businessId) &&
+            ((data?.isSuperadmin ?? false) || (data?.canManageClients ?? false));
+        _lastKnownValue = v;
+        return v;
+      },
+      loading: () => _lastKnownValue,
+      error: (_, __) => _lastKnownValue,
+    );
+  }
+}
+
+final currentUserCanManageClientsProvider =
+    NotifierProvider<_CanManageClientsNotifier, bool>(
+      _CanManageClientsNotifier.new,
+    );
 
 /// Verifica se l'utente corrente può gestire servizi.
 final currentUserCanManageServicesProvider = Provider<bool>((ref) {

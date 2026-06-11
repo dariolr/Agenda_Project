@@ -146,6 +146,7 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[ScaffoldWithNavigation.build] hashCode=$hashCode shellIndex=${widget.navigationShell.currentIndex}');
     final navigationShell = widget.navigationShell;
     final currentIndex = navigationShell.currentIndex;
     if (_lastShellIndex != currentIndex) {
@@ -245,7 +246,7 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
       });
     }
 
-    final showClientsNav = ref.watch(currentUserCanManageClientsProvider);
+    const showClientsNav = true;
     final canCreateAgendaItems = ref.watch(
       currentUserCanManageBookingsProvider,
     );
@@ -359,10 +360,9 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
       }
 
       // Mappa indice corrente a indice compatto per desktop.
-      int desktopCurrentIndex;
-      if (!showClientsNav) {
-        desktopCurrentIndex = navigationShell.currentIndex == 0 ? 0 : 1;
-      } else if (navigationShell.currentIndex <= 1) {
+      // 0=Agenda, 1=Clienti, 2+=Altro
+      final int desktopCurrentIndex;
+      if (navigationShell.currentIndex <= 1) {
         // Agenda o Clienti
         desktopCurrentIndex = navigationShell.currentIndex;
       } else {
@@ -522,12 +522,10 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
     }
 
     // Su mobile, mappa l'indice corrente a quello compatto
-    // Desktop: 0=Agenda, 1=Clienti, 2=Servizi, 3=Staff, 4=Report, 5=Prenotazioni, 6=Altro, 7=Chiusure, 8=Profilo
-    // Mobile:  0=Agenda, 1=Clienti, 2=Altro
-    int mobileCurrentIndex;
-    if (!showClientsNav) {
-      mobileCurrentIndex = navigationShell.currentIndex == 0 ? 0 : 1;
-    } else if (navigationShell.currentIndex <= 1) {
+    // Shell: 0=Agenda, 1=Clienti, 2=Servizi, 3=Staff, 4=Report, 5=Prenotazioni, 6=Altro, 7=Chiusure, 8=Profilo
+    // BNB:   0=Agenda, 1=Clienti, 2=Altro
+    final int mobileCurrentIndex;
+    if (navigationShell.currentIndex <= 1) {
       // Agenda o Clienti
       mobileCurrentIndex = navigationShell.currentIndex;
     } else {

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+
 import 'package:agenda_backend/app/providers/global_loading_provider.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
@@ -347,6 +348,7 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('[AgendaScreen.build] hashCode=$hashCode');
     final ref = this.ref;
 
     ref.listen<bool>(agendaBootstrapUnlockedProvider, (prev, next) {

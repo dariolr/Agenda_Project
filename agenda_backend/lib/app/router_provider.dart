@@ -71,31 +71,11 @@ bool _isRestorableLocation(String location) {
   return true;
 }
 
-/// Provider derivato che cambia SOLO quando cambia l'autenticazione effettiva
-/// NON quando cambia solo l'errorMessage (evita rebuild inutili del router)
-final _routerAuthStateProvider =
-    Provider<
-      ({bool isAuthenticated, bool isSuperadmin, bool isInitialOrLoading})
-    >((ref) {
-      final authState = ref.watch(authProvider);
-      return (
-        isAuthenticated: authState.isAuthenticated,
-        isSuperadmin: authState.user?.isSuperadmin ?? false,
-        isInitialOrLoading:
-            authState.status == AuthStatus.initial ||
-            authState.status == AuthStatus.loading,
-      );
-    });
-
 /// Provider per il router con supporto autenticazione.
+/// Il GoRouter è una singola istanza stabile: non rebuilda mai al cambio auth.
+/// L'auth state viene letto fresco dentro il redirect ad ogni valutazione.
 final routerProvider = Provider<GoRouter>((ref) {
-  // Usa il provider derivato per evitare rebuild quando cambia solo errorMessage
-  final authInfo = ref.watch(_routerAuthStateProvider);
-  final isAuthenticated = authInfo.isAuthenticated;
-  final isSuperadmin = authInfo.isSuperadmin;
-  final isInitialOrLoading = authInfo.isInitialOrLoading;
-
-  return GoRouter(
+  final router = GoRouter(
     navigatorKey: _rootNavigatorKey,
     initialLocation: '/login',
     debugLogDiagnostics: kDebugMode,
@@ -104,6 +84,14 @@ final routerProvider = Provider<GoRouter>((ref) {
     refreshListenable: _AuthNotifier(ref),
 
     redirect: (context, state) {
+      // Auth state fresco ad ogni valutazione — non catturato alla creazione del GoRouter.
+      final authState = ref.read(authProvider);
+      final isAuthenticated = authState.isAuthenticated;
+      final isSuperadmin = authState.user?.isSuperadmin ?? false;
+      final isInitialOrLoading =
+          authState.status == AuthStatus.initial ||
+          authState.status == AuthStatus.loading;
+
       final browserPath = Uri.base.path;
       final isInvitationBrowserUrl =
           browserPath == '/invitation' ||
@@ -129,19 +117,18 @@ final routerProvider = Provider<GoRouter>((ref) {
         return null;
       }
 
-      final isLoggingIn = state.matchedLocation == '/login';
-      final isOnBusinessList = state.matchedLocation == '/businesses';
+      final isLoggingIn = state.uri.path == '/login';
+      final isOnBusinessList = state.uri.path == '/businesses';
       final isOnSuperadminBookingNotifications =
           state.uri.path.startsWith('/businesses/notifiche-prenotazioni');
-      final isOnUserBusinessSwitch = state.matchedLocation == '/my-businesses';
-      final isOnChangePassword = state.matchedLocation == '/change-password';
+      final isOnUserBusinessSwitch = state.uri.path == '/my-businesses';
+      final isOnChangePassword = state.uri.path == '/change-password';
       final isMetaWhatsappCallbackPage =
-          state.matchedLocation == '/auth/meta-whatsapp-callback';
+          state.uri.path == '/auth/meta-whatsapp-callback';
       final invitationPath = state.uri.path;
       final isInvitationPage =
           invitationPath == '/invitation' ||
           invitationPath.startsWith('/invitation/');
-      final canManageClients = ref.read(currentUserCanManageClientsProvider);
       final canViewServices = ref.read(currentUserCanViewServicesProvider);
       final canViewStaff = ref.read(currentUserCanViewStaffProvider);
       final canManageOperators = ref.read(canManageOperatorsProvider);
@@ -154,14 +141,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       final superadminSelectedBusiness = ref.read(
         superadminSelectedBusinessProvider,
       );
-      final authenticatedUser = ref.read(authProvider).user;
-      final authenticatedUserId = authenticatedUser?.id;
+      final authenticatedUserId = authState.user?.id;
       final currentLocation = _toLocationString(state.uri);
       final prefs = ref.read(preferencesServiceProvider);
 
-      // [DEBUG] Helper locale per loggare i redirect del router (solo kDebugMode).
+      // [DEBUG] Helper locale per loggare i redirect del router.
       void rlog(String reason, [String? to]) {
-        if (!kDebugMode) return;
         final now = DateTime.now();
         final hms =
             '${now.hour.toString().padLeft(2, '0')}'
@@ -179,12 +164,9 @@ final routerProvider = Provider<GoRouter>((ref) {
       }
 
       // [DEBUG] Log di valutazione per path rilevanti (nessun rumore su altri path).
-      if (kDebugMode &&
-          (state.uri.path == '/businesses' ||
-              state.uri.path.startsWith(
-                '/businesses/notifiche-prenotazioni',
-              ) ||
-              state.uri.path == '/agenda')) {
+      if (state.uri.path == '/businesses' ||
+          state.uri.path.startsWith('/businesses/notifiche-prenotazioni') ||
+          state.uri.path == '/agenda') {
         rlog('eval_relevant_path');
       }
 
@@ -196,7 +178,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Pagine pubbliche che non richiedono autenticazione
       final isPublicPage =
           isLoggingIn ||
-          state.matchedLocation.startsWith('/reset-password') ||
+          state.uri.path.startsWith('/reset-password') ||
           isMetaWhatsappCallbackPage ||
           isInvitationPage;
 
@@ -213,17 +195,19 @@ final routerProvider = Provider<GoRouter>((ref) {
         );
       }
 
-      // Se non loggato e non su pagina pubblica, vai al login
+      // Se non loggato e non su pagina pubblica, vai al login preservando la destinazione.
       if (!isAuthenticated && !isPublicPage) {
-        if (kDebugMode) rlog('not_authenticated_private_route', '/login');
-        return '/login';
+        final encodedRedirect = Uri.encodeComponent(currentLocation);
+        final loginWithRedirect = '/login?redirect=$encodedRedirect';
+        rlog('not_authenticated_private_route', loginWithRedirect);
+        return loginWithRedirect;
       }
 
       // Se loggato e sulla pagina login
       if (isAuthenticated && isLoggingIn) {
         final redirect = state.uri.queryParameters['redirect'];
         if (redirect != null && redirect.startsWith('/')) {
-          if (kDebugMode) rlog('login_authenticated_redirect_param', redirect);
+          rlog('login_authenticated_redirect_param', redirect);
           return redirect;
         }
         if (authenticatedUserId != null) {
@@ -233,14 +217,14 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
           if (savedLocation != null && _isRestorableLocation(savedLocation)) {
             if (isSuperadmin && superadminSelectedBusiness == null) {
-              if (kDebugMode) rlog('login_authenticated_superadmin_no_business', '/businesses');
+              rlog('login_authenticated_superadmin_no_business', '/businesses');
               return '/businesses';
             }
             if (!isSuperadmin && currentBusinessId <= 0) {
-              if (kDebugMode) rlog('login_authenticated_no_current_business', '/my-businesses');
+              rlog('login_authenticated_no_current_business', '/my-businesses');
               return '/my-businesses';
             }
-            if (kDebugMode) rlog('login_authenticated_restore_saved_location', savedLocation);
+            rlog('login_authenticated_restore_saved_location', savedLocation);
             return savedLocation;
           }
         }
@@ -250,31 +234,31 @@ final routerProvider = Provider<GoRouter>((ref) {
         // - utenti normali: selettore personale
         if (isSuperadmin) {
           if (superadminSelectedBusiness != null) {
-            if (kDebugMode) rlog('login_authenticated_superadmin_has_business', '/agenda');
+            rlog('login_authenticated_superadmin_has_business', '/agenda');
             return '/agenda';
           }
-          if (kDebugMode) rlog('login_authenticated_superadmin_no_business_default', '/businesses');
+          rlog('login_authenticated_superadmin_no_business_default', '/businesses');
           return '/businesses';
         }
-        if (kDebugMode) rlog('login_non_superadmin_default', '/my-businesses');
+        rlog('login_non_superadmin_default', '/my-businesses');
         return '/my-businesses';
       }
 
       // Business list admin solo per superadmin.
       if (isAuthenticated && !isSuperadmin && isOnBusinessList) {
-        if (kDebugMode) rlog('non_superadmin_on_businesses', '/my-businesses');
+        rlog('non_superadmin_on_businesses', '/my-businesses');
         return '/my-businesses';
       }
       if (isAuthenticated &&
           !isSuperadmin &&
           isOnSuperadminBookingNotifications) {
-        if (kDebugMode) rlog('non_superadmin_on_superadmin_booking_notifications', '/agenda');
+        rlog('non_superadmin_on_superadmin_booking_notifications', '/agenda');
         return '/agenda';
       }
 
       // Se superadmin va alla schermata switch user, riporta alla lista admin.
       if (isAuthenticated && isSuperadmin && isOnUserBusinessSwitch) {
-        if (kDebugMode) rlog('superadmin_on_my_businesses', '/businesses');
+        rlog('superadmin_on_my_businesses', '/businesses');
         return '/businesses';
       }
 
@@ -287,7 +271,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isAuthenticated && !isSuperadmin && isOnUserBusinessSwitch) {
         final isExplicitSwitch = state.uri.queryParameters['switch'] == '1';
         if (!isExplicitSwitch && currentBusinessId > 0) {
-          if (kDebugMode) rlog('non_superadmin_user_business_switch_without_switch_param', '/agenda');
+          rlog('non_superadmin_user_business_switch_without_switch_param', '/agenda');
           return '/agenda';
         }
       }
@@ -302,7 +286,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           !isOnUserBusinessSwitch &&
           !isOnChangePassword &&
           !isLoggingIn) {
-        if (kDebugMode) rlog('superadmin_no_selected_business_guard', '/businesses');
+        rlog('superadmin_no_selected_business_guard', '/businesses');
         return '/businesses';
       }
 
@@ -315,7 +299,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             billing.accessBlocked &&
             !isOnBillingScreen &&
             !isOnMyBusinesses) {
-          if (kDebugMode) rlog('billing_access_blocked', '/altro/abbonamento');
+          rlog('billing_access_blocked', '/altro/abbonamento');
           return '/altro/abbonamento';
         }
       }
@@ -323,48 +307,45 @@ final routerProvider = Provider<GoRouter>((ref) {
       // Route guard by explicit permissions.
       if (isAuthenticated && !isSuperadmin) {
         final path = state.uri.path;
-        if (path == '/clienti' && !canManageClients) {
-          if (kDebugMode) rlog('permission_guard_clients', '/agenda');
-          return '/agenda';
-        }
+
         if (path == '/servizi' && !canViewServices) {
-          if (kDebugMode) rlog('permission_guard_services', '/agenda');
+          rlog('permission_guard_services', '/agenda');
           return '/agenda';
         }
         if (path == '/staff' && !canViewStaff) {
-          if (kDebugMode) rlog('permission_guard_staff', '/agenda');
+          rlog('permission_guard_staff', '/agenda');
           return '/agenda';
         }
         if (path == '/staff-availability' && !canViewStaff) {
-          if (kDebugMode) rlog('permission_guard_staff_availability', '/agenda');
+          rlog('permission_guard_staff_availability', '/agenda');
           return '/agenda';
         }
         if (path == '/report' && !canViewReports) {
-          if (kDebugMode) rlog('permission_guard_reports', '/agenda');
+          rlog('permission_guard_reports', '/agenda');
           return '/agenda';
         }
         if (path == '/chiusure' && !canManageBusinessSettings) {
-          if (kDebugMode) rlog('permission_guard_closures', '/agenda');
+          rlog('permission_guard_closures', '/agenda');
           return '/agenda';
         }
         if (path == '/altro/classi' && !canAccessClassEvents) {
-          if (kDebugMode) rlog('permission_guard_class_events', '/agenda');
+          rlog('permission_guard_class_events', '/agenda');
           return '/agenda';
         }
         if (path == '/altro/metodi-pagamento' && !canManageBusinessSettings) {
-          if (kDebugMode) rlog('permission_guard_payment_methods', '/agenda');
+          rlog('permission_guard_payment_methods', '/agenda');
           return '/agenda';
         }
         if (path == '/altro/whatsapp-business' && !canManageBusinessSettings) {
-          if (kDebugMode) rlog('permission_guard_whatsapp_business', '/agenda');
+          rlog('permission_guard_whatsapp_business', '/agenda');
           return '/agenda';
         }
         if (path == '/permessi' && !canManageOperators) {
-          if (kDebugMode) rlog('permission_guard_permissions', '/agenda');
+          rlog('permission_guard_permissions', '/agenda');
           return '/agenda';
         }
         if (path.startsWith('/operatori/') && !canManageOperators) {
-          if (kDebugMode) rlog('permission_guard_operators', '/agenda');
+          rlog('permission_guard_operators', '/agenda');
           return '/agenda';
         }
       }
@@ -658,6 +639,12 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
     ],
   );
+  router.routerDelegate.addListener(() {
+    final loc = router.routerDelegate.currentConfiguration.uri.path;
+    debugPrint('[routerDelegate.listener] location=$loc');
+    ref.read(routerDebugLogProvider.notifier).addLine('delegate→ $loc');
+  });
+  return router;
 });
 
 /// Notifier per aggiornare il router quando cambia l'auth state.
@@ -666,8 +653,15 @@ class _AuthNotifier extends ChangeNotifier {
     _ref.listen(authProvider, (previous, next) {
       // Se l'utente si disconnette, resetta la selezione business del superadmin
       if (previous?.isAuthenticated == true && !next.isAuthenticated) {
+        _ref.read(routerDebugLogProvider.notifier).addLine(
+          'AUTH DISCONNECT prev=${previous?.status} next=${next.status} → clear saBiz',
+        );
         _ref.read(superadminSelectedBusinessProvider.notifier).clear();
         invalidateBusinessScopedProviders(_ref);
+      } else {
+        _ref.read(routerDebugLogProvider.notifier).addLine(
+          'auth change prev=${previous?.status} next=${next.status}',
+        );
       }
       notifyListeners();
     });
@@ -676,6 +670,7 @@ class _AuthNotifier extends ChangeNotifier {
     // deve rieseguire subito le redirect guard (es. /agenda -> /businesses).
     _ref.listen<int?>(superadminSelectedBusinessProvider, (previous, next) {
       if (previous == next) return;
+      _ref.read(routerDebugLogProvider.notifier).addLine('saBiz: $previous→$next');
       notifyListeners();
     });
 

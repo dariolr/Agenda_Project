@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/l10_extension.dart'; // 🌍
+import '../../auth/providers/current_business_user_provider.dart';
 import '../providers/clients_providers.dart';
 import 'widgets/client_list.dart';
 import 'widgets/clients_search_field.dart';
@@ -29,6 +30,32 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final canManageClients = ref.watch(currentUserCanManageClientsProvider);
+    if (!canManageClients) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.lock_outline,
+                size: 48,
+                color: Theme.of(context).colorScheme.outline,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Non hai i permessi per visualizzare i clienti',
+                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     final sortOption = ref.watch(clientSortOptionProvider);
     final clientsAsync = ref.watch(clientsProvider);
     final bottomPadding = MediaQuery.of(context).padding.bottom;
