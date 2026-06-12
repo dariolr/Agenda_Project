@@ -348,7 +348,6 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('[AgendaScreen.build] hashCode=$hashCode');
     final ref = this.ref;
 
     ref.listen<bool>(agendaBootstrapUnlockedProvider, (prev, next) {

@@ -5,9 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers/form_factor_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
+import '../../agenda/providers/business_providers.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
 import '../../billing/providers/billing_provider.dart';
+import '../../business/providers/request_business_switch.dart';
 
 /// Schermata "Altro" con cards per le sezioni secondarie
 class MoreScreen extends ConsumerWidget {
@@ -32,6 +34,9 @@ class MoreScreen extends ConsumerWidget {
     final isSuperadmin = ref.watch(
       authProvider.select((s) => s.user?.isSuperadmin ?? false),
     );
+    final hasMultipleBusinesses = ref
+        .watch(businessesProvider)
+        .maybeWhen(data: (b) => b.length > 1, orElse: () => false);
     final businessOwner = isSuperadmin
         ? ref.watch(businessOwnerProvider)
         : null;
@@ -153,12 +158,21 @@ class MoreScreen extends ConsumerWidget {
     ];
 
     final profileItems = [
+      if (isSuperadmin || hasMultipleBusinesses)
+        _MoreItem(
+          icon: Icons.business_outlined,
+          title: l10n.profileSwitchBusiness,
+          description: l10n.moreSwitchBusinessDescription,
+          color: const Color(0xFF1565C0),
+          onTap: () =>
+              requestBusinessSwitch(context, ref, source: 'moreScreenCard'),
+        ),
       if (showProfile)
         _MoreItem(
           icon: Icons.account_circle_outlined,
           title: l10n.profileTitle,
           description: l10n.moreProfileDescription,
-          color: const Color(0xFF607D8B), // Blue Grey
+          color: const Color(0xFF607D8B),
           onTap: () => context.go(_withFromAltro('/profilo')),
         ),
     ];

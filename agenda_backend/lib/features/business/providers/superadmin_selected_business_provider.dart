@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/providers/router_debug_log_provider.dart';
 import '../../../core/services/preferences_service.dart';
 import '../../agenda/providers/agenda_bootstrap_provider.dart';
 import '../../agenda/providers/agenda_display_settings_provider.dart';
@@ -47,11 +46,7 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
     final prefs = ref.read(preferencesServiceProvider);
     final picker = prefs.getSuperadminShowBusinessPickerOnLogin();
     final lastId = prefs.getSuperadminLastBusinessId();
-    final result = picker ? null : lastId;
-    ref.read(routerDebugLogProvider.notifier).addLine(
-      'saBiz.build() picker=$picker lastId=$lastId → $result',
-    );
-    return result;
+    return picker ? null : lastId;
   }
 
   void select(int businessId) {
@@ -74,16 +69,15 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
 
   /// Pulisce la selezione e invalida tutti i provider relativi al business.
   void clear() {
-    ref.read(routerDebugLogProvider.notifier).addLine('saBiz.clear() called');
     state = null;
   }
 
   /// Mostra la lista business al prossimo login del superadmin.
   /// Mantiene comunque l'ultimo business salvato per uso successivo.
+  ///
+  /// Non usare per il cambio business esplicito da UI già autenticata.
+  /// Il cambio business deve navigare a /businesses?switch=1 senza azzerare saBiz.
   void showBusinessPickerOnNextLogin() {
-    ref.read(routerDebugLogProvider.notifier).addLine(
-      'saBiz.showBusinessPickerOnNextLogin() called',
-    );
     state = null;
     ref
         .read(preferencesServiceProvider)
@@ -93,9 +87,6 @@ class SuperadminSelectedBusinessNotifier extends Notifier<int?> {
   /// Pulisce completamente la selezione, anche dalle preferenze.
   /// Da usare al logout o se il business viene eliminato.
   void clearCompletely() {
-    ref.read(routerDebugLogProvider.notifier).addLine(
-      'saBiz.clearCompletely() called',
-    );
     state = null;
     final prefs = ref.read(preferencesServiceProvider);
     prefs.clearSuperadminLastBusinessId();

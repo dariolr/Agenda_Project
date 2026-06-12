@@ -37,7 +37,7 @@ import '../features/auth/providers/auth_provider.dart';
 import '../features/business/presentation/dialogs/invite_operator_dialog.dart';
 import '../features/business/presentation/dialogs/location_closure_dialog.dart';
 import '../features/business/providers/location_closures_provider.dart';
-import '../features/business/providers/superadmin_selected_business_provider.dart';
+import '../features/business/providers/request_business_switch.dart';
 import '../features/class_events/providers/class_events_providers.dart';
 import '../features/clients/presentation/dialogs/client_edit_dialog.dart';
 import '../features/clients/providers/clients_providers.dart';
@@ -124,7 +124,6 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
   int? _lastShellIndex;
   int _lastMoreBranchIndex = 6;
   bool _altroHadBillingFromAgenda = false;
-
   @override
   void initState() {
     super.initState();
@@ -146,7 +145,6 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('[ScaffoldWithNavigation.build] hashCode=$hashCode shellIndex=${widget.navigationShell.currentIndex}');
     final navigationShell = widget.navigationShell;
     final currentIndex = navigationShell.currentIndex;
     if (_lastShellIndex != currentIndex) {
@@ -266,35 +264,37 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
       data: (businesses) => businesses.length > 1,
       orElse: () => false,
     );
-    final showSwitchBusiness = isSuperadmin || hasMultipleBusinesses;
+    // Mobile BNB: "Cambia Business" solo per superadmin
+    final showSwitchBusinessMobile = isSuperadmin;
+    // Desktop rail: "Cambia Business" per superadmin e utenti con più business
+    final showSwitchBusinessDesktop = isSuperadmin || hasMultipleBusinesses;
     _rememberLastMoreBranchIndex(
       currentIndex,
       includeClients: showClientsNav,
       currentPath: currentPath,
     );
 
-    // Per mobile e desktop usiamo destinazioni compatte con "Altro" (o "Profilo" per viewer)
-    final mobileDestinations =
+    // Desktop: destinazioni per NavigationRail (include tutti gli utenti con più business)
+    final desktopDestinations =
         _ScaffoldWithNavigationHelpers.getMobileDestinations(
           context,
-          showSwitchBusiness: showSwitchBusiness,
+          showSwitchBusiness: showSwitchBusinessDesktop,
           includeClients: showClientsNav,
           isViewer: isViewer,
         );
 
     // Quando non siamo su oggi, mostra freccia per tornare a oggi
     // Freccia destra se nel passato (vai avanti), sinistra se nel futuro (torna indietro)
-    // Destinazioni mobile risolte (con freccia per oggi se necessario)
-    final resolvedMobileDestinations = isAgenda && !isToday
+    final resolvedDesktopDestinations = isAgenda && !isToday
         ? [
             NavigationDestination(
               iconData: isPast ? Icons.arrow_forward : Icons.arrow_back,
               selectedIconData: isPast ? Icons.arrow_forward : Icons.arrow_back,
               label: context.l10n.agendaToday,
             ),
-            ...mobileDestinations.skip(1),
+            ...desktopDestinations.skip(1),
           ]
-        : mobileDestinations;
+        : desktopDestinations;
 
     if (formFactor == AppFormFactor.desktop) {
       final layoutConfig = ref.watch(layoutConfigProvider);
@@ -315,10 +315,9 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
           ? layoutConfig.hourColumnWidth
           : railWidth;
       const dividerThickness = 1.0;
-      // Desktop usa le stesse destinazioni del mobile (con "Altro")
       final railDestinations =
           _ScaffoldWithNavigationHelpers.toRailDestinations(
-            resolvedMobileDestinations,
+            resolvedDesktopDestinations,
           );
 
       // Azioni specifiche per tab (menu utente è nella rail)
@@ -477,6 +476,23 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
     final bottomNavColor =
         Theme.of(context).bottomNavigationBarTheme.backgroundColor ??
         Theme.of(context).colorScheme.surface;
+    final mobileDestinations =
+        _ScaffoldWithNavigationHelpers.getMobileDestinations(
+          context,
+          showSwitchBusiness: showSwitchBusinessMobile,
+          includeClients: showClientsNav,
+          isViewer: isViewer,
+        );
+    final resolvedMobileDestinations = isAgenda && !isToday
+        ? [
+            NavigationDestination(
+              iconData: isPast ? Icons.arrow_forward : Icons.arrow_back,
+              selectedIconData: isPast ? Icons.arrow_forward : Icons.arrow_back,
+              label: context.l10n.agendaToday,
+            ),
+            ...mobileDestinations.skip(1),
+          ]
+        : mobileDestinations;
 
     // Azioni specifiche per tab (menu utente è nella BNB)
     List<Widget> buildMobileActions() {
@@ -590,29 +606,36 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
             ],
             ColoredBox(
               color: bottomNavColor,
-              child: SafeArea(
-                top: false,
-                left: false,
-                right: false,
-                minimum: const EdgeInsets.only(bottom: 15),
-                child: BottomNavigationBar(
-                  currentIndex: mobileCurrentIndex,
-                  onTap: (index) => _handleMobileNavTap(
-                    context,
-                    index,
-                    ref,
-                    includeClients: showClientsNav,
-                  ),
-                  type: BottomNavigationBarType.fixed,
-                  items: resolvedMobileDestinations
-                      .map(
-                        (d) => BottomNavigationBarItem(
-                          icon: Icon(d.iconData),
-                          activeIcon: Icon(d.selectedIconData),
-                          label: d.label,
+              child: Theme(
+                data: Theme.of(context).copyWith(
+                  splashColor: Colors.transparent,
+                  highlightColor: Colors.transparent,
+                ),
+                child: SafeArea(
+                  top: false,
+                  left: false,
+                  right: false,
+                  minimum: const EdgeInsets.only(bottom: 15),
+                  child: BottomNavigationBar(
+                    currentIndex: mobileCurrentIndex,
+                    type: BottomNavigationBarType.fixed,
+                    backgroundColor: bottomNavColor,
+                    elevation: 0,
+                    onTap: (index) => _handleMobileNavTap(
+                      context,
+                      index,
+                      ref,
+                      includeClients: showClientsNav,
+                    ),
+                    items: [
+                      for (final destination in resolvedMobileDestinations)
+                        BottomNavigationBarItem(
+                          icon: Icon(destination.iconData),
+                          activeIcon: Icon(destination.selectedIconData),
+                          label: destination.label,
                         ),
-                      )
-                      .toList(),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -627,11 +650,7 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
     WidgetRef ref, {
     bool forceInitialLocation = false,
   }) {
-    // Protezione minima: indice negativo non valido.
-    if (index < 0) {
-      debugPrint('_goBranch: invalid index $index, ignoring');
-      return;
-    }
+    if (index < 0) return;
 
     if (index == 0 && widget.navigationShell.currentIndex == 0) {
       final selectedDate = ref.read(agendaDateProvider);
@@ -651,9 +670,7 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
         index,
         initialLocation: forceInitialLocation,
       );
-    } catch (e) {
-      debugPrint('_goBranch: failed for index $index ($e)');
-    }
+    } catch (_) {}
   }
 
   bool _isMoreCompactBranch(int index, {required bool includeClients}) {
@@ -739,7 +756,7 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
       return;
     }
     if (desktopIndex == switchBusinessIndex) {
-      _goToBusinessSwitcher(context, ref);
+      requestBusinessSwitch(context, ref, source: 'desktopRail');
       return;
     }
     if (desktopIndex == 0) {
@@ -775,11 +792,6 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
     }
   }
 
-  /// Gestisce tap su navigation mobile:
-  /// - Index 0, 1: navigazione normale (Agenda, Clienti)
-  /// - Index 2: naviga a "Altro" (schermata con cards)
-  /// - Index 3: Cambia Business (se presente) o Logout
-  /// - Index 4: Logout (se Cambia Business presente)
   void _handleMobileNavTap(
     BuildContext context,
     int mobileIndex,
@@ -787,22 +799,17 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
     required bool includeClients,
   }) {
     final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
-    final businessesAsync = ref.read(businessesProvider);
-    final hasMultipleBusinesses = businessesAsync.maybeWhen(
-      data: (businesses) => businesses.length > 1,
-      orElse: () => false,
-    );
-    final showSwitchBusiness = isSuperadmin || hasMultipleBusinesses;
-    final baseCount = includeClients ? 3 : 2;
-    final logoutIndex = showSwitchBusiness ? baseCount + 1 : baseCount;
-    final switchBusinessIndex = showSwitchBusiness ? baseCount : -1;
+    final showSwitchBusiness = isSuperadmin;
+    final moreIndex = includeClients ? 2 : 1;
+    final switchBusinessIndex = showSwitchBusiness ? moreIndex + 1 : -1;
+    final logoutIndex = showSwitchBusiness ? moreIndex + 2 : moreIndex + 1;
 
     if (mobileIndex == logoutIndex) {
       _handleLogout(context, ref);
       return;
     }
     if (mobileIndex == switchBusinessIndex) {
-      _goToBusinessSwitcher(context, ref);
+      requestBusinessSwitch(context, ref, source: 'mobileBottomNav');
       return;
     }
     if (mobileIndex == 0) {
@@ -813,7 +820,6 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
       _goBranch(1, ref);
       return;
     }
-    final moreIndex = includeClients ? 2 : 1;
     if (mobileIndex == moreIndex) {
       if (ref.read(isViewerProvider)) {
         _goBranch(8, ref, forceInitialLocation: true);
@@ -836,20 +842,6 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
         );
       }
     }
-  }
-
-  void _goToBusinessSwitcher(BuildContext context, WidgetRef ref) {
-    final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
-    if (isSuperadmin) {
-      ref
-          .read(superadminSelectedBusinessProvider.notifier)
-          .showBusinessPickerOnNextLogin();
-      invalidateBusinessScopedProviders(ref);
-      context.go('/businesses');
-      return;
-    }
-    invalidateBusinessScopedProviders(ref);
-    context.go('/my-businesses?switch=1');
   }
 
   void _handleLogout(BuildContext context, WidgetRef ref) {

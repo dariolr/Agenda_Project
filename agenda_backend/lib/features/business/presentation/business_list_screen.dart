@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -10,8 +11,8 @@ import '../../../app/widgets/user_menu_button.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
 import '../../../core/network/api_client.dart';
-import '../../../core/services/same_tab_redirect.dart';
 import '../../../core/utils/initials_utils.dart';
+import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/location_providers.dart';
@@ -29,19 +30,15 @@ import 'dialogs/edit_business_dialog.dart';
 class BusinessListScreen extends ConsumerWidget {
   const BusinessListScreen({super.key});
 
-  // ── Cambia solo questo bool per passare da una modalità all'altra ──
-  static const bool _hardNavActive = false;
-  static const int _taskNumber = 16;
-  static const String _navMode = _hardNavActive
-      ? 'Task $_taskNumber · Hard nav (window.location)'
-      : 'Task $_taskNumber · GoRouter.go (in-app)';
+  static const String _appBuildVersion = String.fromEnvironment(
+    'APP_BUILD_VERSION',
+    defaultValue: 'dev',
+  );
+  static const String _buildBannerText =
+      'Build $_appBuildVersion · GoRouter.go (in-app)';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    debugPrint('[BusinessListScreen.build] hashCode=$hashCode');
-    ref
-        .read(routerDebugLogProvider.notifier)
-        .addLine('BizList.build #$hashCode');
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final businessesAsync = ref.watch(businessesProvider);
@@ -57,7 +54,7 @@ class BusinessListScreen extends ConsumerWidget {
             color: Colors.orange.shade100,
             padding: const EdgeInsets.symmetric(vertical: 2),
             child: Text(
-              _navMode,
+              _buildBannerText,
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 11,
@@ -78,9 +75,7 @@ class BusinessListScreen extends ConsumerWidget {
           ),
           IconButton(
             tooltip: context.l10n.bookingNotificationsTitle,
-            onPressed: () => unawaited(
-              redirectInCurrentTab('/businesses/notifiche-prenotazioni'),
-            ),
+            onPressed: () => context.go('/businesses/notifiche-prenotazioni'),
             icon: const Icon(Icons.notifications_active_outlined),
           ),
           // Menu utente (profilo, cambia password, logout)
@@ -156,32 +151,17 @@ class BusinessListScreen extends ConsumerWidget {
     WidgetRef ref,
     Business business,
   ) async {
-    ref
-        .read(routerDebugLogProvider.notifier)
-        .addLine('select→ biz=${business.id}');
-
     // 1) Aggiorna lo stato e attende la persistenza completa delle preferenze.
     await ref
         .read(superadminSelectedBusinessProvider.notifier)
         .switchBusiness(business.id);
-    ref
-        .read(routerDebugLogProvider.notifier)
-        .addLine('switchBusiness done biz=${business.id}');
 
     // 2) Allinea il business corrente usato dai provider della shell.
     ref.read(currentBusinessIdProvider.notifier).selectByUser(business.id);
 
-    // 3) Navigazione verso /agenda — modalità controllata da _hardNavActive.
-    if (_hardNavActive) {
-      final ts = DateTime.now().millisecondsSinceEpoch;
-      await redirectInCurrentTab('/agenda?business_switch=$ts');
-    } else {
-      if (context.mounted) {
-        GoRouter.of(context).go('/agenda');
-      }
-      ref
-          .read(routerDebugLogProvider.notifier)
-          .addLine('go(/agenda) called biz=${business.id}');
+    // 3) Navigazione verso /agenda via GoRouter.
+    if (context.mounted) {
+      GoRouter.of(context).go('/agenda');
     }
 
     // 4) Invalida i provider scoped al business precedente DOPO la navigazione,
@@ -189,52 +169,50 @@ class BusinessListScreen extends ConsumerWidget {
     // prima che GoRouter abbia registrato la nuova location /agenda.
     invalidateBusinessScopedProviders(ref);
     ref.invalidate(currentBusinessUserContextProvider);
-    ref
-        .read(routerDebugLogProvider.notifier)
-        .addLine('invalidate done biz=${business.id}');
 
     // 5) Aggiorna la location selection appena le sedi del nuovo business sono disponibili.
     unawaited(_syncCurrentLocationForSelectedBusiness(ref));
   }
 
-  void _showDebugLogPanel(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet<void>(
+  Future<void> _showDebugLogPanel(BuildContext context, WidgetRef ref) {
+    return AppBottomSheet.show<void>(
       context: context,
-      isScrollControlled: true,
+      adaptiveHeight: true,
       builder: (ctx) => Consumer(
-        builder: (_, innerRef, __) {
+        builder: (_, innerRef, _) {
           final logs = innerRef.watch(routerDebugLogProvider);
-          return ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(ctx).size.height * 0.75,
-            ),
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
-                  child: Row(
-                    children: [
-                      const Text(
-                        'Router Debug Log',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
+                Row(
+                  children: [
+                    const Text(
+                      'Router Debug Log',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
-                      const Spacer(),
-                      TextButton(
-                        onPressed: () => innerRef
-                            .read(routerDebugLogProvider.notifier)
-                            .clear(),
-                        child: const Text('Clear'),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => Navigator.of(ctx).pop(),
-                      ),
-                    ],
-                  ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () {
+                        Clipboard.setData(ClipboardData(text: logs.join('\n')));
+                      },
+                      child: const Text('Copia'),
+                    ),
+                    TextButton(
+                      onPressed: () => innerRef
+                          .read(routerDebugLogProvider.notifier)
+                          .clear(),
+                      child: const Text('Clear'),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                    ),
+                  ],
                 ),
                 const Divider(height: 1),
                 Flexible(
@@ -247,10 +225,7 @@ class BusinessListScreen extends ConsumerWidget {
                           shrinkWrap: true,
                           itemCount: logs.length,
                           itemBuilder: (_, i) => Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 2,
-                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 2),
                             child: SelectableText(
                               logs[i],
                               style: const TextStyle(

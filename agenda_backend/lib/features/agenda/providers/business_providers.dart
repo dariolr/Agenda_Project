@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../../app/providers/router_debug_log_provider.dart';
 import '../../../core/models/business.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../business/providers/business_providers.dart';
@@ -106,13 +105,6 @@ class CurrentBusinessId extends Notifier<int> {
           }
 
           // Business selezionato non più valido: azzera selezione.
-          // [DEBUG] log per diagnosticare clearing spurio durante switch business
-          {
-            final ids = businesses.map((b) => b.id).toList();
-            ref.read(routerDebugLogProvider.notifier).addLine(
-              'CLEAR saBiz=$selectedBusiness bizList=$ids',
-            );
-          }
           ref
               .read(superadminSelectedBusinessProvider.notifier)
               .clearCompletely();

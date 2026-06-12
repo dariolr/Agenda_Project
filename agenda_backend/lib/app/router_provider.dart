@@ -163,13 +163,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         ref.read(routerDebugLogProvider.notifier).addLine(line);
       }
 
-      // [DEBUG] Log di valutazione per path rilevanti (nessun rumore su altri path).
-      if (state.uri.path == '/businesses' ||
-          state.uri.path.startsWith('/businesses/notifiche-prenotazioni') ||
-          state.uri.path == '/agenda') {
-        rlog('eval_relevant_path');
-      }
-
       // Durante il caricamento iniziale, non fare redirect
       if (isInitialOrLoading) {
         return null;
