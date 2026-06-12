@@ -76,6 +76,9 @@ while IFS='=' read -r key value || [[ -n "${key:-}" ]]; do
     DEPLOY_SSH_ALIAS_FROM_FILE="$value"
     continue
   fi
+  if [[ "$key" == "APP_BUILD_VERSION" ]]; then
+    continue
+  fi
 
   DART_DEFINES+=("--dart-define=${key}=${value}")
 done < "$ENV_FILE"
@@ -155,6 +158,7 @@ else
 fi
 
 new_v="${today}-${next_n}.${next_p}"
+DART_DEFINES+=("--dart-define=APP_BUILD_VERSION=${new_v}")
 
 if [[ "$DRY_RUN" -eq 1 ]]; then
   echo "[dry-run] salto bump versione in $INDEX_FILE e web/app_version.txt (next: \"$new_v\")"
@@ -188,6 +192,7 @@ fi
 cd "$ROOT_DIR"
 
 echo "Eseguo build backend per env=$ENV_NAME usando $ENV_FILE"
+echo "Build APP_BUILD_VERSION=$new_v"
 run_cmd "$FLUTTER_BIN" build web --no-pub --release --no-tree-shake-icons --pwa-strategy=none "${DART_DEFINES[@]}"
 
 ###############################################################################
