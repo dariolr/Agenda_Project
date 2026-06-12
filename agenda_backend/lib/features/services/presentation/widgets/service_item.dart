@@ -167,13 +167,11 @@ class ServiceItem extends ConsumerWidget {
                                     )
                                   else if (variant?.price != null)
                                     Text(
-                                      service.isPriceStartingFrom
-                                          ? '${context.l10n.priceStartingFromPrefix} ${PriceFormatter.formatVariant(context: context, ref: ref, variant: variant!)}'
-                                          : PriceFormatter.formatVariant(
-                                              context: context,
-                                              ref: ref,
-                                              variant: variant!,
-                                            ),
+                                      PriceFormatter.formatVariant(
+                                        context: context,
+                                        ref: ref,
+                                        variant: variant!,
+                                      ),
                                       style: const TextStyle(
                                         fontSize: 11,
                                         color: Colors.black54,
