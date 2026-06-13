@@ -102,7 +102,7 @@ class ApiClient {
         onError: (error, handler) async {
           // Gestione token expired - auto refresh con single-flight
           if (error.response?.statusCode == 401 &&
-              error.response?.data?['error']?['code'] == 'token_expired') {
+              _responseErrorCode(error.response) == 'token_expired') {
             try {
               final refreshed = await _refreshTokenWithLock();
               if (refreshed) {
@@ -123,9 +123,11 @@ class ApiClient {
           // Gestione 401 generico (token invalid, unauthorized)
           // MA NON per errori di login (invalid_credentials) o registrazione
           else if (error.response?.statusCode == 401) {
-            final errorCode = error.response?.data?['error']?['code'];
+            final errorCode = _responseErrorCode(error.response);
+            final responseBody = error.response?.data;
             // Non triggerare session expired per errori di credenziali
-            if (errorCode != 'invalid_credentials') {
+            // o per risposte non JSON (es. challenge HTML al posto dell'API).
+            if (responseBody is Map && errorCode != 'invalid_credentials') {
               _triggerSessionExpired();
             }
           }
@@ -187,8 +189,9 @@ class ApiClient {
         data: {'refresh_token': refreshToken},
       );
 
-      if (response.data['success'] == true) {
-        final data = response.data['data'];
+      final body = _bodyAsMapOrThrow(response);
+      if (body['success'] == true) {
+        final data = body['data'];
         _accessToken = data['access_token'];
         await _tokenStorage.saveRefreshToken(data['refresh_token']);
         return true;
@@ -211,8 +214,9 @@ class ApiClient {
         data: {'refresh_token': refreshToken},
       );
 
-      if (response.data['success'] == true) {
-        final data = response.data['data'];
+      final body = _bodyAsMapOrThrow(response);
+      if (body['success'] == true) {
+        final data = body['data'];
         _accessToken = data['access_token'];
         await _tokenStorage.saveRefreshToken(data['refresh_token']);
 
@@ -367,17 +371,35 @@ class ApiClient {
 
   Map<String, dynamic> _bodyAsMapOrThrow(Response response) {
     final body = response.data;
+    final contentType = response.headers.value(Headers.contentTypeHeader);
+    final isChallenge = _isSecurityChallengeBody(body);
+
+    if (_isHtmlContentType(contentType)) {
+      throw _invalidApiResponseException(
+        response: response,
+        code: isChallenge
+            ? 'security_challenge_response'
+            : 'invalid_api_response',
+        message: isChallenge
+            ? 'Security verification page received instead of API JSON. Please check browser cookies and try again.'
+            : 'Invalid server response format',
+      );
+    }
+
     if (body is Map<String, dynamic>) {
       return body;
     }
     if (body is Map) {
       return Map<String, dynamic>.from(body);
     }
-    throw ApiException(
-      code: 'invalid_response',
-      message: 'Invalid server response format',
-      statusCode: response.statusCode ?? 500,
-      details: {'response_type': body.runtimeType.toString()},
+    throw _invalidApiResponseException(
+      response: response,
+      code: isChallenge
+          ? 'security_challenge_response'
+          : 'invalid_api_response',
+      message: isChallenge
+          ? 'Security verification page received instead of API JSON. Please check browser cookies and try again.'
+          : 'Invalid server response format',
     );
   }
 
@@ -410,6 +432,23 @@ class ApiClient {
           details: body['error']?['details'] ?? body['error']?['params'],
         );
       }
+      final contentType = response.headers.value(Headers.contentTypeHeader);
+      if (_isHtmlContentType(contentType) || body is String) {
+        final isChallenge = _isSecurityChallengeBody(body);
+        return _invalidApiResponseException(
+          response: response,
+          code: isChallenge
+              ? 'security_challenge_response'
+              : 'invalid_api_response',
+          message: isChallenge
+              ? 'Security verification page received instead of API JSON. Please check browser cookies and try again.'
+              : _localizedHttpErrorMessage(
+                  statusCode: statusCode,
+                  fallbackMessage: 'Invalid server response format',
+                ),
+          uri: error.requestOptions.uri,
+        );
+      }
       return ApiException(
         code: 'http_error',
         message: _localizedHttpErrorMessage(
@@ -431,6 +470,61 @@ class ApiClient {
       details: {
         'type': error.type.name,
         'uri': error.requestOptions.uri.toString(),
+      },
+    );
+  }
+
+  String? _responseErrorCode(Response? response) {
+    final data = response?.data;
+    if (data is Map<String, dynamic>) {
+      return data['error']?['code']?.toString();
+    }
+    if (data is Map) {
+      final error = data['error'];
+      if (error is Map) return error['code']?.toString();
+    }
+    return null;
+  }
+
+  bool _isHtmlContentType(String? contentType) {
+    if (contentType == null) return false;
+    return contentType.toLowerCase().contains('text/html');
+  }
+
+  bool _isSecurityChallengeBody(dynamic body) {
+    final text = body?.toString().toLowerCase() ?? '';
+    if (text.isEmpty) return false;
+    return text.contains('checking the site connection security') ||
+        text.contains('sgcaptcha') ||
+        text.contains('cloudflare') ||
+        text.contains('just a moment') ||
+        text.contains('attention required');
+  }
+
+  String _bodyPreview(dynamic body) {
+    final normalized = body?.toString().replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (normalized == null || normalized.isEmpty) return '';
+    const maxLength = 240;
+    if (normalized.length <= maxLength) return normalized;
+    return '${normalized.substring(0, maxLength)}...';
+  }
+
+  ApiException _invalidApiResponseException({
+    required Response response,
+    required String code,
+    required String message,
+    Uri? uri,
+  }) {
+    final body = response.data;
+    return ApiException(
+      code: code,
+      message: message,
+      statusCode: response.statusCode ?? 500,
+      details: {
+        'content_type': response.headers.value(Headers.contentTypeHeader),
+        'response_type': body.runtimeType.toString(),
+        'preview': _bodyPreview(body),
+        if (uri != null) 'uri': uri.toString(),
       },
     );
   }
