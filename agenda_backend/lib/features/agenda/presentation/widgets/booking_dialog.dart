@@ -2669,7 +2669,12 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
         intervalValue: _recurrenceConfig!.intervalValue,
         maxOccurrences: _recurrenceConfig!.maxOccurrences,
         endDate: _recurrenceConfig!.endDate?.toIso8601String().split('T')[0],
-        conflictStrategy: _recurrenceConfig!.conflictStrategy.value,
+        // La scelta dell'utente su cosa creare è già in `excludedIndices`
+        // (incluse sovrapposizioni/festività mantenute o escluse dal dialog
+        // di anteprima). Forziamo quindi la creazione di tutte le date NON
+        // escluse: con `skip` il backend ri-salterebbe le sovrapposizioni
+        // pur non essendo escluse dall'utente.
+        conflictStrategy: ConflictStrategy.force.value,
         excludedIndices: excludedIndices,
         items: recurringItems,
       );
