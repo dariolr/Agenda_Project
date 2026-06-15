@@ -50,6 +50,7 @@ class AgendaDay extends ConsumerStatefulWidget {
     this.controller,
     required this.hourColumnWidth,
     required this.currentTimeVerticalOffset,
+    this.suspendDayTransition = false,
   });
 
   final List<Staff> staffList;
@@ -57,6 +58,10 @@ class AgendaDay extends ConsumerStatefulWidget {
   final AgendaDayController? controller;
   final double hourColumnWidth;
   final double currentTimeVerticalOffset;
+
+  /// Quando true, lo switch tra giorni avviene istantaneamente (nessuno slide):
+  /// usato durante il loading per rivelare la vista solo quando è stabile.
+  final bool suspendDayTransition;
 
   @override
   ConsumerState<AgendaDay> createState() => _AgendaDayState();
@@ -207,8 +212,12 @@ class _AgendaDayState extends ConsumerState<AgendaDay> {
 
     // 👇 AnimatedSwitcher forza animazione visibile anche se Flutter riusa il widget
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 400),
-      reverseDuration: const Duration(milliseconds: 250),
+      duration: widget.suspendDayTransition
+          ? Duration.zero
+          : const Duration(milliseconds: 400),
+      reverseDuration: widget.suspendDayTransition
+          ? Duration.zero
+          : const Duration(milliseconds: 250),
       layoutBuilder: (currentChild, previousChildren) {
         return Stack(
           clipBehavior: Clip.none,

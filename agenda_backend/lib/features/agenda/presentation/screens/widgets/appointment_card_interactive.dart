@@ -1421,7 +1421,11 @@ class _AppointmentCardInteractiveState
           final maxIcons = presentation.maxTrailingIcons(
             isCompactIconsLayout: isCompactIconsLayout,
           );
-          final visibleTrailingIcons = trailingIcons.take(maxIcons).toList();
+          // Troncamento per priorità (status > note > online > ricorrenza),
+          // poi inversione per il display: lo status resta sempre all'estrema
+          // destra e l'eventuale nota immediatamente alla sua sinistra.
+          final visibleTrailingIcons =
+              trailingIcons.take(maxIcons).toList().reversed.toList();
 
           List<InlineSpan> buildBaseChildren({required bool fullTime}) {
             return <InlineSpan>[
@@ -1528,7 +1532,11 @@ class _AppointmentCardInteractiveState
         final maxIcons = presentation.maxTrailingIcons(
           isCompactIconsLayout: isCompactIconsLayout,
         );
-        final visibleTrailingIcons = trailingIcons.take(maxIcons).toList();
+        // Troncamento per priorità (status > note > online > ricorrenza),
+        // poi inversione per il display: lo status resta sempre all'estrema
+        // destra e l'eventuale nota immediatamente alla sua sinistra.
+        final visibleTrailingIcons =
+            trailingIcons.take(maxIcons).toList().reversed.toList();
         // In colonne estremamente strette (overlap elevato), anche una sola
         // icona può mandare in overflow la prima riga.
         final hideTrailingIconsForWidth = constraints.maxWidth < 24;

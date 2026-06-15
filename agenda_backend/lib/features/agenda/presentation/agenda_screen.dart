@@ -77,6 +77,14 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
   int _weekAutoScrollRequestId = 0;
   DateTime? _weekAutoScrollTargetDate;
   String? _exceptionsLoadKey;
+  String? _loadedExceptionsKey;
+  static const String _noExceptionsToLoadKey = '__none__';
+
+  /// True dal cambio data/sede finché TUTTI i dati della nuova vista
+  /// (appuntamenti, eccezioni, planning, varianti) non sono pronti.
+  /// Tiene alzato l'overlay di loading evitando flicker/flash delle colonne.
+  bool _pendingDataReload = false;
+  bool _clearReloadScheduled = false;
   bool _didApplyInitialEmptyStaffFilterFallback = false;
 
   void _ensureExceptionsLoadedForVisibleRange({
@@ -85,7 +93,14 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     required CalendarViewMode calendarViewMode,
     required List<int> staffIds,
   }) {
-    if (businessId <= 0 || staffIds.isEmpty) return;
+    if (businessId <= 0 || staffIds.isEmpty) {
+      // Nessuna eccezione da caricare per questa vista: stato già "pronto".
+      if (_exceptionsLoadKey != _noExceptionsToLoadKey) {
+        _exceptionsLoadKey = _noExceptionsToLoadKey;
+        _loadedExceptionsKey = _noExceptionsToLoadKey;
+      }
+      return;
+    }
 
     final targetDate = DateUtils.dateOnly(selectedDate);
     final rangeStart = calendarViewMode == CalendarViewMode.week
@@ -109,7 +124,14 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
           sortedStaffIds,
           fromDate: rangeStart,
           toDate: rangeEnd,
-        ),
+        ).then((_) {
+          if (!mounted) return;
+          // Ignora se nel frattempo la vista (data/sede) è cambiata.
+          if (_exceptionsLoadKey != key || _loadedExceptionsKey == key) return;
+          setState(() {
+            _loadedExceptionsKey = key;
+          });
+        }),
       );
     });
   }
@@ -304,9 +326,10 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
       next,
     ) {
       if (prev == null || prev == next) return;
-      if (mounted && _agendaViewportReady) {
+      if (mounted) {
         setState(() {
           _agendaViewportReady = false;
+          _pendingDataReload = true;
         });
       }
       final session = ref.read(bookingRescheduleSessionProvider);
@@ -381,11 +404,10 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     // (se l'utente cambia data durante il polling, deve mostrare loading)
     ref.listen(agendaDateProvider, (prev, next) {
       if (prev != null && !DateUtils.isSameDay(prev, next)) {
-        if (_agendaViewportReady) {
-          setState(() {
-            _agendaViewportReady = false;
-          });
-        }
+        setState(() {
+          _agendaViewportReady = false;
+          _pendingDataReload = true;
+        });
         ref.invalidate(classEventsForRangeProvider);
         ref.invalidate(classEventsForCurrentLocationDayProvider);
 
@@ -505,8 +527,34 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
         isInitialAppointmentsLoad ||
         isPlanningBootstrapLoading ||
         isServiceVariantsBootstrapLoading;
+    // Prontezza dei dati per la NUOVA vista (cambio data/sede): l'overlay di
+    // loading resta finché tutti i dati che riconfigurano la UI sono arrivati,
+    // così le colonne non "appaiono e spariscono" e le card non lampeggiano.
+    final exceptionsReady = _loadedExceptionsKey == _exceptionsLoadKey;
+    final classEventsAsync = ref.watch(classEventsForCurrentLocationDayProvider);
+    final dateDataReady =
+        !appointmentsAsync.isLoading &&
+        exceptionsReady &&
+        !isPlanningBootstrapLoading &&
+        !isServiceVariantsBootstrapLoading &&
+        !classEventsAsync.isLoading;
+
+    // Una volta pronti, sblocchiamo il flag per non far più scattare l'overlay
+    // sui refresh successivi (es. aggiornamenti ottimistici durante drag/modifica).
+    if (_pendingDataReload && dateDataReady && !_clearReloadScheduled) {
+      _clearReloadScheduled = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _clearReloadScheduled = false;
+        if (!mounted || !_pendingDataReload) return;
+        setState(() {
+          _pendingDataReload = false;
+        });
+      });
+    }
+
     final shouldShowNoStaffState = !hasStaff && !isBootstrapLoading;
-    final shouldDeferAgendaPaint = hasStaff && !_agendaViewportReady;
+    final shouldDeferAgendaPaint =
+        hasStaff && (!_agendaViewportReady || _pendingDataReload);
     final isResizing = ref.watch(isResizingProvider);
 
     final hourColumnWidth = layoutConfig.hourColumnWidth;
@@ -588,6 +636,10 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
             controller: _timelineController,
             hourColumnWidth: hourColumnWidth,
             currentTimeVerticalOffset: _verticalOffset,
+            // Sospende lo slide tra giorni durante il loading: la nuova vista
+            // viene composta "offstage" e rivelata stabile, senza transizione
+            // su contenuti a metà caricamento.
+            suspendDayTransition: shouldDeferAgendaPaint,
           ),
         ),
       ],
