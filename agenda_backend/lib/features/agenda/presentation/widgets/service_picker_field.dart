@@ -564,6 +564,7 @@ class _ServicePickerContentState extends State<_ServicePickerContent> {
                           }
                           return _PopularServicesSection(
                             popularServices: filteredPopular,
+                            services: widget.services,
                             selectedId: widget.selectedId,
                             onSelected: widget.onSelected,
                           );
@@ -793,11 +794,14 @@ class _PackagesSection extends StatelessWidget {
 class _PopularServicesSection extends StatelessWidget {
   const _PopularServicesSection({
     required this.popularServices,
+    required this.services,
     required this.selectedId,
     required this.onSelected,
   });
 
   final List<PopularService> popularServices;
+  // Serve a recuperare il tempo aggiuntivo (non presente in PopularService).
+  final List<Service> services;
   final int? selectedId;
   final ValueChanged<int?> onSelected;
 
@@ -862,8 +866,18 @@ class _PopularServicesSection extends StatelessWidget {
     required ThemeData theme,
   }) {
     final isSelected = popularService.serviceId == selectedId;
+    final matchingService = services
+        .where((s) => s.id == popularService.serviceId)
+        .firstOrNull;
+    final extraMinutes =
+        (matchingService?.processingTime ?? 0) +
+        (matchingService?.blockedTime ?? 0);
     final durationStr = popularService.durationMinutes > 0
-        ? context.localizedDurationLabel(popularService.durationMinutes)
+        ? context.localizedDurationLabel(
+            extraMinutes > 0
+                ? popularService.durationMinutes + extraMinutes
+                : popularService.durationMinutes,
+          )
         : null;
     final servicePriceStr = popularService.price >= 0
         ? '€${popularService.price.toStringAsFixed(2)}'
@@ -996,8 +1010,13 @@ class _CategorySection extends StatelessWidget {
     required ThemeData theme,
   }) {
     final isSelected = service.id == selectedId;
-    final durationStr = service.durationMinutes != null && service.durationMinutes! > 0
-        ? context.localizedDurationLabel(service.durationMinutes!)
+    final baseDuration = service.durationMinutes ?? 0;
+    final extraMinutes =
+        (service.processingTime ?? 0) + (service.blockedTime ?? 0);
+    final durationStr = baseDuration > 0
+        ? context.localizedDurationLabel(
+            extraMinutes > 0 ? baseDuration + extraMinutes : baseDuration,
+          )
         : null;
     final servicePriceStr = service.price != null && service.price! >= 0
         ? '€${service.price!.toStringAsFixed(2)}'
