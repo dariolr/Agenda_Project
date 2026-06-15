@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -2202,10 +2204,20 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       );
     }).toList();
 
+    final classTitle = _editingEvent?.classTypeName?.trim();
+    final startMinutes = _toDayMinutes(_startTime);
+    final hh = (startMinutes ~/ 60).toString().padLeft(2, '0');
+    final mm = (startMinutes % 60).toString().padLeft(2, '0');
+    final dateLabel = '${_formatDate(_date)} $hh:$mm';
+
     return AppForm.show<void>(
       context: context,
       heightFactor: 0.92,
-      builder: (_) => _ClassEventParticipantsListDialog(items: items),
+      builder: (_) => _ClassEventParticipantsListDialog(
+        items: items,
+        eventTitle: (classTitle?.isNotEmpty ?? false) ? classTitle : null,
+        eventDateLabel: dateLabel,
+      ),
     );
   }
 
@@ -3007,6 +3019,9 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
         final origMap = {for (final p in orig) p.customerId: p.status};
         final stagedMap = {for (final p in staged) p.customerId: p.status};
         // Removals first (frees up capacity for new additions).
+        // L'auto-promozione dalla lista d'attesa è disattivata: le eventuali
+        // promozioni sono già state messe in staging in base alla scelta
+        // dell'operatore nel dialog, quindi sono gestite esplicitamente sotto.
         for (final p in orig) {
           if (!mounted) break;
           if (!stagedMap.containsKey(p.customerId)) {
@@ -3015,6 +3030,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
               classEventId: eventId,
               customerId: p.customerId,
               notifyCustomer: notifyParticipants,
+              promoteFromWaitlist: false,
             );
           }
         }
@@ -3732,9 +3748,18 @@ class _ScheduleTimeField extends StatelessWidget {
 }
 
 class _ClassEventParticipantsListDialog extends ConsumerStatefulWidget {
-  const _ClassEventParticipantsListDialog({required this.items});
+  const _ClassEventParticipantsListDialog({
+    required this.items,
+    this.eventTitle,
+    this.eventDateLabel,
+  });
 
   final List<_ParticipantListItem> items;
+
+  /// Titolo (tipologia) e data della programmazione, usati come intestazione
+  /// dell'elenco copiato negli appunti.
+  final String? eventTitle;
+  final String? eventDateLabel;
 
   @override
   ConsumerState<_ClassEventParticipantsListDialog> createState() =>
@@ -3745,6 +3770,16 @@ class _ClassEventParticipantsListDialogState
     extends ConsumerState<_ClassEventParticipantsListDialog> {
   _ClassParticipantsSortMode _sortMode =
       _ClassParticipantsSortMode.registration;
+
+  /// Mostra temporaneamente il feedback "copiato" sul pulsante copia.
+  bool _justCopied = false;
+  Timer? _copiedTimer;
+
+  @override
+  void dispose() {
+    _copiedTimer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -3817,11 +3852,79 @@ class _ClassEventParticipantsListDialogState
       ),
       actions: [
         AppOutlinedActionButton(
+          onPressed: totalCount == 0 || _justCopied
+              ? null
+              : () => _copyList(confirmed, waitlist),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                _justCopied ? Icons.check : Icons.copy_all_outlined,
+                size: 18,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                _justCopied
+                    ? l10n.classEventsParticipantsListCopied
+                    : l10n.classEventsParticipantsCopyList,
+              ),
+            ],
+          ),
+        ),
+        AppOutlinedActionButton(
           onPressed: () => Navigator.of(context).pop(),
           child: Text(l10n.actionClose),
         ),
       ],
     );
+  }
+
+  Future<void> _copyList(
+    List<_ParticipantListItem> confirmed,
+    List<_ParticipantListItem> waitlist,
+  ) async {
+    final l10n = context.l10n;
+    final buffer = StringBuffer();
+
+    final title = widget.eventTitle?.trim();
+    if (title != null && title.isNotEmpty) {
+      buffer.writeln(title);
+    }
+    final dateLabel = widget.eventDateLabel?.trim();
+    if (dateLabel != null && dateLabel.isNotEmpty) {
+      buffer.writeln(dateLabel);
+    }
+
+    void writeSection(String heading, List<_ParticipantListItem> items) {
+      if (buffer.isNotEmpty) buffer.writeln();
+      buffer.writeln('$heading (${items.length})');
+      for (final item in items) {
+        buffer.writeln(_rawName(item));
+      }
+    }
+
+    writeSection(l10n.classEventsParticipantsConfirmedTitle, confirmed);
+    writeSection(l10n.classEventsParticipantsWaitlistTitle, waitlist);
+
+    await Clipboard.setData(
+      ClipboardData(text: buffer.toString().trimRight()),
+    );
+
+    if (!mounted) return;
+    setState(() => _justCopied = true);
+    _copiedTimer?.cancel();
+    _copiedTimer = Timer(const Duration(seconds: 2), () {
+      if (!mounted) return;
+      setState(() => _justCopied = false);
+    });
+  }
+
+  /// Nome e cognome "grezzi" del partecipante (fallback al nome visualizzato).
+  String _rawName(_ParticipantListItem item) {
+    final first = item.customerFirstName?.trim() ?? '';
+    final last = item.customerLastName?.trim() ?? '';
+    final composed = [first, last].where((p) => p.isNotEmpty).join(' ').trim();
+    return composed.isNotEmpty ? composed : item.displayName.trim();
   }
 
   List<_ParticipantListItem> _sortedItems(
@@ -4059,10 +4162,13 @@ class _ParticipantTrailing extends StatelessWidget {
             textAlign: TextAlign.right,
           ),
         if (waitlistPosition != null) ...[
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Chip(
             label: Text('#$waitlistPosition'),
             visualDensity: VisualDensity.compact,
+            // Rimuove il tap target minimo (48px) che faceva sforare la riga.
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
           ),
         ],
       ],

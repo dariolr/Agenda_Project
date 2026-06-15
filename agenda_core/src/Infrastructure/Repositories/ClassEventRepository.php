@@ -1182,7 +1182,7 @@ final class ClassEventRepository
     /**
      * @return array{ok: bool, promotedClassBookingId: ?int}
      */
-    public function cancelBooking(int $businessId, int $classEventId, int $customerId): array
+    public function cancelBooking(int $businessId, int $classEventId, int $customerId, bool $promoteFromWaitlist = true): array
     {
         $pdo = $this->db->getPdo();
         $pdo->beginTransaction();
@@ -1244,42 +1244,47 @@ final class ClassEventRepository
                     'updated_at' => $cancelledAtUtc,
                 ]);
 
-                $nextStmt = $pdo->prepare(
-                    'SELECT id
-                     FROM class_bookings
-                     WHERE business_id = :business_id
-                       AND class_event_id = :class_event_id
-                       AND status = "WAITLISTED"
-                     ORDER BY waitlist_position ASC, booked_at ASC, id ASC
-                     LIMIT 1
-                     FOR UPDATE'
-                );
-                $nextStmt->execute([
-                    'business_id' => $businessId,
-                    'class_event_id' => $classEventId,
-                ]);
-                $next = $nextStmt->fetch(\PDO::FETCH_ASSOC);
                 $promotedId = null;
-                if ($next) {
-                    $promotedId = (int) $next['id'];
-                    $pdo->prepare(
-                        'UPDATE class_bookings
-                         SET status = "CONFIRMED", waitlist_position = NULL
-                         WHERE id = :id'
-                    )->execute(['id' => $promotedId]);
-
-                    $pdo->prepare(
-                        'UPDATE class_events
-                         SET waitlist_count = GREATEST(0, waitlist_count - 1),
-                             confirmed_count = confirmed_count + 1,
-                             updated_at = :updated_at
-                         WHERE business_id = :business_id AND id = :class_event_id'
-                    )->execute([
+                // L'auto-promozione del primo in lista d'attesa può essere
+                // disabilitata dal chiamante (es. editor operatore che gestisce
+                // le promozioni in modo esplicito).
+                if ($promoteFromWaitlist) {
+                    $nextStmt = $pdo->prepare(
+                        'SELECT id
+                         FROM class_bookings
+                         WHERE business_id = :business_id
+                           AND class_event_id = :class_event_id
+                           AND status = "WAITLISTED"
+                         ORDER BY waitlist_position ASC, booked_at ASC, id ASC
+                         LIMIT 1
+                         FOR UPDATE'
+                    );
+                    $nextStmt->execute([
                         'business_id' => $businessId,
                         'class_event_id' => $classEventId,
-                        'updated_at' => $cancelledAtUtc,
                     ]);
-                    $this->repackWaitlist($pdo, $businessId, $classEventId);
+                    $next = $nextStmt->fetch(\PDO::FETCH_ASSOC);
+                    if ($next) {
+                        $promotedId = (int) $next['id'];
+                        $pdo->prepare(
+                            'UPDATE class_bookings
+                             SET status = "CONFIRMED", waitlist_position = NULL
+                             WHERE id = :id'
+                        )->execute(['id' => $promotedId]);
+
+                        $pdo->prepare(
+                            'UPDATE class_events
+                             SET waitlist_count = GREATEST(0, waitlist_count - 1),
+                                 confirmed_count = confirmed_count + 1,
+                                 updated_at = :updated_at
+                             WHERE business_id = :business_id AND id = :class_event_id'
+                        )->execute([
+                            'business_id' => $businessId,
+                            'class_event_id' => $classEventId,
+                            'updated_at' => $cancelledAtUtc,
+                        ]);
+                        $this->repackWaitlist($pdo, $businessId, $classEventId);
+                    }
                 }
             } elseif ($booking['status'] === 'WAITLISTED') {
                 $cancelledAtUtc = $this->resolveCurrentUtcForClassEvent($pdo, $businessId, $classEventId);

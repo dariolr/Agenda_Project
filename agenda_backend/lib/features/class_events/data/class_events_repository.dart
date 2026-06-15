@@ -65,12 +65,14 @@ class ClassEventsRepository {
     required int classEventId,
     int? customerId,
     bool notifyCustomer = true,
+    bool promoteFromWaitlist = true,
   }) {
     return _apiClient.cancelClassEventBooking(
       businessId: businessId,
       classEventId: classEventId,
       customerId: customerId,
       notifyCustomer: notifyCustomer,
+      promoteFromWaitlist: promoteFromWaitlist,
     );
   }
 

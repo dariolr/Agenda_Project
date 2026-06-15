@@ -1307,6 +1307,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "classEventsParticipantsConfirmedTitle":
         MessageLookupByLibrary.simpleMessage("Confermati"),
+    "classEventsParticipantsCopyList": MessageLookupByLibrary.simpleMessage(
+      "Copia elenco",
+    ),
     "classEventsParticipantsDemoteAction": MessageLookupByLibrary.simpleMessage(
       "Sposta in lista d\'attesa",
     ),
@@ -1314,6 +1317,9 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("Nessun partecipante confermato"),
     "classEventsParticipantsEmptyWaitlist":
         MessageLookupByLibrary.simpleMessage("Nessuno in lista d\'attesa"),
+    "classEventsParticipantsListCopied": MessageLookupByLibrary.simpleMessage(
+      "Copiato negli appunti",
+    ),
     "classEventsParticipantsListOpen": MessageLookupByLibrary.simpleMessage(
       "Vista elenco",
     ),

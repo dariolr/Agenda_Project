@@ -1561,12 +1561,14 @@ class ApiClient {
     required int classEventId,
     int? customerId,
     bool notifyCustomer = true,
+    bool promoteFromWaitlist = true,
   }) async {
     await post(
       ApiConfig.classEventCancelBooking(businessId, classEventId),
       data: {
         if (customerId != null) 'customer_id': customerId,
         'notify_customer': notifyCustomer,
+        'promote_from_waitlist': promoteFromWaitlist,
       },
     );
   }

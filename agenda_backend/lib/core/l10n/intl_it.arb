@@ -2040,6 +2040,8 @@
   "classEventsParticipantsLoadError": "Impossibile caricare i partecipanti",
   "classEventsParticipantsListOpen": "Vista elenco",
   "classEventsParticipantsListTitle": "Elenco partecipanti",
+  "classEventsParticipantsCopyList": "Copia elenco",
+  "classEventsParticipantsListCopied": "Copiato negli appunti",
   "classEventsParticipantsSortRegistration": "Data prenotazione",
   "classEventsParticipantsSortFirstName": "Nome",
   "classEventsParticipantsSortLastName": "Cognome",

@@ -13391,6 +13391,26 @@ class L10n {
     );
   }
 
+  /// `Copy list`
+  String get classEventsParticipantsCopyList {
+    return Intl.message(
+      'Copy list',
+      name: 'classEventsParticipantsCopyList',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Copied to clipboard`
+  String get classEventsParticipantsListCopied {
+    return Intl.message(
+      'Copied to clipboard',
+      name: 'classEventsParticipantsListCopied',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Booking date`
   String get classEventsParticipantsSortRegistration {
     return Intl.message(

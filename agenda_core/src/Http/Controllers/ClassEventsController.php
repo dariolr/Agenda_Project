@@ -930,6 +930,9 @@ final class ClassEventsController
             ? (int) $body['customer_id']
             : $this->resolveCustomerId($businessId, $userId);
         $notifyCustomer = $this->readBoolFromBody($body, 'notify_customer', true);
+        // Quando l'operatore gestisce le promozioni dalla lista d'attesa in modo
+        // esplicito, può disattivare l'auto-promozione del primo in attesa.
+        $promoteFromWaitlist = $this->readBoolFromBody($body, 'promote_from_waitlist', true);
         if ($customerId === null || $customerId <= 0) {
             return Response::error('customer_id is required', 'validation_error', 400, $request->traceId);
         }
@@ -941,7 +944,7 @@ final class ClassEventsController
         );
 
         try {
-            $result = $this->classEventRepo->cancelBooking($businessId, $classEventId, $customerId);
+            $result = $this->classEventRepo->cancelBooking($businessId, $classEventId, $customerId, $promoteFromWaitlist);
         } catch (\Throwable) {
             return Response::serverError('Unable to cancel class booking', $request->traceId);
         }

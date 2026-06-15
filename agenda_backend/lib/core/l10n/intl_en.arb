@@ -2040,6 +2040,8 @@
   "classEventsParticipantsLoadError": "Unable to load participants",
   "classEventsParticipantsListOpen": "List view",
   "classEventsParticipantsListTitle": "Participants list",
+  "classEventsParticipantsCopyList": "Copy list",
+  "classEventsParticipantsListCopied": "Copied to clipboard",
   "classEventsParticipantsSortRegistration": "Booking date",
   "classEventsParticipantsSortFirstName": "First name",
   "classEventsParticipantsSortLastName": "Last name",
