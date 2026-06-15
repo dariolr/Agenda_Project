@@ -283,7 +283,16 @@ final class BusinessUserRepository
             } else {
                 $this->setLocationIds((int)$existing['id'], []);
             }
-            
+
+            // Invariante: chi gestisce i servizi non può avere filtri residui.
+            if ($canManageServices === 1) {
+                $this->db->getPdo()->prepare(
+                    'UPDATE business_users
+                        SET allowed_service_ids = NULL, allowed_class_type_ids = NULL
+                      WHERE id = ?'
+                )->execute([$existing['id']]);
+            }
+
             return (int) $existing['id'];
         }
 
@@ -335,10 +344,20 @@ final class BusinessUserRepository
             $this->setLocationIds($businessUserId, $locationIds);
         }
 
-        // Apply service/class-type filters if provided (null=Tutti, []=Nessuno, [..]=Solo selezionati)
-        if (array_key_exists('allowed_service_ids', $data) || array_key_exists('allowed_class_type_ids', $data)) {
-            $svcVal = array_key_exists('allowed_service_ids', $data) ? $data['allowed_service_ids'] : null;
-            $ctVal  = array_key_exists('allowed_class_type_ids', $data) ? $data['allowed_class_type_ids'] : null;
+        // Chi gestisce i servizi (es. admin/owner) non può avere restrizioni:
+        // l'invariante impone allowed_service_ids/class_type_ids = null (= Tutti),
+        // anche se l'invito ha fornito un valore vuoto []. Per gli altri ruoli si
+        // applicano i filtri se forniti (null=Tutti, []=Nessuno, [..]=Selezionati).
+        $isServiceManager = $canManageServices === 1;
+        if ($isServiceManager
+            || array_key_exists('allowed_service_ids', $data)
+            || array_key_exists('allowed_class_type_ids', $data)) {
+            $svcVal = $isServiceManager
+                ? null
+                : (array_key_exists('allowed_service_ids', $data) ? $data['allowed_service_ids'] : null);
+            $ctVal = $isServiceManager
+                ? null
+                : (array_key_exists('allowed_class_type_ids', $data) ? $data['allowed_class_type_ids'] : null);
             $this->db->getPdo()->prepare(
                 'UPDATE business_users SET
                     allowed_service_ids = ?,

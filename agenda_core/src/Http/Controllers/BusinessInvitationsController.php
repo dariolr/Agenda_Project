@@ -254,8 +254,14 @@ final class BusinessInvitationsController
             'staff_id' => $staffId,
             'scope_type' => $scopeType,
             'location_ids' => $locationIds,
-            'allowed_service_ids' => array_map('intval', (array) ($body['allowed_service_ids'] ?? [])),
-            'allowed_class_type_ids' => array_map('intval', (array) ($body['allowed_class_type_ids'] ?? [])),
+            // null/assente = Tutti, [] = Nessuno, [..] = Solo selezionati.
+            // NB: non usare `?? []` perché trasformerebbe "Tutti" (null) in "Nessuno" ([]).
+            'allowed_service_ids' => array_key_exists('allowed_service_ids', $body) && $body['allowed_service_ids'] !== null
+                ? array_map('intval', (array) $body['allowed_service_ids'])
+                : null,
+            'allowed_class_type_ids' => array_key_exists('allowed_class_type_ids', $body) && $body['allowed_class_type_ids'] !== null
+                ? array_map('intval', (array) $body['allowed_class_type_ids'])
+                : null,
             'invited_by' => $userId,
         ]);
 
@@ -435,8 +441,9 @@ final class BusinessInvitationsController
             'staff_id' => isset($invitation['staff_id']) && $invitation['staff_id'] !== null ? (int) $invitation['staff_id'] : null,
             'scope_type' => $invitation['scope_type'],
             'location_ids' => $invitation['location_ids'] ?? [],
-            'allowed_service_ids' => $invitation['allowed_service_ids'] ?? [],
-            'allowed_class_type_ids' => $invitation['allowed_class_type_ids'] ?? [],
+            // Preserva null (= Tutti): `?? []` lo trasformerebbe in [] (= Nessuno).
+            'allowed_service_ids' => $invitation['allowed_service_ids'] ?? null,
+            'allowed_class_type_ids' => $invitation['allowed_class_type_ids'] ?? null,
             'invited_by' => (int) $invitation['invited_by'],
             'invited_at' => $invitation['created_at'],
             'accepted_at' => date('Y-m-d H:i:s'),
@@ -508,8 +515,9 @@ final class BusinessInvitationsController
             'staff_id' => isset($invitation['staff_id']) && $invitation['staff_id'] !== null ? (int) $invitation['staff_id'] : null,
             'scope_type' => $invitation['scope_type'],
             'location_ids' => $invitation['location_ids'] ?? [],
-            'allowed_service_ids' => $invitation['allowed_service_ids'] ?? [],
-            'allowed_class_type_ids' => $invitation['allowed_class_type_ids'] ?? [],
+            // Preserva null (= Tutti): `?? []` lo trasformerebbe in [] (= Nessuno).
+            'allowed_service_ids' => $invitation['allowed_service_ids'] ?? null,
+            'allowed_class_type_ids' => $invitation['allowed_class_type_ids'] ?? null,
             'invited_by' => (int) $invitation['invited_by'],
             'invited_at' => $invitation['created_at'],
             'accepted_at' => date('Y-m-d H:i:s'),
@@ -623,8 +631,9 @@ final class BusinessInvitationsController
             'staff_id' => isset($invitation['staff_id']) && $invitation['staff_id'] !== null ? (int) $invitation['staff_id'] : null,
             'scope_type' => $invitation['scope_type'],
             'location_ids' => $invitation['location_ids'] ?? [],
-            'allowed_service_ids' => $invitation['allowed_service_ids'] ?? [],
-            'allowed_class_type_ids' => $invitation['allowed_class_type_ids'] ?? [],
+            // Preserva null (= Tutti): `?? []` lo trasformerebbe in [] (= Nessuno).
+            'allowed_service_ids' => $invitation['allowed_service_ids'] ?? null,
+            'allowed_class_type_ids' => $invitation['allowed_class_type_ids'] ?? null,
             'invited_by' => (int) $invitation['invited_by'],
             'invited_at' => $invitation['created_at'],
             'accepted_at' => date('Y-m-d H:i:s'),
