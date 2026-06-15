@@ -2396,6 +2396,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
       context,
       ref,
       client: client,
+      allowDelete: false,
     );
     if (updatedClient == null || !mounted) return;
 
@@ -2559,6 +2560,7 @@ class _CreateClassFormState extends ConsumerState<_CreateClassForm> {
           context,
           ref,
           client: initialClient,
+          allowDelete: false,
         );
         if (newClient != null) {
           return _ClassBookingClientPickerResult(newClient.id, newClient.name);

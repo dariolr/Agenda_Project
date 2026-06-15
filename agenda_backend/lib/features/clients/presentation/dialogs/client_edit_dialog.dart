@@ -24,6 +24,9 @@ Future<Client?> showClientEditDialog(
   BuildContext context,
   WidgetRef ref, {
   Client? client,
+  // Quando false, nasconde il pulsante Elimina (es. editor aperto dal
+  // contesto prenotazione, dove eliminare il cliente è fuori posto).
+  bool allowDelete = true,
 }) async {
   final canManageClients = ref.read(currentUserCanManageClientsProvider);
   if (!canManageClients) {
@@ -40,15 +43,16 @@ Future<Client?> showClientEditDialog(
     padding: EdgeInsets.zero,
     heightFactor: AppForm.defaultBottomSheetHeightFactor,
     builder: (_) => formFactor == AppFormFactor.desktop
-        ? ClientEditDialog(initial: client)
-        : ClientEditBottomSheet(initial: client),
+        ? ClientEditDialog(initial: client, allowDelete: allowDelete)
+        : ClientEditBottomSheet(initial: client, allowDelete: allowDelete),
   );
 }
 
 class ClientEditDialog extends ConsumerStatefulWidget {
-  const ClientEditDialog({super.key, this.initial});
+  const ClientEditDialog({super.key, this.initial, this.allowDelete = true});
 
   final Client? initial;
+  final bool allowDelete;
 
   /// Un cliente con id > 0 è esistente (modifica), altrimenti è nuovo (creazione).
   bool get isExistingClient => (initial?.id ?? 0) > 0;
@@ -101,7 +105,7 @@ class _ClientEditDialogState extends ConsumerState<ClientEditDialog> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      if (isEditing) ...[
+                      if (isEditing && widget.allowDelete) ...[
                         SizedBox(
                           width: AppButtonStyles.dialogButtonWidth,
                           child: AppAsyncDangerButton(
@@ -215,9 +219,14 @@ class _ClientEditDialogState extends ConsumerState<ClientEditDialog> {
 /// Bottom sheet per modifica/creazione cliente su mobile.
 /// Usa lo stesso layout degli altri bottom sheet dell'app.
 class ClientEditBottomSheet extends ConsumerStatefulWidget {
-  const ClientEditBottomSheet({super.key, this.initial});
+  const ClientEditBottomSheet({
+    super.key,
+    this.initial,
+    this.allowDelete = true,
+  });
 
   final Client? initial;
+  final bool allowDelete;
 
   /// Un cliente con id > 0 è esistente (modifica), altrimenti è nuovo (creazione).
   bool get isExistingClient => (initial?.id ?? 0) > 0;
@@ -242,7 +251,7 @@ class _ClientEditBottomSheetState extends ConsumerState<ClientEditBottomSheet> {
 
     // Azioni in basso - stesso stile di appointment_dialog
     final actions = <Widget>[
-      if (isEditing)
+      if (isEditing && widget.allowDelete)
         AppAsyncDangerButton(
           onPressed: _isSaving ? null : _onDelete,
           padding: AppButtonStyles.dialogButtonPadding,

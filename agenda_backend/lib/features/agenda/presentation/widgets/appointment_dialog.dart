@@ -2877,6 +2877,7 @@ class _ClientSelectionField extends ConsumerWidget {
       context,
       ref,
       client: client,
+      allowDelete: false,
     );
     if (updatedClient == null) return;
 
@@ -2964,6 +2965,7 @@ class _ClientSelectionField extends ConsumerWidget {
             context,
             ref,
             client: initialClient,
+            allowDelete: false,
           );
           if (newClient != null) {
             // Client saved, select it and return to appointment form

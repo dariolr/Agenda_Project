@@ -1570,6 +1570,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
           context,
           ref,
           client: initialClient,
+          allowDelete: false,
         );
         if (newClient != null) {
           setState(() {
@@ -3185,6 +3186,7 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
                                     context,
                                     ref,
                                     client: client,
+                                    allowDelete: false,
                                   );
                                   // Refresh search results after edit
                                   ref
