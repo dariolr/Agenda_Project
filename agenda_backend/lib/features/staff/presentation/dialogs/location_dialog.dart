@@ -1257,9 +1257,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           address: address.isEmpty ? null : address,
           country: country,
           email: email.isEmpty ? null : email,
-          notificationEmails: notificationEmails.isEmpty
-              ? null
-              : notificationEmails,
+          notificationEmails: notificationEmails,
           timezone: timezone,
           bookingDefaultLocale: bookingDefaultLocale,
           isActive: _isActive,
@@ -1284,9 +1282,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           address: address.isEmpty ? null : address,
           country: country,
           email: email.isEmpty ? null : email,
-          notificationEmails: notificationEmails.isEmpty
-              ? null
-              : notificationEmails,
+          notificationEmails: notificationEmails,
           timezone: timezone,
           bookingDefaultLocale: bookingDefaultLocale,
           isActive: _isActive,
