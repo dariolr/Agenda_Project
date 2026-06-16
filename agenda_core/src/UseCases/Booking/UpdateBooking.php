@@ -461,7 +461,7 @@ final class UpdateBooking
                 'old_start_time' => $oldStartTime,
                 'new_start_time' => $newStartTime,
                 'start_time' => $newStartTime,
-                'services' => implode(', ', array_column($booking['items'] ?? [], 'service_name')),
+                'services' => EmailTemplateRenderer::formatServicesWithDescriptions($booking['items'] ?? []),
                 'manage_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($locationData['business_slug'] ?? '') . '/my-bookings',
                 'booking_url' => ($_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it') . '/' . ($locationData['business_slug'] ?? '') . '/booking' . (!empty($booking['location_id']) ? '?location=' . (int) $booking['location_id'] : ''),
                 'locale' => $locale,

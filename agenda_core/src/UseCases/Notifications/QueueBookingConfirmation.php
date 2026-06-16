@@ -247,7 +247,7 @@ final class QueueBookingConfirmation
             'location_phone' => $booking['location_phone'] ?? '',
             'date' => EmailTemplateRenderer::formatLongDate($startTime, $locale),
             'time' => $startTime->format('H:i'),
-            'services' => $booking['services'] ?? '',
+            'services' => EmailTemplateRenderer::resolveBookingServicesLabel($booking),
             'total_price' => $formattedTotalPrice,
             'total_row_html' => $totalRowHtml,
             'total_row_text' => $totalRowText,

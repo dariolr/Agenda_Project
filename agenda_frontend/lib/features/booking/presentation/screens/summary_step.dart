@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -96,6 +95,16 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
     final selectedServiceById = {
       for (final service in request.services) service.id: service,
     };
+    final displayedManualServices = request.services
+        .where(
+          (service) =>
+              request.isServiceManuallySelected(service.id) &&
+              !totals.coveredServiceIds.contains(service.id),
+        )
+        .toList();
+    final summaryItemCount =
+        totals.selectedPackages.length + displayedManualServices.length;
+    final hasMultipleSummaryItems = summaryItemCount > 1;
     final location = ref.watch(effectiveLocationProvider);
     final business = ref.watch(currentBusinessProvider).value;
     final cancellationHours =
@@ -193,6 +202,8 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                       children: [
                         if (totals.selectedPackages.isNotEmpty)
                           ...totals.selectedPackages.map((package) {
+                            final packageDescription = package.description
+                                ?.trim();
                             return Padding(
                               padding: const EdgeInsets.symmetric(vertical: 4),
                               child: Row(
@@ -212,7 +223,24 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                                 fontWeight: FontWeight.w600,
                                               ),
                                         ),
-                                        if (totals.selectedItemCount > 1)
+                                        if (packageDescription != null &&
+                                            packageDescription.isNotEmpty)
+                                          Padding(
+                                            padding: const EdgeInsets.only(
+                                              top: 2,
+                                            ),
+                                            child: Text(
+                                              packageDescription,
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurface
+                                                        .withOpacity(0.7),
+                                                  ),
+                                            ),
+                                          ),
+                                        if (hasMultipleSummaryItems)
                                           Text(
                                             context.localizedDurationLabel(
                                               package
@@ -231,7 +259,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                       ],
                                     ),
                                   ),
-                                  if (totals.selectedItemCount > 1)
+                                  if (hasMultipleSummaryItems)
                                     Text(
                                       _formatTotalPrice(
                                         context,
@@ -247,93 +275,97 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                               ),
                             );
                           }),
-                        ...request.services
-                            .where(
-                              (service) =>
-                                  request.isServiceManuallySelected(service.id),
-                            )
-                            .map((service) {
-                              final staff = request.staffForService(service.id);
-                              final isCovered = totals.coveredServiceIds
-                                  .contains(service.id);
-                              final operatorLabel =
-                                  request.isAnyOperatorForService(service.id)
-                                  ? bookingAnyStaffLabel(
-                                      context,
-                                      customStaffLabel,
-                                      phraseOverrides: phraseOverrides,
-                                    )
-                                  : (staff != null
-                                        ? staff.fullName
-                                        : bookingAnyStaffLabel(
-                                            context,
-                                            customStaffLabel,
-                                            phraseOverrides: phraseOverrides,
-                                          ));
-                              return Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 4,
-                                ),
-                                child: Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            service.name,
-                                            style: theme.textTheme.bodyMedium
-                                                ?.copyWith(
-                                                  fontWeight: FontWeight.w600,
-                                                ),
+                        ...displayedManualServices.map((service) {
+                          final staff = request.staffForService(service.id);
+                          final serviceDescription = service.description
+                              ?.trim();
+                          final operatorLabel =
+                              request.isAnyOperatorForService(service.id)
+                              ? bookingAnyStaffLabel(
+                                  context,
+                                  customStaffLabel,
+                                  phraseOverrides: phraseOverrides,
+                                )
+                              : (staff != null
+                                    ? staff.fullName
+                                    : bookingAnyStaffLabel(
+                                        context,
+                                        customStaffLabel,
+                                        phraseOverrides: phraseOverrides,
+                                      ));
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 4),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        service.name,
+                                        style: theme.textTheme.bodyMedium
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                      ),
+                                      if (serviceDescription != null &&
+                                          serviceDescription.isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 2,
                                           ),
-                                          Text(
-                                            operatorLabel,
+                                          child: Text(
+                                            serviceDescription,
                                             style: theme.textTheme.bodySmall
                                                 ?.copyWith(
                                                   color: theme
                                                       .colorScheme
                                                       .onSurface
-                                                      .withOpacity(0.6),
+                                                      .withOpacity(0.7),
                                                 ),
                                           ),
-                                          if (totals.selectedItemCount > 1 &&
-                                              !isCovered)
-                                            Text(
-                                              context.localizedDurationLabel(
-                                                service
-                                                    .customerVisibleDurationMinutes,
-                                              ),
-                                              style: theme.textTheme.bodySmall
-                                                  ?.copyWith(
-                                                    color: theme
-                                                        .colorScheme
-                                                        .onSurface
-                                                        .withOpacity(0.6),
-                                                  ),
-                                            ),
-                                        ],
-                                      ),
-                                    ),
-                                    if (totals.selectedItemCount > 1 &&
-                                        !isCovered &&
-                                        (location?.showPriceToCustomer ?? true))
+                                        ),
                                       Text(
-                                        service.formattedPrice,
+                                        operatorLabel,
                                         style: theme.textTheme.bodySmall
                                             ?.copyWith(
                                               color: theme.colorScheme.onSurface
                                                   .withOpacity(0.6),
                                             ),
                                       ),
-                                  ],
+                                      if (hasMultipleSummaryItems)
+                                        Text(
+                                          context.localizedDurationLabel(
+                                            service
+                                                .customerVisibleDurationMinutes,
+                                          ),
+                                          style: theme.textTheme.bodySmall
+                                              ?.copyWith(
+                                                color: theme
+                                                    .colorScheme
+                                                    .onSurface
+                                                    .withOpacity(0.6),
+                                              ),
+                                        ),
+                                    ],
+                                  ),
                                 ),
-                              );
-                            }),
+                                if (hasMultipleSummaryItems &&
+                                    (location?.showPriceToCustomer ?? true))
+                                  Text(
+                                    service.formattedPrice,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withOpacity(0.6),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          );
+                        }),
                         const SizedBox(height: 12),
                         LayoutBuilder(
                           builder: (context, constraints) {
@@ -372,7 +404,9 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                 Row(
                                   children: [
                                     Text(
-                                      l10n.summaryPrice,
+                                      hasMultipleSummaryItems
+                                          ? l10n.summaryPrice
+                                          : l10n.summarySinglePrice,
                                       style: theme.textTheme.bodyMedium
                                           ?.copyWith(
                                             fontWeight: FontWeight.w600,
@@ -963,4 +997,3 @@ class _SummarySection extends StatelessWidget {
     );
   }
 }
-

@@ -1100,14 +1100,8 @@ final class AppointmentsController
             $businessName = trim((string) ($locationData['business_name'] ?? ''));
             $senderName = $businessName !== '' ? $businessName : null;
 
-            $services = [];
             $items = is_array($booking['items'] ?? null) ? $booking['items'] : [];
-            foreach ($items as $item) {
-                $serviceName = $item['service_name'] ?? null;
-                if (is_string($serviceName) && trim($serviceName) !== '') {
-                    $services[] = trim($serviceName);
-                }
-            }
+            $services = EmailTemplateRenderer::formatServicesWithDescriptions($items);
 
             $frontendUrl = $_ENV['FRONTEND_URL'] ?? 'https://prenota.romeolab.it';
             $businessSlug = $locationData['business_slug'] ?? '';
@@ -1130,7 +1124,7 @@ final class AppointmentsController
                 'old_start_time' => $oldStartTime,
                 'new_start_time' => $newStartTime,
                 'start_time' => $newStartTime,
-                'services' => implode(', ', $services),
+                'services' => $services,
                 'manage_url' => $frontendUrl . '/' . $businessSlug . '/my-bookings',
                 'booking_url' => $frontendUrl . '/' . $businessSlug . '/booking',
                 'locale' => $locale,

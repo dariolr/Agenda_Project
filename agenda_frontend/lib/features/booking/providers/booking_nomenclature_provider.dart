@@ -72,7 +72,10 @@ _NomenclatureTerm _serviceTermSentence(
 }
 
 final bookingStaffDisplayLabelProvider = Provider<String?>((ref) {
-  return null;
+  final location = ref.watch(effectiveLocationProvider);
+  return _normalizeLabel(
+    location?.bookingTextOverrides?['default']?['staff_label'],
+  );
 });
 
 final bookingServiceDisplayLabelProvider = Provider<String?>((ref) {
@@ -245,12 +248,45 @@ String? _overrideText(
   return normalized;
 }
 
+String? _staffPhraseOverride(
+  Map<String, String>? phraseOverrides,
+  String? customLabel,
+  String key,
+) {
+  final override = _overrideText(
+    phraseOverrides,
+    key,
+    placeholders: {if (customLabel != null) 'staffLabel': customLabel},
+  );
+  if (override == null) {
+    return null;
+  }
+
+  if (customLabel != null) {
+    final normalized = override.trim().toLowerCase();
+    if (normalized == 'operatore' ||
+        normalized == 'staff' ||
+        normalized == 'fornitore dei servizi' ||
+        normalized == 'service provider' ||
+        normalized == 'scegli il fornitore dei servizi' ||
+        normalized == 'choose service provider') {
+      return null;
+    }
+  }
+
+  return override;
+}
+
 String bookingStaffStepLabel(
   BuildContext context,
   String? customLabel, {
   Map<String, String>? phraseOverrides,
 }) {
-  final override = _overrideText(phraseOverrides, 'staff_step_label');
+  final override = _staffPhraseOverride(
+    phraseOverrides,
+    customLabel,
+    'staff_step_label',
+  );
   if (override != null) {
     return override;
   }
@@ -785,7 +821,11 @@ String bookingStaffTitle(
   String? customLabel, {
   Map<String, String>? phraseOverrides,
 }) {
-  final override = _overrideText(phraseOverrides, 'staff_title');
+  final override = _staffPhraseOverride(
+    phraseOverrides,
+    customLabel,
+    'staff_title',
+  );
   if (override != null) {
     return override;
   }

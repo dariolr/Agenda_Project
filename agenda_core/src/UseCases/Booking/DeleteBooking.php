@@ -152,17 +152,17 @@ final class DeleteBooking
             return [];
         }
         
-        // Get ALL service names for this booking
+        // Get ALL services for this booking
         $stmtServices = $this->db->getPdo()->prepare(
-            'SELECT s.name as service_name
+            'SELECT s.name AS service_name, s.description AS service_description
              FROM booking_items bi
              JOIN services s ON bi.service_id = s.id
              WHERE bi.booking_id = ?
              ORDER BY bi.start_time ASC'
         );
         $stmtServices->execute([$booking['id']]);
-        $allServices = $stmtServices->fetchAll(\PDO::FETCH_COLUMN);
-        $servicesString = implode(', ', $allServices);
+        $allServices = $stmtServices->fetchAll(\PDO::FETCH_ASSOC);
+        $servicesString = EmailTemplateRenderer::formatServicesWithDescriptions($allServices);
         
         // Priority: location email > business email
         $locationEmail = trim((string) ($details['location_email'] ?? ''));

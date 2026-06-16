@@ -607,6 +607,7 @@ final class CreateBooking
                     'start_time' => $currentTime->format('Y-m-d H:i:s'),
                     'end_time' => $displayEndTime->format('Y-m-d H:i:s'), // Display duration only
                     'service_name_snapshot' => $service['name'],
+                    'service_description' => $service['description'] ?? null,
                     'client_name_snapshot' => $clientName,
                 ] + $this->buildItemPricingSnapshot([], $service);
 
@@ -807,6 +808,7 @@ final class CreateBooking
                     'extra_blocked_minutes' => $blockedExtra,
                     'extra_processing_minutes' => $processingExtra,
                     'service_name_snapshot' => $service['name'],
+                    'service_description' => $service['description'] ?? null,
                     'client_name_snapshot' => $clientName,
                 ] + $this->buildItemPricingSnapshot($item, $service);
             }
@@ -876,6 +878,7 @@ final class CreateBooking
                 'service_id' => (int) $item['service_id'],
                 'service_variant_id' => isset($item['service_variant_id']) ? (int) $item['service_variant_id'] : null,
                 'service_name' => $item['service_name'] ?? $item['service_name_snapshot'],
+                'service_description' => $item['service_description'] ?? null,
                 'staff_id' => (int) $item['staff_id'],
                 'staff_display_name' => $item['staff_display_name'] ?? null,
                 'location_id' => (int) $item['location_id'],
@@ -1175,6 +1178,7 @@ final class CreateBooking
                     'extra_blocked_minutes' => $blockedExtra,
                     'extra_processing_minutes' => $processingExtra,
                     'service_name_snapshot' => $service['name'],
+                    'service_description' => $service['description'] ?? null,
                     'client_name_snapshot' => $clientName,
                 ] + $this->buildItemPricingSnapshot(
                     (
@@ -1522,7 +1526,7 @@ final class CreateBooking
                 'sender_name' => $senderName,
                 'start_time' => $booking['items'][0]['start_time'] ?? $booking['created_at'],
                 'end_time' => $booking['items'][count($booking['items']) - 1]['end_time'] ?? null,
-                'services' => implode(', ', array_column($booking['items'] ?? [], 'service_name')),
+                'services' => EmailTemplateRenderer::formatServicesWithDescriptions($booking['items'] ?? []),
                 'total_price' => $booking['total_price'] ?? 0,
                 'location_show_price_to_customer' => (bool) ($location['show_price_to_customer'] ?? true),
                 'cancellation_hours' => $location['cancellation_hours'] ?? 24,

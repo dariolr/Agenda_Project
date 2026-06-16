@@ -130,7 +130,7 @@ final class QueueBookingCancellation
             'location_address_line' => $locationAddressLine,
             'date' => EmailTemplateRenderer::formatLongDate($startTime, $locale),
             'time' => $startTime->format('H:i'),
-            'services' => $booking['services'] ?? '',
+            'services' => EmailTemplateRenderer::resolveBookingServicesLabel($booking),
             'booking_url' => $booking['booking_url'] ?? '#',
             'location_block_html' => $locationBlockHtml,
             'location_block_text' => $locationBlockText,

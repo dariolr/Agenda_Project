@@ -786,6 +786,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Selected services",
     ),
     "summaryServicesCustom": m46,
+    "summarySinglePrice": MessageLookupByLibrary.simpleMessage("Price"),
     "summarySubtitle": MessageLookupByLibrary.simpleMessage(
       "Review the details before confirming",
     ),

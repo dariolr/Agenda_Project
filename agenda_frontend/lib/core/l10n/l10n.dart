@@ -1709,6 +1709,16 @@ class L10n {
     );
   }
 
+  /// `Price`
+  String get summarySinglePrice {
+    return Intl.message(
+      'Price',
+      name: 'summarySinglePrice',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Total price`
   String get summaryPrice {
     return Intl.message(

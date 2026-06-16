@@ -2290,6 +2290,7 @@ final class BookingsController
                 'pricing_source' => $item['pricing_source'] ?? null,
                 'duration_minutes' => (int) ($item['duration_minutes'] ?? 0),
                 'service_name' => $item['service_name'] ?? $item['service_name_snapshot'],
+                'service_description' => $item['service_description'] ?? null,
                 'staff_display_name' => $item['staff_display_name'],
             ], $booking['items'] ?? []),
         ];

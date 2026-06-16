@@ -188,7 +188,7 @@ final class QueueBookingReminder
             'location_phone' => $booking['location_phone'] ?? '',
             'date' => EmailTemplateRenderer::formatLongDate($startTime, $locale),
             'time' => $startTime->format('H:i'),
-            'services' => $booking['services'] ?? '',
+            'services' => EmailTemplateRenderer::resolveBookingServicesLabel($booking),
             'manage_url' => $booking['manage_url'] ?? '#',
             'location_block_html' => $locationBlockHtml,
             'location_block_text' => $locationBlockText,
@@ -271,7 +271,14 @@ final class QueueBookingReminder
                 c.first_name as client_first_name,
                 MIN(bi.start_time) as start_time,
                 MAX(bi.end_time) as end_time,
-                GROUP_CONCAT(DISTINCT s.name SEPARATOR ", ") as services,
+                GROUP_CONCAT(
+                    DISTINCT CASE
+                        WHEN NULLIF(TRIM(s.description), "") IS NULL THEN s.name
+                        ELSE CONCAT(s.name, " - ", TRIM(s.description))
+                    END
+                    ORDER BY bi.start_time
+                    SEPARATOR ", "
+                ) as services,
                 l.cancellation_hours as location_cancellation_hours,
                 bus.cancellation_hours as business_cancellation_hours
              FROM bookings b
@@ -451,7 +458,14 @@ final class QueueBookingReminder
                 c.first_name as client_first_name,
                 MIN(bi.start_time) as start_time,
                 MAX(bi.end_time) as end_time,
-                GROUP_CONCAT(DISTINCT s.name SEPARATOR ", ") as services,
+                GROUP_CONCAT(
+                    DISTINCT CASE
+                        WHEN NULLIF(TRIM(s.description), "") IS NULL THEN s.name
+                        ELSE CONCAT(s.name, " - ", TRIM(s.description))
+                    END
+                    ORDER BY bi.start_time
+                    SEPARATOR ", "
+                ) as services,
                 l.cancellation_hours as location_cancellation_hours,
                 bus.cancellation_hours as business_cancellation_hours
              FROM bookings b

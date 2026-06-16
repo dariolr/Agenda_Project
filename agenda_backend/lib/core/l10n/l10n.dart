@@ -1703,20 +1703,20 @@ class L10n {
     );
   }
 
-  /// `Email`
+  /// `Customer reply email`
   String get teamLocationEmailLabel {
     return Intl.message(
-      'Email',
+      'Customer reply email',
       name: 'teamLocationEmailLabel',
       desc: '',
       args: [],
     );
   }
 
-  /// `Email for customer notifications`
+  /// `Email to receive customer replies`
   String get teamLocationEmailHint {
     return Intl.message(
-      'Email for customer notifications',
+      'Email to receive customer replies',
       name: 'teamLocationEmailHint',
       desc: '',
       args: [],

@@ -279,6 +279,7 @@ final class ReplaceBooking
                     'duration_minutes' => $durationMinutes,
                     'price' => $item['price'] ?? (float) $service['price'],
                     'service_name' => $service['name'],
+                    'service_description' => $service['description'] ?? null,
                     'parallel_capacity' => max(1, (int) ($service['parallel_capacity'] ?? 1)),
                 ];
             }
@@ -346,6 +347,7 @@ final class ReplaceBooking
                     'duration_minutes' => $durationMinutes,
                     'price' => (float) $service['price'],
                     'service_name' => $service['name'],
+                    'service_description' => $service['description'] ?? null,
                     'parallel_capacity' => max(1, (int) ($service['parallel_capacity'] ?? 1)),
                 ];
 

@@ -109,6 +109,7 @@ final class BookingRepository
                     bi.extra_blocked_minutes, bi.extra_processing_minutes,
                     bi.service_name_snapshot, bi.client_name_snapshot,
                     s.name AS service_name,
+                    s.description AS service_description,
                     COALESCE(sv.parallel_capacity, 1) AS parallel_capacity,
                     sv.color_hex AS service_color_hex,
                     st.name AS staff_name, st.surname AS staff_surname,

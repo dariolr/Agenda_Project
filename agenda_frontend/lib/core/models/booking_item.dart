@@ -9,9 +9,11 @@ class BookingItem {
   final String? locationAddress;
   final String? locationCity;
   final List<String> serviceNames;
+  final List<String?> serviceDescriptions;
   final List<int> serviceIds;
   final int? staffId;
   final String? staffName;
+  final List<String> staffNames;
   final DateTime startTime;
   final DateTime endTime;
   final double totalPrice;
@@ -19,6 +21,7 @@ class BookingItem {
   final String source;
   final bool canModify;
   final DateTime? canModifyUntil;
+  final DateTime? createdAt;
 
   /// Direct link slug used to create this booking, if any.
   /// When present, "Prenota di nuovo" CTAs must use this slug.
@@ -27,6 +30,7 @@ class BookingItem {
   /// Raw API string for `can_modify_until` (ISO8601). Useful to display the
   /// location time without device timezone conversion.
   final String? canModifyUntilRaw;
+  final String? createdAtRaw;
   final String status;
 
   const BookingItem({
@@ -39,9 +43,11 @@ class BookingItem {
     this.locationAddress,
     this.locationCity,
     required this.serviceNames,
+    this.serviceDescriptions = const [],
     this.serviceIds = const [],
     this.staffId,
     this.staffName,
+    this.staffNames = const [],
     required this.startTime,
     required this.endTime,
     this.totalPrice = 0.0,
@@ -49,7 +55,9 @@ class BookingItem {
     this.source = 'manual',
     required this.canModify,
     this.canModifyUntil,
+    this.createdAt,
     this.canModifyUntilRaw,
+    this.createdAtRaw,
     this.bookingDirectLinkSlug,
     this.status = 'confirmed',
   });
@@ -74,9 +82,11 @@ class BookingItem {
       locationCity:
           location?['city'] as String? ?? json['location_city'] as String?,
       serviceNames: _parseServiceNames(json),
+      serviceDescriptions: _parseServiceDescriptions(json),
       serviceIds: _parseServiceIds(json),
       staffId: json['staff_id'] as int?,
       staffName: json['staff_name'] as String?,
+      staffNames: _parseStaffNames(json),
       startTime: DateTime.parse(json['start_time'] as String),
       endTime: DateTime.parse(json['end_time'] as String),
       totalPrice:
@@ -90,6 +100,10 @@ class BookingItem {
           ? DateTime.parse(json['can_modify_until'] as String)
           : null,
       canModifyUntilRaw: json['can_modify_until'] as String?,
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'] as String)
+          : null,
+      createdAtRaw: json['created_at'] as String?,
       bookingDirectLinkSlug: json['booking_direct_link_slug'] as String?,
       status: json['status'] as String? ?? 'confirmed',
     );
@@ -111,6 +125,21 @@ class BookingItem {
     return [];
   }
 
+  /// Parsa descrizioni servizi supportando array e singolo valore.
+  static List<String?> _parseServiceDescriptions(Map<String, dynamic> json) {
+    if (json.containsKey('service_descriptions') &&
+        json['service_descriptions'] != null) {
+      final descriptions = json['service_descriptions'];
+      if (descriptions is List) {
+        return descriptions.map((e) => e?.toString()).toList();
+      }
+    }
+    if (json.containsKey('service_description')) {
+      return [json['service_description']?.toString()];
+    }
+    return [];
+  }
+
   /// Parsa service_ids supportando sia array che singolo valore
   static List<int> _parseServiceIds(Map<String, dynamic> json) {
     if (json.containsKey('service_ids') && json['service_ids'] != null) {
@@ -118,6 +147,24 @@ class BookingItem {
       if (ids is List) {
         return ids.map((e) => e as int).toList();
       }
+    }
+    return [];
+  }
+
+  /// Parsa staff_names supportando sia array che singolo valore.
+  static List<String> _parseStaffNames(Map<String, dynamic> json) {
+    if (json.containsKey('staff_names') && json['staff_names'] != null) {
+      final names = json['staff_names'];
+      if (names is List) {
+        return names
+            .map((e) => e.toString().trim())
+            .where((name) => name.isNotEmpty)
+            .toList();
+      }
+    }
+    if (json.containsKey('staff_name') && json['staff_name'] != null) {
+      final name = (json['staff_name'] as String).trim();
+      return name.isEmpty ? const [] : [name];
     }
     return [];
   }
@@ -149,6 +196,8 @@ class BookingItem {
     bool? canModify,
     DateTime? canModifyUntil,
     String? canModifyUntilRaw,
+    DateTime? createdAt,
+    String? createdAtRaw,
     String? status,
   }) {
     return BookingItem(
@@ -160,9 +209,11 @@ class BookingItem {
       locationAddress: locationAddress,
       locationCity: locationCity,
       serviceNames: serviceNames,
+      serviceDescriptions: serviceDescriptions,
       serviceIds: serviceIds,
       staffId: staffId,
       staffName: staffName,
+      staffNames: staffNames,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,
       totalPrice: totalPrice,
@@ -171,6 +222,8 @@ class BookingItem {
       canModify: canModify ?? this.canModify,
       canModifyUntil: canModifyUntil ?? this.canModifyUntil,
       canModifyUntilRaw: canModifyUntilRaw ?? this.canModifyUntilRaw,
+      createdAt: createdAt ?? this.createdAt,
+      createdAtRaw: createdAtRaw ?? this.createdAtRaw,
       status: status ?? this.status,
     );
   }

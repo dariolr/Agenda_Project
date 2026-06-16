@@ -442,6 +442,7 @@ BookingItem _fromCustomerBooking(
 
   final remainingServiceIds = serviceIds.toSet();
   final packageNames = <String>[];
+  final packageDescriptions = <String?>[];
   final packages = packagesByLocation[locationId] ?? const <ServicePackage>[];
   final sortedPackages = [...packages]
     ..sort(
@@ -454,6 +455,7 @@ BookingItem _fromCustomerBooking(
     if (packageServiceIds.isEmpty) continue;
     if (packageServiceIds.every(remainingServiceIds.contains)) {
       packageNames.add(package.name);
+      packageDescriptions.add(package.description);
       for (final id in packageServiceIds) {
         remainingServiceIds.remove(id);
       }
@@ -461,6 +463,7 @@ BookingItem _fromCustomerBooking(
   }
 
   final remainingServiceNames = <String>[];
+  final remainingServiceDescriptions = <String?>[];
   for (final item in items) {
     final serviceId = item['service_id'];
     if (serviceId is! int || !remainingServiceIds.contains(serviceId)) {
@@ -469,11 +472,23 @@ BookingItem _fromCustomerBooking(
     final name = item['service_name'] ?? item['service_name_snapshot'];
     if (name is String && name.isNotEmpty) {
       remainingServiceNames.add(name);
+      remainingServiceDescriptions.add(item['service_description'] as String?);
       remainingServiceIds.remove(serviceId);
     }
   }
 
   final serviceNames = [...packageNames, ...remainingServiceNames];
+  final serviceDescriptions = [
+    ...packageDescriptions,
+    ...remainingServiceDescriptions,
+  ];
+  final staffNames = <String>[];
+  for (final item in items) {
+    final name = (item['staff_display_name'] as String?)?.trim();
+    if (name != null && name.isNotEmpty && !staffNames.contains(name)) {
+      staffNames.add(name);
+    }
+  }
 
   return BookingItem(
     id: json['id'] as int? ?? json['booking_id'] as int,
@@ -485,11 +500,13 @@ BookingItem _fromCustomerBooking(
     locationAddress: json['location_address'] as String?,
     locationCity: json['location_city'] as String?,
     serviceNames: serviceNames,
+    serviceDescriptions: serviceDescriptions,
     serviceIds: serviceIds,
     staffId: items.isNotEmpty ? items.first['staff_id'] as int? : null,
     staffName: items.isNotEmpty
         ? items.first['staff_display_name'] as String?
         : null,
+    staffNames: staffNames,
     startTime: startTime,
     endTime: endTime,
     totalPrice: (json['total_price'] as num?)?.toDouble() ?? 0.0,
@@ -500,6 +517,10 @@ BookingItem _fromCustomerBooking(
         ? DateTime.parse(json['can_modify_until'] as String)
         : null,
     canModifyUntilRaw: json['can_modify_until'] as String?,
+    createdAt: json['created_at'] != null
+        ? DateTime.parse(json['created_at'] as String)
+        : null,
+    createdAtRaw: json['created_at'] as String?,
     bookingDirectLinkSlug: json['booking_direct_link_slug'] as String?,
     status: json['status'] as String? ?? 'confirmed',
   );

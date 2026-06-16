@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Agenda\UseCases\Whatsapp;
 
 use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\Infrastructure\Repositories\BusinessWhatsappSettingsRepository;
 use Agenda\Infrastructure\Repositories\WhatsappRepository;
 use Agenda\Infrastructure\Support\Json;
@@ -320,6 +321,7 @@ final class QueueWhatsappNotification
             } catch (\Throwable) {
             }
         }
+        $servicesLabel = EmailTemplateRenderer::resolveBookingServicesLabel($data);
 
         return [
             'client_name' => $name,
@@ -328,7 +330,9 @@ final class QueueWhatsappNotification
             'location_address' => (string) ($data['location_address_line'] ?? $data['location_address'] ?? ''),
             'date' => $date,
             'time' => $time,
-            'service' => (string) ($data['services'] ?? $data['class_type_name'] ?? ''),
+            'service' => $servicesLabel !== ''
+                ? $servicesLabel
+                : (string) ($data['class_type_name'] ?? ''),
             'staff' => (string) ($data['staff_name'] ?? ''),
             'link' => (string) ($data['manage_url'] ?? $data['booking_url'] ?? ''),
         ];

@@ -369,6 +369,12 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     final theme = Theme.of(context);
     final staffIcon = bookingStaffIconFromKey(location?.staffIconKey);
     final rowIconColor = theme.colorScheme.onSurface.withOpacity(0.6);
+    final staffNames = booking.staffNames.isNotEmpty
+        ? booking.staffNames
+        : [
+            if ((booking.staffName ?? '').trim().isNotEmpty)
+              booking.staffName!.trim(),
+          ];
     const actionButtonPadding = EdgeInsets.symmetric(horizontal: 12);
     final modifyButtonStyle = ElevatedButton.styleFrom(
       minimumSize: const Size(0, 40),
@@ -465,32 +471,37 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
                 Icon(Icons.list_alt, size: 18, color: rowIconColor),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: booking.serviceNames.length <= 1
-                      ? Text(
-                          booking.servicesDisplay,
-                          style: theme.textTheme.bodyMedium,
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            for (final service in booking.serviceNames)
-                              Text(service, style: theme.textTheme.bodyMedium),
-                          ],
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (var i = 0; i < booking.serviceNames.length; i++)
+                        Padding(
+                          padding: EdgeInsets.only(
+                            bottom: i == booking.serviceNames.length - 1
+                                ? 0
+                                : 6,
+                          ),
+                          child: _buildServiceLine(context, booking, i),
                         ),
+                    ],
+                  ),
                 ),
               ],
             ),
 
             // Staff (se presente)
-            if (booking.staffName != null) ...[
+            if (staffNames.isNotEmpty) ...[
               const SizedBox(height: 8),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Icon(staffIcon, size: 18, color: rowIconColor),
                   const SizedBox(width: 8),
-                  Text(
-                    booking.staffName!,
-                    style: Theme.of(context).textTheme.bodyMedium,
+                  Expanded(
+                    child: Text(
+                      staffNames.join(', '),
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
                   ),
                 ],
               ),
@@ -680,6 +691,33 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
     return context.l10n.modifiableUntilDateTime(formatted);
   }
 
+  Widget _buildServiceLine(
+    BuildContext context,
+    BookingItem booking,
+    int index,
+  ) {
+    final theme = Theme.of(context);
+    final description = index < booking.serviceDescriptions.length
+        ? booking.serviceDescriptions[index]?.trim()
+        : null;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(booking.serviceNames[index], style: theme.textTheme.bodyMedium),
+        if (description != null && description.isNotEmpty) ...[
+          const SizedBox(height: 2),
+          Text(
+            description,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.7),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   String _formatModificationExpired(
     BuildContext context, {
     required BookingItem booking,
@@ -691,6 +729,10 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
       return context.l10n.modificationWindowExpired;
     }
     final deadline = _modifiableDeadline(booking);
+    final createdAt = _bookingCreatedAt(booking);
+    if (createdAt != null && !createdAt.isBefore(deadline)) {
+      return context.l10n.modificationWindowExpired;
+    }
     final formattedDate = DateFormat.yMMMMd(
       locale,
     ).format(deadline).replaceAll(' ', '\u00A0');
@@ -763,6 +805,18 @@ class _BookingCardState extends ConsumerState<_BookingCard> {
       }
     }
     return booking.canModifyUntil!;
+  }
+
+  static DateTime? _bookingCreatedAt(BookingItem booking) {
+    final raw = booking.createdAtRaw;
+    if (raw != null && raw.isNotEmpty) {
+      try {
+        return TenantTimeService.parseAsLocationTime(raw);
+      } catch (_) {
+        // Fallback to parsed DateTime if raw parsing fails.
+      }
+    }
+    return booking.createdAt;
   }
 
   static String _localeForLocation(BuildContext context) {

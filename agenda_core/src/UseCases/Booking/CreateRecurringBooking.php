@@ -424,11 +424,7 @@ final class CreateRecurringBooking
         $senderEmail = $locationEmail !== '' ? $locationEmail : ($businessEmail !== '' ? $businessEmail : null);
         $businessName = trim((string) ($location['business_name'] ?? ''));
         $senderName = $businessName !== '' ? $businessName : null;
-        $serviceNames = array_values(array_unique(array_map(
-            static fn (array $template): string => (string) ($template['service_name'] ?? ''),
-            $itemTemplates
-        )));
-        $services = implode(', ', array_filter($serviceNames, static fn (string $name): bool => $name !== ''));
+        $services = EmailTemplateRenderer::formatServicesWithDescriptions($itemTemplates);
         $occurrencePrice = array_reduce(
             $itemTemplates,
             static fn (float $sum, array $template): float => $sum + (float) ($template['price'] ?? 0),
@@ -530,11 +526,7 @@ final class CreateRecurringBooking
         $senderEmail = $locationEmail !== '' ? $locationEmail : ($businessEmail !== '' ? $businessEmail : null);
         $businessName2 = trim((string) ($location['business_name'] ?? ''));
         $senderName = $businessName2 !== '' ? $businessName2 : null;
-        $serviceNames = array_values(array_unique(array_map(
-            static fn (array $template): string => (string) ($template['service_name'] ?? ''),
-            $itemTemplates
-        )));
-        $services = implode(', ', array_filter($serviceNames, static fn (string $name): bool => $name !== ''));
+        $services = EmailTemplateRenderer::formatServicesWithDescriptions($itemTemplates);
         $locale = EmailTemplateRenderer::resolvePreferredLocale(
             $requestedLocale,
             $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? null,
@@ -644,6 +636,7 @@ final class CreateRecurringBooking
                         ?? $serviceId
                     ),
                     'service_name' => (string) ($service['name'] ?? ''),
+                    'service_description' => $service['description'] ?? null,
                     'staff_id' => $itemStaffId,
                     'start_offset_minutes' => $startOffset,
                     'duration_minutes' => $serviceDuration,
@@ -662,6 +655,7 @@ final class CreateRecurringBooking
                     'service_id' => (int) $service['id'],
                     'service_variant_id' => (int) ($service['service_variant_id'] ?? $service['variant_id'] ?? $service['id']),
                     'service_name' => (string) ($service['name'] ?? ''),
+                    'service_description' => $service['description'] ?? null,
                     'staff_id' => (int) ($defaultStaffId ?? 0),
                     'start_offset_minutes' => $cursor,
                     'duration_minutes' => $serviceDuration,

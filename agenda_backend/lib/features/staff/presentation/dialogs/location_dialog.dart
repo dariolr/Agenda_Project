@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -271,6 +270,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     'tab_conflict_events_subtitle',
     'tab_conflict_services_title',
     'tab_conflict_services_subtitle',
+    'staff_label',
     'staff_title',
     'staff_subtitle',
     'staff_any_label',
@@ -468,7 +468,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
         _onlineBookingEnabled = lastLocation.onlineBookingEnabled;
         _minBookingNoticeHours = lastLocation.minBookingNoticeHours;
         _maxBookingAdvanceDays = lastLocation.maxBookingAdvanceDays;
-        _maxBookingAdvanceDaysController.text = _maxBookingAdvanceDays.toString();
+        _maxBookingAdvanceDaysController.text = _maxBookingAdvanceDays
+            .toString();
         _cancellationHours = lastLocation.cancellationHours;
         _allowCustomerChooseStaff = lastLocation.allowCustomerChooseStaff;
         _allowMultiServiceBooking = lastLocation.allowMultiServiceBooking;
@@ -492,7 +493,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           _selectedCountryCode = _businessCountryOrDefault();
         }
         _selectedBookingDefaultLocale = null;
-        _maxBookingAdvanceDaysController.text = _maxBookingAdvanceDays.toString();
+        _maxBookingAdvanceDaysController.text = _maxBookingAdvanceDays
+            .toString();
       }
     }
   }
@@ -844,9 +846,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                   helperText: l10n.teamLocationMaxBookingAdvanceHint,
                 ),
                 keyboardType: TextInputType.number,
-                inputFormatters: [
-                  FilteringTextInputFormatter.digitsOnly,
-                ],
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                 validator: (v) {
                   final n = int.tryParse(v ?? '');
                   if (n == null || n <= 0) return l10n.validationInvalidNumber;
@@ -854,7 +854,9 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                 },
                 onChanged: (v) {
                   final n = int.tryParse(v);
-                  if (n != null && n > 0) setState(() => _maxBookingAdvanceDays = n);
+                  if (n != null && n > 0) {
+                    setState(() => _maxBookingAdvanceDays = n);
+                  }
                 },
               ),
             ),
@@ -1306,7 +1308,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     'it': {
       'location_step_label': 'Sede',
       'services_step_label': 'Servizi',
-      'staff_step_label': 'Fornitore dei servizi',
+      'staff_step_label': '{staffLabel}',
       'location_title': 'Scegli la sede',
       'location_subtitle': 'Seleziona dove vuoi effettuare la prenotazione',
       'location_empty': 'Nessuna sede disponibile',
@@ -1352,7 +1354,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       'tab_conflict_services_title': 'Servizi non selezionabili',
       'tab_conflict_services_subtitle':
           'Hai già selezionato l\'evento "{eventName}". Una prenotazione può includere servizi oppure un evento di gruppo, non entrambi. Deseleziona l\'evento per scegliere i servizi.',
-      'staff_title': 'Scegli il fornitore dei servizi',
+      'staff_label': 'Operatore',
+      'staff_title': 'Scegli {staffLabel}',
       'staff_subtitle': 'Seleziona con chi desideri essere servito',
       'staff_any_label': 'Qualsiasi fornitore dei servizi disponibile',
       'staff_any_subtitle':
@@ -1374,7 +1377,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     'en': {
       'location_step_label': 'Location',
       'services_step_label': 'Services',
-      'staff_step_label': 'Service provider',
+      'staff_step_label': '{staffLabel}',
       'location_title': 'Choose location',
       'location_subtitle': 'Select where you want to book',
       'location_empty': 'No location available',
@@ -1419,7 +1422,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       'tab_conflict_services_title': 'Services not selectable',
       'tab_conflict_services_subtitle':
           'You\'ve already selected the event "{eventName}". A booking can include either services or a group event, not both. Deselect the event to choose services.',
-      'staff_title': 'Choose service provider',
+      'staff_label': 'Staff member',
+      'staff_title': 'Choose {staffLabel}',
       'staff_subtitle': 'Select who you want to be served by',
       'staff_any_label': 'Any available service provider',
       'staff_any_subtitle':
@@ -1476,4 +1480,3 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     return L10n.delegate.supportedLocales.first.languageCode.toLowerCase();
   }
 }
-

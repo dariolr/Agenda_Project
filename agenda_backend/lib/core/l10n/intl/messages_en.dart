@@ -3065,9 +3065,11 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "teamLocationDays": m90,
     "teamLocationEmailHint": MessageLookupByLibrary.simpleMessage(
-      "Email for customer notifications",
+      "Email to receive customer replies",
     ),
-    "teamLocationEmailLabel": MessageLookupByLibrary.simpleMessage("Email"),
+    "teamLocationEmailLabel": MessageLookupByLibrary.simpleMessage(
+      "Customer reply email",
+    ),
     "teamLocationHours": m91,
     "teamLocationIsActiveHint": MessageLookupByLibrary.simpleMessage(
       "If disabled, the location will not be visible to customers",

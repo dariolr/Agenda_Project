@@ -3189,9 +3189,11 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "teamLocationDays": m90,
     "teamLocationEmailHint": MessageLookupByLibrary.simpleMessage(
-      "Email per notifiche ai clienti",
+      "Email per ricevere risposte dai clienti",
     ),
-    "teamLocationEmailLabel": MessageLookupByLibrary.simpleMessage("Email"),
+    "teamLocationEmailLabel": MessageLookupByLibrary.simpleMessage(
+      "Email ricezione risposte clienti",
+    ),
     "teamLocationHours": m91,
     "teamLocationIsActiveHint": MessageLookupByLibrary.simpleMessage(
       "Se disattivata, la sede non sarà visibile ai clienti",

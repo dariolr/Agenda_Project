@@ -135,7 +135,7 @@ final class QueueBookingRescheduled
             'new_time' => $newStartTime->format('H:i'),
             'date' => EmailTemplateRenderer::formatLongDate($newStartTime, $locale),
             'time' => $newStartTime->format('H:i'),
-            'services' => $booking['services'] ?? '',
+            'services' => EmailTemplateRenderer::resolveBookingServicesLabel($booking),
             'manage_url' => $booking['manage_url'] ?? '#',
             'booking_url' => $booking['booking_url'] ?? '#',
             'location_block_html' => $locationBlockHtml,

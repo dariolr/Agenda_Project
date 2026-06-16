@@ -1661,6 +1661,7 @@ class _ServiceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final description = service.description?.trim();
 
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
@@ -1710,6 +1711,15 @@ class _ServiceTile extends StatelessWidget {
                         fontWeight: FontWeight.w600,
                       ),
                     ),
+                    if (description != null && description.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        description,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurface.withOpacity(0.7),
+                        ),
+                      ),
+                    ],
                     if (showDurationToCustomer) ...[
                       const SizedBox(height: 4),
                       Text(

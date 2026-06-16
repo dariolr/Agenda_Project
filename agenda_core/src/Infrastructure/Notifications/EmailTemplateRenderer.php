@@ -13,6 +13,51 @@ use DateTimeImmutable;
 final class EmailTemplateRenderer
 {
     /**
+     * Build a customer-facing service list for notification templates.
+     *
+     * @param array<int,array<string,mixed>> $items
+     */
+    public static function formatServicesWithDescriptions(array $items): string
+    {
+        $lines = [];
+
+        foreach ($items as $item) {
+            $name = trim((string) ($item['service_name'] ?? $item['service_name_snapshot'] ?? ''));
+            if ($name === '') {
+                continue;
+            }
+
+            $description = trim((string) ($item['service_description'] ?? ''));
+            $description = preg_replace('/\s+/', ' ', $description) ?? $description;
+
+            $line = $description !== '' ? sprintf('%s - %s', $name, $description) : $name;
+            if (!in_array($line, $lines, true)) {
+                $lines[] = $line;
+            }
+        }
+
+        return implode(', ', $lines);
+    }
+
+    /**
+     * Resolve the service label for a booking notification payload.
+     *
+     * @param array<string,mixed> $booking
+     */
+    public static function resolveBookingServicesLabel(array $booking): string
+    {
+        $items = $booking['items'] ?? null;
+        if (is_array($items)) {
+            $label = self::formatServicesWithDescriptions($items);
+            if ($label !== '') {
+                return $label;
+            }
+        }
+
+        return (string) ($booking['services'] ?? '');
+    }
+
+    /**
      * Render a template with variables.
      *
      * @param string $template Template string with {{placeholders}}
