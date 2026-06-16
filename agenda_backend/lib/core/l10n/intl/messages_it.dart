@@ -3260,6 +3260,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationNomenclatureValueLabel": MessageLookupByLibrary.simpleMessage(
       "Testo personalizzato",
     ),
+    "teamLocationNotificationEmailsHelper": MessageLookupByLibrary.simpleMessage(
+      "Avvisi per attività online del cliente (prenotazione, modifica, annullamento). Separa più email con virgola.",
+    ),
+    "teamLocationNotificationEmailsHint": MessageLookupByLibrary.simpleMessage(
+      "email1@esempio.it, email2@esempio.it",
+    ),
+    "teamLocationNotificationEmailsLabel": MessageLookupByLibrary.simpleMessage(
+      "Email notifiche prenotazioni clienti",
+    ),
     "teamLocationOnlineBookingEnabledHint": MessageLookupByLibrary.simpleMessage(
       "Se disattivata, la sede non sarà prenotabile online. Rimane visibile e operativa nel gestionale.",
     ),

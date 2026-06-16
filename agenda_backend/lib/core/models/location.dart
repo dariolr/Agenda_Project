@@ -8,6 +8,7 @@ class Location {
   final String? country;
   final String? phone;
   final String? email;
+  final String? notificationEmails;
   final double? latitude;
   final double? longitude;
   final String? currency;
@@ -40,6 +41,7 @@ class Location {
     this.country,
     this.phone,
     this.email,
+    this.notificationEmails,
     this.latitude,
     this.longitude,
     this.currency,
@@ -73,6 +75,7 @@ class Location {
     String? country,
     String? phone,
     String? email,
+    String? notificationEmails,
     double? latitude,
     double? longitude,
     String? currency,
@@ -105,6 +108,7 @@ class Location {
       country: country ?? this.country,
       phone: phone ?? this.phone,
       email: email ?? this.email,
+      notificationEmails: notificationEmails ?? this.notificationEmails,
       latitude: latitude ?? this.latitude,
       longitude: longitude ?? this.longitude,
       currency: currency ?? this.currency,
@@ -147,6 +151,7 @@ class Location {
       country: json['country'] as String?,
       phone: json['phone'] as String?,
       email: json['email'] as String?,
+      notificationEmails: json['notification_emails'] as String?,
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       currency: json['currency'] as String?,
@@ -188,6 +193,7 @@ class Location {
       if (country != null) 'country': country,
       if (phone != null) 'phone': phone,
       if (email != null) 'email': email,
+      if (notificationEmails != null) 'notification_emails': notificationEmails,
       if (latitude != null) 'latitude': latitude,
       if (longitude != null) 'longitude': longitude,
       if (currency != null) 'currency': currency,
@@ -241,4 +247,3 @@ Map<String, Map<String, String>>? _parseBookingTextOverrides(dynamic raw) {
 
   return result.isEmpty ? null : result;
 }
-

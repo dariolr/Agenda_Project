@@ -108,6 +108,50 @@ final class NotificationRepository
     }
 
     /**
+     * Queue additional notifications for location's notification_emails (staff recipients).
+     * Parses comma-separated emails and queues one notification per email.
+     */
+    public function queueForNotificationEmails(
+        string $notificationEmails,
+        string $channel,
+        string $subject,
+        array $variables,
+        int $businessId,
+        ?int $bookingId = null,
+        ?int $classBookingId = null,
+    ): void {
+        $emails = array_map('trim', explode(',', $notificationEmails));
+        $emails = array_filter($emails, static fn(string $email): bool => $email !== '');
+
+        if (empty($emails)) {
+            return;
+        }
+
+        $staffSubject = '[Staff] ' . $subject;
+
+        foreach ($emails as $email) {
+            $this->queue([
+                'type' => 'email',
+                'channel' => $channel,
+                'recipient_type' => 'staff',
+                'recipient_id' => 0,
+                'recipient_email' => $email,
+                'recipient_name' => null,
+                'subject' => $staffSubject,
+                'payload' => [
+                    'template' => $channel,
+                    'variables' => $variables,
+                    'is_staff_notification' => true,
+                ],
+                'priority' => 5,
+                'business_id' => $businessId,
+                'booking_id' => $bookingId,
+                'class_booking_id' => $classBookingId,
+            ]);
+        }
+    }
+
+    /**
      * Get pending notifications ready to be sent.
      */
     public function getPending(int $limit = 50): array

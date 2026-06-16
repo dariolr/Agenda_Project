@@ -173,6 +173,7 @@ final class LocationsController
             'country' => $row['country'],
             'phone' => $row['phone'],
             'email' => $row['email'],
+            'notification_emails' => $row['notification_emails'] ?? null,
             'latitude' => $row['latitude'] ? (float) $row['latitude'] : null,
             'longitude' => $row['longitude'] ? (float) $row['longitude'] : null,
             'currency' => $row['currency'],
@@ -307,6 +308,7 @@ final class LocationsController
             'country' => $country,
             'phone' => $body['phone'] ?? null,
             'email' => $body['email'] ?? null,
+            'notification_emails' => $body['notification_emails'] ?? null,
             'timezone' => $timezone,
             'booking_default_locale' => $bookingDefaultLocale,
             'min_booking_notice_hours' => $body['min_booking_notice_hours'] ?? 1,
@@ -360,6 +362,7 @@ final class LocationsController
             'address' => array_key_exists('address', $body) ? $body['address'] : $location['address'],
             'phone' => array_key_exists('phone', $body) ? $body['phone'] : $location['phone'],
             'email' => array_key_exists('email', $body) ? $body['email'] : $location['email'],
+            'notification_emails' => array_key_exists('notification_emails', $body) ? $body['notification_emails'] : ($location['notification_emails'] ?? null),
             'is_active' => array_key_exists('is_active', $body) ? $body['is_active'] : $location['is_active'],
             'online_booking_enabled' => array_key_exists('online_booking_enabled', $body)
                 ? (bool) $body['online_booking_enabled']

@@ -133,20 +133,38 @@ final class QueueClassBookingNotification
             $payload['attachments'] = $attachments;
         }
 
-        return $this->notificationRepo->queue([
+        $subject = EmailTemplateRenderer::render($template['subject'], $variables);
+        $result = $this->notificationRepo->queue([
             'type'              => 'email',
             'channel'           => $channel,
             'recipient_type'    => 'client',
             'recipient_id'      => $clientId,
             'recipient_email'   => $clientEmail['email'],
             'recipient_name'    => $this->extractFirstName($clientEmail['name'] ?? null),
-            'subject'           => EmailTemplateRenderer::render($template['subject'], $variables),
+            'subject'           => $subject,
             'payload'           => $payload,
             'priority'          => $priority,
             'scheduled_at'      => $scheduledAt,
             'business_id'       => $businessId,
             'class_booking_id'  => $classBookingId,
         ]);
+
+        // Queue staff notifications for location notification_emails (only if client-triggered)
+        // Note: class bookings from customer are triggered by client, but we don't track that yet
+        $notificationEmails = trim((string) ($data['location_notification_emails'] ?? ''));
+        if ($notificationEmails !== '' && false) {
+            $this->notificationRepo->queueForNotificationEmails(
+                $notificationEmails,
+                $channel,
+                $subject,
+                $variables,
+                $businessId,
+                null,
+                $classBookingId,
+            );
+        }
+
+        return $result;
     }
 
     private function queueWhatsapp(array $data, string $channel, ?string $scheduledAt = null): void
@@ -196,6 +214,7 @@ final class QueueClassBookingNotification
                  l.phone                AS location_phone,
                  l.timezone             AS location_timezone,
                  l.booking_default_locale AS location_locale,
+                 l.notification_emails  AS location_notification_emails,
                  bus.name               AS business_name,
                  bus.email              AS business_email,
                  bus.slug               AS business_slug

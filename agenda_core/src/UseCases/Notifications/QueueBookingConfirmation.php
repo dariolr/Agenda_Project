@@ -132,7 +132,7 @@ final class QueueBookingConfirmation
         }
 
         // Queue notification
-        return $this->notificationRepo->queue([
+        $result = $this->notificationRepo->queue([
             'type' => 'email',
             'channel' => 'booking_confirmed',
             'recipient_type' => $recipientType,
@@ -145,6 +145,22 @@ final class QueueBookingConfirmation
             'business_id' => $booking['business_id'],
             'booking_id' => $booking['booking_id'],
         ]);
+
+        // Queue staff notifications for notification_emails (only if client-triggered)
+        $notificationEmails = trim((string) ($booking['notification_emails'] ?? ''));
+        $triggeredByClient = !empty($booking['triggered_by_client']);
+        if ($notificationEmails !== '' && $triggeredByClient) {
+            $this->notificationRepo->queueForNotificationEmails(
+                $notificationEmails,
+                'booking_confirmed',
+                EmailTemplateRenderer::render($template['subject'], $variables),
+                $variables,
+                (int) $booking['business_id'],
+                (int) $booking['booking_id'],
+            );
+        }
+
+        return $result;
     }
 
     private function queueWhatsapp(array $booking, string $channel, ?string $scheduledAt = null): void

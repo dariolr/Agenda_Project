@@ -78,7 +78,7 @@ final class DeleteBooking
         }
         
         // Prepara i dati per la notifica prima di cancellare
-        $notificationData = $this->prepareNotificationData($booking, $requestedLocale);
+        $notificationData = $this->prepareNotificationData($booking, $requestedLocale, $isCustomer);
         
         // Cattura stato booking per audit prima della cancellazione
         $bookingStateForAudit = $this->captureBookingStateForAudit($bookingId);
@@ -106,7 +106,7 @@ final class DeleteBooking
         $this->queueCancellationNotification($notificationData);
     }
 
-    private function prepareNotificationData(array $booking, ?string $requestedLocale = null): array
+    private function prepareNotificationData(array $booking, ?string $requestedLocale = null, bool $isCustomer = false): array
     {
         // Get booking details before deletion including location and business emails
         // NOTE: notifications go to CLIENT (from clients table), not user (operator)
@@ -124,6 +124,7 @@ final class DeleteBooking
                 l.name as location_name,
                 l.address as location_address,
                 l.email as location_email,
+                l.notification_emails as location_notification_emails,
                 l.timezone as location_timezone,
                 l.booking_default_locale as location_locale,
                 b.name as business_name,
@@ -196,6 +197,8 @@ final class DeleteBooking
             'location_name' => $details['location_name'] ?? '',
             'location_address' => $details['location_address'] ?? '',
             'location_email' => $details['location_email'] ?? '',
+            'notification_emails' => $details['location_notification_emails'] ?? '',
+            'triggered_by_client' => $isCustomer,
             'location_timezone' => $details['location_timezone'] ?? null,
             'business_name' => $details['business_name'] ?? 'Agenda',
             'business_email' => $details['business_email'] ?? '',

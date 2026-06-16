@@ -3136,6 +3136,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationNomenclatureValueLabel": MessageLookupByLibrary.simpleMessage(
       "Custom text",
     ),
+    "teamLocationNotificationEmailsHelper": MessageLookupByLibrary.simpleMessage(
+      "Alerts for online customer activity (booking, modify, cancel). Separate multiple emails with commas.",
+    ),
+    "teamLocationNotificationEmailsHint": MessageLookupByLibrary.simpleMessage(
+      "email1@example.com, email2@example.com",
+    ),
+    "teamLocationNotificationEmailsLabel": MessageLookupByLibrary.simpleMessage(
+      "Customer booking notification emails",
+    ),
     "teamLocationOnlineBookingEnabledHint": MessageLookupByLibrary.simpleMessage(
       "If disabled, this location cannot be booked online. It remains visible and operational in the management panel.",
     ),

@@ -1,4 +1,3 @@
-
 import '../../../core/models/location.dart';
 import '../../../core/network/api_client.dart';
 
@@ -19,6 +18,7 @@ class LocationsRepository {
     String? country,
     String? phone,
     String? email,
+    String? notificationEmails,
     String? timezone,
     String? bookingDefaultLocale,
     int? minBookingNoticeHours,
@@ -40,6 +40,7 @@ class LocationsRepository {
       country: country,
       phone: phone,
       email: email,
+      notificationEmails: notificationEmails,
       timezone: timezone,
       bookingDefaultLocale: bookingDefaultLocale,
       minBookingNoticeHours: minBookingNoticeHours,
@@ -64,6 +65,7 @@ class LocationsRepository {
     String? country,
     String? phone,
     String? email,
+    String? notificationEmails,
     String? timezone,
     String? bookingDefaultLocale,
     int? minBookingNoticeHours,
@@ -88,6 +90,7 @@ class LocationsRepository {
       country: country,
       phone: phone,
       email: email,
+      notificationEmails: notificationEmails,
       timezone: timezone,
       bookingDefaultLocale: bookingDefaultLocale,
       minBookingNoticeHours: minBookingNoticeHours,
@@ -112,4 +115,3 @@ class LocationsRepository {
     await _apiClient.deleteLocation(locationId);
   }
 }
-

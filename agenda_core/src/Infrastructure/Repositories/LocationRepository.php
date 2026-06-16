@@ -16,7 +16,7 @@ final class LocationRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT l.id, l.business_id, l.name, l.address, l.city, l.region, l.country,
-                    l.phone, l.email, l.latitude, l.longitude, l.currency, l.timezone,
+                    l.phone, l.email, l.notification_emails, l.latitude, l.longitude, l.currency, l.timezone,
                     l.booking_default_locale,
                     l.allow_customer_choose_staff, l.allow_multi_service_booking,
                     l.show_price_to_customer, l.show_duration_to_customer,
@@ -46,7 +46,7 @@ final class LocationRepository
     public function findByBusinessId(int $businessId, bool $includeInactive = false): array
     {
         $sql = 'SELECT l.id, l.business_id, l.name, l.address, l.city, l.region, l.country,
-                    l.phone, l.email, l.latitude, l.longitude, l.currency, l.timezone,
+                    l.phone, l.email, l.notification_emails, l.latitude, l.longitude, l.currency, l.timezone,
                     l.booking_default_locale,
                     l.allow_customer_choose_staff, l.allow_multi_service_booking,
                     l.show_price_to_customer, l.show_duration_to_customer,
@@ -179,14 +179,14 @@ final class LocationRepository
         $onlineBookingEnabled = $data['online_booking_enabled'] ?? 1;
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO locations (
-                business_id, name, address, country, phone, email, timezone, booking_default_locale,
+                business_id, name, address, country, phone, email, notification_emails, timezone, booking_default_locale,
                 min_booking_notice_hours, max_booking_advance_days,
                 allow_customer_choose_staff, allow_multi_service_booking, cancellation_hours,
                 booking_text_overrides_json,
                 staff_icon_key,
                 show_price_to_customer, show_duration_to_customer,
                 is_active, online_booking_enabled
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $businessId,
@@ -195,6 +195,7 @@ final class LocationRepository
             $data['country'] ?? null,
             $data['phone'] ?? null,
             $data['email'] ?? null,
+            $data['notification_emails'] ?? null,
             $data['timezone'] ?? 'Europe/Rome',
             $data['booking_default_locale'] ?? null,
             $data['min_booking_notice_hours'] ?? 1,
@@ -218,7 +219,7 @@ final class LocationRepository
         $fields = [];
         $values = [];
 
-        foreach (['name', 'address', 'country', 'phone', 'email', 'timezone', 'booking_default_locale', 'booking_text_overrides_json', 'staff_icon_key'] as $field) {
+        foreach (['name', 'address', 'country', 'phone', 'email', 'notification_emails', 'timezone', 'booking_default_locale', 'booking_text_overrides_json', 'staff_icon_key'] as $field) {
             if (array_key_exists($field, $data)) {
                 $fields[] = "{$field} = ?";
                 $values[] = $data[$field];

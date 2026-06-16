@@ -664,6 +664,8 @@ final class ReplaceBooking
                 'business_email' => $location['business_email'] ?? '',
                 'location_name' => $location['name'] ?? '',
                 'location_email' => $location['email'] ?? '',
+                'notification_emails' => $location['notification_emails'] ?? '',
+                'triggered_by_client' => false,
                 'location_address' => $location['address'] ?? '',
                 'location_city' => $location['city'] ?? '',
                 'location_phone' => $location['phone'] ?? '',

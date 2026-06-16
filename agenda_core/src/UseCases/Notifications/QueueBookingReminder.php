@@ -174,7 +174,7 @@ final class QueueBookingReminder
         $calendar = $this->buildCalendarData($booking, $locale);
 
         $resolvedSenderEmail = $this->resolveSenderEmail($booking);
-        $resolvedSenderName = $this->resolveSenderName($booking, $resolvedSenderEmail);
+        $resolvedSenderName = $this->resolveSenderName($booking);
 
         $variables = [
             'client_name' => $clientName,
@@ -211,7 +211,7 @@ final class QueueBookingReminder
             $payload['attachments'] = $calendar['attachments'];
         }
 
-        return $this->notificationRepo->queue([
+        $result = $this->notificationRepo->queue([
             'type' => 'email',
             'channel' => 'booking_reminder',
             'recipient_type' => $recipientType,
@@ -226,6 +226,22 @@ final class QueueBookingReminder
             'business_id' => $booking['business_id'],
             'booking_id' => $booking['booking_id'],
         ]);
+
+        // Queue staff notifications for notification_emails (only if client-triggered)
+        $notificationEmails = trim((string) ($booking['notification_emails'] ?? ''));
+        $triggeredByClient = !empty($booking['triggered_by_client']);
+        if ($notificationEmails !== '' && $triggeredByClient) {
+            $this->notificationRepo->queueForNotificationEmails(
+                $notificationEmails,
+                'booking_reminder',
+                EmailTemplateRenderer::render($template['subject'], $variables),
+                $variables,
+                (int) $booking['business_id'],
+                (int) $booking['booking_id'],
+            );
+        }
+
+        return $result;
     }
 
     private function queueWhatsapp(array $booking, string $channel, ?string $scheduledAt = null): void
@@ -267,6 +283,7 @@ final class QueueBookingReminder
                 l.address as location_address,
                 l.phone as location_phone,
                 l.email as location_email,
+                l.notification_emails,
                 c.email as client_email,
                 c.first_name as client_first_name,
                 MIN(bi.start_time) as start_time,
@@ -454,6 +471,7 @@ final class QueueBookingReminder
                 l.address as location_address,
                 l.phone as location_phone,
                 l.email as location_email,
+                l.notification_emails,
                 c.email as client_email,
                 c.first_name as client_first_name,
                 MIN(bi.start_time) as start_time,

@@ -148,7 +148,8 @@ final class UpdateBooking
             $this->queueRescheduleNotification(
                 $updatedBooking,
                 $oldStartTime,
-                isset($data['locale']) ? (string) $data['locale'] : null
+                isset($data['locale']) ? (string) $data['locale'] : null,
+                $isCustomer,
             );
 
             // Keep reminder aligned with the new booking start after reschedule.
@@ -384,7 +385,8 @@ final class UpdateBooking
     private function queueRescheduleNotification(
         array $booking,
         ?string $oldStartTime,
-        ?string $requestedLocale = null
+        ?string $requestedLocale = null,
+        bool $isCustomer = false,
     ): void
     {
         // No client = no notification
@@ -452,6 +454,8 @@ final class UpdateBooking
                 'business_email' => $locationData['business_email'] ?? '',
                 'location_name' => $locationData['location_name'] ?? '',
                 'location_email' => $locationData['location_email'] ?? '',
+                'notification_emails' => $locationData['location_notification_emails'] ?? '',
+                'triggered_by_client' => $isCustomer,
                 'location_address' => $locationData['location_address'] ?? '',
                 'location_city' => $locationData['location_city'] ?? '',
                 'location_phone' => $locationData['location_phone'] ?? '',
@@ -500,6 +504,7 @@ final class UpdateBooking
                 l.business_id,
                 l.name as location_name,
                 l.email as location_email,
+                l.notification_emails as location_notification_emails,
                 l.address as location_address,
                 l.city as location_city,
                 l.phone as location_phone,

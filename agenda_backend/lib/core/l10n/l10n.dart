@@ -1723,6 +1723,36 @@ class L10n {
     );
   }
 
+  /// `Customer booking notification emails`
+  String get teamLocationNotificationEmailsLabel {
+    return Intl.message(
+      'Customer booking notification emails',
+      name: 'teamLocationNotificationEmailsLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `email1@example.com, email2@example.com`
+  String get teamLocationNotificationEmailsHint {
+    return Intl.message(
+      'email1@example.com, email2@example.com',
+      name: 'teamLocationNotificationEmailsHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Alerts for online customer activity (booking, modify, cancel). Separate multiple emails with commas.`
+  String get teamLocationNotificationEmailsHelper {
+    return Intl.message(
+      'Alerts for online customer activity (booking, modify, cancel). Separate multiple emails with commas.',
+      name: 'teamLocationNotificationEmailsHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Online booking configuration for this location`
   String get teamLocationOnlineBookingSettingsSection {
     return Intl.message(

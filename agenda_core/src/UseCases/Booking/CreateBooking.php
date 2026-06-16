@@ -915,8 +915,8 @@ final class CreateBooking
             return;
         }
         
-        // Use the same method as customer bookings
-        $this->queueNotificationsForClient($booking, $location, (int) $clientId, $requestedLocale);
+        // Use the same method as customer bookings (but operator-triggered)
+        $this->queueNotificationsForClient($booking, $location, (int) $clientId, $requestedLocale, false);
     }
 
     /**
@@ -1222,8 +1222,8 @@ final class CreateBooking
             // Create audit event for booking_created (by customer)
             $this->createBookingCreatedEvent($bookingId, 'customer', $clientId, $booking);
             
-            // Queue notifications
-            $this->queueNotificationsForClient($booking, $location, $clientId, $requestedLocale);
+            // Queue notifications (triggered by client)
+            $this->queueNotificationsForClient($booking, $location, $clientId, $requestedLocale, true);
             
             return $this->formatBookingResponse($booking);
 
@@ -1347,6 +1347,7 @@ final class CreateBooking
 
         try {
             $itemsToCreate = [];
+            $staffId = null;
 
             foreach ($items as $item) {
                 $serviceId = (int) $item['service_id'];
@@ -1442,8 +1443,8 @@ final class CreateBooking
             // Create audit event for booking_created (by customer)
             $this->createBookingCreatedEvent($bookingId, 'customer', $clientId, $booking);
 
-            // Queue notifications
-            $this->queueNotificationsForClient($booking, $location, $clientId, $requestedLocale);
+            // Queue notifications (triggered by client)
+            $this->queueNotificationsForClient($booking, $location, $clientId, $requestedLocale, true);
 
             return $this->formatBookingResponse($booking);
 
@@ -1467,7 +1468,8 @@ final class CreateBooking
         array $booking,
         array $location,
         int $clientId,
-        ?string $requestedLocale = null
+        ?string $requestedLocale = null,
+        bool $triggeredByClient = false,
     ): void
     {
         file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " queueNotificationsForClient: notificationRepo=" . ($this->notificationRepo === null ? 'NULL' : 'OK') . " booking_id={$booking['id']} client_id={$clientId}\n", FILE_APPEND);
@@ -1518,6 +1520,8 @@ final class CreateBooking
                 'business_email' => $location['business_email'] ?? '',
                 'location_name' => $location['name'] ?? '',
                 'location_email' => $location['email'] ?? '',
+                'notification_emails' => $location['notification_emails'] ?? '',
+                'triggered_by_client' => $triggeredByClient,
                 'location_address' => $location['address'] ?? '',
                 'location_city' => $location['city'] ?? '',
                 'location_phone' => $location['phone'] ?? '',

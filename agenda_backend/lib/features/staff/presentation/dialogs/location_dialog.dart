@@ -51,6 +51,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
   final _emailController = TextEditingController();
+  final _notificationEmailsController = TextEditingController();
   String _selectedCountryCode = 'IT';
   String _selectedTimezone = 'Europe/Rome';
   String? _selectedBookingDefaultLocale;
@@ -392,6 +393,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           ? initialBookingLocale
           : null;
       _emailController.text = widget.initial!.email ?? '';
+      _notificationEmailsController.text =
+          widget.initial!.notificationEmails ?? '';
       final defaultMap = widget.initial!.bookingTextOverrides?['default'];
       for (final key in _nomenclatureFieldOrder) {
         _nomenclatureControllers[key] = TextEditingController(
@@ -504,6 +507,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     _nameController.dispose();
     _addressController.dispose();
     _emailController.dispose();
+    _notificationEmailsController.dispose();
     _maxBookingAdvanceDaysController.dispose();
     for (final controller in _nomenclatureControllers.values) {
       controller.dispose();
@@ -677,6 +681,20 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       ),
     );
 
+    final notificationEmailsField = LabeledFormField(
+      label: l10n.teamLocationNotificationEmailsLabel,
+      child: TextFormField(
+        controller: _notificationEmailsController,
+        keyboardType: TextInputType.emailAddress,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          isDense: true,
+          hintText: l10n.teamLocationNotificationEmailsHint,
+          helperText: l10n.teamLocationNotificationEmailsHelper,
+        ),
+      ),
+    );
+
     final content = Form(
       autovalidateMode: AutovalidateMode.onUserInteraction,
       key: _formKey,
@@ -695,6 +713,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           ],
           const SizedBox(height: AppSpacing.formRowSpacing),
           emailField,
+          const SizedBox(height: AppSpacing.formRowSpacing),
+          notificationEmailsField,
           const SizedBox(height: AppSpacing.formRowSpacing),
           _buildSectionDivider(context),
           const SizedBox(height: AppSpacing.formRowSpacing),
@@ -1219,6 +1239,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
         ? _selectedBookingDefaultLocale?.trim().toLowerCase()
         : null;
     final email = _emailController.text.trim();
+    final notificationEmails = _notificationEmailsController.text.trim();
     final bookingTextOverrides = isSuperadmin
         ? _buildBookingTextOverrides(context.l10n)
         : null;
@@ -1236,6 +1257,9 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           address: address.isEmpty ? null : address,
           country: country,
           email: email.isEmpty ? null : email,
+          notificationEmails: notificationEmails.isEmpty
+              ? null
+              : notificationEmails,
           timezone: timezone,
           bookingDefaultLocale: bookingDefaultLocale,
           isActive: _isActive,
@@ -1260,6 +1284,9 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           address: address.isEmpty ? null : address,
           country: country,
           email: email.isEmpty ? null : email,
+          notificationEmails: notificationEmails.isEmpty
+              ? null
+              : notificationEmails,
           timezone: timezone,
           bookingDefaultLocale: bookingDefaultLocale,
           isActive: _isActive,

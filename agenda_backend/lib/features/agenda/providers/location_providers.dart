@@ -1,4 +1,3 @@
-
 import 'package:agenda_backend/core/services/preferences_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -122,6 +121,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
     String? country,
     String? phone,
     String? email,
+    String? notificationEmails,
     String? timezone,
     String? bookingDefaultLocale,
     int? minBookingNoticeHours,
@@ -145,6 +145,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
       country: country,
       phone: phone,
       email: email,
+      notificationEmails: notificationEmails,
       timezone: timezone,
       bookingDefaultLocale: bookingDefaultLocale,
       minBookingNoticeHours: minBookingNoticeHours,
@@ -171,6 +172,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
     String? country,
     String? phone,
     String? email,
+    String? notificationEmails,
     String? timezone,
     String? bookingDefaultLocale,
     int? minBookingNoticeHours,
@@ -196,6 +198,7 @@ class LocationsNotifier extends Notifier<List<Location>> {
       country: country,
       phone: phone,
       email: email,
+      notificationEmails: notificationEmails,
       timezone: timezone,
       bookingDefaultLocale: bookingDefaultLocale,
       minBookingNoticeHours: minBookingNoticeHours,
@@ -399,4 +402,3 @@ final effectiveCurrencyProvider = Provider<String>((ref) {
   final business = ref.watch(currentBusinessProvider);
   return location.currency ?? business.currency;
 });
-
