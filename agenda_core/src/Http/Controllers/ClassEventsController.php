@@ -77,6 +77,16 @@ final class ClassEventsController
             }
         }
 
+        // Apply per-operator class-type read filter (null=Tutti, []=Nessuno, [ids]=selezionati).
+        $allowedClassTypeIds = $this->allowedClassTypeFilter($userId, $businessId);
+        if ($allowedClassTypeIds !== null) {
+            $allowedSet = array_flip($allowedClassTypeIds);
+            $items = array_values(array_filter(
+                $items,
+                static fn (array $row): bool => isset($allowedSet[(int) $row['id']])
+            ));
+        }
+
         return Response::success([
             'items' => array_map(
                 fn (array $row): array => $this->formatClassType(
@@ -375,6 +385,16 @@ final class ClassEventsController
             $this->resolveCustomerId($businessId, $userId)
         );
 
+        // Apply per-operator class-type read filter (null=Tutti, []=Nessuno, [ids]=selezionati).
+        $allowedClassTypeIds = $this->allowedClassTypeFilter($userId, $businessId);
+        if ($allowedClassTypeIds !== null) {
+            $allowedSet = array_flip($allowedClassTypeIds);
+            $items = array_values(array_filter(
+                $items,
+                static fn (array $row): bool => isset($allowedSet[(int) $row['class_type_id']])
+            ));
+        }
+
         $eventIds = array_map(static fn (array $row): int => (int) $row['id'], $items);
         $resourceRequirements = $this->classEventRepo->findResourceRequirementsForEvents($businessId, $eventIds);
 
@@ -409,6 +429,9 @@ final class ClassEventsController
         if ($event === null) {
             return Response::notFound('Class event not found', $request->traceId);
         }
+        if (!$this->canReadClassType($userId, $businessId, (int) $event['class_type_id'])) {
+            return Response::notFound('Class event not found', $request->traceId);
+        }
 
         $resourceRequirements = $this->classEventRepo->findResourceRequirementsForEvents($businessId, [$classEventId]);
         return Response::success($this->formatClassEvent($event, $resourceRequirements[$classEventId] ?? []));
@@ -424,6 +447,14 @@ final class ClassEventsController
         }
         if (!$this->canRead($userId, $businessId)) {
             return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        $event = $this->classEventRepo->findById($businessId, $classEventId, null);
+        if ($event === null) {
+            return Response::notFound('Class event not found', $request->traceId);
+        }
+        if (!$this->canReadClassType($userId, $businessId, (int) $event['class_type_id'])) {
+            return Response::notFound('Class event not found', $request->traceId);
         }
 
         $status = $request->queryParam('status');
@@ -1366,6 +1397,34 @@ final class ClassEventsController
             return false;
         }
         $allowed = $businessUser['allowed_class_type_ids']; // null=Tutti, []=Nessuno, [..]=selezionati
+        if ($allowed === null) {
+            return true;
+        }
+        if (empty($allowed)) {
+            return false;
+        }
+        return in_array($classTypeId, $allowed, true);
+    }
+
+    /**
+     * Class-type read filter for the current operator.
+     * Returns: null = Tutti (no restriction), [] = Nessuno, [ids] = solo selezionati.
+     * Superadmin and service managers (allowed=null) are never restricted.
+     */
+    private function allowedClassTypeFilter(int $userId, int $businessId): ?array
+    {
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return null;
+        }
+        return $this->businessUserRepo->getAllowedClassTypeIds($userId, $businessId);
+    }
+
+    /**
+     * Whether the current operator may see the given class type, per read filter.
+     */
+    private function canReadClassType(int $userId, int $businessId, int $classTypeId): bool
+    {
+        $allowed = $this->allowedClassTypeFilter($userId, $businessId);
         if ($allowed === null) {
             return true;
         }

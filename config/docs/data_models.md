@@ -122,11 +122,16 @@ I due filtri sono **indipendenti** e seguono una semantica a 3 stati ciascuno:
 I due filtri si applicano in modo ortogonale: impostare uno non influenza l'altro.
 
 **Effetti del filtro:**
-- Visibilità nell'agenda (lato Flutter — filtro applicato client-side)
+- Visibilità nell'agenda (lato Flutter e lato backend)
 - Autorizzazione a creare/modificare/cancellare eventi del tipo corrispondente (lato backend)
 - Per `allowed_service_ids`: validato anche su creazione e modifica appuntamenti
 
-**Nota — filtro lettura backend:** gli endpoint di lettura (lista servizi, lista eventi lezione) non applicano ancora il filtro lato SQL. Il filtraggio avviene client-side. Questo è un punto aperto da completare.
+**Filtro lettura backend (implementato):** gli endpoint di lettura per operatori applicano il filtro a 3 stati:
+- `allowed_class_type_ids` → `ClassEventsController`: `indexTypes`, `indexByBusiness`, `show`, `participants`
+- `allowed_service_ids` → `ServicesController::indexByLocation`; `BookingsController::listAll` (a livello SQL, paginazione-safe) e `index` (vista giorno agenda)
+- Semantica bookings: una prenotazione è visibile se contiene **almeno un** servizio consentito (union).
+- Gli endpoint pubblici/cliente (`ServicesController::index`, portale prenotazioni) NON applicano il filtro operatore.
+- Superadmin e service manager (`allowed_*` = NULL) non sono mai filtrati.
 
 **Relazione con `can_manage_services`:**
 `can_manage_services` controlla la gestione della **configurazione** (creare/modificare/eliminare tipi di servizio e tipi di lezione). È ortogonale ai filtri: un operatore con filtri attivi ha `can_manage_services = false` per default, ma può comunque schedulare eventi per i tipi a cui ha accesso.

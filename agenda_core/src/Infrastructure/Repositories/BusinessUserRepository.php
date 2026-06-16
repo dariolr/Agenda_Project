@@ -763,7 +763,37 @@ final class BusinessUserRepository
         if ($businessUser['scope_type'] === 'business') {
             return null; // null = all locations allowed
         }
-        
+
         return $businessUser['location_ids'];
+    }
+
+    /**
+     * Get the service-id read filter for a user in a business.
+     * 3-state: null = Tutti (no restriction), [] = Nessuno, [ids] = solo selezionati.
+     * Returns null when the user has no association (caller already enforces access).
+     */
+    public function getAllowedServiceIds(int $userId, int $businessId): ?array
+    {
+        $businessUser = $this->findByUserAndBusiness($userId, $businessId);
+        if ($businessUser === null) {
+            return null;
+        }
+
+        return $businessUser['allowed_service_ids'];
+    }
+
+    /**
+     * Get the class-type-id read filter for a user in a business.
+     * 3-state: null = Tutti (no restriction), [] = Nessuno, [ids] = solo selezionati.
+     * Returns null when the user has no association (caller already enforces access).
+     */
+    public function getAllowedClassTypeIds(int $userId, int $businessId): ?array
+    {
+        $businessUser = $this->findByUserAndBusiness($userId, $businessId);
+        if ($businessUser === null) {
+            return null;
+        }
+
+        return $businessUser['allowed_class_type_ids'];
     }
 }

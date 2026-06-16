@@ -54,6 +54,20 @@ final class ServicesController
     }
 
     /**
+     * Service-id read filter for the current operator.
+     * Returns: null = Tutti (no restriction), [] = Nessuno, [ids] = solo selezionati.
+     * Superadmin and service managers (allowed=null) are never restricted.
+     */
+    private function allowedServiceFilter(Request $request, int $businessId): ?array
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null || $this->userRepo->isSuperadmin($userId)) {
+            return null;
+        }
+        return $this->businessUserRepo->getAllowedServiceIds((int) $userId, $businessId);
+    }
+
+    /**
      * Check if authenticated user has services manage permission in the given business.
      */
     private function hasBusinessAccess(Request $request, int $businessId): bool
@@ -282,6 +296,17 @@ final class ServicesController
         }
 
         $services = $this->serviceRepository->findAdminByLocationId($locationId, $businessId);
+
+        // Apply per-operator service read filter (null=Tutti, []=Nessuno, [ids]=selezionati).
+        $allowedServiceIds = $this->allowedServiceFilter($request, $businessId);
+        if ($allowedServiceIds !== null) {
+            $allowedSet = array_flip($allowedServiceIds);
+            $services = array_values(array_filter(
+                $services,
+                static fn (array $service): bool => isset($allowedSet[(int) $service['id']])
+            ));
+        }
+
         $categories = $this->serviceRepository->getCategories($businessId, null, true);
 
         $variantIds = [];

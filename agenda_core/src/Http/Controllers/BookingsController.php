@@ -88,6 +88,23 @@ final class BookingsController
     }
 
     /**
+     * Service-id read filter for the current operator.
+     * Returns: null = Tutti (no restriction), [] = Nessuno, [ids] = solo selezionati.
+     * Superadmin and service managers (allowed=null) are never restricted.
+     */
+    private function allowedServiceFilter(Request $request, int $businessId): ?array
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null || $this->userRepo === null || $this->businessUserRepo === null) {
+            return null;
+        }
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return null;
+        }
+        return $this->businessUserRepo->getAllowedServiceIds((int) $userId, $businessId);
+    }
+
+    /**
      * @param int[] $locationIds
      */
     private function requireLocationScope(Request $request, int $businessId, array $locationIds): ?Response
@@ -212,6 +229,26 @@ final class BookingsController
             $staffId !== null ? (int) $staffId : null
         );
 
+        // Apply per-operator service read filter (null=Tutti, []=Nessuno, [ids]=selezionati).
+        // Union semantics: a booking is visible if it contains at least one allowed service.
+        if ($businessId !== null) {
+            $allowedServiceIds = $this->allowedServiceFilter($request, (int) $businessId);
+            if ($allowedServiceIds !== null) {
+                $allowedSet = array_flip($allowedServiceIds);
+                $bookings = array_values(array_filter(
+                    $bookings,
+                    static function (array $booking) use ($allowedSet): bool {
+                        foreach ($booking['items'] ?? [] as $item) {
+                            if (isset($allowedSet[(int) $item['service_id']])) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    }
+                ));
+            }
+        }
+
         // Format bookings for response
         $formatted = array_map(fn($b) => $this->formatBooking($b), $bookings);
 
@@ -309,7 +346,41 @@ final class BookingsController
         } elseif ($request->queryParam('service_id') !== null) {
             $filters['service_id'] = (int) $request->queryParam('service_id');
         }
-        
+
+        // Apply per-operator service read filter (null=Tutti, []=Nessuno, [ids]=selezionati),
+        // intersecting with any service filter requested by the client.
+        $allowedServiceIds = $this->allowedServiceFilter($request, $businessId);
+        if ($allowedServiceIds !== null) {
+            $emptyResult = static fn (): Response => Response::success([
+                'bookings' => [],
+                'total' => 0,
+                'limit' => min(100, max(1, (int) ($request->queryParam('limit') ?? 50))),
+                'offset' => max(0, (int) ($request->queryParam('offset') ?? 0)),
+            ]);
+
+            if (empty($allowedServiceIds)) {
+                return $emptyResult();
+            }
+
+            $requested = null;
+            if (!empty($filters['service_ids'])) {
+                $requested = array_map('intval', $filters['service_ids']);
+            } elseif (!empty($filters['service_id'])) {
+                $requested = [(int) $filters['service_id']];
+            }
+
+            $effective = $requested === null
+                ? array_values($allowedServiceIds)
+                : array_values(array_intersect($requested, $allowedServiceIds));
+
+            if (empty($effective)) {
+                return $emptyResult();
+            }
+
+            unset($filters['service_id']);
+            $filters['service_ids'] = $effective;
+        }
+
         if ($request->queryParam('client_search') !== null) {
             $filters['client_search'] = trim($request->queryParam('client_search'));
         }
