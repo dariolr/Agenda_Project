@@ -497,6 +497,11 @@ final class ClassEventsController
         if ($linkedStaffId !== null && $staffId !== $linkedStaffId) {
             return Response::forbidden('Staff operators can only schedule events for themselves', $request->traceId);
         }
+        // Ruolo custom: l'istruttore assegnato deve appartenere a allowed_staff_ids.
+        $customAllowedStaffIds = $this->getAllowedStaffIdsForCustomOperator($userId, $businessId);
+        if ($customAllowedStaffIds !== null && !in_array($staffId, $customAllowedStaffIds, true)) {
+            return Response::forbidden('You can only schedule events for your allowed team members', $request->traceId);
+        }
         if (!$this->classEventRepo->classTypeExists($businessId, $classTypeId)) {
             return Response::error('class_type_id not found for this business', 'validation_error', 400, $request->traceId);
         }
@@ -630,6 +635,12 @@ final class ClassEventsController
             $linkedStaffId = $this->getLinkedStaffId($userId, $businessId);
             if ($linkedStaffId !== null && (int) $payload['staff_id'] !== $linkedStaffId) {
                 return Response::forbidden('Staff operators can only schedule events for themselves', $request->traceId);
+            }
+            // Ruolo custom: l'istruttore assegnato deve appartenere a allowed_staff_ids.
+            $customAllowedStaffIds = $this->getAllowedStaffIdsForCustomOperator($userId, $businessId);
+            if ($customAllowedStaffIds !== null
+                && !in_array((int) $payload['staff_id'], $customAllowedStaffIds, true)) {
+                return Response::forbidden('You can only schedule events for your allowed team members', $request->traceId);
             }
         }
         if (isset($payload['status'])) {
@@ -1382,6 +1393,23 @@ final class ClassEventsController
         }
         $staffId = isset($businessUser['staff_id']) ? (int) $businessUser['staff_id'] : 0;
         return $staffId > 0 ? $staffId : null;
+    }
+
+    /**
+     * For role=custom operators, returns the allowed_staff_ids 3-state filter:
+     * null = nessuna restrizione (Tutti, o ruolo non custom/superadmin),
+     * [] = Nessuno, [ids] = solo quei membri. Distinto dal forced-staff di role===staff.
+     */
+    private function getAllowedStaffIdsForCustomOperator(int $userId, int $businessId): ?array
+    {
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return null;
+        }
+        $businessUser = $this->businessUserRepo->findByUserAndBusiness($userId, $businessId);
+        if ($businessUser === null || ($businessUser['role'] ?? null) !== 'custom') {
+            return null;
+        }
+        return $businessUser['allowed_staff_ids'] ?? null;
     }
 
     private function canScheduleClassType(int $userId, int $businessId, int $classTypeId): bool

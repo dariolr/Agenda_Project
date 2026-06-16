@@ -85,11 +85,12 @@ Associa utenti a businesses con ruoli e permessi.
 - id
 - business_id
 - user_id
-- role (enum: owner, admin, manager, staff, viewer)
+- role (enum: owner, admin, manager, staff, viewer, custom)
 - staff_id (optional, link a staff record)
 - scope_type (`business` | `locations`)
 - allowed_service_ids (JSON array, optional — vedi Filter Semantics)
 - allowed_class_type_ids (JSON array, optional — vedi Filter Semantics)
+- allowed_staff_ids (JSON array, optional — vedi Filter Semantics)
 - can_manage_bookings
 - can_manage_clients
 - can_manage_services
@@ -108,18 +109,35 @@ Associa utenti a businesses con ruoli e permessi.
 - `manager`: Operativita completa sul perimetro assegnato (business intero o sedi assegnate)
 - `staff`: Operativita limitata al membro del team associato (`staff_id`). Può schedulare eventi lezione e gestire appuntamenti solo per il proprio `staff_id`. I filtri `allowed_service_ids` / `allowed_class_type_ids` restringono ulteriormente quali servizi/tipi lezione può gestire.
 - `viewer`: Sola lettura (agenda/prenotazioni/staff/servizi nel perimetro assegnato)
+- `custom`: Ruolo completamente configurabile. I permessi (`can_manage_*`) e i filtri
+  (`allowed_service_ids`, `allowed_class_type_ids`, `allowed_staff_ids`) sono impostati
+  esplicitamente dall'UI, non derivati dal ruolo. Il vincolo "solo questi membri del team"
+  deriva da `allowed_staff_ids` (insieme), **non** da `staff_id` (singolo) come per il ruolo
+  `staff`: sono meccanismi distinti. La logica backend che fa `if role === 'staff'`
+  (forced-staff) o `if role === 'manager'` (grant extra su staff/scope) **non** si applica a
+  `custom`, che ricade interamente sui flag e sui filtri. Enforcement in scrittura
+  (`staff_id` assegnato ∈ `allowed_staff_ids`) attivo in `BookingsController`,
+  `AppointmentsController`, `ClassEventsController`.
 
 **Scope Semantics:**
 - `scope_type=business`: accesso a tutte le sedi del business.
 - `scope_type=locations`: accesso limitato alle sedi assegnate in `business_user_locations`.
 
-**Filter Semantics (allowed_service_ids / allowed_class_type_ids):**
-I due filtri sono **indipendenti** e seguono una semantica a 3 stati ciascuno:
-- `null` → **Tutti**: nessun filtro, accesso completo a tutti i servizi/tipi lezione.
-- `[]` → **Nessuno**: nessun accesso (zero servizi/tipi lezione visibili e gestibili).
+**Filter Semantics (allowed_service_ids / allowed_class_type_ids / allowed_staff_ids):**
+I tre filtri sono **indipendenti** e seguono una semantica a 3 stati ciascuno:
+- `null` → **Tutti**: nessun filtro, accesso completo a tutti i servizi/tipi lezione/membri del team.
+- `[]` → **Nessuno**: nessun accesso (zero elementi visibili e gestibili).
 - `[1, 2, ...]` → **Solo selezionati**: accesso limitato agli id esplicitamente elencati.
 
-I due filtri si applicano in modo ortogonale: impostare uno non influenza l'altro.
+I tre filtri si applicano in modo ortogonale: impostarne uno non influenza gli altri.
+
+`allowed_staff_ids` indica su quali membri del team l'operatore può operare. È mostrato in UI
+solo per i ruoli diversi da admin/owner (accesso totale) e da `staff` (già vincolato al membro
+collegato via `staff_id`). Invariante speculare a quella dei servizi: chi ha `can_manage_staff`
+non può avere un filtro residuo → `allowed_staff_ids` viene forzato a `NULL` (`create`) o rifiutato
+(`update`). Enforcement in lettura: l'agenda mostra solo i membri consentiti
+(`staff_filter_providers.dart` → `filteredStaffProvider`). L'enforcement in scrittura
+(`staff_id` assegnato ∈ `allowed_staff_ids`) arriverà con il ruolo `custom` (Step 2).
 
 **Effetti del filtro:**
 - Visibilità nell'agenda (lato Flutter e lato backend)
@@ -144,7 +162,7 @@ Inviti via email per nuovi operatori.
 - id
 - business_id
 - email
-- role (enum: admin, manager, staff, viewer)
+- role (enum: admin, manager, staff, viewer, custom)
 - scope_type (`business` | `locations`)
 - staff_id (nullable, obbligatorio quando `role=staff`)
 - token (64-char hex, unique)
@@ -153,6 +171,8 @@ Inviti via email per nuovi operatori.
 - accepted_by (user_id, nullable)
 - accepted_at (nullable)
 - invited_by (user_id)
+- allowed_service_ids / allowed_class_type_ids / allowed_staff_ids (JSON array, optional — filtri salvati sull'invito e applicati alla creazione del BusinessUser all'accettazione; stessa semantica 3-stati. NB: su invito `[]` è collassato a `null` = Tutti)
+- can_manage_bookings / can_manage_clients / can_manage_services / can_manage_staff / can_view_reports (tinyint nullable — permessi granulari salvati sull'invito, valorizzati solo per `role=custom`. `NULL` = non specificato → all'accettazione si applica il default del ruolo)
 - created_at
 - updated_at
 

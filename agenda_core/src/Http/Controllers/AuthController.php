@@ -501,6 +501,7 @@ final class AuthController
                 'staff_id' => $businessUser['staff_id'] ?? null,
                 'allowed_service_ids' => $businessUser['allowed_service_ids'],
                 'allowed_class_type_ids' => $businessUser['allowed_class_type_ids'],
+                'allowed_staff_ids' => $businessUser['allowed_staff_ids'] ?? null,
                 'permissions' => [
                     'can_manage_bookings' => (bool) ($businessUser['can_manage_bookings'] ?? false),
                     'can_manage_clients' => (bool) ($businessUser['can_manage_clients'] ?? false),

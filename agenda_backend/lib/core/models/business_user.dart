@@ -11,6 +11,14 @@ class BusinessUser {
   final List<int>? allowedServiceIds;
   /// null = Tutti, [] = Nessuno, [1,2] = Solo selezionati.
   final List<int>? allowedClassTypeIds;
+  /// null = Tutti, [] = Nessuno, [1,2] = Solo selezionati.
+  final List<int>? allowedStaffIds;
+  /// Permessi granulari (rilevanti soprattutto per il ruolo `custom`).
+  final bool canManageBookings;
+  final bool canManageClients;
+  final bool canManageServices;
+  final bool canManageStaff;
+  final bool canViewReports;
   final String email;
   final String firstName;
   final String lastName;
@@ -29,6 +37,12 @@ class BusinessUser {
     this.locationIds = const [],
     this.allowedServiceIds,
     this.allowedClassTypeIds,
+    this.allowedStaffIds,
+    this.canManageBookings = false,
+    this.canManageClients = false,
+    this.canManageServices = false,
+    this.canManageStaff = false,
+    this.canViewReports = false,
     required this.email,
     required this.firstName,
     required this.lastName,
@@ -60,6 +74,7 @@ class BusinessUser {
     'manager' => 'Manager',
     'staff' => 'Staff',
     'viewer' => 'Visualizzatore',
+    'custom' => 'Operatore personalizzato',
     _ => role,
   };
 
@@ -73,6 +88,12 @@ class BusinessUser {
     List<int>? locationIds,
     List<int>? allowedServiceIds,
     List<int>? allowedClassTypeIds,
+    List<int>? allowedStaffIds,
+    bool? canManageBookings,
+    bool? canManageClients,
+    bool? canManageServices,
+    bool? canManageStaff,
+    bool? canViewReports,
     String? email,
     String? firstName,
     String? lastName,
@@ -90,6 +111,12 @@ class BusinessUser {
     locationIds: locationIds ?? this.locationIds,
     allowedServiceIds: allowedServiceIds ?? this.allowedServiceIds,
     allowedClassTypeIds: allowedClassTypeIds ?? this.allowedClassTypeIds,
+    allowedStaffIds: allowedStaffIds ?? this.allowedStaffIds,
+    canManageBookings: canManageBookings ?? this.canManageBookings,
+    canManageClients: canManageClients ?? this.canManageClients,
+    canManageServices: canManageServices ?? this.canManageServices,
+    canManageStaff: canManageStaff ?? this.canManageStaff,
+    canViewReports: canViewReports ?? this.canViewReports,
     email: email ?? this.email,
     firstName: firstName ?? this.firstName,
     lastName: lastName ?? this.lastName,
@@ -122,6 +149,16 @@ class BusinessUser {
             ?.map(_asInt)
             .where((e) => e > 0)
             .toList(),
+    allowedStaffIds:
+        (json['allowed_staff_ids'] as List<dynamic>?)
+            ?.map(_asInt)
+            .where((e) => e > 0)
+            .toList(),
+    canManageBookings: _asBool(_permission(json, 'can_manage_bookings')),
+    canManageClients: _asBool(_permission(json, 'can_manage_clients')),
+    canManageServices: _asBool(_permission(json, 'can_manage_services')),
+    canManageStaff: _asBool(_permission(json, 'can_manage_staff')),
+    canViewReports: _asBool(_permission(json, 'can_view_reports')),
     email: json['email'] as String? ?? json['user']?['email'] as String? ?? '',
     firstName:
         json['first_name'] as String? ??
@@ -180,4 +217,23 @@ int _asInt(Object? value) {
   if (value is num) return value.toInt();
   if (value is String) return int.tryParse(value) ?? 0;
   return 0;
+}
+
+/// Legge un flag permesso sia dal sotto-oggetto `permissions` sia dal livello root.
+Object? _permission(Map<String, dynamic> json, String key) {
+  final permissions = json['permissions'];
+  if (permissions is Map && permissions.containsKey(key)) {
+    return permissions[key];
+  }
+  return json[key];
+}
+
+bool _asBool(Object? value) {
+  if (value is bool) return value;
+  if (value is num) return value != 0;
+  if (value is String) {
+    final v = value.trim().toLowerCase();
+    return v == '1' || v == 'true' || v == 'yes';
+  }
+  return false;
 }

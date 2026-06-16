@@ -2169,6 +2169,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "operatorsAccessibleServices": MessageLookupByLibrary.simpleMessage(
       "Servizi accessibili",
     ),
+    "operatorsAccessibleStaff": MessageLookupByLibrary.simpleMessage(
+      "Membri del team accessibili",
+    ),
     "operatorsDeleteInvite": MessageLookupByLibrary.simpleMessage(
       "Elimina invito",
     ),
@@ -2227,6 +2230,22 @@ class MessageLookup extends MessageLookupByLibrary {
       "Inviti in attesa",
     ),
     "operatorsPendingInvitesCount": m57,
+    "operatorsPermBookings": MessageLookupByLibrary.simpleMessage(
+      "Gestione prenotazioni",
+    ),
+    "operatorsPermClients": MessageLookupByLibrary.simpleMessage(
+      "Gestione clienti",
+    ),
+    "operatorsPermReports": MessageLookupByLibrary.simpleMessage(
+      "Accesso ai report",
+    ),
+    "operatorsPermServices": MessageLookupByLibrary.simpleMessage(
+      "Gestione servizi e listino",
+    ),
+    "operatorsPermStaff": MessageLookupByLibrary.simpleMessage("Gestione team"),
+    "operatorsPermissionsTitle": MessageLookupByLibrary.simpleMessage(
+      "Permessi",
+    ),
     "operatorsRemove": MessageLookupByLibrary.simpleMessage(
       "Rimuovi operatore",
     ),
@@ -2243,6 +2262,12 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "operatorsRoleAdminDesc": MessageLookupByLibrary.simpleMessage(
       "Accesso completo a tutte le funzionalità. Può gestire altri operatori e modificare impostazioni del business.",
+    ),
+    "operatorsRoleCustom": MessageLookupByLibrary.simpleMessage(
+      "Operatore personalizzato",
+    ),
+    "operatorsRoleCustomDesc": MessageLookupByLibrary.simpleMessage(
+      "Permessi e ambito configurabili nel dettaglio: scegli cosa può gestire e su quali servizi, tipi lezione e membri del team opera.",
     ),
     "operatorsRoleDescription": MessageLookupByLibrary.simpleMessage(
       "Seleziona il livello di accesso",

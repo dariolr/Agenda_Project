@@ -20,6 +20,12 @@ typedef RoleScopeSaveCallback =
       required List<int> locationIds,
       required List<int>? allowedServiceIds,
       required List<int>? allowedClassTypeIds,
+      required List<int>? allowedStaffIds,
+      bool? canManageBookings,
+      bool? canManageClients,
+      bool? canManageServices,
+      bool? canManageStaff,
+      bool? canViewReports,
     });
 
 /// Modalità di accesso per una categoria di filtro.
@@ -39,6 +45,12 @@ class RoleSelectionDialog extends StatefulWidget {
     required this.onSave,
     this.currentServiceIds,
     this.currentClassTypeIds,
+    this.currentStaffIds,
+    this.currentCanManageBookings = false,
+    this.currentCanManageClients = false,
+    this.currentCanManageServices = false,
+    this.currentCanManageStaff = false,
+    this.currentCanViewReports = false,
     this.services = const [],
     this.classTypes = const [],
     this.linkedStaffId,
@@ -54,6 +66,12 @@ class RoleSelectionDialog extends StatefulWidget {
   final RoleScopeSaveCallback onSave;
   final List<int>? currentServiceIds;
   final List<int>? currentClassTypeIds;
+  final List<int>? currentStaffIds;
+  final bool currentCanManageBookings;
+  final bool currentCanManageClients;
+  final bool currentCanManageServices;
+  final bool currentCanManageStaff;
+  final bool currentCanViewReports;
   final List<Service> services;
   final List<ClassType> classTypes;
   /// Staff collegato all'operatore (solo per role=staff)
@@ -70,8 +88,15 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
   late Set<int> _selectedLocationIds;
   late AccessMode _serviceMode;
   late AccessMode _classTypeMode;
+  late AccessMode _staffMode;
   late Set<int> _selectedServiceIds;
   late Set<int> _selectedClassTypeIds;
+  late Set<int> _selectedStaffIds;
+  late bool _canManageBookings;
+  late bool _canManageClients;
+  late bool _canManageServices;
+  late bool _canManageStaff;
+  late bool _canViewReports;
 
   @override
   void initState() {
@@ -83,8 +108,15 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
     _selectedLocationIds = widget.currentLocationIds.toSet();
     _serviceMode = _modeFromList(widget.currentServiceIds);
     _classTypeMode = _modeFromList(widget.currentClassTypeIds);
+    _staffMode = _modeFromList(widget.currentStaffIds);
     _selectedServiceIds = widget.currentServiceIds?.toSet() ?? {};
     _selectedClassTypeIds = widget.currentClassTypeIds?.toSet() ?? {};
+    _selectedStaffIds = widget.currentStaffIds?.toSet() ?? {};
+    _canManageBookings = widget.currentCanManageBookings;
+    _canManageClients = widget.currentCanManageClients;
+    _canManageServices = widget.currentCanManageServices;
+    _canManageStaff = widget.currentCanManageStaff;
+    _canViewReports = widget.currentCanViewReports;
     _enforceSingleLocationForStaff();
   }
 
@@ -126,11 +158,23 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
 
   bool _showServiceFilter(List<Service> filtered) {
     if (_selectedRole == 'admin' || _selectedRole == 'owner') return false;
+    // custom con gestione servizi: nessun filtro residuo (invariante backend).
+    if (_selectedRole == 'custom' && _canManageServices) return false;
     if (_selectedRole != 'staff') {
       return widget.services.isNotEmpty || widget.classTypes.isNotEmpty;
     }
     return widget.linkedStaffId != null &&
         (filtered.isNotEmpty || widget.classTypes.isNotEmpty);
+  }
+
+  /// Il filtro sui membri del team non si applica ad admin/owner (accesso totale)
+  /// né al ruolo staff (già vincolato al membro collegato).
+  bool _showStaffFilter() {
+    if (_selectedRole == 'admin' || _selectedRole == 'owner') return false;
+    if (_selectedRole == 'staff') return false;
+    // custom con gestione team: nessun filtro residuo sui membri (invariante backend).
+    if (_selectedRole == 'custom' && _canManageStaff) return false;
+    return widget.staffList.isNotEmpty;
   }
 
   @override
@@ -167,6 +211,44 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
               _enforceSingleLocationForStaff();
             }),
           ),
+          if (_selectedRole == 'custom') ...[
+            const SizedBox(height: 24),
+            const AppDivider(),
+            const SizedBox(height: 16),
+            PermissionTogglesSection(
+              canManageBookings: _canManageBookings,
+              canManageClients: _canManageClients,
+              canManageServices: _canManageServices,
+              canManageStaff: _canManageStaff,
+              canViewReports: _canViewReports,
+              onChanged: (key, value) => setState(() {
+                switch (key) {
+                  case 'bookings':
+                    _canManageBookings = value;
+                  case 'clients':
+                    _canManageClients = value;
+                  case 'services':
+                    _canManageServices = value;
+                    // Invariante: chi gestisce i servizi non ha filtri residui.
+                    if (value) {
+                      _serviceMode = AccessMode.all;
+                      _selectedServiceIds = {};
+                      _classTypeMode = AccessMode.all;
+                      _selectedClassTypeIds = {};
+                    }
+                  case 'staff':
+                    _canManageStaff = value;
+                    // Invariante: chi gestisce il team non ha filtro sui membri.
+                    if (value) {
+                      _staffMode = AccessMode.all;
+                      _selectedStaffIds = {};
+                    }
+                  case 'reports':
+                    _canViewReports = value;
+                }
+              }),
+            ),
+          ],
           // Sezione scope solo se più di una location
           if (widget.locations.length > 1) ...[
             const SizedBox(height: 24),
@@ -225,6 +307,22 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
                   setState(() => _selectedClassTypeIds = ids),
             ),
           ],
+          if (_showStaffFilter()) ...[
+            const SizedBox(height: 24),
+            const AppDivider(),
+            const SizedBox(height: 16),
+            StaffFilterSection(
+              staffList: widget.staffList,
+              mode: _staffMode,
+              selectedIds: _selectedStaffIds,
+              onModeChanged: (mode) => setState(() {
+                _staffMode = mode;
+                if (mode != AccessMode.selected) _selectedStaffIds = {};
+              }),
+              onSelectionChanged: (ids) =>
+                  setState(() => _selectedStaffIds = ids),
+            ),
+          ],
         ],
       ),
       actions: [
@@ -260,8 +358,20 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
               role: _selectedRole,
               scopeType: _selectedScopeType,
               locationIds: _selectedLocationIds.toList(),
-              allowedServiceIds: _resolveFilterIds(_serviceMode, _selectedServiceIds),
-              allowedClassTypeIds: _resolveFilterIds(_classTypeMode, _selectedClassTypeIds),
+              allowedServiceIds: _showServiceFilter(filteredServices)
+                  ? _resolveFilterIds(_serviceMode, _selectedServiceIds)
+                  : null,
+              allowedClassTypeIds: _showServiceFilter(filteredServices)
+                  ? _resolveFilterIds(_classTypeMode, _selectedClassTypeIds)
+                  : null,
+              allowedStaffIds: _showStaffFilter()
+                  ? _resolveFilterIds(_staffMode, _selectedStaffIds)
+                  : null,
+              canManageBookings: _selectedRole == 'custom' ? _canManageBookings : null,
+              canManageClients: _selectedRole == 'custom' ? _canManageClients : null,
+              canManageServices: _selectedRole == 'custom' ? _canManageServices : null,
+              canManageStaff: _selectedRole == 'custom' ? _canManageStaff : null,
+              canViewReports: _selectedRole == 'custom' ? _canViewReports : null,
             );
           },
           child: Text(l10n.actionSave),
@@ -284,6 +394,12 @@ class RoleSelectionSheet extends StatefulWidget {
     required this.onSave,
     this.currentServiceIds,
     this.currentClassTypeIds,
+    this.currentStaffIds,
+    this.currentCanManageBookings = false,
+    this.currentCanManageClients = false,
+    this.currentCanManageServices = false,
+    this.currentCanManageStaff = false,
+    this.currentCanViewReports = false,
     this.services = const [],
     this.classTypes = const [],
     this.linkedStaffId,
@@ -299,6 +415,12 @@ class RoleSelectionSheet extends StatefulWidget {
   final RoleScopeSaveCallback onSave;
   final List<int>? currentServiceIds;
   final List<int>? currentClassTypeIds;
+  final List<int>? currentStaffIds;
+  final bool currentCanManageBookings;
+  final bool currentCanManageClients;
+  final bool currentCanManageServices;
+  final bool currentCanManageStaff;
+  final bool currentCanViewReports;
   final List<Service> services;
   final List<ClassType> classTypes;
   final int? linkedStaffId;
@@ -314,8 +436,15 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
   late Set<int> _selectedLocationIds;
   late AccessMode _serviceMode;
   late AccessMode _classTypeMode;
+  late AccessMode _staffMode;
   late Set<int> _selectedServiceIds;
   late Set<int> _selectedClassTypeIds;
+  late Set<int> _selectedStaffIds;
+  late bool _canManageBookings;
+  late bool _canManageClients;
+  late bool _canManageServices;
+  late bool _canManageStaff;
+  late bool _canViewReports;
 
   @override
   void initState() {
@@ -327,8 +456,15 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
     _selectedLocationIds = widget.currentLocationIds.toSet();
     _serviceMode = _modeFromList(widget.currentServiceIds);
     _classTypeMode = _modeFromList(widget.currentClassTypeIds);
+    _staffMode = _modeFromList(widget.currentStaffIds);
     _selectedServiceIds = widget.currentServiceIds?.toSet() ?? {};
     _selectedClassTypeIds = widget.currentClassTypeIds?.toSet() ?? {};
+    _selectedStaffIds = widget.currentStaffIds?.toSet() ?? {};
+    _canManageBookings = widget.currentCanManageBookings;
+    _canManageClients = widget.currentCanManageClients;
+    _canManageServices = widget.currentCanManageServices;
+    _canManageStaff = widget.currentCanManageStaff;
+    _canViewReports = widget.currentCanViewReports;
     _enforceSingleLocationForStaff();
   }
 
@@ -370,11 +506,23 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
 
   bool _showServiceFilter(List<Service> filtered) {
     if (_selectedRole == 'admin' || _selectedRole == 'owner') return false;
+    // custom con gestione servizi: nessun filtro residuo (invariante backend).
+    if (_selectedRole == 'custom' && _canManageServices) return false;
     if (_selectedRole != 'staff') {
       return widget.services.isNotEmpty || widget.classTypes.isNotEmpty;
     }
     return widget.linkedStaffId != null &&
         (filtered.isNotEmpty || widget.classTypes.isNotEmpty);
+  }
+
+  /// Il filtro sui membri del team non si applica ad admin/owner (accesso totale)
+  /// né al ruolo staff (già vincolato al membro collegato).
+  bool _showStaffFilter() {
+    if (_selectedRole == 'admin' || _selectedRole == 'owner') return false;
+    if (_selectedRole == 'staff') return false;
+    // custom con gestione team: nessun filtro residuo sui membri (invariante backend).
+    if (_selectedRole == 'custom' && _canManageStaff) return false;
+    return widget.staffList.isNotEmpty;
   }
 
   @override
@@ -416,6 +564,44 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
               _enforceSingleLocationForStaff();
             }),
           ),
+          if (_selectedRole == 'custom') ...[
+            const SizedBox(height: 24),
+            const AppDivider(),
+            const SizedBox(height: 16),
+            PermissionTogglesSection(
+              canManageBookings: _canManageBookings,
+              canManageClients: _canManageClients,
+              canManageServices: _canManageServices,
+              canManageStaff: _canManageStaff,
+              canViewReports: _canViewReports,
+              onChanged: (key, value) => setState(() {
+                switch (key) {
+                  case 'bookings':
+                    _canManageBookings = value;
+                  case 'clients':
+                    _canManageClients = value;
+                  case 'services':
+                    _canManageServices = value;
+                    // Invariante: chi gestisce i servizi non ha filtri residui.
+                    if (value) {
+                      _serviceMode = AccessMode.all;
+                      _selectedServiceIds = {};
+                      _classTypeMode = AccessMode.all;
+                      _selectedClassTypeIds = {};
+                    }
+                  case 'staff':
+                    _canManageStaff = value;
+                    // Invariante: chi gestisce il team non ha filtro sui membri.
+                    if (value) {
+                      _staffMode = AccessMode.all;
+                      _selectedStaffIds = {};
+                    }
+                  case 'reports':
+                    _canViewReports = value;
+                }
+              }),
+            ),
+          ],
           // Sezione scope solo se più di una location
           if (widget.locations.length > 1) ...[
             const SizedBox(height: 24),
@@ -472,6 +658,22 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
                   setState(() => _selectedServiceIds = ids),
               onClassTypesChanged: (ids) =>
                   setState(() => _selectedClassTypeIds = ids),
+            ),
+          ],
+          if (_showStaffFilter()) ...[
+            const SizedBox(height: 24),
+            const AppDivider(),
+            const SizedBox(height: 16),
+            StaffFilterSection(
+              staffList: widget.staffList,
+              mode: _staffMode,
+              selectedIds: _selectedStaffIds,
+              onModeChanged: (mode) => setState(() {
+                _staffMode = mode;
+                if (mode != AccessMode.selected) _selectedStaffIds = {};
+              }),
+              onSelectionChanged: (ids) =>
+                  setState(() => _selectedStaffIds = ids),
             ),
           ],
           const SizedBox(height: 16),
@@ -514,8 +716,20 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
                       role: _selectedRole,
                       scopeType: _selectedScopeType,
                       locationIds: _selectedLocationIds.toList(),
-                      allowedServiceIds: _resolveFilterIds(_serviceMode, _selectedServiceIds),
-                      allowedClassTypeIds: _resolveFilterIds(_classTypeMode, _selectedClassTypeIds),
+                      allowedServiceIds: _showServiceFilter(filteredServices)
+                          ? _resolveFilterIds(_serviceMode, _selectedServiceIds)
+                          : null,
+                      allowedClassTypeIds: _showServiceFilter(filteredServices)
+                          ? _resolveFilterIds(_classTypeMode, _selectedClassTypeIds)
+                          : null,
+                      allowedStaffIds: _showStaffFilter()
+                          ? _resolveFilterIds(_staffMode, _selectedStaffIds)
+                          : null,
+                      canManageBookings: _selectedRole == 'custom' ? _canManageBookings : null,
+                      canManageClients: _selectedRole == 'custom' ? _canManageClients : null,
+                      canManageServices: _selectedRole == 'custom' ? _canManageServices : null,
+                      canManageStaff: _selectedRole == 'custom' ? _canManageStaff : null,
+                      canViewReports: _selectedRole == 'custom' ? _canViewReports : null,
                     );
                   },
                   child: Text(l10n.actionSave),
@@ -573,6 +787,14 @@ class _RoleRadioList extends StatelessWidget {
           title: l10n.operatorsRoleViewer,
           subtitle: l10n.operatorsRoleViewerDesc,
           icon: Icons.visibility_outlined,
+        ),
+        _RoleRadioTile(
+          value: 'custom',
+          groupValue: selectedRole,
+          onChanged: onChanged,
+          title: l10n.operatorsRoleCustom,
+          subtitle: l10n.operatorsRoleCustomDesc,
+          icon: Icons.tune,
         ),
       ],
     );
@@ -971,6 +1193,107 @@ class ServiceFilterSection extends ConsumerWidget {
           items: byCategory[catId]!,
         ),
     ];
+  }
+}
+
+/// Toggle dei permessi granulari, mostrati per il ruolo `custom`.
+class PermissionTogglesSection extends StatelessWidget {
+  const PermissionTogglesSection({
+    super.key,
+    required this.canManageBookings,
+    required this.canManageClients,
+    required this.canManageServices,
+    required this.canManageStaff,
+    required this.canViewReports,
+    required this.onChanged,
+  });
+
+  final bool canManageBookings;
+  final bool canManageClients;
+  final bool canManageServices;
+  final bool canManageStaff;
+  final bool canViewReports;
+
+  /// key in {bookings, clients, services, staff, reports}.
+  final void Function(String key, bool value) onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+
+    Widget tile(String key, String label, bool value) => SwitchListTile(
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      title: Text(label, style: theme.textTheme.bodyMedium),
+      value: value,
+      onChanged: (v) => onChanged(key, v),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.operatorsPermissionsTitle,
+          style: theme.textTheme.labelMedium
+              ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        ),
+        tile('bookings', l10n.operatorsPermBookings, canManageBookings),
+        tile('clients', l10n.operatorsPermClients, canManageClients),
+        tile('services', l10n.operatorsPermServices, canManageServices),
+        tile('staff', l10n.operatorsPermStaff, canManageStaff),
+        tile('reports', l10n.operatorsPermReports, canViewReports),
+      ],
+    );
+  }
+}
+
+/// Sezione filtro 3-stati per i membri del team accessibili.
+/// Riusa lo stesso widget delle sezioni servizi/tipi lezione.
+class StaffFilterSection extends StatelessWidget {
+  const StaffFilterSection({
+    super.key,
+    required this.staffList,
+    required this.mode,
+    required this.selectedIds,
+    required this.onModeChanged,
+    required this.onSelectionChanged,
+  });
+
+  final List<Staff> staffList;
+  final AccessMode mode;
+  final Set<int> selectedIds;
+  final ValueChanged<AccessMode> onModeChanged;
+  final ValueChanged<Set<int>> onSelectionChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    return _FilterCategorySection(
+      label: l10n.operatorsAccessibleStaff,
+      mode: mode,
+      onModeChanged: onModeChanged,
+      l10n: l10n,
+      theme: theme,
+      child: mode == AccessMode.selected
+          ? _ItemCheckboxList(
+              items: [
+                (
+                  catId: null,
+                  catName: '',
+                  items: staffList
+                      .map((s) => (id: s.id, name: s.name, icon: null as IconData?))
+                      .toList(),
+                ),
+              ],
+              selectedIds: selectedIds,
+              onChanged: onSelectionChanged,
+              theme: theme,
+              colorScheme: theme.colorScheme,
+            )
+          : null,
+    );
   }
 }
 

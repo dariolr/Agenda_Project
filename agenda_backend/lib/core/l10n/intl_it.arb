@@ -800,6 +800,14 @@
   "operatorsRoleStaffDesc": "Vede e gestisce solo i propri appuntamenti. Può creare prenotazioni assegnate a sé stesso.",
   "operatorsRoleViewer": "Visualizzatore",
   "operatorsRoleViewerDesc": "Può consultare appuntamenti, servizi, staff e disponibilità. Nessuna modifica consentita.",
+  "operatorsRoleCustom": "Operatore personalizzato",
+  "operatorsRoleCustomDesc": "Permessi e ambito configurabili nel dettaglio: scegli cosa può gestire e su quali servizi, tipi lezione e membri del team opera.",
+  "operatorsPermissionsTitle": "Permessi",
+  "operatorsPermBookings": "Gestione prenotazioni",
+  "operatorsPermClients": "Gestione clienti",
+  "operatorsPermServices": "Gestione servizi e listino",
+  "operatorsPermStaff": "Gestione team",
+  "operatorsPermReports": "Accesso ai report",
   "operatorsRoleDescription": "Seleziona il livello di accesso",
   "operatorsYou": "Tu",
   "operatorsInvitedBy": "Invitato da {name}",
@@ -2094,5 +2102,6 @@
   "operatorsAccessNone": "Nessuno",
   "operatorsAccessSelected": "Solo selezionati",
   "operatorsAccessibleServices": "Servizi accessibili",
-  "operatorsAccessibleClassTypes": "Tipi lezione accessibili"
+  "operatorsAccessibleClassTypes": "Tipi lezione accessibili",
+  "operatorsAccessibleStaff": "Membri del team accessibili"
 }

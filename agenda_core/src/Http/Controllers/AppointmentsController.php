@@ -116,6 +116,24 @@ final class AppointmentsController
     }
 
     /**
+     * For role=custom operators, returns the allowed_staff_ids 3-state filter:
+     * null = nessuna restrizione (Tutti, o ruolo non custom/superadmin),
+     * [] = Nessuno, [ids] = solo quei membri. Distinto dal forced-staff di role===staff.
+     */
+    private function getAllowedStaffIdsForCustomOperator(Request $request, int $businessId): ?array
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null || $this->userRepo->isSuperadmin((int) $userId)) {
+            return null;
+        }
+        $businessUser = $this->businessUserRepo->findByUserAndBusiness((int) $userId, $businessId);
+        if ($businessUser === null || ($businessUser['role'] ?? null) !== 'custom') {
+            return null;
+        }
+        return $businessUser['allowed_staff_ids'] ?? null;
+    }
+
+    /**
      * GET /v1/locations/{location_id}/appointments?date=YYYY-MM-DD
      * Returns all booking_items (appointments) for a specific location and date
      */
@@ -230,6 +248,19 @@ final class AppointmentsController
             }
             if (isset($body['staff_id']) && (int) $body['staff_id'] !== $forcedStaffId) {
                 return Response::forbidden('Staff operators can only assign appointments to themselves');
+            }
+        }
+
+        // Ruolo custom: può modificare solo appuntamenti dei membri consentiti e
+        // riassegnarli solo a membri consentiti (allowed_staff_ids).
+        $customAllowed = $this->getAllowedStaffIdsForCustomOperator($request, $businessId);
+        if ($customAllowed !== null) {
+            $allowed = array_flip($customAllowed);
+            if (!isset($allowed[(int) $appointment['staff_id']])) {
+                return Response::forbidden('You can only modify appointments for your allowed team members', $request->traceId);
+            }
+            if (isset($body['staff_id']) && !isset($allowed[(int) $body['staff_id']])) {
+                return Response::forbidden('You can only assign appointments to your allowed team members', $request->traceId);
             }
         }
 
@@ -401,6 +432,14 @@ final class AppointmentsController
         $forcedStaffId = $this->getForcedStaffIdForStaffOperator($request, $businessId);
         if ($forcedStaffId !== null && (int) $body['staff_id'] !== $forcedStaffId) {
             return Response::forbidden('Staff operators can only assign appointments to themselves');
+        }
+
+        // Ruolo custom: lo staff assegnato deve appartenere a allowed_staff_ids.
+        $customAllowed = $this->getAllowedStaffIdsForCustomOperator($request, $businessId);
+        if ($customAllowed !== null
+            && isset($body['staff_id'])
+            && !in_array((int) $body['staff_id'], $customAllowed, true)) {
+            return Response::forbidden('You can only assign appointments to your allowed team members', $request->traceId);
         }
 
         // Validate required fields

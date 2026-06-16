@@ -14,7 +14,12 @@ import '../../../class_events/providers/class_events_providers.dart';
 import '../../../services/providers/services_provider.dart';
 import '../../../staff/providers/staff_providers.dart';
 import '../../providers/business_users_provider.dart';
-import 'role_selection_dialog.dart' show AccessMode, ServiceFilterSection;
+import 'role_selection_dialog.dart'
+    show
+        AccessMode,
+        ServiceFilterSection,
+        StaffFilterSection,
+        PermissionTogglesSection;
 
 String _resolveInviteErrorMessage(
   BuildContext context,
@@ -70,6 +75,12 @@ class InviteOperatorDialog extends ConsumerStatefulWidget {
     this.initialLocationIds,
     this.initialServiceIds,
     this.initialClassTypeIds,
+    this.initialStaffIds,
+    this.initialCanManageBookings,
+    this.initialCanManageClients,
+    this.initialCanManageServices,
+    this.initialCanManageStaff,
+    this.initialCanViewReports,
   });
 
   final int businessId;
@@ -80,6 +91,12 @@ class InviteOperatorDialog extends ConsumerStatefulWidget {
   final List<int>? initialLocationIds;
   final List<int>? initialServiceIds;
   final List<int>? initialClassTypeIds;
+  final List<int>? initialStaffIds;
+  final bool? initialCanManageBookings;
+  final bool? initialCanManageClients;
+  final bool? initialCanManageServices;
+  final bool? initialCanManageStaff;
+  final bool? initialCanViewReports;
 
   @override
   ConsumerState<InviteOperatorDialog> createState() =>
@@ -94,9 +111,16 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
   late Set<int> _selectedLocationIds;
   late AccessMode _serviceMode;
   late AccessMode _classTypeMode;
+  late AccessMode _staffMode;
   late Set<int> _selectedServiceIds;
   late Set<int> _selectedClassTypeIds;
+  late Set<int> _selectedStaffIds;
   late int? _selectedStaffId;
+  late bool _canManageBookings;
+  late bool _canManageClients;
+  late bool _canManageServices;
+  late bool _canManageStaff;
+  late bool _canViewReports;
   bool _isLoading = false;
 
   static AccessMode _modeFromList(List<int>? ids) {
@@ -120,8 +144,15 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
     _selectedLocationIds = (widget.initialLocationIds ?? []).toSet();
     _serviceMode = _modeFromList(widget.initialServiceIds);
     _classTypeMode = _modeFromList(widget.initialClassTypeIds);
+    _staffMode = _modeFromList(widget.initialStaffIds);
     _selectedServiceIds = widget.initialServiceIds?.toSet() ?? {};
     _selectedClassTypeIds = widget.initialClassTypeIds?.toSet() ?? {};
+    _selectedStaffIds = widget.initialStaffIds?.toSet() ?? {};
+    _canManageBookings = widget.initialCanManageBookings ?? false;
+    _canManageClients = widget.initialCanManageClients ?? false;
+    _canManageServices = widget.initialCanManageServices ?? false;
+    _canManageStaff = widget.initialCanManageStaff ?? false;
+    _canViewReports = widget.initialCanViewReports ?? false;
     _selectedStaffId = widget.initialStaffId;
   }
 
@@ -150,9 +181,20 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
         : allServices;
 
     // Filtro visibile: per staff solo dopo selezione, per altri ruoli sempre
-    final showServiceFilter = _selectedRole != 'staff'
-        ? (services.isNotEmpty || classTypes.isNotEmpty)
-        : (selectedStaff != null && (services.isNotEmpty || classTypes.isNotEmpty));
+    final showServiceFilter = (_selectedRole == 'custom' && _canManageServices)
+        ? false
+        : _selectedRole != 'staff'
+            ? (services.isNotEmpty || classTypes.isNotEmpty)
+            : (selectedStaff != null &&
+                (services.isNotEmpty || classTypes.isNotEmpty));
+
+    // Il filtro sui membri del team non si applica a staff (vincolato al membro
+    // collegato) né ad admin/owner (accesso totale).
+    final showStaffFilter = _selectedRole != 'staff' &&
+        _selectedRole != 'admin' &&
+        _selectedRole != 'owner' &&
+        !(_selectedRole == 'custom' && _canManageStaff) &&
+        allStaff.isNotEmpty;
 
     return AppFormDialog(
       title: Text(l10n.operatorsInviteTitle),
@@ -217,6 +259,42 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
                     }
                   }),
                 ),
+                if (_selectedRole == 'custom') ...[
+                  const SizedBox(height: 24),
+                  const AppDivider(),
+                  const SizedBox(height: 16),
+                  PermissionTogglesSection(
+                    canManageBookings: _canManageBookings,
+                    canManageClients: _canManageClients,
+                    canManageServices: _canManageServices,
+                    canManageStaff: _canManageStaff,
+                    canViewReports: _canViewReports,
+                    onChanged: (key, value) => setState(() {
+                      switch (key) {
+                        case 'bookings':
+                          _canManageBookings = value;
+                        case 'clients':
+                          _canManageClients = value;
+                        case 'services':
+                          _canManageServices = value;
+                          if (value) {
+                            _serviceMode = AccessMode.all;
+                            _selectedServiceIds = {};
+                            _classTypeMode = AccessMode.all;
+                            _selectedClassTypeIds = {};
+                          }
+                        case 'staff':
+                          _canManageStaff = value;
+                          if (value) {
+                            _staffMode = AccessMode.all;
+                            _selectedStaffIds = {};
+                          }
+                        case 'reports':
+                          _canViewReports = value;
+                      }
+                    }),
+                  ),
+                ],
                 if (locations.length > 1) ...[
                   const SizedBox(height: 24),
                   const AppDivider(),
@@ -300,6 +378,22 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
                         setState(() => _selectedServiceIds = ids),
                     onClassTypesChanged: (ids) =>
                         setState(() => _selectedClassTypeIds = ids),
+                  ),
+                ],
+                if (showStaffFilter) ...[
+                  const SizedBox(height: 24),
+                  const AppDivider(),
+                  const SizedBox(height: 16),
+                  StaffFilterSection(
+                    staffList: allStaff,
+                    mode: _staffMode,
+                    selectedIds: _selectedStaffIds,
+                    onModeChanged: (mode) => setState(() {
+                      _staffMode = mode;
+                      if (mode != AccessMode.selected) _selectedStaffIds = {};
+                    }),
+                    onSelectionChanged: (ids) =>
+                        setState(() => _selectedStaffIds = ids),
                   ),
                 ],
               ],
@@ -432,6 +526,16 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
               : null,
           allowedServiceIds: _resolveFilter(_serviceMode, _selectedServiceIds),
           allowedClassTypeIds: _resolveFilter(_classTypeMode, _selectedClassTypeIds),
+          allowedStaffIds: (_selectedRole == 'staff' ||
+                  _selectedRole == 'admin' ||
+                  _selectedRole == 'owner')
+              ? null
+              : _resolveFilter(_staffMode, _selectedStaffIds),
+          canManageBookings: _selectedRole == 'custom' ? _canManageBookings : null,
+          canManageClients: _selectedRole == 'custom' ? _canManageClients : null,
+          canManageServices: _selectedRole == 'custom' ? _canManageServices : null,
+          canManageStaff: _selectedRole == 'custom' ? _canManageStaff : null,
+          canViewReports: _selectedRole == 'custom' ? _canViewReports : null,
         );
 
     if (!mounted) return;
@@ -483,6 +587,12 @@ class InviteOperatorSheet extends ConsumerStatefulWidget {
     this.initialLocationIds,
     this.initialServiceIds,
     this.initialClassTypeIds,
+    this.initialStaffIds,
+    this.initialCanManageBookings,
+    this.initialCanManageClients,
+    this.initialCanManageServices,
+    this.initialCanManageStaff,
+    this.initialCanViewReports,
   });
 
   final int businessId;
@@ -493,6 +603,12 @@ class InviteOperatorSheet extends ConsumerStatefulWidget {
   final List<int>? initialLocationIds;
   final List<int>? initialServiceIds;
   final List<int>? initialClassTypeIds;
+  final List<int>? initialStaffIds;
+  final bool? initialCanManageBookings;
+  final bool? initialCanManageClients;
+  final bool? initialCanManageServices;
+  final bool? initialCanManageStaff;
+  final bool? initialCanViewReports;
 
   @override
   ConsumerState<InviteOperatorSheet> createState() =>
@@ -507,9 +623,16 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
   late Set<int> _selectedLocationIds;
   late AccessMode _serviceMode;
   late AccessMode _classTypeMode;
+  late AccessMode _staffMode;
   late Set<int> _selectedServiceIds;
   late Set<int> _selectedClassTypeIds;
+  late Set<int> _selectedStaffIds;
   late int? _selectedStaffId;
+  late bool _canManageBookings;
+  late bool _canManageClients;
+  late bool _canManageServices;
+  late bool _canManageStaff;
+  late bool _canViewReports;
   bool _isLoading = false;
 
   static AccessMode _modeFromList(List<int>? ids) {
@@ -533,8 +656,15 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
     _selectedLocationIds = (widget.initialLocationIds ?? []).toSet();
     _serviceMode = _modeFromList(widget.initialServiceIds);
     _classTypeMode = _modeFromList(widget.initialClassTypeIds);
+    _staffMode = _modeFromList(widget.initialStaffIds);
     _selectedServiceIds = widget.initialServiceIds?.toSet() ?? {};
     _selectedClassTypeIds = widget.initialClassTypeIds?.toSet() ?? {};
+    _selectedStaffIds = widget.initialStaffIds?.toSet() ?? {};
+    _canManageBookings = widget.initialCanManageBookings ?? false;
+    _canManageClients = widget.initialCanManageClients ?? false;
+    _canManageServices = widget.initialCanManageServices ?? false;
+    _canManageStaff = widget.initialCanManageStaff ?? false;
+    _canViewReports = widget.initialCanViewReports ?? false;
     _selectedStaffId = widget.initialStaffId;
   }
 
@@ -560,9 +690,20 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
     final services = selectedStaff != null
         ? allServices.where((s) => selectedStaff.serviceIds.contains(s.id)).toList()
         : allServices;
-    final showServiceFilter = _selectedRole != 'staff'
-        ? (services.isNotEmpty || classTypes.isNotEmpty)
-        : (selectedStaff != null && (services.isNotEmpty || classTypes.isNotEmpty));
+    final showServiceFilter = (_selectedRole == 'custom' && _canManageServices)
+        ? false
+        : _selectedRole != 'staff'
+            ? (services.isNotEmpty || classTypes.isNotEmpty)
+            : (selectedStaff != null &&
+                (services.isNotEmpty || classTypes.isNotEmpty));
+
+    // Il filtro sui membri del team non si applica a staff (vincolato al membro
+    // collegato) né ad admin/owner (accesso totale).
+    final showStaffFilter = _selectedRole != 'staff' &&
+        _selectedRole != 'admin' &&
+        _selectedRole != 'owner' &&
+        !(_selectedRole == 'custom' && _canManageStaff) &&
+        allStaff.isNotEmpty;
 
     return Material(
       color: Theme.of(context).colorScheme.surface,
@@ -636,6 +777,42 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
                         }
                       }),
                     ),
+                    if (_selectedRole == 'custom') ...[
+                      const SizedBox(height: 24),
+                      const AppDivider(),
+                      const SizedBox(height: 16),
+                      PermissionTogglesSection(
+                        canManageBookings: _canManageBookings,
+                        canManageClients: _canManageClients,
+                        canManageServices: _canManageServices,
+                        canManageStaff: _canManageStaff,
+                        canViewReports: _canViewReports,
+                        onChanged: (key, value) => setState(() {
+                          switch (key) {
+                            case 'bookings':
+                              _canManageBookings = value;
+                            case 'clients':
+                              _canManageClients = value;
+                            case 'services':
+                              _canManageServices = value;
+                              if (value) {
+                                _serviceMode = AccessMode.all;
+                                _selectedServiceIds = {};
+                                _classTypeMode = AccessMode.all;
+                                _selectedClassTypeIds = {};
+                              }
+                            case 'staff':
+                              _canManageStaff = value;
+                              if (value) {
+                                _staffMode = AccessMode.all;
+                                _selectedStaffIds = {};
+                              }
+                            case 'reports':
+                              _canViewReports = value;
+                          }
+                        }),
+                      ),
+                    ],
                     if (locations.length > 1) ...[
                       const SizedBox(height: 24),
                       const AppDivider(),
@@ -719,6 +896,22 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
                             setState(() => _selectedServiceIds = ids),
                         onClassTypesChanged: (ids) =>
                             setState(() => _selectedClassTypeIds = ids),
+                      ),
+                    ],
+                    if (showStaffFilter) ...[
+                      const SizedBox(height: 24),
+                      const AppDivider(),
+                      const SizedBox(height: 16),
+                      StaffFilterSection(
+                        staffList: allStaff,
+                        mode: _staffMode,
+                        selectedIds: _selectedStaffIds,
+                        onModeChanged: (mode) => setState(() {
+                          _staffMode = mode;
+                          if (mode != AccessMode.selected) _selectedStaffIds = {};
+                        }),
+                        onSelectionChanged: (ids) =>
+                            setState(() => _selectedStaffIds = ids),
                       ),
                     ],
                   ],
@@ -865,6 +1058,16 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
               : null,
           allowedServiceIds: _resolveFilter(_serviceMode, _selectedServiceIds),
           allowedClassTypeIds: _resolveFilter(_classTypeMode, _selectedClassTypeIds),
+          allowedStaffIds: (_selectedRole == 'staff' ||
+                  _selectedRole == 'admin' ||
+                  _selectedRole == 'owner')
+              ? null
+              : _resolveFilter(_staffMode, _selectedStaffIds),
+          canManageBookings: _selectedRole == 'custom' ? _canManageBookings : null,
+          canManageClients: _selectedRole == 'custom' ? _canManageClients : null,
+          canManageServices: _selectedRole == 'custom' ? _canManageServices : null,
+          canManageStaff: _selectedRole == 'custom' ? _canManageStaff : null,
+          canViewReports: _selectedRole == 'custom' ? _canViewReports : null,
         );
 
     if (!mounted) return;
@@ -951,6 +1154,15 @@ class _RoleSelector extends StatelessWidget {
           icon: Icons.visibility_outlined,
           isSelected: selectedRole == 'viewer',
           onTap: () => onChanged('viewer'),
+        ),
+        const SizedBox(height: 8),
+        _RoleOption(
+          role: 'custom',
+          label: l10n.operatorsRoleCustom,
+          description: l10n.operatorsRoleCustomDesc,
+          icon: Icons.tune,
+          isSelected: selectedRole == 'custom',
+          onTap: () => onChanged('custom'),
         ),
       ],
     );

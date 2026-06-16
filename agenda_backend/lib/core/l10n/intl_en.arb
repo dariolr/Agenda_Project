@@ -800,6 +800,14 @@
   "operatorsRoleStaffDesc": "Views and manages only own appointments. Can create bookings assigned to themselves.",
   "operatorsRoleViewer": "Viewer",
   "operatorsRoleViewerDesc": "Can view appointments, services, staff, and availability. No edits allowed.",
+  "operatorsRoleCustom": "Custom operator",
+  "operatorsRoleCustomDesc": "Fully configurable permissions and scope: choose what they can manage and which services, class types, and team members they operate on.",
+  "operatorsPermissionsTitle": "Permissions",
+  "operatorsPermBookings": "Manage bookings",
+  "operatorsPermClients": "Manage clients",
+  "operatorsPermServices": "Manage services & pricing",
+  "operatorsPermStaff": "Manage team",
+  "operatorsPermReports": "Access reports",
   "operatorsRoleDescription": "Select access level",
   "operatorsYou": "You",
   "operatorsInvitedBy": "Invited by {name}",
@@ -2094,5 +2102,6 @@
   "operatorsAccessNone": "None",
   "operatorsAccessSelected": "Selected only",
   "operatorsAccessibleServices": "Accessible services",
-  "operatorsAccessibleClassTypes": "Accessible class types"
+  "operatorsAccessibleClassTypes": "Accessible class types",
+  "operatorsAccessibleStaff": "Accessible team members"
 }

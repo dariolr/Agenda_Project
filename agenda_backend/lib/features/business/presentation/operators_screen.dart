@@ -486,6 +486,12 @@ class _InvitationTile extends ConsumerWidget {
           initialLocationIds: invitation.locationIds,
           initialServiceIds: invitation.allowedServiceIds,
           initialClassTypeIds: invitation.allowedClassTypeIds,
+          initialStaffIds: invitation.allowedStaffIds,
+          initialCanManageBookings: invitation.canManageBookings,
+          initialCanManageClients: invitation.canManageClients,
+          initialCanManageServices: invitation.canManageServices,
+          initialCanManageStaff: invitation.canManageStaff,
+          initialCanViewReports: invitation.canViewReports,
         ),
       );
     } else {
@@ -500,6 +506,12 @@ class _InvitationTile extends ConsumerWidget {
           initialLocationIds: invitation.locationIds,
           initialServiceIds: invitation.allowedServiceIds,
           initialClassTypeIds: invitation.allowedClassTypeIds,
+          initialStaffIds: invitation.allowedStaffIds,
+          initialCanManageBookings: invitation.canManageBookings,
+          initialCanManageClients: invitation.canManageClients,
+          initialCanManageServices: invitation.canManageServices,
+          initialCanManageStaff: invitation.canManageStaff,
+          initialCanViewReports: invitation.canViewReports,
         ),
       );
     }
@@ -726,6 +738,7 @@ class _UserTile extends ConsumerWidget {
     final currentLocationIds = user.locationIds.toSet();
     final currentServiceIds = user.allowedServiceIds;
     final currentClassTypeIds = user.allowedClassTypeIds;
+    final currentStaffIds = user.allowedStaffIds;
 
     // Servizi, lezioni e staff per il filtro
     final services = ref.read(servicesProvider).asData?.value ?? [];
@@ -739,6 +752,12 @@ class _UserTile extends ConsumerWidget {
       required List<int> locationIds,
       required List<int>? allowedServiceIds,
       required List<int>? allowedClassTypeIds,
+      required List<int>? allowedStaffIds,
+      bool? canManageBookings,
+      bool? canManageClients,
+      bool? canManageServices,
+      bool? canManageStaff,
+      bool? canViewReports,
     }) async {
       Navigator.of(dialogContext).pop();
       final selectedLocationIds =
@@ -748,12 +767,20 @@ class _UserTile extends ConsumerWidget {
         if (a == null || b == null) return true;
         return !setEquals(a.toSet(), b.toSet());
       }
+      final permissionsChanged = role == 'custom' &&
+          ((canManageBookings ?? user.canManageBookings) != user.canManageBookings ||
+              (canManageClients ?? user.canManageClients) != user.canManageClients ||
+              (canManageServices ?? user.canManageServices) != user.canManageServices ||
+              (canManageStaff ?? user.canManageStaff) != user.canManageStaff ||
+              (canViewReports ?? user.canViewReports) != user.canViewReports);
       final hasChanges =
           role != user.role ||
           scopeType != user.scopeType ||
           !setEquals(selectedLocationIds, currentLocationIds) ||
           listChanged(allowedServiceIds, currentServiceIds) ||
-          listChanged(allowedClassTypeIds, currentClassTypeIds);
+          listChanged(allowedClassTypeIds, currentClassTypeIds) ||
+          listChanged(allowedStaffIds, currentStaffIds) ||
+          permissionsChanged;
       if (!hasChanges) return;
       final ok = await ref
           .read(businessUsersProvider(businessId).notifier)
@@ -766,6 +793,12 @@ class _UserTile extends ConsumerWidget {
                 : <int>[],
             allowedServiceIds: allowedServiceIds,
             allowedClassTypeIds: allowedClassTypeIds,
+            allowedStaffIds: allowedStaffIds,
+            canManageBookings: canManageBookings,
+            canManageClients: canManageClients,
+            canManageServices: canManageServices,
+            canManageStaff: canManageStaff,
+            canViewReports: canViewReports,
           );
       if (!context.mounted || ok) return;
       final isIt = Localizations.localeOf(context).languageCode == 'it';
@@ -792,6 +825,12 @@ class _UserTile extends ConsumerWidget {
           currentLocationIds: user.locationIds,
           currentServiceIds: user.allowedServiceIds,
           currentClassTypeIds: user.allowedClassTypeIds,
+          currentStaffIds: user.allowedStaffIds,
+          currentCanManageBookings: user.canManageBookings,
+          currentCanManageClients: user.canManageClients,
+          currentCanManageServices: user.canManageServices,
+          currentCanManageStaff: user.canManageStaff,
+          currentCanViewReports: user.canViewReports,
           locations: locations,
           services: services,
           classTypes: classTypes,
@@ -805,6 +844,12 @@ class _UserTile extends ConsumerWidget {
             required List<int> locationIds,
             required List<int>? allowedServiceIds,
             required List<int>? allowedClassTypeIds,
+            required List<int>? allowedStaffIds,
+            bool? canManageBookings,
+            bool? canManageClients,
+            bool? canManageServices,
+            bool? canManageStaff,
+            bool? canViewReports,
           }) => handleSave(
             dialogContext: ctx,
             role: role,
@@ -812,6 +857,12 @@ class _UserTile extends ConsumerWidget {
             locationIds: locationIds,
             allowedServiceIds: allowedServiceIds,
             allowedClassTypeIds: allowedClassTypeIds,
+            allowedStaffIds: allowedStaffIds,
+            canManageBookings: canManageBookings,
+            canManageClients: canManageClients,
+            canManageServices: canManageServices,
+            canManageStaff: canManageStaff,
+            canViewReports: canViewReports,
           ),
         ),
       );
@@ -824,6 +875,12 @@ class _UserTile extends ConsumerWidget {
           currentLocationIds: user.locationIds,
           currentServiceIds: user.allowedServiceIds,
           currentClassTypeIds: user.allowedClassTypeIds,
+          currentStaffIds: user.allowedStaffIds,
+          currentCanManageBookings: user.canManageBookings,
+          currentCanManageClients: user.canManageClients,
+          currentCanManageServices: user.canManageServices,
+          currentCanManageStaff: user.canManageStaff,
+          currentCanViewReports: user.canViewReports,
           locations: locations,
           services: services,
           classTypes: classTypes,
@@ -837,6 +894,12 @@ class _UserTile extends ConsumerWidget {
             required List<int> locationIds,
             required List<int>? allowedServiceIds,
             required List<int>? allowedClassTypeIds,
+            required List<int>? allowedStaffIds,
+            bool? canManageBookings,
+            bool? canManageClients,
+            bool? canManageServices,
+            bool? canManageStaff,
+            bool? canViewReports,
           }) => handleSave(
             dialogContext: ctx,
             role: role,
@@ -844,6 +907,12 @@ class _UserTile extends ConsumerWidget {
             locationIds: locationIds,
             allowedServiceIds: allowedServiceIds,
             allowedClassTypeIds: allowedClassTypeIds,
+            allowedStaffIds: allowedStaffIds,
+            canManageBookings: canManageBookings,
+            canManageClients: canManageClients,
+            canManageServices: canManageServices,
+            canManageStaff: canManageStaff,
+            canViewReports: canViewReports,
           ),
         ),
       );

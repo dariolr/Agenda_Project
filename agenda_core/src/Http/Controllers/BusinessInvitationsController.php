@@ -84,6 +84,14 @@ final class BusinessInvitationsController
                 'staff_id' => isset($inv['staff_id']) && $inv['staff_id'] !== null ? (int) $inv['staff_id'] : null,
                 'scope_type' => $inv['scope_type'],
                 'location_ids' => array_map('intval', $inv['location_ids'] ?? []),
+                'allowed_service_ids' => $inv['allowed_service_ids'] ?? null,
+                'allowed_class_type_ids' => $inv['allowed_class_type_ids'] ?? null,
+                'allowed_staff_ids' => $inv['allowed_staff_ids'] ?? null,
+                'can_manage_bookings' => self::nullableBool($inv['can_manage_bookings'] ?? null),
+                'can_manage_clients' => self::nullableBool($inv['can_manage_clients'] ?? null),
+                'can_manage_services' => self::nullableBool($inv['can_manage_services'] ?? null),
+                'can_manage_staff' => self::nullableBool($inv['can_manage_staff'] ?? null),
+                'can_view_reports' => self::nullableBool($inv['can_view_reports'] ?? null),
                 'status' => $inv['status'],
                 'effective_status' => $effectiveStatus,
                 'expires_at' => $inv['expires_at'],
@@ -150,8 +158,8 @@ final class BusinessInvitationsController
         $staffId = isset($body['staff_id']) ? (int) $body['staff_id'] : null;
 
         // Validate role
-        if (!in_array($role, ['staff', 'manager', 'viewer', 'admin'], true)) {
-            return Response::validationError('Role must be staff, manager, viewer, or admin', $request->traceId);
+        if (!in_array($role, ['staff', 'manager', 'viewer', 'admin', 'custom'], true)) {
+            return Response::validationError('Role must be staff, manager, viewer, admin, or custom', $request->traceId);
         }
 
         if ($role === 'staff' && ($staffId === null || $staffId <= 0)) {
@@ -262,6 +270,16 @@ final class BusinessInvitationsController
             'allowed_class_type_ids' => array_key_exists('allowed_class_type_ids', $body) && $body['allowed_class_type_ids'] !== null
                 ? array_map('intval', (array) $body['allowed_class_type_ids'])
                 : null,
+            'allowed_staff_ids' => array_key_exists('allowed_staff_ids', $body) && $body['allowed_staff_ids'] !== null
+                ? array_map('intval', (array) $body['allowed_staff_ids'])
+                : null,
+            // Permessi granulari: salvati sull'invito solo per il ruolo custom
+            // (per gli altri ruoli si applicano i default del ruolo all'accettazione).
+            'can_manage_bookings' => $role === 'custom' ? (bool) ($body['can_manage_bookings'] ?? false) : null,
+            'can_manage_clients'  => $role === 'custom' ? (bool) ($body['can_manage_clients'] ?? false) : null,
+            'can_manage_services' => $role === 'custom' ? (bool) ($body['can_manage_services'] ?? false) : null,
+            'can_manage_staff'    => $role === 'custom' ? (bool) ($body['can_manage_staff'] ?? false) : null,
+            'can_view_reports'    => $role === 'custom' ? (bool) ($body['can_view_reports'] ?? false) : null,
             'invited_by' => $userId,
         ]);
 
@@ -444,6 +462,13 @@ final class BusinessInvitationsController
             // Preserva null (= Tutti): `?? []` lo trasformerebbe in [] (= Nessuno).
             'allowed_service_ids' => $invitation['allowed_service_ids'] ?? null,
             'allowed_class_type_ids' => $invitation['allowed_class_type_ids'] ?? null,
+            'allowed_staff_ids' => $invitation['allowed_staff_ids'] ?? null,
+            // Permessi salvati sull'invito (null = default del ruolo all'accettazione).
+            'can_manage_bookings' => $invitation['can_manage_bookings'] ?? null,
+            'can_manage_clients' => $invitation['can_manage_clients'] ?? null,
+            'can_manage_services' => $invitation['can_manage_services'] ?? null,
+            'can_manage_staff' => $invitation['can_manage_staff'] ?? null,
+            'can_view_reports' => $invitation['can_view_reports'] ?? null,
             'invited_by' => (int) $invitation['invited_by'],
             'invited_at' => $invitation['created_at'],
             'accepted_at' => date('Y-m-d H:i:s'),
@@ -518,6 +543,13 @@ final class BusinessInvitationsController
             // Preserva null (= Tutti): `?? []` lo trasformerebbe in [] (= Nessuno).
             'allowed_service_ids' => $invitation['allowed_service_ids'] ?? null,
             'allowed_class_type_ids' => $invitation['allowed_class_type_ids'] ?? null,
+            'allowed_staff_ids' => $invitation['allowed_staff_ids'] ?? null,
+            // Permessi salvati sull'invito (null = default del ruolo all'accettazione).
+            'can_manage_bookings' => $invitation['can_manage_bookings'] ?? null,
+            'can_manage_clients' => $invitation['can_manage_clients'] ?? null,
+            'can_manage_services' => $invitation['can_manage_services'] ?? null,
+            'can_manage_staff' => $invitation['can_manage_staff'] ?? null,
+            'can_view_reports' => $invitation['can_view_reports'] ?? null,
             'invited_by' => (int) $invitation['invited_by'],
             'invited_at' => $invitation['created_at'],
             'accepted_at' => date('Y-m-d H:i:s'),
@@ -634,6 +666,13 @@ final class BusinessInvitationsController
             // Preserva null (= Tutti): `?? []` lo trasformerebbe in [] (= Nessuno).
             'allowed_service_ids' => $invitation['allowed_service_ids'] ?? null,
             'allowed_class_type_ids' => $invitation['allowed_class_type_ids'] ?? null,
+            'allowed_staff_ids' => $invitation['allowed_staff_ids'] ?? null,
+            // Permessi salvati sull'invito (null = default del ruolo all'accettazione).
+            'can_manage_bookings' => $invitation['can_manage_bookings'] ?? null,
+            'can_manage_clients' => $invitation['can_manage_clients'] ?? null,
+            'can_manage_services' => $invitation['can_manage_services'] ?? null,
+            'can_manage_staff' => $invitation['can_manage_staff'] ?? null,
+            'can_view_reports' => $invitation['can_view_reports'] ?? null,
             'invited_by' => (int) $invitation['invited_by'],
             'invited_at' => $invitation['created_at'],
             'accepted_at' => date('Y-m-d H:i:s'),
@@ -665,6 +704,17 @@ final class BusinessInvitationsController
         );
 
         return $response;
+    }
+
+    /**
+     * Normalizza un tinyint nullable in bool|null (null = non specificato sull'invito).
+     */
+    private static function nullableBool(mixed $value): ?bool
+    {
+        if ($value === null) {
+            return null;
+        }
+        return (int) $value === 1;
     }
 
     /**

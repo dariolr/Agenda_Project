@@ -2093,6 +2093,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "operatorsAccessibleServices": MessageLookupByLibrary.simpleMessage(
       "Accessible services",
     ),
+    "operatorsAccessibleStaff": MessageLookupByLibrary.simpleMessage(
+      "Accessible team members",
+    ),
     "operatorsDeleteInvite": MessageLookupByLibrary.simpleMessage(
       "Delete invite",
     ),
@@ -2151,6 +2154,22 @@ class MessageLookup extends MessageLookupByLibrary {
       "Pending invites",
     ),
     "operatorsPendingInvitesCount": m57,
+    "operatorsPermBookings": MessageLookupByLibrary.simpleMessage(
+      "Manage bookings",
+    ),
+    "operatorsPermClients": MessageLookupByLibrary.simpleMessage(
+      "Manage clients",
+    ),
+    "operatorsPermReports": MessageLookupByLibrary.simpleMessage(
+      "Access reports",
+    ),
+    "operatorsPermServices": MessageLookupByLibrary.simpleMessage(
+      "Manage services & pricing",
+    ),
+    "operatorsPermStaff": MessageLookupByLibrary.simpleMessage("Manage team"),
+    "operatorsPermissionsTitle": MessageLookupByLibrary.simpleMessage(
+      "Permissions",
+    ),
     "operatorsRemove": MessageLookupByLibrary.simpleMessage("Remove operator"),
     "operatorsRemoveConfirm": m58,
     "operatorsRemoveSuccess": MessageLookupByLibrary.simpleMessage(
@@ -2163,6 +2182,12 @@ class MessageLookup extends MessageLookupByLibrary {
     "operatorsRoleAdmin": MessageLookupByLibrary.simpleMessage("Administrator"),
     "operatorsRoleAdminDesc": MessageLookupByLibrary.simpleMessage(
       "Full access to all features. Can manage other operators and modify business settings.",
+    ),
+    "operatorsRoleCustom": MessageLookupByLibrary.simpleMessage(
+      "Custom operator",
+    ),
+    "operatorsRoleCustomDesc": MessageLookupByLibrary.simpleMessage(
+      "Fully configurable permissions and scope: choose what they can manage and which services, class types, and team members they operate on.",
     ),
     "operatorsRoleDescription": MessageLookupByLibrary.simpleMessage(
       "Select access level",

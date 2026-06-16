@@ -195,6 +195,65 @@ final class BookingsController
     }
 
     /**
+     * For role=custom operators, returns the allowed_staff_ids 3-state filter:
+     * null = nessuna restrizione (Tutti, o ruolo non custom/superadmin),
+     * [] = Nessuno, [ids] = solo quei membri.
+     * Meccanismo distinto dal forced-staff di role===staff (qui è un insieme, non un singolo id).
+     */
+    private function getAllowedStaffIdsForCustomOperator(Request $request, int $businessId): ?array
+    {
+        $userId = $request->getAttribute('user_id');
+        if ($userId === null || $this->businessUserRepo === null || $this->userRepo === null) {
+            return null;
+        }
+        if ($this->userRepo->isSuperadmin((int) $userId)) {
+            return null;
+        }
+        $businessUser = $this->businessUserRepo->findByUserAndBusiness((int) $userId, $businessId);
+        if ($businessUser === null) {
+            return null;
+        }
+        if (($businessUser['role'] ?? null) !== 'custom') {
+            return null;
+        }
+        return $businessUser['allowed_staff_ids'] ?? null;
+    }
+
+    /**
+     * Validate that payload staff assignments respect a custom operator's allowed_staff_ids.
+     * $allowedStaffIds: null = nessuna restrizione; [] = nessuno; [ids] = solo selezionati.
+     * Gli staff_id assenti/null non sono validati (prenotazione senza assegnazione = consentita).
+     */
+    private function validateAllowedStaffAssignment(array $payload, ?array $allowedStaffIds): ?Response
+    {
+        if ($allowedStaffIds === null) {
+            return null; // nessuna restrizione
+        }
+        $allowed = array_flip($allowedStaffIds);
+        $isForbidden = static fn($staffId): bool => !isset($allowed[(int) $staffId]);
+
+        if (isset($payload['items']) && is_array($payload['items'])) {
+            foreach ($payload['items'] as $item) {
+                if (isset($item['staff_id']) && $isForbidden($item['staff_id'])) {
+                    return Response::forbidden('You can only assign bookings to your allowed team members');
+                }
+            }
+        }
+        if (isset($payload['staff_id']) && $isForbidden($payload['staff_id'])) {
+            return Response::forbidden('You can only assign bookings to your allowed team members');
+        }
+        if (isset($payload['staff_by_service']) && is_array($payload['staff_by_service'])) {
+            foreach ($payload['staff_by_service'] as $staffId) {
+                if ($isForbidden($staffId)) {
+                    return Response::forbidden('You can only assign bookings to your allowed team members');
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * GET /v1/locations/{location_id}/bookings?date=YYYY-MM-DD[&staff_id=X]
      * Protected endpoint - gets bookings for a location on a date.
      */
@@ -758,6 +817,15 @@ final class BookingsController
             } elseif (isset($body['staff_id']) && (int) $body['staff_id'] !== $forcedStaffId) {
                 return Response::forbidden('Staff operators can only create bookings assigned to themselves');
             }
+        }
+
+        // Ruolo custom: lo staff assegnato deve appartenere a allowed_staff_ids.
+        $customViolation = $this->validateAllowedStaffAssignment(
+            $items !== null ? ['items' => $items] : ['staff_id' => $body['staff_id'] ?? null],
+            $this->getAllowedStaffIdsForCustomOperator($request, (int) $businessId)
+        );
+        if ($customViolation !== null) {
+            return $customViolation;
         }
 
         try {
@@ -1798,6 +1866,13 @@ final class BookingsController
                 $body['staff_id'] = $forcedStaffId;
             }
         }
+        $customViolation = $this->validateAllowedStaffAssignment(
+            $body,
+            $this->getAllowedStaffIdsForCustomOperator($request, $businessId)
+        );
+        if ($customViolation !== null) {
+            return $customViolation;
+        }
 
         try {
             $result = $this->replaceBooking->execute(
@@ -1945,6 +2020,13 @@ final class BookingsController
                 $data['staff_id'] = $forcedStaffId;
             }
         }
+        $customViolation = $this->validateAllowedStaffAssignment(
+            $data,
+            $this->getAllowedStaffIdsForCustomOperator($request, (int) $businessId)
+        );
+        if ($customViolation !== null) {
+            return $customViolation;
+        }
 
         // Validate frequency
         $validFrequencies = ['daily', 'weekly', 'monthly', 'custom'];
@@ -2057,6 +2139,13 @@ final class BookingsController
             if (!isset($data['staff_id']) && !isset($data['staff_by_service'])) {
                 $data['staff_id'] = $forcedStaffId;
             }
+        }
+        $customViolation = $this->validateAllowedStaffAssignment(
+            $data,
+            $this->getAllowedStaffIdsForCustomOperator($request, (int) $businessId)
+        );
+        if ($customViolation !== null) {
+            return $customViolation;
         }
 
         try {
@@ -2293,6 +2382,13 @@ final class BookingsController
         $forcedStaffId = $this->getForcedStaffIdForStaffOperator($request, $rule->businessId);
         if ($forcedStaffId !== null && isset($changes['staff_id']) && (int) $changes['staff_id'] !== $forcedStaffId) {
             return Response::forbidden('Staff operators can only assign bookings to themselves');
+        }
+        $customViolation = $this->validateAllowedStaffAssignment(
+            $changes,
+            $this->getAllowedStaffIdsForCustomOperator($request, $rule->businessId)
+        );
+        if ($customViolation !== null) {
+            return $customViolation;
         }
 
         try {

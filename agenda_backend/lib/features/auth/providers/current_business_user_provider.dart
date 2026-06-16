@@ -20,6 +20,8 @@ class BusinessUserContext {
   final List<int>? allowedServiceIds;
   /// null = Tutti, [] = Nessuno, [1,2] = Solo selezionati.
   final List<int>? allowedClassTypeIds;
+  /// null = Tutti, [] = Nessuno, [1,2] = Solo selezionati.
+  final List<int>? allowedStaffIds;
   final int? staffId;
   final bool isSuperadmin;
   final bool canManageBookings;
@@ -36,6 +38,7 @@ class BusinessUserContext {
     required this.locationIds,
     this.allowedServiceIds,
     this.allowedClassTypeIds,
+    this.allowedStaffIds,
     required this.staffId,
     required this.isSuperadmin,
     required this.canManageBookings,
@@ -59,6 +62,9 @@ class BusinessUserContext {
 
   /// True se l'operatore ha un filtro attivo (null=Tutti = nessun filtro).
   bool get hasClassTypeFilter => allowedClassTypeIds != null;
+
+  /// True se l'operatore ha un filtro attivo sui membri del team.
+  bool get hasStaffFilter => allowedStaffIds != null;
 
   factory BusinessUserContext.fromJson(Map<String, dynamic> json) {
     final role = (json['role'] as String? ?? 'staff').trim().toLowerCase();
@@ -119,6 +125,10 @@ class BusinessUserContext {
               .toList(),
       allowedClassTypeIds:
           (json['allowed_class_type_ids'] as List<dynamic>?)
+              ?.map((e) => e as int)
+              .toList(),
+      allowedStaffIds:
+          (json['allowed_staff_ids'] as List<dynamic>?)
               ?.map((e) => e as int)
               .toList(),
       staffId: json['staff_id'] as int?,
@@ -271,6 +281,21 @@ final allowedClassTypeIdsProvider = Provider<List<int>?>((ref) {
   return context!.allowedClassTypeIds;
 });
 
+/// Membri del team su cui l'operatore corrente può operare.
+/// null = Tutti, [] = Nessuno, [1,2] = Solo selezionati.
+final allowedStaffIdsProvider = Provider<List<int>?>((ref) {
+  final currentBusinessId = ref.watch(currentBusinessIdProvider);
+  final contextAsync = ref.watch(currentBusinessUserContextProvider);
+  final context = contextAsync.when(
+    data: (data) => data,
+    loading: () => null,
+    error: (_, __) => null,
+  );
+
+  if (!_isContextForCurrentBusiness(context, currentBusinessId)) return null;
+  return context!.allowedStaffIds;
+});
+
 // ============================================================================
 // PROVIDER PERMESSI RUOLO
 // ============================================================================
@@ -322,10 +347,13 @@ final canViewAllAppointmentsProvider = Provider<bool>((ref) {
     data: (data) {
       if (!_isContextForCurrentBusiness(data, currentBusinessId)) return false;
       if (data!.isSuperadmin) return true;
+      // custom: visibilità governata dal filtro fine allowed_staff_ids, non dalla
+      // regola grezza "solo sé stesso" (che vale per il ruolo staff).
       return data.role == 'admin' ||
           data.role == 'owner' ||
           data.role == 'manager' ||
-          data.role == 'viewer';
+          data.role == 'viewer' ||
+          data.role == 'custom';
     },
     loading: () => false,
     error: (_, __) => false,

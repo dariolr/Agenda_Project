@@ -96,9 +96,9 @@ final class BusinessUsersController
         $role = $body['role'] ?? 'staff';
         
         // Validate role
-        if (!in_array($role, ['staff', 'manager', 'viewer', 'admin'], true)) {
+        if (!in_array($role, ['staff', 'manager', 'viewer', 'admin', 'custom'], true)) {
             return Response::validationError(
-                'role must be staff, manager, viewer, or admin',
+                'role must be staff, manager, viewer, admin, or custom',
                 $request->traceId
             );
         }
@@ -202,9 +202,9 @@ final class BusinessUsersController
         if (isset($body['role'])) {
             $newRole = $body['role'];
             
-            if (!in_array($newRole, ['staff', 'manager', 'viewer', 'admin'], true)) {
+            if (!in_array($newRole, ['staff', 'manager', 'viewer', 'admin', 'custom'], true)) {
                 return Response::validationError(
-                    'role must be staff, manager, viewer, or admin',
+                    'role must be staff, manager, viewer, admin, or custom',
                     $request->traceId
                 );
             }
@@ -280,6 +280,10 @@ final class BusinessUsersController
             $val = $body['allowed_class_type_ids'];
             $updateData['allowed_class_type_ids'] = ($val === null) ? null : array_map('intval', (array) $val);
         }
+        if (array_key_exists('allowed_staff_ids', $body)) {
+            $val = $body['allowed_staff_ids'];
+            $updateData['allowed_staff_ids'] = ($val === null) ? null : array_map('intval', (array) $val);
+        }
 
         // Enforce mutual exclusion: a filter on services/class-types is incompatible
         // with can_manage_services. Compute effective values after this update and reject
@@ -298,6 +302,20 @@ final class BusinessUsersController
         if ($effectiveCanManageSvc && ($effectiveServiceIds !== null || $effectiveClassTypeIds !== null)) {
             return Response::validationError(
                 'can_manage_services cannot be true when allowed_service_ids or allowed_class_type_ids is set',
+                $request->traceId
+            );
+        }
+
+        // Invariante speculare per i membri del team: chi gestisce tutto lo staff
+        // (can_manage_staff) non può avere un filtro residuo su allowed_staff_ids.
+        $effectiveStaffIds = array_key_exists('allowed_staff_ids', $updateData)
+            ? $updateData['allowed_staff_ids']
+            : ($businessUser['allowed_staff_ids'] ?? null);
+        $effectiveCanManageStaff = $updateData['can_manage_staff']
+            ?? (bool) ($businessUser['can_manage_staff'] ?? false);
+        if ($effectiveCanManageStaff && $effectiveStaffIds !== null) {
+            return Response::validationError(
+                'can_manage_staff cannot be true when allowed_staff_ids is set',
                 $request->traceId
             );
         }
@@ -438,6 +456,7 @@ final class BusinessUsersController
             'staff_id' => isset($businessUser['staff_id']) ? (int) $businessUser['staff_id'] : null,
             'allowed_service_ids' => $businessUser['allowed_service_ids'],
             'allowed_class_type_ids' => $businessUser['allowed_class_type_ids'],
+            'allowed_staff_ids' => $businessUser['allowed_staff_ids'] ?? null,
             'is_superadmin' => false,
             'permissions' => [
                 'can_manage_bookings' => (bool) $businessUser['can_manage_bookings'],
@@ -502,6 +521,7 @@ final class BusinessUsersController
             'location_ids' => array_map('intval', $row['location_ids'] ?? []),
             'allowed_service_ids' => $row['allowed_service_ids'],
             'allowed_class_type_ids' => $row['allowed_class_type_ids'],
+            'allowed_staff_ids' => $row['allowed_staff_ids'] ?? null,
             'staff_id' => $row['staff_id'] ? (int) $row['staff_id'] : null,
             'permissions' => [
                 'can_manage_bookings' => (bool) $row['can_manage_bookings'],
@@ -551,6 +571,14 @@ final class BusinessUsersController
                 'can_view_reports' => false,
             ],
             'viewer' => [
+                'can_manage_bookings' => false,
+                'can_manage_clients' => false,
+                'can_manage_services' => false,
+                'can_manage_staff' => false,
+                'can_view_reports' => false,
+            ],
+            // Ruolo configurabile: default tutti false, poi sovrascritti dai toggle dell'UI.
+            'custom' => [
                 'can_manage_bookings' => false,
                 'can_manage_clients' => false,
                 'can_manage_services' => false,

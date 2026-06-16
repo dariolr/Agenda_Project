@@ -73,20 +73,43 @@ final class BusinessInvitationRepository
             $this->setLocationIds($invitationId, $locationIds);
         }
 
-        // Store service/class-type filters as JSON columns
-        $svcIds = array_values(array_map('intval', (array) ($data['allowed_service_ids'] ?? [])));
-        $ctIds  = array_values(array_map('intval', (array) ($data['allowed_class_type_ids'] ?? [])));
-        if (!empty($svcIds) || !empty($ctIds)) {
+        // Store service/class-type/staff filters as JSON columns
+        $svcIds   = array_values(array_map('intval', (array) ($data['allowed_service_ids'] ?? [])));
+        $ctIds    = array_values(array_map('intval', (array) ($data['allowed_class_type_ids'] ?? [])));
+        $staffIds = array_values(array_map('intval', (array) ($data['allowed_staff_ids'] ?? [])));
+        if (!empty($svcIds) || !empty($ctIds) || !empty($staffIds)) {
             $this->db->getPdo()->prepare(
                 'UPDATE business_invitations SET
                     allowed_service_ids = ?,
-                    allowed_class_type_ids = ?
+                    allowed_class_type_ids = ?,
+                    allowed_staff_ids = ?
                  WHERE id = ?'
             )->execute([
-                empty($svcIds) ? null : json_encode($svcIds),
-                empty($ctIds)  ? null : json_encode($ctIds),
+                empty($svcIds)   ? null : json_encode($svcIds),
+                empty($ctIds)    ? null : json_encode($ctIds),
+                empty($staffIds) ? null : json_encode($staffIds),
                 $invitationId,
             ]);
+        }
+
+        // Permessi granulari salvati sull'invito (NULL = default del ruolo all'accettazione).
+        $permKeys = [
+            'can_manage_bookings', 'can_manage_clients', 'can_manage_services',
+            'can_manage_staff', 'can_view_reports',
+        ];
+        $permSets = [];
+        $permVals = [];
+        foreach ($permKeys as $key) {
+            if (array_key_exists($key, $data) && $data[$key] !== null) {
+                $permSets[] = "$key = ?";
+                $permVals[] = $data[$key] ? 1 : 0;
+            }
+        }
+        if (!empty($permSets)) {
+            $permVals[] = $invitationId;
+            $this->db->getPdo()->prepare(
+                'UPDATE business_invitations SET ' . implode(', ', $permSets) . ' WHERE id = ?'
+            )->execute($permVals);
         }
 
         return [
@@ -108,7 +131,9 @@ final class BusinessInvitationRepository
             "SELECT
                 i.id, i.business_id, i.email, i.role, i.scope_type, {$staffSelect}, i.token,
                 i.expires_at, i.status, i.accepted_by, i.accepted_at,
-                i.invited_by, i.allowed_service_ids, i.allowed_class_type_ids, i.created_at,
+                i.invited_by, i.allowed_service_ids, i.allowed_class_type_ids, i.allowed_staff_ids,
+                i.can_manage_bookings, i.can_manage_clients, i.can_manage_services, i.can_manage_staff, i.can_view_reports,
+                i.created_at,
                 b.name as business_name, b.slug as business_slug
              FROM business_invitations i
              JOIN businesses b ON i.business_id = b.id
@@ -129,6 +154,7 @@ final class BusinessInvitationRepository
         }
         $result['allowed_service_ids']    = $this->decodeJsonIds($result['allowed_service_ids'] ?? null);
         $result['allowed_class_type_ids'] = $this->decodeJsonIds($result['allowed_class_type_ids'] ?? null);
+        $result['allowed_staff_ids']      = $this->decodeJsonIds($result['allowed_staff_ids'] ?? null);
 
         return $result;
     }
@@ -155,6 +181,7 @@ final class BusinessInvitationRepository
         }
         $result['allowed_service_ids']    = $this->decodeJsonIds($result['allowed_service_ids'] ?? null);
         $result['allowed_class_type_ids'] = $this->decodeJsonIds($result['allowed_class_type_ids'] ?? null);
+        $result['allowed_staff_ids']      = $this->decodeJsonIds($result['allowed_staff_ids'] ?? null);
 
         return $result;
     }
@@ -213,7 +240,9 @@ final class BusinessInvitationRepository
         $stmt = $this->db->getPdo()->prepare(
             "SELECT
                 i.id, i.email, i.role, i.scope_type, {$staffSelect}, i.token, i.expires_at,
-                i.status, i.invited_by, i.allowed_service_ids, i.allowed_class_type_ids, i.created_at,
+                i.status, i.invited_by, i.allowed_service_ids, i.allowed_class_type_ids, i.allowed_staff_ids,
+                i.can_manage_bookings, i.can_manage_clients, i.can_manage_services, i.can_manage_staff, i.can_view_reports,
+                i.created_at,
                 u.first_name as inviter_first_name, u.last_name as inviter_last_name
              FROM business_invitations i
              LEFT JOIN users u ON i.invited_by = u.id
@@ -234,6 +263,7 @@ final class BusinessInvitationRepository
             }
             $inv['allowed_service_ids']    = $this->decodeJsonIds($inv['allowed_service_ids'] ?? null);
             $inv['allowed_class_type_ids'] = $this->decodeJsonIds($inv['allowed_class_type_ids'] ?? null);
+            $inv['allowed_staff_ids']      = $this->decodeJsonIds($inv['allowed_staff_ids'] ?? null);
         }
 
         return $invitations;
@@ -250,7 +280,9 @@ final class BusinessInvitationRepository
         $stmt = $this->db->getPdo()->prepare(
             "SELECT
                 i.id, i.email, i.role, i.scope_type, {$staffSelect}, i.token, i.expires_at,
-                i.status, i.accepted_at, i.invited_by, i.allowed_service_ids, i.allowed_class_type_ids, i.created_at,
+                i.status, i.accepted_at, i.invited_by, i.allowed_service_ids, i.allowed_class_type_ids, i.allowed_staff_ids,
+                i.can_manage_bookings, i.can_manage_clients, i.can_manage_services, i.can_manage_staff, i.can_view_reports,
+                i.created_at,
                 u.first_name as inviter_first_name, u.last_name as inviter_last_name
              FROM business_invitations i
              LEFT JOIN users u ON i.invited_by = u.id
@@ -269,6 +301,7 @@ final class BusinessInvitationRepository
             }
             $inv['allowed_service_ids']    = $this->decodeJsonIds($inv['allowed_service_ids'] ?? null);
             $inv['allowed_class_type_ids'] = $this->decodeJsonIds($inv['allowed_class_type_ids'] ?? null);
+            $inv['allowed_staff_ids']      = $this->decodeJsonIds($inv['allowed_staff_ids'] ?? null);
         }
 
         return $invitations;

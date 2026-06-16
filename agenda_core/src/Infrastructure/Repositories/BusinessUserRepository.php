@@ -53,7 +53,7 @@ final class BusinessUserRepository
                 bu.id, bu.business_id, bu.user_id, bu.role, bu.scope_type, bu.staff_id,
                 bu.can_manage_bookings, bu.can_manage_clients,
                 bu.can_manage_services, bu.can_manage_staff, bu.can_view_reports,
-                bu.allowed_service_ids, bu.allowed_class_type_ids,
+                bu.allowed_service_ids, bu.allowed_class_type_ids, bu.allowed_staff_ids,
                 bu.is_active, bu.invited_by, bu.invited_at, bu.accepted_at,
                 bu.created_at, bu.updated_at
              FROM business_users bu
@@ -76,6 +76,7 @@ final class BusinessUserRepository
         // Decode JSON filter columns (NULL = no restriction)
         $result['allowed_service_ids']    = $this->decodeJsonIds($result['allowed_service_ids']);
         $result['allowed_class_type_ids'] = $this->decodeJsonIds($result['allowed_class_type_ids']);
+        $result['allowed_staff_ids']      = $this->decodeJsonIds($result['allowed_staff_ids']);
 
         return $result;
     }
@@ -186,7 +187,7 @@ final class BusinessUserRepository
                 bu.id, bu.user_id, bu.role, bu.scope_type, bu.staff_id,
                 bu.can_manage_bookings, bu.can_manage_clients,
                 bu.can_manage_services, bu.can_manage_staff, bu.can_view_reports,
-                bu.allowed_service_ids, bu.allowed_class_type_ids,
+                bu.allowed_service_ids, bu.allowed_class_type_ids, bu.allowed_staff_ids,
                 bu.is_active, bu.invited_by, bu.invited_at, bu.accepted_at,
                 bu.created_at,
                 u.email, u.first_name, u.last_name, u.phone as user_phone
@@ -210,6 +211,7 @@ final class BusinessUserRepository
             }
             $user['allowed_service_ids']    = $this->decodeJsonIds($user['allowed_service_ids'] ?? null);
             $user['allowed_class_type_ids'] = $this->decodeJsonIds($user['allowed_class_type_ids'] ?? null);
+            $user['allowed_staff_ids']      = $this->decodeJsonIds($user['allowed_staff_ids'] ?? null);
         }
 
         return $users;
@@ -292,6 +294,12 @@ final class BusinessUserRepository
                       WHERE id = ?'
                 )->execute([$existing['id']]);
             }
+            // Invariante: chi gestisce tutto lo staff non può avere un filtro sui membri.
+            if ($canManageStaff === 1) {
+                $this->db->getPdo()->prepare(
+                    'UPDATE business_users SET allowed_staff_ids = NULL WHERE id = ?'
+                )->execute([$existing['id']]);
+            }
 
             return (int) $existing['id'];
         }
@@ -370,6 +378,22 @@ final class BusinessUserRepository
             ]);
         }
 
+        // Filtro membri del team: chi gestisce tutto lo staff (can_manage_staff) non può
+        // avere restrizioni (allowed_staff_ids = null = Tutti). Per gli altri si applica
+        // il valore fornito (null=Tutti, []=Nessuno, [..]=Selezionati).
+        $isStaffManager = $canManageStaff === 1;
+        if ($isStaffManager || array_key_exists('allowed_staff_ids', $data)) {
+            $staffVal = $isStaffManager
+                ? null
+                : (array_key_exists('allowed_staff_ids', $data) ? $data['allowed_staff_ids'] : null);
+            $this->db->getPdo()->prepare(
+                'UPDATE business_users SET allowed_staff_ids = ? WHERE id = ?'
+            )->execute([
+                $staffVal === null ? null : json_encode(array_values(array_map('intval', (array) $staffVal))),
+                $businessUserId,
+            ]);
+        }
+
         return $businessUserId;
     }
 
@@ -413,6 +437,15 @@ final class BusinessUserRepository
                 'can_view_reports' => false,
             ],
             'viewer' => [
+                'can_manage_bookings' => false,
+                'can_manage_clients' => false,
+                'can_manage_services' => false,
+                'can_manage_staff' => false,
+                'can_view_reports' => false,
+            ],
+            // Ruolo completamente configurabile: parte da tutti i permessi a false,
+            // poi vengono impostati esplicitamente dall'UI (toggle + filtri).
+            'custom' => [
                 'can_manage_bookings' => false,
                 'can_manage_clients' => false,
                 'can_manage_services' => false,
@@ -509,6 +542,11 @@ final class BusinessUserRepository
             $val = $data['allowed_class_type_ids'];
             $params[] = $val === null ? null : json_encode(array_values(array_map('intval', (array) $val)));
         }
+        if (array_key_exists('allowed_staff_ids', $data)) {
+            $fields[] = 'allowed_staff_ids = ?';
+            $val = $data['allowed_staff_ids'];
+            $params[] = $val === null ? null : json_encode(array_values(array_map('intval', (array) $val)));
+        }
 
         if (empty($fields)) {
             // Still need to handle location_ids even if no other fields
@@ -589,11 +627,12 @@ final class BusinessUserRepository
     public function canAssignRole(string $assignerRole, string $targetRole): bool
     {
         $hierarchy = [
-            'owner' => ['owner', 'admin', 'manager', 'staff', 'viewer'],
-            'admin' => ['admin', 'manager', 'staff', 'viewer'],
+            'owner' => ['owner', 'admin', 'manager', 'staff', 'viewer', 'custom'],
+            'admin' => ['admin', 'manager', 'staff', 'viewer', 'custom'],
             'manager' => [],
             'staff' => [],
             'viewer' => [],
+            'custom' => [],
         ];
 
         return in_array($targetRole, $hierarchy[$assignerRole] ?? [], true);
@@ -795,5 +834,20 @@ final class BusinessUserRepository
         }
 
         return $businessUser['allowed_class_type_ids'];
+    }
+
+    /**
+     * Get the staff-id filter for a user in a business.
+     * 3-state: null = Tutti (no restriction), [] = Nessuno, [ids] = solo selezionati.
+     * Returns null when the user has no association (caller already enforces access).
+     */
+    public function getAllowedStaffIds(int $userId, int $businessId): ?array
+    {
+        $businessUser = $this->findByUserAndBusiness($userId, $businessId);
+        if ($businessUser === null) {
+            return null;
+        }
+
+        return $businessUser['allowed_staff_ids'];
     }
 }

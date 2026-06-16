@@ -206,7 +206,32 @@ ALTER TABLE business_invitations
 > Step 1 (`allowed_staff_ids`) e Step 2 (`custom`) sono accoppiati: conviene farli insieme,
 > perché `allowed_staff_ids` ha senso solo con un ruolo che lo consuma (`custom`).
 
-### Step 1 — `allowed_staff_ids`
+### Step 1 — `allowed_staff_ids` — ✅ FATTO (sessione 2026-06-16)
+
+> Decisioni prese in questa sessione:
+> - **Invariante** legata a `can_manage_staff` (non a `can_manage_services`): chi gestisce
+>   tutto lo staff non può avere un filtro residuo → `allowed_staff_ids` forzato a `NULL`
+>   in `create()` e rifiutato in `update()` (mirror speculare dell'invariante servizi).
+> - **Enforcement**: solo **read** in Step 1 (filtro agenda `filteredStaffProvider`); il
+>   **write-enforcement** (`staff_id` assegnato ∈ `allowed_staff_ids`) è rimandato allo Step 2
+>   col ruolo `custom`, dove è semanticamente ancorato.
+> - **Inviti**: comportamento **mirror** (limite esistente: `[]` collassa a `null`); il fix
+>   del 3-stati sugli inviti resta una voce separata, non affrontata qui.
+>
+> Cosa è stato fatto: migration `20260616_business_user_staff_filter.sql` + `FULL_DATABASE_SCHEMA.sql`;
+> `BusinessUserRepository` (SELECT/decode/persist + invariante + helper `getAllowedStaffIds`);
+> `BusinessInvitationRepository` (persist/decode mirror); controller `BusinessUsers`/`BusinessInvitations`/`Auth`
+> (lettura body, invariante `can_manage_staff`, output `/v1/me*`); Flutter model
+> `business_user.dart`/`business_invitation.dart`, `api_client.dart`, repo+notifier business users,
+> `current_business_user_provider` (`allowedStaffIdsProvider`), UI `role_selection_dialog.dart`
+> e `invite_operator_dialog.dart` (sezione "Membri del team accessibili" in entrambe le varianti
+> Dialog/Sheet + l10n `operatorsAccessibleStaff` IT/EN), read-filter `staff_filter_providers.dart`,
+> caller re-invito in `operators_screen.dart` (`initialStaffIds`). `php -l` e `dart analyze` puliti.
+>
+> Funzionalità Step 1 completa: il filtro "Membri del team" è impostabile sia in invito sia in
+> modifica operatore, persistito e applicato in lettura sull'agenda. Resta per lo Step 2 solo il
+> write-enforcement legato al ruolo `custom` (come da decisione).
+
 1. **Migration DB**: nuovo file `config/migrations/<data>_business_user_staff_filter.sql` →
    `ALTER TABLE business_users ADD COLUMN allowed_staff_ids JSON NULL;` + idem su `business_invitations`.
    Aggiornare `FULL_DATABASE_SCHEMA.sql`.
@@ -229,7 +254,42 @@ ALTER TABLE business_invitations
    - **Write**: in create/update di booking ed eventi, lo `staff_id` assegnato deve appartenere
      a `allowed_staff_ids` (per ruolo `custom`).
 
-### Step 2 — ruolo `custom`
+### Step 2 — ruolo `custom` — ✅ FATTO (sessione 2026-06-16)
+
+> Cosa è stato fatto:
+> - Migration `20260616_business_user_custom_role.sql` (enum esteso con `custom` su
+>   `business_users` e `business_invitations`) + `FULL_DATABASE_SCHEMA.sql`.
+> - `BusinessUserRepository`: `defaultPermissionsForRole('custom')` = tutti false;
+>   `canAssignRole` consente a owner/admin di assegnare `custom`.
+> - Validazione ruolo `custom` in `BusinessUsersController` (store/update) e
+>   `BusinessInvitationsController`; `defaultPermissionsForRole` custom anche nel controller.
+> - **Write-enforcement** dello `staff_id` per `custom` come ramo separato (insieme
+>   `allowed_staff_ids`, distinto dal forced-staff di `role==='staff'`) in:
+>   `BookingsController` (5 siti, helper `getAllowedStaffIdsForCustomOperator` +
+>   `validateAllowedStaffAssignment`), `AppointmentsController` (modifica+creazione),
+>   `ClassEventsController` (creazione+update). I check `can_manage_*` (via `hasPermission`)
+>   e i filtri `allowed_service_ids`/`allowed_class_type_ids` valgono già per `custom`
+>   (per-flag/per-filtro). I rami `if role==='manager'/'staff'` sono grant extra che NON si
+>   applicano a `custom` (verificato in `StaffController`/`StaffPlanningController`).
+> - Flutter: label "Operatore personalizzato" nei due model; `role_selection_dialog`
+>   con opzione `custom` + `PermissionTogglesSection` (5 toggle) + le 3 sezioni filtro,
+>   con invarianti UI (attivando gestione servizi/team si azzerano i filtri relativi);
+>   `invite_operator_dialog` con opzione `custom`; `operators_screen` propaga i flag;
+>   catena `api_client`/repo/notifier estesa con i 5 flag; `BusinessUser` model espone i
+>   permessi; `canViewAllAppointmentsProvider` include `custom`. l10n IT/EN aggiornata.
+> - `php -l` e `dart analyze` puliti.
+>
+> Inviti `custom` con permessi: migration `20260616_business_invitation_permissions.sql`
+> aggiunge 5 colonne `can_manage_*` (tinyint nullable) a `business_invitations`
+> (NULL = default del ruolo all'accettazione). `BusinessInvitationRepository` persiste/legge
+> i flag; `BusinessInvitationsController` li accetta dal body (solo per `custom`), li propaga
+> ai 3 flussi di accettazione (`businessUserRepo->create`) e li espone nella lista inviti
+> (`index`, insieme ai filtri — prima non li ritornava). Flutter: `business_invitation.dart`
+> con i 5 campi nullable, catena `api_client`/repo/notifier estesa, `invite_operator_dialog`
+> con `PermissionTogglesSection` per `custom` (entrambe le varianti) + invarianti UI,
+> `operators_screen` re-invito che pre-compila i permessi. Quindi i permessi del ruolo `custom`
+> si scelgono **già all'invito** (oltre che modificando l'operatore). `php -l`/`dart analyze` puliti.
+
 7. **Migration DB**: estendere enum →
    `enum('owner','admin','manager','staff','viewer','custom')` su `business_users` e `business_invitations`.
    Aggiornare `FULL_DATABASE_SCHEMA.sql`.

@@ -112,6 +112,12 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
     int? staffId,
     List<int>? allowedServiceIds,
     List<int>? allowedClassTypeIds,
+    List<int>? allowedStaffIds,
+    bool? canManageBookings,
+    bool? canManageClients,
+    bool? canManageServices,
+    bool? canManageStaff,
+    bool? canViewReports,
   }) async {
     final globalLoading = ref.read(globalLoadingProvider.notifier);
     globalLoading.show();
@@ -126,6 +132,12 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
         staffId: staffId,
         allowedServiceIds: allowedServiceIds,
         allowedClassTypeIds: allowedClassTypeIds,
+        allowedStaffIds: allowedStaffIds,
+        canManageBookings: canManageBookings,
+        canManageClients: canManageClients,
+        canManageServices: canManageServices,
+        canManageStaff: canManageStaff,
+        canViewReports: canViewReports,
       );
       // Always reload from API after update to keep scope/location state aligned
       // with server-side rules and avoid stale local UI.
@@ -176,6 +188,12 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
     int? staffId,
     List<int>? allowedServiceIds,
     List<int>? allowedClassTypeIds,
+    List<int>? allowedStaffIds,
+    bool? canManageBookings,
+    bool? canManageClients,
+    bool? canManageServices,
+    bool? canManageStaff,
+    bool? canViewReports,
   }) async {
     final globalLoading = ref.read(globalLoadingProvider.notifier);
     globalLoading.show();
@@ -190,6 +208,12 @@ class BusinessUsersNotifier extends _$BusinessUsersNotifier {
         staffId: staffId,
         allowedServiceIds: allowedServiceIds,
         allowedClassTypeIds: allowedClassTypeIds,
+        allowedStaffIds: allowedStaffIds,
+        canManageBookings: canManageBookings,
+        canManageClients: canManageClients,
+        canManageServices: canManageServices,
+        canManageStaff: canManageStaff,
+        canViewReports: canViewReports,
       );
       if (ref.mounted) {
         state = state.copyWith(

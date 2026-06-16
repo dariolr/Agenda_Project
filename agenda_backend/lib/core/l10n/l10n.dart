@@ -5386,6 +5386,86 @@ class L10n {
     );
   }
 
+  /// `Custom operator`
+  String get operatorsRoleCustom {
+    return Intl.message(
+      'Custom operator',
+      name: 'operatorsRoleCustom',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Fully configurable permissions and scope: choose what they can manage and which services, class types, and team members they operate on.`
+  String get operatorsRoleCustomDesc {
+    return Intl.message(
+      'Fully configurable permissions and scope: choose what they can manage and which services, class types, and team members they operate on.',
+      name: 'operatorsRoleCustomDesc',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Permissions`
+  String get operatorsPermissionsTitle {
+    return Intl.message(
+      'Permissions',
+      name: 'operatorsPermissionsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manage bookings`
+  String get operatorsPermBookings {
+    return Intl.message(
+      'Manage bookings',
+      name: 'operatorsPermBookings',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manage clients`
+  String get operatorsPermClients {
+    return Intl.message(
+      'Manage clients',
+      name: 'operatorsPermClients',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manage services & pricing`
+  String get operatorsPermServices {
+    return Intl.message(
+      'Manage services & pricing',
+      name: 'operatorsPermServices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Manage team`
+  String get operatorsPermStaff {
+    return Intl.message(
+      'Manage team',
+      name: 'operatorsPermStaff',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Access reports`
+  String get operatorsPermReports {
+    return Intl.message(
+      'Access reports',
+      name: 'operatorsPermReports',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Select access level`
   String get operatorsRoleDescription {
     return Intl.message(
@@ -13936,6 +14016,16 @@ class L10n {
     return Intl.message(
       'Accessible class types',
       name: 'operatorsAccessibleClassTypes',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Accessible team members`
+  String get operatorsAccessibleStaff {
+    return Intl.message(
+      'Accessible team members',
+      name: 'operatorsAccessibleStaff',
       desc: '',
       args: [],
     );

@@ -186,9 +186,18 @@ final filteredStaffProvider = Provider<List<Staff>>((ref) {
   final allowedServiceIds = ref.watch(allowedServiceIdsProvider);
   List<Staff> visibleStaff = allStaff;
   if (allowedServiceIds != null) {
-    visibleStaff = allStaff
+    visibleStaff = visibleStaff
         .where((s) => s.serviceIds.any(allowedServiceIds.contains))
         .toList();
+  }
+
+  // Filtro per membri del team consentiti all'operatore (allowed_staff_ids).
+  // null = Tutti (nessun filtro), [] = Nessuno, [ids] = solo quei membri.
+  final allowedStaffIds = ref.watch(allowedStaffIdsProvider);
+  if (allowedStaffIds != null) {
+    final allowed = allowedStaffIds.toSet();
+    visibleStaff =
+        visibleStaff.where((s) => allowed.contains(s.id)).toList();
   }
 
   // Applica i filtri normali (allTeam / onDutyTeam / custom) sul sottoinsieme visibile

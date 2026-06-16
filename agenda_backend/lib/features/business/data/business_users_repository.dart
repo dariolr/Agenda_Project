@@ -27,6 +27,12 @@ class BusinessUsersRepository {
     int? staffId,
     List<int>? allowedServiceIds,
     List<int>? allowedClassTypeIds,
+    List<int>? allowedStaffIds,
+    bool? canManageBookings,
+    bool? canManageClients,
+    bool? canManageServices,
+    bool? canManageStaff,
+    bool? canViewReports,
   }) async {
     final data = await _apiClient.updateBusinessUser(
       businessId: businessId,
@@ -37,6 +43,12 @@ class BusinessUsersRepository {
       staffId: staffId,
       allowedServiceIds: allowedServiceIds,
       allowedClassTypeIds: allowedClassTypeIds,
+      allowedStaffIds: allowedStaffIds,
+      canManageBookings: canManageBookings,
+      canManageClients: canManageClients,
+      canManageServices: canManageServices,
+      canManageStaff: canManageStaff,
+      canViewReports: canViewReports,
     );
     return BusinessUser.fromJson(data);
   }
@@ -73,6 +85,12 @@ class BusinessUsersRepository {
     int? staffId,
     List<int>? allowedServiceIds,
     List<int>? allowedClassTypeIds,
+    List<int>? allowedStaffIds,
+    bool? canManageBookings,
+    bool? canManageClients,
+    bool? canManageServices,
+    bool? canManageStaff,
+    bool? canViewReports,
   }) async {
     final data = await _apiClient.createBusinessInvitation(
       businessId: businessId,
@@ -83,6 +101,12 @@ class BusinessUsersRepository {
       staffId: staffId,
       allowedServiceIds: allowedServiceIds,
       allowedClassTypeIds: allowedClassTypeIds,
+      allowedStaffIds: allowedStaffIds,
+      canManageBookings: canManageBookings,
+      canManageClients: canManageClients,
+      canManageServices: canManageServices,
+      canManageStaff: canManageStaff,
+      canViewReports: canViewReports,
     );
     return BusinessInvitation.fromJson(data);
   }

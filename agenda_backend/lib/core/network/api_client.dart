@@ -2453,6 +2453,12 @@ class ApiClient {
     int? staffId,
     List<int>? allowedServiceIds,
     List<int>? allowedClassTypeIds,
+    List<int>? allowedStaffIds,
+    bool? canManageBookings,
+    bool? canManageClients,
+    bool? canManageServices,
+    bool? canManageStaff,
+    bool? canViewReports,
   }) async {
     final data = <String, dynamic>{'role': role};
     if (scopeType != null) data['scope_type'] = scopeType;
@@ -2466,6 +2472,13 @@ class ApiClient {
     // Invia sempre i campi filtro: null=Tutti, []=Nessuno, [..]=Solo selezionati.
     data['allowed_service_ids'] = allowedServiceIds;
     data['allowed_class_type_ids'] = allowedClassTypeIds;
+    data['allowed_staff_ids'] = allowedStaffIds;
+    // Flag permessi (usati soprattutto dal ruolo custom): inviati solo se forniti.
+    if (canManageBookings != null) data['can_manage_bookings'] = canManageBookings;
+    if (canManageClients != null) data['can_manage_clients'] = canManageClients;
+    if (canManageServices != null) data['can_manage_services'] = canManageServices;
+    if (canManageStaff != null) data['can_manage_staff'] = canManageStaff;
+    if (canViewReports != null) data['can_view_reports'] = canViewReports;
 
     final response = await patch(
       ApiConfig.businessUser(businessId, userId),
@@ -2520,6 +2533,12 @@ class ApiClient {
     int? staffId,
     List<int>? allowedServiceIds,
     List<int>? allowedClassTypeIds,
+    List<int>? allowedStaffIds,
+    bool? canManageBookings,
+    bool? canManageClients,
+    bool? canManageServices,
+    bool? canManageStaff,
+    bool? canViewReports,
   }) async {
     final data = <String, dynamic>{
       'email': email,
@@ -2535,6 +2554,13 @@ class ApiClient {
     // Invia sempre i campi filtro: null=Tutti, []=Nessuno, [..]=Solo selezionati.
     data['allowed_service_ids'] = allowedServiceIds;
     data['allowed_class_type_ids'] = allowedClassTypeIds;
+    data['allowed_staff_ids'] = allowedStaffIds;
+    // Flag permessi (usati dal ruolo custom): inviati solo se forniti.
+    if (canManageBookings != null) data['can_manage_bookings'] = canManageBookings;
+    if (canManageClients != null) data['can_manage_clients'] = canManageClients;
+    if (canManageServices != null) data['can_manage_services'] = canManageServices;
+    if (canManageStaff != null) data['can_manage_staff'] = canManageStaff;
+    if (canViewReports != null) data['can_view_reports'] = canViewReports;
 
     final response = await post(
       ApiConfig.businessInvitations(businessId),
