@@ -1,18 +1,19 @@
-import 'package:agenda_backend/app/theme/extensions.dart';
-import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/app/providers/form_factor_provider.dart';
+import 'package:agenda_backend/app/theme/extensions.dart';
 import 'package:agenda_backend/core/constants/ui_sizes.dart';
 import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/location.dart';
+import 'package:agenda_backend/core/services/preferences_service.dart';
 import 'package:agenda_backend/core/widgets/adaptive_dropdown.dart';
 import 'package:agenda_backend/core/widgets/app_bottom_sheet.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
+import 'package:agenda_backend/core/widgets/app_dividers.dart';
 import 'package:agenda_backend/features/agenda/presentation/widgets/agenda_display_settings_sheet.dart';
+import 'package:agenda_backend/features/agenda/providers/agenda_day_summary_provider.dart';
+import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/calendar_view_mode_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/date_range_provider.dart';
 import 'package:agenda_backend/features/agenda/providers/location_providers.dart';
-import 'package:agenda_backend/core/services/preferences_service.dart';
-import 'package:agenda_backend/features/agenda/providers/business_providers.dart';
 import 'package:agenda_backend/features/agenda/providers/tenant_time_provider.dart';
 import 'package:agenda_backend/features/billing/providers/billing_notice_provider.dart';
 import 'package:agenda_backend/features/reports/providers/reports_filter_provider.dart';
@@ -1479,6 +1480,10 @@ class AgendaLaunchReportButton extends ConsumerWidget {
     final label = viewMode == CalendarViewMode.week
         ? l10n.agendaReportDisplayedWeekAction
         : l10n.agendaReportDisplayedDateAction;
+    // Riepilogo giornata (null fuori dalla day view o in caricamento iniziale).
+    //final summary = ref.watch(agendaDaySummaryProvider);
+
+    final iconWidget = _buildIcon(scheme, null);
 
     return Tooltip(
       message: label,
@@ -1496,17 +1501,45 @@ class AgendaLaunchReportButton extends ConsumerWidget {
               : scheme.primary,
           foregroundColor: scheme.onSurface,
           child: iconOnly
-              ? const Icon(Icons.bar_chart_outlined, size: 22)
+              ? iconWidget
               : Row(
                   mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.bar_chart_outlined, size: 22),
-                    const SizedBox(width: 8),
-                    Text(label),
-                  ],
+                  children: [iconWidget, const SizedBox(width: 8), Text(label)],
                 ),
         ),
       ),
+    );
+  }
+
+  /// Icona del report. In day view l'icona del grafico viene schiarita e vi
+  /// vengono sovrapposti i conteggi del giorno (sopra le prenotazioni, sotto i
+  /// clienti unici). Fuori dalla day view resta l'icona normale.
+  Widget _buildIcon(ColorScheme scheme, AgendaDaySummary? summary) {
+    const chartIcon = Icon(Icons.bar_chart_outlined, size: 26);
+    if (summary == null || 1 == 1) {
+      return const Icon(Icons.bar_chart_outlined, size: 22);
+    }
+
+    final countStyle = TextStyle(
+      fontSize: 11,
+      height: 1.05,
+      fontWeight: FontWeight.w700,
+      color: scheme.onSurface,
+    );
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Icona grafico molto schiarita, fa da sfondo ai numeri.
+        Opacity(opacity: 0.18, child: chartIcon),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('${summary.appointmentCount}', style: countStyle),
+            Text('${summary.uniqueClientCount}', style: countStyle),
+          ],
+        ),
+      ],
     );
   }
 

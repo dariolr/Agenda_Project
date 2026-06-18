@@ -68,7 +68,8 @@ class TopControls extends ConsumerWidget {
     WidgetRef ref,
   ) {
     // Su mobile per agenda, il date picker è in basso (come tablet)
-    // In agenda mobile i filtri (staff/location) sono in AppBar actions.
+    // In agenda mobile i filtri (staff/location) e il badge riepilogo sono
+    // nelle AppBar actions (vedi _AgendaFilterActions).
     if (mode == TopControlsMode.agenda) {
       return const SizedBox.shrink();
     }
