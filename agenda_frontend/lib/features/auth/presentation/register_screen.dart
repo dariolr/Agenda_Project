@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/providers/route_slug_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/widgets/feedback_dialog.dart';
+import '../../../core/widgets/phone_input_field.dart';
 import '../../booking/providers/business_provider.dart';
 import '../providers/auth_provider.dart';
 
@@ -30,10 +30,10 @@ class RegisterScreen extends ConsumerStatefulWidget {
 
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _phoneFieldKey = GlobalKey<PhoneInputFieldState>();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
-  final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _obscurePassword = true;
@@ -74,7 +74,6 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     _firstNameController.dispose();
     _lastNameController.dispose();
     _emailController.dispose();
-    _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -148,9 +147,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             password: _passwordController.text,
             firstName: _firstNameController.text.trim(),
             lastName: _lastNameController.text.trim(),
-            phone: _phoneController.text.trim().isNotEmpty
-                ? _phoneController.text.trim()
-                : null,
+            phone: _phoneFieldKey.currentState?.fullPhone ?? '',
           );
 
       if (success && mounted) {
@@ -281,16 +278,19 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Telefono (opzionale)
-                  TextFormField(
-                    controller: _phoneController,
-                    keyboardType: TextInputType.phone,
+                  // Telefono (obbligatorio)
+                  PhoneInputField(
+                    key: _phoneFieldKey,
+                    labelText: l10n.authPhone,
                     textInputAction: TextInputAction.next,
-                    autofillHints: const [AutofillHints.telephoneNumber],
-                    decoration: InputDecoration(
-                      labelText: '${l10n.authPhone} (opzionale)',
-                      prefixIcon: const Icon(Icons.phone_outlined),
-                    ),
+                    validator: (value) {
+                      final fullPhone =
+                          _phoneFieldKey.currentState?.fullPhone ?? '';
+                      if (fullPhone.isEmpty) {
+                        return l10n.authRequiredField;
+                      }
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 16),
 
@@ -447,4 +447,3 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     );
   }
 }
-

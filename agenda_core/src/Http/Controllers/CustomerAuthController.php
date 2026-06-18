@@ -113,6 +113,11 @@ final class CustomerAuthController
             return Response::error('Email and password are required', 'validation_error', 400);
         }
 
+        $phone = $body['phone'] ?? null;
+        if ($phone === null || trim($phone) === '') {
+            return Response::error('Phone number is required', 'validation_error', 400);
+        }
+
         // Accept either first_name/last_name or a single 'name' field
         $firstName = $body['first_name'] ?? null;
         $lastName = $body['last_name'] ?? null;
@@ -135,7 +140,7 @@ final class CustomerAuthController
                 $firstName,
                 $lastName,
                 $businessId,
-                $body['phone'] ?? null,
+                $phone,
                 $request->getHeader('User-Agent'),
                 $request->getClientIp()
             );

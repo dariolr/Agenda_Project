@@ -53,7 +53,7 @@ class AuthRepository {
     required String password,
     required String firstName,
     required String lastName,
-    String? phone,
+    required String phone,
   }) async {
     final data = await _apiClient.customerRegister(
       businessId: businessId,

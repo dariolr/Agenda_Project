@@ -45,6 +45,11 @@ final class RegisterCustomer
         // Validate password strength
         $this->validatePassword($password);
 
+        // Validate phone
+        if ($phone === null || trim($phone) === '') {
+            throw new ValidationException('Phone number is required');
+        }
+
         // Check if client exists with this email in this business
         $existingClient = $this->clientRepository->findByEmail($email, $businessId);
 

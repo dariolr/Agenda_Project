@@ -169,7 +169,7 @@ class AuthNotifier extends Notifier<AuthState> {
     required String password,
     required String firstName,
     required String lastName,
-    String? phone,
+    required String phone,
   }) async {
     debugPrint('=== REGISTER START ===');
     debugPrint(

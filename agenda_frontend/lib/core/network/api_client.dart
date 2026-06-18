@@ -509,7 +509,7 @@ class ApiClient {
     required String password,
     required String firstName,
     required String lastName,
-    String? phone,
+    required String phone,
   }) async {
     debugPrint('=== API customerRegister ===');
     debugPrint('businessId: $businessId, email: $email');
@@ -522,7 +522,7 @@ class ApiClient {
         'password': password,
         'first_name': firstName,
         'last_name': lastName,
-        if (phone != null) 'phone': phone,
+        'phone': phone,
       },
     );
 
