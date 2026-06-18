@@ -8,6 +8,7 @@ import '../../../../core/network/network_providers.dart';
 import '../../providers/booking_direct_link_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/locations_provider.dart';
+import '../widgets/booking_formatted_message_text.dart';
 
 class ConfirmationStep extends ConsumerStatefulWidget {
   const ConfirmationStep({super.key});
@@ -235,8 +236,8 @@ class _ConfirmationInformationBox extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            message,
+          BookingFormattedMessageText(
+            text: message,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.78),
             ),

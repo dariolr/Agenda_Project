@@ -19,6 +19,7 @@ import '../../providers/business_provider.dart';
 import '../../providers/class_events_provider.dart';
 import '../../providers/my_bookings_provider.dart';
 import '../../../auth/providers/auth_provider.dart';
+import '../widgets/booking_formatted_message_text.dart';
 
 class ServicesStep extends ConsumerStatefulWidget {
   const ServicesStep({super.key});
@@ -1009,8 +1010,8 @@ class _BookingInformationBox extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 6),
-          Text(
-            message,
+          BookingFormattedMessageText(
+            text: message,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurface.withOpacity(0.78),
             ),

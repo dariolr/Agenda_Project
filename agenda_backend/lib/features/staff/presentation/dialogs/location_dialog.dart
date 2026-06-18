@@ -47,6 +47,7 @@ class _LocationDialog extends ConsumerStatefulWidget {
 
 class _LocationDialogState extends ConsumerState<_LocationDialog> {
   static const int _neverCancellationHours = 100000;
+  static const int _formHelperMaxLines = 8;
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _addressController = TextEditingController();
@@ -646,6 +647,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           border: const OutlineInputBorder(),
           isDense: true,
           helperText: l10n.teamLocationBookingDefaultLocaleHint,
+          helperMaxLines: _formHelperMaxLines,
         ),
         items: [
           DropdownMenuItem<String?>(
@@ -699,6 +701,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           isDense: true,
           hintText: l10n.teamLocationNotificationEmailsHint,
           helperText: l10n.teamLocationNotificationEmailsHelper,
+          helperMaxLines: _formHelperMaxLines,
         ),
       ),
     );
@@ -713,7 +716,9 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           border: const OutlineInputBorder(),
           isDense: true,
           helperText: l10n.teamLocationBookingIntroMessageHelper,
+          helperMaxLines: _formHelperMaxLines,
           hintText: l10n.teamLocationBookingIntroMessagePlaceholder,
+          hintMaxLines: _formHelperMaxLines,
           alignLabelWithHint: true,
         ),
       ),
@@ -729,7 +734,9 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           border: const OutlineInputBorder(),
           isDense: true,
           helperText: l10n.teamLocationBookingConfirmationMessageHelper,
+          helperMaxLines: _formHelperMaxLines,
           hintText: l10n.teamLocationBookingConfirmationMessagePlaceholder,
+          hintMaxLines: _formHelperMaxLines,
           alignLabelWithHint: true,
         ),
       ),
@@ -847,6 +854,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                       border: const OutlineInputBorder(),
                       isDense: true,
                       helperText: l10n.teamLocationStaffIconKeyHint,
+                      helperMaxLines: _formHelperMaxLines,
                     ),
                     items: _staffIconKeys
                         .map(
@@ -886,6 +894,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                   border: const OutlineInputBorder(),
                   isDense: true,
                   helperText: l10n.teamLocationMinBookingNoticeHint,
+                  helperMaxLines: _formHelperMaxLines,
                 ),
                 items: _noticeHoursOptions.map((hours) {
                   return DropdownMenuItem(
@@ -908,6 +917,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                   border: const OutlineInputBorder(),
                   isDense: true,
                   helperText: l10n.teamLocationMaxBookingAdvanceHint,
+                  helperMaxLines: _formHelperMaxLines,
                 ),
                 keyboardType: TextInputType.number,
                 inputFormatters: [FilteringTextInputFormatter.digitsOnly],
@@ -934,6 +944,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                   border: const OutlineInputBorder(),
                   isDense: true,
                   helperText: l10n.teamLocationCancellationHoursHint,
+                  helperMaxLines: _formHelperMaxLines,
                 ),
                 items: _cancellationHoursOptions.map((hours) {
                   String label;
@@ -1035,6 +1046,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                   border: const OutlineInputBorder(),
                   isDense: true,
                   helperText: l10n.teamLocationSlotIntervalHint,
+                  helperMaxLines: _formHelperMaxLines,
                 ),
                 items: _onlineBookingSlotIntervalOptions.map((minutes) {
                   return DropdownMenuItem(
@@ -1061,6 +1073,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                   helperText: _slotDisplayMode == 'all'
                       ? l10n.teamLocationSlotDisplayModeAllHint
                       : l10n.teamLocationSlotDisplayModeMinGapHint,
+                  helperMaxLines: _formHelperMaxLines,
                 ),
                 items: [
                   DropdownMenuItem(
@@ -1088,6 +1101,7 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
                     border: const OutlineInputBorder(),
                     isDense: true,
                     helperText: l10n.teamLocationMinGapHint,
+                    helperMaxLines: _formHelperMaxLines,
                   ),
                   items: _minGapOptions.map((minutes) {
                     return DropdownMenuItem(

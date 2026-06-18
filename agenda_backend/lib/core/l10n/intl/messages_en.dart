@@ -3014,13 +3014,13 @@ class MessageLookup extends MessageLookupByLibrary {
         ),
     "teamLocationBookingConfirmationMessageHelper":
         MessageLookupByLibrary.simpleMessage(
-          "This message will be shown to customers on the confirmation page after the online booking has been completed. Leave it empty if you do not want to show any message.",
+          "You can use line breaks to separate information and make a word or sentence bold by wrapping it with two asterisks.\n\nExample: **Please arrive 10 minutes early**.",
         ),
     "teamLocationBookingConfirmationMessageLabel":
         MessageLookupByLibrary.simpleMessage("Online confirmation message"),
     "teamLocationBookingConfirmationMessagePlaceholder":
         MessageLookupByLibrary.simpleMessage(
-          "E.g. Thank you for your booking. Please arrive 10 minutes before your scheduled time.",
+          "Example: **Important:** please arrive 10 minutes before your appointment.\n\nSportswear is required for classes.",
         ),
     "teamLocationBookingDefaultLocaleAuto":
         MessageLookupByLibrary.simpleMessage("Automatic"),
@@ -3034,13 +3034,13 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationBookingDefaultLocaleLabel":
         MessageLookupByLibrary.simpleMessage("Default online booking language"),
     "teamLocationBookingIntroMessageHelper": MessageLookupByLibrary.simpleMessage(
-      "This message will be shown to customers after selecting the location and before choosing services, lessons or bookable activities. Leave it empty if you do not want to show any message.",
+      "You can use line breaks to separate information and make a word or sentence bold by wrapping it with two asterisks.\n\nExample: **Please arrive 10 minutes early**.",
     ),
     "teamLocationBookingIntroMessageLabel":
         MessageLookupByLibrary.simpleMessage("Online booking intro message"),
     "teamLocationBookingIntroMessagePlaceholder":
         MessageLookupByLibrary.simpleMessage(
-          "E.g. Before choosing a service or lesson, please read this information carefully.",
+          "Example: **Important:** please arrive 10 minutes before your appointment.\n\nSportswear is required for classes.",
         ),
     "teamLocationBookingLimitsSection": MessageLookupByLibrary.simpleMessage(
       "Online booking limits",

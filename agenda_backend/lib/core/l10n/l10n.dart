@@ -1713,20 +1713,20 @@ class L10n {
     );
   }
 
-  /// `This message will be shown to customers after selecting the location and before choosing services, lessons or bookable activities. Leave it empty if you do not want to show any message.`
+  /// `You can use line breaks to separate information and make a word or sentence bold by wrapping it with two asterisks.\n\nExample: **Please arrive 10 minutes early**.`
   String get teamLocationBookingIntroMessageHelper {
     return Intl.message(
-      'This message will be shown to customers after selecting the location and before choosing services, lessons or bookable activities. Leave it empty if you do not want to show any message.',
+      'You can use line breaks to separate information and make a word or sentence bold by wrapping it with two asterisks.\n\nExample: **Please arrive 10 minutes early**.',
       name: 'teamLocationBookingIntroMessageHelper',
       desc: '',
       args: [],
     );
   }
 
-  /// `E.g. Before choosing a service or lesson, please read this information carefully.`
+  /// `Example: **Important:** please arrive 10 minutes before your appointment.\n\nSportswear is required for classes.`
   String get teamLocationBookingIntroMessagePlaceholder {
     return Intl.message(
-      'E.g. Before choosing a service or lesson, please read this information carefully.',
+      'Example: **Important:** please arrive 10 minutes before your appointment.\n\nSportswear is required for classes.',
       name: 'teamLocationBookingIntroMessagePlaceholder',
       desc: '',
       args: [],
@@ -1743,20 +1743,20 @@ class L10n {
     );
   }
 
-  /// `This message will be shown to customers on the confirmation page after the online booking has been completed. Leave it empty if you do not want to show any message.`
+  /// `You can use line breaks to separate information and make a word or sentence bold by wrapping it with two asterisks.\n\nExample: **Please arrive 10 minutes early**.`
   String get teamLocationBookingConfirmationMessageHelper {
     return Intl.message(
-      'This message will be shown to customers on the confirmation page after the online booking has been completed. Leave it empty if you do not want to show any message.',
+      'You can use line breaks to separate information and make a word or sentence bold by wrapping it with two asterisks.\n\nExample: **Please arrive 10 minutes early**.',
       name: 'teamLocationBookingConfirmationMessageHelper',
       desc: '',
       args: [],
     );
   }
 
-  /// `E.g. Thank you for your booking. Please arrive 10 minutes before your scheduled time.`
+  /// `Example: **Important:** please arrive 10 minutes before your appointment.\n\nSportswear is required for classes.`
   String get teamLocationBookingConfirmationMessagePlaceholder {
     return Intl.message(
-      'E.g. Thank you for your booking. Please arrive 10 minutes before your scheduled time.',
+      'Example: **Important:** please arrive 10 minutes before your appointment.\n\nSportswear is required for classes.',
       name: 'teamLocationBookingConfirmationMessagePlaceholder',
       desc: '',
       args: [],

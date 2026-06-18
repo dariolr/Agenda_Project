@@ -3134,7 +3134,7 @@ class MessageLookup extends MessageLookupByLibrary {
         ),
     "teamLocationBookingConfirmationMessageHelper":
         MessageLookupByLibrary.simpleMessage(
-          "Questo messaggio sarà mostrato ai clienti nella pagina di conferma, dopo che la prenotazione online è stata completata. Lascia il campo vuoto se non vuoi mostrare alcun messaggio.",
+          "Puoi usare gli a capo per separare le informazioni e scrivere una parola o una frase in grassetto racchiudendola tra due asterischi.\n\nEsempio: **Presentati 10 minuti prima** dell’orario scelto.",
         ),
     "teamLocationBookingConfirmationMessageLabel":
         MessageLookupByLibrary.simpleMessage(
@@ -3142,7 +3142,7 @@ class MessageLookup extends MessageLookupByLibrary {
         ),
     "teamLocationBookingConfirmationMessagePlaceholder":
         MessageLookupByLibrary.simpleMessage(
-          "Es. Grazie per la prenotazione. Ti chiediamo di presentarti 10 minuti prima dell’orario scelto.",
+          "Es. **Importante:** presentati 10 minuti prima dell’orario scelto.\n\nPer le lezioni è richiesto abbigliamento sportivo.",
         ),
     "teamLocationBookingDefaultLocaleAuto":
         MessageLookupByLibrary.simpleMessage("Automatico"),
@@ -3158,7 +3158,7 @@ class MessageLookup extends MessageLookupByLibrary {
           "Lingua predefinita prenotazioni online",
         ),
     "teamLocationBookingIntroMessageHelper": MessageLookupByLibrary.simpleMessage(
-      "Questo messaggio sarà mostrato ai clienti dopo la scelta della sede e prima della selezione di servizi, lezioni o attività prenotabili. Lascia il campo vuoto se non vuoi mostrare alcun messaggio.",
+      "Puoi usare gli a capo per separare le informazioni e scrivere una parola o una frase in grassetto racchiudendola tra due asterischi.\n\nEsempio: **Presentati 10 minuti prima** dell’orario scelto.",
     ),
     "teamLocationBookingIntroMessageLabel":
         MessageLookupByLibrary.simpleMessage(
@@ -3166,7 +3166,7 @@ class MessageLookup extends MessageLookupByLibrary {
         ),
     "teamLocationBookingIntroMessagePlaceholder":
         MessageLookupByLibrary.simpleMessage(
-          "Es. Prima di scegliere il servizio o la lezione, leggi attentamente queste informazioni.",
+          "Es. **Importante:** presentati 10 minuti prima dell’orario scelto.\n\nPer le lezioni è richiesto abbigliamento sportivo.",
         ),
     "teamLocationBookingLimitsSection": MessageLookupByLibrary.simpleMessage(
       "Limiti prenotazione online",
