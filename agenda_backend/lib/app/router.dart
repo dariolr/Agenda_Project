@@ -8,9 +8,11 @@ import '../features/agenda/presentation/agenda_screen.dart';
 import '../features/auth/presentation/profile_screen.dart';
 import '../features/auth/presentation/meta_whatsapp_callback_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
+import '../features/booking_forms/presentation/booking_forms_screen.dart';
 import '../features/bookings_list/presentation/bookings_list_screen.dart';
 import '../features/business/presentation/operators_screen.dart';
 import '../features/clients/presentation/clients_screen.dart';
+import '../features/more/presentation/more_screen.dart';
 import '../features/more/presentation/whatsapp_business_screen.dart';
 import '../features/reports/presentation/reports_screen.dart';
 import '../features/services/presentation/services_screen.dart';
@@ -121,6 +123,18 @@ final GoRouter appRouter = GoRouter(
             ),
           ],
         ),
+
+        // --- Ramo 6: Altro ---
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/altro',
+              name: 'altro',
+              builder: (BuildContext context, GoRouterState state) =>
+                  const MoreScreen(),
+            ),
+          ],
+        ),
       ],
     ),
     GoRoute(
@@ -164,6 +178,13 @@ final GoRouter appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (BuildContext context, GoRouterState state) =>
           const MetaWhatsappCallbackScreen(),
+    ),
+    GoRoute(
+      path: '/altro/booking-forms',
+      name: 'more-booking-forms',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (BuildContext context, GoRouterState state) =>
+          const BookingFormsScreen(),
     ),
     GoRoute(
       path: '/altro/whatsapp-business',

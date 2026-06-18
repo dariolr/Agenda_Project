@@ -3092,6 +3092,46 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Booking information`
+  String get bookingFormsSectionTitle {
+    return Intl.message(
+      'Booking information',
+      name: 'bookingFormsSectionTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{label} *`
+  String bookingFormsRequiredLabel(String label) {
+    return Intl.message(
+      '$label *',
+      name: 'bookingFormsRequiredLabel',
+      desc: '',
+      args: [label],
+    );
+  }
+
+  /// `Required field`
+  String get bookingFormsRequiredError {
+    return Intl.message(
+      'Required field',
+      name: 'bookingFormsRequiredError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Complete the required information before confirming.`
+  String get bookingFormsSubmitError {
+    return Intl.message(
+      'Complete the required information before confirming.',
+      name: 'bookingFormsSubmitError',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

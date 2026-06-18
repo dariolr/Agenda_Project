@@ -14090,6 +14090,246 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Online booking forms`
+  String get bookingFormsAdminTitle {
+    return Intl.message(
+      'Online booking forms',
+      name: 'bookingFormsAdminTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Collect information and consent during online booking`
+  String get bookingFormsAdminDescription {
+    return Intl.message(
+      'Collect information and consent during online booking',
+      name: 'bookingFormsAdminDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `New form`
+  String get bookingFormsNew {
+    return Intl.message(
+      'New form',
+      name: 'bookingFormsNew',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No forms configured`
+  String get bookingFormsEmpty {
+    return Intl.message(
+      'No forms configured',
+      name: 'bookingFormsEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select a form or create a new one`
+  String get bookingFormsSelectHint {
+    return Intl.message(
+      'Select a form or create a new one',
+      name: 'bookingFormsSelectHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{fields} fields · {assignments} assignments`
+  String bookingFormsListMeta(int fields, int assignments) {
+    return Intl.message(
+      '$fields fields · $assignments assignments',
+      name: 'bookingFormsListMeta',
+      desc: '',
+      args: [fields, assignments],
+    );
+  }
+
+  /// `Title`
+  String get bookingFormsFieldTitle {
+    return Intl.message(
+      'Title',
+      name: 'bookingFormsFieldTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Description`
+  String get bookingFormsFieldDescription {
+    return Intl.message(
+      'Description',
+      name: 'bookingFormsFieldDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Internal name`
+  String get bookingFormsFieldInternalName {
+    return Intl.message(
+      'Internal name',
+      name: 'bookingFormsFieldInternalName',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Active`
+  String get bookingFormsActive {
+    return Intl.message(
+      'Active',
+      name: 'bookingFormsActive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Show for the whole business`
+  String get bookingFormsAssignBusiness {
+    return Intl.message(
+      'Show for the whole business',
+      name: 'bookingFormsAssignBusiness',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Fields`
+  String get bookingFormsFieldsTitle {
+    return Intl.message(
+      'Fields',
+      name: 'bookingFormsFieldsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Required`
+  String get bookingFormsRequired {
+    return Intl.message(
+      'Required',
+      name: 'bookingFormsRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add field`
+  String get bookingFormsAddField {
+    return Intl.message(
+      'Add field',
+      name: 'bookingFormsAddField',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Field type`
+  String get bookingFormsFieldType {
+    return Intl.message(
+      'Field type',
+      name: 'bookingFormsFieldType',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Label`
+  String get bookingFormsFieldLabel {
+    return Intl.message(
+      'Label',
+      name: 'bookingFormsFieldLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Options, one per line`
+  String get bookingFormsOptionsHint {
+    return Intl.message(
+      'Options, one per line',
+      name: 'bookingFormsOptionsHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Short text`
+  String get bookingFormsFieldTypeShortText {
+    return Intl.message(
+      'Short text',
+      name: 'bookingFormsFieldTypeShortText',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Long text`
+  String get bookingFormsFieldTypeLongText {
+    return Intl.message(
+      'Long text',
+      name: 'bookingFormsFieldTypeLongText',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Single choice`
+  String get bookingFormsFieldTypeSingleChoice {
+    return Intl.message(
+      'Single choice',
+      name: 'bookingFormsFieldTypeSingleChoice',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Multiple choice`
+  String get bookingFormsFieldTypeMultipleChoice {
+    return Intl.message(
+      'Multiple choice',
+      name: 'bookingFormsFieldTypeMultipleChoice',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Checkbox`
+  String get bookingFormsFieldTypeCheckbox {
+    return Intl.message(
+      'Checkbox',
+      name: 'bookingFormsFieldTypeCheckbox',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Consent`
+  String get bookingFormsFieldTypeConsent {
+    return Intl.message(
+      'Consent',
+      name: 'bookingFormsFieldTypeConsent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Info text`
+  String get bookingFormsFieldTypeInfoText {
+    return Intl.message(
+      'Info text',
+      name: 'bookingFormsFieldTypeInfoText',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

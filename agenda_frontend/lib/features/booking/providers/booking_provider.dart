@@ -1110,7 +1110,9 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
   /// - true: prenotazione confermata con successo
   /// - false: errore generico
   /// - Lancia TokenExpiredException se il token è scaduto (401)
-  Future<bool> confirmBooking() async {
+  Future<bool> confirmBooking({
+    List<Map<String, dynamic>> formSubmissions = const [],
+  }) async {
     debugPrint('[confirmBooking] isComplete=${state.request.isComplete}');
     debugPrint(
       '[confirmBooking] services=${state.request.services.map((s) => s.id).toList()}',
@@ -1220,6 +1222,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         packageIds: state.request.selectedPackageIds.toList(),
         pricingOverrides: pricingOverrides.isEmpty ? null : pricingOverrides,
         bookingDirectLinkSlug: bookingDirectLinkSlug,
+        formSubmissions: formSubmissions,
       );
 
       // Prenotazione confermata - elimina lo stato salvato

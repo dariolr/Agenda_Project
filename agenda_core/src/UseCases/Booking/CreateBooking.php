@@ -15,6 +15,7 @@ use Agenda\Infrastructure\Repositories\UserRepository;
 use Agenda\Infrastructure\Repositories\LocationClosureRepository;
 use Agenda\Infrastructure\Repositories\ClassEventRepository;
 use Agenda\Infrastructure\Repositories\BookingDirectLinkRepository;
+use Agenda\Infrastructure\Repositories\BookingFormRepository;
 use Agenda\Infrastructure\Notifications\NotificationRepository;
 use Agenda\Infrastructure\Notifications\EmailTemplateRenderer;
 use Agenda\UseCases\Notifications\QueueBookingConfirmation;
@@ -46,6 +47,7 @@ final class CreateBooking
         private readonly ?LocationClosureRepository $locationClosureRepository = null,
         private readonly ?ClassEventRepository $classEventRepository = null,
         private readonly ?BookingDirectLinkRepository $bookingDirectLinkRepository = null,
+        private readonly ?BookingFormRepository $bookingFormRepository = null,
     ) {}
 
     private function priceToCents(mixed $value): ?int
@@ -966,7 +968,8 @@ final class CreateBooking
             return $this->executeForCustomerWithItems(
                 $clientId, $locationId, $businessId, $data['items'],
                 $notes, $idempotencyKey, $requestedLocale, $directLinkSlug,
-                $this->packageIdsFromPayload($data)
+                $this->packageIdsFromPayload($data),
+                isset($data['form_submissions']) && is_array($data['form_submissions']) ? $data['form_submissions'] : []
             );
         }
 
@@ -1036,6 +1039,9 @@ final class CreateBooking
         // Get services with variants
         $services = $this->serviceRepository->findByIds($serviceIds, $locationId, $businessId);
         $pricingOverrides = $this->normalizePricingOverrides($data['pricing_overrides'] ?? null);
+        $formSubmissions = isset($data['form_submissions']) && is_array($data['form_submissions'])
+            ? $data['form_submissions']
+            : [];
         
         if (count($services) !== count($serviceIds)) {
             throw BookingException::invalidService($serviceIds);
@@ -1214,6 +1220,20 @@ final class CreateBooking
                 $this->bookingRepository->addBookingItem($bookingId, $item);
             }
 
+            if ($this->bookingFormRepository !== null) {
+                $this->bookingFormRepository->validateAndSaveSubmissions(
+                    $businessId,
+                    $locationId,
+                    $bookingId,
+                    $clientId,
+                    array_map(static fn(array $item): int => (int) $item['service_variant_id'], $itemsToCreate),
+                    array_map('intval', $serviceIds),
+                    $this->packageIdsFromPayload($data),
+                    [],
+                    $formSubmissions
+                );
+            }
+
             $this->db->commit();
 
             // Fetch and return created booking
@@ -1252,7 +1272,8 @@ final class CreateBooking
         ?string $idempotencyKey,
         ?string $requestedLocale = null,
         ?string $directLinkSlug = null,
-        array $packageIds = []
+        array $packageIds = [],
+        array $formSubmissions = []
     ): array {
         // Validate location
         $location = $this->locationRepository->findById($locationId);
@@ -1433,6 +1454,20 @@ final class CreateBooking
             foreach ($itemsToCreate as $itemData) {
                 $itemData['location_id'] = $locationId;
                 $this->bookingRepository->addBookingItem($bookingId, $itemData);
+            }
+
+            if ($this->bookingFormRepository !== null) {
+                $this->bookingFormRepository->validateAndSaveSubmissions(
+                    $businessId,
+                    $locationId,
+                    $bookingId,
+                    $clientId,
+                    array_map(static fn(array $item): int => (int) $item['service_variant_id'], $itemsToCreate),
+                    $serviceIds,
+                    $packageIds,
+                    [],
+                    $formSubmissions
+                );
             }
 
             $this->db->commit();

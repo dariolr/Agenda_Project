@@ -1,0 +1,262 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Agenda\Http\Controllers;
+
+use Agenda\Http\Request;
+use Agenda\Http\Response;
+use Agenda\Infrastructure\Repositories\BookingFormRepository;
+use Agenda\Infrastructure\Repositories\BusinessUserRepository;
+use Agenda\Infrastructure\Repositories\UserRepository;
+use InvalidArgumentException;
+
+final class BookingFormsController
+{
+    public function __construct(
+        private readonly BookingFormRepository $bookingFormRepo,
+        private readonly BusinessUserRepository $businessUserRepo,
+        private readonly UserRepository $userRepo,
+    ) {}
+
+    public function index(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        if (!$this->hasReadAccess($request, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        return Response::success([
+            'forms' => $this->bookingFormRepo->listForms($businessId),
+        ]);
+    }
+
+    public function show(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        $formId = (int) $request->getRouteParam('form_id');
+        if (!$this->hasReadAccess($request, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        $form = $this->bookingFormRepo->findForm($businessId, $formId);
+        if ($form === null) {
+            return Response::notFound('Booking form not found', $request->traceId);
+        }
+
+        return Response::success(['form' => $form]);
+    }
+
+    public function store(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        if (!$this->hasManageAccess($request, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        try {
+            $formId = $this->bookingFormRepo->createForm(
+                $businessId,
+                $this->body($request),
+                $this->userId($request)
+            );
+            return Response::success(['form' => $this->bookingFormRepo->findForm($businessId, $formId)], 201);
+        } catch (InvalidArgumentException $e) {
+            return Response::error($e->getMessage(), 'validation_error', 422, $request->traceId);
+        }
+    }
+
+    public function update(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        $formId = (int) $request->getRouteParam('form_id');
+        if (!$this->hasManageAccess($request, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        try {
+            if (!$this->bookingFormRepo->updateForm($businessId, $formId, $this->body($request), $this->userId($request))) {
+                return Response::notFound('Booking form not found', $request->traceId);
+            }
+            return Response::success(['form' => $this->bookingFormRepo->findForm($businessId, $formId)]);
+        } catch (InvalidArgumentException $e) {
+            return Response::error($e->getMessage(), 'validation_error', 422, $request->traceId);
+        }
+    }
+
+    public function destroy(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        $formId = (int) $request->getRouteParam('form_id');
+        if (!$this->hasManageAccess($request, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        $this->bookingFormRepo->updateForm($businessId, $formId, ['is_active' => false], $this->userId($request));
+        return Response::success(['deleted' => true]);
+    }
+
+    public function storeField(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        $formId = (int) $request->getRouteParam('form_id');
+        if (!$this->hasManageAccess($request, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        try {
+            $this->bookingFormRepo->addField($businessId, $formId, $this->body($request));
+            return Response::success(['form' => $this->bookingFormRepo->findForm($businessId, $formId)], 201);
+        } catch (InvalidArgumentException $e) {
+            return Response::error($e->getMessage(), 'validation_error', 422, $request->traceId);
+        }
+    }
+
+    public function updateField(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        $formId = (int) $request->getRouteParam('form_id');
+        $fieldId = (int) $request->getRouteParam('field_id');
+        if (!$this->hasManageAccess($request, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        try {
+            if (!$this->bookingFormRepo->updateField($businessId, $formId, $fieldId, $this->body($request))) {
+                return Response::notFound('Booking form field not found', $request->traceId);
+            }
+            return Response::success(['form' => $this->bookingFormRepo->findForm($businessId, $formId)]);
+        } catch (InvalidArgumentException $e) {
+            return Response::error($e->getMessage(), 'validation_error', 422, $request->traceId);
+        }
+    }
+
+    public function destroyField(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        $formId = (int) $request->getRouteParam('form_id');
+        $fieldId = (int) $request->getRouteParam('field_id');
+        if (!$this->hasManageAccess($request, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        $this->bookingFormRepo->deactivateField($businessId, $formId, $fieldId);
+        return Response::success(['form' => $this->bookingFormRepo->findForm($businessId, $formId)]);
+    }
+
+    public function reorderFields(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        $formId = (int) $request->getRouteParam('form_id');
+        if (!$this->hasManageAccess($request, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        $fieldIds = $this->body($request)['field_ids'] ?? [];
+        if (!is_array($fieldIds)) {
+            return Response::error('field_ids is required', 'validation_error', 422, $request->traceId);
+        }
+
+        $this->bookingFormRepo->reorderFields($businessId, $formId, array_map('intval', $fieldIds));
+        return Response::success(['form' => $this->bookingFormRepo->findForm($businessId, $formId)]);
+    }
+
+    public function replaceAssignments(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        $formId = (int) $request->getRouteParam('form_id');
+        if (!$this->hasManageAccess($request, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        $assignments = $this->body($request)['assignments'] ?? [];
+        if (!is_array($assignments)) {
+            return Response::error('assignments is required', 'validation_error', 422, $request->traceId);
+        }
+
+        try {
+            $this->bookingFormRepo->replaceAssignments($businessId, $formId, $assignments);
+            return Response::success(['form' => $this->bookingFormRepo->findForm($businessId, $formId)]);
+        } catch (InvalidArgumentException $e) {
+            return Response::error($e->getMessage(), 'validation_error', 422, $request->traceId);
+        }
+    }
+
+    public function resolvePublic(Request $request): Response
+    {
+        $body = $this->body($request);
+        $businessId = (int) ($body['business_id'] ?? 0);
+        $locationId = (int) ($body['location_id'] ?? 0);
+        if ($businessId <= 0 || $locationId <= 0) {
+            return Response::error('business_id and location_id are required', 'validation_error', 400, $request->traceId);
+        }
+
+        return Response::success([
+            'forms' => $this->bookingFormRepo->resolvePublicForms(
+                $businessId,
+                $locationId,
+                $this->ids($body['service_variant_ids'] ?? []),
+                $this->ids($body['service_ids'] ?? []),
+                $this->ids($body['service_package_ids'] ?? $body['package_ids'] ?? []),
+                $this->ids($body['class_event_ids'] ?? []),
+            ),
+        ]);
+    }
+
+    public function submissionsForBooking(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        $bookingId = (int) $request->getRouteParam('booking_id');
+        if (!$this->hasReadAccess($request, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        return Response::success([
+            'form_submissions' => $this->bookingFormRepo->getSubmissionsForBooking($businessId, $bookingId),
+        ]);
+    }
+
+    private function hasManageAccess(Request $request, int $businessId): bool
+    {
+        $userId = $this->userId($request);
+        if ($userId === null) {
+            return false;
+        }
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return true;
+        }
+        return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_services', false);
+    }
+
+    private function hasReadAccess(Request $request, int $businessId): bool
+    {
+        $userId = $this->userId($request);
+        if ($userId === null) {
+            return false;
+        }
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return true;
+        }
+        return $this->businessUserRepo->hasAccess($userId, $businessId, false);
+    }
+
+    private function userId(Request $request): ?int
+    {
+        $userId = $request->getAttribute('user_id');
+        return $userId !== null ? (int) $userId : null;
+    }
+
+    private function body(Request $request): array
+    {
+        $body = $request->getBody();
+        return is_array($body) ? $body : [];
+    }
+
+    private function ids(mixed $value): array
+    {
+        if (!is_array($value)) {
+            return [];
+        }
+        return array_values(array_unique(array_filter(array_map('intval', $value), static fn(int $id): bool => $id > 0)));
+    }
+}

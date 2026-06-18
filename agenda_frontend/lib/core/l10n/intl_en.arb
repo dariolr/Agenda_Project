@@ -600,5 +600,15 @@
       "businessName": { "type": "String" }
     }
   },
-  "wrongBusinessAuthAction": "Log out and sign in here"
+  "wrongBusinessAuthAction": "Log out and sign in here",
+
+  "bookingFormsSectionTitle": "Booking information",
+  "bookingFormsRequiredLabel": "{label} *",
+  "@bookingFormsRequiredLabel": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "bookingFormsRequiredError": "Required field",
+  "bookingFormsSubmitError": "Complete the required information before confirming."
 }

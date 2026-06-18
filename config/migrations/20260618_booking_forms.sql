@@ -1,0 +1,103 @@
+CREATE TABLE IF NOT EXISTS `booking_forms` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `business_id` INT UNSIGNED NOT NULL,
+  `title` VARCHAR(191) NOT NULL,
+  `description` TEXT NULL,
+  `internal_name` VARCHAR(191) NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `sort_order` INT NOT NULL DEFAULT 0,
+  `created_by_user_id` INT UNSIGNED NULL,
+  `updated_by_user_id` INT UNSIGNED NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_booking_forms_business_active_sort` (`business_id`, `is_active`, `sort_order`),
+  KEY `idx_booking_forms_created_by` (`created_by_user_id`),
+  KEY `idx_booking_forms_updated_by` (`updated_by_user_id`),
+  CONSTRAINT `fk_booking_forms_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_booking_forms_created_by` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_booking_forms_updated_by` FOREIGN KEY (`updated_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `booking_form_fields` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `form_id` INT UNSIGNED NOT NULL,
+  `business_id` INT UNSIGNED NOT NULL,
+  `field_type` VARCHAR(40) NOT NULL,
+  `label` VARCHAR(191) NOT NULL,
+  `description` TEXT NULL,
+  `placeholder` VARCHAR(191) NULL,
+  `help_text` TEXT NULL,
+  `is_required` TINYINT(1) NOT NULL DEFAULT 0,
+  `sort_order` INT NOT NULL DEFAULT 0,
+  `options_json` JSON NULL,
+  `validation_json` JSON NULL,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_booking_form_fields_form_active_sort` (`form_id`, `is_active`, `sort_order`),
+  KEY `idx_booking_form_fields_business` (`business_id`),
+  CONSTRAINT `fk_booking_form_fields_form` FOREIGN KEY (`form_id`) REFERENCES `booking_forms` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_booking_form_fields_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `booking_form_assignments` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `form_id` INT UNSIGNED NOT NULL,
+  `business_id` INT UNSIGNED NOT NULL,
+  `scope_type` VARCHAR(40) NOT NULL,
+  `scope_id` INT UNSIGNED NULL,
+  `scope_key` VARCHAR(80) GENERATED ALWAYS AS (CONCAT(`scope_type`, ':', COALESCE(CAST(`scope_id` AS CHAR), 'business'))) STORED,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_booking_form_assignment_scope` (`form_id`, `scope_key`),
+  KEY `idx_booking_form_assignments_business_scope` (`business_id`, `scope_type`, `scope_id`, `is_active`),
+  CONSTRAINT `fk_booking_form_assignments_form` FOREIGN KEY (`form_id`) REFERENCES `booking_forms` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_booking_form_assignments_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `booking_form_submissions` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `business_id` INT UNSIGNED NOT NULL,
+  `booking_id` INT UNSIGNED NOT NULL,
+  `form_id` INT UNSIGNED NOT NULL,
+  `form_title_snapshot` VARCHAR(191) NOT NULL,
+  `submitted_by_client_id` INT UNSIGNED NULL,
+  `submitted_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uniq_booking_form_submission_booking_form` (`booking_id`, `form_id`),
+  KEY `idx_booking_form_submissions_business_booking` (`business_id`, `booking_id`),
+  KEY `idx_booking_form_submissions_form` (`form_id`),
+  KEY `idx_booking_form_submissions_client` (`submitted_by_client_id`),
+  CONSTRAINT `fk_booking_form_submissions_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_booking_form_submissions_booking` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_booking_form_submissions_form` FOREIGN KEY (`form_id`) REFERENCES `booking_forms` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_booking_form_submissions_client` FOREIGN KEY (`submitted_by_client_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `booking_form_submission_answers` (
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `submission_id` BIGINT UNSIGNED NOT NULL,
+  `business_id` INT UNSIGNED NOT NULL,
+  `booking_id` INT UNSIGNED NOT NULL,
+  `form_id` INT UNSIGNED NOT NULL,
+  `field_id` INT UNSIGNED NOT NULL,
+  `field_type_snapshot` VARCHAR(40) NOT NULL,
+  `field_label_snapshot` VARCHAR(191) NOT NULL,
+  `answer_text` TEXT NULL,
+  `answer_json` JSON NULL,
+  `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_booking_form_answers_submission` (`submission_id`),
+  KEY `idx_booking_form_answers_business_booking` (`business_id`, `booking_id`),
+  KEY `idx_booking_form_answers_field` (`field_id`),
+  CONSTRAINT `fk_booking_form_answers_submission` FOREIGN KEY (`submission_id`) REFERENCES `booking_form_submissions` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_booking_form_answers_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_booking_form_answers_booking` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_booking_form_answers_form` FOREIGN KEY (`form_id`) REFERENCES `booking_forms` (`id`) ON DELETE RESTRICT,
+  CONSTRAINT `fk_booking_form_answers_field` FOREIGN KEY (`field_id`) REFERENCES `booking_form_fields` (`id`) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

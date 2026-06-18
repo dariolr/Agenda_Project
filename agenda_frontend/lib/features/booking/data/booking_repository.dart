@@ -1,6 +1,7 @@
 import 'package:uuid/uuid.dart';
 
 import '../../../core/models/class_event.dart';
+import '../../../core/models/booking_form.dart';
 import '../../../core/models/location.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
@@ -306,6 +307,7 @@ class BookingRepository {
     List<int>? packageIds,
     List<Map<String, dynamic>>? pricingOverrides,
     String? bookingDirectLinkSlug,
+    List<Map<String, dynamic>>? formSubmissions,
   }) async {
     // Genera idempotency key se non fornita
     final key = idempotencyKey ?? _uuid.v4();
@@ -323,7 +325,29 @@ class BookingRepository {
       packageIds: packageIds,
       pricingOverrides: pricingOverrides,
       bookingDirectLinkSlug: bookingDirectLinkSlug,
+      formSubmissions: formSubmissions,
     );
+  }
+
+  Future<List<BookingForm>> resolveBookingForms({
+    required int businessId,
+    required int locationId,
+    required List<int> serviceIds,
+    required List<int> serviceVariantIds,
+    required List<int> packageIds,
+    required List<int> classEventIds,
+  }) async {
+    final data = await _apiClient.resolveBookingForms(
+      businessId: businessId,
+      locationId: locationId,
+      serviceIds: serviceIds,
+      serviceVariantIds: serviceVariantIds,
+      packageIds: packageIds,
+      classEventIds: classEventIds,
+    );
+    return (data['forms'] as List<dynamic>? ?? const [])
+        .map((json) => BookingForm.fromJson(json as Map<String, dynamic>))
+        .toList();
   }
 
   /// Genera un nuovo idempotency key (UUID v4)

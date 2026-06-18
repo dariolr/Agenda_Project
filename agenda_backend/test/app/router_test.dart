@@ -6,7 +6,7 @@ void main() {
   test('appRouter exposes main navigation branches', () {
     final routes = appRouter.configuration.routes;
     // StatefulShellRoute + extra top-level routes.
-    expect(routes.length, 7);
+    expect(routes.length, 8);
 
     final shellRoute = routes.first;
     expect(shellRoute, isA<StatefulShellRoute>());
@@ -14,7 +14,7 @@ void main() {
     final branches = (shellRoute as StatefulShellRoute).branches
         .map((b) => b.routes)
         .toList();
-    expect(branches.length, 6);
+    expect(branches.length, 7);
 
     final branchPaths = branches
         .map((routes) => (routes.first as GoRoute).path)
@@ -28,6 +28,7 @@ void main() {
         '/staff',
         '/report',
         '/prenotazioni',
+        '/altro',
       ]),
     );
   });

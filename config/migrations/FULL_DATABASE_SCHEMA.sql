@@ -89,6 +89,105 @@ CREATE TABLE `booking_events` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `booking_forms`
+--
+
+CREATE TABLE `booking_forms` (
+  `id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `title` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `internal_name` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `sort_order` int NOT NULL DEFAULT '0',
+  `created_by_user_id` int UNSIGNED DEFAULT NULL,
+  `updated_by_user_id` int UNSIGNED DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `booking_form_fields`
+--
+
+CREATE TABLE `booking_form_fields` (
+  `id` int UNSIGNED NOT NULL,
+  `form_id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `field_type` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `label` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `description` text COLLATE utf8mb4_unicode_ci,
+  `placeholder` varchar(191) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `help_text` text COLLATE utf8mb4_unicode_ci,
+  `is_required` tinyint(1) NOT NULL DEFAULT '0',
+  `sort_order` int NOT NULL DEFAULT '0',
+  `options_json` json DEFAULT NULL,
+  `validation_json` json DEFAULT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `booking_form_assignments`
+--
+
+CREATE TABLE `booking_form_assignments` (
+  `id` int UNSIGNED NOT NULL,
+  `form_id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `scope_type` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `scope_id` int UNSIGNED DEFAULT NULL,
+  `scope_key` varchar(80) COLLATE utf8mb4_unicode_ci GENERATED ALWAYS AS (concat(`scope_type`,_utf8mb4':',coalesce(cast(`scope_id` as char charset utf8mb4),_utf8mb4'business'))) STORED,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `booking_form_submissions`
+--
+
+CREATE TABLE `booking_form_submissions` (
+  `id` bigint UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `booking_id` int UNSIGNED NOT NULL,
+  `form_id` int UNSIGNED NOT NULL,
+  `form_title_snapshot` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `submitted_by_client_id` int UNSIGNED DEFAULT NULL,
+  `submitted_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `booking_form_submission_answers`
+--
+
+CREATE TABLE `booking_form_submission_answers` (
+  `id` bigint UNSIGNED NOT NULL,
+  `submission_id` bigint UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `booking_id` int UNSIGNED NOT NULL,
+  `form_id` int UNSIGNED NOT NULL,
+  `field_id` int UNSIGNED NOT NULL,
+  `field_type_snapshot` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `field_label_snapshot` varchar(191) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `answer_text` text COLLATE utf8mb4_unicode_ci,
+  `answer_json` json DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `booking_items`
 --
 
@@ -1224,6 +1323,50 @@ ALTER TABLE `booking_events`
   ADD KEY `idx_booking_events_correlation_id` (`correlation_id`);
 
 --
+-- Indici per le tabelle `booking_forms`
+--
+ALTER TABLE `booking_forms`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_booking_forms_business_active_sort` (`business_id`,`is_active`,`sort_order`),
+  ADD KEY `idx_booking_forms_created_by` (`created_by_user_id`),
+  ADD KEY `idx_booking_forms_updated_by` (`updated_by_user_id`);
+
+--
+-- Indici per le tabelle `booking_form_fields`
+--
+ALTER TABLE `booking_form_fields`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_booking_form_fields_form_active_sort` (`form_id`,`is_active`,`sort_order`),
+  ADD KEY `idx_booking_form_fields_business` (`business_id`);
+
+--
+-- Indici per le tabelle `booking_form_assignments`
+--
+ALTER TABLE `booking_form_assignments`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_booking_form_assignment_scope` (`form_id`,`scope_key`),
+  ADD KEY `idx_booking_form_assignments_business_scope` (`business_id`,`scope_type`,`scope_id`,`is_active`);
+
+--
+-- Indici per le tabelle `booking_form_submissions`
+--
+ALTER TABLE `booking_form_submissions`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_booking_form_submission_booking_form` (`booking_id`,`form_id`),
+  ADD KEY `idx_booking_form_submissions_business_booking` (`business_id`,`booking_id`),
+  ADD KEY `idx_booking_form_submissions_form` (`form_id`),
+  ADD KEY `idx_booking_form_submissions_client` (`submitted_by_client_id`);
+
+--
+-- Indici per le tabelle `booking_form_submission_answers`
+--
+ALTER TABLE `booking_form_submission_answers`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_booking_form_answers_submission` (`submission_id`),
+  ADD KEY `idx_booking_form_answers_business_booking` (`business_id`,`booking_id`),
+  ADD KEY `idx_booking_form_answers_field` (`field_id`);
+
+--
 -- Indici per le tabelle `booking_items`
 --
 ALTER TABLE `booking_items`
@@ -1713,6 +1856,36 @@ ALTER TABLE `booking_events`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT per la tabella `booking_forms`
+--
+ALTER TABLE `booking_forms`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `booking_form_fields`
+--
+ALTER TABLE `booking_form_fields`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `booking_form_assignments`
+--
+ALTER TABLE `booking_form_assignments`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `booking_form_submissions`
+--
+ALTER TABLE `booking_form_submissions`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `booking_form_submission_answers`
+--
+ALTER TABLE `booking_form_submission_answers`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT per la tabella `booking_items`
 --
 ALTER TABLE `booking_items`
@@ -2007,6 +2180,47 @@ ALTER TABLE `bookings`
 --
 ALTER TABLE `booking_events`
   ADD CONSTRAINT `fk_booking_events_booking` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
+
+--
+-- Limiti per la tabella `booking_forms`
+--
+ALTER TABLE `booking_forms`
+  ADD CONSTRAINT `fk_booking_forms_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_booking_forms_created_by` FOREIGN KEY (`created_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_booking_forms_updated_by` FOREIGN KEY (`updated_by_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
+
+--
+-- Limiti per la tabella `booking_form_fields`
+--
+ALTER TABLE `booking_form_fields`
+  ADD CONSTRAINT `fk_booking_form_fields_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_booking_form_fields_form` FOREIGN KEY (`form_id`) REFERENCES `booking_forms` (`id`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `booking_form_assignments`
+--
+ALTER TABLE `booking_form_assignments`
+  ADD CONSTRAINT `fk_booking_form_assignments_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_booking_form_assignments_form` FOREIGN KEY (`form_id`) REFERENCES `booking_forms` (`id`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `booking_form_submissions`
+--
+ALTER TABLE `booking_form_submissions`
+  ADD CONSTRAINT `fk_booking_form_submissions_booking` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_booking_form_submissions_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_booking_form_submissions_client` FOREIGN KEY (`submitted_by_client_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_booking_form_submissions_form` FOREIGN KEY (`form_id`) REFERENCES `booking_forms` (`id`) ON DELETE RESTRICT;
+
+--
+-- Limiti per la tabella `booking_form_submission_answers`
+--
+ALTER TABLE `booking_form_submission_answers`
+  ADD CONSTRAINT `fk_booking_form_answers_booking` FOREIGN KEY (`booking_id`) REFERENCES `bookings` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_booking_form_answers_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_booking_form_answers_field` FOREIGN KEY (`field_id`) REFERENCES `booking_form_fields` (`id`) ON DELETE RESTRICT,
+  ADD CONSTRAINT `fk_booking_form_answers_form` FOREIGN KEY (`form_id`) REFERENCES `booking_forms` (`id`) ON DELETE RESTRICT,
+  ADD CONSTRAINT `fk_booking_form_answers_submission` FOREIGN KEY (`submission_id`) REFERENCES `booking_form_submissions` (`id`) ON DELETE CASCADE;
 
 --
 -- Limiti per la tabella `booking_items`

@@ -1673,6 +1673,9 @@ final class BookingsController
                         'locale' => $requestLocale,
                         'booking_direct_link_slug' => $directLinkSlug,
                         'package_ids' => $packageIds,
+                        'form_submissions' => isset($body['form_submissions']) && is_array($body['form_submissions'])
+                            ? $body['form_submissions']
+                            : [],
                     ],
                     $idempotencyKey
                 );
@@ -1693,6 +1696,9 @@ final class BookingsController
                         'locale' => $requestLocale,
                         'booking_direct_link_slug' => $directLinkSlug,
                         'package_ids' => $packageIds,
+                        'form_submissions' => isset($body['form_submissions']) && is_array($body['form_submissions'])
+                            ? $body['form_submissions']
+                            : [],
                     ],
                     $idempotencyKey
                 );

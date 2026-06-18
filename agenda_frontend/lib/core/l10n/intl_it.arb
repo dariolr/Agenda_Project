@@ -600,5 +600,15 @@
       "businessName": { "type": "String" }
     }
   },
-  "wrongBusinessAuthAction": "Esci e accedi qui"
+  "wrongBusinessAuthAction": "Esci e accedi qui",
+
+  "bookingFormsSectionTitle": "Informazioni per la prenotazione",
+  "bookingFormsRequiredLabel": "{label} *",
+  "@bookingFormsRequiredLabel": {
+    "placeholders": {
+      "label": { "type": "String" }
+    }
+  },
+  "bookingFormsRequiredError": "Campo obbligatorio",
+  "bookingFormsSubmitError": "Completa le informazioni richieste prima di confermare."
 }

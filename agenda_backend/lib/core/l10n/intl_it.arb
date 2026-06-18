@@ -2109,5 +2109,35 @@
   "operatorsAccessSelected": "Solo selezionati",
   "operatorsAccessibleServices": "Servizi accessibili",
   "operatorsAccessibleClassTypes": "Tipi lezione accessibili",
-  "operatorsAccessibleStaff": "Membri del team accessibili"
+  "operatorsAccessibleStaff": "Membri del team accessibili",
+  "bookingFormsAdminTitle": "Moduli prenotazione online",
+  "bookingFormsAdminDescription": "Raccogli informazioni e consensi durante la prenotazione online",
+  "bookingFormsNew": "Nuovo modulo",
+  "bookingFormsEmpty": "Nessun modulo configurato",
+  "bookingFormsSelectHint": "Seleziona un modulo o creane uno nuovo",
+  "bookingFormsListMeta": "{fields} campi · {assignments} assegnazioni",
+  "@bookingFormsListMeta": {
+    "placeholders": {
+      "fields": { "type": "int" },
+      "assignments": { "type": "int" }
+    }
+  },
+  "bookingFormsFieldTitle": "Titolo",
+  "bookingFormsFieldDescription": "Descrizione",
+  "bookingFormsFieldInternalName": "Nome interno",
+  "bookingFormsActive": "Attivo",
+  "bookingFormsAssignBusiness": "Mostra per tutto il business",
+  "bookingFormsFieldsTitle": "Campi",
+  "bookingFormsRequired": "Obbligatorio",
+  "bookingFormsAddField": "Aggiungi campo",
+  "bookingFormsFieldType": "Tipo campo",
+  "bookingFormsFieldLabel": "Etichetta",
+  "bookingFormsOptionsHint": "Opzioni, una per riga",
+  "bookingFormsFieldTypeShortText": "Testo breve",
+  "bookingFormsFieldTypeLongText": "Testo lungo",
+  "bookingFormsFieldTypeSingleChoice": "Scelta singola",
+  "bookingFormsFieldTypeMultipleChoice": "Scelta multipla",
+  "bookingFormsFieldTypeCheckbox": "Checkbox",
+  "bookingFormsFieldTypeConsent": "Consenso",
+  "bookingFormsFieldTypeInfoText": "Testo informativo"
 }

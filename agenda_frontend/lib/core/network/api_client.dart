@@ -699,6 +699,7 @@ class ApiClient {
     List<int>? packageIds,
     List<Map<String, dynamic>>? pricingOverrides,
     String? bookingDirectLinkSlug,
+    List<Map<String, dynamic>>? formSubmissions,
   }) async {
     final data = <String, dynamic>{'location_id': locationId};
     if (items != null) {
@@ -722,11 +723,35 @@ class ApiClient {
     if (bookingDirectLinkSlug != null && bookingDirectLinkSlug.isNotEmpty) {
       data['booking_direct_link_slug'] = bookingDirectLinkSlug;
     }
+    if (formSubmissions != null && formSubmissions.isNotEmpty) {
+      data['form_submissions'] = formSubmissions;
+    }
 
     return post(
       ApiConfig.customerCreateBooking(businessId),
       data: data,
       headers: {'X-Idempotency-Key': idempotencyKey},
+    );
+  }
+
+  Future<Map<String, dynamic>> resolveBookingForms({
+    required int businessId,
+    required int locationId,
+    required List<int> serviceIds,
+    required List<int> serviceVariantIds,
+    required List<int> packageIds,
+    required List<int> classEventIds,
+  }) async {
+    return post(
+      '/v1/public/booking-forms/resolve',
+      data: {
+        'business_id': businessId,
+        'location_id': locationId,
+        'service_ids': serviceIds,
+        'service_variant_ids': serviceVariantIds,
+        'service_package_ids': packageIds,
+        'class_event_ids': classEventIds,
+      },
     );
   }
 

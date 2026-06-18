@@ -2109,5 +2109,35 @@
   "operatorsAccessSelected": "Selected only",
   "operatorsAccessibleServices": "Accessible services",
   "operatorsAccessibleClassTypes": "Accessible class types",
-  "operatorsAccessibleStaff": "Accessible team members"
+  "operatorsAccessibleStaff": "Accessible team members",
+  "bookingFormsAdminTitle": "Online booking forms",
+  "bookingFormsAdminDescription": "Collect information and consent during online booking",
+  "bookingFormsNew": "New form",
+  "bookingFormsEmpty": "No forms configured",
+  "bookingFormsSelectHint": "Select a form or create a new one",
+  "bookingFormsListMeta": "{fields} fields · {assignments} assignments",
+  "@bookingFormsListMeta": {
+    "placeholders": {
+      "fields": { "type": "int" },
+      "assignments": { "type": "int" }
+    }
+  },
+  "bookingFormsFieldTitle": "Title",
+  "bookingFormsFieldDescription": "Description",
+  "bookingFormsFieldInternalName": "Internal name",
+  "bookingFormsActive": "Active",
+  "bookingFormsAssignBusiness": "Show for the whole business",
+  "bookingFormsFieldsTitle": "Fields",
+  "bookingFormsRequired": "Required",
+  "bookingFormsAddField": "Add field",
+  "bookingFormsFieldType": "Field type",
+  "bookingFormsFieldLabel": "Label",
+  "bookingFormsOptionsHint": "Options, one per line",
+  "bookingFormsFieldTypeShortText": "Short text",
+  "bookingFormsFieldTypeLongText": "Long text",
+  "bookingFormsFieldTypeSingleChoice": "Single choice",
+  "bookingFormsFieldTypeMultipleChoice": "Multiple choice",
+  "bookingFormsFieldTypeCheckbox": "Checkbox",
+  "bookingFormsFieldTypeConsent": "Consent",
+  "bookingFormsFieldTypeInfoText": "Info text"
 }

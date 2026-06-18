@@ -1,0 +1,900 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Agenda\Infrastructure\Repositories;
+
+use Agenda\Domain\Exceptions\BookingException;
+use Agenda\Infrastructure\Database\Connection;
+use Agenda\Infrastructure\Support\Json;
+use InvalidArgumentException;
+
+final class BookingFormRepository
+{
+    public const FIELD_SHORT_TEXT = 'short_text';
+    public const FIELD_LONG_TEXT = 'long_text';
+    public const FIELD_SINGLE_CHOICE = 'single_choice';
+    public const FIELD_MULTIPLE_CHOICE = 'multiple_choice';
+    public const FIELD_CHECKBOX = 'checkbox';
+    public const FIELD_CONSENT = 'consent';
+    public const FIELD_INFO_TEXT = 'info_text';
+    public const FIELD_NUMBER = 'number';
+    public const FIELD_EMAIL = 'email';
+    public const FIELD_PHONE = 'phone';
+    public const FIELD_DATE = 'date';
+    public const FIELD_DROPDOWN = 'dropdown';
+
+    private const NON_REQUIRED_TYPES = [self::FIELD_INFO_TEXT];
+    private const CHOICE_TYPES = [self::FIELD_SINGLE_CHOICE, self::FIELD_MULTIPLE_CHOICE, self::FIELD_DROPDOWN];
+    private const INPUT_TYPES = [
+        self::FIELD_SHORT_TEXT,
+        self::FIELD_LONG_TEXT,
+        self::FIELD_SINGLE_CHOICE,
+        self::FIELD_MULTIPLE_CHOICE,
+        self::FIELD_CHECKBOX,
+        self::FIELD_CONSENT,
+        self::FIELD_NUMBER,
+        self::FIELD_EMAIL,
+        self::FIELD_PHONE,
+        self::FIELD_DATE,
+        self::FIELD_DROPDOWN,
+    ];
+
+    private const FIELD_TYPES = [
+        self::FIELD_SHORT_TEXT,
+        self::FIELD_LONG_TEXT,
+        self::FIELD_SINGLE_CHOICE,
+        self::FIELD_MULTIPLE_CHOICE,
+        self::FIELD_CHECKBOX,
+        self::FIELD_CONSENT,
+        self::FIELD_INFO_TEXT,
+        self::FIELD_NUMBER,
+        self::FIELD_EMAIL,
+        self::FIELD_PHONE,
+        self::FIELD_DATE,
+        self::FIELD_DROPDOWN,
+    ];
+
+    private const SCOPE_TYPES = [
+        'business',
+        'location',
+        'service_variant',
+        'service_package',
+        'class_event',
+        'service_category',
+    ];
+
+    public function __construct(private readonly Connection $db) {}
+
+    public function listForms(int $businessId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            "SELECT bf.*,
+                    (SELECT COUNT(*) FROM booking_form_fields bff WHERE bff.form_id = bf.id AND bff.is_active = 1) AS fields_count,
+                    (SELECT COUNT(*) FROM booking_form_assignments bfa WHERE bfa.form_id = bf.id AND bfa.is_active = 1) AS assignments_count
+             FROM booking_forms bf
+             WHERE bf.business_id = ?
+             ORDER BY bf.sort_order ASC, bf.id ASC"
+        );
+        $stmt->execute([$businessId]);
+
+        return array_map([$this, 'formatAdminFormSummary'], $stmt->fetchAll());
+    }
+
+    public function findForm(int $businessId, int $formId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare('SELECT * FROM booking_forms WHERE id = ? AND business_id = ?');
+        $stmt->execute([$formId, $businessId]);
+        $form = $stmt->fetch();
+        if (!$form) {
+            return null;
+        }
+
+        return $this->formatAdminForm($form);
+    }
+
+    public function createForm(int $businessId, array $data, ?int $userId): int
+    {
+        $title = trim((string) ($data['title'] ?? ''));
+        if ($title === '') {
+            throw new InvalidArgumentException('title_required');
+        }
+
+        $stmt = $this->db->getPdo()->prepare(
+            'INSERT INTO booking_forms
+                (business_id, title, description, internal_name, is_active, sort_order, created_by_user_id, updated_by_user_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+        $stmt->execute([
+            $businessId,
+            $title,
+            $this->nullableTrim($data['description'] ?? null),
+            $this->nullableTrim($data['internal_name'] ?? null),
+            isset($data['is_active']) ? ((int) (bool) $data['is_active']) : 1,
+            (int) ($data['sort_order'] ?? 0),
+            $userId,
+            $userId,
+        ]);
+
+        return (int) $this->db->getPdo()->lastInsertId();
+    }
+
+    public function updateForm(int $businessId, int $formId, array $data, ?int $userId): bool
+    {
+        $allowed = ['title', 'description', 'internal_name', 'is_active', 'sort_order'];
+        $fields = [];
+        $params = [];
+        foreach ($allowed as $key) {
+            if (!array_key_exists($key, $data)) {
+                continue;
+            }
+            if ($key === 'title') {
+                $value = trim((string) $data[$key]);
+                if ($value === '') {
+                    throw new InvalidArgumentException('title_required');
+                }
+            } elseif (in_array($key, ['description', 'internal_name'], true)) {
+                $value = $this->nullableTrim($data[$key]);
+            } elseif ($key === 'is_active') {
+                $value = (int) (bool) $data[$key];
+            } else {
+                $value = (int) $data[$key];
+            }
+            $fields[] = "{$key} = ?";
+            $params[] = $value;
+        }
+
+        if ($userId !== null) {
+            $fields[] = 'updated_by_user_id = ?';
+            $params[] = $userId;
+        }
+
+        if (empty($fields)) {
+            return $this->findForm($businessId, $formId) !== null;
+        }
+
+        $params[] = $formId;
+        $params[] = $businessId;
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE booking_forms SET ' . implode(', ', $fields) . ', updated_at = NOW() WHERE id = ? AND business_id = ?'
+        );
+        $stmt->execute($params);
+
+        return $stmt->rowCount() > 0;
+    }
+
+    public function addField(int $businessId, int $formId, array $data): int
+    {
+        $this->assertFormBelongsToBusiness($businessId, $formId);
+        $normalized = $this->normalizeFieldData($data);
+        $stmt = $this->db->getPdo()->prepare(
+            'INSERT INTO booking_form_fields
+                (form_id, business_id, field_type, label, description, placeholder, help_text, is_required, sort_order, options_json, validation_json, is_active)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+        $stmt->execute([
+            $formId,
+            $businessId,
+            $normalized['field_type'],
+            $normalized['label'],
+            $normalized['description'],
+            $normalized['placeholder'],
+            $normalized['help_text'],
+            $normalized['is_required'],
+            $normalized['sort_order'],
+            $normalized['options_json'],
+            $normalized['validation_json'],
+            $normalized['is_active'],
+        ]);
+
+        return (int) $this->db->getPdo()->lastInsertId();
+    }
+
+    public function updateField(int $businessId, int $formId, int $fieldId, array $data): bool
+    {
+        $this->assertFormBelongsToBusiness($businessId, $formId);
+        $existing = $this->findField($businessId, $formId, $fieldId);
+        if ($existing === null) {
+            return false;
+        }
+
+        $normalized = $this->normalizeFieldData(array_merge($existing, $data), false);
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE booking_form_fields
+             SET field_type = ?, label = ?, description = ?, placeholder = ?, help_text = ?,
+                 is_required = ?, sort_order = ?, options_json = ?, validation_json = ?, is_active = ?, updated_at = NOW()
+             WHERE id = ? AND form_id = ? AND business_id = ?'
+        );
+        $stmt->execute([
+            $normalized['field_type'],
+            $normalized['label'],
+            $normalized['description'],
+            $normalized['placeholder'],
+            $normalized['help_text'],
+            $normalized['is_required'],
+            $normalized['sort_order'],
+            $normalized['options_json'],
+            $normalized['validation_json'],
+            $normalized['is_active'],
+            $fieldId,
+            $formId,
+            $businessId,
+        ]);
+
+        return true;
+    }
+
+    public function deactivateField(int $businessId, int $formId, int $fieldId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE booking_form_fields SET is_active = 0, updated_at = NOW() WHERE id = ? AND form_id = ? AND business_id = ?'
+        );
+        $stmt->execute([$fieldId, $formId, $businessId]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public function reorderFields(int $businessId, int $formId, array $fieldIds): void
+    {
+        $this->assertFormBelongsToBusiness($businessId, $formId);
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE booking_form_fields SET sort_order = ?, updated_at = NOW() WHERE id = ? AND form_id = ? AND business_id = ?'
+        );
+        foreach (array_values($fieldIds) as $index => $fieldId) {
+            $stmt->execute([$index, (int) $fieldId, $formId, $businessId]);
+        }
+    }
+
+    public function replaceAssignments(int $businessId, int $formId, array $assignments): void
+    {
+        $this->assertFormBelongsToBusiness($businessId, $formId);
+        $pdo = $this->db->getPdo();
+        $pdo->beginTransaction();
+        try {
+            $delete = $pdo->prepare('DELETE FROM booking_form_assignments WHERE form_id = ? AND business_id = ?');
+            $delete->execute([$formId, $businessId]);
+
+            $insert = $pdo->prepare(
+                'INSERT INTO booking_form_assignments (form_id, business_id, scope_type, scope_id, is_active)
+                 VALUES (?, ?, ?, ?, ?)'
+            );
+            foreach ($assignments as $assignment) {
+                if (!is_array($assignment)) {
+                    continue;
+                }
+                $scopeType = (string) ($assignment['scope_type'] ?? '');
+                $scopeId = array_key_exists('scope_id', $assignment) && $assignment['scope_id'] !== null
+                    ? (int) $assignment['scope_id']
+                    : null;
+                if (!$this->isValidAssignment($businessId, $scopeType, $scopeId)) {
+                    throw new InvalidArgumentException('invalid_assignment');
+                }
+                $insert->execute([
+                    $formId,
+                    $businessId,
+                    $scopeType,
+                    $scopeId,
+                    isset($assignment['is_active']) ? (int) (bool) $assignment['is_active'] : 1,
+                ]);
+            }
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    public function resolvePublicForms(
+        int $businessId,
+        int $locationId,
+        array $serviceVariantIds = [],
+        array $serviceIds = [],
+        array $servicePackageIds = [],
+        array $classEventIds = []
+    ): array {
+        $context = $this->buildContextIds($businessId, $locationId, $serviceVariantIds, $serviceIds, $servicePackageIds, $classEventIds);
+        $forms = $this->findActiveFormsForContext($businessId, $context);
+        return array_map([$this, 'formatPublicForm'], $forms);
+    }
+
+    public function validateAndSaveSubmissions(
+        int $businessId,
+        int $locationId,
+        int $bookingId,
+        int $clientId,
+        array $serviceVariantIds,
+        array $serviceIds,
+        array $servicePackageIds,
+        array $classEventIds,
+        array $submissions
+    ): void {
+        $context = $this->buildContextIds($businessId, $locationId, $serviceVariantIds, $serviceIds, $servicePackageIds, $classEventIds);
+        $forms = $this->findActiveFormsForContext($businessId, $context);
+        $formsById = [];
+        foreach ($forms as $form) {
+            $formsById[(int) $form['id']] = $form;
+        }
+
+        $submittedByForm = [];
+        foreach ($submissions as $submission) {
+            if (!is_array($submission) || !isset($submission['form_id'])) {
+                throw BookingException::bookingFormError('booking_form_invalid_submission', 'Invalid booking form submission');
+            }
+            $formId = (int) $submission['form_id'];
+            if (!isset($formsById[$formId])) {
+                throw BookingException::bookingFormError('booking_form_not_applicable', 'Booking form is not applicable to this booking', ['form_id' => $formId]);
+            }
+            $submittedByForm[$formId] = $submission;
+        }
+
+        $missing = [];
+        foreach ($formsById as $formId => $form) {
+            $answersByField = $this->answersByField($submittedByForm[$formId]['answers'] ?? []);
+            foreach ($form['fields'] as $field) {
+                if ((int) $field['is_required'] !== 1 || !$this->isInputField((string) $field['field_type'])) {
+                    continue;
+                }
+                $value = $answersByField[(int) $field['id']]['value'] ?? null;
+                if (!$this->isValidAnswerValue($field, $value)) {
+                    $missing[] = ['form_id' => $formId, 'field_id' => (int) $field['id']];
+                }
+            }
+        }
+        if (!empty($missing)) {
+            throw BookingException::bookingFormError(
+                'booking_form_required_fields_missing',
+                'One or more required booking form fields are missing',
+                ['fields' => $missing]
+            );
+        }
+
+        foreach ($submittedByForm as $formId => $submission) {
+            $form = $formsById[$formId];
+            $answersByField = $this->answersByField($submission['answers'] ?? []);
+            $answersToSave = [];
+            foreach ($form['fields'] as $field) {
+                $fieldId = (int) $field['id'];
+                $fieldType = (string) $field['field_type'];
+                if (!$this->isInputField($fieldType) || !array_key_exists($fieldId, $answersByField)) {
+                    continue;
+                }
+                $value = $answersByField[$fieldId]['value'] ?? null;
+                if (!$this->isValidAnswerValue($field, $value)) {
+                    if ((int) $field['is_required'] === 1) {
+                        throw BookingException::bookingFormError('booking_form_invalid_field', 'Invalid booking form field value', ['field_id' => $fieldId]);
+                    }
+                    continue;
+                }
+                $answersToSave[] = $this->formatAnswerForStorage($field, $value);
+            }
+
+            if (empty($answersToSave)) {
+                continue;
+            }
+
+            $stmt = $this->db->getPdo()->prepare(
+                'INSERT INTO booking_form_submissions
+                    (business_id, booking_id, form_id, form_title_snapshot, submitted_by_client_id)
+                 VALUES (?, ?, ?, ?, ?)'
+            );
+            $stmt->execute([$businessId, $bookingId, $formId, $form['title'], $clientId]);
+            $submissionId = (int) $this->db->getPdo()->lastInsertId();
+
+            $answerStmt = $this->db->getPdo()->prepare(
+                'INSERT INTO booking_form_submission_answers
+                    (submission_id, business_id, booking_id, form_id, field_id, field_type_snapshot, field_label_snapshot, answer_text, answer_json)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            foreach ($answersToSave as $answer) {
+                $answerStmt->execute([
+                    $submissionId,
+                    $businessId,
+                    $bookingId,
+                    $formId,
+                    $answer['field_id'],
+                    $answer['field_type'],
+                    $answer['field_label'],
+                    $answer['answer_text'],
+                    $answer['answer_json'],
+                ]);
+            }
+        }
+    }
+
+    public function getSubmissionsForBooking(int $businessId, int $bookingId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT * FROM booking_form_submissions WHERE business_id = ? AND booking_id = ? ORDER BY id ASC'
+        );
+        $stmt->execute([$businessId, $bookingId]);
+        $submissions = $stmt->fetchAll();
+        if (empty($submissions)) {
+            return [];
+        }
+
+        $ids = array_map(static fn(array $row): int => (int) $row['id'], $submissions);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $answerStmt = $this->db->getPdo()->prepare(
+            "SELECT * FROM booking_form_submission_answers
+             WHERE submission_id IN ({$placeholders})
+             ORDER BY id ASC"
+        );
+        $answerStmt->execute($ids);
+        $answersBySubmission = [];
+        foreach ($answerStmt->fetchAll() as $answer) {
+            $answersBySubmission[(int) $answer['submission_id']][] = [
+                'id' => (int) $answer['id'],
+                'field_id' => (int) $answer['field_id'],
+                'field_type' => $answer['field_type_snapshot'],
+                'field_label' => $answer['field_label_snapshot'],
+                'answer_text' => $answer['answer_text'],
+                'answer_json' => $this->decodeJson($answer['answer_json'] ?? null),
+            ];
+        }
+
+        return array_map(static function (array $submission) use ($answersBySubmission): array {
+            $id = (int) $submission['id'];
+            return [
+                'id' => $id,
+                'booking_id' => (int) $submission['booking_id'],
+                'form_id' => (int) $submission['form_id'],
+                'form_title' => $submission['form_title_snapshot'],
+                'submitted_by_client_id' => $submission['submitted_by_client_id'] !== null ? (int) $submission['submitted_by_client_id'] : null,
+                'submitted_at' => $submission['submitted_at'],
+                'answers' => $answersBySubmission[$id] ?? [],
+            ];
+        }, $submissions);
+    }
+
+    private function findActiveFormsForContext(int $businessId, array $context): array
+    {
+        $conditions = ['(bfa.scope_type = ? AND bfa.scope_id IS NULL)'];
+        $params = [$businessId, 'business'];
+
+        foreach (['location', 'service_variant', 'service_package', 'class_event', 'service_category'] as $scopeType) {
+            $ids = $context[$scopeType] ?? [];
+            if (empty($ids)) {
+                continue;
+            }
+            $conditions[] = '(bfa.scope_type = ? AND bfa.scope_id IN (' . implode(',', array_fill(0, count($ids), '?')) . '))';
+            $params[] = $scopeType;
+            foreach ($ids as $id) {
+                $params[] = $id;
+            }
+        }
+
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT DISTINCT bf.*
+             FROM booking_forms bf
+             INNER JOIN booking_form_assignments bfa ON bfa.form_id = bf.id
+             WHERE bf.business_id = ?
+               AND bf.is_active = 1
+               AND bfa.is_active = 1
+               AND (' . implode(' OR ', $conditions) . ')
+             ORDER BY bf.sort_order ASC, bf.id ASC'
+        );
+        $stmt->execute($params);
+        $forms = $stmt->fetchAll();
+        if (empty($forms)) {
+            return [];
+        }
+
+        $formIds = array_map(static fn(array $row): int => (int) $row['id'], $forms);
+        $fieldsByForm = $this->fieldsByFormIds($businessId, $formIds);
+        $assignmentsByForm = $this->assignmentsByFormIds($businessId, $formIds);
+        foreach ($forms as &$form) {
+            $id = (int) $form['id'];
+            $form['fields'] = $fieldsByForm[$id] ?? [];
+            $form['assignments'] = $assignmentsByForm[$id] ?? [];
+        }
+
+        return $forms;
+    }
+
+    private function buildContextIds(int $businessId, int $locationId, array $serviceVariantIds, array $serviceIds, array $servicePackageIds, array $classEventIds): array
+    {
+        $serviceVariantIds = $this->positiveIds($serviceVariantIds);
+        $serviceIds = $this->positiveIds($serviceIds);
+        $servicePackageIds = $this->positiveIds($servicePackageIds);
+        $classEventIds = $this->positiveIds($classEventIds);
+        $categoryIds = [];
+
+        if (!empty($serviceVariantIds) || !empty($serviceIds)) {
+            $variantSql = !empty($serviceVariantIds)
+                ? 'sv.id IN (' . implode(',', array_fill(0, count($serviceVariantIds), '?')) . ')'
+                : '0 = 1';
+            $serviceSql = !empty($serviceIds)
+                ? 's.id IN (' . implode(',', array_fill(0, count($serviceIds), '?')) . ')'
+                : '0 = 1';
+            $stmt = $this->db->getPdo()->prepare(
+                "SELECT DISTINCT s.category_id
+                 FROM service_variants sv
+                 INNER JOIN services s ON s.id = sv.service_id
+                 WHERE ({$variantSql} OR {$serviceSql}) AND s.business_id = ? AND sv.location_id = ?"
+            );
+            $stmt->execute([...$serviceVariantIds, ...$serviceIds, $businessId, $locationId]);
+            foreach ($stmt->fetchAll() as $row) {
+                if ($row['category_id'] !== null) {
+                    $categoryIds[] = (int) $row['category_id'];
+                }
+            }
+
+            if (!empty($serviceIds)) {
+                $placeholders = implode(',', array_fill(0, count($serviceIds), '?'));
+                $variantStmt = $this->db->getPdo()->prepare(
+                    "SELECT sv.id
+                     FROM service_variants sv
+                     INNER JOIN services s ON s.id = sv.service_id
+                     WHERE s.id IN ({$placeholders}) AND s.business_id = ? AND sv.location_id = ?"
+                );
+                $variantStmt->execute([...$serviceIds, $businessId, $locationId]);
+                foreach ($variantStmt->fetchAll() as $row) {
+                    $serviceVariantIds[] = (int) $row['id'];
+                }
+                $serviceVariantIds = $this->positiveIds($serviceVariantIds);
+            }
+        }
+
+        if (!empty($servicePackageIds)) {
+            $placeholders = implode(',', array_fill(0, count($servicePackageIds), '?'));
+            $stmt = $this->db->getPdo()->prepare(
+                "SELECT DISTINCT category_id
+                 FROM service_packages
+                 WHERE id IN ({$placeholders}) AND business_id = ? AND location_id = ?"
+            );
+            $stmt->execute([...$servicePackageIds, $businessId, $locationId]);
+            foreach ($stmt->fetchAll() as $row) {
+                if ($row['category_id'] !== null) {
+                    $categoryIds[] = (int) $row['category_id'];
+                }
+            }
+        }
+
+        return [
+            'location' => [$locationId],
+            'service_variant' => $serviceVariantIds,
+            'service_package' => $servicePackageIds,
+            'class_event' => $classEventIds,
+            'service_category' => $this->positiveIds($categoryIds),
+        ];
+    }
+
+    private function fieldsByFormIds(int $businessId, array $formIds): array
+    {
+        if (empty($formIds)) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($formIds), '?'));
+        $stmt = $this->db->getPdo()->prepare(
+            "SELECT *
+             FROM booking_form_fields
+             WHERE business_id = ?
+               AND form_id IN ({$placeholders})
+               AND is_active = 1
+             ORDER BY sort_order ASC, id ASC"
+        );
+        $stmt->execute([$businessId, ...$formIds]);
+        $fields = [];
+        foreach ($stmt->fetchAll() as $field) {
+            $fields[(int) $field['form_id']][] = $this->formatField($field);
+        }
+        return $fields;
+    }
+
+    private function assignmentsByFormIds(int $businessId, array $formIds): array
+    {
+        if (empty($formIds)) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($formIds), '?'));
+        $stmt = $this->db->getPdo()->prepare(
+            "SELECT *
+             FROM booking_form_assignments
+             WHERE business_id = ?
+               AND form_id IN ({$placeholders})
+               AND is_active = 1
+             ORDER BY id ASC"
+        );
+        $stmt->execute([$businessId, ...$formIds]);
+        $assignments = [];
+        foreach ($stmt->fetchAll() as $assignment) {
+            $assignments[(int) $assignment['form_id']][] = $this->formatAssignment($assignment);
+        }
+        return $assignments;
+    }
+
+    private function formatAdminForm(array $form): array
+    {
+        $id = (int) $form['id'];
+        return $this->formatAdminFormSummary($form) + [
+            'fields' => $this->fieldsByFormIds((int) $form['business_id'], [$id])[$id] ?? [],
+            'assignments' => $this->assignmentsByFormIds((int) $form['business_id'], [$id])[$id] ?? [],
+        ];
+    }
+
+    private function formatAdminFormSummary(array $form): array
+    {
+        return [
+            'id' => (int) $form['id'],
+            'business_id' => (int) $form['business_id'],
+            'title' => $form['title'],
+            'description' => $form['description'],
+            'internal_name' => $form['internal_name'],
+            'is_active' => (int) $form['is_active'] === 1,
+            'sort_order' => (int) $form['sort_order'],
+            'fields_count' => isset($form['fields_count']) ? (int) $form['fields_count'] : null,
+            'assignments_count' => isset($form['assignments_count']) ? (int) $form['assignments_count'] : null,
+            'created_at' => $form['created_at'],
+            'updated_at' => $form['updated_at'],
+        ];
+    }
+
+    private function formatPublicForm(array $form): array
+    {
+        return [
+            'id' => (int) $form['id'],
+            'title' => $form['title'],
+            'description' => $form['description'],
+            'sort_order' => (int) $form['sort_order'],
+            'fields' => $form['fields'] ?? [],
+        ];
+    }
+
+    private function formatField(array $field): array
+    {
+        return [
+            'id' => (int) $field['id'],
+            'form_id' => (int) $field['form_id'],
+            'field_type' => $field['field_type'],
+            'label' => $field['label'],
+            'description' => $field['description'],
+            'placeholder' => $field['placeholder'],
+            'help_text' => $field['help_text'],
+            'is_required' => (int) $field['is_required'] === 1,
+            'sort_order' => (int) $field['sort_order'],
+            'options' => $this->decodeJson($field['options_json'] ?? null) ?? [],
+            'validation' => $this->decodeJson($field['validation_json'] ?? null) ?? [],
+            'is_active' => (int) $field['is_active'] === 1,
+        ];
+    }
+
+    private function formatAssignment(array $assignment): array
+    {
+        return [
+            'id' => (int) $assignment['id'],
+            'form_id' => (int) $assignment['form_id'],
+            'scope_type' => $assignment['scope_type'],
+            'scope_id' => $assignment['scope_id'] !== null ? (int) $assignment['scope_id'] : null,
+            'is_active' => (int) $assignment['is_active'] === 1,
+        ];
+    }
+
+    private function normalizeFieldData(array $data, bool $requireLabel = true): array
+    {
+        $fieldType = (string) ($data['field_type'] ?? '');
+        if (!in_array($fieldType, self::FIELD_TYPES, true)) {
+            throw new InvalidArgumentException('invalid_field_type');
+        }
+        $label = trim((string) ($data['label'] ?? ''));
+        if ($requireLabel && $label === '') {
+            throw new InvalidArgumentException('label_required');
+        }
+        if ($label === '') {
+            $label = 'Campo';
+        }
+
+        $isRequired = isset($data['is_required']) ? (int) (bool) $data['is_required'] : 0;
+        if (in_array($fieldType, self::NON_REQUIRED_TYPES, true)) {
+            $isRequired = 0;
+        }
+
+        $options = $this->normalizeOptions($data['options'] ?? $data['options_json'] ?? null);
+        if (in_array($fieldType, self::CHOICE_TYPES, true) && empty($options)) {
+            throw new InvalidArgumentException('options_required');
+        }
+
+        $validation = $this->decodeJson($data['validation_json'] ?? null);
+        if (isset($data['validation']) && is_array($data['validation'])) {
+            $validation = $data['validation'];
+        }
+
+        return [
+            'field_type' => $fieldType,
+            'label' => $label,
+            'description' => $this->nullableTrim($data['description'] ?? null),
+            'placeholder' => $this->nullableTrim($data['placeholder'] ?? null),
+            'help_text' => $this->nullableTrim($data['help_text'] ?? null),
+            'is_required' => $isRequired,
+            'sort_order' => (int) ($data['sort_order'] ?? 0),
+            'options_json' => !empty($options) ? Json::encode($options) : null,
+            'validation_json' => is_array($validation) && !empty($validation) ? Json::encode($validation) : null,
+            'is_active' => isset($data['is_active']) ? (int) (bool) $data['is_active'] : 1,
+        ];
+    }
+
+    private function normalizeOptions(mixed $value): array
+    {
+        $decoded = is_string($value) ? $this->decodeJson($value) : $value;
+        if (!is_array($decoded)) {
+            return [];
+        }
+        $options = [];
+        foreach ($decoded as $option) {
+            if (is_array($option)) {
+                $optionValue = trim((string) ($option['value'] ?? $option['label'] ?? ''));
+                $label = trim((string) ($option['label'] ?? $optionValue));
+            } else {
+                $optionValue = trim((string) $option);
+                $label = $optionValue;
+            }
+            if ($optionValue === '') {
+                continue;
+            }
+            $options[] = ['value' => $optionValue, 'label' => $label];
+        }
+        return $options;
+    }
+
+    private function answersByField(array $answers): array
+    {
+        $result = [];
+        foreach ($answers as $answer) {
+            if (!is_array($answer) || !isset($answer['field_id'])) {
+                continue;
+            }
+            $result[(int) $answer['field_id']] = $answer;
+        }
+        return $result;
+    }
+
+    private function isValidAnswerValue(array $field, mixed $value): bool
+    {
+        $type = (string) $field['field_type'];
+        $required = (int) $field['is_required'] === 1 || ($field['is_required'] ?? false) === true;
+        if ($value === null || $value === '') {
+            return !$required;
+        }
+
+        if (in_array($type, [self::FIELD_CHECKBOX, self::FIELD_CONSENT], true)) {
+            return !$required || $value === true || $value === 1 || $value === '1';
+        }
+
+        if ($type === self::FIELD_MULTIPLE_CHOICE) {
+            if (!is_array($value)) {
+                return false;
+            }
+            if ($required && empty($value)) {
+                return false;
+            }
+            return $this->valuesBelongToOptions($field, $value);
+        }
+
+        if (in_array($type, [self::FIELD_SINGLE_CHOICE, self::FIELD_DROPDOWN], true)) {
+            return $this->valuesBelongToOptions($field, [(string) $value]);
+        }
+
+        $text = trim((string) $value);
+        if ($required && $text === '') {
+            return false;
+        }
+        $max = $type === self::FIELD_SHORT_TEXT ? 1000 : 4000;
+        $validation = is_array($field['validation'] ?? null) ? $field['validation'] : [];
+        if (isset($validation['max_length'])) {
+            $max = max(1, min(10000, (int) $validation['max_length']));
+        }
+        return mb_strlen($text) <= $max;
+    }
+
+    private function valuesBelongToOptions(array $field, array $values): bool
+    {
+        $allowed = [];
+        foreach (($field['options'] ?? []) as $option) {
+            if (is_array($option) && isset($option['value'])) {
+                $allowed[(string) $option['value']] = true;
+            }
+        }
+        foreach ($values as $value) {
+            if (!isset($allowed[(string) $value])) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private function formatAnswerForStorage(array $field, mixed $value): array
+    {
+        $type = (string) $field['field_type'];
+        $answerText = null;
+        $answerJson = null;
+        if ($type === self::FIELD_MULTIPLE_CHOICE || is_array($value)) {
+            $answerJson = Json::encode(array_values((array) $value));
+        } elseif (in_array($type, [self::FIELD_CHECKBOX, self::FIELD_CONSENT], true)) {
+            $answerText = ($value === true || $value === 1 || $value === '1') ? '1' : '0';
+        } else {
+            $answerText = trim((string) $value);
+        }
+
+        return [
+            'field_id' => (int) $field['id'],
+            'field_type' => $type,
+            'field_label' => (string) $field['label'],
+            'answer_text' => $answerText,
+            'answer_json' => $answerJson,
+        ];
+    }
+
+    private function isValidAssignment(int $businessId, string $scopeType, ?int $scopeId): bool
+    {
+        if (!in_array($scopeType, self::SCOPE_TYPES, true)) {
+            return false;
+        }
+        if ($scopeType === 'business') {
+            return $scopeId === null;
+        }
+        if ($scopeId === null || $scopeId <= 0) {
+            return false;
+        }
+        $map = [
+            'location' => ['locations', 'id'],
+            'service_variant' => ['service_variants sv INNER JOIN services s ON s.id = sv.service_id', 'sv.id'],
+            'service_package' => ['service_packages', 'id'],
+            'class_event' => ['class_events', 'id'],
+            'service_category' => ['service_categories', 'id'],
+        ];
+        [$table, $column] = $map[$scopeType];
+        $businessColumn = $scopeType === 'service_variant' ? 's.business_id' : 'business_id';
+        $stmt = $this->db->getPdo()->prepare("SELECT 1 FROM {$table} WHERE {$column} = ? AND {$businessColumn} = ? LIMIT 1");
+        $stmt->execute([$scopeId, $businessId]);
+        return (bool) $stmt->fetchColumn();
+    }
+
+    private function assertFormBelongsToBusiness(int $businessId, int $formId): void
+    {
+        if ($this->findForm($businessId, $formId) === null) {
+            throw new InvalidArgumentException('form_not_found');
+        }
+    }
+
+    private function findField(int $businessId, int $formId, int $fieldId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT * FROM booking_form_fields WHERE id = ? AND form_id = ? AND business_id = ?'
+        );
+        $stmt->execute([$fieldId, $formId, $businessId]);
+        return $stmt->fetch() ?: null;
+    }
+
+    private function nullableTrim(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        $trimmed = trim((string) $value);
+        return $trimmed === '' ? null : $trimmed;
+    }
+
+    private function decodeJson(mixed $value): mixed
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+        if (is_array($value)) {
+            return $value;
+        }
+        return Json::decodeAssoc((string) $value);
+    }
+
+    private function positiveIds(array $ids): array
+    {
+        $normalized = array_values(array_unique(array_filter(
+            array_map(static fn(mixed $id): int => (int) $id, $ids),
+            static fn(int $id): bool => $id > 0
+        )));
+        sort($normalized);
+        return $normalized;
+    }
+
+    private function isInputField(string $type): bool
+    {
+        return in_array($type, self::INPUT_TYPES, true);
+    }
+}

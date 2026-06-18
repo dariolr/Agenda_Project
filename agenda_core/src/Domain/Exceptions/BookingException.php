@@ -139,6 +139,11 @@ final class BookingException extends Exception
         return new self($message, self::VALIDATION_ERROR, 400);
     }
 
+    public static function bookingFormError(string $code, string $message, array $details = []): self
+    {
+        return new self($message, $code, 400, $details);
+    }
+
     public static function serverError(string $message = 'Internal server error'): self
     {
         return new self($message, self::SERVER_ERROR, 500);

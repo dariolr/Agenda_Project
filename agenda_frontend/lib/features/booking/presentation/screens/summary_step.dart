@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/models/class_event.dart';
+import '../../../../core/models/booking_form.dart';
 
 import '../../../../app/providers/route_slug_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
@@ -30,6 +31,11 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
   final _scrollController = ScrollController();
   bool _cancellationPolicyAccepted = false;
   bool _showCancellationPolicyWarning = false;
+  String? _formsContextKey;
+  bool _formsLoading = false;
+  List<BookingForm> _bookingForms = const [];
+  final Map<int, dynamic> _formAnswers = {};
+  final Set<int> _invalidRequiredFieldIds = {};
 
   Future<void> _savePendingBookingForAuth() async {
     final bookingState = ref.read(bookingFlowProvider);
@@ -109,6 +115,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
     final business = ref.watch(currentBusinessProvider).value;
     final cancellationHours =
         location?.cancellationHours ?? business?.cancellationHours ?? 24;
+    _refreshBookingFormsIfNeeded(business?.id, location?.id, request);
 
     return Column(
       children: [
@@ -496,6 +503,14 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                 ),
                 const SizedBox(height: 16),
 
+                if (_formsLoading) ...[
+                  const Center(child: CircularProgressIndicator()),
+                  const SizedBox(height: 16),
+                ] else if (_bookingForms.isNotEmpty) ...[
+                  _buildBookingFormsSection(context, theme),
+                  const SizedBox(height: 16),
+                ],
+
                 // Policy modifica/cancellazione (ultima informazione)
                 _SummarySection(
                   title: l10n.summaryCancellationPolicyTitle,
@@ -830,6 +845,10 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                         _scrollToBottom();
                         return;
                       }
+                      if (!_validateBookingForms()) {
+                        _scrollToBottom();
+                        return;
+                      }
                       if (_showCancellationPolicyWarning) {
                         setState(() {
                           _showCancellationPolicyWarning = false;
@@ -838,7 +857,9 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                       try {
                         await ref
                             .read(bookingFlowProvider.notifier)
-                            .confirmBooking();
+                            .confirmBooking(
+                              formSubmissions: _buildFormSubmissions(),
+                            );
                       } on TokenExpiredException {
                         // Sessione scaduta - reindirizza al login
                         // Lo stato della prenotazione è già salvato in localStorage
@@ -933,6 +954,10 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
         return l10n.bookingErrorUnauthorized;
       case 'validation_error':
         return l10n.bookingErrorValidation;
+      case 'booking_form_required_fields_missing':
+      case 'booking_form_invalid_field':
+      case 'booking_form_not_applicable':
+        return l10n.bookingFormsSubmitError;
       case 'internal_error':
         return l10n.bookingErrorServer;
     }
@@ -951,6 +976,284 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
       return l10n.summaryCancellationPolicyDays(hours ~/ 24);
     }
     return l10n.summaryCancellationPolicyHours(hours);
+  }
+
+  void _refreshBookingFormsIfNeeded(
+    int? businessId,
+    int? locationId,
+    dynamic request,
+  ) {
+    if (businessId == null || locationId == null || locationId <= 0) return;
+    final serviceIds =
+        request.services.map<int>((service) => service.id as int).toList()
+          ..sort();
+    final variantIds =
+        request.services
+            .map<int?>((service) => service.serviceVariantId as int?)
+            .whereType<int>()
+            .toList()
+          ..sort();
+    final packageIds = request.selectedPackageIds.toList()..sort();
+    final classEventIds = request.selectedClassEvent == null
+        ? <int>[]
+        : <int>[request.selectedClassEvent.id as int];
+    final key = [
+      businessId,
+      locationId,
+      serviceIds.join(','),
+      variantIds.join(','),
+      packageIds.join(','),
+      classEventIds.join(','),
+    ].join('|');
+    if (_formsContextKey == key || _formsLoading) return;
+    _formsContextKey = key;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      setState(() {
+        _formsLoading = true;
+        _bookingForms = const [];
+        _formAnswers.clear();
+        _invalidRequiredFieldIds.clear();
+      });
+      try {
+        final forms = await ref
+            .read(bookingRepositoryProvider)
+            .resolveBookingForms(
+              businessId: businessId,
+              locationId: locationId,
+              serviceIds: serviceIds,
+              serviceVariantIds: variantIds,
+              packageIds: packageIds,
+              classEventIds: classEventIds,
+            );
+        if (!mounted) return;
+        setState(() {
+          _bookingForms = forms;
+          _formsLoading = false;
+        });
+      } catch (_) {
+        if (!mounted) return;
+        setState(() {
+          _bookingForms = const [];
+          _formsLoading = false;
+        });
+      }
+    });
+  }
+
+  bool _validateBookingForms() {
+    final invalid = <int>{};
+    for (final form in _bookingForms) {
+      for (final field in form.fields) {
+        if (!field.isRequired || !field.isInput) continue;
+        final value = _formAnswers[field.id];
+        if (!_hasFormValue(field, value)) {
+          invalid.add(field.id);
+        }
+      }
+    }
+    setState(() {
+      _invalidRequiredFieldIds
+        ..clear()
+        ..addAll(invalid);
+    });
+    return invalid.isEmpty;
+  }
+
+  bool _hasFormValue(BookingFormField field, dynamic value) {
+    if (field.fieldType == 'checkbox' || field.fieldType == 'consent') {
+      return value == true;
+    }
+    if (field.fieldType == 'multiple_choice') {
+      return value is Set<String> && value.isNotEmpty;
+    }
+    if (value == null) return false;
+    return value.toString().trim().isNotEmpty;
+  }
+
+  List<Map<String, dynamic>> _buildFormSubmissions() {
+    final submissions = <Map<String, dynamic>>[];
+    for (final form in _bookingForms) {
+      final answers = <Map<String, dynamic>>[];
+      for (final field in form.fields) {
+        if (!field.isInput) continue;
+        final value = _formAnswers[field.id];
+        if (!_hasFormValue(field, value)) continue;
+        answers.add({
+          'field_id': field.id,
+          'value': value is Set<String> ? value.toList() : value,
+        });
+      }
+      if (answers.isNotEmpty) {
+        submissions.add({'form_id': form.id, 'answers': answers});
+      }
+    }
+    return submissions;
+  }
+
+  Widget _buildBookingFormsSection(BuildContext context, ThemeData theme) {
+    final l10n = context.l10n;
+    return _SummarySection(
+      title: l10n.bookingFormsSectionTitle,
+      icon: Icons.assignment_outlined,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final form in _bookingForms) ...[
+            Text(
+              form.title,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            if (form.description != null && form.description!.trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  form.description!,
+                  style: theme.textTheme.bodySmall,
+                ),
+              ),
+            const SizedBox(height: 12),
+            for (final field in form.fields) ...[
+              _BookingFormFieldWidget(
+                field: field,
+                value: _formAnswers[field.id],
+                showRequiredError: _invalidRequiredFieldIds.contains(field.id),
+                onChanged: (value) {
+                  setState(() {
+                    _formAnswers[field.id] = value;
+                    _invalidRequiredFieldIds.remove(field.id);
+                  });
+                },
+              ),
+              const SizedBox(height: 12),
+            ],
+            if (form != _bookingForms.last) const Divider(height: 24),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _BookingFormFieldWidget extends StatelessWidget {
+  const _BookingFormFieldWidget({
+    required this.field,
+    required this.value,
+    required this.showRequiredError,
+    required this.onChanged,
+  });
+
+  final BookingFormField field;
+  final dynamic value;
+  final bool showRequiredError;
+  final ValueChanged<dynamic> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    if (field.fieldType == 'info_text') {
+      return Text(field.label, style: theme.textTheme.bodyMedium);
+    }
+
+    final label = field.isRequired
+        ? l10n.bookingFormsRequiredLabel(field.label)
+        : field.label;
+    final errorText = showRequiredError ? l10n.bookingFormsRequiredError : null;
+
+    switch (field.fieldType) {
+      case 'long_text':
+        return TextField(
+          maxLines: 4,
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: field.placeholder,
+            helperText: field.helpText,
+            errorText: errorText,
+            border: const OutlineInputBorder(),
+          ),
+          onChanged: onChanged,
+        );
+      case 'single_choice':
+      case 'dropdown':
+        return DropdownButtonFormField<String>(
+          value: value as String?,
+          decoration: InputDecoration(
+            labelText: label,
+            helperText: field.helpText,
+            errorText: errorText,
+            border: const OutlineInputBorder(),
+          ),
+          items: [
+            for (final option in field.options)
+              DropdownMenuItem(value: option.value, child: Text(option.label)),
+          ],
+          onChanged: onChanged,
+        );
+      case 'multiple_choice':
+        final selected = value is Set<String>
+            ? value as Set<String>
+            : <String>{};
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: theme.textTheme.bodyMedium),
+            for (final option in field.options)
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: selected.contains(option.value),
+                title: Text(option.label),
+                onChanged: (checked) {
+                  final next = Set<String>.from(selected);
+                  if (checked ?? false) {
+                    next.add(option.value);
+                  } else {
+                    next.remove(option.value);
+                  }
+                  onChanged(next);
+                },
+              ),
+            if (errorText != null)
+              Text(errorText, style: TextStyle(color: theme.colorScheme.error)),
+          ],
+        );
+      case 'checkbox':
+      case 'consent':
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              value: value == true,
+              title: Text(label),
+              subtitle: field.helpText == null ? null : Text(field.helpText!),
+              onChanged: (checked) => onChanged(checked ?? false),
+            ),
+            if (errorText != null)
+              Text(errorText, style: TextStyle(color: theme.colorScheme.error)),
+          ],
+        );
+      default:
+        return TextField(
+          keyboardType: field.fieldType == 'number'
+              ? TextInputType.number
+              : (field.fieldType == 'email'
+                    ? TextInputType.emailAddress
+                    : (field.fieldType == 'phone'
+                          ? TextInputType.phone
+                          : TextInputType.text)),
+          decoration: InputDecoration(
+            labelText: label,
+            hintText: field.placeholder,
+            helperText: field.helpText,
+            errorText: errorText,
+            border: const OutlineInputBorder(),
+          ),
+          onChanged: onChanged,
+        );
+    }
   }
 }
 
