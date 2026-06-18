@@ -14,6 +14,8 @@ class Location {
   final String? currency;
   final String timezone;
   final String? bookingDefaultLocale;
+  final String? bookingIntroMessage;
+  final String? bookingConfirmationMessage;
   final int minBookingNoticeHours;
   final int maxBookingAdvanceDays;
   final bool allowCustomerChooseStaff;
@@ -47,6 +49,8 @@ class Location {
     this.currency,
     this.timezone = 'Europe/Rome',
     this.bookingDefaultLocale,
+    this.bookingIntroMessage,
+    this.bookingConfirmationMessage,
     this.minBookingNoticeHours = 1,
     this.maxBookingAdvanceDays = 90,
     this.allowCustomerChooseStaff = false,
@@ -81,6 +85,8 @@ class Location {
     String? currency,
     String? timezone,
     String? bookingDefaultLocale,
+    String? bookingIntroMessage,
+    String? bookingConfirmationMessage,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
     bool? allowCustomerChooseStaff,
@@ -114,6 +120,9 @@ class Location {
       currency: currency ?? this.currency,
       timezone: timezone ?? this.timezone,
       bookingDefaultLocale: bookingDefaultLocale ?? this.bookingDefaultLocale,
+      bookingIntroMessage: bookingIntroMessage ?? this.bookingIntroMessage,
+      bookingConfirmationMessage:
+          bookingConfirmationMessage ?? this.bookingConfirmationMessage,
       minBookingNoticeHours:
           minBookingNoticeHours ?? this.minBookingNoticeHours,
       maxBookingAdvanceDays:
@@ -157,6 +166,9 @@ class Location {
       currency: json['currency'] as String?,
       timezone: json['timezone'] as String? ?? 'Europe/Rome',
       bookingDefaultLocale: json['booking_default_locale'] as String?,
+      bookingIntroMessage: json['booking_intro_message'] as String?,
+      bookingConfirmationMessage:
+          json['booking_confirmation_message'] as String?,
       minBookingNoticeHours: json['min_booking_notice_hours'] as int? ?? 1,
       maxBookingAdvanceDays: json['max_booking_advance_days'] as int? ?? 90,
       allowCustomerChooseStaff:
@@ -200,6 +212,8 @@ class Location {
       'timezone': timezone,
       if (bookingDefaultLocale != null)
         'booking_default_locale': bookingDefaultLocale,
+      'booking_intro_message': bookingIntroMessage,
+      'booking_confirmation_message': bookingConfirmationMessage,
       'min_booking_notice_hours': minBookingNoticeHours,
       'max_booking_advance_days': maxBookingAdvanceDays,
       'allow_customer_choose_staff': allowCustomerChooseStaff,

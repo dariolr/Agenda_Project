@@ -256,6 +256,21 @@ ALTER TABLE business_invitations
 
 ### Step 2 — ruolo `custom` — ✅ FATTO (sessione 2026-06-16)
 
+> **Coesistenza + gating superadmin (deciso in questa sessione).** `custom` è puramente
+> additivo: i ruoli esistenti (owner/admin/manager/staff/viewer) e tutta la loro logica
+> (forced-staff, grant manager) restano invariati → convivenza temporanea garantita.
+> Per ora `custom` è **riservato al superadmin**:
+> - Backend: `BusinessUsersController` (store + update, incluso il caso in cui il target è
+>   *già* custom) e `BusinessInvitationsController::store` rifiutano `role=custom` se il
+>   richiedente non è superadmin (403). `canAssignRole` resta invariato (superadmin è mappato
+>   ad `admin`, quindi passa; il gate `isSuperadmin` è la barriera reale).
+> - Flutter: nuovo `isSuperadminProvider`; l'opzione "custom" appare in `role_selection_dialog`
+>   e `invite_operator_dialog` solo se superadmin (`allowCustomRole`), oppure se l'operatore ha
+>   già quel ruolo (così la lista resta coerente in modifica). `operators_screen` passa il flag.
+> Quando si vorrà aprire `custom` a owner/admin basterà rimuovere i gate `isSuperadmin` e
+> passare `allowCustomRole: true`.
+
+
 > Cosa è stato fatto:
 > - Migration `20260616_business_user_custom_role.sql` (enum esteso con `custom` su
 >   `business_users` e `business_invitations`) + `FULL_DATABASE_SCHEMA.sql`.

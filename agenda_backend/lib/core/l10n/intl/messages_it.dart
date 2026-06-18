@@ -3132,6 +3132,18 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage(
           "Consenti selezione multipla di servizi/pacchetti/eventi online",
         ),
+    "teamLocationBookingConfirmationMessageHelper":
+        MessageLookupByLibrary.simpleMessage(
+          "Questo messaggio sarà mostrato ai clienti nella pagina di conferma, dopo che la prenotazione online è stata completata. Lascia il campo vuoto se non vuoi mostrare alcun messaggio.",
+        ),
+    "teamLocationBookingConfirmationMessageLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Messaggio dopo la conferma online",
+        ),
+    "teamLocationBookingConfirmationMessagePlaceholder":
+        MessageLookupByLibrary.simpleMessage(
+          "Es. Grazie per la prenotazione. Ti chiediamo di presentarti 10 minuti prima dell’orario scelto.",
+        ),
     "teamLocationBookingDefaultLocaleAuto":
         MessageLookupByLibrary.simpleMessage("Automatico"),
     "teamLocationBookingDefaultLocaleEnglish":
@@ -3144,6 +3156,17 @@ class MessageLookup extends MessageLookupByLibrary {
     "teamLocationBookingDefaultLocaleLabel":
         MessageLookupByLibrary.simpleMessage(
           "Lingua predefinita prenotazioni online",
+        ),
+    "teamLocationBookingIntroMessageHelper": MessageLookupByLibrary.simpleMessage(
+      "Questo messaggio sarà mostrato ai clienti dopo la scelta della sede e prima della selezione di servizi, lezioni o attività prenotabili. Lascia il campo vuoto se non vuoi mostrare alcun messaggio.",
+    ),
+    "teamLocationBookingIntroMessageLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Messaggio introduttivo alla prenotazione online",
+        ),
+    "teamLocationBookingIntroMessagePlaceholder":
+        MessageLookupByLibrary.simpleMessage(
+          "Es. Prima di scegliere il servizio o la lezione, leggi attentamente queste informazioni.",
         ),
     "teamLocationBookingLimitsSection": MessageLookupByLibrary.simpleMessage(
       "Limiti prenotazione online",

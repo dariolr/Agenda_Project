@@ -179,6 +179,8 @@ final class LocationsController
             'currency' => $row['currency'],
             'timezone' => $row['timezone'] ?? 'Europe/Rome',
             'booking_default_locale' => $row['booking_default_locale'],
+            'booking_intro_message' => $this->normalizeOptionalText($row['booking_intro_message'] ?? null),
+            'booking_confirmation_message' => $this->normalizeOptionalText($row['booking_confirmation_message'] ?? null),
             'min_booking_notice_hours' => (int) ($row['min_booking_notice_hours'] ?? 1),
             'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
             'allow_customer_choose_staff' => (bool) ($row['allow_customer_choose_staff'] ?? false),
@@ -215,6 +217,8 @@ final class LocationsController
             'timezone' => $row['timezone'] ?? 'Europe/Rome',
             'country' => $row['country'],
             'booking_default_locale' => $row['booking_default_locale'],
+            'booking_intro_message' => $this->normalizeOptionalText($row['booking_intro_message'] ?? null),
+            'booking_confirmation_message' => $this->normalizeOptionalText($row['booking_confirmation_message'] ?? null),
             'min_booking_notice_hours' => (int) ($row['min_booking_notice_hours'] ?? 1),
             'max_booking_advance_days' => (int) ($row['max_booking_advance_days'] ?? 90),
             'allow_customer_choose_staff' => (bool) ($row['allow_customer_choose_staff'] ?? false),
@@ -274,6 +278,25 @@ final class LocationsController
             return Response::error($bookingDefaultLocaleError, 'validation_error', 400, $request->traceId);
         }
 
+        $bookingIntroMessageError = null;
+        $bookingIntroMessage = $this->normalizeOptionalTextForInput(
+            $body['booking_intro_message'] ?? null,
+            'booking_intro_message',
+            $bookingIntroMessageError,
+        );
+        if ($bookingIntroMessageError !== null) {
+            return Response::error($bookingIntroMessageError, 'validation_error', 400, $request->traceId);
+        }
+        $bookingConfirmationMessageError = null;
+        $bookingConfirmationMessage = $this->normalizeOptionalTextForInput(
+            $body['booking_confirmation_message'] ?? null,
+            'booking_confirmation_message',
+            $bookingConfirmationMessageError,
+        );
+        if ($bookingConfirmationMessageError !== null) {
+            return Response::error($bookingConfirmationMessageError, 'validation_error', 400, $request->traceId);
+        }
+
         $cancellationHours = null;
         if (array_key_exists('cancellation_hours', $body)) {
             if ($body['cancellation_hours'] === null) {
@@ -311,6 +334,8 @@ final class LocationsController
             'notification_emails' => $body['notification_emails'] ?? null,
             'timezone' => $timezone,
             'booking_default_locale' => $bookingDefaultLocale,
+            'booking_intro_message' => $bookingIntroMessage,
+            'booking_confirmation_message' => $bookingConfirmationMessage,
             'min_booking_notice_hours' => $body['min_booking_notice_hours'] ?? 1,
             'max_booking_advance_days' => $body['max_booking_advance_days'] ?? 90,
             'allow_customer_choose_staff' => $body['allow_customer_choose_staff'] ?? false,
@@ -396,6 +421,30 @@ final class LocationsController
                 return Response::error($bookingDefaultLocaleError, 'validation_error', 400, $request->traceId);
             }
             $updateData['booking_default_locale'] = $bookingDefaultLocale;
+        }
+        if (array_key_exists('booking_intro_message', $body)) {
+            $bookingIntroMessageError = null;
+            $bookingIntroMessage = $this->normalizeOptionalTextForInput(
+                $body['booking_intro_message'],
+                'booking_intro_message',
+                $bookingIntroMessageError,
+            );
+            if ($bookingIntroMessageError !== null) {
+                return Response::error($bookingIntroMessageError, 'validation_error', 400, $request->traceId);
+            }
+            $updateData['booking_intro_message'] = $bookingIntroMessage;
+        }
+        if (array_key_exists('booking_confirmation_message', $body)) {
+            $bookingConfirmationMessageError = null;
+            $bookingConfirmationMessage = $this->normalizeOptionalTextForInput(
+                $body['booking_confirmation_message'],
+                'booking_confirmation_message',
+                $bookingConfirmationMessageError,
+            );
+            if ($bookingConfirmationMessageError !== null) {
+                return Response::error($bookingConfirmationMessageError, 'validation_error', 400, $request->traceId);
+            }
+            $updateData['booking_confirmation_message'] = $bookingConfirmationMessage;
         }
 
         if (array_key_exists('allow_customer_choose_staff', $body)) {
@@ -710,6 +759,31 @@ final class LocationsController
         }
 
         return $locale;
+    }
+
+    private function normalizeOptionalText(mixed $raw): ?string
+    {
+        if ($raw === null) {
+            return null;
+        }
+
+        $text = trim((string) $raw);
+        return $text === '' ? null : $text;
+    }
+
+    private function normalizeOptionalTextForInput(mixed $raw, string $field, ?string &$error): ?string
+    {
+        $error = null;
+
+        if ($raw === null) {
+            return null;
+        }
+        if (!is_string($raw)) {
+            $error = "{$field} must be a string or null";
+            return null;
+        }
+
+        return $this->normalizeOptionalText($raw);
     }
 
     private function normalizeStaffIconKey(mixed $value, bool $strict = false): ?string

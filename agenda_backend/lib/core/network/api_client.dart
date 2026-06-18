@@ -1892,6 +1892,8 @@ class ApiClient {
     String? notificationEmails,
     String? timezone,
     String? bookingDefaultLocale,
+    String? bookingIntroMessage,
+    String? bookingConfirmationMessage,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
     Map<String, dynamic>? bookingTextOverrides,
@@ -1917,6 +1919,10 @@ class ApiClient {
         if (timezone != null && timezone.isNotEmpty) 'timezone': timezone,
         if (bookingDefaultLocale != null)
           'booking_default_locale': bookingDefaultLocale,
+        if (bookingIntroMessage != null)
+          'booking_intro_message': bookingIntroMessage,
+        if (bookingConfirmationMessage != null)
+          'booking_confirmation_message': bookingConfirmationMessage,
         if (minBookingNoticeHours != null)
           'min_booking_notice_hours': minBookingNoticeHours,
         if (maxBookingAdvanceDays != null)
@@ -1959,6 +1965,8 @@ class ApiClient {
     String? notificationEmails,
     String? timezone,
     String? bookingDefaultLocale,
+    String? bookingIntroMessage,
+    String? bookingConfirmationMessage,
     int? minBookingNoticeHours,
     int? maxBookingAdvanceDays,
     Map<String, dynamic>? bookingTextOverrides,
@@ -1987,6 +1995,10 @@ class ApiClient {
         if (timezone != null) 'timezone': timezone,
         if (bookingDefaultLocale != null)
           'booking_default_locale': bookingDefaultLocale,
+        if (bookingIntroMessage != null)
+          'booking_intro_message': bookingIntroMessage,
+        if (bookingConfirmationMessage != null)
+          'booking_confirmation_message': bookingConfirmationMessage,
         if (minBookingNoticeHours != null)
           'min_booking_notice_hours': minBookingNoticeHours,
         if (maxBookingAdvanceDays != null)
@@ -2461,8 +2473,12 @@ class ApiClient {
     bool? canViewReports,
   }) async {
     final data = <String, dynamic>{'role': role};
-    if (scopeType != null) data['scope_type'] = scopeType;
-    if (locationIds != null) data['location_ids'] = locationIds;
+    if (scopeType != null) {
+      data['scope_type'] = scopeType;
+    }
+    if (locationIds != null) {
+      data['location_ids'] = locationIds;
+    }
     if (staffId != null) {
       data['staff_id'] = staffId;
     } else if (role != 'staff') {
@@ -2474,11 +2490,21 @@ class ApiClient {
     data['allowed_class_type_ids'] = allowedClassTypeIds;
     data['allowed_staff_ids'] = allowedStaffIds;
     // Flag permessi (usati soprattutto dal ruolo custom): inviati solo se forniti.
-    if (canManageBookings != null) data['can_manage_bookings'] = canManageBookings;
-    if (canManageClients != null) data['can_manage_clients'] = canManageClients;
-    if (canManageServices != null) data['can_manage_services'] = canManageServices;
-    if (canManageStaff != null) data['can_manage_staff'] = canManageStaff;
-    if (canViewReports != null) data['can_view_reports'] = canViewReports;
+    if (canManageBookings != null) {
+      data['can_manage_bookings'] = canManageBookings;
+    }
+    if (canManageClients != null) {
+      data['can_manage_clients'] = canManageClients;
+    }
+    if (canManageServices != null) {
+      data['can_manage_services'] = canManageServices;
+    }
+    if (canManageStaff != null) {
+      data['can_manage_staff'] = canManageStaff;
+    }
+    if (canViewReports != null) {
+      data['can_view_reports'] = canViewReports;
+    }
 
     final response = await patch(
       ApiConfig.businessUser(businessId, userId),
@@ -2556,11 +2582,21 @@ class ApiClient {
     data['allowed_class_type_ids'] = allowedClassTypeIds;
     data['allowed_staff_ids'] = allowedStaffIds;
     // Flag permessi (usati dal ruolo custom): inviati solo se forniti.
-    if (canManageBookings != null) data['can_manage_bookings'] = canManageBookings;
-    if (canManageClients != null) data['can_manage_clients'] = canManageClients;
-    if (canManageServices != null) data['can_manage_services'] = canManageServices;
-    if (canManageStaff != null) data['can_manage_staff'] = canManageStaff;
-    if (canViewReports != null) data['can_view_reports'] = canViewReports;
+    if (canManageBookings != null) {
+      data['can_manage_bookings'] = canManageBookings;
+    }
+    if (canManageClients != null) {
+      data['can_manage_clients'] = canManageClients;
+    }
+    if (canManageServices != null) {
+      data['can_manage_services'] = canManageServices;
+    }
+    if (canManageStaff != null) {
+      data['can_manage_staff'] = canManageStaff;
+    }
+    if (canViewReports != null) {
+      data['can_view_reports'] = canViewReports;
+    }
 
     final response = await post(
       ApiConfig.businessInvitations(businessId),

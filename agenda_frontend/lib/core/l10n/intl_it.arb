@@ -370,6 +370,8 @@
   "confirmationPostRegistrationMyBookingsHint": "Troverai l'elenco delle tue prenotazioni in alto a destra, nella sezione Profilo.",
   "confirmationNewBooking": "Nuova prenotazione",
   "confirmationGoHome": "Torna alla home",
+  "bookingUsefulInformationTitle": "Informazioni utili",
+  "bookingConfirmationInformationTitle": "Informazioni sulla prenotazione",
   
   "durationMinutes": "{minutes} min",
   "@durationMinutes": {

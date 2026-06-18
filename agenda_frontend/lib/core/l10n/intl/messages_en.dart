@@ -342,6 +342,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Booking cancelled successfully",
     ),
     "bookingChooseCustomLabel": m1,
+    "bookingConfirmationInformationTitle": MessageLookupByLibrary.simpleMessage(
+      "Booking information",
+    ),
     "bookingErrorInvalidClient": MessageLookupByLibrary.simpleMessage(
       "The selected client is not valid",
     ),
@@ -467,6 +470,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingTitle": MessageLookupByLibrary.simpleMessage("Book appointment"),
     "bookingUpdatedTitle": MessageLookupByLibrary.simpleMessage(
       "Booking updated",
+    ),
+    "bookingUsefulInformationTitle": MessageLookupByLibrary.simpleMessage(
+      "Useful information",
     ),
     "businessNotFound": MessageLookupByLibrary.simpleMessage(
       "Business not found",

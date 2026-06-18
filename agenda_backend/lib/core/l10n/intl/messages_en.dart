@@ -3012,6 +3012,16 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage(
           "Allow multiple service/package/event selection online",
         ),
+    "teamLocationBookingConfirmationMessageHelper":
+        MessageLookupByLibrary.simpleMessage(
+          "This message will be shown to customers on the confirmation page after the online booking has been completed. Leave it empty if you do not want to show any message.",
+        ),
+    "teamLocationBookingConfirmationMessageLabel":
+        MessageLookupByLibrary.simpleMessage("Online confirmation message"),
+    "teamLocationBookingConfirmationMessagePlaceholder":
+        MessageLookupByLibrary.simpleMessage(
+          "E.g. Thank you for your booking. Please arrive 10 minutes before your scheduled time.",
+        ),
     "teamLocationBookingDefaultLocaleAuto":
         MessageLookupByLibrary.simpleMessage("Automatic"),
     "teamLocationBookingDefaultLocaleEnglish":
@@ -3023,6 +3033,15 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("Italian"),
     "teamLocationBookingDefaultLocaleLabel":
         MessageLookupByLibrary.simpleMessage("Default online booking language"),
+    "teamLocationBookingIntroMessageHelper": MessageLookupByLibrary.simpleMessage(
+      "This message will be shown to customers after selecting the location and before choosing services, lessons or bookable activities. Leave it empty if you do not want to show any message.",
+    ),
+    "teamLocationBookingIntroMessageLabel":
+        MessageLookupByLibrary.simpleMessage("Online booking intro message"),
+    "teamLocationBookingIntroMessagePlaceholder":
+        MessageLookupByLibrary.simpleMessage(
+          "E.g. Before choosing a service or lesson, please read this information carefully.",
+        ),
     "teamLocationBookingLimitsSection": MessageLookupByLibrary.simpleMessage(
       "Online booking limits",
     ),

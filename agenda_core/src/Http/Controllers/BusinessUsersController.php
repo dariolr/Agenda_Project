@@ -103,6 +103,14 @@ final class BusinessUsersController
             );
         }
 
+        // Il ruolo custom è temporaneamente riservato al superadmin.
+        if ($role === 'custom' && !$this->userRepo->isSuperadmin($currentUserId)) {
+            return Response::forbidden(
+                'The custom role is currently available to superadmins only',
+                $request->traceId
+            );
+        }
+
         // Check if user exists
         $targetUser = $this->userRepo->findById($targetUserId);
         if ($targetUser === null) {
@@ -197,6 +205,16 @@ final class BusinessUsersController
 
         $body = $request->getBody();
         $updateData = [];
+
+        // Il ruolo custom è temporaneamente riservato al superadmin: né assegnarlo,
+        // né modificare un operatore che è già custom (se non superadmin).
+        if (!$this->userRepo->isSuperadmin($currentUserId)
+            && (($body['role'] ?? null) === 'custom' || ($businessUser['role'] ?? null) === 'custom')) {
+            return Response::forbidden(
+                'The custom role is currently available to superadmins only',
+                $request->traceId
+            );
+        }
 
         // Update role if provided
         if (isset($body['role'])) {

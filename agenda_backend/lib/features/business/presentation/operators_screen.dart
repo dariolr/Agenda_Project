@@ -18,6 +18,7 @@ import '../../agenda/providers/location_providers.dart';
 import '../../staff/providers/staff_providers.dart';
 import 'dialogs/invite_operator_dialog.dart';
 import '../../class_events/providers/class_events_providers.dart';
+import '../../auth/providers/current_business_user_provider.dart';
 import '../../services/providers/services_provider.dart';
 import '../providers/business_users_provider.dart';
 import 'dialogs/role_selection_dialog.dart';
@@ -79,7 +80,9 @@ class _OperatorsBodyState extends ConsumerState<_OperatorsBody> {
     BusinessUsersState state,
     dynamic l10n,
   ) {
-    final pendingInvitations = state.invitations.where((i) => i.isPending).toList();
+    final pendingInvitations = state.invitations
+        .where((i) => i.isPending)
+        .toList();
     final historicalInvitations = state.invitations
         // Non mostrare inviti già accettati: l'utente è ormai un operatore attivo.
         .where((i) => !i.isPending && i.effectiveStatus != 'accepted')
@@ -192,7 +195,8 @@ class _OperatorsBodyState extends ConsumerState<_OperatorsBody> {
               ),
             ),
 
-          if (historicalInvitations.isNotEmpty && _showHistoricalInvitations) ...[
+          if (historicalInvitations.isNotEmpty &&
+              _showHistoricalInvitations) ...[
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
@@ -266,7 +270,9 @@ class _OperatorsBodyState extends ConsumerState<_OperatorsBody> {
     if (selected) {
       return isEn ? 'Hide invite history' : 'Nascondi storico inviti';
     }
-    return isEn ? 'Show invite history ($count)' : 'Mostra storico inviti ($count)';
+    return isEn
+        ? 'Show invite history ($count)'
+        : 'Mostra storico inviti ($count)';
   }
 }
 
@@ -396,7 +402,10 @@ class _InvitationTile extends ConsumerWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: colorScheme.primaryContainer,
-          child: Icon(Icons.mail_outline, color: colorScheme.onPrimaryContainer),
+          child: Icon(
+            Icons.mail_outline,
+            color: colorScheme.onPrimaryContainer,
+          ),
         ),
         title: Text(invitation.email),
         subtitle: Column(
@@ -471,6 +480,7 @@ class _InvitationTile extends ConsumerWidget {
     // Il backend revoca automaticamente il vecchio invito pendente per la
     // stessa email quando viene creato uno nuovo.
     final formFactor = ref.read(formFactorProvider);
+    final allowCustomRole = ref.read(isSuperadminProvider);
 
     if (formFactor == AppFormFactor.mobile ||
         formFactor == AppFormFactor.tablet) {
@@ -492,6 +502,7 @@ class _InvitationTile extends ConsumerWidget {
           initialCanManageServices: invitation.canManageServices,
           initialCanManageStaff: invitation.canManageStaff,
           initialCanViewReports: invitation.canViewReports,
+          allowCustomRole: allowCustomRole,
         ),
       );
     } else {
@@ -512,6 +523,7 @@ class _InvitationTile extends ConsumerWidget {
           initialCanManageServices: invitation.canManageServices,
           initialCanManageStaff: invitation.canManageStaff,
           initialCanViewReports: invitation.canViewReports,
+          allowCustomRole: allowCustomRole,
         ),
       );
     }
@@ -561,9 +573,9 @@ class _InvitationTile extends ConsumerWidget {
         : (ref.read(businessUsersProvider(businessId)).error ??
               l10n.operatorsInviteError);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 }
 
@@ -585,7 +597,8 @@ class _UserTile extends ConsumerWidget {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
     final locations = ref.watch(locationsProvider);
-    final canEditRole = enableActions && !user.isCurrentUser && user.role != 'owner';
+    final canEditRole =
+        enableActions && !user.isCurrentUser && user.role != 'owner';
     final showLocationsInfo = locations.length > 1;
     final enabledLocationsInfo = _buildEnabledLocationsInfo(l10n, locations);
 
@@ -735,6 +748,7 @@ class _UserTile extends ConsumerWidget {
     List<Location> locations,
   ) {
     final formFactor = ref.read(formFactorProvider);
+    final allowCustomRole = ref.read(isSuperadminProvider);
     final currentLocationIds = user.locationIds.toSet();
     final currentServiceIds = user.allowedServiceIds;
     final currentClassTypeIds = user.allowedClassTypeIds;
@@ -760,17 +774,23 @@ class _UserTile extends ConsumerWidget {
       bool? canViewReports,
     }) async {
       Navigator.of(dialogContext).pop();
-      final selectedLocationIds =
-          scopeType == 'locations' ? locationIds.toSet() : <int>{};
+      final selectedLocationIds = scopeType == 'locations'
+          ? locationIds.toSet()
+          : <int>{};
       bool listChanged(List<int>? a, List<int>? b) {
         if (a == null && b == null) return false;
         if (a == null || b == null) return true;
         return !setEquals(a.toSet(), b.toSet());
       }
-      final permissionsChanged = role == 'custom' &&
-          ((canManageBookings ?? user.canManageBookings) != user.canManageBookings ||
-              (canManageClients ?? user.canManageClients) != user.canManageClients ||
-              (canManageServices ?? user.canManageServices) != user.canManageServices ||
+
+      final permissionsChanged =
+          role == 'custom' &&
+          ((canManageBookings ?? user.canManageBookings) !=
+                  user.canManageBookings ||
+              (canManageClients ?? user.canManageClients) !=
+                  user.canManageClients ||
+              (canManageServices ?? user.canManageServices) !=
+                  user.canManageServices ||
               (canManageStaff ?? user.canManageStaff) != user.canManageStaff ||
               (canViewReports ?? user.canViewReports) != user.canViewReports);
       final hasChanges =
@@ -831,6 +851,7 @@ class _UserTile extends ConsumerWidget {
           currentCanManageServices: user.canManageServices,
           currentCanManageStaff: user.canManageStaff,
           currentCanViewReports: user.canViewReports,
+          allowCustomRole: allowCustomRole,
           locations: locations,
           services: services,
           classTypes: classTypes,
@@ -838,32 +859,33 @@ class _UserTile extends ConsumerWidget {
           staffList: allStaff,
           userName: user.fullName,
           userEmail: user.email,
-          onSave: ({
-            required String role,
-            required String scopeType,
-            required List<int> locationIds,
-            required List<int>? allowedServiceIds,
-            required List<int>? allowedClassTypeIds,
-            required List<int>? allowedStaffIds,
-            bool? canManageBookings,
-            bool? canManageClients,
-            bool? canManageServices,
-            bool? canManageStaff,
-            bool? canViewReports,
-          }) => handleSave(
-            dialogContext: ctx,
-            role: role,
-            scopeType: scopeType,
-            locationIds: locationIds,
-            allowedServiceIds: allowedServiceIds,
-            allowedClassTypeIds: allowedClassTypeIds,
-            allowedStaffIds: allowedStaffIds,
-            canManageBookings: canManageBookings,
-            canManageClients: canManageClients,
-            canManageServices: canManageServices,
-            canManageStaff: canManageStaff,
-            canViewReports: canViewReports,
-          ),
+          onSave:
+              ({
+                required String role,
+                required String scopeType,
+                required List<int> locationIds,
+                required List<int>? allowedServiceIds,
+                required List<int>? allowedClassTypeIds,
+                required List<int>? allowedStaffIds,
+                bool? canManageBookings,
+                bool? canManageClients,
+                bool? canManageServices,
+                bool? canManageStaff,
+                bool? canViewReports,
+              }) => handleSave(
+                dialogContext: ctx,
+                role: role,
+                scopeType: scopeType,
+                locationIds: locationIds,
+                allowedServiceIds: allowedServiceIds,
+                allowedClassTypeIds: allowedClassTypeIds,
+                allowedStaffIds: allowedStaffIds,
+                canManageBookings: canManageBookings,
+                canManageClients: canManageClients,
+                canManageServices: canManageServices,
+                canManageStaff: canManageStaff,
+                canViewReports: canViewReports,
+              ),
         ),
       );
     } else {
@@ -881,6 +903,7 @@ class _UserTile extends ConsumerWidget {
           currentCanManageServices: user.canManageServices,
           currentCanManageStaff: user.canManageStaff,
           currentCanViewReports: user.canViewReports,
+          allowCustomRole: allowCustomRole,
           locations: locations,
           services: services,
           classTypes: classTypes,
@@ -888,32 +911,33 @@ class _UserTile extends ConsumerWidget {
           staffList: allStaff,
           userName: user.fullName,
           userEmail: user.email,
-          onSave: ({
-            required String role,
-            required String scopeType,
-            required List<int> locationIds,
-            required List<int>? allowedServiceIds,
-            required List<int>? allowedClassTypeIds,
-            required List<int>? allowedStaffIds,
-            bool? canManageBookings,
-            bool? canManageClients,
-            bool? canManageServices,
-            bool? canManageStaff,
-            bool? canViewReports,
-          }) => handleSave(
-            dialogContext: ctx,
-            role: role,
-            scopeType: scopeType,
-            locationIds: locationIds,
-            allowedServiceIds: allowedServiceIds,
-            allowedClassTypeIds: allowedClassTypeIds,
-            allowedStaffIds: allowedStaffIds,
-            canManageBookings: canManageBookings,
-            canManageClients: canManageClients,
-            canManageServices: canManageServices,
-            canManageStaff: canManageStaff,
-            canViewReports: canViewReports,
-          ),
+          onSave:
+              ({
+                required String role,
+                required String scopeType,
+                required List<int> locationIds,
+                required List<int>? allowedServiceIds,
+                required List<int>? allowedClassTypeIds,
+                required List<int>? allowedStaffIds,
+                bool? canManageBookings,
+                bool? canManageClients,
+                bool? canManageServices,
+                bool? canManageStaff,
+                bool? canViewReports,
+              }) => handleSave(
+                dialogContext: ctx,
+                role: role,
+                scopeType: scopeType,
+                locationIds: locationIds,
+                allowedServiceIds: allowedServiceIds,
+                allowedClassTypeIds: allowedClassTypeIds,
+                allowedStaffIds: allowedStaffIds,
+                canManageBookings: canManageBookings,
+                canManageClients: canManageClients,
+                canManageServices: canManageServices,
+                canManageStaff: canManageStaff,
+                canViewReports: canViewReports,
+              ),
         ),
       );
     }

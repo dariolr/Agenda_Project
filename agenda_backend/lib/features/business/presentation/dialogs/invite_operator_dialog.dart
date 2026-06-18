@@ -81,6 +81,7 @@ class InviteOperatorDialog extends ConsumerStatefulWidget {
     this.initialCanManageServices,
     this.initialCanManageStaff,
     this.initialCanViewReports,
+    this.allowCustomRole = false,
   });
 
   final int businessId;
@@ -97,6 +98,8 @@ class InviteOperatorDialog extends ConsumerStatefulWidget {
   final bool? initialCanManageServices;
   final bool? initialCanManageStaff;
   final bool? initialCanViewReports;
+  /// Mostra l'opzione ruolo "custom" (al momento riservata al superadmin).
+  final bool allowCustomRole;
 
   @override
   ConsumerState<InviteOperatorDialog> createState() =>
@@ -242,6 +245,7 @@ class _InviteOperatorDialogState extends ConsumerState<InviteOperatorDialog> {
                 const SizedBox(height: 8),
                 _RoleSelector(
                   selectedRole: _selectedRole,
+                  allowCustomRole: widget.allowCustomRole,
                   onChanged: (role) => setState(() {
                     _selectedRole = role;
                     if (role == 'staff') {
@@ -593,6 +597,7 @@ class InviteOperatorSheet extends ConsumerStatefulWidget {
     this.initialCanManageServices,
     this.initialCanManageStaff,
     this.initialCanViewReports,
+    this.allowCustomRole = false,
   });
 
   final int businessId;
@@ -609,6 +614,8 @@ class InviteOperatorSheet extends ConsumerStatefulWidget {
   final bool? initialCanManageServices;
   final bool? initialCanManageStaff;
   final bool? initialCanViewReports;
+  /// Mostra l'opzione ruolo "custom" (al momento riservata al superadmin).
+  final bool allowCustomRole;
 
   @override
   ConsumerState<InviteOperatorSheet> createState() =>
@@ -760,6 +767,7 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
                     const SizedBox(height: 8),
                     _RoleSelector(
                       selectedRole: _selectedRole,
+                      allowCustomRole: widget.allowCustomRole,
                       onChanged: (role) => setState(() {
                         _selectedRole = role;
                         if (role == 'staff') {
@@ -1109,10 +1117,15 @@ class _InviteOperatorSheetState extends ConsumerState<InviteOperatorSheet> {
 
 /// Widget per selezionare un ruolo.
 class _RoleSelector extends StatelessWidget {
-  const _RoleSelector({required this.selectedRole, required this.onChanged});
+  const _RoleSelector({
+    required this.selectedRole,
+    required this.onChanged,
+    this.allowCustomRole = false,
+  });
 
   final String selectedRole;
   final ValueChanged<String> onChanged;
+  final bool allowCustomRole;
 
   @override
   Widget build(BuildContext context) {
@@ -1155,15 +1168,18 @@ class _RoleSelector extends StatelessWidget {
           isSelected: selectedRole == 'viewer',
           onTap: () => onChanged('viewer'),
         ),
-        const SizedBox(height: 8),
-        _RoleOption(
-          role: 'custom',
-          label: l10n.operatorsRoleCustom,
-          description: l10n.operatorsRoleCustomDesc,
-          icon: Icons.tune,
-          isSelected: selectedRole == 'custom',
-          onTap: () => onChanged('custom'),
-        ),
+        // Ruolo custom: visibile solo se consentito (superadmin) o già selezionato.
+        if (allowCustomRole || selectedRole == 'custom') ...[
+          const SizedBox(height: 8),
+          _RoleOption(
+            role: 'custom',
+            label: l10n.operatorsRoleCustom,
+            description: l10n.operatorsRoleCustomDesc,
+            icon: Icons.tune,
+            isSelected: selectedRole == 'custom',
+            onTap: () => onChanged('custom'),
+          ),
+        ],
       ],
     );
   }

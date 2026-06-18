@@ -57,6 +57,8 @@ class _ConfirmationStepState extends ConsumerState<ConfirmationStep> {
     final bookingState = ref.watch(bookingFlowProvider);
     final isWaitlisted =
         bookingState.confirmedClassBookingStatus == 'waitlisted';
+    final location = ref.watch(effectiveLocationProvider);
+    final confirmationMessage = location?.bookingConfirmationMessage?.trim();
 
     return SafeArea(
       child: Padding(
@@ -107,6 +109,15 @@ class _ConfirmationStepState extends ConsumerState<ConfirmationStep> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 24),
+
+            if (confirmationMessage != null &&
+                confirmationMessage.isNotEmpty) ...[
+              _ConfirmationInformationBox(
+                title: l10n.bookingConfirmationInformationTitle,
+                message: confirmationMessage,
+              ),
+              const SizedBox(height: 24),
+            ],
 
             // Codice prenotazione + hint "prime 5 prenotazioni" nello stesso box
             if (bookingState.confirmedBookingId != null || _showFirstFiveHint)
@@ -188,6 +199,49 @@ class _ConfirmationStepState extends ConsumerState<ConfirmationStep> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _ConfirmationInformationBox extends StatelessWidget {
+  const _ConfirmationInformationBox({
+    required this.title,
+    required this.message,
+  });
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withOpacity(0.06),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.18)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            message,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.78),
+            ),
+          ),
+        ],
       ),
     );
   }

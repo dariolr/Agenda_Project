@@ -162,6 +162,11 @@ final class BusinessInvitationsController
             return Response::validationError('Role must be staff, manager, viewer, admin, or custom', $request->traceId);
         }
 
+        // Il ruolo custom è temporaneamente riservato al superadmin.
+        if ($role === 'custom' && !$this->userRepo->isSuperadmin($userId)) {
+            return Response::forbidden('The custom role is currently available to superadmins only', $request->traceId);
+        }
+
         if ($role === 'staff' && ($staffId === null || $staffId <= 0)) {
             return Response::validationError('staff_id is required when role is staff', $request->traceId);
         }

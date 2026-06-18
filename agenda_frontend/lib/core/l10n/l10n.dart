@@ -2002,6 +2002,26 @@ class L10n {
     );
   }
 
+  /// `Useful information`
+  String get bookingUsefulInformationTitle {
+    return Intl.message(
+      'Useful information',
+      name: 'bookingUsefulInformationTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Booking information`
+  String get bookingConfirmationInformationTitle {
+    return Intl.message(
+      'Booking information',
+      name: 'bookingConfirmationInformationTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `{minutes} min`
   String durationMinutes(int minutes) {
     return Intl.message(

@@ -370,6 +370,8 @@
   "confirmationPostRegistrationMyBookingsHint": "You will find your booking list in the top-right Profile section.",
   "confirmationNewBooking": "New booking",
   "confirmationGoHome": "Go to home",
+  "bookingUsefulInformationTitle": "Useful information",
+  "bookingConfirmationInformationTitle": "Booking information",
   
   "durationMinutes": "{minutes} min",
   "@durationMinutes": {

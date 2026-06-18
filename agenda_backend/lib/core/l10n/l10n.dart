@@ -1703,6 +1703,66 @@ class L10n {
     );
   }
 
+  /// `Online booking intro message`
+  String get teamLocationBookingIntroMessageLabel {
+    return Intl.message(
+      'Online booking intro message',
+      name: 'teamLocationBookingIntroMessageLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This message will be shown to customers after selecting the location and before choosing services, lessons or bookable activities. Leave it empty if you do not want to show any message.`
+  String get teamLocationBookingIntroMessageHelper {
+    return Intl.message(
+      'This message will be shown to customers after selecting the location and before choosing services, lessons or bookable activities. Leave it empty if you do not want to show any message.',
+      name: 'teamLocationBookingIntroMessageHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `E.g. Before choosing a service or lesson, please read this information carefully.`
+  String get teamLocationBookingIntroMessagePlaceholder {
+    return Intl.message(
+      'E.g. Before choosing a service or lesson, please read this information carefully.',
+      name: 'teamLocationBookingIntroMessagePlaceholder',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Online confirmation message`
+  String get teamLocationBookingConfirmationMessageLabel {
+    return Intl.message(
+      'Online confirmation message',
+      name: 'teamLocationBookingConfirmationMessageLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This message will be shown to customers on the confirmation page after the online booking has been completed. Leave it empty if you do not want to show any message.`
+  String get teamLocationBookingConfirmationMessageHelper {
+    return Intl.message(
+      'This message will be shown to customers on the confirmation page after the online booking has been completed. Leave it empty if you do not want to show any message.',
+      name: 'teamLocationBookingConfirmationMessageHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `E.g. Thank you for your booking. Please arrive 10 minutes before your scheduled time.`
+  String get teamLocationBookingConfirmationMessagePlaceholder {
+    return Intl.message(
+      'E.g. Thank you for your booking. Please arrive 10 minutes before your scheduled time.',
+      name: 'teamLocationBookingConfirmationMessagePlaceholder',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Customer reply email`
   String get teamLocationEmailLabel {
     return Intl.message(

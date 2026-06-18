@@ -51,6 +51,7 @@ class RoleSelectionDialog extends StatefulWidget {
     this.currentCanManageServices = false,
     this.currentCanManageStaff = false,
     this.currentCanViewReports = false,
+    this.allowCustomRole = false,
     this.services = const [],
     this.classTypes = const [],
     this.linkedStaffId,
@@ -72,6 +73,8 @@ class RoleSelectionDialog extends StatefulWidget {
   final bool currentCanManageServices;
   final bool currentCanManageStaff;
   final bool currentCanViewReports;
+  /// Mostra l'opzione ruolo "custom" (al momento riservata al superadmin).
+  final bool allowCustomRole;
   final List<Service> services;
   final List<ClassType> classTypes;
   /// Staff collegato all'operatore (solo per role=staff)
@@ -206,6 +209,7 @@ class _RoleSelectionDialogState extends State<RoleSelectionDialog> {
           const SizedBox(height: 24),
           _RoleRadioList(
             selectedRole: _selectedRole,
+            allowCustomRole: widget.allowCustomRole,
             onChanged: (role) => setState(() {
               _selectedRole = role;
               _enforceSingleLocationForStaff();
@@ -400,6 +404,7 @@ class RoleSelectionSheet extends StatefulWidget {
     this.currentCanManageServices = false,
     this.currentCanManageStaff = false,
     this.currentCanViewReports = false,
+    this.allowCustomRole = false,
     this.services = const [],
     this.classTypes = const [],
     this.linkedStaffId,
@@ -421,6 +426,8 @@ class RoleSelectionSheet extends StatefulWidget {
   final bool currentCanManageServices;
   final bool currentCanManageStaff;
   final bool currentCanViewReports;
+  /// Mostra l'opzione ruolo "custom" (al momento riservata al superadmin).
+  final bool allowCustomRole;
   final List<Service> services;
   final List<ClassType> classTypes;
   final int? linkedStaffId;
@@ -559,6 +566,7 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
           const SizedBox(height: 16),
           _RoleRadioList(
             selectedRole: _selectedRole,
+            allowCustomRole: widget.allowCustomRole,
             onChanged: (role) => setState(() {
               _selectedRole = role;
               _enforceSingleLocationForStaff();
@@ -745,10 +753,15 @@ class _RoleSelectionSheetState extends State<RoleSelectionSheet> {
 
 /// Lista di radio button per la selezione del ruolo.
 class _RoleRadioList extends StatelessWidget {
-  const _RoleRadioList({required this.selectedRole, required this.onChanged});
+  const _RoleRadioList({
+    required this.selectedRole,
+    required this.onChanged,
+    this.allowCustomRole = false,
+  });
 
   final String selectedRole;
   final ValueChanged<String> onChanged;
+  final bool allowCustomRole;
 
   @override
   Widget build(BuildContext context) {
@@ -788,14 +801,17 @@ class _RoleRadioList extends StatelessWidget {
           subtitle: l10n.operatorsRoleViewerDesc,
           icon: Icons.visibility_outlined,
         ),
-        _RoleRadioTile(
-          value: 'custom',
-          groupValue: selectedRole,
-          onChanged: onChanged,
-          title: l10n.operatorsRoleCustom,
-          subtitle: l10n.operatorsRoleCustomDesc,
-          icon: Icons.tune,
-        ),
+        // Ruolo custom: visibile solo se consentito (superadmin) o se l'operatore
+        // ha già questo ruolo (così la lista resta coerente in modifica).
+        if (allowCustomRole || selectedRole == 'custom')
+          _RoleRadioTile(
+            value: 'custom',
+            groupValue: selectedRole,
+            onChanged: onChanged,
+            title: l10n.operatorsRoleCustom,
+            subtitle: l10n.operatorsRoleCustomDesc,
+            icon: Icons.tune,
+          ),
       ],
     );
   }

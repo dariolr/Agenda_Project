@@ -51,6 +51,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
 
   @override
   Widget build(BuildContext context) {
+    final l10n = context.l10n;
     final theme = Theme.of(context);
     final customServiceLabel = ref.watch(bookingServiceDisplayLabelProvider);
     final phraseOverrides = ref.watch(
@@ -81,6 +82,7 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     );
     final showPriceToCustomer = location?.showPriceToCustomer ?? true;
     final showDurationToCustomer = location?.showDurationToCustomer ?? true;
+    final introMessage = location?.bookingIntroMessage?.trim();
 
     if (servicesDataAsync.hasError) {
       return _buildErrorWidget(
@@ -261,6 +263,13 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withOpacity(0.7),
                       ),
+                    ),
+                  ],
+                  if (introMessage != null && introMessage.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _BookingInformationBox(
+                      title: l10n.bookingUsefulInformationTitle,
+                      message: introMessage,
                     ),
                   ],
                   const SizedBox(height: 12),
@@ -969,6 +978,46 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
       }
     }
     return widgets;
+  }
+}
+
+class _BookingInformationBox extends StatelessWidget {
+  const _BookingInformationBox({required this.title, required this.message});
+
+  final String title;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withOpacity(0.06),
+        border: Border.all(color: theme.colorScheme.primary.withOpacity(0.18)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: theme.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: theme.colorScheme.primary,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            message,
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withOpacity(0.78),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

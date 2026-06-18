@@ -347,6 +347,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Prenotazione annullata con successo",
     ),
     "bookingChooseCustomLabel": m1,
+    "bookingConfirmationInformationTitle": MessageLookupByLibrary.simpleMessage(
+      "Informazioni sulla prenotazione",
+    ),
     "bookingErrorInvalidClient": MessageLookupByLibrary.simpleMessage(
       "Il cliente selezionato non è valido",
     ),
@@ -476,6 +479,9 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "bookingUpdatedTitle": MessageLookupByLibrary.simpleMessage(
       "Prenotazione aggiornata",
+    ),
+    "bookingUsefulInformationTitle": MessageLookupByLibrary.simpleMessage(
+      "Informazioni utili",
     ),
     "businessNotFound": MessageLookupByLibrary.simpleMessage(
       "Attività non trovata",

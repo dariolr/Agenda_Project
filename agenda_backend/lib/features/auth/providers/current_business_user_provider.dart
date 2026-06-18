@@ -338,6 +338,15 @@ final canManageOperatorsProvider = Provider<bool>((ref) {
   );
 });
 
+/// True se l'utente corrente è superadmin.
+final isSuperadminProvider = Provider<bool>((ref) {
+  final contextAsync = ref.watch(currentBusinessUserContextProvider);
+  return contextAsync.maybeWhen(
+    data: (data) => data?.isSuperadmin ?? false,
+    orElse: () => false,
+  );
+});
+
 /// Verifica se l'utente corrente può vedere tutti gli appuntamenti.
 /// Admin e Manager vedono tutto, Staff vede solo i propri.
 final canViewAllAppointmentsProvider = Provider<bool>((ref) {

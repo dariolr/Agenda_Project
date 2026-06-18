@@ -1,4 +1,3 @@
-
 import 'package:flutter/foundation.dart';
 
 /// Modello Location (sede)
@@ -18,6 +17,8 @@ class Location {
   final String? currency;
   final String timezone;
   final String? bookingDefaultLocale;
+  final String? bookingIntroMessage;
+  final String? bookingConfirmationMessage;
   final bool allowCustomerChooseStaff;
   final bool allowMultiServiceBooking;
   final bool showPriceToCustomer;
@@ -44,6 +45,8 @@ class Location {
     this.currency,
     this.timezone = 'Europe/Rome',
     this.bookingDefaultLocale,
+    this.bookingIntroMessage,
+    this.bookingConfirmationMessage,
     this.allowCustomerChooseStaff = false,
     this.allowMultiServiceBooking = true,
     this.showPriceToCustomer = true,
@@ -76,6 +79,9 @@ class Location {
       currency: json['currency'] as String?,
       timezone: json['timezone'] as String? ?? 'Europe/Rome',
       bookingDefaultLocale: json['booking_default_locale'] as String?,
+      bookingIntroMessage: json['booking_intro_message'] as String?,
+      bookingConfirmationMessage:
+          json['booking_confirmation_message'] as String?,
       allowCustomerChooseStaff:
           json['allow_customer_choose_staff'] as bool? ?? false,
       allowMultiServiceBooking:
@@ -111,6 +117,8 @@ class Location {
       'currency': currency,
       'timezone': timezone,
       'booking_default_locale': bookingDefaultLocale,
+      'booking_intro_message': bookingIntroMessage,
+      'booking_confirmation_message': bookingConfirmationMessage,
       'allow_customer_choose_staff': allowCustomerChooseStaff,
       'allow_multi_service_booking': allowMultiServiceBooking,
       'show_price_to_customer': showPriceToCustomer,
@@ -172,4 +180,3 @@ Map<String, Map<String, String>>? _parseBookingTextOverrides(dynamic raw) {
 
   return result.isEmpty ? null : result;
 }
-

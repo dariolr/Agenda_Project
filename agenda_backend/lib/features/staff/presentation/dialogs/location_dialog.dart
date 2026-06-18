@@ -55,6 +55,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
   String _selectedCountryCode = 'IT';
   String _selectedTimezone = 'Europe/Rome';
   String? _selectedBookingDefaultLocale;
+  final _bookingIntroMessageController = TextEditingController();
+  final _bookingConfirmationMessageController = TextEditingController();
   final Map<String, TextEditingController> _nomenclatureControllers = {};
   final _maxBookingAdvanceDaysController = TextEditingController();
   bool _isActive = true;
@@ -392,6 +394,10 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           (initialBookingLocale == 'it' || initialBookingLocale == 'en')
           ? initialBookingLocale
           : null;
+      _bookingIntroMessageController.text =
+          widget.initial!.bookingIntroMessage ?? '';
+      _bookingConfirmationMessageController.text =
+          widget.initial!.bookingConfirmationMessage ?? '';
       _emailController.text = widget.initial!.email ?? '';
       _notificationEmailsController.text =
           widget.initial!.notificationEmails ?? '';
@@ -508,6 +514,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
     _addressController.dispose();
     _emailController.dispose();
     _notificationEmailsController.dispose();
+    _bookingIntroMessageController.dispose();
+    _bookingConfirmationMessageController.dispose();
     _maxBookingAdvanceDaysController.dispose();
     for (final controller in _nomenclatureControllers.values) {
       controller.dispose();
@@ -695,6 +703,38 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
       ),
     );
 
+    final bookingIntroMessageField = LabeledFormField(
+      label: l10n.teamLocationBookingIntroMessageLabel,
+      child: TextFormField(
+        controller: _bookingIntroMessageController,
+        minLines: 3,
+        maxLines: 6,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          isDense: true,
+          helperText: l10n.teamLocationBookingIntroMessageHelper,
+          hintText: l10n.teamLocationBookingIntroMessagePlaceholder,
+          alignLabelWithHint: true,
+        ),
+      ),
+    );
+
+    final bookingConfirmationMessageField = LabeledFormField(
+      label: l10n.teamLocationBookingConfirmationMessageLabel,
+      child: TextFormField(
+        controller: _bookingConfirmationMessageController,
+        minLines: 3,
+        maxLines: 6,
+        decoration: InputDecoration(
+          border: const OutlineInputBorder(),
+          isDense: true,
+          helperText: l10n.teamLocationBookingConfirmationMessageHelper,
+          hintText: l10n.teamLocationBookingConfirmationMessagePlaceholder,
+          alignLabelWithHint: true,
+        ),
+      ),
+    );
+
     final content = Form(
       autovalidateMode: AutovalidateMode.onUserInteraction,
       key: _formKey,
@@ -740,6 +780,10 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
               const SizedBox(height: AppSpacing.formRowSpacing),
               bookingDefaultLocaleField,
             ],
+            const SizedBox(height: AppSpacing.formRowSpacing),
+            bookingIntroMessageField,
+            const SizedBox(height: AppSpacing.formRowSpacing),
+            bookingConfirmationMessageField,
             const SizedBox(height: AppSpacing.formRowSpacing),
             // Sezione Limiti Prenotazione Online
             Text(
@@ -1240,6 +1284,9 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
         : null;
     final email = _emailController.text.trim();
     final notificationEmails = _notificationEmailsController.text.trim();
+    final bookingIntroMessage = _bookingIntroMessageController.text;
+    final bookingConfirmationMessage =
+        _bookingConfirmationMessageController.text;
     final bookingTextOverrides = isSuperadmin
         ? _buildBookingTextOverrides(context.l10n)
         : null;
@@ -1260,6 +1307,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           notificationEmails: notificationEmails,
           timezone: timezone,
           bookingDefaultLocale: bookingDefaultLocale,
+          bookingIntroMessage: bookingIntroMessage,
+          bookingConfirmationMessage: bookingConfirmationMessage,
           isActive: _isActive,
           onlineBookingEnabled: _onlineBookingEnabled,
           minBookingNoticeHours: _minBookingNoticeHours,
@@ -1285,6 +1334,8 @@ class _LocationDialogState extends ConsumerState<_LocationDialog> {
           notificationEmails: notificationEmails,
           timezone: timezone,
           bookingDefaultLocale: bookingDefaultLocale,
+          bookingIntroMessage: bookingIntroMessage,
+          bookingConfirmationMessage: bookingConfirmationMessage,
           isActive: _isActive,
           onlineBookingEnabled: _onlineBookingEnabled,
           minBookingNoticeHours: _minBookingNoticeHours,
