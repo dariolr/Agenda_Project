@@ -92,7 +92,9 @@ final class BookingFormsController
             return Response::forbidden('Access denied', $request->traceId);
         }
 
-        $this->bookingFormRepo->updateForm($businessId, $formId, ['is_active' => false], $this->userId($request));
+        if (!$this->bookingFormRepo->deleteForm($businessId, $formId, $this->userId($request))) {
+            return Response::notFound('Booking form not found', $request->traceId);
+        }
         return Response::success(['deleted' => true]);
     }
 
@@ -142,6 +144,22 @@ final class BookingFormsController
 
         $this->bookingFormRepo->deactivateField($businessId, $formId, $fieldId);
         return Response::success(['form' => $this->bookingFormRepo->findForm($businessId, $formId)]);
+    }
+
+    public function reorderForms(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        if (!$this->hasManageAccess($request, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        $formIds = $this->body($request)['form_ids'] ?? [];
+        if (!is_array($formIds)) {
+            return Response::error('form_ids is required', 'validation_error', 422, $request->traceId);
+        }
+
+        $this->bookingFormRepo->reorderForms($businessId, array_map('intval', $formIds));
+        return Response::success(['forms' => $this->bookingFormRepo->listForms($businessId)]);
     }
 
     public function reorderFields(Request $request): Response

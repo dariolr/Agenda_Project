@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../core/l10n/l10_extension.dart';
+import '../core/services/preferences_service.dart';
 import '../features/agenda/presentation/agenda_screen.dart';
 import '../features/agenda/providers/business_providers.dart';
 import '../features/auth/domain/auth_state.dart';
@@ -16,6 +17,9 @@ import '../features/auth/presentation/profile_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/providers/current_business_user_provider.dart';
+import '../features/billing/presentation/billing_screen.dart';
+import '../features/billing/providers/billing_provider.dart';
+import '../features/booking_forms/presentation/booking_forms_screen.dart';
 import '../features/booking_notifications/presentation/booking_notifications_screen.dart';
 import '../features/bookings_list/presentation/bookings_list_screen.dart';
 import '../features/business/presentation/business_list_screen.dart';
@@ -29,15 +33,12 @@ import '../features/more/presentation/locations_screen.dart';
 import '../features/more/presentation/more_screen.dart';
 import '../features/more/presentation/whatsapp_business_screen.dart';
 import '../features/payments/presentation/payment_methods_screen.dart';
-import '../features/billing/presentation/billing_screen.dart';
-import '../features/billing/providers/billing_provider.dart';
 import '../features/reports/presentation/reports_screen.dart';
 import '../features/services/presentation/services_screen.dart';
 import '../features/staff/presentation/staff_week_overview_screen.dart';
 import '../features/staff/presentation/team_screen.dart';
-import '../core/services/preferences_service.dart';
-import 'scaffold_with_navigation.dart';
 import 'providers/router_debug_log_provider.dart';
+import 'scaffold_with_navigation.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final rootNavigatorKeyProvider = Provider<GlobalKey<NavigatorState>>(
@@ -119,8 +120,9 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       final isLoggingIn = state.uri.path == '/login';
       final isOnBusinessList = state.uri.path == '/businesses';
-      final isOnSuperadminBookingNotifications =
-          state.uri.path.startsWith('/businesses/notifiche-prenotazioni');
+      final isOnSuperadminBookingNotifications = state.uri.path.startsWith(
+        '/businesses/notifiche-prenotazioni',
+      );
       final isOnUserBusinessSwitch = state.uri.path == '/my-businesses';
       final isOnChangePassword = state.uri.path == '/change-password';
       final isMetaWhatsappCallbackPage =
@@ -230,7 +232,10 @@ final routerProvider = Provider<GoRouter>((ref) {
             rlog('login_authenticated_superadmin_has_business', '/agenda');
             return '/agenda';
           }
-          rlog('login_authenticated_superadmin_no_business_default', '/businesses');
+          rlog(
+            'login_authenticated_superadmin_no_business_default',
+            '/businesses',
+          );
           return '/businesses';
         }
         rlog('login_non_superadmin_default', '/my-businesses');
@@ -264,7 +269,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isAuthenticated && !isSuperadmin && isOnUserBusinessSwitch) {
         final isExplicitSwitch = state.uri.queryParameters['switch'] == '1';
         if (!isExplicitSwitch && currentBusinessId > 0) {
-          rlog('non_superadmin_user_business_switch_without_switch_param', '/agenda');
+          rlog(
+            'non_superadmin_user_business_switch_without_switch_param',
+            '/agenda',
+          );
           return '/agenda';
         }
       }
@@ -331,6 +339,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         }
         if (path == '/altro/whatsapp-business' && !canManageBusinessSettings) {
           rlog('permission_guard_whatsapp_business', '/agenda');
+          return '/agenda';
+        }
+        if (path == '/altro/booking-forms' && !canManageBusinessSettings) {
+          rlog('permission_guard_booking_forms', '/agenda');
           return '/agenda';
         }
         if (path == '/permessi' && !canManageOperators) {
@@ -542,6 +554,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                     pageBuilder: (BuildContext context, GoRouterState state) =>
                         const NoTransitionPage(child: WhatsappBusinessScreen()),
                   ),
+                  GoRoute(
+                    path: 'booking-forms',
+                    name: 'more-booking-forms',
+                    pageBuilder: (BuildContext context, GoRouterState state) =>
+                        const NoTransitionPage(child: BookingFormsScreen()),
+                  ),
                 ],
               ),
             ],
@@ -646,15 +664,19 @@ class _AuthNotifier extends ChangeNotifier {
     _ref.listen(authProvider, (previous, next) {
       // Se l'utente si disconnette, resetta la selezione business del superadmin
       if (previous?.isAuthenticated == true && !next.isAuthenticated) {
-        _ref.read(routerDebugLogProvider.notifier).addLine(
-          'AUTH DISCONNECT prev=${previous?.status} next=${next.status} → clear saBiz',
-        );
+        _ref
+            .read(routerDebugLogProvider.notifier)
+            .addLine(
+              'AUTH DISCONNECT prev=${previous?.status} next=${next.status} → clear saBiz',
+            );
         _ref.read(superadminSelectedBusinessProvider.notifier).clear();
         invalidateBusinessScopedProviders(_ref);
       } else {
-        _ref.read(routerDebugLogProvider.notifier).addLine(
-          'auth change prev=${previous?.status} next=${next.status}',
-        );
+        _ref
+            .read(routerDebugLogProvider.notifier)
+            .addLine(
+              'auth change prev=${previous?.status} next=${next.status}',
+            );
       }
       notifyListeners();
     });
@@ -663,7 +685,9 @@ class _AuthNotifier extends ChangeNotifier {
     // deve rieseguire subito le redirect guard (es. /agenda -> /businesses).
     _ref.listen<int?>(superadminSelectedBusinessProvider, (previous, next) {
       if (previous == next) return;
-      _ref.read(routerDebugLogProvider.notifier).addLine('saBiz: $previous→$next');
+      _ref
+          .read(routerDebugLogProvider.notifier)
+          .addLine('saBiz: $previous→$next');
       notifyListeners();
     });
 
@@ -687,7 +711,6 @@ class _AuthNotifier extends ChangeNotifier {
       );
       if (prevBlocked != nextBlocked) notifyListeners();
     });
-
   }
 
   final Ref _ref;

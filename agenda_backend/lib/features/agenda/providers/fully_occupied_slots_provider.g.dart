@@ -77,7 +77,7 @@ final class FullyOccupiedSlotsProvider
 }
 
 String _$fullyOccupiedSlotsHash() =>
-    r'cac3293a238229a07421123556e10d4471801e64';
+    r'19ed579f37ab4568cf44a1223b0b81a8fcdd8e6b';
 
 /// Calcola gli indici degli slot completamente occupati per un dato staff.
 /// Uno slot è "completamente occupato" quando la somma delle frazioni di larghezza

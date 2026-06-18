@@ -74,6 +74,7 @@ final class BookingFormRepository
                     (SELECT COUNT(*) FROM booking_form_assignments bfa WHERE bfa.form_id = bf.id AND bfa.is_active = 1) AS assignments_count
              FROM booking_forms bf
              WHERE bf.business_id = ?
+               AND bf.deleted_at IS NULL
              ORDER BY bf.sort_order ASC, bf.id ASC"
         );
         $stmt->execute([$businessId]);
@@ -83,7 +84,7 @@ final class BookingFormRepository
 
     public function findForm(int $businessId, int $formId): ?array
     {
-        $stmt = $this->db->getPdo()->prepare('SELECT * FROM booking_forms WHERE id = ? AND business_id = ?');
+        $stmt = $this->db->getPdo()->prepare('SELECT * FROM booking_forms WHERE id = ? AND business_id = ? AND deleted_at IS NULL');
         $stmt->execute([$formId, $businessId]);
         $form = $stmt->fetch();
         if (!$form) {
@@ -156,9 +157,21 @@ final class BookingFormRepository
         $params[] = $formId;
         $params[] = $businessId;
         $stmt = $this->db->getPdo()->prepare(
-            'UPDATE booking_forms SET ' . implode(', ', $fields) . ', updated_at = NOW() WHERE id = ? AND business_id = ?'
+            'UPDATE booking_forms SET ' . implode(', ', $fields) . ', updated_at = NOW() WHERE id = ? AND business_id = ? AND deleted_at IS NULL'
         );
         $stmt->execute($params);
+
+        return $stmt->rowCount() > 0;
+    }
+
+    public function deleteForm(int $businessId, int $formId, ?int $userId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE booking_forms
+             SET is_active = 0, deleted_at = NOW(), updated_by_user_id = ?, updated_at = NOW()
+             WHERE id = ? AND business_id = ? AND deleted_at IS NULL'
+        );
+        $stmt->execute([$userId, $formId, $businessId]);
 
         return $stmt->rowCount() > 0;
     }
@@ -231,6 +244,16 @@ final class BookingFormRepository
         );
         $stmt->execute([$fieldId, $formId, $businessId]);
         return $stmt->rowCount() > 0;
+    }
+
+    public function reorderForms(int $businessId, array $formIds): void
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE booking_forms SET sort_order = ?, updated_at = NOW() WHERE id = ? AND business_id = ? AND deleted_at IS NULL'
+        );
+        foreach (array_values($formIds) as $index => $formId) {
+            $stmt->execute([$index, (int) $formId, $businessId]);
+        }
     }
 
     public function reorderFields(int $businessId, int $formId, array $fieldIds): void
@@ -468,6 +491,7 @@ final class BookingFormRepository
              INNER JOIN booking_form_assignments bfa ON bfa.form_id = bf.id
              WHERE bf.business_id = ?
                AND bf.is_active = 1
+               AND bf.deleted_at IS NULL
                AND bfa.is_active = 1
                AND (' . implode(' OR ', $conditions) . ')
              ORDER BY bf.sort_order ASC, bf.id ASC'
@@ -481,13 +505,18 @@ final class BookingFormRepository
         $formIds = array_map(static fn(array $row): int => (int) $row['id'], $forms);
         $fieldsByForm = $this->fieldsByFormIds($businessId, $formIds);
         $assignmentsByForm = $this->assignmentsByFormIds($businessId, $formIds);
+        $formsWithFields = [];
         foreach ($forms as &$form) {
             $id = (int) $form['id'];
+            if (empty($fieldsByForm[$id])) {
+                continue;
+            }
             $form['fields'] = $fieldsByForm[$id] ?? [];
             $form['assignments'] = $assignmentsByForm[$id] ?? [];
+            $formsWithFields[] = $form;
         }
 
-        return $forms;
+        return $formsWithFields;
     }
 
     private function buildContextIds(int $businessId, int $locationId, array $serviceVariantIds, array $serviceIds, array $servicePackageIds, array $classEventIds): array
@@ -545,6 +574,22 @@ final class BookingFormRepository
             foreach ($stmt->fetchAll() as $row) {
                 if ($row['category_id'] !== null) {
                     $categoryIds[] = (int) $row['category_id'];
+                }
+            }
+        }
+
+        if (!empty($classEventIds)) {
+            $placeholders = implode(',', array_fill(0, count($classEventIds), '?'));
+            $stmt = $this->db->getPdo()->prepare(
+                "SELECT DISTINCT ct.service_category_id
+                 FROM class_events ce
+                 INNER JOIN class_types ct ON ct.id = ce.class_type_id AND ct.business_id = ce.business_id
+                 WHERE ce.id IN ({$placeholders}) AND ce.business_id = ? AND ce.location_id = ?"
+            );
+            $stmt->execute([...$classEventIds, $businessId, $locationId]);
+            foreach ($stmt->fetchAll() as $row) {
+                if ($row['service_category_id'] !== null) {
+                    $categoryIds[] = (int) $row['service_category_id'];
                 }
             }
         }
@@ -682,19 +727,31 @@ final class BookingFormRepository
             $label = 'Campo';
         }
 
-        $isRequired = isset($data['is_required']) ? (int) (bool) $data['is_required'] : 0;
+        $isRequired = isset($data['is_required'])
+            ? (int) (bool) $data['is_required']
+            : ($fieldType === self::FIELD_CONSENT ? 1 : 0);
         if (in_array($fieldType, self::NON_REQUIRED_TYPES, true)) {
             $isRequired = 0;
         }
 
         $options = $this->normalizeOptions($data['options'] ?? $data['options_json'] ?? null);
-        if (in_array($fieldType, self::CHOICE_TYPES, true) && empty($options)) {
+        if (in_array($fieldType, self::CHOICE_TYPES, true) && count($options) < 2) {
             throw new InvalidArgumentException('options_required');
         }
 
         $validation = $this->decodeJson($data['validation_json'] ?? null);
         if (isset($data['validation']) && is_array($data['validation'])) {
             $validation = $data['validation'];
+        }
+        if ($fieldType === self::FIELD_CONSENT && is_array($validation) && isset($validation['url'])) {
+            $url = trim((string) $validation['url']);
+            if ($url === '') {
+                unset($validation['url']);
+            } elseif (!filter_var($url, FILTER_VALIDATE_URL)) {
+                throw new InvalidArgumentException('invalid_consent_url');
+            } else {
+                $validation['url'] = $url;
+            }
         }
 
         return [

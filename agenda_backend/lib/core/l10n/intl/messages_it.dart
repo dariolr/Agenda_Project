@@ -743,8 +743,14 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingDirectLinkCopiedPackageMessage": m7,
     "bookingDirectLinkCopiedServiceMessage": m8,
     "bookingFormsActive": MessageLookupByLibrary.simpleMessage("Attivo"),
+    "bookingFormsActiveHint": MessageLookupByLibrary.simpleMessage(
+      "I moduli non attivi non vengono mai mostrati online.",
+    ),
     "bookingFormsAddField": MessageLookupByLibrary.simpleMessage(
       "Aggiungi campo",
+    ),
+    "bookingFormsAddOption": MessageLookupByLibrary.simpleMessage(
+      "Aggiungi opzione",
     ),
     "bookingFormsAdminDescription": MessageLookupByLibrary.simpleMessage(
       "Raccogli informazioni e consensi durante la prenotazione online",
@@ -755,16 +761,91 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingFormsAssignBusiness": MessageLookupByLibrary.simpleMessage(
       "Mostra per tutto il business",
     ),
+    "bookingFormsAssignmentAdd": MessageLookupByLibrary.simpleMessage(
+      "Aggiungi assegnazione",
+    ),
+    "bookingFormsAssignmentBusiness": MessageLookupByLibrary.simpleMessage(
+      "Business",
+    ),
+    "bookingFormsAssignmentBusinessWide": MessageLookupByLibrary.simpleMessage(
+      "Tutto il business",
+    ),
+    "bookingFormsAssignmentCategory": MessageLookupByLibrary.simpleMessage(
+      "Categoria",
+    ),
+    "bookingFormsAssignmentClassEvent": MessageLookupByLibrary.simpleMessage(
+      "Lezione",
+    ),
+    "bookingFormsAssignmentLocation": MessageLookupByLibrary.simpleMessage(
+      "Sede",
+    ),
+    "bookingFormsAssignmentNoTargets": MessageLookupByLibrary.simpleMessage(
+      "Nessun elemento disponibile per questo ambito",
+    ),
+    "bookingFormsAssignmentPackage": MessageLookupByLibrary.simpleMessage(
+      "Pacchetto",
+    ),
+    "bookingFormsAssignmentScope": MessageLookupByLibrary.simpleMessage(
+      "Ambito",
+    ),
+    "bookingFormsAssignmentService": MessageLookupByLibrary.simpleMessage(
+      "Servizio",
+    ),
+    "bookingFormsAssignmentTarget": MessageLookupByLibrary.simpleMessage(
+      "Elemento",
+    ),
+    "bookingFormsAssignmentsSave": MessageLookupByLibrary.simpleMessage(
+      "Salva assegnazioni",
+    ),
+    "bookingFormsAssignmentsTitle": MessageLookupByLibrary.simpleMessage(
+      "Assegnazioni",
+    ),
+    "bookingFormsConsentUrl": MessageLookupByLibrary.simpleMessage(
+      "Link informativa",
+    ),
+    "bookingFormsConsentUrlHint": MessageLookupByLibrary.simpleMessage(
+      "https://...",
+    ),
+    "bookingFormsDeleteFieldMessage": MessageLookupByLibrary.simpleMessage(
+      "Il campo non sarà più mostrato nel modulo. Le risposte già raccolte restano nello storico.",
+    ),
+    "bookingFormsDeleteFieldTitle": MessageLookupByLibrary.simpleMessage(
+      "Rimuovere il campo?",
+    ),
+    "bookingFormsDeleteMessage": MessageLookupByLibrary.simpleMessage(
+      "Il modulo non sarà più disponibile per le prenotazioni online. Le risposte già raccolte restano nello storico.",
+    ),
+    "bookingFormsDeleteTitle": MessageLookupByLibrary.simpleMessage(
+      "Eliminare il modulo?",
+    ),
+    "bookingFormsEditField": MessageLookupByLibrary.simpleMessage(
+      "Modifica campo",
+    ),
+    "bookingFormsEditorSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Configura il modulo, i suoi campi e dove mostrarlo online.",
+    ),
     "bookingFormsEmpty": MessageLookupByLibrary.simpleMessage(
       "Nessun modulo configurato",
     ),
     "bookingFormsFieldDescription": MessageLookupByLibrary.simpleMessage(
       "Descrizione",
     ),
+    "bookingFormsFieldHelpText": MessageLookupByLibrary.simpleMessage(
+      "Testo di aiuto (facoltativo)",
+    ),
     "bookingFormsFieldInternalName": MessageLookupByLibrary.simpleMessage(
       "Nome interno",
     ),
     "bookingFormsFieldLabel": MessageLookupByLibrary.simpleMessage("Etichetta"),
+    "bookingFormsFieldOptional": MessageLookupByLibrary.simpleMessage(
+      "Facoltativo",
+    ),
+    "bookingFormsFieldPreviewTitle": MessageLookupByLibrary.simpleMessage(
+      "Anteprima",
+    ),
+    "bookingFormsFieldSaveError": MessageLookupByLibrary.simpleMessage(
+      "Impossibile salvare il campo",
+    ),
     "bookingFormsFieldTitle": MessageLookupByLibrary.simpleMessage("Titolo"),
     "bookingFormsFieldType": MessageLookupByLibrary.simpleMessage("Tipo campo"),
     "bookingFormsFieldTypeCheckbox": MessageLookupByLibrary.simpleMessage(
@@ -788,17 +869,75 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingFormsFieldTypeSingleChoice": MessageLookupByLibrary.simpleMessage(
       "Scelta singola",
     ),
+    "bookingFormsFieldsEmpty": MessageLookupByLibrary.simpleMessage(
+      "Nessun campo. Aggiungi il primo per iniziare.",
+    ),
     "bookingFormsFieldsTitle": MessageLookupByLibrary.simpleMessage("Campi"),
     "bookingFormsListMeta": m9,
+    "bookingFormsModuleDetailsTitle": MessageLookupByLibrary.simpleMessage(
+      "Dettagli del modulo",
+    ),
     "bookingFormsNew": MessageLookupByLibrary.simpleMessage("Nuovo modulo"),
+    "bookingFormsNoAssignmentsHint": MessageLookupByLibrary.simpleMessage(
+      "Senza assegnazioni il modulo non comparirà mai online.",
+    ),
+    "bookingFormsOptionHint": MessageLookupByLibrary.simpleMessage(
+      "Testo opzione",
+    ),
     "bookingFormsOptionsHint": MessageLookupByLibrary.simpleMessage(
       "Opzioni, una per riga",
+    ),
+    "bookingFormsOptionsRequired": MessageLookupByLibrary.simpleMessage(
+      "Aggiungi almeno due opzioni per i campi a scelta.",
+    ),
+    "bookingFormsOptionsTitle": MessageLookupByLibrary.simpleMessage("Opzioni"),
+    "bookingFormsReorderTooltip": MessageLookupByLibrary.simpleMessage(
+      "Tieni premuto e trascina per riordinare",
     ),
     "bookingFormsRequired": MessageLookupByLibrary.simpleMessage(
       "Obbligatorio",
     ),
+    "bookingFormsSaveModuleFirst": MessageLookupByLibrary.simpleMessage(
+      "Salva il modulo per gestire campi e visibilità.",
+    ),
     "bookingFormsSelectHint": MessageLookupByLibrary.simpleMessage(
       "Seleziona un modulo o creane uno nuovo",
+    ),
+    "bookingFormsStatusHidden": MessageLookupByLibrary.simpleMessage(
+      "Non visibile online",
+    ),
+    "bookingFormsStatusInactive": MessageLookupByLibrary.simpleMessage(
+      "Non attivo",
+    ),
+    "bookingFormsStatusShown": MessageLookupByLibrary.simpleMessage(
+      "Visibile online",
+    ),
+    "bookingFormsStepFields": MessageLookupByLibrary.simpleMessage("Campi"),
+    "bookingFormsStepForm": MessageLookupByLibrary.simpleMessage("Modulo"),
+    "bookingFormsStepVisibility": MessageLookupByLibrary.simpleMessage(
+      "Visibilità",
+    ),
+    "bookingFormsVisibilityBusinessWideHint":
+        MessageLookupByLibrary.simpleMessage(
+          "Verrà mostrato in tutte le prenotazioni online.",
+        ),
+    "bookingFormsVisibilityIntro": MessageLookupByLibrary.simpleMessage(
+      "Scegli dove mostrare il modulo durante la prenotazione online. Gli ambiti già coperti da una regola più ampia vengono nascosti per evitare ridondanze.",
+    ),
+    "bookingFormsWarningInactive": MessageLookupByLibrary.simpleMessage(
+      "Modulo disattivato",
+    ),
+    "bookingFormsWarningNoAssignments": MessageLookupByLibrary.simpleMessage(
+      "Nessuna assegnazione",
+    ),
+    "bookingFormsWarningNoFields": MessageLookupByLibrary.simpleMessage(
+      "Nessun campo attivo",
+    ),
+    "bookingFormsWhereShownTitle": MessageLookupByLibrary.simpleMessage(
+      "Dove viene mostrato",
+    ),
+    "bookingFormsWontShowSummary": MessageLookupByLibrary.simpleMessage(
+      "Non verrà mostrato online",
     ),
     "bookingHistoryActorCustomer": MessageLookupByLibrary.simpleMessage(
       "Cliente",

@@ -328,6 +328,7 @@ final class Kernel
         // Booking Forms (auth required)
         $this->router->get('/v1/businesses/{business_id}/booking-forms', BookingFormsController::class, 'index', ['auth', 'business_access_route']);
         $this->router->post('/v1/businesses/{business_id}/booking-forms', BookingFormsController::class, 'store', ['auth', 'business_access_route']);
+        $this->router->put('/v1/businesses/{business_id}/booking-forms/reorder', BookingFormsController::class, 'reorderForms', ['auth', 'business_access_route']);
         $this->router->get('/v1/businesses/{business_id}/booking-forms/{form_id}', BookingFormsController::class, 'show', ['auth', 'business_access_route']);
         $this->router->patch('/v1/businesses/{business_id}/booking-forms/{form_id}', BookingFormsController::class, 'update', ['auth', 'business_access_route']);
         $this->router->delete('/v1/businesses/{business_id}/booking-forms/{form_id}', BookingFormsController::class, 'destroy', ['auth', 'business_access_route']);

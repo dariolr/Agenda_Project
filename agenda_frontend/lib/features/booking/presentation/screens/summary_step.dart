@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/models/class_event.dart';
 import '../../../../core/models/booking_form.dart';
@@ -480,6 +483,14 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
 
                 const SizedBox(height: 24),
 
+                if (_formsLoading) ...[
+                  const Center(child: CircularProgressIndicator()),
+                  const SizedBox(height: 16),
+                ] else if (_bookingForms.isNotEmpty) ...[
+                  _buildBookingFormsSection(context, theme),
+                  const SizedBox(height: 16),
+                ],
+
                 // Note
                 Text(
                   l10n.summaryNotes,
@@ -502,14 +513,6 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                   },
                 ),
                 const SizedBox(height: 16),
-
-                if (_formsLoading) ...[
-                  const Center(child: CircularProgressIndicator()),
-                  const SizedBox(height: 16),
-                ] else if (_bookingForms.isNotEmpty) ...[
-                  _buildBookingFormsSection(context, theme),
-                  const SizedBox(height: 16),
-                ],
 
                 // Policy modifica/cancellazione (ultima informazione)
                 _SummarySection(
@@ -1092,44 +1095,67 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
   }
 
   Widget _buildBookingFormsSection(BuildContext context, ThemeData theme) {
-    final l10n = context.l10n;
+    return Column(
+      children: [
+        for (var index = 0; index < _bookingForms.length; index++) ...[
+          _BookingFormSection(
+            form: _bookingForms[index],
+            theme: theme,
+            formAnswers: _formAnswers,
+            invalidRequiredFieldIds: _invalidRequiredFieldIds,
+            onFieldChanged: (fieldId, value) {
+              setState(() {
+                _formAnswers[fieldId] = value;
+                _invalidRequiredFieldIds.remove(fieldId);
+              });
+            },
+          ),
+          if (index != _bookingForms.length - 1) const SizedBox(height: 12),
+        ],
+      ],
+    );
+  }
+}
+
+class _BookingFormSection extends StatelessWidget {
+  const _BookingFormSection({
+    required this.form,
+    required this.theme,
+    required this.formAnswers,
+    required this.invalidRequiredFieldIds,
+    required this.onFieldChanged,
+  });
+
+  final BookingForm form;
+  final ThemeData theme;
+  final Map<int, dynamic> formAnswers;
+  final Set<int> invalidRequiredFieldIds;
+  final void Function(int fieldId, dynamic value) onFieldChanged;
+
+  @override
+  Widget build(BuildContext context) {
     return _SummarySection(
-      title: l10n.bookingFormsSectionTitle,
+      title: form.title,
       icon: Icons.assignment_outlined,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          for (final form in _bookingForms) ...[
-            Text(
-              form.title,
-              style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+          if (form.description != null && form.description!.trim().isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Text(form.description!, style: theme.textTheme.bodySmall),
             ),
-            if (form.description != null && form.description!.trim().isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  form.description!,
-                  style: theme.textTheme.bodySmall,
-                ),
+          for (var index = 0; index < form.fields.length; index++) ...[
+            _BookingFormFieldWidget(
+              field: form.fields[index],
+              value: formAnswers[form.fields[index].id],
+              showRequiredError: invalidRequiredFieldIds.contains(
+                form.fields[index].id,
               ),
-            const SizedBox(height: 12),
-            for (final field in form.fields) ...[
-              _BookingFormFieldWidget(
-                field: field,
-                value: _formAnswers[field.id],
-                showRequiredError: _invalidRequiredFieldIds.contains(field.id),
-                onChanged: (value) {
-                  setState(() {
-                    _formAnswers[field.id] = value;
-                    _invalidRequiredFieldIds.remove(field.id);
-                  });
-                },
-              ),
-              const SizedBox(height: 12),
-            ],
-            if (form != _bookingForms.last) const Divider(height: 24),
+              onChanged: (value) =>
+                  onFieldChanged(form.fields[index].id, value),
+            ),
+            if (index != form.fields.length - 1) const SizedBox(height: 12),
           ],
         ],
       ),
@@ -1219,8 +1245,81 @@ class _BookingFormFieldWidget extends StatelessWidget {
               Text(errorText, style: TextStyle(color: theme.colorScheme.error)),
           ],
         );
-      case 'checkbox':
       case 'consent':
+        return Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primaryContainer.withOpacity(0.22),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: theme.colorScheme.primary.withOpacity(0.25),
+            ),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Checkbox(
+                value: value == true,
+                onChanged: (checked) => onChanged(checked ?? false),
+              ),
+              const SizedBox(width: 4),
+              Icon(
+                Icons.verified_user_outlined,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: theme.textTheme.bodyMedium),
+                    if (field.consentUrl != null) ...[
+                      const SizedBox(height: 6),
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: [
+                          Text(
+                            '${l10n.bookingFormsPolicyLinkLabel}:',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => _openConsentUrl(field.consentUrl!),
+                            icon: const Icon(Icons.open_in_new, size: 16),
+                            label: Text(field.consentUrl!),
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              alignment: Alignment.centerLeft,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (field.helpText != null &&
+                        field.helpText!.trim().isNotEmpty)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Text(field.helpText!),
+                      ),
+                    if (errorText != null) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        errorText,
+                        style: TextStyle(color: theme.colorScheme.error),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      case 'checkbox':
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1255,6 +1354,18 @@ class _BookingFormFieldWidget extends StatelessWidget {
         );
     }
   }
+}
+
+void _openConsentUrl(String rawUrl) {
+  final uri = Uri.tryParse(rawUrl.trim());
+  if (uri == null || !uri.hasScheme) return;
+  unawaited(
+    launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+      webOnlyWindowName: '_blank',
+    ),
+  );
 }
 
 class _SummarySection extends StatelessWidget {

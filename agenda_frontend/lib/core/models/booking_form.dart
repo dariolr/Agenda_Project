@@ -32,6 +32,7 @@ class BookingFormField {
   final String? description;
   final String? placeholder;
   final String? helpText;
+  final Map<String, dynamic> validation;
   final bool isRequired;
   final int sortOrder;
   final List<BookingFormOption> options;
@@ -44,6 +45,7 @@ class BookingFormField {
     this.description,
     this.placeholder,
     this.helpText,
+    this.validation = const {},
     this.isRequired = false,
     this.sortOrder = 0,
     this.options = const [],
@@ -60,6 +62,9 @@ class BookingFormField {
         description: json['description'] as String?,
         placeholder: json['placeholder'] as String?,
         helpText: json['help_text'] as String?,
+        validation: json['validation'] is Map<String, dynamic>
+            ? json['validation'] as Map<String, dynamic>
+            : const {},
         isRequired: _asBool(json['is_required']),
         sortOrder: json['sort_order'] as int? ?? 0,
         options: (json['options'] as List<dynamic>? ?? const [])
@@ -72,6 +77,11 @@ class BookingFormField {
     if (value is num) return value == 1;
     if (value is String) return value == '1' || value.toLowerCase() == 'true';
     return false;
+  }
+
+  String? get consentUrl {
+    final value = validation['url']?.toString().trim();
+    return value == null || value.isEmpty ? null : value;
   }
 }
 

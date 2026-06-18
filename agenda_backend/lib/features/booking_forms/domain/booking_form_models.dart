@@ -48,6 +48,10 @@ class BookingFormField {
   final int id;
   final String fieldType;
   final String label;
+  final String? description;
+  final String? placeholder;
+  final String? helpText;
+  final Map<String, dynamic> validation;
   final bool isRequired;
   final int sortOrder;
   final List<Map<String, String>> options;
@@ -56,6 +60,10 @@ class BookingFormField {
     required this.id,
     required this.fieldType,
     required this.label,
+    this.description,
+    this.placeholder,
+    this.helpText,
+    this.validation = const {},
     this.isRequired = false,
     this.sortOrder = 0,
     this.options = const [],
@@ -66,6 +74,12 @@ class BookingFormField {
         id: json['id'] as int,
         fieldType: json['field_type'] as String? ?? 'short_text',
         label: json['label'] as String? ?? '',
+        description: json['description'] as String?,
+        placeholder: json['placeholder'] as String?,
+        helpText: json['help_text'] as String?,
+        validation: json['validation'] is Map<String, dynamic>
+            ? json['validation'] as Map<String, dynamic>
+            : const {},
         isRequired: _asBool(json['is_required']),
         sortOrder: json['sort_order'] as int? ?? 0,
         options: (json['options'] as List<dynamic>? ?? const [])
@@ -81,6 +95,15 @@ class BookingFormField {
             .where((option) => option['value']!.isNotEmpty)
             .toList(),
       );
+
+  /// Campi compilabili dal cliente (non puramente informativi). Un modulo
+  /// senza nessun campo di input non viene mostrato nella prenotazione online.
+  bool get isInputField => fieldType != 'info_text';
+
+  String? get consentUrl {
+    final value = validation['url']?.toString().trim();
+    return value == null || value.isEmpty ? null : value;
+  }
 }
 
 class BookingFormAssignment {
@@ -94,6 +117,11 @@ class BookingFormAssignment {
         scopeType: json['scope_type'] as String? ?? 'business',
         scopeId: json['scope_id'] as int?,
       );
+
+  Map<String, dynamic> toJson() => {
+    'scope_type': scopeType,
+    'scope_id': scopeId,
+  };
 }
 
 bool _asBool(dynamic value) {

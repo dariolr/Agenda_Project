@@ -2118,8 +2118,12 @@
   "bookingFormsListMeta": "{fields} campi · {assignments} assegnazioni",
   "@bookingFormsListMeta": {
     "placeholders": {
-      "fields": { "type": "int" },
-      "assignments": { "type": "int" }
+      "fields": {
+        "type": "int"
+      },
+      "assignments": {
+        "type": "int"
+      }
     }
   },
   "bookingFormsFieldTitle": "Titolo",
@@ -2130,6 +2134,7 @@
   "bookingFormsFieldsTitle": "Campi",
   "bookingFormsRequired": "Obbligatorio",
   "bookingFormsAddField": "Aggiungi campo",
+  "bookingFormsEditField": "Modifica campo",
   "bookingFormsFieldType": "Tipo campo",
   "bookingFormsFieldLabel": "Etichetta",
   "bookingFormsOptionsHint": "Opzioni, una per riga",
@@ -2139,5 +2144,52 @@
   "bookingFormsFieldTypeMultipleChoice": "Scelta multipla",
   "bookingFormsFieldTypeCheckbox": "Checkbox",
   "bookingFormsFieldTypeConsent": "Consenso",
-  "bookingFormsFieldTypeInfoText": "Testo informativo"
+  "bookingFormsFieldTypeInfoText": "Testo informativo",
+  "bookingFormsConsentUrl": "Link informativa",
+  "bookingFormsConsentUrlHint": "https://...",
+  "bookingFormsAssignmentsTitle": "Assegnazioni",
+  "bookingFormsAssignmentScope": "Ambito",
+  "bookingFormsAssignmentTarget": "Elemento",
+  "bookingFormsAssignmentAdd": "Aggiungi assegnazione",
+  "bookingFormsAssignmentsSave": "Salva assegnazioni",
+  "bookingFormsAssignmentBusiness": "Business",
+  "bookingFormsAssignmentBusinessWide": "Tutto il business",
+  "bookingFormsAssignmentLocation": "Sede",
+  "bookingFormsAssignmentService": "Servizio",
+  "bookingFormsAssignmentPackage": "Pacchetto",
+  "bookingFormsAssignmentCategory": "Categoria",
+  "bookingFormsAssignmentClassEvent": "Lezione",
+  "bookingFormsAssignmentNoTargets": "Nessun elemento disponibile per questo ambito",
+  "bookingFormsDeleteTitle": "Eliminare il modulo?",
+  "bookingFormsDeleteMessage": "Il modulo non sarà più disponibile per le prenotazioni online. Le risposte già raccolte restano nello storico.",
+  "bookingFormsEditorSubtitle": "Configura il modulo, i suoi campi e dove mostrarlo online.",
+  "bookingFormsStepForm": "Modulo",
+  "bookingFormsStepFields": "Campi",
+  "bookingFormsStepVisibility": "Visibilità",
+  "bookingFormsModuleDetailsTitle": "Dettagli del modulo",
+  "bookingFormsActiveHint": "I moduli non attivi non vengono mai mostrati online.",
+  "bookingFormsStatusInactive": "Non attivo",
+  "bookingFormsStatusShown": "Visibile online",
+  "bookingFormsStatusHidden": "Non visibile online",
+  "bookingFormsWarningNoFields": "Nessun campo attivo",
+  "bookingFormsWarningNoAssignments": "Nessuna assegnazione",
+  "bookingFormsWarningInactive": "Modulo disattivato",
+  "bookingFormsWontShowSummary": "Non verrà mostrato online",
+  "bookingFormsFieldsEmpty": "Nessun campo. Aggiungi il primo per iniziare.",
+  "bookingFormsFieldOptional": "Facoltativo",
+  "bookingFormsFieldHelpText": "Testo di aiuto (facoltativo)",
+  "bookingFormsFieldPreviewTitle": "Anteprima",
+  "bookingFormsReorderTooltip": "Tieni premuto e trascina per riordinare",
+  "bookingFormsSaveModuleFirst": "Salva il modulo per gestire campi e visibilità.",
+  "bookingFormsVisibilityIntro": "Scegli dove mostrare il modulo durante la prenotazione online. Gli ambiti già coperti da una regola più ampia vengono nascosti per evitare ridondanze.",
+  "bookingFormsWhereShownTitle": "Dove viene mostrato",
+  "bookingFormsVisibilityBusinessWideHint": "Verrà mostrato in tutte le prenotazioni online.",
+  "bookingFormsNoAssignmentsHint": "Senza assegnazioni il modulo non comparirà mai online.",
+  "bookingFormsDeleteFieldTitle": "Rimuovere il campo?",
+  "bookingFormsDeleteFieldMessage": "Il campo non sarà più mostrato nel modulo. Le risposte già raccolte restano nello storico.",
+  "bookingFormsOptionsRequired": "Aggiungi almeno due opzioni per i campi a scelta.",
+  "bookingFormsFieldSaveError": "Impossibile salvare il campo",
+  "bookingFormsOptionsTitle": "Opzioni",
+  "bookingFormsOptionHint": "Testo opzione",
+  "bookingFormsAddOption": "Aggiungi opzione"
 }

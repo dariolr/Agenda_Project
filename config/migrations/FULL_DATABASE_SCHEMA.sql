@@ -103,7 +103,8 @@ CREATE TABLE `booking_forms` (
   `created_by_user_id` int UNSIGNED DEFAULT NULL,
   `updated_by_user_id` int UNSIGNED DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `deleted_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1328,6 +1329,7 @@ ALTER TABLE `booking_events`
 ALTER TABLE `booking_forms`
   ADD PRIMARY KEY (`id`),
   ADD KEY `idx_booking_forms_business_active_sort` (`business_id`,`is_active`,`sort_order`),
+  ADD KEY `idx_booking_forms_business_deleted_active_sort` (`business_id`,`deleted_at`,`is_active`,`sort_order`),
   ADD KEY `idx_booking_forms_created_by` (`created_by_user_id`),
   ADD KEY `idx_booking_forms_updated_by` (`updated_by_user_id`);
 

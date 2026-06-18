@@ -399,6 +399,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingErrorValidation": MessageLookupByLibrary.simpleMessage(
       "Controlla i dati inseriti",
     ),
+    "bookingFormsPolicyLinkLabel": MessageLookupByLibrary.simpleMessage(
+      "Informativa",
+    ),
     "bookingFormsRequiredError": MessageLookupByLibrary.simpleMessage(
       "Campo obbligatorio",
     ),

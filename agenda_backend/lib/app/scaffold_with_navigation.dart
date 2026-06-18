@@ -34,6 +34,7 @@ import '../features/agenda/providers/location_providers.dart';
 import '../features/agenda/providers/tenant_time_provider.dart';
 
 import '../features/auth/providers/auth_provider.dart';
+import '../features/booking_forms/presentation/booking_forms_screen.dart';
 import '../features/business/presentation/dialogs/invite_operator_dialog.dart';
 import '../features/business/presentation/dialogs/location_closure_dialog.dart';
 import '../features/business/providers/location_closures_provider.dart';
@@ -193,6 +194,7 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
     final isMoreResources = currentPath == '/altro/risorse';
     final isMoreLocations = currentPath == '/altro/sedi';
     final isMorePaymentMethods = currentPath == '/altro/metodi-pagamento';
+    final isMoreBookingForms = currentPath == '/altro/booking-forms';
     final isMoreBilling = currentPath == '/altro/abbonamento';
     final isMoreWhatsappBusiness = currentPath == '/altro/whatsapp-business';
     final hasAltroBack =
@@ -348,6 +350,8 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
           actions.add(const _LocationsAddAction());
         } else if (isMorePaymentMethods && canManageClosures) {
           actions.add(const _PaymentMethodsAddAction());
+        } else if (isMoreBookingForms && canManageClosures) {
+          actions.add(const _BookingFormsAddAction());
         } else if (isBookingNotifications) {
           actions.add(_BookingNotificationsRefreshAction(ref: ref));
         } else if (isClosures && canManageClosures) {
@@ -527,6 +531,8 @@ class _ScaffoldWithNavigationState extends ConsumerState<ScaffoldWithNavigation>
         actions.add(const _LocationsAddAction(compact: true));
       } else if (isMorePaymentMethods && canManageClosures) {
         actions.add(const _PaymentMethodsAddAction(compact: true));
+      } else if (isMoreBookingForms && canManageClosures) {
+        actions.add(const _BookingFormsAddAction(compact: true));
       } else if (isBookingNotifications) {
         actions.add(_BookingNotificationsRefreshAction(ref: ref));
       } else if (isClosures && canManageClosures) {
@@ -2398,6 +2404,59 @@ class _PaymentMethodsAddAction extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: GestureDetector(
         onTap: () => showPaymentMethodDialog(context, ref),
+        child: Builder(
+          builder: (buttonContext) {
+            final scheme = Theme.of(buttonContext).colorScheme;
+            final onContainer = scheme.onSecondaryContainer;
+            return Material(
+              elevation: 0,
+              color: scheme.secondaryContainer,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: SizedBox(
+                height: _actionButtonHeight,
+                width: isIconOnly ? iconOnlyWidth : null,
+                child: Padding(
+                  padding: compact
+                      ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+                      : const EdgeInsets.fromLTRB(12, 8, 28, 8),
+                  child: _buildAddButtonContent(
+                    showLabelEffective: showLabelEffective,
+                    compact: compact,
+                    label: l10n.agendaAdd,
+                    onContainer: onContainer,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _BookingFormsAddAction extends ConsumerWidget {
+  const _BookingFormsAddAction({this.compact = false});
+  final bool compact;
+  static const double _actionButtonHeight = 40;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final layoutConfig = ref.watch(layoutConfigProvider);
+    final formFactor = ref.watch(formFactorProvider);
+    final showLabel = layoutConfig.showTopbarAddLabel;
+    final showLabelEffective = showLabel || formFactor != AppFormFactor.mobile;
+    const iconOnlyWidth = 46.0;
+    final bool isIconOnly = !showLabelEffective;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: GestureDetector(
+        onTap: () => openBookingFormEditor(context, ref),
         child: Builder(
           builder: (buttonContext) {
             final scheme = Theme.of(buttonContext).colorScheme;

@@ -610,5 +610,6 @@
     }
   },
   "bookingFormsRequiredError": "Required field",
-  "bookingFormsSubmitError": "Complete the required information before confirming."
+  "bookingFormsSubmitError": "Complete the required information before confirming.",
+  "bookingFormsPolicyLinkLabel": "Policy"
 }

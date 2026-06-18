@@ -2118,8 +2118,12 @@
   "bookingFormsListMeta": "{fields} fields · {assignments} assignments",
   "@bookingFormsListMeta": {
     "placeholders": {
-      "fields": { "type": "int" },
-      "assignments": { "type": "int" }
+      "fields": {
+        "type": "int"
+      },
+      "assignments": {
+        "type": "int"
+      }
     }
   },
   "bookingFormsFieldTitle": "Title",
@@ -2130,6 +2134,7 @@
   "bookingFormsFieldsTitle": "Fields",
   "bookingFormsRequired": "Required",
   "bookingFormsAddField": "Add field",
+  "bookingFormsEditField": "Edit field",
   "bookingFormsFieldType": "Field type",
   "bookingFormsFieldLabel": "Label",
   "bookingFormsOptionsHint": "Options, one per line",
@@ -2139,5 +2144,52 @@
   "bookingFormsFieldTypeMultipleChoice": "Multiple choice",
   "bookingFormsFieldTypeCheckbox": "Checkbox",
   "bookingFormsFieldTypeConsent": "Consent",
-  "bookingFormsFieldTypeInfoText": "Info text"
+  "bookingFormsFieldTypeInfoText": "Info text",
+  "bookingFormsConsentUrl": "Policy link",
+  "bookingFormsConsentUrlHint": "https://...",
+  "bookingFormsAssignmentsTitle": "Assignments",
+  "bookingFormsAssignmentScope": "Scope",
+  "bookingFormsAssignmentTarget": "Target",
+  "bookingFormsAssignmentAdd": "Add assignment",
+  "bookingFormsAssignmentsSave": "Save assignments",
+  "bookingFormsAssignmentBusiness": "Business",
+  "bookingFormsAssignmentBusinessWide": "Whole business",
+  "bookingFormsAssignmentLocation": "Location",
+  "bookingFormsAssignmentService": "Service",
+  "bookingFormsAssignmentPackage": "Package",
+  "bookingFormsAssignmentCategory": "Category",
+  "bookingFormsAssignmentClassEvent": "Class",
+  "bookingFormsAssignmentNoTargets": "No targets available for this scope",
+  "bookingFormsDeleteTitle": "Delete form?",
+  "bookingFormsDeleteMessage": "The form will no longer be available for online bookings. Existing submissions remain in history.",
+  "bookingFormsEditorSubtitle": "Configure the form, its fields and where it shows online.",
+  "bookingFormsStepForm": "Form",
+  "bookingFormsStepFields": "Fields",
+  "bookingFormsStepVisibility": "Visibility",
+  "bookingFormsModuleDetailsTitle": "Form details",
+  "bookingFormsActiveHint": "Inactive forms are never shown online.",
+  "bookingFormsStatusInactive": "Inactive",
+  "bookingFormsStatusShown": "Shown online",
+  "bookingFormsStatusHidden": "Not shown online",
+  "bookingFormsWarningNoFields": "No active fields",
+  "bookingFormsWarningNoAssignments": "No assignments",
+  "bookingFormsWarningInactive": "Form disabled",
+  "bookingFormsWontShowSummary": "Won't be shown online",
+  "bookingFormsFieldsEmpty": "No fields yet. Add the first one to get started.",
+  "bookingFormsFieldOptional": "Optional",
+  "bookingFormsFieldHelpText": "Help text (optional)",
+  "bookingFormsFieldPreviewTitle": "Preview",
+  "bookingFormsReorderTooltip": "Press and drag to reorder",
+  "bookingFormsSaveModuleFirst": "Save the form to manage fields and visibility.",
+  "bookingFormsVisibilityIntro": "Choose where to show the form during online booking. Scopes already covered by a broader rule are hidden to avoid redundancy.",
+  "bookingFormsWhereShownTitle": "Where it shows",
+  "bookingFormsVisibilityBusinessWideHint": "It will be shown in every online booking.",
+  "bookingFormsNoAssignmentsHint": "Without assignments the form will never appear online.",
+  "bookingFormsDeleteFieldTitle": "Remove field?",
+  "bookingFormsDeleteFieldMessage": "The field will no longer be shown in the form. Existing submissions remain in history.",
+  "bookingFormsOptionsRequired": "Add at least two options for choice fields.",
+  "bookingFormsFieldSaveError": "Could not save the field",
+  "bookingFormsOptionsTitle": "Options",
+  "bookingFormsOptionHint": "Option text",
+  "bookingFormsAddOption": "Add option"
 }

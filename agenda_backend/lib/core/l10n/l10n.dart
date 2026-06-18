@@ -14231,6 +14231,16 @@ class L10n {
     );
   }
 
+  /// `Edit field`
+  String get bookingFormsEditField {
+    return Intl.message(
+      'Edit field',
+      name: 'bookingFormsEditField',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Field type`
   String get bookingFormsFieldType {
     return Intl.message(
@@ -14326,6 +14336,476 @@ class L10n {
     return Intl.message(
       'Info text',
       name: 'bookingFormsFieldTypeInfoText',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Policy link`
+  String get bookingFormsConsentUrl {
+    return Intl.message(
+      'Policy link',
+      name: 'bookingFormsConsentUrl',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `https://...`
+  String get bookingFormsConsentUrlHint {
+    return Intl.message(
+      'https://...',
+      name: 'bookingFormsConsentUrlHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Assignments`
+  String get bookingFormsAssignmentsTitle {
+    return Intl.message(
+      'Assignments',
+      name: 'bookingFormsAssignmentsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Scope`
+  String get bookingFormsAssignmentScope {
+    return Intl.message(
+      'Scope',
+      name: 'bookingFormsAssignmentScope',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Target`
+  String get bookingFormsAssignmentTarget {
+    return Intl.message(
+      'Target',
+      name: 'bookingFormsAssignmentTarget',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add assignment`
+  String get bookingFormsAssignmentAdd {
+    return Intl.message(
+      'Add assignment',
+      name: 'bookingFormsAssignmentAdd',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Save assignments`
+  String get bookingFormsAssignmentsSave {
+    return Intl.message(
+      'Save assignments',
+      name: 'bookingFormsAssignmentsSave',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Business`
+  String get bookingFormsAssignmentBusiness {
+    return Intl.message(
+      'Business',
+      name: 'bookingFormsAssignmentBusiness',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Whole business`
+  String get bookingFormsAssignmentBusinessWide {
+    return Intl.message(
+      'Whole business',
+      name: 'bookingFormsAssignmentBusinessWide',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Location`
+  String get bookingFormsAssignmentLocation {
+    return Intl.message(
+      'Location',
+      name: 'bookingFormsAssignmentLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Service`
+  String get bookingFormsAssignmentService {
+    return Intl.message(
+      'Service',
+      name: 'bookingFormsAssignmentService',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Package`
+  String get bookingFormsAssignmentPackage {
+    return Intl.message(
+      'Package',
+      name: 'bookingFormsAssignmentPackage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Category`
+  String get bookingFormsAssignmentCategory {
+    return Intl.message(
+      'Category',
+      name: 'bookingFormsAssignmentCategory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Class`
+  String get bookingFormsAssignmentClassEvent {
+    return Intl.message(
+      'Class',
+      name: 'bookingFormsAssignmentClassEvent',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No targets available for this scope`
+  String get bookingFormsAssignmentNoTargets {
+    return Intl.message(
+      'No targets available for this scope',
+      name: 'bookingFormsAssignmentNoTargets',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Delete form?`
+  String get bookingFormsDeleteTitle {
+    return Intl.message(
+      'Delete form?',
+      name: 'bookingFormsDeleteTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The form will no longer be available for online bookings. Existing submissions remain in history.`
+  String get bookingFormsDeleteMessage {
+    return Intl.message(
+      'The form will no longer be available for online bookings. Existing submissions remain in history.',
+      name: 'bookingFormsDeleteMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Configure the form, its fields and where it shows online.`
+  String get bookingFormsEditorSubtitle {
+    return Intl.message(
+      'Configure the form, its fields and where it shows online.',
+      name: 'bookingFormsEditorSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Form`
+  String get bookingFormsStepForm {
+    return Intl.message(
+      'Form',
+      name: 'bookingFormsStepForm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Fields`
+  String get bookingFormsStepFields {
+    return Intl.message(
+      'Fields',
+      name: 'bookingFormsStepFields',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Visibility`
+  String get bookingFormsStepVisibility {
+    return Intl.message(
+      'Visibility',
+      name: 'bookingFormsStepVisibility',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Form details`
+  String get bookingFormsModuleDetailsTitle {
+    return Intl.message(
+      'Form details',
+      name: 'bookingFormsModuleDetailsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Inactive forms are never shown online.`
+  String get bookingFormsActiveHint {
+    return Intl.message(
+      'Inactive forms are never shown online.',
+      name: 'bookingFormsActiveHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Inactive`
+  String get bookingFormsStatusInactive {
+    return Intl.message(
+      'Inactive',
+      name: 'bookingFormsStatusInactive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Shown online`
+  String get bookingFormsStatusShown {
+    return Intl.message(
+      'Shown online',
+      name: 'bookingFormsStatusShown',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Not shown online`
+  String get bookingFormsStatusHidden {
+    return Intl.message(
+      'Not shown online',
+      name: 'bookingFormsStatusHidden',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No active fields`
+  String get bookingFormsWarningNoFields {
+    return Intl.message(
+      'No active fields',
+      name: 'bookingFormsWarningNoFields',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No assignments`
+  String get bookingFormsWarningNoAssignments {
+    return Intl.message(
+      'No assignments',
+      name: 'bookingFormsWarningNoAssignments',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Form disabled`
+  String get bookingFormsWarningInactive {
+    return Intl.message(
+      'Form disabled',
+      name: 'bookingFormsWarningInactive',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Won't be shown online`
+  String get bookingFormsWontShowSummary {
+    return Intl.message(
+      'Won\'t be shown online',
+      name: 'bookingFormsWontShowSummary',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No fields yet. Add the first one to get started.`
+  String get bookingFormsFieldsEmpty {
+    return Intl.message(
+      'No fields yet. Add the first one to get started.',
+      name: 'bookingFormsFieldsEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Optional`
+  String get bookingFormsFieldOptional {
+    return Intl.message(
+      'Optional',
+      name: 'bookingFormsFieldOptional',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Help text (optional)`
+  String get bookingFormsFieldHelpText {
+    return Intl.message(
+      'Help text (optional)',
+      name: 'bookingFormsFieldHelpText',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Preview`
+  String get bookingFormsFieldPreviewTitle {
+    return Intl.message(
+      'Preview',
+      name: 'bookingFormsFieldPreviewTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Press and drag to reorder`
+  String get bookingFormsReorderTooltip {
+    return Intl.message(
+      'Press and drag to reorder',
+      name: 'bookingFormsReorderTooltip',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Save the form to manage fields and visibility.`
+  String get bookingFormsSaveModuleFirst {
+    return Intl.message(
+      'Save the form to manage fields and visibility.',
+      name: 'bookingFormsSaveModuleFirst',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Choose where to show the form during online booking. Scopes already covered by a broader rule are hidden to avoid redundancy.`
+  String get bookingFormsVisibilityIntro {
+    return Intl.message(
+      'Choose where to show the form during online booking. Scopes already covered by a broader rule are hidden to avoid redundancy.',
+      name: 'bookingFormsVisibilityIntro',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Where it shows`
+  String get bookingFormsWhereShownTitle {
+    return Intl.message(
+      'Where it shows',
+      name: 'bookingFormsWhereShownTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `It will be shown in every online booking.`
+  String get bookingFormsVisibilityBusinessWideHint {
+    return Intl.message(
+      'It will be shown in every online booking.',
+      name: 'bookingFormsVisibilityBusinessWideHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Without assignments the form will never appear online.`
+  String get bookingFormsNoAssignmentsHint {
+    return Intl.message(
+      'Without assignments the form will never appear online.',
+      name: 'bookingFormsNoAssignmentsHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Remove field?`
+  String get bookingFormsDeleteFieldTitle {
+    return Intl.message(
+      'Remove field?',
+      name: 'bookingFormsDeleteFieldTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The field will no longer be shown in the form. Existing submissions remain in history.`
+  String get bookingFormsDeleteFieldMessage {
+    return Intl.message(
+      'The field will no longer be shown in the form. Existing submissions remain in history.',
+      name: 'bookingFormsDeleteFieldMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add at least two options for choice fields.`
+  String get bookingFormsOptionsRequired {
+    return Intl.message(
+      'Add at least two options for choice fields.',
+      name: 'bookingFormsOptionsRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not save the field`
+  String get bookingFormsFieldSaveError {
+    return Intl.message(
+      'Could not save the field',
+      name: 'bookingFormsFieldSaveError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Options`
+  String get bookingFormsOptionsTitle {
+    return Intl.message(
+      'Options',
+      name: 'bookingFormsOptionsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Option text`
+  String get bookingFormsOptionHint {
+    return Intl.message(
+      'Option text',
+      name: 'bookingFormsOptionHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add option`
+  String get bookingFormsAddOption {
+    return Intl.message(
+      'Add option',
+      name: 'bookingFormsAddOption',
       desc: '',
       args: [],
     );

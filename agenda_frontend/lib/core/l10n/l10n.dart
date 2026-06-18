@@ -3132,6 +3132,16 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Policy`
+  String get bookingFormsPolicyLinkLabel {
+    return Intl.message(
+      'Policy',
+      name: 'bookingFormsPolicyLinkLabel',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

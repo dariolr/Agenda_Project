@@ -610,5 +610,6 @@
     }
   },
   "bookingFormsRequiredError": "Campo obbligatorio",
-  "bookingFormsSubmitError": "Completa le informazioni richieste prima di confermare."
+  "bookingFormsSubmitError": "Completa le informazioni richieste prima di confermare.",
+  "bookingFormsPolicyLinkLabel": "Informativa"
 }

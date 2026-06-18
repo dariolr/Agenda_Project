@@ -715,7 +715,11 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingDirectLinkCopiedPackageMessage": m7,
     "bookingDirectLinkCopiedServiceMessage": m8,
     "bookingFormsActive": MessageLookupByLibrary.simpleMessage("Active"),
+    "bookingFormsActiveHint": MessageLookupByLibrary.simpleMessage(
+      "Inactive forms are never shown online.",
+    ),
     "bookingFormsAddField": MessageLookupByLibrary.simpleMessage("Add field"),
+    "bookingFormsAddOption": MessageLookupByLibrary.simpleMessage("Add option"),
     "bookingFormsAdminDescription": MessageLookupByLibrary.simpleMessage(
       "Collect information and consent during online booking",
     ),
@@ -725,16 +729,89 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingFormsAssignBusiness": MessageLookupByLibrary.simpleMessage(
       "Show for the whole business",
     ),
+    "bookingFormsAssignmentAdd": MessageLookupByLibrary.simpleMessage(
+      "Add assignment",
+    ),
+    "bookingFormsAssignmentBusiness": MessageLookupByLibrary.simpleMessage(
+      "Business",
+    ),
+    "bookingFormsAssignmentBusinessWide": MessageLookupByLibrary.simpleMessage(
+      "Whole business",
+    ),
+    "bookingFormsAssignmentCategory": MessageLookupByLibrary.simpleMessage(
+      "Category",
+    ),
+    "bookingFormsAssignmentClassEvent": MessageLookupByLibrary.simpleMessage(
+      "Class",
+    ),
+    "bookingFormsAssignmentLocation": MessageLookupByLibrary.simpleMessage(
+      "Location",
+    ),
+    "bookingFormsAssignmentNoTargets": MessageLookupByLibrary.simpleMessage(
+      "No targets available for this scope",
+    ),
+    "bookingFormsAssignmentPackage": MessageLookupByLibrary.simpleMessage(
+      "Package",
+    ),
+    "bookingFormsAssignmentScope": MessageLookupByLibrary.simpleMessage(
+      "Scope",
+    ),
+    "bookingFormsAssignmentService": MessageLookupByLibrary.simpleMessage(
+      "Service",
+    ),
+    "bookingFormsAssignmentTarget": MessageLookupByLibrary.simpleMessage(
+      "Target",
+    ),
+    "bookingFormsAssignmentsSave": MessageLookupByLibrary.simpleMessage(
+      "Save assignments",
+    ),
+    "bookingFormsAssignmentsTitle": MessageLookupByLibrary.simpleMessage(
+      "Assignments",
+    ),
+    "bookingFormsConsentUrl": MessageLookupByLibrary.simpleMessage(
+      "Policy link",
+    ),
+    "bookingFormsConsentUrlHint": MessageLookupByLibrary.simpleMessage(
+      "https://...",
+    ),
+    "bookingFormsDeleteFieldMessage": MessageLookupByLibrary.simpleMessage(
+      "The field will no longer be shown in the form. Existing submissions remain in history.",
+    ),
+    "bookingFormsDeleteFieldTitle": MessageLookupByLibrary.simpleMessage(
+      "Remove field?",
+    ),
+    "bookingFormsDeleteMessage": MessageLookupByLibrary.simpleMessage(
+      "The form will no longer be available for online bookings. Existing submissions remain in history.",
+    ),
+    "bookingFormsDeleteTitle": MessageLookupByLibrary.simpleMessage(
+      "Delete form?",
+    ),
+    "bookingFormsEditField": MessageLookupByLibrary.simpleMessage("Edit field"),
+    "bookingFormsEditorSubtitle": MessageLookupByLibrary.simpleMessage(
+      "Configure the form, its fields and where it shows online.",
+    ),
     "bookingFormsEmpty": MessageLookupByLibrary.simpleMessage(
       "No forms configured",
     ),
     "bookingFormsFieldDescription": MessageLookupByLibrary.simpleMessage(
       "Description",
     ),
+    "bookingFormsFieldHelpText": MessageLookupByLibrary.simpleMessage(
+      "Help text (optional)",
+    ),
     "bookingFormsFieldInternalName": MessageLookupByLibrary.simpleMessage(
       "Internal name",
     ),
     "bookingFormsFieldLabel": MessageLookupByLibrary.simpleMessage("Label"),
+    "bookingFormsFieldOptional": MessageLookupByLibrary.simpleMessage(
+      "Optional",
+    ),
+    "bookingFormsFieldPreviewTitle": MessageLookupByLibrary.simpleMessage(
+      "Preview",
+    ),
+    "bookingFormsFieldSaveError": MessageLookupByLibrary.simpleMessage(
+      "Could not save the field",
+    ),
     "bookingFormsFieldTitle": MessageLookupByLibrary.simpleMessage("Title"),
     "bookingFormsFieldType": MessageLookupByLibrary.simpleMessage("Field type"),
     "bookingFormsFieldTypeCheckbox": MessageLookupByLibrary.simpleMessage(
@@ -758,15 +835,73 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingFormsFieldTypeSingleChoice": MessageLookupByLibrary.simpleMessage(
       "Single choice",
     ),
+    "bookingFormsFieldsEmpty": MessageLookupByLibrary.simpleMessage(
+      "No fields yet. Add the first one to get started.",
+    ),
     "bookingFormsFieldsTitle": MessageLookupByLibrary.simpleMessage("Fields"),
     "bookingFormsListMeta": m9,
+    "bookingFormsModuleDetailsTitle": MessageLookupByLibrary.simpleMessage(
+      "Form details",
+    ),
     "bookingFormsNew": MessageLookupByLibrary.simpleMessage("New form"),
+    "bookingFormsNoAssignmentsHint": MessageLookupByLibrary.simpleMessage(
+      "Without assignments the form will never appear online.",
+    ),
+    "bookingFormsOptionHint": MessageLookupByLibrary.simpleMessage(
+      "Option text",
+    ),
     "bookingFormsOptionsHint": MessageLookupByLibrary.simpleMessage(
       "Options, one per line",
     ),
+    "bookingFormsOptionsRequired": MessageLookupByLibrary.simpleMessage(
+      "Add at least two options for choice fields.",
+    ),
+    "bookingFormsOptionsTitle": MessageLookupByLibrary.simpleMessage("Options"),
+    "bookingFormsReorderTooltip": MessageLookupByLibrary.simpleMessage(
+      "Press and drag to reorder",
+    ),
     "bookingFormsRequired": MessageLookupByLibrary.simpleMessage("Required"),
+    "bookingFormsSaveModuleFirst": MessageLookupByLibrary.simpleMessage(
+      "Save the form to manage fields and visibility.",
+    ),
     "bookingFormsSelectHint": MessageLookupByLibrary.simpleMessage(
       "Select a form or create a new one",
+    ),
+    "bookingFormsStatusHidden": MessageLookupByLibrary.simpleMessage(
+      "Not shown online",
+    ),
+    "bookingFormsStatusInactive": MessageLookupByLibrary.simpleMessage(
+      "Inactive",
+    ),
+    "bookingFormsStatusShown": MessageLookupByLibrary.simpleMessage(
+      "Shown online",
+    ),
+    "bookingFormsStepFields": MessageLookupByLibrary.simpleMessage("Fields"),
+    "bookingFormsStepForm": MessageLookupByLibrary.simpleMessage("Form"),
+    "bookingFormsStepVisibility": MessageLookupByLibrary.simpleMessage(
+      "Visibility",
+    ),
+    "bookingFormsVisibilityBusinessWideHint":
+        MessageLookupByLibrary.simpleMessage(
+          "It will be shown in every online booking.",
+        ),
+    "bookingFormsVisibilityIntro": MessageLookupByLibrary.simpleMessage(
+      "Choose where to show the form during online booking. Scopes already covered by a broader rule are hidden to avoid redundancy.",
+    ),
+    "bookingFormsWarningInactive": MessageLookupByLibrary.simpleMessage(
+      "Form disabled",
+    ),
+    "bookingFormsWarningNoAssignments": MessageLookupByLibrary.simpleMessage(
+      "No assignments",
+    ),
+    "bookingFormsWarningNoFields": MessageLookupByLibrary.simpleMessage(
+      "No active fields",
+    ),
+    "bookingFormsWhereShownTitle": MessageLookupByLibrary.simpleMessage(
+      "Where it shows",
+    ),
+    "bookingFormsWontShowSummary": MessageLookupByLibrary.simpleMessage(
+      "Won\'t be shown online",
     ),
     "bookingHistoryActorCustomer": MessageLookupByLibrary.simpleMessage(
       "Customer",
