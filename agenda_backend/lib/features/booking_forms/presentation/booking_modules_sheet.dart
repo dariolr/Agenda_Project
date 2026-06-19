@@ -142,10 +142,7 @@ class _BookingModulesSheetState extends ConsumerState<_BookingModulesSheet> {
                 onPressed: () => Navigator.of(context).pop(),
                 child: Text(l10n.actionCancel),
               ),
-              AppFilledButton(
-                onPressed: _save,
-                child: Text(l10n.actionSave),
-              ),
+              AppFilledButton(onPressed: _save, child: Text(l10n.actionSave)),
             ]
           : const [],
     );
@@ -235,45 +232,45 @@ class _FormCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.assignment_outlined,
-                size: 20,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  form.title,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.assignment_outlined,
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    form.title,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
+                ),
+              ],
+            ),
+            if (form.description?.isNotEmpty == true) ...[
+              const SizedBox(height: 4),
+              Text(
+                form.description!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ],
-          ),
-          if (form.description?.isNotEmpty == true) ...[
-            const SizedBox(height: 4),
-            Text(
-              form.description!,
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
+            const SizedBox(height: 12),
+            for (var i = 0; i < form.fields.length; i++) ...[
+              if (i > 0) const SizedBox(height: 14),
+              _FieldInput(
+                field: form.fields[i],
+                value: values[form.fields[i].id],
+                onChanged: (value) => onChanged(form.fields[i].id, value),
               ),
-            ),
+            ],
           ],
-          const SizedBox(height: 12),
-          for (var i = 0; i < form.fields.length; i++) ...[
-            if (i > 0) const SizedBox(height: 14),
-            _FieldInput(
-              field: form.fields[i],
-              value: values[form.fields[i].id],
-              onChanged: (value) => onChanged(form.fields[i].id, value),
-            ),
-          ],
-        ],
         ),
       ),
     );
@@ -332,6 +329,29 @@ class _FieldInput extends StatelessWidget {
           ),
         );
 
+      case 'segmented_choice':
+        return LabeledFormField(
+          label: _labelWithRequired(context),
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SegmentedButton<String>(
+              showSelectedIcon: false,
+              segments: [
+                for (final option in field.options)
+                  ButtonSegment<String>(
+                    value: option['value']!,
+                    label: Text(option['label'] ?? option['value']!),
+                  ),
+              ],
+              selected: value is String ? {value} : const <String>{},
+              emptySelectionAllowed: true,
+              onSelectionChanged: (selection) {
+                onChanged(selection.isEmpty ? null : selection.first);
+              },
+            ),
+          ),
+        );
+
       case 'multiple_choice':
         final selected = value is List
             ? List<String>.from(value.map((e) => e.toString()))
@@ -374,10 +394,7 @@ class _FieldInput extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            AppSwitch(
-              value: value == true,
-              onChanged: (v) => onChanged(v),
-            ),
+            AppSwitch(value: value == true, onChanged: (v) => onChanged(v)),
           ],
         );
 
@@ -395,8 +412,10 @@ class _FieldInput extends StatelessWidget {
         decoration: InputDecoration(
           hintText: field.helpText,
           isDense: true,
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 14,
+            vertical: 14,
+          ),
           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),

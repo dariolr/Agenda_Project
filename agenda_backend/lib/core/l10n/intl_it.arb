@@ -2141,6 +2141,7 @@
   "bookingFormsFieldTypeShortText": "Testo breve",
   "bookingFormsFieldTypeLongText": "Testo lungo",
   "bookingFormsFieldTypeSingleChoice": "Scelta singola",
+  "bookingFormsFieldTypeSegmentedChoice": "Scelta singola segmentata",
   "bookingFormsFieldTypeMultipleChoice": "Scelta multipla",
   "bookingFormsFieldTypeCheckbox": "Checkbox",
   "bookingFormsFieldTypeConsent": "Consenso",

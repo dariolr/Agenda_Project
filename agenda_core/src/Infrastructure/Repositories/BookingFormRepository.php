@@ -14,6 +14,7 @@ final class BookingFormRepository
     public const FIELD_SHORT_TEXT = 'short_text';
     public const FIELD_LONG_TEXT = 'long_text';
     public const FIELD_SINGLE_CHOICE = 'single_choice';
+    public const FIELD_SEGMENTED_CHOICE = 'segmented_choice';
     public const FIELD_MULTIPLE_CHOICE = 'multiple_choice';
     public const FIELD_CHECKBOX = 'checkbox';
     public const FIELD_CONSENT = 'consent';
@@ -25,11 +26,17 @@ final class BookingFormRepository
     public const FIELD_DROPDOWN = 'dropdown';
 
     private const NON_REQUIRED_TYPES = [self::FIELD_INFO_TEXT];
-    private const CHOICE_TYPES = [self::FIELD_SINGLE_CHOICE, self::FIELD_MULTIPLE_CHOICE, self::FIELD_DROPDOWN];
+    private const CHOICE_TYPES = [
+        self::FIELD_SINGLE_CHOICE,
+        self::FIELD_SEGMENTED_CHOICE,
+        self::FIELD_MULTIPLE_CHOICE,
+        self::FIELD_DROPDOWN,
+    ];
     private const INPUT_TYPES = [
         self::FIELD_SHORT_TEXT,
         self::FIELD_LONG_TEXT,
         self::FIELD_SINGLE_CHOICE,
+        self::FIELD_SEGMENTED_CHOICE,
         self::FIELD_MULTIPLE_CHOICE,
         self::FIELD_CHECKBOX,
         self::FIELD_CONSENT,
@@ -44,6 +51,7 @@ final class BookingFormRepository
         self::FIELD_SHORT_TEXT,
         self::FIELD_LONG_TEXT,
         self::FIELD_SINGLE_CHOICE,
+        self::FIELD_SEGMENTED_CHOICE,
         self::FIELD_MULTIPLE_CHOICE,
         self::FIELD_CHECKBOX,
         self::FIELD_CONSENT,
@@ -1001,7 +1009,11 @@ final class BookingFormRepository
             return $this->valuesBelongToOptions($field, $value);
         }
 
-        if (in_array($type, [self::FIELD_SINGLE_CHOICE, self::FIELD_DROPDOWN], true)) {
+        if (in_array(
+            $type,
+            [self::FIELD_SINGLE_CHOICE, self::FIELD_SEGMENTED_CHOICE, self::FIELD_DROPDOWN],
+            true
+        )) {
             return $this->valuesBelongToOptions($field, [(string) $value]);
         }
 

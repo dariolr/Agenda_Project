@@ -829,6 +829,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingFormsFieldTypeMultipleChoice": MessageLookupByLibrary.simpleMessage(
       "Multiple choice",
     ),
+    "bookingFormsFieldTypeSegmentedChoice":
+        MessageLookupByLibrary.simpleMessage("Segmented single choice"),
     "bookingFormsFieldTypeShortText": MessageLookupByLibrary.simpleMessage(
       "Short text",
     ),

@@ -14301,6 +14301,16 @@ class L10n {
     );
   }
 
+  /// `Segmented single choice`
+  String get bookingFormsFieldTypeSegmentedChoice {
+    return Intl.message(
+      'Segmented single choice',
+      name: 'bookingFormsFieldTypeSegmentedChoice',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Multiple choice`
   String get bookingFormsFieldTypeMultipleChoice {
     return Intl.message(

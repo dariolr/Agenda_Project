@@ -1218,6 +1218,45 @@ class _BookingFormFieldWidget extends StatelessWidget {
           ],
           onChanged: onChanged,
         );
+      case 'segmented_choice':
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(label, style: theme.textTheme.bodyMedium),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SegmentedButton<String>(
+                showSelectedIcon: false,
+                segments: [
+                  for (final option in field.options)
+                    ButtonSegment<String>(
+                      value: option.value,
+                      label: Text(option.label),
+                    ),
+                ],
+                selected: value is String ? {value} : const <String>{},
+                emptySelectionAllowed: true,
+                onSelectionChanged: (selection) {
+                  onChanged(selection.isEmpty ? null : selection.first);
+                },
+              ),
+            ),
+            if (field.helpText != null && field.helpText!.trim().isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(field.helpText!, style: theme.textTheme.bodySmall),
+              ),
+            if (errorText != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  errorText,
+                  style: TextStyle(color: theme.colorScheme.error),
+                ),
+              ),
+          ],
+        );
       case 'multiple_choice':
         final selected = value is Set<String>
             ? value as Set<String>

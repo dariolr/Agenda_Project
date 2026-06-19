@@ -1874,6 +1874,7 @@ IconData _fieldTypeIcon(String fieldType) {
     'short_text' => Icons.short_text,
     'long_text' => Icons.notes_outlined,
     'single_choice' => Icons.radio_button_checked,
+    'segmented_choice' => Icons.splitscreen_outlined,
     'multiple_choice' => Icons.checklist_outlined,
     'checkbox' => Icons.check_box_outlined,
     'consent' => Icons.verified_user_outlined,
@@ -1888,6 +1889,7 @@ String _fieldTypeLabel(BuildContext context, String fieldType) {
     'short_text' => l10n.bookingFormsFieldTypeShortText,
     'long_text' => l10n.bookingFormsFieldTypeLongText,
     'single_choice' => l10n.bookingFormsFieldTypeSingleChoice,
+    'segmented_choice' => l10n.bookingFormsFieldTypeSegmentedChoice,
     'multiple_choice' => l10n.bookingFormsFieldTypeMultipleChoice,
     'checkbox' => l10n.bookingFormsFieldTypeCheckbox,
     'consent' => l10n.bookingFormsFieldTypeConsent,
@@ -1924,6 +1926,7 @@ class _BookingFormFieldDialogState extends State<_BookingFormFieldDialog> {
     'short_text',
     'long_text',
     'single_choice',
+    'segmented_choice',
     'multiple_choice',
     'checkbox',
     'consent',
@@ -1961,7 +1964,9 @@ class _BookingFormFieldDialogState extends State<_BookingFormFieldDialog> {
   }
 
   bool get _requiresOptions =>
-      _fieldType == 'single_choice' || _fieldType == 'multiple_choice';
+      _fieldType == 'single_choice' ||
+      _fieldType == 'segmented_choice' ||
+      _fieldType == 'multiple_choice';
 
   bool get _isInfo => _fieldType == 'info_text';
 
@@ -2357,9 +2362,32 @@ class _FieldPreview extends StatelessWidget {
           ],
         );
       case 'single_choice':
+      case 'segmented_choice':
       case 'multiple_choice':
         final isMulti = fieldType == 'multiple_choice';
         final opts = options.isEmpty ? ['—'] : options;
+        if (fieldType == 'segmented_choice') {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              labelText(),
+              const SizedBox(height: 8),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: SegmentedButton<String>(
+                  showSelectedIcon: false,
+                  segments: [
+                    for (final opt in opts)
+                      ButtonSegment<String>(value: opt, label: Text(opt)),
+                  ],
+                  selected: const <String>{},
+                  emptySelectionAllowed: true,
+                  onSelectionChanged: null,
+                ),
+              ),
+            ],
+          );
+        }
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
