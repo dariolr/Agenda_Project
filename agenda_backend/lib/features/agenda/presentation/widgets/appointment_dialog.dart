@@ -836,19 +836,19 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
           ),
           orElse: () => false,
         );
-    final modulesButton = OutlinedButton.icon(
+    final moduliAction = AppOutlinedActionButton(
       onPressed: _isSaving
           ? null
           : () => showBookingModulesSheet(
                 context,
                 bookingId: widget.initial.bookingId,
               ),
-      icon: const Icon(Icons.assignment_outlined, size: 18),
-      label: Text(l10n.bookingModulesAction),
+      padding: AppButtonStyles.dialogButtonPadding,
+      child: Text(l10n.bookingModulesAction),
     );
     final actions = canManageBookings
         ? [deleteAction, cancelAction, rescheduleAction, paymentAction, saveAction]
-        : [cancelAction];
+        : (hasModules ? [cancelAction, moduliAction] : [cancelAction]);
 
     if (isDialog) {
       return CallbackShortcuts(
@@ -903,10 +903,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                                 ],
                               ),
                             ),
-                            if (hasModules) ...[
-                              modulesButton,
-                              const SizedBox(width: 8),
-                            ],
                             IconButton(
                               icon: const Icon(Icons.history),
                               tooltip: l10n.bookingHistoryTitle,
@@ -927,19 +923,44 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                             l10n.bookingUnavailableTimeWarningAppointment,
                           ),
                         ),
-                        OverflowBar(
-                          alignment: MainAxisAlignment.end,
-                          overflowAlignment: OverflowBarAlignment.end,
-                          spacing: 8,
-                          overflowSpacing: 8,
-                          children: [
-                            for (final action in actions)
-                              SizedBox(
-                                width: AppButtonStyles.dialogButtonWidth,
-                                child: action,
+                        if (canManageBookings && hasModules)
+                          Column(
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(child: rescheduleAction),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: moduliAction),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: paymentAction),
+                                ],
                               ),
-                          ],
-                        ),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Expanded(child: deleteAction),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: cancelAction),
+                                  const SizedBox(width: 8),
+                                  Expanded(child: saveAction),
+                                ],
+                              ),
+                            ],
+                          )
+                        else
+                          OverflowBar(
+                            alignment: MainAxisAlignment.end,
+                            overflowAlignment: OverflowBarAlignment.end,
+                            spacing: 8,
+                            overflowSpacing: 8,
+                            children: [
+                              for (final action in actions)
+                                SizedBox(
+                                  width: AppButtonStyles.dialogButtonWidth,
+                                  child: action,
+                                ),
+                            ],
+                          ),
                       ],
                     ),
                   ),
@@ -990,10 +1011,6 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                         ],
                       ),
                     ),
-                    if (hasModules) ...[
-                      modulesButton,
-                      const SizedBox(width: 8),
-                    ],
                     IconButton(
                       icon: const Icon(Icons.history),
                       tooltip: l10n.bookingHistoryTitle,
@@ -1023,25 +1040,52 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                     0,
                   ),
                   child: Column(
-                    children: [
-                      SizedBox(width: double.infinity, child: cancelAction),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(child: paymentAction),
-                          const SizedBox(width: 8),
-                          Expanded(child: rescheduleAction),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(child: deleteAction),
-                          const SizedBox(width: 8),
-                          Expanded(child: saveAction),
-                        ],
-                      ),
-                    ],
+                    children: hasModules
+                        ? [
+                            Row(
+                              children: [
+                                Expanded(child: cancelAction),
+                                const SizedBox(width: 8),
+                                Expanded(child: rescheduleAction),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(child: paymentAction),
+                                const SizedBox(width: 8),
+                                Expanded(child: moduliAction),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(child: deleteAction),
+                                const SizedBox(width: 8),
+                                Expanded(child: saveAction),
+                              ],
+                            ),
+                          ]
+                        : [
+                            SizedBox(
+                                width: double.infinity, child: cancelAction),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(child: paymentAction),
+                                const SizedBox(width: 8),
+                                Expanded(child: rescheduleAction),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              children: [
+                                Expanded(child: deleteAction),
+                                const SizedBox(width: 8),
+                                Expanded(child: saveAction),
+                              ],
+                            ),
+                          ],
                   ),
                 ),
               ],

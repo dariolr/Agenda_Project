@@ -6,6 +6,7 @@ import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/widgets/app_buttons.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/agenda/domain/staff_filter_mode.dart';
+import 'package:agenda_backend/features/booking_forms/providers/booking_forms_provider.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/day_view/agenda_day.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/day_view/components/hour_column.dart';
 import 'package:agenda_backend/features/agenda/presentation/screens/week_view/weekly_appointments_view.dart';
@@ -397,6 +398,9 @@ class _AgendaScreenState extends ConsumerState<AgendaScreen> {
     final rescheduleSession = ref.watch(bookingRescheduleSessionProvider);
     final canUseBookingReschedule = ref.watch(canUseBookingRescheduleProvider);
     final currentBusinessId = ref.watch(currentBusinessIdProvider);
+    // Precarica i moduli prenotazione così, all'apertura di una prenotazione,
+    // il pulsante "Moduli" è già deciso e i pulsanti non si riorganizzano.
+    ref.watch(bookingFormsProvider);
     final globalLoadingCount = ref.watch(globalLoadingProvider);
     final isGlobalLoading = globalLoadingCount > 0;
 

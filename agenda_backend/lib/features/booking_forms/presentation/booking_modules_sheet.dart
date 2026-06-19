@@ -130,6 +130,11 @@ class _BookingModulesSheetState extends ConsumerState<_BookingModulesSheet> {
     return AppFormScaffold(
       isLoading: _saving,
       title: Text(l10n.bookingModulesTitle),
+      // Su mobile AppForm.show fornisce già il padding orizzontale del
+      // bottom sheet: azzero quello dello scaffold per evitare margini doppi.
+      mobileContentPadding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+      mobileActionsPadding: const EdgeInsets.fromLTRB(0, 12, 0, 0),
+      mobileBottomSpacing: 16,
       content: _buildContent(context),
       actions: hasForms
           ? [
@@ -221,14 +226,15 @@ class _FormCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
+    return Material(
+      color: theme.colorScheme.surface,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.18)),
+        side: BorderSide(color: Colors.grey.withValues(alpha: 0.18)),
       ),
-      child: Column(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
@@ -268,6 +274,7 @@ class _FormCard extends StatelessWidget {
             ),
           ],
         ],
+        ),
       ),
     );
   }
