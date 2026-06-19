@@ -1013,6 +1013,19 @@ class MessageLookup extends MessageLookupByLibrary {
       "Storico prenotazione",
     ),
     "bookingItems": MessageLookupByLibrary.simpleMessage("Servizi"),
+    "bookingModulesAction": MessageLookupByLibrary.simpleMessage("Moduli"),
+    "bookingModulesEmpty": MessageLookupByLibrary.simpleMessage(
+      "Nessun modulo applicabile a questa prenotazione.",
+    ),
+    "bookingModulesError": MessageLookupByLibrary.simpleMessage(
+      "Impossibile salvare i moduli",
+    ),
+    "bookingModulesSaved": MessageLookupByLibrary.simpleMessage(
+      "Moduli salvati",
+    ),
+    "bookingModulesTitle": MessageLookupByLibrary.simpleMessage(
+      "Moduli prenotazione",
+    ),
     "bookingNotes": MessageLookupByLibrary.simpleMessage("Note prenotazione"),
     "bookingNotificationsActionViewBody": MessageLookupByLibrary.simpleMessage(
       "Visualizza corpo",

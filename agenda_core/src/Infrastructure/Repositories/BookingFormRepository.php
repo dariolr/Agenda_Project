@@ -323,18 +323,25 @@ final class BookingFormRepository
         int $businessId,
         int $locationId,
         int $bookingId,
-        int $clientId,
+        ?int $clientId,
         array $serviceVariantIds,
         array $serviceIds,
         array $servicePackageIds,
         array $classEventIds,
-        array $submissions
+        array $submissions,
+        bool $replaceExisting = false,
+        bool $enforceRequired = true
     ): void {
         $context = $this->buildContextIds($businessId, $locationId, $serviceVariantIds, $serviceIds, $servicePackageIds, $classEventIds);
         $forms = $this->findActiveFormsForContext($businessId, $context);
         $formsById = [];
         foreach ($forms as $form) {
             $formsById[(int) $form['id']] = $form;
+        }
+
+        // Modifica dal gestionale: sostituisce le submission esistenti.
+        if ($replaceExisting) {
+            $this->deleteSubmissionsForBooking($businessId, $bookingId);
         }
 
         $submittedByForm = [];
@@ -362,7 +369,7 @@ final class BookingFormRepository
                 }
             }
         }
-        if (!empty($missing)) {
+        if ($enforceRequired && !empty($missing)) {
             throw BookingException::bookingFormError(
                 'booking_form_required_fields_missing',
                 'One or more required booking form fields are missing',
@@ -466,6 +473,175 @@ final class BookingFormRepository
                 'answers' => $answersBySubmission[$id] ?? [],
             ];
         }, $submissions);
+    }
+
+    /**
+     * Tutti i moduli attivi del business (con campi) e il valore corrente di
+     * ogni campo dalle submission salvate. Per il gestionale, dove l'operatore
+     * può compilare/modificare qualunque modulo su una prenotazione,
+     * indipendentemente dalle assegnazioni (che valgono per la prenotazione
+     * pubblica).
+     */
+    public function getActiveFormsWithValues(int $businessId, int $bookingId): array
+    {
+        $forms = array_map(
+            [$this, 'formatPublicForm'],
+            $this->allActiveFormsWithFields($businessId)
+        );
+        return $this->attachAnswerValues($forms, $businessId, $bookingId);
+    }
+
+    /**
+     * Salva (sostituendo) le risposte ai moduli di una prenotazione dal
+     * gestionale. Valida i valori rispetto ai campi del modulo; permissivo sui
+     * campi obbligatori (consente salvataggi parziali).
+     */
+    public function saveManagedSubmissions(
+        int $businessId,
+        int $bookingId,
+        ?int $clientId,
+        array $submissions
+    ): void {
+        $formsById = [];
+        foreach ($this->allActiveFormsWithFields($businessId) as $form) {
+            $formsById[(int) $form['id']] = $form;
+        }
+
+        $this->deleteSubmissionsForBooking($businessId, $bookingId);
+
+        $pdo = $this->db->getPdo();
+        $submissionStmt = $pdo->prepare(
+            'INSERT INTO booking_form_submissions
+                (business_id, booking_id, form_id, form_title_snapshot, submitted_by_client_id)
+             VALUES (?, ?, ?, ?, ?)'
+        );
+        $answerStmt = $pdo->prepare(
+            'INSERT INTO booking_form_submission_answers
+                (submission_id, business_id, booking_id, form_id, field_id, field_type_snapshot, field_label_snapshot, answer_text, answer_json)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+
+        foreach ($submissions as $submission) {
+            if (!is_array($submission) || !isset($submission['form_id'])) {
+                continue;
+            }
+            $formId = (int) $submission['form_id'];
+            if (!isset($formsById[$formId])) {
+                continue; // modulo sconosciuto/non attivo: ignorato
+            }
+            $form = $formsById[$formId];
+            $answersByField = $this->answersByField($submission['answers'] ?? []);
+            $answersToSave = [];
+            foreach ($form['fields'] as $field) {
+                $fieldId = (int) $field['id'];
+                $fieldType = (string) $field['field_type'];
+                if (!$this->isInputField($fieldType) || !array_key_exists($fieldId, $answersByField)) {
+                    continue;
+                }
+                $value = $answersByField[$fieldId]['value'] ?? null;
+                if (!$this->isValidAnswerValue($field, $value)) {
+                    continue;
+                }
+                $answersToSave[] = $this->formatAnswerForStorage($field, $value);
+            }
+            if (empty($answersToSave)) {
+                continue;
+            }
+
+            $submissionStmt->execute([$businessId, $bookingId, $formId, $form['title'], $clientId]);
+            $submissionId = (int) $pdo->lastInsertId();
+            foreach ($answersToSave as $answer) {
+                $answerStmt->execute([
+                    $submissionId,
+                    $businessId,
+                    $bookingId,
+                    $formId,
+                    $answer['field_id'],
+                    $answer['field_type'],
+                    $answer['field_label'],
+                    $answer['answer_text'],
+                    $answer['answer_json'],
+                ]);
+            }
+        }
+    }
+
+    /** @param array<int,array<string,mixed>> $forms */
+    private function attachAnswerValues(array $forms, int $businessId, int $bookingId): array
+    {
+        $valueByFormField = [];
+        foreach ($this->getSubmissionsForBooking($businessId, $bookingId) as $submission) {
+            $formId = (int) $submission['form_id'];
+            foreach ($submission['answers'] as $answer) {
+                $valueByFormField[$formId][(int) $answer['field_id']] = $answer;
+            }
+        }
+
+        foreach ($forms as &$form) {
+            $formId = (int) $form['id'];
+            foreach ($form['fields'] as &$field) {
+                $stored = $valueByFormField[$formId][(int) $field['id']] ?? null;
+                $field['value'] = $stored === null
+                    ? null
+                    : $this->storedAnswerValue((string) $field['field_type'], $stored);
+            }
+            unset($field);
+        }
+        unset($form);
+
+        return $forms;
+    }
+
+    private function allActiveFormsWithFields(int $businessId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT * FROM booking_forms
+             WHERE business_id = ? AND is_active = 1 AND deleted_at IS NULL
+             ORDER BY sort_order ASC, id ASC'
+        );
+        $stmt->execute([$businessId]);
+        $forms = $stmt->fetchAll();
+        if (empty($forms)) {
+            return [];
+        }
+
+        $formIds = array_map(static fn(array $row): int => (int) $row['id'], $forms);
+        $fieldsByForm = $this->fieldsByFormIds($businessId, $formIds);
+        $result = [];
+        foreach ($forms as $form) {
+            $id = (int) $form['id'];
+            if (empty($fieldsByForm[$id])) {
+                continue;
+            }
+            $form['fields'] = $fieldsByForm[$id];
+            $result[] = $form;
+        }
+        return $result;
+    }
+
+    private function storedAnswerValue(string $fieldType, array $answer): mixed
+    {
+        if ($fieldType === self::FIELD_MULTIPLE_CHOICE) {
+            $json = $answer['answer_json'] ?? null;
+            return is_array($json) ? array_values($json) : [];
+        }
+        if (in_array($fieldType, [self::FIELD_CHECKBOX, self::FIELD_CONSENT], true)) {
+            return ($answer['answer_text'] ?? null) === '1';
+        }
+        return $answer['answer_text'];
+    }
+
+    private function deleteSubmissionsForBooking(int $businessId, int $bookingId): void
+    {
+        $pdo = $this->db->getPdo();
+        $answers = $pdo->prepare(
+            'DELETE FROM booking_form_submission_answers WHERE business_id = ? AND booking_id = ?'
+        );
+        $answers->execute([$businessId, $bookingId]);
+        $submissions = $pdo->prepare(
+            'DELETE FROM booking_form_submissions WHERE business_id = ? AND booking_id = ?'
+        );
+        $submissions->execute([$businessId, $bookingId]);
     }
 
     private function findActiveFormsForContext(int $businessId, array $context): array

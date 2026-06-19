@@ -14810,6 +14810,56 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Modules`
+  String get bookingModulesAction {
+    return Intl.message(
+      'Modules',
+      name: 'bookingModulesAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Booking modules`
+  String get bookingModulesTitle {
+    return Intl.message(
+      'Booking modules',
+      name: 'bookingModulesTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No modules apply to this booking.`
+  String get bookingModulesEmpty {
+    return Intl.message(
+      'No modules apply to this booking.',
+      name: 'bookingModulesEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Could not save the modules`
+  String get bookingModulesError {
+    return Intl.message(
+      'Could not save the modules',
+      name: 'bookingModulesError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Modules saved`
+  String get bookingModulesSaved {
+    return Intl.message(
+      'Modules saved',
+      name: 'bookingModulesSaved',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

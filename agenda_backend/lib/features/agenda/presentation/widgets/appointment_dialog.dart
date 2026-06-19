@@ -23,6 +23,8 @@ import '../../../../core/utils/price_utils.dart';
 import '../../../../core/widgets/app_bottom_sheet.dart';
 import '../../../../core/widgets/app_buttons.dart';
 import '../../../../core/widgets/app_dialogs.dart';
+import '../../../booking_forms/presentation/booking_modules_sheet.dart';
+import '../../../booking_forms/providers/booking_forms_provider.dart';
 import '../../../../core/widgets/app_dividers.dart';
 import '../../../../core/widgets/feedback_dialog.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
@@ -827,6 +829,23 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
       padding: AppButtonStyles.dialogButtonPadding,
       child: Text(l10n.actionPayment),
     );
+    // Il pulsante Moduli compare solo se esiste almeno un modulo attivo con campi.
+    final hasModules = ref.watch(bookingFormsProvider).maybeWhen(
+          data: (forms) => forms.any(
+            (form) => form.isActive && (form.fieldsCount ?? form.fields.length) > 0,
+          ),
+          orElse: () => false,
+        );
+    final modulesButton = OutlinedButton.icon(
+      onPressed: _isSaving
+          ? null
+          : () => showBookingModulesSheet(
+                context,
+                bookingId: widget.initial.bookingId,
+              ),
+      icon: const Icon(Icons.assignment_outlined, size: 18),
+      label: Text(l10n.bookingModulesAction),
+    );
     final actions = canManageBookings
         ? [deleteAction, cancelAction, rescheduleAction, paymentAction, saveAction]
         : [cancelAction];
@@ -884,6 +903,10 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                                 ],
                               ),
                             ),
+                            if (hasModules) ...[
+                              modulesButton,
+                              const SizedBox(width: 8),
+                            ],
                             IconButton(
                               icon: const Icon(Icons.history),
                               tooltip: l10n.bookingHistoryTitle,
@@ -967,6 +990,10 @@ class _AppointmentDialogState extends ConsumerState<_AppointmentDialog> {
                         ],
                       ),
                     ),
+                    if (hasModules) ...[
+                      modulesButton,
+                      const SizedBox(width: 8),
+                    ],
                     IconButton(
                       icon: const Icon(Icons.history),
                       tooltip: l10n.bookingHistoryTitle,

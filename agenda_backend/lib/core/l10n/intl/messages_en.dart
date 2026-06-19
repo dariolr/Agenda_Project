@@ -973,6 +973,19 @@ class MessageLookup extends MessageLookupByLibrary {
       "Booking history",
     ),
     "bookingItems": MessageLookupByLibrary.simpleMessage("Services"),
+    "bookingModulesAction": MessageLookupByLibrary.simpleMessage("Modules"),
+    "bookingModulesEmpty": MessageLookupByLibrary.simpleMessage(
+      "No modules apply to this booking.",
+    ),
+    "bookingModulesError": MessageLookupByLibrary.simpleMessage(
+      "Could not save the modules",
+    ),
+    "bookingModulesSaved": MessageLookupByLibrary.simpleMessage(
+      "Modules saved",
+    ),
+    "bookingModulesTitle": MessageLookupByLibrary.simpleMessage(
+      "Booking modules",
+    ),
     "bookingNotes": MessageLookupByLibrary.simpleMessage("Booking notes"),
     "bookingNotificationsActionViewBody": MessageLookupByLibrary.simpleMessage(
       "View body",

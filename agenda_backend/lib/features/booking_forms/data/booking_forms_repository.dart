@@ -1,4 +1,5 @@
 import '../../../core/network/api_client.dart';
+import '../domain/booking_form_for_booking.dart';
 import '../domain/booking_form_models.dart';
 
 class BookingFormsRepository {
@@ -102,6 +103,33 @@ class BookingFormsRepository {
 
   Future<void> deleteForm(int businessId, int formId) async {
     await _apiClient.delete('/v1/businesses/$businessId/booking-forms/$formId');
+  }
+
+  /// Moduli applicabili a una prenotazione, con i valori correnti dei campi.
+  Future<List<BookingFormForBooking>> getBookingForms(
+    int businessId,
+    int bookingId,
+  ) async {
+    final response = await _apiClient.get(
+      '/v1/businesses/$businessId/bookings/$bookingId/forms',
+    );
+    return (response['forms'] as List<dynamic>? ?? const [])
+        .map((item) =>
+            BookingFormForBooking.fromJson(item as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// Salva (sostituisce) le risposte ai moduli di una prenotazione.
+  /// [submissions] = [{form_id, answers: [{field_id, value}]}].
+  Future<void> saveBookingForms(
+    int businessId,
+    int bookingId,
+    List<Map<String, dynamic>> submissions,
+  ) async {
+    await _apiClient.put(
+      '/v1/businesses/$businessId/bookings/$bookingId/form-submissions',
+      data: {'submissions': submissions},
+    );
   }
 
   Future<BookingForm> setBusinessAssignment(int businessId, int formId) async {

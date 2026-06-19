@@ -338,6 +338,8 @@ final class Kernel
         $this->router->put('/v1/businesses/{business_id}/booking-forms/{form_id}/fields/reorder', BookingFormsController::class, 'reorderFields', ['auth', 'business_access_route']);
         $this->router->put('/v1/businesses/{business_id}/booking-forms/{form_id}/assignments', BookingFormsController::class, 'replaceAssignments', ['auth', 'business_access_route']);
         $this->router->get('/v1/businesses/{business_id}/bookings/{booking_id}/form-submissions', BookingFormsController::class, 'submissionsForBooking', ['auth', 'business_access_route']);
+        $this->router->get('/v1/businesses/{business_id}/bookings/{booking_id}/forms', BookingFormsController::class, 'formsForBooking', ['auth', 'business_access_route']);
+        $this->router->put('/v1/businesses/{business_id}/bookings/{booking_id}/form-submissions', BookingFormsController::class, 'saveBookingSubmissions', ['auth', 'business_access_route']);
 
         // Clients (auth required)
         $this->router->get('/v1/clients', ClientsController::class, 'index', ['auth']);
@@ -571,7 +573,7 @@ final class Kernel
             ServicesController::class => new ServicesController($serviceRepo, $variantResourceRepo, $locationRepo, $businessUserRepo, $userRepo, $servicePackageRepo, $popularServiceRepo, $staffRepo, $bookingDirectLinkRepo, $locationAuth),
             ServicePackagesController::class => new ServicePackagesController($servicePackageRepo, $businessUserRepo, $userRepo, $bookingDirectLinkRepo),
             BookingDirectLinksController::class => new BookingDirectLinksController($bookingDirectLinkRepo, $businessRepo, $businessUserRepo, $locationRepo, $userRepo),
-            BookingFormsController::class => new BookingFormsController($bookingFormRepo, $businessUserRepo, $userRepo),
+            BookingFormsController::class => new BookingFormsController($bookingFormRepo, $businessUserRepo, $userRepo, $bookingRepo),
             StaffController::class => new StaffController($staffRepo, $businessUserRepo, $locationRepo, $userRepo, $bookingRepo, $classEventRepo),
             AvailabilityController::class => new AvailabilityController($computeAvailability, $serviceRepo),
             BookingsController::class => new BookingsController($createBooking, $bookingRepo, $getMyBookings, $updateBooking, $deleteBooking, $locationRepo, $businessUserRepo, $userRepo, $replaceBooking, $bookingAuditRepo, $clientRepo, $createRecurringBooking, $previewRecurringBooking, $recurrenceRuleRepo, $modifyRecurringSeries, $notificationRepo, $locationAuth),

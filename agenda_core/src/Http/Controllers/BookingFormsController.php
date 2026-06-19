@@ -7,6 +7,7 @@ namespace Agenda\Http\Controllers;
 use Agenda\Http\Request;
 use Agenda\Http\Response;
 use Agenda\Infrastructure\Repositories\BookingFormRepository;
+use Agenda\Infrastructure\Repositories\BookingRepository;
 use Agenda\Infrastructure\Repositories\BusinessUserRepository;
 use Agenda\Infrastructure\Repositories\UserRepository;
 use InvalidArgumentException;
@@ -17,6 +18,7 @@ final class BookingFormsController
         private readonly BookingFormRepository $bookingFormRepo,
         private readonly BusinessUserRepository $businessUserRepo,
         private readonly UserRepository $userRepo,
+        private readonly BookingRepository $bookingRepo,
     ) {}
 
     public function index(Request $request): Response
@@ -234,6 +236,58 @@ final class BookingFormsController
         ]);
     }
 
+    /**
+     * Moduli applicabili a una prenotazione (definizione + valori correnti),
+     * per la visualizzazione/modifica nel gestionale.
+     */
+    public function formsForBooking(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        $bookingId = (int) $request->getRouteParam('booking_id');
+        if (!$this->hasReadAccess($request, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        $booking = $this->bookingRepo->findById($bookingId);
+        if ($booking === null || (int) $booking['business_id'] !== $businessId) {
+            return Response::notFound('Booking not found', $request->traceId);
+        }
+
+        return Response::success([
+            'forms' => $this->bookingFormRepo->getActiveFormsWithValues($businessId, $bookingId),
+        ]);
+    }
+
+    public function saveBookingSubmissions(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        $bookingId = (int) $request->getRouteParam('booking_id');
+        if (!$this->hasBookingManageAccess($request, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        $booking = $this->bookingRepo->findById($bookingId);
+        if ($booking === null || (int) $booking['business_id'] !== $businessId) {
+            return Response::notFound('Booking not found', $request->traceId);
+        }
+
+        $submissions = $this->body($request)['submissions'] ?? [];
+        if (!is_array($submissions)) {
+            return Response::error('submissions is required', 'validation_error', 422, $request->traceId);
+        }
+
+        $clientId = $booking['client_id'] !== null ? (int) $booking['client_id'] : null;
+        try {
+            $this->bookingFormRepo->saveManagedSubmissions($businessId, $bookingId, $clientId, $submissions);
+        } catch (\Throwable $e) {
+            return Response::error($e->getMessage(), 'validation_error', 422, $request->traceId);
+        }
+
+        return Response::success([
+            'form_submissions' => $this->bookingFormRepo->getSubmissionsForBooking($businessId, $bookingId),
+        ]);
+    }
+
     private function hasManageAccess(Request $request, int $businessId): bool
     {
         $userId = $this->userId($request);
@@ -244,6 +298,18 @@ final class BookingFormsController
             return true;
         }
         return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_services', false);
+    }
+
+    private function hasBookingManageAccess(Request $request, int $businessId): bool
+    {
+        $userId = $this->userId($request);
+        if ($userId === null) {
+            return false;
+        }
+        if ($this->userRepo->isSuperadmin($userId)) {
+            return true;
+        }
+        return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_bookings', false);
     }
 
     private function hasReadAccess(Request $request, int $businessId): bool

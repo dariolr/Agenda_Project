@@ -2191,5 +2191,10 @@
   "bookingFormsFieldSaveError": "Impossibile salvare il campo",
   "bookingFormsOptionsTitle": "Opzioni",
   "bookingFormsOptionHint": "Testo opzione",
-  "bookingFormsAddOption": "Aggiungi opzione"
+  "bookingFormsAddOption": "Aggiungi opzione",
+  "bookingModulesAction": "Moduli",
+  "bookingModulesTitle": "Moduli prenotazione",
+  "bookingModulesEmpty": "Nessun modulo applicabile a questa prenotazione.",
+  "bookingModulesError": "Impossibile salvare i moduli",
+  "bookingModulesSaved": "Moduli salvati"
 }
