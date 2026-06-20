@@ -969,6 +969,7 @@ final class CreateBooking
                 $clientId, $locationId, $businessId, $data['items'],
                 $notes, $idempotencyKey, $requestedLocale, $directLinkSlug,
                 $this->packageIdsFromPayload($data),
+                (bool) ($data['customer_selected_staff'] ?? true),
                 isset($data['form_submissions']) && is_array($data['form_submissions']) ? $data['form_submissions'] : []
             );
         }
@@ -976,6 +977,7 @@ final class CreateBooking
         // Legacy format: service_ids with single staff_id
         $serviceIds = $data['service_ids'] ?? [];
         $staffId = $data['staff_id'] ?? null;
+        $customerSelectedStaff = (bool) ($data['customer_selected_staff'] ?? ($staffId !== null));
         $startTimeString = $data['start_time'] ?? null;
 
         if (empty($serviceIds)) {
@@ -1201,6 +1203,7 @@ final class CreateBooking
             }
 
             // Create booking (container) - note: user_id is NULL for customer bookings
+            $source = $customerSelectedStaff ? 'onlinestaff' : 'online';
             $bookingId = $this->bookingRepository->create([
                 'business_id' => $businessId,
                 'location_id' => $locationId,
@@ -1209,7 +1212,7 @@ final class CreateBooking
                 'user_id' => null, // Customer booking, no operator user
                 'notes' => $notes,
                 'status' => 'confirmed',
-                'source' => 'online',
+                'source' => $source,
                 'idempotency_key' => $idempotencyKey,
                 'booking_direct_link_id' => $bookingDirectLinkId,
             ]);
@@ -1273,6 +1276,7 @@ final class CreateBooking
         ?string $requestedLocale = null,
         ?string $directLinkSlug = null,
         array $packageIds = [],
+        bool $customerSelectedStaff = true,
         array $formSubmissions = []
     ): array {
         // Validate location
@@ -1436,7 +1440,7 @@ final class CreateBooking
             }
 
             // Create booking (container)
-            $source = $staffId === null ? 'online' : 'onlinestaff';
+            $source = $customerSelectedStaff ? 'onlinestaff' : 'online';
             $bookingId = $this->bookingRepository->create([
                 'business_id' => $businessId,
                 'location_id' => $locationId,

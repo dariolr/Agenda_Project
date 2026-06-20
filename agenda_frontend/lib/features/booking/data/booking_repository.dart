@@ -301,6 +301,7 @@ class BookingRepository {
     required List<int> serviceIds,
     required DateTime startTime,
     int? staffId,
+    bool customerSelectedStaff = false,
     String? notes,
     String? idempotencyKey,
     List<Map<String, dynamic>>? items,
@@ -320,6 +321,7 @@ class BookingRepository {
       // Invia orario come ISO locale (NO toUtc - il backend gestisce il timezone)
       startTime: startTime.toIso8601String(),
       staffId: staffId,
+      customerSelectedStaff: customerSelectedStaff,
       notes: notes,
       items: items,
       packageIds: packageIds,

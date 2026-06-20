@@ -703,6 +703,7 @@ final class BookingsController
      * {
      *   "service_ids": [int],
      *   "staff_id": int|null,
+     *   "customer_selected_staff": bool, // true only when customer explicitly chose staff
      *   "start_time": "ISO8601",
      *   "notes": "string|null"
      * }
@@ -1673,6 +1674,7 @@ final class BookingsController
                         'locale' => $requestLocale,
                         'booking_direct_link_slug' => $directLinkSlug,
                         'package_ids' => $packageIds,
+                        'customer_selected_staff' => (bool) ($body['customer_selected_staff'] ?? true),
                         'form_submissions' => isset($body['form_submissions']) && is_array($body['form_submissions'])
                             ? $body['form_submissions']
                             : [],
@@ -1689,6 +1691,7 @@ final class BookingsController
                         'service_ids' => array_map('intval', $body['service_ids']),
                         'staff_id' => isset($body['staff_id']) ? (int) $body['staff_id'] : null,
                         'start_time' => $body['start_time'],
+                        'customer_selected_staff' => (bool) ($body['customer_selected_staff'] ?? isset($body['staff_id'])),
                         'pricing_overrides' => isset($body['pricing_overrides']) && is_array($body['pricing_overrides'])
                             ? $body['pricing_overrides']
                             : [],

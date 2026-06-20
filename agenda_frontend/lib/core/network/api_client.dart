@@ -658,6 +658,7 @@ class ApiClient {
     required List<int> serviceIds,
     required String startTime,
     int? staffId,
+    bool customerSelectedStaff = false,
     String? notes,
     String? reason,
     List<Map<String, dynamic>>? items,
@@ -672,6 +673,7 @@ class ApiClient {
         data['staff_id'] = staffId;
       }
     }
+    data['customer_selected_staff'] = customerSelectedStaff;
     if (notes != null && notes.isNotEmpty) {
       data['notes'] = notes;
     }
@@ -694,6 +696,7 @@ class ApiClient {
     required List<int> serviceIds,
     required String startTime,
     int? staffId,
+    bool customerSelectedStaff = false,
     String? notes,
     List<Map<String, dynamic>>? items,
     List<int>? packageIds,
@@ -714,6 +717,7 @@ class ApiClient {
         data['pricing_overrides'] = pricingOverrides;
       }
     }
+    data['customer_selected_staff'] = customerSelectedStaff;
     if (packageIds != null && packageIds.isNotEmpty) {
       data['package_ids'] = packageIds;
     }

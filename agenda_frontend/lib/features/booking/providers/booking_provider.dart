@@ -1217,6 +1217,9 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         serviceIds: services.map((s) => s.id).toList(),
         startTime: state.request.selectedSlot!.startTime,
         staffId: staffId,
+        customerSelectedStaff:
+            state.request.hasOnlyStaffSelectionForAllServices &&
+            !state.isStaffAutoSelected,
         notes: state.request.notes,
         items: items,
         packageIds: state.request.selectedPackageIds.toList(),
