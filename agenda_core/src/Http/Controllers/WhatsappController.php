@@ -14,6 +14,7 @@ use Agenda\Infrastructure\Repositories\WhatsappRepository;
 use Agenda\Infrastructure\Security\TokenCipher;
 use Agenda\Infrastructure\Support\Json;
 use Agenda\Infrastructure\Whatsapp\MetaWhatsAppEmbeddedSignupService;
+use Agenda\UseCases\Whatsapp\SubmitDefaultWhatsAppTemplateAfterEmbeddedSignup;
 
 final class WhatsappController
 {
@@ -45,6 +46,7 @@ final class WhatsappController
         private readonly BusinessWhatsappSettingsRepository $settingsRepo,
         private readonly TokenCipher $tokenCipher,
         private readonly MetaWhatsAppEmbeddedSignupService $metaEmbeddedSignupService,
+        private readonly ?SubmitDefaultWhatsAppTemplateAfterEmbeddedSignup $submitDefaultTemplateAfterSignup = null,
     ) {}
 
     public function configsIndex(Request $request): Response
@@ -293,9 +295,47 @@ final class WhatsappController
         if ($this->whatsappRepo->findTemplateById($businessId, $templateId) === null) {
             return Response::notFound('Template not found', $request->traceId);
         }
+        $template = $this->whatsappRepo->findTemplateById($businessId, $templateId);
+        if (($template['business_id'] ?? null) === null && !$this->isSuperadmin($request)) {
+            return Response::error('Solo superadmin', 'forbidden', 403, $request->traceId);
+        }
 
-        $this->whatsappRepo->disableTemplate($businessId, $templateId);
+        $this->whatsappRepo->disableTemplate($businessId, $templateId, $this->isSuperadmin($request));
         return Response::success(['disabled' => true]);
+    }
+
+    public function templatesDefaultSubmit(Request $request): Response
+    {
+        $businessId = (int) $request->getAttribute('business_id');
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'manage_config', $request);
+        if ($availability !== null) {
+            return $availability;
+        }
+
+        $config = $this->findDefaultOrActiveConfig($businessId);
+        if ($config === null) {
+            return Response::validationError('Configurazione WhatsApp mancante', $request->traceId);
+        }
+
+        if ($this->submitDefaultTemplateAfterSignup === null) {
+            return Response::error(
+                'Submission automatica template non configurata',
+                'whatsapp_template_auto_submit_not_configured',
+                503,
+                $request->traceId
+            );
+        }
+
+        $result = $this->submitDefaultTemplateAfterSignup->execute(
+            $businessId,
+            (int) ($config['id'] ?? 0),
+            (string) ($config['waba_id'] ?? '')
+        );
+
+        return Response::success(['default_template_submission' => $this->formatTemplateSubmission($result)]);
     }
 
     public function templateAssignmentsIndex(Request $request): Response
@@ -770,6 +810,27 @@ final class WhatsappController
         );
         $config = $this->whatsappRepo->findConfigById($businessId, $id);
         $this->settingsRepo->updateStatus($businessId, ($config['status'] ?? '') === 'active' ? 'active' : 'pending_review');
+        $templateSubmission = null;
+        if ($this->submitDefaultTemplateAfterSignup !== null) {
+            try {
+                $templateSubmission = $this->submitDefaultTemplateAfterSignup->execute(
+                    $businessId,
+                    $id,
+                    (string) $meta['waba_id']
+                );
+            } catch (\Throwable $e) {
+                $templateSubmission = [
+                    'status' => 'error',
+                    'reason' => 'default_template_submission_exception',
+                ];
+                $this->logAppError('Default WhatsApp template submit failed', [
+                    'business_id' => $businessId,
+                    'whatsapp_config_id' => $id,
+                    'trace_id' => $request->traceId ?? '-',
+                    'reason' => $e->getMessage(),
+                ]);
+            }
+        }
 
         $autoMappedLocationIds = [];
         $activeLocations = $this->locationRepo->findByBusinessId($businessId);
@@ -800,6 +861,7 @@ final class WhatsappController
             'auto_mapped_location_ids' => $autoMappedLocationIds,
             'go_live_check' => $goLive,
             'next_steps' => $nextSteps,
+            'default_template_submission' => $this->formatTemplateSubmission($templateSubmission),
             'session_info_version' => $sessionInfoVersion,
         ]);
     }
@@ -877,12 +939,17 @@ final class WhatsappController
 
         $phoneNumberId = $this->extractPhoneNumberIdFromWebhook($payload);
         if ($phoneNumberId === null) {
-            return Response::success(['processed' => false, 'reason' => 'phone_number_id_not_found']);
+            $wabaId = $this->extractWabaIdFromWebhook($payload);
+            if ($wabaId === null) {
+                return Response::success(['processed' => false, 'reason' => 'phone_number_id_not_found']);
+            }
+            $config = $this->whatsappRepo->findConfigByWabaIdGlobal($wabaId);
+        } else {
+            $config = $this->whatsappRepo->findConfigByPhoneNumberIdGlobal($phoneNumberId);
         }
 
-        $config = $this->whatsappRepo->findConfigByPhoneNumberIdGlobal($phoneNumberId);
         if ($config === null) {
-            return Response::success(['processed' => false, 'reason' => 'unmapped_phone_number_id']);
+            return Response::success(['processed' => false, 'reason' => 'unmapped_whatsapp_config']);
         }
 
         $businessId = (int) ($config['business_id'] ?? 0);
@@ -900,6 +967,7 @@ final class WhatsappController
 
         $this->whatsappRepo->storeWebhookEvent($eventId, $businessId, $payload);
         $updated = $this->applyWebhookStatuses($businessId, $payload);
+        $templateUpdates = $this->applyTemplateStatusUpdates($businessId, $payload);
         $optOuts = $this->applyWebhookOptOutKeywords($businessId, $payload);
 
         return Response::success([
@@ -907,6 +975,7 @@ final class WhatsappController
             'duplicate' => false,
             'event_id' => $eventId,
             'updated_count' => $updated,
+            'template_updates' => $templateUpdates,
             'opt_out_updates' => $optOuts,
         ]);
     }
@@ -923,6 +992,12 @@ final class WhatsappController
         }
 
         return $this->businessUserRepo->hasAccess((int) $userId, $businessId, false);
+    }
+
+    private function isSuperadmin(Request $request): bool
+    {
+        $userId = $request->getAttribute('user_id');
+        return $userId !== null && $this->userRepo->isSuperadmin((int) $userId);
     }
 
     private function assertWhatsappFeatureAvailableForBusiness(int $businessId, string $action, Request $request): ?Response
@@ -1133,6 +1208,69 @@ final class WhatsappController
         }
 
         return $updated;
+    }
+
+    private function applyTemplateStatusUpdates(int $businessId, array $payload): int
+    {
+        $updated = 0;
+        $entry = $payload['entry'] ?? null;
+        if (!is_array($entry)) {
+            return 0;
+        }
+
+        foreach ($entry as $entryItem) {
+            if (!is_array($entryItem)) {
+                continue;
+            }
+            $changes = $entryItem['changes'] ?? null;
+            if (!is_array($changes)) {
+                continue;
+            }
+            foreach ($changes as $change) {
+                if (!is_array($change)) {
+                    continue;
+                }
+                $field = trim((string) ($change['field'] ?? ''));
+                $value = $change['value'] ?? null;
+                if ($field !== 'message_template_status_update' || !is_array($value)) {
+                    continue;
+                }
+
+                $status = $this->normalizeTemplateWebhookStatus((string) ($value['event'] ?? $value['status'] ?? ''));
+                if ($status === null) {
+                    continue;
+                }
+                $providerTemplateId = trim((string) ($value['message_template_id'] ?? $value['template_id'] ?? ''));
+                $templateName = trim((string) ($value['message_template_name'] ?? $value['template_name'] ?? ''));
+                $languageCode = trim((string) ($value['message_template_language'] ?? $value['language'] ?? ''));
+                $reason = trim((string) ($value['reason'] ?? $value['rejection_reason'] ?? ''));
+
+                if ($this->whatsappRepo->updateTemplateStatusFromWebhook(
+                    $businessId,
+                    $providerTemplateId !== '' ? $providerTemplateId : null,
+                    $templateName !== '' ? $templateName : null,
+                    $languageCode !== '' ? $languageCode : null,
+                    $status,
+                    $reason !== '' ? $reason : null
+                )) {
+                    $updated++;
+                }
+            }
+        }
+
+        return $updated;
+    }
+
+    private function normalizeTemplateWebhookStatus(string $status): ?string
+    {
+        return match (strtolower(trim($status))) {
+            'approved' => 'approved',
+            'rejected' => 'rejected',
+            'paused' => 'paused',
+            'pending', 'in_review', 'submitted' => 'pending',
+            'disabled' => 'disabled',
+            default => null,
+        };
     }
 
     private function findDefaultOrActiveConfig(int $businessId): ?array
@@ -1356,8 +1494,14 @@ final class WhatsappController
             return Response::error('Solo superadmin', 'forbidden', 403, $request->traceId);
         }
 
-        if ($templateId !== null && $this->whatsappRepo->findTemplateById($businessId, $templateId) === null) {
-            return Response::notFound('Template not found', $request->traceId);
+        if ($templateId !== null) {
+            $current = $this->whatsappRepo->findTemplateById($businessId, $templateId);
+            if ($current === null) {
+                return Response::notFound('Template not found', $request->traceId);
+            }
+            if (($current['business_id'] ?? null) === null && !$this->isSuperadmin($request)) {
+                return Response::error('Solo superadmin', 'forbidden', 403, $request->traceId);
+            }
         }
 
         $id = $this->whatsappRepo->upsertTemplate($businessId, [
@@ -1403,8 +1547,32 @@ final class WhatsappController
             'body_preview' => $template['body_preview'] ?? null,
             'variables_schema' => $variables,
             'provider_template_id' => $template['provider_template_id'] ?? null,
+            'meta_submission_requested_at' => $template['meta_submission_requested_at'] ?? null,
+            'meta_last_synced_at' => $template['meta_last_synced_at'] ?? null,
+            'last_error_code' => $template['last_error_code'] ?? null,
+            'last_error_message' => $template['last_error_message'] ?? null,
+            'rejection_reason' => $template['rejection_reason'] ?? null,
+            'is_auto_created' => ((int) ($template['is_auto_created'] ?? 0)) === 1,
+            'source' => $template['source'] ?? null,
             'created_at' => $template['created_at'] ?? null,
             'updated_at' => $template['updated_at'] ?? null,
+        ];
+    }
+
+    private function formatTemplateSubmission(?array $submission): ?array
+    {
+        if ($submission === null) {
+            return null;
+        }
+        $template = is_array($submission['template'] ?? null)
+            ? $this->formatTemplate($submission['template'])
+            : null;
+
+        return [
+            'status' => (string) ($submission['status'] ?? 'unknown'),
+            'reason' => $submission['reason'] ?? null,
+            'error_message' => $submission['error_message'] ?? null,
+            'template' => $template,
         ];
     }
 
@@ -1492,6 +1660,42 @@ final class WhatsappController
                     }
                 }
                 $candidate = trim((string) ($value['phone_number_id'] ?? ''));
+                if ($candidate !== '') {
+                    return $candidate;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function extractWabaIdFromWebhook(array $payload): ?string
+    {
+        $entry = $payload['entry'] ?? null;
+        if (!is_array($entry)) {
+            return null;
+        }
+        foreach ($entry as $entryItem) {
+            if (!is_array($entryItem)) {
+                continue;
+            }
+            $candidate = trim((string) ($entryItem['id'] ?? ''));
+            if ($candidate !== '') {
+                return $candidate;
+            }
+            $changes = $entryItem['changes'] ?? null;
+            if (!is_array($changes)) {
+                continue;
+            }
+            foreach ($changes as $change) {
+                if (!is_array($change)) {
+                    continue;
+                }
+                $value = $change['value'] ?? null;
+                if (!is_array($value)) {
+                    continue;
+                }
+                $candidate = trim((string) ($value['waba_id'] ?? $value['whatsapp_business_account_id'] ?? ''));
                 if ($candidate !== '') {
                     return $candidate;
                 }

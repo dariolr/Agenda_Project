@@ -17,7 +17,7 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, last_health_check_at,
+                    access_token_encrypted, status, is_default, template_auto_submit_enabled, last_health_check_at,
                     last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE business_id = ?
@@ -32,7 +32,7 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, last_health_check_at,
+                    access_token_encrypted, status, is_default, template_auto_submit_enabled, last_health_check_at,
                     last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE business_id = ? AND id = ?
@@ -51,6 +51,7 @@ final class WhatsappRepository
         string $accessTokenEncrypted,
         string $status,
         bool $isDefault,
+        bool $templateAutoSubmitEnabled = false,
         ?string $displayPhoneNumber = null
     ): int {
         if ($isDefault) {
@@ -59,8 +60,8 @@ final class WhatsappRepository
 
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO whatsapp_business_config
-             (business_id, waba_id, phone_number_id, display_phone_number, access_token_encrypted, status, is_default)
-             VALUES (?, ?, ?, ?, ?, ?, ?)'
+             (business_id, waba_id, phone_number_id, display_phone_number, access_token_encrypted, status, is_default, template_auto_submit_enabled)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $businessId,
@@ -70,6 +71,7 @@ final class WhatsappRepository
             $accessTokenEncrypted,
             $status,
             $isDefault ? 1 : 0,
+            $templateAutoSubmitEnabled ? 1 : 0,
         ]);
 
         return (int) $this->db->getPdo()->lastInsertId();
@@ -79,7 +81,7 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, last_health_check_at,
+                    access_token_encrypted, status, is_default, template_auto_submit_enabled, last_health_check_at,
                     last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE business_id = ? AND phone_number_id = ?
@@ -95,7 +97,7 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, last_health_check_at,
+                    access_token_encrypted, status, is_default, template_auto_submit_enabled, last_health_check_at,
                     last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE phone_number_id = ?
@@ -103,6 +105,23 @@ final class WhatsappRepository
              LIMIT 1'
         );
         $stmt->execute([$phoneNumberId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
+
+    public function findConfigByWabaIdGlobal(string $wabaId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
+                    access_token_encrypted, status, is_default, template_auto_submit_enabled, last_health_check_at,
+                    last_error_code, last_error_message, created_at, updated_at
+             FROM whatsapp_business_config
+             WHERE waba_id = ?
+             ORDER BY is_default DESC, id DESC
+             LIMIT 1'
+        );
+        $stmt->execute([$wabaId]);
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
 
         return $row ?: null;
@@ -160,6 +179,7 @@ final class WhatsappRepository
             $accessTokenEncrypted,
             $status,
             $isDefault,
+            (int) ($existing['template_auto_submit_enabled'] ?? 0) === 1,
             $displayPhoneNumber
         );
     }
@@ -201,6 +221,10 @@ final class WhatsappRepository
             }
             $fields[] = 'is_default = ?';
             $params[] = (bool) $data['is_default'] ? 1 : 0;
+        }
+        if (array_key_exists('template_auto_submit_enabled', $data)) {
+            $fields[] = 'template_auto_submit_enabled = ?';
+            $params[] = (bool) $data['template_auto_submit_enabled'] ? 1 : 0;
         }
 
         if (empty($fields)) {
@@ -848,6 +872,8 @@ final class WhatsappRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, provider_code, template_name, language_code, category, status,
                     message_type, body_preview, variables_schema_json, provider_template_id,
+                    meta_submission_requested_at, meta_last_synced_at, last_error_code,
+                    last_error_message, rejection_reason, is_auto_created, source,
                     created_at, updated_at
              FROM whatsapp_templates
              WHERE business_id = ? OR business_id IS NULL
@@ -863,6 +889,8 @@ final class WhatsappRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, provider_code, template_name, language_code, category, status,
                     message_type, body_preview, variables_schema_json, provider_template_id,
+                    meta_submission_requested_at, meta_last_synced_at, last_error_code,
+                    last_error_message, rejection_reason, is_auto_created, source,
                     created_at, updated_at
              FROM whatsapp_templates
              WHERE id = ? AND (business_id = ? OR business_id IS NULL)
@@ -872,6 +900,204 @@ final class WhatsappRepository
         $row = $stmt->fetch(\PDO::FETCH_ASSOC);
 
         return $row ?: null;
+    }
+
+    public function findTemplateForAutoSubmit(
+        int $businessId,
+        string $messageType,
+        string $languageCode,
+        string $templateName
+    ): ?array {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, provider_code, template_name, language_code, category, status,
+                    message_type, body_preview, variables_schema_json, provider_template_id,
+                    meta_submission_requested_at, meta_last_synced_at, last_error_code,
+                    last_error_message, rejection_reason, is_auto_created, source,
+                    created_at, updated_at
+             FROM whatsapp_templates
+             WHERE business_id = ?
+               AND language_code = ?
+               AND (template_name = ? OR message_type = ?)
+               AND status IN ("draft", "submitted", "pending", "approved", "paused")
+             ORDER BY template_name = ? DESC, id DESC
+             LIMIT 1'
+        );
+        $stmt->execute([$businessId, $languageCode, $templateName, $messageType, $templateName]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
+
+    public function findTemplateBlueprint(int $businessId, string $messageType, string $languageCode): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, template_name, language_code, body_preview, variables_schema_json
+             FROM whatsapp_templates
+             WHERE business_id = ?
+               AND message_type = ?
+               AND language_code IN (?, "it")
+               AND body_preview IS NOT NULL
+               AND body_preview <> ""
+             ORDER BY language_code = ? DESC, id DESC
+             LIMIT 1'
+        );
+        $stmt->execute([$businessId, $messageType, $languageCode, $languageCode]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if ($row !== false) {
+            return $row;
+        }
+
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, template_name, language_code, body_preview, variables_schema_json
+             FROM whatsapp_templates
+             WHERE business_id IS NULL
+               AND message_type = ?
+               AND language_code IN (?, "it")
+               AND body_preview IS NOT NULL
+               AND body_preview <> ""
+             ORDER BY language_code = ? DESC, id DESC
+             LIMIT 1'
+        );
+        $stmt->execute([$messageType, $languageCode, $languageCode]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
+
+    public function upsertAutoTemplateDraft(int $businessId, array $data): int
+    {
+        $variablesSchema = $data['variables_schema_json'] ?? $data['variables_schema'] ?? null;
+        $variablesJson = is_array($variablesSchema) ? Json::encode($variablesSchema) : $variablesSchema;
+        $templateId = (int) ($data['id'] ?? 0);
+
+        if ($templateId > 0) {
+            $stmt = $this->db->getPdo()->prepare(
+                'UPDATE whatsapp_templates
+                 SET template_name = ?,
+                     language_code = ?,
+                     category = ?,
+                     message_type = ?,
+                     body_preview = ?,
+                     variables_schema_json = ?,
+                     is_auto_created = 1,
+                     source = "embedded_signup_auto",
+                     updated_at = NOW()
+                 WHERE business_id = ? AND id = ?'
+            );
+            $stmt->execute([
+                $data['template_name'],
+                $data['language_code'],
+                $data['category'] ?? 'utility',
+                $data['message_type'] ?? null,
+                $data['body_preview'] ?? null,
+                $variablesJson,
+                $businessId,
+                $templateId,
+            ]);
+
+            return $templateId;
+        }
+
+        $stmt = $this->db->getPdo()->prepare(
+            'INSERT INTO whatsapp_templates
+             (business_id, provider_code, template_name, language_code, category, status,
+              message_type, body_preview, variables_schema_json, is_auto_created, source)
+             VALUES (?, "meta", ?, ?, ?, "draft", ?, ?, ?, 1, "embedded_signup_auto")'
+        );
+        $stmt->execute([
+            $businessId,
+            $data['template_name'],
+            $data['language_code'],
+            $data['category'] ?? 'utility',
+            $data['message_type'] ?? null,
+            $data['body_preview'] ?? null,
+            $variablesJson,
+        ]);
+
+        return (int) $this->db->getPdo()->lastInsertId();
+    }
+
+    public function markTemplateMetaSubmitted(
+        int $templateId,
+        int $businessId,
+        string $status,
+        ?string $providerTemplateId
+    ): bool {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE whatsapp_templates
+             SET status = ?,
+                 provider_template_id = COALESCE(NULLIF(?, ""), provider_template_id),
+                 meta_submission_requested_at = NOW(),
+                 meta_last_synced_at = NOW(),
+                 last_error_code = NULL,
+                 last_error_message = NULL,
+                 rejection_reason = NULL,
+                 updated_at = NOW()
+             WHERE id = ? AND business_id = ?'
+        );
+
+        return $stmt->execute([$status, $providerTemplateId, $templateId, $businessId]);
+    }
+
+    public function markTemplateMetaSubmissionFailed(
+        int $templateId,
+        int $businessId,
+        ?string $errorCode,
+        ?string $errorMessage
+    ): bool {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE whatsapp_templates
+             SET status = "draft",
+                 meta_submission_requested_at = NOW(),
+                 last_error_code = ?,
+                 last_error_message = ?,
+                 updated_at = NOW()
+             WHERE id = ? AND business_id = ?'
+        );
+
+        return $stmt->execute([
+            $errorCode !== null ? mb_substr($errorCode, 0, 120) : null,
+            $errorMessage !== null ? mb_substr($errorMessage, 0, 500) : null,
+            $templateId,
+            $businessId,
+        ]);
+    }
+
+    public function updateTemplateStatusFromWebhook(
+        int $businessId,
+        ?string $providerTemplateId,
+        ?string $templateName,
+        ?string $languageCode,
+        string $status,
+        ?string $rejectionReason
+    ): bool {
+        $params = [$status, $rejectionReason !== null ? mb_substr($rejectionReason, 0, 500) : null, $businessId];
+        $where = 'business_id = ?';
+        if ($providerTemplateId !== null && trim($providerTemplateId) !== '') {
+            $where .= ' AND provider_template_id = ?';
+            $params[] = $providerTemplateId;
+        } elseif ($templateName !== null && trim($templateName) !== '' && $languageCode !== null && trim($languageCode) !== '') {
+            $where .= ' AND template_name = ? AND language_code = ?';
+            $params[] = $templateName;
+            $params[] = $this->normalizeTemplateLanguage($languageCode);
+        } else {
+            return false;
+        }
+
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE whatsapp_templates
+             SET status = ?,
+                 rejection_reason = ?,
+                 meta_last_synced_at = NOW(),
+                 last_error_code = NULL,
+                 last_error_message = NULL,
+                 updated_at = NOW()
+             WHERE ' . $where . '
+             LIMIT 1'
+        );
+        $stmt->execute($params);
+
+        return $stmt->rowCount() > 0;
     }
 
     public function upsertTemplate(int $businessId, array $data): int
@@ -934,15 +1160,19 @@ final class WhatsappRepository
         return (int) $this->db->getPdo()->lastInsertId();
     }
 
-    public function disableTemplate(int $businessId, int $templateId): bool
+    public function disableTemplate(int $businessId, int $templateId, bool $allowGlobal = false): bool
     {
+        $where = $allowGlobal
+            ? 'id = ? AND (business_id = ? OR business_id IS NULL)'
+            : 'business_id = ? AND id = ?';
+        $params = $allowGlobal ? [$templateId, $businessId] : [$businessId, $templateId];
         $stmt = $this->db->getPdo()->prepare(
             'UPDATE whatsapp_templates
              SET status = "disabled", updated_at = NOW()
-             WHERE business_id = ? AND id = ?'
+             WHERE ' . $where
         );
 
-        return $stmt->execute([$businessId, $templateId]);
+        return $stmt->execute($params);
     }
 
     public function listTemplateAssignments(int $businessId): array
@@ -1182,7 +1412,7 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT c.id, c.business_id, c.waba_id, c.phone_number_id, c.display_phone_number,
-                    c.access_token_encrypted, c.status, c.is_default, c.last_health_check_at,
+                    c.access_token_encrypted, c.status, c.is_default, c.template_auto_submit_enabled, c.last_health_check_at,
                     c.last_error_code, c.last_error_message, c.created_at, c.updated_at
              FROM whatsapp_location_mapping m
              JOIN whatsapp_business_config c ON c.id = m.whatsapp_config_id
@@ -1197,7 +1427,7 @@ final class WhatsappRepository
 
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, last_health_check_at,
+                    access_token_encrypted, status, is_default, template_auto_submit_enabled, last_health_check_at,
                     last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE business_id = ? AND is_default = 1

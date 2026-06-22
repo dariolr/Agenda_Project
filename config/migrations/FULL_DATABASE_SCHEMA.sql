@@ -877,6 +877,13 @@ CREATE TABLE `whatsapp_templates` (
   `body_preview` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `variables_schema_json` json DEFAULT NULL,
   `provider_template_id` varchar(191) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `meta_submission_requested_at` timestamp NULL DEFAULT NULL,
+  `meta_last_synced_at` timestamp NULL DEFAULT NULL,
+  `last_error_code` varchar(120) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `last_error_message` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `rejection_reason` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_auto_created` tinyint(1) NOT NULL DEFAULT '0',
+  `source` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1661,7 +1668,9 @@ ALTER TABLE `whatsapp_templates`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uq_wt_business_name` (`business_id`,`template_name`,`language_code`),
   ADD KEY `idx_wt_business_status` (`business_id`,`status`),
-  ADD KEY `idx_wt_business_category` (`business_id`,`category`);
+  ADD KEY `idx_wt_business_category` (`business_id`,`category`),
+  ADD KEY `idx_wt_provider_template_id` (`provider_template_id`),
+  ADD KEY `idx_wt_message_language_status` (`business_id`,`message_type`,`language_code`,`status`);
 
 --
 -- Indici per le tabelle `whatsapp_template_assignments`

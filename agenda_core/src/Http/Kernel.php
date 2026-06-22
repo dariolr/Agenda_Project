@@ -87,6 +87,7 @@ use Agenda\Infrastructure\Security\JwtService;
 use Agenda\Infrastructure\Security\PasswordHasher;
 use Agenda\Infrastructure\Security\TokenCipher;
 use Agenda\Infrastructure\Whatsapp\MetaWhatsAppEmbeddedSignupService;
+use Agenda\Infrastructure\Whatsapp\MetaWhatsAppTemplateClient;
 use Agenda\UseCases\Auth\GetMe;
 use Agenda\UseCases\Auth\LoginUser;
 use Agenda\UseCases\Auth\LogoutUser;
@@ -118,6 +119,7 @@ use Agenda\UseCases\CustomerAuth\UpdateCustomerProfile;
 use Agenda\UseCases\CustomerAuth\ChangeCustomerPassword;
 use Agenda\UseCases\Admin\ExportBusiness;
 use Agenda\UseCases\Admin\ImportBusiness;
+use Agenda\UseCases\Whatsapp\SubmitDefaultWhatsAppTemplateAfterEmbeddedSignup;
 use Agenda\Infrastructure\Repositories\BookingAuditRepository;
 use Agenda\Infrastructure\Repositories\RecurrenceRuleRepository;
 use Throwable;
@@ -393,6 +395,7 @@ final class Kernel
         $this->router->post('/v1/businesses/{business_id}/whatsapp/templates', WhatsappController::class, 'templatesStore', ['auth']);
         $this->router->put('/v1/businesses/{business_id}/whatsapp/templates/{id}', WhatsappController::class, 'templatesUpdate', ['auth']);
         $this->router->delete('/v1/businesses/{business_id}/whatsapp/templates/{id}', WhatsappController::class, 'templatesDestroy', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/whatsapp/templates/default/submit', WhatsappController::class, 'templatesDefaultSubmit', ['auth']);
         $this->router->get('/v1/businesses/{business_id}/whatsapp/template-assignments', WhatsappController::class, 'templateAssignmentsIndex', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/whatsapp/template-assignments', WhatsappController::class, 'templateAssignmentsStore', ['auth']);
         $this->router->delete('/v1/businesses/{business_id}/whatsapp/template-assignments/{id}', WhatsappController::class, 'templateAssignmentsDestroy', ['auth']);
@@ -525,6 +528,11 @@ final class Kernel
         $passwordHasher = new PasswordHasher();
         $tokenCipher = new TokenCipher();
         $metaEmbeddedSignupService = new MetaWhatsAppEmbeddedSignupService();
+        $submitDefaultWhatsappTemplate = new SubmitDefaultWhatsAppTemplateAfterEmbeddedSignup(
+            $whatsappRepo,
+            $businessWhatsappSettingsRepo,
+            new MetaWhatsAppTemplateClient()
+        );
         $billingProviderFactory = new BillingProviderFactory([
             BillingProviderCode::STRIPE => new StripeBillingProvider(
                 new StripeClientFactory(),
@@ -626,7 +634,8 @@ final class Kernel
                 $locationRepo,
                 $businessWhatsappSettingsRepo,
                 $tokenCipher,
-                $metaEmbeddedSignupService
+                $metaEmbeddedSignupService,
+                $submitDefaultWhatsappTemplate
             ),
         ];
     }
