@@ -14,6 +14,8 @@ import '/core/models/whatsapp_embedded_signup_result.dart';
 import '/core/models/whatsapp_go_live_check.dart';
 import '/core/models/whatsapp_location_mapping.dart';
 import '/core/models/whatsapp_outbox_item.dart';
+import '/core/models/whatsapp_template.dart';
+import '/core/models/whatsapp_template_assignment.dart';
 import 'api_config.dart';
 import 'token_storage.dart';
 
@@ -3419,6 +3421,116 @@ class ApiClient {
     required int businessId,
   }) async {
     return await post(ApiConfig.whatsappEmbeddedSignupState(businessId));
+  }
+
+  Future<List<WhatsappTemplate>> getWhatsappTemplates(int businessId) async {
+    final response = await get(ApiConfig.whatsappTemplates(businessId));
+    final raw =
+        response['templates'] ??
+        response['items'] ??
+        response['_list'] ??
+        response['data'] ??
+        const <dynamic>[];
+    if (raw is! List) return const <WhatsappTemplate>[];
+    return raw
+        .map(
+          (e) => WhatsappTemplate.fromJson(Map<String, dynamic>.from(e as Map)),
+        )
+        .toList();
+  }
+
+  Future<WhatsappTemplate> upsertWhatsappTemplate({
+    required int businessId,
+    int? templateId,
+    required String templateName,
+    required String languageCode,
+    required String messageType,
+    required String status,
+    bool isGlobal = false,
+    String category = 'utility',
+    String? bodyPreview,
+  }) async {
+    final data = {
+      'template_name': templateName,
+      'language_code': languageCode,
+      'message_type': messageType,
+      'status': status,
+      'is_global': isGlobal,
+      'category': category,
+      if (bodyPreview != null) 'body_preview': bodyPreview,
+    };
+    final response = templateId == null
+        ? await post(ApiConfig.whatsappTemplates(businessId), data: data)
+        : await put(
+            ApiConfig.whatsappTemplate(businessId, templateId),
+            data: data,
+          );
+    final map = Map<String, dynamic>.from(
+      (response['template'] as Map?) ?? response,
+    );
+    return WhatsappTemplate.fromJson(map);
+  }
+
+  Future<void> disableWhatsappTemplate({
+    required int businessId,
+    required int templateId,
+  }) async {
+    await delete(ApiConfig.whatsappTemplate(businessId, templateId));
+  }
+
+  Future<List<WhatsappTemplateAssignment>> getWhatsappTemplateAssignments(
+    int businessId,
+  ) async {
+    final response = await get(
+      ApiConfig.whatsappTemplateAssignments(businessId),
+    );
+    final raw =
+        response['assignments'] ??
+        response['items'] ??
+        response['_list'] ??
+        response['data'] ??
+        const <dynamic>[];
+    if (raw is! List) return const <WhatsappTemplateAssignment>[];
+    return raw
+        .map(
+          (e) => WhatsappTemplateAssignment.fromJson(
+            Map<String, dynamic>.from(e as Map),
+          ),
+        )
+        .toList();
+  }
+
+  Future<WhatsappTemplateAssignment> upsertWhatsappTemplateAssignment({
+    required int businessId,
+    int? locationId,
+    required String messageType,
+    required String languageCode,
+    required int whatsappTemplateId,
+    bool isActive = true,
+  }) async {
+    final response = await post(
+      ApiConfig.whatsappTemplateAssignments(businessId),
+      data: {
+        'location_id': locationId,
+        'message_type': messageType,
+        'language_code': languageCode,
+        'whatsapp_template_id': whatsappTemplateId,
+        'is_active': isActive,
+      },
+    );
+    final map = Map<String, dynamic>.from(
+      (response['assignment'] as Map?) ?? response,
+    );
+    return WhatsappTemplateAssignment.fromJson(map);
+  }
+
+  Future<void> deleteWhatsappTemplateAssignment({
+    required int businessId,
+    required int assignmentId,
+  }) async {
+    await delete(
+      ApiConfig.whatsappTemplateAssignment(businessId, assignmentId),
+    );
   }
 
   // ==========================================================================

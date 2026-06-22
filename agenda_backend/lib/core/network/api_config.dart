@@ -162,6 +162,22 @@ class ApiConfig {
   static String whatsappEmbeddedSignupState(int businessId) =>
       '/v1/businesses/$businessId/whatsapp/embedded-signup/state';
 
+  /// Template WhatsApp Meta disponibili per business
+  static String whatsappTemplates(int businessId) =>
+      '/v1/businesses/$businessId/whatsapp/templates';
+
+  /// Singolo template WhatsApp Meta
+  static String whatsappTemplate(int businessId, int templateId) =>
+      '/v1/businesses/$businessId/whatsapp/templates/$templateId';
+
+  /// Assegnazioni operative template WhatsApp
+  static String whatsappTemplateAssignments(int businessId) =>
+      '/v1/businesses/$businessId/whatsapp/template-assignments';
+
+  /// Singola assegnazione template WhatsApp
+  static String whatsappTemplateAssignment(int businessId, int assignmentId) =>
+      '/v1/businesses/$businessId/whatsapp/template-assignments/$assignmentId';
+
   // ========== CLASS EVENTS ENDPOINTS ==========
 
   /// Lista class events per business.

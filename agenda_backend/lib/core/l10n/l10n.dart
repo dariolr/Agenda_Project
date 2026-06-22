@@ -14870,6 +14870,146 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Available templates`
+  String get whatsappTemplatesSectionTitle {
+    return Intl.message(
+      'Available templates',
+      name: 'whatsappTemplatesSectionTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Template assignments`
+  String get whatsappTemplateAssignmentsSectionTitle {
+    return Intl.message(
+      'Template assignments',
+      name: 'whatsappTemplateAssignmentsSectionTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `New template`
+  String get whatsappTemplateAddAction {
+    return Intl.message(
+      'New template',
+      name: 'whatsappTemplateAddAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `New WhatsApp template`
+  String get whatsappTemplateCreateTitle {
+    return Intl.message(
+      'New WhatsApp template',
+      name: 'whatsappTemplateCreateTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Edit WhatsApp template`
+  String get whatsappTemplateEditTitle {
+    return Intl.message(
+      'Edit WhatsApp template',
+      name: 'whatsappTemplateEditTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Message type`
+  String get whatsappTemplateMessageTypeLabel {
+    return Intl.message(
+      'Message type',
+      name: 'whatsappTemplateMessageTypeLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Language`
+  String get whatsappTemplateLanguageLabel {
+    return Intl.message(
+      'Language',
+      name: 'whatsappTemplateLanguageLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Body preview`
+  String get whatsappTemplateBodyPreviewLabel {
+    return Intl.message(
+      'Body preview',
+      name: 'whatsappTemplateBodyPreviewLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No templates configured.`
+  String get whatsappTemplatesEmpty {
+    return Intl.message(
+      'No templates configured.',
+      name: 'whatsappTemplatesEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Location overrides`
+  String get whatsappLocationOverridesTitle {
+    return Intl.message(
+      'Location overrides',
+      name: 'whatsappLocationOverridesTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Global template`
+  String get whatsappTemplateGlobalLabel {
+    return Intl.message(
+      'Global template',
+      name: 'whatsappTemplateGlobalLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Makes the template available as a fallback for every business.`
+  String get whatsappTemplateGlobalHelper {
+    return Intl.message(
+      'Makes the template available as a fallback for every business.',
+      name: 'whatsappTemplateGlobalHelper',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Global`
+  String get whatsappTemplateGlobalBadge {
+    return Intl.message(
+      'Global',
+      name: 'whatsappTemplateGlobalBadge',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Business`
+  String get whatsappTemplateBusinessBadge {
+    return Intl.message(
+      'Business',
+      name: 'whatsappTemplateBusinessBadge',
+      desc: '',
+      args: [],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

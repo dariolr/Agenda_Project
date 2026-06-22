@@ -843,6 +843,295 @@ final class WhatsappRepository
         return trim((string) ($_ENV['WHATSAPP_REMINDER_TEMPLATE_NAME'] ?? getenv('WHATSAPP_REMINDER_TEMPLATE_NAME') ?? 'promemoria_appuntamento_ita_24h')) !== '';
     }
 
+    public function listTemplatesByBusiness(int $businessId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, provider_code, template_name, language_code, category, status,
+                    message_type, body_preview, variables_schema_json, provider_template_id,
+                    created_at, updated_at
+             FROM whatsapp_templates
+             WHERE business_id = ? OR business_id IS NULL
+             ORDER BY business_id IS NULL ASC, message_type ASC, language_code ASC, template_name ASC'
+        );
+        $stmt->execute([$businessId]);
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function findTemplateById(int $businessId, int $templateId): ?array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, provider_code, template_name, language_code, category, status,
+                    message_type, body_preview, variables_schema_json, provider_template_id,
+                    created_at, updated_at
+             FROM whatsapp_templates
+             WHERE id = ? AND (business_id = ? OR business_id IS NULL)
+             LIMIT 1'
+        );
+        $stmt->execute([$templateId, $businessId]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
+
+    public function upsertTemplate(int $businessId, array $data): int
+    {
+        $templateId = (int) ($data['id'] ?? 0);
+        $templateBusinessId = (bool) ($data['is_global'] ?? false) ? null : $businessId;
+        $variablesSchema = $data['variables_schema_json'] ?? $data['variables_schema'] ?? null;
+        $variablesJson = is_array($variablesSchema) ? Json::encode($variablesSchema) : $variablesSchema;
+
+        if ($templateId > 0) {
+            $stmt = $this->db->getPdo()->prepare(
+                'UPDATE whatsapp_templates
+                 SET business_id = ?,
+                     template_name = ?,
+                     language_code = ?,
+                     category = ?,
+                     status = ?,
+                     message_type = ?,
+                     body_preview = ?,
+                     variables_schema_json = ?,
+                     provider_template_id = ?,
+                     updated_at = NOW()
+                 WHERE id = ? AND (business_id = ? OR business_id IS NULL)'
+            );
+            $stmt->execute([
+                $templateBusinessId,
+                $data['template_name'],
+                $data['language_code'],
+                $data['category'] ?? 'utility',
+                $data['status'] ?? 'draft',
+                $data['message_type'] ?? null,
+                $data['body_preview'] ?? null,
+                $variablesJson,
+                $data['provider_template_id'] ?? null,
+                $templateId,
+                $businessId,
+            ]);
+
+            return $templateId;
+        }
+
+        $stmt = $this->db->getPdo()->prepare(
+            'INSERT INTO whatsapp_templates
+             (business_id, provider_code, template_name, language_code, category, status,
+              message_type, body_preview, variables_schema_json, provider_template_id)
+             VALUES (?, "meta", ?, ?, ?, ?, ?, ?, ?, ?)'
+        );
+        $stmt->execute([
+            $templateBusinessId,
+            $data['template_name'],
+            $data['language_code'],
+            $data['category'] ?? 'utility',
+            $data['status'] ?? 'draft',
+            $data['message_type'] ?? null,
+            $data['body_preview'] ?? null,
+            $variablesJson,
+            $data['provider_template_id'] ?? null,
+        ]);
+
+        return (int) $this->db->getPdo()->lastInsertId();
+    }
+
+    public function disableTemplate(int $businessId, int $templateId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'UPDATE whatsapp_templates
+             SET status = "disabled", updated_at = NOW()
+             WHERE business_id = ? AND id = ?'
+        );
+
+        return $stmt->execute([$businessId, $templateId]);
+    }
+
+    public function listTemplateAssignments(int $businessId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT a.id, a.business_id, a.location_id, a.message_type, a.language_code,
+                    a.whatsapp_template_id, a.is_active, a.created_at, a.updated_at,
+                    t.template_name, t.status AS template_status, t.body_preview
+             FROM whatsapp_template_assignments a
+             JOIN whatsapp_templates t ON t.id = a.whatsapp_template_id
+             WHERE a.business_id = ?
+             ORDER BY a.location_id IS NULL DESC, a.location_id ASC, a.message_type ASC, a.language_code ASC'
+        );
+        $stmt->execute([$businessId]);
+
+        return $stmt->fetchAll(\PDO::FETCH_ASSOC);
+    }
+
+    public function findTemplateAssignment(
+        int $businessId,
+        ?int $locationId,
+        string $messageType,
+        string $languageCode
+    ): ?array {
+        $sql = 'SELECT a.id, a.business_id, a.location_id, a.message_type, a.language_code,
+                       a.whatsapp_template_id, a.is_active, a.created_at, a.updated_at,
+                       t.template_name, t.status AS template_status, t.body_preview
+                FROM whatsapp_template_assignments a
+                JOIN whatsapp_templates t ON t.id = a.whatsapp_template_id
+                WHERE a.business_id = ?
+                  AND a.message_type = ?
+                  AND a.language_code = ?
+                  AND a.is_active = 1
+                  AND ';
+        $params = [$businessId, $messageType, $languageCode];
+        if ($locationId !== null && $locationId > 0) {
+            $sql .= 'a.location_id = ?';
+            $params[] = $locationId;
+        } else {
+            $sql .= 'a.location_id IS NULL';
+        }
+        $sql .= ' LIMIT 1';
+
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
+
+    public function upsertTemplateAssignment(
+        int $businessId,
+        ?int $locationId,
+        string $messageType,
+        string $languageCode,
+        int $templateId,
+        bool $isActive
+    ): int {
+        $stmt = $this->db->getPdo()->prepare(
+            'INSERT INTO whatsapp_template_assignments
+             (business_id, location_id, message_type, language_code, whatsapp_template_id, is_active)
+             VALUES (?, ?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE
+               whatsapp_template_id = VALUES(whatsapp_template_id),
+               is_active = VALUES(is_active),
+               updated_at = NOW()'
+        );
+        $stmt->execute([
+            $businessId,
+            $locationId !== null && $locationId > 0 ? $locationId : null,
+            $messageType,
+            $languageCode,
+            $templateId,
+            $isActive ? 1 : 0,
+        ]);
+
+        $assignment = $this->findTemplateAssignment(
+            $businessId,
+            $locationId,
+            $messageType,
+            $languageCode
+        );
+
+        return (int) ($assignment['id'] ?? $this->db->getPdo()->lastInsertId());
+    }
+
+    public function deleteTemplateAssignment(int $businessId, int $assignmentId): bool
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'DELETE FROM whatsapp_template_assignments
+             WHERE business_id = ? AND id = ?'
+        );
+
+        return $stmt->execute([$businessId, $assignmentId]);
+    }
+
+    public function resolveTemplateForNotification(
+        int $businessId,
+        ?int $locationId,
+        string $messageType,
+        string $languageCode
+    ): ?array {
+        $language = $this->normalizeTemplateLanguage($languageCode);
+        if ($locationId !== null && $locationId > 0) {
+            $assigned = $this->findAssignedApprovedTemplate($businessId, $locationId, $messageType, $language);
+            if ($assigned !== null) {
+                return $assigned;
+            }
+        }
+
+        $assigned = $this->findAssignedApprovedTemplate($businessId, null, $messageType, $language);
+        if ($assigned !== null) {
+            return $assigned;
+        }
+
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, template_name, language_code, message_type, status
+             FROM whatsapp_templates
+             WHERE business_id = ?
+               AND (message_type = ? OR template_name = ?)
+               AND language_code IN (?, "it")
+               AND status = "approved"
+             ORDER BY language_code = ? DESC
+             LIMIT 1'
+        );
+        $stmt->execute([$businessId, $messageType, $messageType, $language, $language]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+        if ($row !== false) {
+            return $row;
+        }
+
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT id, business_id, template_name, language_code, message_type, status
+             FROM whatsapp_templates
+             WHERE business_id IS NULL
+               AND (message_type = ? OR template_name = ?)
+               AND language_code IN (?, "it")
+               AND status = "approved"
+             ORDER BY language_code = ? DESC
+             LIMIT 1'
+        );
+        $stmt->execute([$messageType, $messageType, $language, $language]);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
+
+    private function findAssignedApprovedTemplate(
+        int $businessId,
+        ?int $locationId,
+        string $messageType,
+        string $languageCode
+    ): ?array {
+        $sql = 'SELECT t.id, t.business_id, t.template_name, t.language_code, t.message_type, t.status
+                FROM whatsapp_template_assignments a
+                JOIN whatsapp_templates t ON t.id = a.whatsapp_template_id
+                WHERE a.business_id = ?
+                  AND a.message_type = ?
+                  AND a.language_code = ?
+                  AND a.is_active = 1
+                  AND t.status = "approved"
+                  AND (t.business_id = ? OR t.business_id IS NULL)
+                  AND ';
+        $params = [$businessId, $messageType, $languageCode, $businessId];
+        if ($locationId !== null && $locationId > 0) {
+            $sql .= 'a.location_id = ?';
+            $params[] = $locationId;
+        } else {
+            $sql .= 'a.location_id IS NULL';
+        }
+        $sql .= ' LIMIT 1';
+
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute($params);
+        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
+
+        return $row ?: null;
+    }
+
+    private function normalizeTemplateLanguage(string $languageCode): string
+    {
+        $value = strtolower(trim($languageCode));
+        if ($value === '') {
+            return 'it';
+        }
+
+        return str_starts_with($value, 'en') ? 'en' : $value;
+    }
+
     public function hasWebhookEventForBusiness(int $businessId): bool
     {
         $stmt = $this->db->getPdo()->prepare(

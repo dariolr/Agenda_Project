@@ -2197,5 +2197,19 @@
   "bookingModulesTitle": "Moduli prenotazione",
   "bookingModulesEmpty": "Nessun modulo applicabile a questa prenotazione.",
   "bookingModulesError": "Impossibile salvare i moduli",
-  "bookingModulesSaved": "Moduli salvati"
+  "bookingModulesSaved": "Moduli salvati",
+  "whatsappTemplatesSectionTitle": "Template disponibili",
+  "whatsappTemplateAssignmentsSectionTitle": "Assegnazioni template",
+  "whatsappTemplateAddAction": "Nuovo template",
+  "whatsappTemplateCreateTitle": "Nuovo template WhatsApp",
+  "whatsappTemplateEditTitle": "Modifica template WhatsApp",
+  "whatsappTemplateMessageTypeLabel": "Tipo messaggio",
+  "whatsappTemplateLanguageLabel": "Lingua",
+  "whatsappTemplateBodyPreviewLabel": "Anteprima body",
+  "whatsappTemplatesEmpty": "Nessun template configurato.",
+  "whatsappLocationOverridesTitle": "Override per location",
+  "whatsappTemplateGlobalLabel": "Template globale",
+  "whatsappTemplateGlobalHelper": "Rende il template disponibile come fallback per tutti i business.",
+  "whatsappTemplateGlobalBadge": "Globale",
+  "whatsappTemplateBusinessBadge": "Business"
 }

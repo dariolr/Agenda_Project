@@ -21,6 +21,21 @@ final class WhatsappController
     private const ALLOWED_CONFIG_STATUS = ['active', 'inactive', 'pending', 'error', 'draft', 'suspended'];
     /** @var string[] */
     private const ALLOWED_OUTBOX_STATUS = ['queued', 'processing', 'sent', 'delivered', 'read', 'failed', 'cancelled', 'skipped'];
+    /** @var string[] */
+    private const ALLOWED_TEMPLATE_STATUS = ['draft', 'submitted', 'approved', 'rejected', 'disabled', 'pending', 'paused'];
+    /** @var string[] */
+    private const ALLOWED_TEMPLATE_CATEGORY = ['marketing', 'utility', 'authentication', 'service'];
+    /** @var string[] */
+    private const ALLOWED_MESSAGE_TYPES = [
+        'booking_confirmation',
+        'booking_reminder',
+        'booking_cancellation',
+        'booking_reschedule',
+        'class_booking_confirmation',
+        'class_booking_reminder',
+        'class_booking_cancellation',
+        'test',
+    ];
 
     public function __construct(
         private readonly WhatsappRepository $whatsappRepo,
@@ -232,6 +247,152 @@ final class WhatsappController
         }
 
         $this->whatsappRepo->deleteMapping($businessId, $mappingId);
+        return Response::success(['deleted' => true]);
+    }
+
+    public function templatesIndex(Request $request): Response
+    {
+        $businessId = (int) $request->getAttribute('business_id');
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'view', $request);
+        if ($availability !== null) {
+            return $availability;
+        }
+
+        return Response::success([
+            'templates' => array_map(
+                [$this, 'formatTemplate'],
+                $this->whatsappRepo->listTemplatesByBusiness($businessId)
+            ),
+        ]);
+    }
+
+    public function templatesStore(Request $request): Response
+    {
+        return $this->upsertTemplateFromRequest($request, null);
+    }
+
+    public function templatesUpdate(Request $request): Response
+    {
+        return $this->upsertTemplateFromRequest($request, (int) $request->getAttribute('id'));
+    }
+
+    public function templatesDestroy(Request $request): Response
+    {
+        $businessId = (int) $request->getAttribute('business_id');
+        $templateId = (int) $request->getAttribute('id');
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'manage_config', $request);
+        if ($availability !== null) {
+            return $availability;
+        }
+        if ($this->whatsappRepo->findTemplateById($businessId, $templateId) === null) {
+            return Response::notFound('Template not found', $request->traceId);
+        }
+
+        $this->whatsappRepo->disableTemplate($businessId, $templateId);
+        return Response::success(['disabled' => true]);
+    }
+
+    public function templateAssignmentsIndex(Request $request): Response
+    {
+        $businessId = (int) $request->getAttribute('business_id');
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'view', $request);
+        if ($availability !== null) {
+            return $availability;
+        }
+
+        return Response::success([
+            'assignments' => array_map(
+                [$this, 'formatTemplateAssignment'],
+                $this->whatsappRepo->listTemplateAssignments($businessId)
+            ),
+        ]);
+    }
+
+    public function templateAssignmentsStore(Request $request): Response
+    {
+        $businessId = (int) $request->getAttribute('business_id');
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'manage_config', $request);
+        if ($availability !== null) {
+            return $availability;
+        }
+
+        $body = $request->getBody() ?? [];
+        $locationId = isset($body['location_id']) && $body['location_id'] !== null
+            ? (int) $body['location_id']
+            : null;
+        if ($locationId !== null && $locationId > 0) {
+            $location = $this->locationRepo->findById($locationId);
+            if ($location === null || (int) ($location['business_id'] ?? 0) !== $businessId) {
+                return Response::validationError('location_id non appartiene al business', $request->traceId);
+            }
+        } else {
+            $locationId = null;
+        }
+
+        $messageType = trim((string) ($body['message_type'] ?? ''));
+        if (!in_array($messageType, self::ALLOWED_MESSAGE_TYPES, true)) {
+            return Response::validationError('message_type non valido', $request->traceId);
+        }
+        $languageCode = $this->normalizeTemplateLanguage((string) ($body['language_code'] ?? ''));
+        if ($languageCode === '') {
+            return Response::validationError('language_code obbligatorio', $request->traceId);
+        }
+
+        $templateId = (int) ($body['whatsapp_template_id'] ?? 0);
+        $template = $this->whatsappRepo->findTemplateById($businessId, $templateId);
+        if ($template === null) {
+            return Response::validationError('whatsapp_template_id non valido', $request->traceId);
+        }
+        if (($template['status'] ?? '') !== 'approved') {
+            return Response::validationError('Il template deve essere approvato', $request->traceId);
+        }
+        if (($template['message_type'] ?? null) !== null && ($template['message_type'] ?? '') !== $messageType) {
+            return Response::validationError('Il template non corrisponde al message_type', $request->traceId);
+        }
+
+        $id = $this->whatsappRepo->upsertTemplateAssignment(
+            $businessId,
+            $locationId,
+            $messageType,
+            $languageCode,
+            $templateId,
+            (bool) ($body['is_active'] ?? true)
+        );
+        $assignment = $this->whatsappRepo->findTemplateAssignment(
+            $businessId,
+            $locationId,
+            $messageType,
+            $languageCode
+        );
+
+        return Response::success(['assignment' => $this->formatTemplateAssignment($assignment ?? ['id' => $id])]);
+    }
+
+    public function templateAssignmentsDestroy(Request $request): Response
+    {
+        $businessId = (int) $request->getAttribute('business_id');
+        $assignmentId = (int) $request->getAttribute('id');
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'manage_config', $request);
+        if ($availability !== null) {
+            return $availability;
+        }
+
+        $this->whatsappRepo->deleteTemplateAssignment($businessId, $assignmentId);
         return Response::success(['deleted' => true]);
     }
 
@@ -459,6 +620,7 @@ final class WhatsappController
         $phoneActive = $config !== null && ($config['status'] ?? '') === 'active';
         $webhookVerified = $this->whatsappRepo->hasWebhookEventForBusiness($businessId);
         $templateApproved = $this->whatsappRepo->hasApprovedUtilityTemplate($businessId);
+        $missingTemplates = $this->missingResolvableTemplates($businessId, $locationId > 0 ? $locationId : null);
         $optInActive = $this->whatsappRepo->hasActiveOptIn($businessId);
 
         $settings = $this->settingsRepo->findByBusinessId($businessId);
@@ -468,7 +630,8 @@ final class WhatsappController
             $config,
             $phoneActive,
             $webhookVerified,
-            $templateApproved,
+            $templateApproved && $missingTemplates === [],
+            $missingTemplates,
             $optInActive
         );
         $blocking = $checks['blocking_reasons'] ?? [];
@@ -1010,6 +1173,22 @@ final class WhatsappController
         return $this->whatsappRepo->hasActiveOptIn($businessId);
     }
 
+    private function missingResolvableTemplates(int $businessId, ?int $locationId): array
+    {
+        $missing = [];
+        foreach (self::ALLOWED_MESSAGE_TYPES as $messageType) {
+            if ($this->whatsappRepo->resolveTemplateForNotification($businessId, $locationId, $messageType, 'it') === null) {
+                $missing[] = [
+                    'message_type' => $messageType,
+                    'language_code' => 'it',
+                    'location_id' => $locationId,
+                ];
+            }
+        }
+
+        return $missing;
+    }
+
     private function buildGoLiveResponse(
         int $businessId,
         array $settings,
@@ -1017,6 +1196,7 @@ final class WhatsappController
         bool $phoneActive,
         bool $webhookVerified,
         bool $templateApproved,
+        array $missingTemplates,
         bool $optInActive
     ): array {
         $featureEnabled = ((int) ($settings['whatsapp_enabled'] ?? 0)) === 1;
@@ -1048,6 +1228,10 @@ final class WhatsappController
             $blocking[] = 'whatsapp_template_not_approved';
             $nextSteps[] = 'approve_utility_templates';
         }
+        if ($missingTemplates !== []) {
+            $blocking[] = 'whatsapp_template_assignments_missing';
+            $nextSteps[] = 'assign_whatsapp_templates';
+        }
         if (!$optInActive) {
             $blocking[] = 'whatsapp_optin_required';
             $nextSteps[] = 'collect_customer_opt_in';
@@ -1071,6 +1255,7 @@ final class WhatsappController
             'webhook_verified' => $webhookVerified,
             'template_approved' => $templateApproved,
             'templates_approved' => $templateApproved,
+            'missing_templates' => $missingTemplates,
             'opt_in_active' => $optInActive,
             'opt_in_available' => $optInActive,
             'location_mapping_valid' => $mappingAllowed || ($settings['default_channel_mode'] ?? '') !== 'location_mapping',
@@ -1131,6 +1316,128 @@ final class WhatsappController
             'created_at' => $config['created_at'] ?? null,
             'updated_at' => $config['updated_at'] ?? null,
         ];
+    }
+
+    private function upsertTemplateFromRequest(Request $request, ?int $templateId): Response
+    {
+        $businessId = (int) $request->getAttribute('business_id');
+        if (!$this->hasBusinessAccess($request, $businessId)) {
+            return Response::forbidden('You do not have access to this business', $request->traceId);
+        }
+        $availability = $this->assertWhatsappFeatureAvailableForBusiness($businessId, 'manage_config', $request);
+        if ($availability !== null) {
+            return $availability;
+        }
+
+        $body = $request->getBody() ?? [];
+        $templateName = trim((string) ($body['template_name'] ?? ''));
+        $languageCode = $this->normalizeTemplateLanguage((string) ($body['language_code'] ?? ''));
+        $messageType = trim((string) ($body['message_type'] ?? ''));
+        $category = strtolower(trim((string) ($body['category'] ?? 'utility')));
+        $status = strtolower(trim((string) ($body['status'] ?? 'draft')));
+        $isGlobal = (bool) ($body['is_global'] ?? false);
+
+        if ($templateName === '') {
+            return Response::validationError('template_name obbligatorio', $request->traceId);
+        }
+        if ($languageCode === '') {
+            return Response::validationError('language_code obbligatorio', $request->traceId);
+        }
+        if ($messageType !== '' && !in_array($messageType, self::ALLOWED_MESSAGE_TYPES, true)) {
+            return Response::validationError('message_type non valido', $request->traceId);
+        }
+        if (!in_array($category, self::ALLOWED_TEMPLATE_CATEGORY, true)) {
+            return Response::validationError('category non valida', $request->traceId);
+        }
+        if (!in_array($status, self::ALLOWED_TEMPLATE_STATUS, true)) {
+            return Response::validationError('status non valido', $request->traceId);
+        }
+        if ($isGlobal && !$this->isSuperadmin($request)) {
+            return Response::error('Solo superadmin', 'forbidden', 403, $request->traceId);
+        }
+
+        if ($templateId !== null && $this->whatsappRepo->findTemplateById($businessId, $templateId) === null) {
+            return Response::notFound('Template not found', $request->traceId);
+        }
+
+        $id = $this->whatsappRepo->upsertTemplate($businessId, [
+            'id' => $templateId,
+            'template_name' => $templateName,
+            'language_code' => $languageCode,
+            'category' => $category,
+            'status' => $status,
+            'is_global' => $isGlobal,
+            'message_type' => $messageType !== '' ? $messageType : null,
+            'body_preview' => isset($body['body_preview']) ? trim((string) $body['body_preview']) : null,
+            'variables_schema_json' => $body['variables_schema_json'] ?? $body['variables_schema'] ?? null,
+            'provider_template_id' => isset($body['provider_template_id'])
+                ? trim((string) $body['provider_template_id'])
+                : null,
+        ]);
+        $template = $this->whatsappRepo->findTemplateById($businessId, $id);
+
+        return $templateId === null
+            ? Response::created(['template' => $this->formatTemplate($template ?? ['id' => $id])])
+            : Response::success(['template' => $this->formatTemplate($template ?? ['id' => $id])]);
+    }
+
+    private function formatTemplate(array $template): array
+    {
+        $variables = $template['variables_schema_json'] ?? null;
+        if (is_string($variables) && $variables !== '') {
+            $decoded = Json::decodeAssoc($variables);
+            $variables = $decoded ?? $variables;
+        }
+
+        return [
+            'id' => isset($template['id']) ? (int) $template['id'] : 0,
+            'business_id' => isset($template['business_id']) && $template['business_id'] !== null
+                ? (int) $template['business_id']
+                : null,
+            'provider_code' => (string) ($template['provider_code'] ?? 'meta'),
+            'template_name' => (string) ($template['template_name'] ?? ''),
+            'language_code' => (string) ($template['language_code'] ?? 'it'),
+            'category' => (string) ($template['category'] ?? 'utility'),
+            'status' => (string) ($template['status'] ?? 'draft'),
+            'message_type' => $template['message_type'] ?? null,
+            'body_preview' => $template['body_preview'] ?? null,
+            'variables_schema' => $variables,
+            'provider_template_id' => $template['provider_template_id'] ?? null,
+            'created_at' => $template['created_at'] ?? null,
+            'updated_at' => $template['updated_at'] ?? null,
+        ];
+    }
+
+    private function formatTemplateAssignment(array $assignment): array
+    {
+        return [
+            'id' => isset($assignment['id']) ? (int) $assignment['id'] : 0,
+            'business_id' => isset($assignment['business_id']) ? (int) $assignment['business_id'] : null,
+            'location_id' => isset($assignment['location_id']) && $assignment['location_id'] !== null
+                ? (int) $assignment['location_id']
+                : null,
+            'message_type' => (string) ($assignment['message_type'] ?? ''),
+            'language_code' => (string) ($assignment['language_code'] ?? 'it'),
+            'whatsapp_template_id' => isset($assignment['whatsapp_template_id'])
+                ? (int) $assignment['whatsapp_template_id']
+                : null,
+            'is_active' => ((int) ($assignment['is_active'] ?? 1)) === 1,
+            'template_name' => $assignment['template_name'] ?? null,
+            'template_status' => $assignment['template_status'] ?? null,
+            'body_preview' => $assignment['body_preview'] ?? null,
+            'created_at' => $assignment['created_at'] ?? null,
+            'updated_at' => $assignment['updated_at'] ?? null,
+        ];
+    }
+
+    private function normalizeTemplateLanguage(string $languageCode): string
+    {
+        $value = strtolower(trim($languageCode));
+        if ($value === '') {
+            return '';
+        }
+
+        return str_starts_with($value, 'en') ? 'en' : $value;
     }
 
     private function isEmbeddedSignupEnabled(int $businessId): bool

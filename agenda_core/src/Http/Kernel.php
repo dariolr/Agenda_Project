@@ -389,6 +389,14 @@ final class Kernel
         $this->router->post('/v1/businesses/{business_id}/location-whatsapp-mappings', WhatsappController::class, 'mappingsStore', ['auth']);
         $this->router->delete('/v1/businesses/{business_id}/location-whatsapp-mappings/{id}', WhatsappController::class, 'mappingsDestroy', ['auth']);
 
+        $this->router->get('/v1/businesses/{business_id}/whatsapp/templates', WhatsappController::class, 'templatesIndex', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/whatsapp/templates', WhatsappController::class, 'templatesStore', ['auth']);
+        $this->router->put('/v1/businesses/{business_id}/whatsapp/templates/{id}', WhatsappController::class, 'templatesUpdate', ['auth']);
+        $this->router->delete('/v1/businesses/{business_id}/whatsapp/templates/{id}', WhatsappController::class, 'templatesDestroy', ['auth']);
+        $this->router->get('/v1/businesses/{business_id}/whatsapp/template-assignments', WhatsappController::class, 'templateAssignmentsIndex', ['auth']);
+        $this->router->post('/v1/businesses/{business_id}/whatsapp/template-assignments', WhatsappController::class, 'templateAssignmentsStore', ['auth']);
+        $this->router->delete('/v1/businesses/{business_id}/whatsapp/template-assignments/{id}', WhatsappController::class, 'templateAssignmentsDestroy', ['auth']);
+
         $this->router->get('/v1/businesses/{business_id}/whatsapp-outbox', WhatsappController::class, 'outboxIndex', ['auth']);
         $this->router->post('/v1/businesses/{business_id}/whatsapp-outbox', WhatsappController::class, 'outboxStore', ['auth']);
         $this->router->put('/v1/businesses/{business_id}/whatsapp-outbox/{id}', WhatsappController::class, 'outboxUpdate', ['auth']);

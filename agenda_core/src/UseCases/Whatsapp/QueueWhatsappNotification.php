@@ -14,7 +14,16 @@ use DateTimeZone;
 
 final class QueueWhatsappNotification
 {
-    private const ENABLED_MESSAGE_TYPES = ['booking_reminder'];
+    private const ENABLED_MESSAGE_TYPES = [
+        'booking_confirmation',
+        'booking_reminder',
+        'booking_cancellation',
+        'booking_reschedule',
+        'class_booking_confirmation',
+        'class_booking_reminder',
+        'class_booking_cancellation',
+        'test',
+    ];
 
     public function __construct(
         private readonly Connection $db,
@@ -69,7 +78,12 @@ final class QueueWhatsappNotification
             return 0;
         }
 
-        $template = $this->findApprovedTemplate($businessId, $messageType, (string) ($data['locale'] ?? 'it'));
+        $template = $this->whatsappRepo->resolveTemplateForNotification(
+            $businessId,
+            $locationId > 0 ? $locationId : null,
+            $messageType,
+            (string) ($data['locale'] ?? 'it')
+        );
         if ($template === null) {
             return 0;
         }
@@ -217,44 +231,6 @@ final class QueueWhatsappNotification
         }
 
         return null;
-    }
-
-    private function findApprovedTemplate(int $businessId, string $messageType, string $locale): ?array
-    {
-        $language = str_starts_with(strtolower($locale), 'en') ? 'en' : 'it';
-        $stmt = $this->db->getPdo()->prepare(
-            'SELECT business_id, template_name, language_code
-             FROM whatsapp_templates
-             WHERE (business_id = ? OR business_id IS NULL)
-               AND (message_type = ? OR template_name = ?)
-               AND language_code IN (?, "it")
-               AND status = "approved"
-             ORDER BY business_id IS NULL ASC, language_code = ? DESC
-             LIMIT 1'
-        );
-        $stmt->execute([$businessId, $messageType, $messageType, $language, $language]);
-        $row = $stmt->fetch(\PDO::FETCH_ASSOC);
-
-        if ($row !== false) {
-            return $row;
-        }
-
-        if ($messageType === 'booking_reminder') {
-            return [
-                'business_id' => null,
-                'template_name' => $this->defaultReminderTemplateName(),
-                'language_code' => $language,
-            ];
-        }
-
-        return null;
-    }
-
-    private function defaultReminderTemplateName(): string
-    {
-        $name = trim((string) ($_ENV['WHATSAPP_REMINDER_TEMPLATE_NAME'] ?? getenv('WHATSAPP_REMINDER_TEMPLATE_NAME') ?? ''));
-
-        return $name !== '' ? $name : 'promemoria_appuntamento_ita_24h';
     }
 
     private function messageTypeForChannel(string $channel): ?string

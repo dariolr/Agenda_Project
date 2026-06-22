@@ -6,6 +6,8 @@ import '/core/models/whatsapp_config.dart';
 import '/core/models/whatsapp_embedded_signup_result.dart';
 import '/core/models/whatsapp_go_live_check.dart';
 import '/core/models/whatsapp_outbox_item.dart';
+import '/core/models/whatsapp_template.dart';
+import '/core/models/whatsapp_template_assignment.dart';
 import '/core/network/api_client.dart';
 import '/core/network/network_providers.dart';
 
@@ -14,6 +16,8 @@ class WhatsappIntegrationState {
   final List<WhatsappConfig> configs;
   final List<WhatsappLocationMapping> mappings;
   final List<WhatsappOutboxItem> outbox;
+  final List<WhatsappTemplate> templates;
+  final List<WhatsappTemplateAssignment> templateAssignments;
   final BusinessWhatsappSettings? settings;
   final bool isLoading;
   final String? error;
@@ -23,6 +27,8 @@ class WhatsappIntegrationState {
     this.configs = const [],
     this.mappings = const [],
     this.outbox = const [],
+    this.templates = const [],
+    this.templateAssignments = const [],
     this.settings,
     this.isLoading = false,
     this.error,
@@ -34,6 +40,8 @@ class WhatsappIntegrationState {
     List<WhatsappConfig>? configs,
     List<WhatsappLocationMapping>? mappings,
     List<WhatsappOutboxItem>? outbox,
+    List<WhatsappTemplate>? templates,
+    List<WhatsappTemplateAssignment>? templateAssignments,
     BusinessWhatsappSettings? settings,
     bool clearSettings = false,
     bool? isLoading,
@@ -47,6 +55,8 @@ class WhatsappIntegrationState {
       configs: configs ?? this.configs,
       mappings: mappings ?? this.mappings,
       outbox: outbox ?? this.outbox,
+      templates: templates ?? this.templates,
+      templateAssignments: templateAssignments ?? this.templateAssignments,
       settings: clearSettings ? null : (settings ?? this.settings),
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
@@ -73,6 +83,8 @@ class WhatsappIntegrationNotifier extends Notifier<WhatsappIntegrationState> {
       configs: const [],
       mappings: const [],
       outbox: const [],
+      templates: const [],
+      templateAssignments: const [],
       clearSettings: true,
       isLoading: true,
       clearError: true,
@@ -83,6 +95,8 @@ class WhatsappIntegrationNotifier extends Notifier<WhatsappIntegrationState> {
         _api.getBusinessWhatsappConfigs(businessId),
         _api.getWhatsappLocationMappings(businessId),
         _api.getWhatsappOutbox(businessId: businessId, limit: 100, offset: 0),
+        _api.getWhatsappTemplates(businessId),
+        _api.getWhatsappTemplateAssignments(businessId),
       ]);
       state = state.copyWith(
         loadedBusinessId: businessId,
@@ -90,6 +104,8 @@ class WhatsappIntegrationNotifier extends Notifier<WhatsappIntegrationState> {
         configs: results[1] as List<WhatsappConfig>,
         mappings: results[2] as List<WhatsappLocationMapping>,
         outbox: results[3] as List<WhatsappOutboxItem>,
+        templates: results[4] as List<WhatsappTemplate>,
+        templateAssignments: results[5] as List<WhatsappTemplateAssignment>,
         isLoading: false,
       );
     } on ApiException catch (e) {
@@ -167,6 +183,68 @@ class WhatsappIntegrationNotifier extends Notifier<WhatsappIntegrationState> {
     await _api.deleteBusinessWhatsappConfig(
       businessId: businessId,
       configId: configId,
+    );
+    await loadBusinessWhatsappData(businessId);
+  }
+
+  Future<void> upsertTemplate({
+    required int businessId,
+    int? templateId,
+    required String templateName,
+    required String languageCode,
+    required String messageType,
+    required String status,
+    bool isGlobal = false,
+    String? bodyPreview,
+  }) async {
+    await _api.upsertWhatsappTemplate(
+      businessId: businessId,
+      templateId: templateId,
+      templateName: templateName,
+      languageCode: languageCode,
+      messageType: messageType,
+      status: status,
+      isGlobal: isGlobal,
+      bodyPreview: bodyPreview,
+    );
+    await loadBusinessWhatsappData(businessId);
+  }
+
+  Future<void> disableTemplate({
+    required int businessId,
+    required int templateId,
+  }) async {
+    await _api.disableWhatsappTemplate(
+      businessId: businessId,
+      templateId: templateId,
+    );
+    await loadBusinessWhatsappData(businessId);
+  }
+
+  Future<void> upsertTemplateAssignment({
+    required int businessId,
+    int? locationId,
+    required String messageType,
+    required String languageCode,
+    required int whatsappTemplateId,
+  }) async {
+    await _api.upsertWhatsappTemplateAssignment(
+      businessId: businessId,
+      locationId: locationId,
+      messageType: messageType,
+      languageCode: languageCode,
+      whatsappTemplateId: whatsappTemplateId,
+    );
+    await loadBusinessWhatsappData(businessId);
+  }
+
+  Future<void> deleteTemplateAssignment({
+    required int businessId,
+    required int assignmentId,
+  }) async {
+    await _api.deleteWhatsappTemplateAssignment(
+      businessId: businessId,
+      assignmentId: assignmentId,
     );
     await loadBusinessWhatsappData(businessId);
   }

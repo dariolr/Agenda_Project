@@ -2,12 +2,12 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "Deploy agenda_core (demo)",
+      "label": "Deploy agenda_core (staging)",
       "type": "shell",
       "command": "zsh",
       "args": [
         "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/config/scripts/deploy/deploy_core.sh",
-        "demo"
+        "staging"
       ],
       "options": {
         "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_core"
@@ -38,12 +38,12 @@
       }
     },
     {
-      "label": "Deploy agenda_backend (demo)",
+      "label": "Deploy agenda_backend (staging)",
       "type": "shell",
       "command": "zsh",
       "args": [
         "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/config/scripts/deploy/deploy_backend.sh",
-        "demo"
+        "staging"
       ],
       "options": {
         "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_backend"
@@ -74,12 +74,12 @@
       }
     },
     {
-      "label": "Deploy agenda_frontend (demo)",
+      "label": "Deploy agenda_frontend (staging)",
       "type": "shell",
       "command": "zsh",
       "args": [
         "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/config/scripts/deploy/deploy_frontend.sh",
-        "demo"
+        "staging"
       ],
       "options": {
         "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_frontend"
@@ -101,6 +101,23 @@
       ],
       "options": {
         "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/agenda_frontend"
+      },
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      }
+    },
+    {
+      "label": "Bundle",
+      "type": "shell",
+      "command": "zsh",
+      "args": [
+        "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/config/scripts/bundle/agenda_all_bundle.sh"
+      ],
+      "options": {
+        "cwd": "/Users/dariolarosa/Documents/Romeo_lab/Agenda_Project/config/scripts/bundle/"
       },
       "problemMatcher": [],
       "presentation": {

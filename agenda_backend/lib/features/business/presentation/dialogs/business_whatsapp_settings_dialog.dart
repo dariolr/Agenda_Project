@@ -4,9 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/business_whatsapp_settings.dart';
 import '../../../../core/models/location.dart';
+import '../../../../core/models/whatsapp_template.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/network/network_providers.dart';
+import '../../../../core/widgets/app_form.dart';
 import '../../../../core/widgets/local_loading_overlay.dart';
+import '../../../booking_notifications/providers/whatsapp_integration_provider.dart';
 
 class BusinessWhatsappSettingsDialog extends ConsumerStatefulWidget {
   const BusinessWhatsappSettingsDialog({
@@ -25,6 +28,17 @@ class BusinessWhatsappSettingsDialog extends ConsumerStatefulWidget {
 
 class _BusinessWhatsappSettingsDialogState
     extends ConsumerState<BusinessWhatsappSettingsDialog> {
+  static const _messageTypes = [
+    'booking_confirmation',
+    'booking_reminder',
+    'booking_cancellation',
+    'booking_reschedule',
+    'class_booking_confirmation',
+    'class_booking_reminder',
+    'class_booking_cancellation',
+    'test',
+  ];
+
   BusinessWhatsappSettings? _settings;
   List<Location> _locations = const [];
   bool _isLoading = true;
@@ -59,6 +73,9 @@ class _BusinessWhatsappSettingsDialogState
           .map((raw) => Location.fromJson(Map<String, dynamic>.from(raw)))
           .where((location) => location.isActive)
           .toList(growable: false);
+      await ref
+          .read(whatsappIntegrationProvider.notifier)
+          .loadBusinessWhatsappData(widget.businessId);
       if (!mounted) return;
       final canUseLocationMapping = locations.length > 1;
       setState(() {
@@ -115,6 +132,9 @@ class _BusinessWhatsappSettingsDialogState
               'status': _whatsappEnabled ? 'enabled' : 'not_enabled',
             },
           );
+      await ref
+          .read(whatsappIntegrationProvider.notifier)
+          .loadBusinessWhatsappData(widget.businessId);
 
       if (mounted) {
         Navigator.of(context).pop(true);
@@ -145,12 +165,233 @@ class _BusinessWhatsappSettingsDialogState
     });
   }
 
+  Future<void> _showTemplateDialog({WhatsappTemplate? template}) async {
+    final l10n = context.l10n;
+    final nameController = TextEditingController(
+      text: template?.templateName ?? '',
+    );
+    final bodyController = TextEditingController(
+      text: template?.bodyPreview ?? '',
+    );
+    var messageType = template?.messageType ?? 'booking_reminder';
+    var languageCode = template?.languageCode ?? 'it';
+    var status = template?.status ?? 'approved';
+    var isGlobal = template != null && template.businessId == null;
+
+    final saved = await AppForm.show<bool>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: Text(
+            template == null
+                ? l10n.whatsappTemplateCreateTitle
+                : l10n.whatsappTemplateEditTitle,
+          ),
+          content: SizedBox(
+            width: 460,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: InputDecoration(
+                    labelText: l10n.whatsappFieldTemplateName,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: messageType,
+                  decoration: InputDecoration(
+                    labelText: l10n.whatsappTemplateMessageTypeLabel,
+                  ),
+                  items: _messageTypes
+                      .map(
+                        (type) =>
+                            DropdownMenuItem(value: type, child: Text(type)),
+                      )
+                      .toList(),
+                  onChanged: (value) => messageType = value ?? messageType,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: languageCode,
+                  decoration: InputDecoration(
+                    labelText: l10n.whatsappTemplateLanguageLabel,
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'it', child: Text('it')),
+                    DropdownMenuItem(value: 'en', child: Text('en')),
+                  ],
+                  onChanged: (value) => languageCode = value ?? languageCode,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: status,
+                  decoration: InputDecoration(
+                    labelText: l10n.whatsappFieldStatus,
+                  ),
+                  items: const [
+                    DropdownMenuItem(value: 'draft', child: Text('draft')),
+                    DropdownMenuItem(
+                      value: 'submitted',
+                      child: Text('submitted'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'approved',
+                      child: Text('approved'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'rejected',
+                      child: Text('rejected'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'disabled',
+                      child: Text('disabled'),
+                    ),
+                    DropdownMenuItem(value: 'pending', child: Text('pending')),
+                    DropdownMenuItem(value: 'paused', child: Text('paused')),
+                  ],
+                  onChanged: (value) => status = value ?? status,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: bodyController,
+                  minLines: 2,
+                  maxLines: 4,
+                  decoration: InputDecoration(
+                    labelText: l10n.whatsappTemplateBodyPreviewLabel,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                CheckboxListTile.adaptive(
+                  value: isGlobal,
+                  onChanged: (value) =>
+                      setDialogState(() => isGlobal = value ?? false),
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(l10n.whatsappTemplateGlobalLabel),
+                  subtitle: Text(l10n.whatsappTemplateGlobalHelper),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(l10n.actionCancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(l10n.actionSave),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (saved != true || !mounted) return;
+    setState(() => _isSaving = true);
+    try {
+      await ref
+          .read(whatsappIntegrationProvider.notifier)
+          .upsertTemplate(
+            businessId: widget.businessId,
+            templateId: template?.id,
+            templateName: nameController.text.trim(),
+            languageCode: languageCode,
+            messageType: messageType,
+            status: status,
+            isGlobal: isGlobal,
+            bodyPreview: bodyController.text.trim(),
+          );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  Future<void> _saveAssignment({
+    required int? locationId,
+    required String messageType,
+    required int? templateId,
+  }) async {
+    if (templateId == null) return;
+    setState(() => _isSaving = true);
+    try {
+      await ref
+          .read(whatsappIntegrationProvider.notifier)
+          .upsertTemplateAssignment(
+            businessId: widget.businessId,
+            locationId: locationId,
+            messageType: messageType,
+            languageCode: 'it',
+            whatsappTemplateId: templateId,
+          );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
+  int? _selectedTemplateId(
+    WhatsappIntegrationState state, {
+    required int? locationId,
+    required String messageType,
+  }) {
+    return state.templateAssignments
+        .where(
+          (assignment) =>
+              assignment.locationId == locationId &&
+              assignment.messageType == messageType &&
+              assignment.languageCode == 'it',
+        )
+        .map((assignment) => assignment.whatsappTemplateId)
+        .cast<int?>()
+        .firstWhere((value) => value != null, orElse: () => null);
+  }
+
+  int? _assignmentId(
+    WhatsappIntegrationState state, {
+    required int? locationId,
+    required String messageType,
+  }) {
+    return state.templateAssignments
+        .where(
+          (assignment) =>
+              assignment.locationId == locationId &&
+              assignment.messageType == messageType &&
+              assignment.languageCode == 'it',
+        )
+        .map((assignment) => assignment.id)
+        .cast<int?>()
+        .firstWhere((value) => value != null, orElse: () => null);
+  }
+
+  Future<void> _deleteAssignment(int? assignmentId) async {
+    if (assignmentId == null) return;
+    setState(() => _isSaving = true);
+    try {
+      await ref
+          .read(whatsappIntegrationProvider.notifier)
+          .deleteTemplateAssignment(
+            businessId: widget.businessId,
+            assignmentId: assignmentId,
+          );
+    } finally {
+      if (mounted) {
+        setState(() => _isSaving = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final canUseLocationMapping = _locations.length > 1;
+    final whatsappState = ref.watch(whatsappIntegrationProvider);
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(28),
@@ -265,6 +506,140 @@ class _BusinessWhatsappSettingsDialogState
                       ),
                     ),
                   ],
+                  const SizedBox(height: 16),
+                  ExpansionTile(
+                    initiallyExpanded: true,
+                    leading: const Icon(Icons.settings_phone_outlined),
+                    title: Text(l10n.whatsappConfigsTitle),
+                    children: [
+                      if (whatsappState.configs.isEmpty)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(l10n.whatsappNoConfigs),
+                        )
+                      else
+                        for (final config in whatsappState.configs)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(
+                              config.displayPhoneNumber ?? config.phoneNumberId,
+                            ),
+                            subtitle: Text(
+                              '${l10n.whatsappFieldStatus}: ${config.status.name}',
+                            ),
+                            trailing: config.isDefault
+                                ? const Icon(Icons.star_outline)
+                                : null,
+                          ),
+                    ],
+                  ),
+                  ExpansionTile(
+                    initiallyExpanded: true,
+                    leading: const Icon(Icons.description_outlined),
+                    title: Text(l10n.whatsappTemplatesSectionTitle),
+                    children: [
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          onPressed: _isSaving
+                              ? null
+                              : () => _showTemplateDialog(),
+                          icon: const Icon(Icons.add_outlined),
+                          label: Text(l10n.whatsappTemplateAddAction),
+                        ),
+                      ),
+                      if (whatsappState.templates.isEmpty)
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(l10n.whatsappTemplatesEmpty),
+                        )
+                      else
+                        for (final template in whatsappState.templates)
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(template.templateName),
+                            subtitle: Text(
+                              '${template.messageType ?? '-'} · ${template.languageCode} · ${template.status} · ${template.businessId == null ? l10n.whatsappTemplateGlobalBadge : l10n.whatsappTemplateBusinessBadge}',
+                            ),
+                            trailing: IconButton(
+                              tooltip: l10n.actionEdit,
+                              onPressed: _isSaving
+                                  ? null
+                                  : () =>
+                                        _showTemplateDialog(template: template),
+                              icon: const Icon(Icons.edit_outlined),
+                            ),
+                          ),
+                    ],
+                  ),
+                  ExpansionTile(
+                    initiallyExpanded: true,
+                    leading: const Icon(Icons.rule_folder_outlined),
+                    title: Text(l10n.whatsappTemplateAssignmentsSectionTitle),
+                    children: [
+                      for (final messageType in _messageTypes)
+                        _TemplateAssignmentRow(
+                          label: messageType,
+                          templates: whatsappState.templates,
+                          selectedTemplateId: _selectedTemplateId(
+                            whatsappState,
+                            locationId: null,
+                            messageType: messageType,
+                          ),
+                          onChanged: (templateId) => _saveAssignment(
+                            locationId: null,
+                            messageType: messageType,
+                            templateId: templateId,
+                          ),
+                          onClear: () => _deleteAssignment(
+                            _assignmentId(
+                              whatsappState,
+                              locationId: null,
+                              messageType: messageType,
+                            ),
+                          ),
+                        ),
+                      if (_locations.isNotEmpty) ...[
+                        const Divider(),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            l10n.whatsappLocationOverridesTitle,
+                            style: theme.textTheme.titleSmall,
+                          ),
+                        ),
+                        for (final location in _locations)
+                          ExpansionTile(
+                            tilePadding: EdgeInsets.zero,
+                            title: Text(location.name),
+                            children: [
+                              for (final messageType in _messageTypes)
+                                _TemplateAssignmentRow(
+                                  label: messageType,
+                                  templates: whatsappState.templates,
+                                  selectedTemplateId: _selectedTemplateId(
+                                    whatsappState,
+                                    locationId: location.id,
+                                    messageType: messageType,
+                                  ),
+                                  onChanged: (templateId) => _saveAssignment(
+                                    locationId: location.id,
+                                    messageType: messageType,
+                                    templateId: templateId,
+                                  ),
+                                  onClear: () => _deleteAssignment(
+                                    _assignmentId(
+                                      whatsappState,
+                                      locationId: location.id,
+                                      messageType: messageType,
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -285,12 +660,82 @@ class _BusinessWhatsappSettingsDialogState
   }
 }
 
+class _TemplateAssignmentRow extends StatelessWidget {
+  const _TemplateAssignmentRow({
+    required this.label,
+    required this.templates,
+    required this.selectedTemplateId,
+    required this.onChanged,
+    required this.onClear,
+  });
+
+  final String label;
+  final List<WhatsappTemplate> templates;
+  final int? selectedTemplateId;
+  final ValueChanged<int?> onChanged;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context) {
+    final approvedTemplates = templates
+        .where(
+          (template) =>
+              template.isApproved &&
+              template.languageCode == 'it' &&
+              (template.messageType == null || template.messageType == label),
+        )
+        .toList(growable: false);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        children: [
+          Expanded(
+            flex: 2,
+            child: Text(label, overflow: TextOverflow.ellipsis),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            flex: 3,
+            child: DropdownButtonFormField<int>(
+              value:
+                  approvedTemplates.any(
+                    (template) => template.id == selectedTemplateId,
+                  )
+                  ? selectedTemplateId
+                  : null,
+              isExpanded: true,
+              items: approvedTemplates
+                  .map(
+                    (template) => DropdownMenuItem<int>(
+                      value: template.id,
+                      child: Text(
+                        template.templateName,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  )
+                  .toList(),
+              onChanged: approvedTemplates.isEmpty ? null : onChanged,
+            ),
+          ),
+          IconButton(
+            tooltip: context.l10n.actionDelete,
+            onPressed: selectedTemplateId == null ? null : onClear,
+            icon: const Icon(Icons.close_outlined),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 Future<bool?> showBusinessWhatsappSettingsDialog(
   BuildContext context, {
   required int businessId,
   required String businessName,
 }) {
-  return showDialog<bool>(
+  return AppForm.show<bool>(
     context: context,
     builder: (context) => BusinessWhatsappSettingsDialog(
       businessId: businessId,

@@ -3744,6 +3744,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappLocationMappingTitle": MessageLookupByLibrary.simpleMessage(
       "Location to number mapping",
     ),
+    "whatsappLocationOverridesTitle": MessageLookupByLibrary.simpleMessage(
+      "Location overrides",
+    ),
     "whatsappMessagingActiveMessage": MessageLookupByLibrary.simpleMessage(
       "WhatsApp messaging is active for this business. Automatic messages can be sent when WhatsApp notifications are enabled.",
     ),
@@ -3835,6 +3838,44 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappTechnicalValueCopiedTitle": MessageLookupByLibrary.simpleMessage(
       "Value copied",
+    ),
+    "whatsappTemplateAddAction": MessageLookupByLibrary.simpleMessage(
+      "New template",
+    ),
+    "whatsappTemplateAssignmentsSectionTitle":
+        MessageLookupByLibrary.simpleMessage("Template assignments"),
+    "whatsappTemplateBodyPreviewLabel": MessageLookupByLibrary.simpleMessage(
+      "Body preview",
+    ),
+    "whatsappTemplateBusinessBadge": MessageLookupByLibrary.simpleMessage(
+      "Business",
+    ),
+    "whatsappTemplateCreateTitle": MessageLookupByLibrary.simpleMessage(
+      "New WhatsApp template",
+    ),
+    "whatsappTemplateEditTitle": MessageLookupByLibrary.simpleMessage(
+      "Edit WhatsApp template",
+    ),
+    "whatsappTemplateGlobalBadge": MessageLookupByLibrary.simpleMessage(
+      "Global",
+    ),
+    "whatsappTemplateGlobalHelper": MessageLookupByLibrary.simpleMessage(
+      "Makes the template available as a fallback for every business.",
+    ),
+    "whatsappTemplateGlobalLabel": MessageLookupByLibrary.simpleMessage(
+      "Global template",
+    ),
+    "whatsappTemplateLanguageLabel": MessageLookupByLibrary.simpleMessage(
+      "Language",
+    ),
+    "whatsappTemplateMessageTypeLabel": MessageLookupByLibrary.simpleMessage(
+      "Message type",
+    ),
+    "whatsappTemplatesEmpty": MessageLookupByLibrary.simpleMessage(
+      "No templates configured.",
+    ),
+    "whatsappTemplatesSectionTitle": MessageLookupByLibrary.simpleMessage(
+      "Available templates",
     ),
     "whatsappTestSendTitle": MessageLookupByLibrary.simpleMessage(
       "Template test send",

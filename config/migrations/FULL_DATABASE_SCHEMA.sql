@@ -884,6 +884,25 @@ CREATE TABLE `whatsapp_templates` (
 -- --------------------------------------------------------
 
 --
+-- Struttura della tabella `whatsapp_template_assignments`
+--
+
+CREATE TABLE `whatsapp_template_assignments` (
+  `id` bigint UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `location_id` int UNSIGNED DEFAULT NULL,
+  `location_scope_id` int UNSIGNED GENERATED ALWAYS AS (coalesce(`location_id`,0)) STORED,
+  `message_type` enum('booking_confirmation','booking_reminder','booking_cancellation','booking_reschedule','class_booking_confirmation','class_booking_reminder','class_booking_cancellation','test') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `language_code` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `whatsapp_template_id` bigint UNSIGNED NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Struttura della tabella `whatsapp_webhook_events`
 --
 
@@ -1645,6 +1664,15 @@ ALTER TABLE `whatsapp_templates`
   ADD KEY `idx_wt_business_category` (`business_id`,`category`);
 
 --
+-- Indici per le tabelle `whatsapp_template_assignments`
+--
+ALTER TABLE `whatsapp_template_assignments`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uq_wta_scope` (`business_id`,`location_scope_id`,`message_type`,`language_code`),
+  ADD KEY `idx_wta_lookup` (`business_id`,`location_id`,`message_type`,`language_code`,`is_active`),
+  ADD KEY `idx_wta_template` (`whatsapp_template_id`);
+
+--
 -- Indici per le tabelle `whatsapp_webhook_events`
 --
 ALTER TABLE `whatsapp_webhook_events`
@@ -2049,6 +2077,12 @@ ALTER TABLE `whatsapp_templates`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
+-- AUTO_INCREMENT per la tabella `whatsapp_template_assignments`
+--
+ALTER TABLE `whatsapp_template_assignments`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT per la tabella `whatsapp_webhook_events`
 --
 ALTER TABLE `whatsapp_webhook_events`
@@ -2422,6 +2456,14 @@ ALTER TABLE `whatsapp_outbox`
 --
 ALTER TABLE `whatsapp_templates`
   ADD CONSTRAINT `fk_wt_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `whatsapp_template_assignments`
+--
+ALTER TABLE `whatsapp_template_assignments`
+  ADD CONSTRAINT `fk_wta_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_wta_location` FOREIGN KEY (`location_id`) REFERENCES `locations` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_wta_template` FOREIGN KEY (`whatsapp_template_id`) REFERENCES `whatsapp_templates` (`id`) ON DELETE CASCADE;
 
 --
 -- Limiti per la tabella `whatsapp_webhook_events`
