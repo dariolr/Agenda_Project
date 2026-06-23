@@ -18,12 +18,11 @@ Regole:
 - Usare questi file come base per variabili CI/CD o file `.env` locali.
 - In demo, i flag sensibili devono restare disattivati.
 
-## WhatsApp template auto-submit
+## WhatsApp template Meta
 
-Per abilitare la creazione automatica del template Meta dopo Embedded Signup nel core:
+La creazione del template Meta si configura per singola configurazione WhatsApp Business dal gestionale superadmin.
 
-- `META_TEMPLATE_AUTO_SUBMIT_ENABLED=true` solo negli ambienti dove la submission reale e' voluta.
-- `META_SYSTEM_USER_ACCESS_TOKEN` deve essere configurato fuori dai file versionati e avere `whatsapp_business_management`.
-- `META_GRAPH_API_VERSION` e' opzionale; in assenza viene usato `META_GRAPH_VERSION`.
-- `META_TEMPLATE_DEFAULT_LANGUAGE` default `it`.
-- `META_TEMPLATE_DEFAULT_CATEGORY` default `UTILITY`.
+- La richiesta usa il token salvato nella configurazione WhatsApp del business (`access_token_encrypted`).
+- `template_auto_submit_enabled` abilita solo l'invio automatico dopo Embedded Signup.
+- Se `template_auto_submit_enabled` e' disattivo, il superadmin puo' comunque inviare il template in un secondo momento dal gestionale con l'azione manuale "Invia template a Meta".
+- `META_GRAPH_VERSION` e' opzionale; in assenza il core usa `v22.0`.

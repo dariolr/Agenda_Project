@@ -17,7 +17,8 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, template_auto_submit_enabled, last_health_check_at,
+                    access_token_encrypted, status, is_default, template_auto_submit_enabled,
+                    template_default_language, template_default_category, last_health_check_at,
                     last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE business_id = ?
@@ -32,7 +33,8 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, template_auto_submit_enabled, last_health_check_at,
+                    access_token_encrypted, status, is_default, template_auto_submit_enabled,
+                    template_default_language, template_default_category, last_health_check_at,
                     last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE business_id = ? AND id = ?
@@ -52,6 +54,8 @@ final class WhatsappRepository
         string $status,
         bool $isDefault,
         bool $templateAutoSubmitEnabled = false,
+        string $templateDefaultLanguage = 'it',
+        string $templateDefaultCategory = 'utility',
         ?string $displayPhoneNumber = null
     ): int {
         if ($isDefault) {
@@ -60,8 +64,9 @@ final class WhatsappRepository
 
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO whatsapp_business_config
-             (business_id, waba_id, phone_number_id, display_phone_number, access_token_encrypted, status, is_default, template_auto_submit_enabled)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+             (business_id, waba_id, phone_number_id, display_phone_number, access_token_encrypted, status,
+              is_default, template_auto_submit_enabled, template_default_language, template_default_category)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $businessId,
@@ -72,6 +77,8 @@ final class WhatsappRepository
             $status,
             $isDefault ? 1 : 0,
             $templateAutoSubmitEnabled ? 1 : 0,
+            $templateDefaultLanguage,
+            $templateDefaultCategory,
         ]);
 
         return (int) $this->db->getPdo()->lastInsertId();
@@ -81,7 +88,8 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, template_auto_submit_enabled, last_health_check_at,
+                    access_token_encrypted, status, is_default, template_auto_submit_enabled,
+                    template_default_language, template_default_category, last_health_check_at,
                     last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE business_id = ? AND phone_number_id = ?
@@ -97,7 +105,8 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, template_auto_submit_enabled, last_health_check_at,
+                    access_token_encrypted, status, is_default, template_auto_submit_enabled,
+                    template_default_language, template_default_category, last_health_check_at,
                     last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE phone_number_id = ?
@@ -114,7 +123,8 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, template_auto_submit_enabled, last_health_check_at,
+                    access_token_encrypted, status, is_default, template_auto_submit_enabled,
+                    template_default_language, template_default_category, last_health_check_at,
                     last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE waba_id = ?
@@ -179,7 +189,9 @@ final class WhatsappRepository
             $accessTokenEncrypted,
             $status,
             $isDefault,
-            (int) ($existing['template_auto_submit_enabled'] ?? 0) === 1,
+            false,
+            'it',
+            'utility',
             $displayPhoneNumber
         );
     }
@@ -225,6 +237,14 @@ final class WhatsappRepository
         if (array_key_exists('template_auto_submit_enabled', $data)) {
             $fields[] = 'template_auto_submit_enabled = ?';
             $params[] = (bool) $data['template_auto_submit_enabled'] ? 1 : 0;
+        }
+        if (array_key_exists('template_default_language', $data)) {
+            $fields[] = 'template_default_language = ?';
+            $params[] = $data['template_default_language'];
+        }
+        if (array_key_exists('template_default_category', $data)) {
+            $fields[] = 'template_default_category = ?';
+            $params[] = $data['template_default_category'];
         }
 
         if (empty($fields)) {
@@ -1412,7 +1432,8 @@ final class WhatsappRepository
     {
         $stmt = $this->db->getPdo()->prepare(
             'SELECT c.id, c.business_id, c.waba_id, c.phone_number_id, c.display_phone_number,
-                    c.access_token_encrypted, c.status, c.is_default, c.template_auto_submit_enabled, c.last_health_check_at,
+                    c.access_token_encrypted, c.status, c.is_default, c.template_auto_submit_enabled,
+                    c.template_default_language, c.template_default_category, c.last_health_check_at,
                     c.last_error_code, c.last_error_message, c.created_at, c.updated_at
              FROM whatsapp_location_mapping m
              JOIN whatsapp_business_config c ON c.id = m.whatsapp_config_id
@@ -1427,7 +1448,8 @@ final class WhatsappRepository
 
         $stmt = $this->db->getPdo()->prepare(
             'SELECT id, business_id, waba_id, phone_number_id, display_phone_number,
-                    access_token_encrypted, status, is_default, template_auto_submit_enabled, last_health_check_at,
+                    access_token_encrypted, status, is_default, template_auto_submit_enabled,
+                    template_default_language, template_default_category, last_health_check_at,
                     last_error_code, last_error_message, created_at, updated_at
              FROM whatsapp_business_config
              WHERE business_id = ? AND is_default = 1

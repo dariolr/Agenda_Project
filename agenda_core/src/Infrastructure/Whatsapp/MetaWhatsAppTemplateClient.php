@@ -4,30 +4,33 @@ declare(strict_types=1);
 
 namespace Agenda\Infrastructure\Whatsapp;
 
+use Agenda\Infrastructure\Security\TokenCipher;
+
 final class MetaWhatsAppTemplateClient
 {
+    public function __construct(private readonly TokenCipher $tokenCipher) {}
+
     /**
+     * @param array<string,mixed> $config
      * @param array<int,string> $examples
      * @return array{success:bool,provider_template_id:?string,status:?string,error_code:?string,error_message:?string,raw_response_sanitized:array<string,mixed>}
      */
     public function submitTemplate(
-        string $wabaId,
+        array $config,
         string $templateName,
         string $languageCode,
         string $category,
         string $bodyText,
         array $examples
     ): array {
-        $token = trim((string) ($_ENV['META_SYSTEM_USER_ACCESS_TOKEN'] ?? getenv('META_SYSTEM_USER_ACCESS_TOKEN') ?? ''));
-        if ($token === '') {
-            return $this->error('meta_system_user_token_missing', 'META_SYSTEM_USER_ACCESS_TOKEN non configurato');
+        $wabaId = trim((string) ($config['waba_id'] ?? ''));
+        $encryptedToken = trim((string) ($config['access_token_encrypted'] ?? ''));
+        if ($wabaId === '' || $encryptedToken === '') {
+            return $this->error('whatsapp_provider_not_configured', 'Missing WABA id or token');
         }
 
-        $graphVersion = trim((string) (
-            $_ENV['META_GRAPH_API_VERSION']
-            ?? getenv('META_GRAPH_API_VERSION')
-            ?: ($_ENV['META_GRAPH_VERSION'] ?? getenv('META_GRAPH_VERSION') ?: 'v22.0')
-        ));
+        $token = $this->tokenCipher->decrypt($encryptedToken);
+        $graphVersion = trim((string) ($_ENV['META_GRAPH_VERSION'] ?? getenv('META_GRAPH_VERSION') ?: 'v22.0'));
         $url = 'https://graph.facebook.com/' . $graphVersion . '/' . rawurlencode($wabaId) . '/message_templates';
         $bodyComponent = [
             'type' => 'BODY',

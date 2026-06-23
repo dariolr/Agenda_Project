@@ -22,10 +22,15 @@ final class SubmitDefaultWhatsAppTemplateAfterEmbeddedSignup
     /**
      * @return array<string,mixed>
      */
-    public function execute(int $businessId, int $whatsappConfigId, string $wabaId): array
-    {
-        $languageCode = $this->normalizeLanguage($this->env('META_TEMPLATE_DEFAULT_LANGUAGE', 'it'));
-        $category = strtolower($this->env('META_TEMPLATE_DEFAULT_CATEGORY', 'utility'));
+    public function execute(
+        int $businessId,
+        int $whatsappConfigId,
+        string $wabaId,
+        bool $respectAutoSubmitEnabled = true
+    ): array {
+        $config = $this->whatsappRepo->findConfigById($businessId, $whatsappConfigId);
+        $languageCode = $this->normalizeLanguage((string) ($config['template_default_language'] ?? 'it'));
+        $category = $this->normalizeCategory((string) ($config['template_default_category'] ?? 'utility'));
         $templateName = $this->buildTemplateName($businessId, $languageCode);
 
         $existing = $this->whatsappRepo->findTemplateForAutoSubmit(
@@ -53,7 +58,14 @@ final class SubmitDefaultWhatsAppTemplateAfterEmbeddedSignup
             'variables_schema_json' => $blueprint['variables_schema'],
         ]);
 
-        if (!$this->autoSubmitEnabled()) {
+        if ($config === null) {
+            return [
+                'status' => 'skipped',
+                'reason' => 'whatsapp_config_missing',
+                'template' => $this->whatsappRepo->findTemplateById($businessId, $templateId),
+            ];
+        }
+        if ($respectAutoSubmitEnabled && ((int) ($config['template_auto_submit_enabled'] ?? 0)) !== 1) {
             return [
                 'status' => 'skipped',
                 'reason' => 'auto_submit_disabled',
@@ -78,7 +90,7 @@ final class SubmitDefaultWhatsAppTemplateAfterEmbeddedSignup
         }
 
         $result = $this->templateClient->submitTemplate(
-            $wabaId,
+            $config,
             $templateName,
             $languageCode,
             $category,
@@ -189,9 +201,12 @@ final class SubmitDefaultWhatsAppTemplateAfterEmbeddedSignup
         return str_starts_with($value, 'en') ? 'en' : $value;
     }
 
-    private function autoSubmitEnabled(): bool
+    private function normalizeCategory(string $category): string
     {
-        return in_array(strtolower($this->env('META_TEMPLATE_AUTO_SUBMIT_ENABLED', 'false')), ['1', 'true', 'yes', 'on'], true);
+        $value = strtolower(trim($category));
+        return in_array($value, ['marketing', 'utility', 'authentication', 'service'], true)
+            ? $value
+            : 'utility';
     }
 
     private function looksLikeDuplicateName(?string $message, ?string $code): bool
@@ -200,9 +215,4 @@ final class SubmitDefaultWhatsAppTemplateAfterEmbeddedSignup
         return str_contains($haystack, 'already exists') || str_contains($haystack, 'duplicate');
     }
 
-    private function env(string $key, string $default): string
-    {
-        $value = $_ENV[$key] ?? getenv($key);
-        return trim((string) ($value === false || $value === null || $value === '' ? $default : $value));
-    }
 }

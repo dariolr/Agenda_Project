@@ -531,7 +531,7 @@ final class Kernel
         $submitDefaultWhatsappTemplate = new SubmitDefaultWhatsAppTemplateAfterEmbeddedSignup(
             $whatsappRepo,
             $businessWhatsappSettingsRepo,
-            new MetaWhatsAppTemplateClient()
+            new MetaWhatsAppTemplateClient($tokenCipher)
         );
         $billingProviderFactory = new BillingProviderFactory([
             BillingProviderCode::STRIPE => new StripeBillingProvider(

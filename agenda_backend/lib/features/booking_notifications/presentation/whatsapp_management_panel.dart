@@ -14,6 +14,7 @@ import '/core/models/whatsapp_location_mapping.dart';
 import '/core/models/whatsapp_outbox_item.dart';
 import '/core/network/network_providers.dart';
 import '/core/widgets/feedback_dialog.dart';
+import '/features/auth/providers/auth_provider.dart';
 import '/features/booking_notifications/providers/whatsapp_integration_provider.dart';
 
 final whatsappLocationsByBusinessProvider =
@@ -65,6 +66,7 @@ class _WhatsappManagementPanelState
   bool _isQueueingTest = false;
   bool _isCreatingConfig = false;
   bool _isApplyingMappings = false;
+  bool _isSubmittingDefaultTemplate = false;
   Map<String, bool>? _lastGoLiveChecks;
   String? _lastGoLiveScopeLabel;
 
@@ -257,10 +259,71 @@ class _WhatsappManagementPanelState
     }
   }
 
+  Future<void> _submitDefaultTemplate() async {
+    final businessId = _businessId;
+    if (businessId == null) return;
+
+    setState(() => _isSubmittingDefaultTemplate = true);
+    try {
+      final result = await ref
+          .read(whatsappIntegrationProvider.notifier)
+          .submitDefaultTemplate(businessId: businessId);
+      if (!mounted) return;
+
+      final status = (result['status'] ?? '').toString();
+      final reason = (result['reason'] ?? '').toString();
+      final errorMessage = (result['error_message'] ?? '').toString();
+      final template = result['template'] is Map
+          ? Map<String, dynamic>.from(result['template'] as Map)
+          : const <String, dynamic>{};
+      final templateName = (template['template_name'] ?? '').toString();
+      final details = <String>[
+        if (status.isNotEmpty)
+          '${context.l10n.whatsappTemplateSubmitStatus}: $status',
+        if (templateName.isNotEmpty)
+          '${context.l10n.whatsappTemplateSubmitTemplate}: $templateName',
+        if (reason.isNotEmpty)
+          '${context.l10n.whatsappTemplateSubmitReason}: $reason',
+        if (errorMessage.isNotEmpty) errorMessage,
+      ].join('\n');
+
+      if (status == 'error') {
+        await FeedbackDialog.showError(
+          context,
+          title: context.l10n.whatsappTemplateSubmitErrorTitle,
+          message: details.isEmpty
+              ? context.l10n.whatsappTemplateSubmitErrorMessage
+              : details,
+        );
+        return;
+      }
+
+      await FeedbackDialog.showSuccess(
+        context,
+        title: context.l10n.whatsappTemplateSubmitSuccessTitle,
+        message: details.isEmpty
+            ? context.l10n.whatsappTemplateSubmitSuccessMessage
+            : details,
+      );
+    } catch (e) {
+      if (!mounted) return;
+      await FeedbackDialog.showError(
+        context,
+        title: context.l10n.whatsappTemplateSubmitErrorTitle,
+        message: e.toString(),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmittingDefaultTemplate = false);
+      }
+    }
+  }
+
   Future<void> _showConfigDialog({WhatsappConfig? initial}) async {
     final businessId = _businessId;
     if (businessId == null) return;
     final l10n = context.l10n;
+    final isSuperadmin = ref.read(authProvider).user?.isSuperadmin ?? false;
 
     final wabaController = TextEditingController(text: initial?.wabaId ?? '');
     final phoneController = TextEditingController(
@@ -269,8 +332,13 @@ class _WhatsappManagementPanelState
     final tokenController = TextEditingController(
       text: initial?.accessTokenEncrypted ?? '',
     );
+    final templateLanguageController = TextEditingController(
+      text: initial?.templateDefaultLanguage ?? 'it',
+    );
     var status = initial?.status ?? WhatsappConfigStatus.pending;
     var isDefault = initial?.isDefault ?? false;
+    var templateAutoSubmitEnabled = initial?.templateAutoSubmitEnabled ?? false;
+    var templateDefaultCategory = initial?.templateDefaultCategory ?? 'utility';
 
     final result = await showDialog<bool>(
       context: context,
@@ -339,6 +407,77 @@ class _WhatsappManagementPanelState
                       onChanged: (value) =>
                           setStateDialog(() => isDefault = value),
                     ),
+                    if (isSuperadmin)
+                      Column(
+                        children: [
+                          SwitchListTile.adaptive(
+                            contentPadding: EdgeInsets.zero,
+                            title: Text(l10n.whatsappTemplateAutoSubmitEnabled),
+                            subtitle: Text(l10n.whatsappTemplateAutoSubmitHint),
+                            value: templateAutoSubmitEnabled,
+                            onChanged: (value) => setStateDialog(
+                              () => templateAutoSubmitEnabled = value,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextField(
+                            controller: templateLanguageController,
+                            decoration: InputDecoration(
+                              labelText: l10n.whatsappTemplateDefaultLanguage,
+                              border: const OutlineInputBorder(),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          DropdownButtonFormField<String>(
+                            value: templateDefaultCategory,
+                            decoration: InputDecoration(
+                              labelText: l10n.whatsappTemplateDefaultCategory,
+                              border: const OutlineInputBorder(),
+                            ),
+                            items: [
+                              DropdownMenuItem(
+                                value: 'utility',
+                                child: Text(
+                                  l10n.whatsappTemplateCategoryUtility,
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: 'marketing',
+                                child: Text(
+                                  l10n.whatsappTemplateCategoryMarketing,
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: 'authentication',
+                                child: Text(
+                                  l10n.whatsappTemplateCategoryAuthentication,
+                                ),
+                              ),
+                              DropdownMenuItem(
+                                value: 'service',
+                                child: Text(
+                                  l10n.whatsappTemplateCategoryService,
+                                ),
+                              ),
+                            ],
+                            onChanged: (value) {
+                              if (value == null) return;
+                              setStateDialog(() {
+                                templateDefaultCategory = value;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                    if (isSuperadmin) const SizedBox(height: 12),
+                    if (isSuperadmin)
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          l10n.whatsappTemplateDefaultsHint,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -353,6 +492,16 @@ class _WhatsappManagementPanelState
                     final waba = wabaController.text.trim();
                     final token = tokenController.text.trim();
                     if (phone.isEmpty || waba.isEmpty || token.isEmpty) {
+                      await FeedbackDialog.showError(
+                        context,
+                        title: l10n.errorTitle,
+                        message: l10n.whatsappValidationRequired,
+                      );
+                      return;
+                    }
+                    final templateLanguage = templateLanguageController.text
+                        .trim();
+                    if (isSuperadmin && templateLanguage.isEmpty) {
                       await FeedbackDialog.showError(
                         context,
                         title: l10n.errorTitle,
@@ -384,6 +533,15 @@ class _WhatsappManagementPanelState
           accessTokenEncrypted: tokenController.text.trim(),
           status: whatsappConfigStatusToString(status),
           isDefault: isDefault,
+          templateAutoSubmitEnabled: isSuperadmin
+              ? templateAutoSubmitEnabled
+              : null,
+          templateDefaultLanguage: isSuperadmin
+              ? templateLanguageController.text.trim()
+              : null,
+          templateDefaultCategory: isSuperadmin
+              ? templateDefaultCategory
+              : null,
         );
       } else {
         await api.updateBusinessWhatsappConfig(
@@ -394,6 +552,15 @@ class _WhatsappManagementPanelState
           accessTokenEncrypted: tokenController.text.trim(),
           status: whatsappConfigStatusToString(status),
           isDefault: isDefault,
+          templateAutoSubmitEnabled: isSuperadmin
+              ? templateAutoSubmitEnabled
+              : null,
+          templateDefaultLanguage: isSuperadmin
+              ? templateLanguageController.text.trim()
+              : null,
+          templateDefaultCategory: isSuperadmin
+              ? templateDefaultCategory
+              : null,
         );
       }
       await _loadIfPossible();
@@ -685,6 +852,9 @@ class _WhatsappManagementPanelState
 
     final businessId = _businessId!;
     final state = ref.watch(whatsappIntegrationProvider);
+    final isSuperadmin = ref.watch(
+      authProvider.select((state) => state.user?.isSuperadmin ?? false),
+    );
     final locationsAsync = ref.watch(
       whatsappLocationsByBusinessProvider(businessId),
     );
@@ -800,10 +970,12 @@ class _WhatsappManagementPanelState
                       if (!hasSingleLocation)
                         locationsAsync.when(
                           data: (locations) => FilledButton.icon(
-                          onPressed: _isRunningCheck || locations.isEmpty
-                              || !hasActiveConfig
-                              ? null
-                              : () => _runLocationGoLiveCheck(locations),
+                            onPressed:
+                                _isRunningCheck ||
+                                    locations.isEmpty ||
+                                    !hasActiveConfig
+                                ? null
+                                : () => _runLocationGoLiveCheck(locations),
                             icon: const Icon(Icons.place_outlined),
                             label: Text(l10n.whatsappGoLiveCheckLocation),
                           ),
@@ -825,6 +997,23 @@ class _WhatsappManagementPanelState
                             : const Icon(Icons.play_circle_outline_rounded),
                         label: Text(l10n.whatsappRunWorker),
                       ),
+                      if (isSuperadmin)
+                        FilledButton.tonalIcon(
+                          onPressed:
+                              _isSubmittingDefaultTemplate || !hasActiveConfig
+                              ? null
+                              : _submitDefaultTemplate,
+                          icon: _isSubmittingDefaultTemplate
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Icon(Icons.cloud_upload_outlined),
+                          label: Text(l10n.whatsappTemplateSubmitAction),
+                        ),
                     ],
                   ),
                 ],

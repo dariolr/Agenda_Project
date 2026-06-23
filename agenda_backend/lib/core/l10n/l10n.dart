@@ -11736,6 +11736,176 @@ class L10n {
     );
   }
 
+  /// `Automatically submit the template to Meta`
+  String get whatsappTemplateAutoSubmitEnabled {
+    return Intl.message(
+      'Automatically submit the template to Meta',
+      name: 'whatsappTemplateAutoSubmitEnabled',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `After Embedded Signup the core submits the reminder template creation request for this configuration.`
+  String get whatsappTemplateAutoSubmitHint {
+    return Intl.message(
+      'After Embedded Signup the core submits the reminder template creation request for this configuration.',
+      name: 'whatsappTemplateAutoSubmitHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Default template language`
+  String get whatsappTemplateDefaultLanguage {
+    return Intl.message(
+      'Default template language',
+      name: 'whatsappTemplateDefaultLanguage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Default template category`
+  String get whatsappTemplateDefaultCategory {
+    return Intl.message(
+      'Default template category',
+      name: 'whatsappTemplateDefaultCategory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `These options only apply to the automatic template request for this WhatsApp configuration.`
+  String get whatsappTemplateDefaultsHint {
+    return Intl.message(
+      'These options only apply to the automatic template request for this WhatsApp configuration.',
+      name: 'whatsappTemplateDefaultsHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Utility`
+  String get whatsappTemplateCategoryUtility {
+    return Intl.message(
+      'Utility',
+      name: 'whatsappTemplateCategoryUtility',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Marketing`
+  String get whatsappTemplateCategoryMarketing {
+    return Intl.message(
+      'Marketing',
+      name: 'whatsappTemplateCategoryMarketing',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Authentication`
+  String get whatsappTemplateCategoryAuthentication {
+    return Intl.message(
+      'Authentication',
+      name: 'whatsappTemplateCategoryAuthentication',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Service`
+  String get whatsappTemplateCategoryService {
+    return Intl.message(
+      'Service',
+      name: 'whatsappTemplateCategoryService',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Submit template to Meta`
+  String get whatsappTemplateSubmitAction {
+    return Intl.message(
+      'Submit template to Meta',
+      name: 'whatsappTemplateSubmitAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Template request submitted`
+  String get whatsappTemplateSubmitSuccessTitle {
+    return Intl.message(
+      'Template request submitted',
+      name: 'whatsappTemplateSubmitSuccessTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The default template request has been submitted to Meta.`
+  String get whatsappTemplateSubmitSuccessMessage {
+    return Intl.message(
+      'The default template request has been submitted to Meta.',
+      name: 'whatsappTemplateSubmitSuccessMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Template submission failed`
+  String get whatsappTemplateSubmitErrorTitle {
+    return Intl.message(
+      'Template submission failed',
+      name: 'whatsappTemplateSubmitErrorTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unable to submit the default template to Meta.`
+  String get whatsappTemplateSubmitErrorMessage {
+    return Intl.message(
+      'Unable to submit the default template to Meta.',
+      name: 'whatsappTemplateSubmitErrorMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Status`
+  String get whatsappTemplateSubmitStatus {
+    return Intl.message(
+      'Status',
+      name: 'whatsappTemplateSubmitStatus',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Template`
+  String get whatsappTemplateSubmitTemplate {
+    return Intl.message(
+      'Template',
+      name: 'whatsappTemplateSubmitTemplate',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Reason`
+  String get whatsappTemplateSubmitReason {
+    return Intl.message(
+      'Reason',
+      name: 'whatsappTemplateSubmitReason',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Active`
   String get whatsappStatusActive {
     return Intl.message(

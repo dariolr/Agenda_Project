@@ -81,12 +81,31 @@ final class WhatsappController
         $tokenInput = trim((string) ($body['access_token_encrypted'] ?? ''));
         $status = strtolower(trim((string) ($body['status'] ?? 'pending')));
         $isDefault = (bool) ($body['is_default'] ?? false);
+        $templateAutoSubmitEnabled = (bool) ($body['template_auto_submit_enabled'] ?? false);
+        $templateDefaultLanguage = $this->normalizeTemplateLanguage((string) ($body['template_default_language'] ?? 'it'));
+        $templateDefaultCategory = strtolower(trim((string) ($body['template_default_category'] ?? 'utility')));
+        if (
+            (
+                array_key_exists('template_auto_submit_enabled', $body)
+                || array_key_exists('template_default_language', $body)
+                || array_key_exists('template_default_category', $body)
+            )
+            && !$this->isSuperadmin($request)
+        ) {
+            return Response::error('Solo superadmin', 'forbidden', 403, $request->traceId);
+        }
 
         if ($wabaId === '' || $phoneNumberId === '' || $tokenInput === '') {
             return Response::validationError('waba_id, phone_number_id e access_token_encrypted sono obbligatori', $request->traceId);
         }
         if (!in_array($status, self::ALLOWED_CONFIG_STATUS, true)) {
             return Response::validationError('status non valido', $request->traceId);
+        }
+        if ($templateDefaultLanguage === '') {
+            return Response::validationError('template_default_language non valido', $request->traceId);
+        }
+        if (!in_array($templateDefaultCategory, self::ALLOWED_TEMPLATE_CATEGORY, true)) {
+            return Response::validationError('template_default_category non valida', $request->traceId);
         }
 
         $token = $this->encryptTokenIfNeeded($tokenInput);
@@ -97,7 +116,10 @@ final class WhatsappController
             $phoneNumberId,
             $token,
             $status,
-            $isDefault
+            $isDefault,
+            $templateAutoSubmitEnabled,
+            $templateDefaultLanguage,
+            $templateDefaultCategory
         );
         $config = $this->whatsappRepo->findConfigById($businessId, $id);
 
@@ -143,6 +165,32 @@ final class WhatsappController
         }
         if (array_key_exists('is_default', $body)) {
             $data['is_default'] = (bool) $body['is_default'];
+        }
+        if (array_key_exists('template_auto_submit_enabled', $body)) {
+            if (!$this->isSuperadmin($request)) {
+                return Response::error('Solo superadmin', 'forbidden', 403, $request->traceId);
+            }
+            $data['template_auto_submit_enabled'] = (bool) $body['template_auto_submit_enabled'];
+        }
+        if (array_key_exists('template_default_language', $body)) {
+            if (!$this->isSuperadmin($request)) {
+                return Response::error('Solo superadmin', 'forbidden', 403, $request->traceId);
+            }
+            $language = $this->normalizeTemplateLanguage((string) $body['template_default_language']);
+            if ($language === '') {
+                return Response::validationError('template_default_language non valido', $request->traceId);
+            }
+            $data['template_default_language'] = $language;
+        }
+        if (array_key_exists('template_default_category', $body)) {
+            if (!$this->isSuperadmin($request)) {
+                return Response::error('Solo superadmin', 'forbidden', 403, $request->traceId);
+            }
+            $category = strtolower(trim((string) $body['template_default_category']));
+            if (!in_array($category, self::ALLOWED_TEMPLATE_CATEGORY, true)) {
+                return Response::validationError('template_default_category non valida', $request->traceId);
+            }
+            $data['template_default_category'] = $category;
         }
 
         $this->whatsappRepo->updateConfig($businessId, $configId, $data);
@@ -332,7 +380,8 @@ final class WhatsappController
         $result = $this->submitDefaultTemplateAfterSignup->execute(
             $businessId,
             (int) ($config['id'] ?? 0),
-            (string) ($config['waba_id'] ?? '')
+            (string) ($config['waba_id'] ?? ''),
+            false
         );
 
         return Response::success(['default_template_submission' => $this->formatTemplateSubmission($result)]);
@@ -1447,6 +1496,9 @@ final class WhatsappController
             'display_phone_number' => $config['display_phone_number'] ?? null,
             'status' => $config['status'] ?? 'pending',
             'is_default' => ((int) ($config['is_default'] ?? 0)) === 1,
+            'template_auto_submit_enabled' => ((int) ($config['template_auto_submit_enabled'] ?? 0)) === 1,
+            'template_default_language' => (string) ($config['template_default_language'] ?? 'it'),
+            'template_default_category' => (string) ($config['template_default_category'] ?? 'utility'),
             'last_health_check_at' => $config['last_health_check_at'] ?? null,
             'last_error_code' => $config['last_error_code'] ?? null,
             'last_error_message' => $config['last_error_message'] ?? null,

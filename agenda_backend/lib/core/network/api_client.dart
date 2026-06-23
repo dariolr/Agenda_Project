@@ -3115,17 +3115,31 @@ class ApiClient {
     required String phoneNumberId,
     required String accessTokenEncrypted,
     String status = 'pending',
-    bool isDefault = false,
+    bool? isDefault,
+    bool? templateAutoSubmitEnabled,
+    String? templateDefaultLanguage,
+    String? templateDefaultCategory,
   }) async {
+    final data = <String, dynamic>{
+      'waba_id': wabaId,
+      'phone_number_id': phoneNumberId,
+      'access_token_encrypted': accessTokenEncrypted,
+      'status': status,
+    };
+    if (isDefault != null) data['is_default'] = isDefault;
+    if (templateAutoSubmitEnabled != null) {
+      data['template_auto_submit_enabled'] = templateAutoSubmitEnabled;
+    }
+    if (templateDefaultLanguage != null) {
+      data['template_default_language'] = templateDefaultLanguage;
+    }
+    if (templateDefaultCategory != null) {
+      data['template_default_category'] = templateDefaultCategory;
+    }
+
     final response = await post(
       ApiConfig.businessWhatsappConfigs(businessId),
-      data: {
-        'waba_id': wabaId,
-        'phone_number_id': phoneNumberId,
-        'access_token_encrypted': accessTokenEncrypted,
-        'status': status,
-        'is_default': isDefault,
-      },
+      data: data,
     );
     final map = Map<String, dynamic>.from(
       (response['config'] as Map?) ?? response,
@@ -3141,6 +3155,9 @@ class ApiClient {
     String? accessTokenEncrypted,
     String? status,
     bool? isDefault,
+    bool? templateAutoSubmitEnabled,
+    String? templateDefaultLanguage,
+    String? templateDefaultCategory,
   }) async {
     final data = <String, dynamic>{};
     if (wabaId != null) data['waba_id'] = wabaId;
@@ -3150,6 +3167,15 @@ class ApiClient {
     }
     if (status != null) data['status'] = status;
     if (isDefault != null) data['is_default'] = isDefault;
+    if (templateAutoSubmitEnabled != null) {
+      data['template_auto_submit_enabled'] = templateAutoSubmitEnabled;
+    }
+    if (templateDefaultLanguage != null) {
+      data['template_default_language'] = templateDefaultLanguage;
+    }
+    if (templateDefaultCategory != null) {
+      data['template_default_category'] = templateDefaultCategory;
+    }
 
     final response = await put(
       ApiConfig.businessWhatsappConfig(businessId, configId),
@@ -3476,6 +3502,17 @@ class ApiClient {
     required int templateId,
   }) async {
     await delete(ApiConfig.whatsappTemplate(businessId, templateId));
+  }
+
+  Future<Map<String, dynamic>> submitDefaultWhatsappTemplate(
+    int businessId,
+  ) async {
+    final response = await post(
+      ApiConfig.whatsappDefaultTemplateSubmit(businessId),
+    );
+    return Map<String, dynamic>.from(
+      (response['default_template_submission'] as Map?) ?? response,
+    );
   }
 
   Future<List<WhatsappTemplateAssignment>> getWhatsappTemplateAssignments(

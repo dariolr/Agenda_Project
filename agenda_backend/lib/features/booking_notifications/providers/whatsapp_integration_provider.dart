@@ -221,6 +221,14 @@ class WhatsappIntegrationNotifier extends Notifier<WhatsappIntegrationState> {
     await loadBusinessWhatsappData(businessId);
   }
 
+  Future<Map<String, dynamic>> submitDefaultTemplate({
+    required int businessId,
+  }) async {
+    final result = await _api.submitDefaultWhatsappTemplate(businessId);
+    await loadBusinessWhatsappData(businessId);
+    return result;
+  }
+
   Future<void> upsertTemplateAssignment({
     required int businessId,
     int? locationId,

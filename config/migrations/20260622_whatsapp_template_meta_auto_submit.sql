@@ -48,6 +48,24 @@ END $$
 DELIMITER ;
 
 CALL add_column_if_missing(
+  'whatsapp_business_config',
+  'template_auto_submit_enabled',
+  'ALTER TABLE `whatsapp_business_config` ADD COLUMN `template_auto_submit_enabled` tinyint(1) NOT NULL DEFAULT 0 AFTER `is_default`'
+);
+
+CALL add_column_if_missing(
+  'whatsapp_business_config',
+  'template_default_language',
+  'ALTER TABLE `whatsapp_business_config` ADD COLUMN `template_default_language` varchar(16) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT "it" AFTER `template_auto_submit_enabled`'
+);
+
+CALL add_column_if_missing(
+  'whatsapp_business_config',
+  'template_default_category',
+  'ALTER TABLE `whatsapp_business_config` ADD COLUMN `template_default_category` enum("marketing","utility","authentication","service") CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT "utility" AFTER `template_default_language`'
+);
+
+CALL add_column_if_missing(
   'whatsapp_templates',
   'meta_submission_requested_at',
   'ALTER TABLE `whatsapp_templates` ADD COLUMN `meta_submission_requested_at` timestamp NULL DEFAULT NULL AFTER `provider_template_id`'

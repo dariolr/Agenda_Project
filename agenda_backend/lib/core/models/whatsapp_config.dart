@@ -33,6 +33,9 @@ class WhatsappConfig {
   final String? accessTokenEncrypted;
   final WhatsappConfigStatus status;
   final bool isDefault;
+  final bool templateAutoSubmitEnabled;
+  final String templateDefaultLanguage;
+  final String templateDefaultCategory;
   final DateTime? lastHealthCheckAt;
   final String? lastErrorCode;
   final String? lastErrorMessage;
@@ -49,6 +52,9 @@ class WhatsappConfig {
     this.accessTokenEncrypted,
     required this.status,
     this.isDefault = false,
+    this.templateAutoSubmitEnabled = false,
+    this.templateDefaultLanguage = 'it',
+    this.templateDefaultCategory = 'utility',
     this.lastHealthCheckAt,
     this.lastErrorCode,
     this.lastErrorMessage,
@@ -76,6 +82,13 @@ class WhatsappConfig {
       accessTokenEncrypted: json['access_token_encrypted']?.toString(),
       status: whatsappConfigStatusFromString(json['status']?.toString()),
       isDefault: json['is_default'] == true || json['is_default'] == 1,
+      templateAutoSubmitEnabled:
+          json['template_auto_submit_enabled'] == true ||
+          json['template_auto_submit_enabled'] == 1,
+      templateDefaultLanguage:
+          json['template_default_language']?.toString() ?? 'it',
+      templateDefaultCategory:
+          json['template_default_category']?.toString() ?? 'utility',
       lastHealthCheckAt: parseDate(json['last_health_check_at']),
       lastErrorCode: json['last_error_code']?.toString(),
       lastErrorMessage: json['last_error_message']?.toString(),
@@ -96,6 +109,9 @@ class WhatsappConfig {
       'access_token_encrypted': accessTokenEncrypted,
       'status': whatsappConfigStatusToString(status),
       'is_default': isDefault,
+      'template_auto_submit_enabled': templateAutoSubmitEnabled,
+      'template_default_language': templateDefaultLanguage,
+      'template_default_category': templateDefaultCategory,
       'last_health_check_at': lastHealthCheckAt?.toIso8601String(),
       'last_error_code': lastErrorCode,
       'last_error_message': lastErrorMessage,

@@ -170,6 +170,10 @@ class ApiConfig {
   static String whatsappTemplate(int businessId, int templateId) =>
       '/v1/businesses/$businessId/whatsapp/templates/$templateId';
 
+  /// Invio manuale del template WhatsApp predefinito a Meta
+  static String whatsappDefaultTemplateSubmit(int businessId) =>
+      '/v1/businesses/$businessId/whatsapp/templates/default/submit';
+
   /// Assegnazioni operative template WhatsApp
   static String whatsappTemplateAssignments(int businessId) =>
       '/v1/businesses/$businessId/whatsapp/template-assignments';

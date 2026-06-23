@@ -3844,14 +3844,40 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappTemplateAssignmentsSectionTitle":
         MessageLookupByLibrary.simpleMessage("Template assignments"),
+    "whatsappTemplateAutoSubmitEnabled": MessageLookupByLibrary.simpleMessage(
+      "Automatically submit the template to Meta",
+    ),
+    "whatsappTemplateAutoSubmitHint": MessageLookupByLibrary.simpleMessage(
+      "After Embedded Signup the core submits the reminder template creation request for this configuration.",
+    ),
     "whatsappTemplateBodyPreviewLabel": MessageLookupByLibrary.simpleMessage(
       "Body preview",
     ),
     "whatsappTemplateBusinessBadge": MessageLookupByLibrary.simpleMessage(
       "Business",
     ),
+    "whatsappTemplateCategoryAuthentication":
+        MessageLookupByLibrary.simpleMessage("Authentication"),
+    "whatsappTemplateCategoryMarketing": MessageLookupByLibrary.simpleMessage(
+      "Marketing",
+    ),
+    "whatsappTemplateCategoryService": MessageLookupByLibrary.simpleMessage(
+      "Service",
+    ),
+    "whatsappTemplateCategoryUtility": MessageLookupByLibrary.simpleMessage(
+      "Utility",
+    ),
     "whatsappTemplateCreateTitle": MessageLookupByLibrary.simpleMessage(
       "New WhatsApp template",
+    ),
+    "whatsappTemplateDefaultCategory": MessageLookupByLibrary.simpleMessage(
+      "Default template category",
+    ),
+    "whatsappTemplateDefaultLanguage": MessageLookupByLibrary.simpleMessage(
+      "Default template language",
+    ),
+    "whatsappTemplateDefaultsHint": MessageLookupByLibrary.simpleMessage(
+      "These options only apply to the automatic template request for this WhatsApp configuration.",
     ),
     "whatsappTemplateEditTitle": MessageLookupByLibrary.simpleMessage(
       "Edit WhatsApp template",
@@ -3870,6 +3896,31 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "whatsappTemplateMessageTypeLabel": MessageLookupByLibrary.simpleMessage(
       "Message type",
+    ),
+    "whatsappTemplateSubmitAction": MessageLookupByLibrary.simpleMessage(
+      "Submit template to Meta",
+    ),
+    "whatsappTemplateSubmitErrorMessage": MessageLookupByLibrary.simpleMessage(
+      "Unable to submit the default template to Meta.",
+    ),
+    "whatsappTemplateSubmitErrorTitle": MessageLookupByLibrary.simpleMessage(
+      "Template submission failed",
+    ),
+    "whatsappTemplateSubmitReason": MessageLookupByLibrary.simpleMessage(
+      "Reason",
+    ),
+    "whatsappTemplateSubmitStatus": MessageLookupByLibrary.simpleMessage(
+      "Status",
+    ),
+    "whatsappTemplateSubmitSuccessMessage":
+        MessageLookupByLibrary.simpleMessage(
+          "The default template request has been submitted to Meta.",
+        ),
+    "whatsappTemplateSubmitSuccessTitle": MessageLookupByLibrary.simpleMessage(
+      "Template request submitted",
+    ),
+    "whatsappTemplateSubmitTemplate": MessageLookupByLibrary.simpleMessage(
+      "Template",
     ),
     "whatsappTemplatesEmpty": MessageLookupByLibrary.simpleMessage(
       "No templates configured.",
