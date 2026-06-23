@@ -820,6 +820,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingFormsFieldTypeConsent": MessageLookupByLibrary.simpleMessage(
       "Consent",
     ),
+    "bookingFormsFieldTypeDate": MessageLookupByLibrary.simpleMessage("Date"),
     "bookingFormsFieldTypeInfoText": MessageLookupByLibrary.simpleMessage(
       "Info text",
     ),

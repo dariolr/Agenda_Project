@@ -14601,6 +14601,16 @@ class L10n {
     );
   }
 
+  /// `Date`
+  String get bookingFormsFieldTypeDate {
+    return Intl.message(
+      'Date',
+      name: 'bookingFormsFieldTypeDate',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Single choice`
   String get bookingFormsFieldTypeSingleChoice {
     return Intl.message(

@@ -904,16 +904,13 @@ final class BookingFormRepository
             throw new InvalidArgumentException('invalid_field_type');
         }
         $label = trim((string) ($data['label'] ?? ''));
-        if ($requireLabel && $label === '') {
+        if ($label === '' && $fieldType !== self::FIELD_CONSENT) {
             throw new InvalidArgumentException('label_required');
-        }
-        if ($label === '') {
-            $label = 'Campo';
         }
 
         $isRequired = isset($data['is_required'])
             ? (int) (bool) $data['is_required']
-            : ($fieldType === self::FIELD_CONSENT ? 1 : 0);
+            : 0;
         if (in_array($fieldType, self::NON_REQUIRED_TYPES, true)) {
             $isRequired = 0;
         }

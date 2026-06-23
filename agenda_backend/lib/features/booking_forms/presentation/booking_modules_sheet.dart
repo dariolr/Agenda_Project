@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/widgets/app_buttons.dart';
@@ -310,6 +311,9 @@ class _FieldInput extends StatelessWidget {
       case 'long_text':
         return _textField(context, maxLines: 3);
 
+      case 'date':
+        return _dateField(context);
+
       case 'single_choice':
         return LabeledFormField(
           label: _labelWithRequired(context),
@@ -398,9 +402,53 @@ class _FieldInput extends StatelessWidget {
           ],
         );
 
-      default: // short_text, number, email, phone, date
+      default: // short_text, number, email, phone
         return _textField(context);
     }
+  }
+
+  Widget _dateField(BuildContext context) {
+    final selected = _parseDateValue(value);
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final displayValue = selected == null
+        ? ''
+        : DateFormat.yMd(locale).format(selected);
+    return LabeledFormField(
+      label: _labelWithRequired(context),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () async {
+          final now = DateTime.now();
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: selected ?? now,
+            firstDate: DateTime(1900),
+            lastDate: DateTime(2100),
+          );
+          if (picked == null) return;
+          onChanged(_formatDateValue(picked));
+        },
+        child: InputDecorator(
+          decoration: InputDecoration(
+            hintText: field.helpText,
+            isDense: true,
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 14,
+            ),
+            suffixIcon: const Icon(Icons.calendar_today_outlined),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: Colors.grey.withValues(alpha: 0.35),
+              ),
+            ),
+          ),
+          child: Text(displayValue),
+        ),
+      ),
+    );
   }
 
   Widget _textField(BuildContext context, {int maxLines = 1}) {
@@ -426,4 +474,22 @@ class _FieldInput extends StatelessWidget {
       ),
     );
   }
+}
+
+DateTime? _parseDateValue(dynamic value) {
+  if (value is! String || value.trim().isEmpty) return null;
+  final trimmed = value.trim();
+  final parts = trimmed.split('-');
+  if (parts.length != 3) return DateTime.tryParse(trimmed);
+  final year = int.tryParse(parts[0]);
+  final month = int.tryParse(parts[1]);
+  final day = int.tryParse(parts[2]);
+  if (year == null || month == null || day == null) return null;
+  return DateTime(year, month, day);
+}
+
+String _formatDateValue(DateTime date) {
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  return '${date.year}-$month-$day';
 }

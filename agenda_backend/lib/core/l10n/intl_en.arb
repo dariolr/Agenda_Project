@@ -2171,6 +2171,7 @@
   "bookingFormsOptionsHint": "Options, one per line",
   "bookingFormsFieldTypeShortText": "Short text",
   "bookingFormsFieldTypeLongText": "Long text",
+  "bookingFormsFieldTypeDate": "Date",
   "bookingFormsFieldTypeSingleChoice": "Single choice",
   "bookingFormsFieldTypeSegmentedChoice": "Segmented single choice",
   "bookingFormsFieldTypeMultipleChoice": "Multiple choice",

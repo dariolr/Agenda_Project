@@ -1873,6 +1873,7 @@ IconData _fieldTypeIcon(String fieldType) {
   return switch (fieldType) {
     'short_text' => Icons.short_text,
     'long_text' => Icons.notes_outlined,
+    'date' => Icons.calendar_today_outlined,
     'single_choice' => Icons.radio_button_checked,
     'segmented_choice' => Icons.splitscreen_outlined,
     'multiple_choice' => Icons.checklist_outlined,
@@ -1888,6 +1889,7 @@ String _fieldTypeLabel(BuildContext context, String fieldType) {
   return switch (fieldType) {
     'short_text' => l10n.bookingFormsFieldTypeShortText,
     'long_text' => l10n.bookingFormsFieldTypeLongText,
+    'date' => l10n.bookingFormsFieldTypeDate,
     'single_choice' => l10n.bookingFormsFieldTypeSingleChoice,
     'segmented_choice' => l10n.bookingFormsFieldTypeSegmentedChoice,
     'multiple_choice' => l10n.bookingFormsFieldTypeMultipleChoice,
@@ -1925,6 +1927,7 @@ class _BookingFormFieldDialogState extends State<_BookingFormFieldDialog> {
   static const _types = [
     'short_text',
     'long_text',
+    'date',
     'single_choice',
     'segmented_choice',
     'multiple_choice',
@@ -1943,7 +1946,7 @@ class _BookingFormFieldDialogState extends State<_BookingFormFieldDialog> {
       text: initial?.consentUrl ?? '',
     );
     _fieldType = initial?.fieldType ?? 'short_text';
-    _required = initial?.isRequired ?? _fieldType == 'consent';
+    _required = initial?.isRequired ?? false;
     for (final option in initial?.options ?? const <Map<String, String>>[]) {
       _optionControllers.add(
         TextEditingController(text: option['label'] ?? ''),
@@ -2015,7 +2018,6 @@ class _BookingFormFieldDialogState extends State<_BookingFormFieldDialog> {
                     onTap: () => setState(() {
                       _fieldType = type;
                       if (_isInfo) _required = false;
-                      if (_fieldType == 'consent') _required = true;
                       _ensureMinOptions();
                     }),
                   ),
@@ -2174,7 +2176,7 @@ class _BookingFormFieldDialogState extends State<_BookingFormFieldDialog> {
 
   void _submit() {
     final label = _labelController.text.trim();
-    if (label.isEmpty) return;
+    if (label.isEmpty && _fieldType != 'consent') return;
     final options = _parsedOptions();
     // I tipi a scelta richiedono almeno due opzioni (validato anche lato server).
     if (_requiresOptions && options.length < 2) {
@@ -2274,9 +2276,7 @@ class _FieldPreview extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
-    final displayLabel = label.isEmpty
-        ? _fieldTypeLabel(context, fieldType)
-        : label;
+    final displayLabel = label.isEmpty ? '' : label;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -2357,6 +2357,32 @@ class _FieldPreview extends StatelessWidget {
                 color: theme.colorScheme.surface,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+              ),
+            ),
+          ],
+        );
+      case 'date':
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            labelText(),
+            const SizedBox(height: 6),
+            Container(
+              height: 40,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today_outlined,
+                    size: 18,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ],
               ),
             ),
           ],

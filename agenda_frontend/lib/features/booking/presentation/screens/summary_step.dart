@@ -1202,6 +1202,8 @@ class _BookingFormFieldWidget extends StatelessWidget {
           ),
           onChanged: onChanged,
         );
+      case 'date':
+        return _dateField(context, label, errorText);
       case 'single_choice':
       case 'dropdown':
         return DropdownButtonFormField<String>(
@@ -1319,12 +1321,6 @@ class _BookingFormFieldWidget extends StatelessWidget {
                         spacing: 6,
                         runSpacing: 4,
                         children: [
-                          Text(
-                            '${l10n.bookingFormsPolicyLinkLabel}:',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
                           TextButton.icon(
                             onPressed: () => _openConsentUrl(field.consentUrl!),
                             icon: const Icon(Icons.open_in_new, size: 16),
@@ -1393,6 +1389,56 @@ class _BookingFormFieldWidget extends StatelessWidget {
         );
     }
   }
+
+  Widget _dateField(BuildContext context, String label, String? errorText) {
+    final selected = _parseDateValue(value);
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final displayValue = selected == null
+        ? ''
+        : DateFormat.yMd(locale).format(selected);
+    return InkWell(
+      borderRadius: BorderRadius.circular(4),
+      onTap: () async {
+        final now = DateTime.now();
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: selected ?? now,
+          firstDate: DateTime(1900),
+          lastDate: DateTime(2100),
+        );
+        if (picked == null) return;
+        onChanged(_formatDateValue(picked));
+      },
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: label,
+          helperText: field.helpText,
+          errorText: errorText,
+          suffixIcon: const Icon(Icons.calendar_today_outlined),
+          border: const OutlineInputBorder(),
+        ),
+        child: Text(displayValue),
+      ),
+    );
+  }
+}
+
+DateTime? _parseDateValue(dynamic value) {
+  if (value is! String || value.trim().isEmpty) return null;
+  final trimmed = value.trim();
+  final parts = trimmed.split('-');
+  if (parts.length != 3) return DateTime.tryParse(trimmed);
+  final year = int.tryParse(parts[0]);
+  final month = int.tryParse(parts[1]);
+  final day = int.tryParse(parts[2]);
+  if (year == null || month == null || day == null) return null;
+  return DateTime(year, month, day);
+}
+
+String _formatDateValue(DateTime date) {
+  final month = date.month.toString().padLeft(2, '0');
+  final day = date.day.toString().padLeft(2, '0');
+  return '${date.year}-$month-$day';
 }
 
 void _openConsentUrl(String rawUrl) {
