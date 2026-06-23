@@ -12596,20 +12596,20 @@ class L10n {
     );
   }
 
-  /// `Guide to activating WhatsApp for your business`
+  /// `Guide to activating WhatsApp Business`
   String get whatsappGuideTitle {
     return Intl.message(
-      'Guide to activating WhatsApp for your business',
+      'Guide to activating WhatsApp Business',
       name: 'whatsappGuideTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `To send automatic reminders to your clients, we need to connect one of your numbers to Meta's professional platform (the company that owns Facebook and WhatsApp).\nFollow these steps to get started right away.`
+  /// `To connect WhatsApp to the management system, you will be redirected to Meta's secure setup flow. During the process you can select or create your business Meta account, connect a WhatsApp Business account, and verify the phone number used for automatic messages.`
   String get whatsappGuideIntro {
     return Intl.message(
-      'To send automatic reminders to your clients, we need to connect one of your numbers to Meta\'s professional platform (the company that owns Facebook and WhatsApp).\nFollow these steps to get started right away.',
+      'To connect WhatsApp to the management system, you will be redirected to Meta\'s secure setup flow. During the process you can select or create your business Meta account, connect a WhatsApp Business account, and verify the phone number used for automatic messages.',
       name: 'whatsappGuideIntro',
       desc: '',
       args: [],
@@ -12626,21 +12626,91 @@ class L10n {
     );
   }
 
-  /// `A dedicated number: You can use your shop landline or a new SIM. Important: this number must not have an active WhatsApp account on any mobile phone during the connection setup process.`
+  /// `A personal Facebook/Meta account: it must belong to the person who manages the business or can administer its Business Manager.`
+  String get whatsappGuideNeedMetaAccount {
+    return Intl.message(
+      'A personal Facebook/Meta account: it must belong to the person who manages the business or can administer its Business Manager.',
+      name: 'whatsappGuideNeedMetaAccount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `A Meta Business Account for the business: if it does not exist yet, Meta may guide you through creating one during the setup flow.`
+  String get whatsappGuideNeedMetaBusinessAccount {
+    return Intl.message(
+      'A Meta Business Account for the business: if it does not exist yet, Meta may guide you through creating one during the setup flow.',
+      name: 'whatsappGuideNeedMetaBusinessAccount',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `A phone number to connect to WhatsApp Business: it can be a new SIM or a landline. The number must not have an active WhatsApp account during the connection process.`
   String get whatsappGuideNeedDedicatedNumber {
     return Intl.message(
-      'A dedicated number: You can use your shop landline or a new SIM. Important: this number must not have an active WhatsApp account on any mobile phone during the connection setup process.',
+      'A phone number to connect to WhatsApp Business: it can be a new SIM or a landline. The number must not have an active WhatsApp account during the connection process.',
       name: 'whatsappGuideNeedDedicatedNumber',
       desc: '',
       args: [],
     );
   }
 
-  /// `A payment card: You will need it to pay Meta directly for messages. Cost is about 4 euro cents for each client you message (even more than once) within 24 hours.`
+  /// `A Meta payment method, if requested: payment details are entered only in Meta's secure window and are never visible to the management system.`
   String get whatsappGuideNeedPaymentCard {
     return Intl.message(
-      'A payment card: You will need it to pay Meta directly for messages. Cost is about 4 euro cents for each client you message (even more than once) within 24 hours.',
+      'A Meta payment method, if requested: payment details are entered only in Meta\'s secure window and are never visible to the management system.',
       name: 'whatsappGuideNeedPaymentCard',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `A website is not mandatory: if Meta asks for an online reference, you can use the business details or the public booking link provided by the management system, if available.`
+  String get whatsappGuideNeedWebsiteNotRequired {
+    return Intl.message(
+      'A website is not mandatory: if Meta asks for an online reference, you can use the business details or the public booking link provided by the management system, if available.',
+      name: 'whatsappGuideNeedWebsiteNotRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Public booking link`
+  String get whatsappGuidePublicBookingLinkTitle {
+    return Intl.message(
+      'Public booking link',
+      name: 'whatsappGuidePublicBookingLinkTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `You can use this link as the business online reference during the Meta setup flow.`
+  String get whatsappGuidePublicBookingLinkBody {
+    return Intl.message(
+      'You can use this link as the business online reference during the Meta setup flow.',
+      name: 'whatsappGuidePublicBookingLinkBody',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Copy link`
+  String get whatsappGuidePublicBookingLinkCopyAction {
+    return Intl.message(
+      'Copy link',
+      name: 'whatsappGuidePublicBookingLinkCopyAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Link copied`
+  String get whatsappGuidePublicBookingLinkCopiedAction {
+    return Intl.message(
+      'Link copied',
+      name: 'whatsappGuidePublicBookingLinkCopiedAction',
       desc: '',
       args: [],
     );
@@ -12656,6 +12726,26 @@ class L10n {
     );
   }
 
+  /// `Do not have a Meta Business Account yet?`
+  String get whatsappGuideNoBusinessAccountTitle {
+    return Intl.message(
+      'Do not have a Meta Business Account yet?',
+      name: 'whatsappGuideNoBusinessAccountTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No problem: during the setup flow Meta may allow you to create one. Use a real Facebook/Meta profile belonging to the person who manages the business.`
+  String get whatsappGuideNoBusinessAccountBody {
+    return Intl.message(
+      'No problem: during the setup flow Meta may allow you to create one. Use a real Facebook/Meta profile belonging to the person who manages the business.',
+      name: 'whatsappGuideNoBusinessAccountBody',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Payments and security`
   String get whatsappGuidePaymentsTitle {
     return Intl.message(
@@ -12666,30 +12756,30 @@ class L10n {
     );
   }
 
-  /// `Card data is entered only in Meta's secure window: the management system never sees card number, expiry date, or CVV.`
+  /// `Any WhatsApp message costs are managed directly by Meta according to its pricing. Payment details are entered only in Meta's secure screens: the management system never sees card number, expiry date, or CVV.`
   String get whatsappGuidePaymentsBody {
     return Intl.message(
-      'Card data is entered only in Meta\'s secure window: the management system never sees card number, expiry date, or CVV.',
+      'Any WhatsApp message costs are managed directly by Meta according to its pricing. Payment details are entered only in Meta\'s secure screens: the management system never sees card number, expiry date, or CVV.',
       name: 'whatsappGuidePaymentsBody',
       desc: '',
       args: [],
     );
   }
 
-  /// `Why do you need a dedicated number?`
+  /// `Why do you need a professional number?`
   String get whatsappGuideProfessionalTitle {
     return Intl.message(
-      'Why do you need a dedicated number?',
+      'Why do you need a professional number?',
       name: 'whatsappGuideProfessionalTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `A regular WhatsApp account cannot send automatic messages. Using a dedicated number linked to your business allows the management system to send accurate reminders with your official business name, improving your image, reducing missed appointments, and increasing your clients' trust.`
+  /// `A regular WhatsApp account cannot be used to send automatic messages from the platform. Meta therefore requires a number connected to the WhatsApp Business Platform. You can use a dedicated number, a new SIM, or a business landline, as long as it can be verified and does not have an active WhatsApp account during the connection process.`
   String get whatsappGuideProfessionalBody {
     return Intl.message(
-      'A regular WhatsApp account cannot send automatic messages. Using a dedicated number linked to your business allows the management system to send accurate reminders with your official business name, improving your image, reducing missed appointments, and increasing your clients\' trust.',
+      'A regular WhatsApp account cannot be used to send automatic messages from the platform. Meta therefore requires a number connected to the WhatsApp Business Platform. You can use a dedicated number, a new SIM, or a business landline, as long as it can be verified and does not have an active WhatsApp account during the connection process.',
       name: 'whatsappGuideProfessionalBody',
       desc: '',
       args: [],
@@ -12716,20 +12806,20 @@ class L10n {
     );
   }
 
-  /// `If you use a landline: choose "Voice call" during verification. You will receive a call to the shop landline with the code to enter.`
+  /// `If you use a landline: choose phone call verification when supported by Meta. You will receive a call to the business landline with the code to enter.`
   String get whatsappGuideManageNumberLandline {
     return Intl.message(
-      'If you use a landline: choose "Voice call" during verification. You will receive a call to the shop landline with the code to enter.',
+      'If you use a landline: choose phone call verification when supported by Meta. You will receive a call to the business landline with the code to enter.',
       name: 'whatsappGuideManageNumberLandline',
       desc: '',
       args: [],
     );
   }
 
-  /// `If you want to use your current number: first delete the WhatsApp account from your smartphone (Settings > Account > Delete account). Warning: this removes old messages.`
+  /// `If you want to use your current number: if it is already used on WhatsApp or the WhatsApp Business App, you may need to disconnect or migrate it by following Meta's instructions before connecting it.`
   String get whatsappGuideManageNumberCurrent {
     return Intl.message(
-      'If you want to use your current number: first delete the WhatsApp account from your smartphone (Settings > Account > Delete account). Warning: this removes old messages.',
+      'If you want to use your current number: if it is already used on WhatsApp or the WhatsApp Business App, you may need to disconnect or migrate it by following Meta\'s instructions before connecting it.',
       name: 'whatsappGuideManageNumberCurrent',
       desc: '',
       args: [],
@@ -12746,41 +12836,61 @@ class L10n {
     );
   }
 
-  /// `Click the "Connect with Meta" button at the bottom of this guide.`
+  /// `Click "Connect with Meta".`
   String get whatsappGuideStep1 {
     return Intl.message(
-      'Click the "Connect with Meta" button at the bottom of this guide.',
+      'Click "Connect with Meta".',
       name: 'whatsappGuideStep1',
       desc: '',
       args: [],
     );
   }
 
-  /// `Sign in with your Facebook page account (the one managing the shop page, not your personal profile account).`
+  /// `Sign in with your personal Facebook/Meta account, meaning the account of the person who administers the business.`
   String get whatsappGuideStep2 {
     return Intl.message(
-      'Sign in with your Facebook page account (the one managing the shop page, not your personal profile account).',
+      'Sign in with your personal Facebook/Meta account, meaning the account of the person who administers the business.',
       name: 'whatsappGuideStep2',
       desc: '',
       args: [],
     );
   }
 
-  /// `Follow the instructions to enter the business name (what your clients will see), card details, and VAT number.`
+  /// `Select your business Meta Business Account or create a new one when Meta offers it.`
   String get whatsappGuideStep3 {
     return Intl.message(
-      'Follow the instructions to enter the business name (what your clients will see), card details, and VAT number.',
+      'Select your business Meta Business Account or create a new one when Meta offers it.',
       name: 'whatsappGuideStep3',
       desc: '',
       args: [],
     );
   }
 
-  /// `When you receive the code by SMS or call, you will need to enter it in the admin panel to complete the connection. Make note of it.`
+  /// `Create or connect the WhatsApp Business account and choose the phone number to use.`
   String get whatsappGuideStep4 {
     return Intl.message(
-      'When you receive the code by SMS or call, you will need to enter it in the admin panel to complete the connection. Make note of it.',
+      'Create or connect the WhatsApp Business account and choose the phone number to use.',
       name: 'whatsappGuideStep4',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Verify the phone number by SMS or phone call when requested by Meta.`
+  String get whatsappGuideStep5 {
+    return Intl.message(
+      'Verify the phone number by SMS or phone call when requested by Meta.',
+      name: 'whatsappGuideStep5',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Confirm the required permissions so the management system can send automatic messages.`
+  String get whatsappGuideStep6 {
+    return Intl.message(
+      'Confirm the required permissions so the management system can send automatic messages.',
+      name: 'whatsappGuideStep6',
       desc: '',
       args: [],
     );
@@ -12796,6 +12906,36 @@ class L10n {
     );
   }
 
+  /// `What happens after the connection`
+  String get whatsappGuideAfterConnectionTitle {
+    return Intl.message(
+      'What happens after the connection',
+      name: 'whatsappGuideAfterConnectionTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The management system saves the WhatsApp configuration connected to your business.`
+  String get whatsappGuideAfterConnectionConfigSaved {
+    return Intl.message(
+      'The management system saves the WhatsApp configuration connected to your business.',
+      name: 'whatsappGuideAfterConnectionConfigSaved',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Automatic message sending can start only when the settings and template are approved and active.`
+  String get whatsappGuideAfterConnectionApprovalRequired {
+    return Intl.message(
+      'Automatic message sending can start only when the settings and template are approved and active.',
+      name: 'whatsappGuideAfterConnectionApprovalRequired',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `A small tip`
   String get whatsappGuideTipTitle {
     return Intl.message(
@@ -12806,10 +12946,10 @@ class L10n {
     );
   }
 
-  /// `If you use a dedicated SIM, remember to do a small top-up at least once per year to keep the number active. Also keep Meta payment methods updated and ensure there is always available balance; otherwise Meta may suspend the service.`
+  /// `If you use a dedicated SIM, remember to keep it active according to your operator's terms. Also keep any Meta payment methods updated; otherwise Meta may suspend the service.`
   String get whatsappGuideTipBody {
     return Intl.message(
-      'If you use a dedicated SIM, remember to do a small top-up at least once per year to keep the number active. Also keep Meta payment methods updated and ensure there is always available balance; otherwise Meta may suspend the service.',
+      'If you use a dedicated SIM, remember to keep it active according to your operator\'s terms. Also keep any Meta payment methods updated; otherwise Meta may suspend the service.',
       name: 'whatsappGuideTipBody',
       desc: '',
       args: [],

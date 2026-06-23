@@ -3810,71 +3810,112 @@ class MessageLookup extends MessageLookupByLibrary {
     "whatsappGoLiveScopeBusiness": MessageLookupByLibrary.simpleMessage(
       "Ambito: business",
     ),
+    "whatsappGuideAfterConnectionApprovalRequired":
+        MessageLookupByLibrary.simpleMessage(
+          "L\'invio automatico dei messaggi potrà avere inizio soltanto quando le impostazioni e il modello risultano approvati e attivi.",
+        ),
+    "whatsappGuideAfterConnectionConfigSaved": MessageLookupByLibrary.simpleMessage(
+      "Il gestionale salva la configurazione WhatsApp collegata alla tua attività.",
+    ),
+    "whatsappGuideAfterConnectionTitle": MessageLookupByLibrary.simpleMessage(
+      "Cosa succede dopo il collegamento",
+    ),
     "whatsappGuideCodeImportant": MessageLookupByLibrary.simpleMessage(
       "Importante: senza l\'inserimento del codice di verifica nel gestionale, la connessione WhatsApp non verrà attivata.",
     ),
     "whatsappGuideIntro": MessageLookupByLibrary.simpleMessage(
-      "Per inviare promemoria automatici ai tuoi clienti, dobbiamo collegare un tuo numero alla piattaforma professionale di Meta (la società che possiede Facebook e WhatsApp).\nSegui questi passaggi per iniziare subito.",
+      "Per collegare WhatsApp al gestionale verrai reindirizzato nella procedura sicura di Meta. Durante la procedura potrai selezionare o creare l\'account business Meta della tua attività, collegare un account WhatsApp Business e verificare il numero da usare per i messaggi automatici.",
     ),
     "whatsappGuideManageNumberCurrent": MessageLookupByLibrary.simpleMessage(
-      "Se vuoi usare il tuo numero attuale: Devi prima cancellare l\'account WhatsApp dal tuo smartphone (Impostazioni > Account > Elimina account). Attenzione: perderai i vecchi messaggi.",
+      "Se vuoi usare il tuo numero attuale: se è già usato su WhatsApp o WhatsApp Business App, potrebbe essere necessario scollegarlo o migrarlo seguendo le istruzioni di Meta prima del collegamento.",
     ),
     "whatsappGuideManageNumberLandline": MessageLookupByLibrary.simpleMessage(
-      "Se usi il numero fisso: Scegli l\'opzione \"Chiamata vocale\" durante la verifica. Riceverai una telefonata sul fisso del negozio che ti detterà il codice da inserire.",
+      "Se usi il numero fisso: scegli l\'opzione di verifica tramite chiamata quando supportata da Meta. Riceverai una telefonata sul fisso dell\'attività con il codice da inserire.",
     ),
     "whatsappGuideManageNumberNewSim": MessageLookupByLibrary.simpleMessage(
-      "Se usi una nuova SIM: Inseriscila in un telefono solo per ricevere il codice di verifica iniziale. Una volta confermato il collegamento, puoi togliere la SIM; il sistema funzionerà anche a telefono spento.",
+      "Se usi una nuova SIM: inseriscila in un telefono solo per ricevere il codice di verifica iniziale. Una volta confermato il collegamento, puoi togliere la SIM; il sistema continuerà a funzionare anche con il telefono spento.",
     ),
     "whatsappGuideManageNumberTitle": MessageLookupByLibrary.simpleMessage(
       "Come gestire il numero di telefono",
     ),
     "whatsappGuideNeedDedicatedNumber": MessageLookupByLibrary.simpleMessage(
-      "Un numero dedicato: Puoi usare il numero fisso del tuo negozio oppure una nuova scheda SIM. Importante: Questo numero non deve avere un account WhatsApp attivo su qualsiasi cellulare durante la procedura di collegamento.",
+      "Un numero telefonico da collegare a WhatsApp Business: può essere una nuova SIM o un numero fisso. Il numero non deve avere un account WhatsApp attivo durante il collegamento.",
+    ),
+    "whatsappGuideNeedMetaAccount": MessageLookupByLibrary.simpleMessage(
+      "Un account Facebook/Meta personale: deve essere l\'account della persona che gestisce l\'attività o che può amministrare il Business Manager.",
+    ),
+    "whatsappGuideNeedMetaBusinessAccount": MessageLookupByLibrary.simpleMessage(
+      "Un Meta Business Account dell\'attività: se non esiste ancora, Meta potrà guidarti nella creazione durante la procedura.",
     ),
     "whatsappGuideNeedPaymentCard": MessageLookupByLibrary.simpleMessage(
-      "Una carta di pagamento: Ti servirà per pagare i messaggi direttamente a Meta. Il costo è di circa 4 centesimi per ogni cliente a cui invii messaggi nell\'arco di una giornata.",
+      "Un metodo di pagamento Meta, se richiesto: i dati vengono inseriti solo nella finestra sicura di Meta e non sono visibili al gestionale.",
     ),
     "whatsappGuideNeedVat": MessageLookupByLibrary.simpleMessage(
       "La tua Partita IVA: Inserendola eviterai che Meta ti addebiti IVA irlandese in fattura, dovrai però consultare il tuo commercialista in quanto riceverai da Meta la fattura che di fatto è una fattura estera.",
     ),
+    "whatsappGuideNeedWebsiteNotRequired": MessageLookupByLibrary.simpleMessage(
+      "Sito web non obbligatorio: se Meta richiede un riferimento online, puoi usare i dati dell\'attività o il link pubblico di prenotazione fornito dal gestionale, se disponibile.",
+    ),
     "whatsappGuideNeedsTitle": MessageLookupByLibrary.simpleMessage(
       "Cosa ti serve per iniziare",
     ),
+    "whatsappGuideNoBusinessAccountBody": MessageLookupByLibrary.simpleMessage(
+      "Nessun problema: durante la procedura Meta potrà permetterti di crearne uno. Usa un profilo Facebook/Meta reale e riconducibile alla persona che gestisce l\'attività.",
+    ),
+    "whatsappGuideNoBusinessAccountTitle": MessageLookupByLibrary.simpleMessage(
+      "Non hai ancora un Meta Business Account?",
+    ),
     "whatsappGuidePaymentsBody": MessageLookupByLibrary.simpleMessage(
-      "I dati della carta vengono inseriti solo nella finestra protetta di Meta: il gestionale non vede mai numero carta, scadenza o CVV.",
+      "Gli eventuali costi dei messaggi WhatsApp sono gestiti direttamente da Meta secondo le sue tariffe. I dati di pagamento vengono inseriti solo nelle schermate protette di Meta: il gestionale non vede mai numero carta, scadenza o CVV.",
     ),
     "whatsappGuidePaymentsTitle": MessageLookupByLibrary.simpleMessage(
       "Pagamenti e sicurezza",
     ),
     "whatsappGuideProfessionalBody": MessageLookupByLibrary.simpleMessage(
-      "Un account WhatsApp normale non può inviare messaggi automatici. Usando un numero dedicato e associato alla tua attività consentirà al gestionale di inviare promemoria precisi con il nome ufficiale della tua attività, migliorando la tua immagine, riducendo gli appuntamenti dimenticati e aumentando la fiducia dei tuoi clienti.",
+      "Un account WhatsApp normale non può essere usato per inviare messaggi automatici dalla piattaforma. Per questo Meta richiede un numero collegato a WhatsApp Business Platform. Puoi usare un numero dedicato, una nuova SIM o un numero fisso dell\'attività, purché sia verificabile e non abbia un account WhatsApp attivo durante il collegamento.",
     ),
     "whatsappGuideProfessionalTitle": MessageLookupByLibrary.simpleMessage(
-      "Perché serve un numero dedicato?",
+      "Perché serve un numero professionale?",
+    ),
+    "whatsappGuidePublicBookingLinkBody": MessageLookupByLibrary.simpleMessage(
+      "Puoi usare questo link come riferimento online dell\'attività durante la procedura Meta.",
+    ),
+    "whatsappGuidePublicBookingLinkCopiedAction":
+        MessageLookupByLibrary.simpleMessage("Link copiato"),
+    "whatsappGuidePublicBookingLinkCopyAction":
+        MessageLookupByLibrary.simpleMessage("Copia link"),
+    "whatsappGuidePublicBookingLinkTitle": MessageLookupByLibrary.simpleMessage(
+      "Link pubblico di prenotazione",
     ),
     "whatsappGuideStep1": MessageLookupByLibrary.simpleMessage(
-      "Clicca sul tasto \"Connetti con Meta\" in basso a questa guida.",
+      "Clicca su \"Connetti con Meta\".",
     ),
     "whatsappGuideStep2": MessageLookupByLibrary.simpleMessage(
-      "Accedi con l\'account della tua pagina Facebook (quello che gestisce la pagina del negozio, non quello del tuo profilo personale).",
+      "Accedi con il tuo account Facebook/Meta personale, cioè quello della persona che amministra l\'attività.",
     ),
     "whatsappGuideStep3": MessageLookupByLibrary.simpleMessage(
-      "Segui le istruzioni per inserire nome attività (quello che vedranno i tuoi clienti), ed eventuali altri dettagli richiesti da Meta.",
+      "Seleziona il Meta Business Account della tua attività oppure creane uno nuovo quando Meta lo propone.",
     ),
     "whatsappGuideStep4": MessageLookupByLibrary.simpleMessage(
-      "Quando ricevi il codice tramite SMS o chiamata, dovrai inserirlo nel gestionale per completare il collegamento, prendine nota.",
+      "Crea o collega l\'account WhatsApp Business e scegli il numero da usare.",
+    ),
+    "whatsappGuideStep5": MessageLookupByLibrary.simpleMessage(
+      "Verifica il numero tramite SMS o chiamata, quando richiesto da Meta.",
+    ),
+    "whatsappGuideStep6": MessageLookupByLibrary.simpleMessage(
+      "Conferma le autorizzazioni richieste per permettere al gestionale di inviare i messaggi automatici.",
     ),
     "whatsappGuideStepsTitle": MessageLookupByLibrary.simpleMessage(
       "I passaggi da seguire",
     ),
     "whatsappGuideTipBody": MessageLookupByLibrary.simpleMessage(
-      "Se usi una SIM dedicata, ricordati di fare una piccola ricarica almeno una volta all\'anno per mantenerla attiva. Ricordati anche di tenere aggiornati i metodi di pagamento su Meta e verificare che ci sia sempre saldo disponibile: in caso contrario, Meta potrebbe sospendere il servizio.",
+      "Se usi una SIM dedicata, ricordati di mantenerla attiva secondo le condizioni del tuo operatore. Ricordati anche di tenere aggiornati gli eventuali metodi di pagamento su Meta: in caso contrario, Meta potrebbe sospendere il servizio.",
     ),
     "whatsappGuideTipTitle": MessageLookupByLibrary.simpleMessage(
       "Un piccolo consiglio",
     ),
     "whatsappGuideTitle": MessageLookupByLibrary.simpleMessage(
-      "Guida per l\'attivazione di WhatsApp per la tua attività",
+      "Guida per attivare WhatsApp Business",
     ),
     "whatsappInvalidJson": MessageLookupByLibrary.simpleMessage(
       "JSON variabili non valido.",

@@ -1,13 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '/core/l10n/l10_extension.dart';
 
 class GuidaAttivazioneWhatsApp extends StatelessWidget {
-  const GuidaAttivazioneWhatsApp({super.key});
+  const GuidaAttivazioneWhatsApp({super.key, this.publicBookingUrl});
+
+  final String? publicBookingUrl;
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
+    final bookingUrl = publicBookingUrl?.trim();
+    final hasPublicBookingUrl = bookingUrl != null && bookingUrl.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,6 +39,14 @@ class GuidaAttivazioneWhatsApp extends StatelessWidget {
         const Divider(height: 40),
         _buildTitolo(l10n.whatsappGuideNeedsTitle),
         _buildPuntoElenco(
+          l10n.whatsappGuideNeedMetaAccount,
+          emphasizePrefix: true,
+        ),
+        _buildPuntoElenco(
+          l10n.whatsappGuideNeedMetaBusinessAccount,
+          emphasizePrefix: true,
+        ),
+        _buildPuntoElenco(
           l10n.whatsappGuideNeedDedicatedNumber,
           emphasizePrefix: true,
         ),
@@ -39,11 +54,20 @@ class GuidaAttivazioneWhatsApp extends StatelessWidget {
           l10n.whatsappGuideNeedPaymentCard,
           emphasizePrefix: true,
         ),
-        /*_buildPuntoElenco(
-          l10n.whatsappGuideNeedVat,
+        _buildPuntoElenco(
+          l10n.whatsappGuideNeedWebsiteNotRequired,
           emphasizePrefix: true,
-        ),*/
+        ),
+        if (hasPublicBookingUrl) ...[
+          const SizedBox(height: 10),
+          _PublicBookingLinkBox(url: bookingUrl),
+        ],
         const SizedBox(height: 18),
+        _buildInfoBox(
+          title: l10n.whatsappGuideNoBusinessAccountTitle,
+          body: l10n.whatsappGuideNoBusinessAccountBody,
+        ),
+        const SizedBox(height: 24),
         _buildTitolo(l10n.whatsappGuidePaymentsTitle),
         Text(
           l10n.whatsappGuidePaymentsBody,
@@ -66,28 +90,17 @@ class GuidaAttivazioneWhatsApp extends StatelessWidget {
         _buildPassaggio(2, l10n.whatsappGuideStep2),
         _buildPassaggio(3, l10n.whatsappGuideStep3),
         _buildPassaggio(4, l10n.whatsappGuideStep4),
+        _buildPassaggio(5, l10n.whatsappGuideStep5),
+        _buildPassaggio(6, l10n.whatsappGuideStep6),
         const SizedBox(height: 24),
-        Container(
-          padding: const EdgeInsets.all(15),
-          decoration: BoxDecoration(
-            color: Colors.blue[50],
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.blue[200]!),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                l10n.whatsappGuideTipTitle,
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue[800],
-                ),
-              ),
-              const SizedBox(height: 5),
-              Text(l10n.whatsappGuideTipBody),
-            ],
-          ),
+        _buildTitolo(l10n.whatsappGuideAfterConnectionTitle),
+        _buildPuntoElenco(l10n.whatsappGuideAfterConnectionConfigSaved),
+        _buildPuntoElenco(l10n.whatsappGuideAfterConnectionApprovalRequired),
+        const SizedBox(height: 24),
+        _buildInfoBox(
+          title: l10n.whatsappGuideTipTitle,
+          body: l10n.whatsappGuideTipBody,
+          color: Colors.blue,
         ),
         const SizedBox(height: 20),
       ],
@@ -99,7 +112,7 @@ class GuidaAttivazioneWhatsApp extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12.0),
       child: Text(
         testo,
-        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -119,7 +132,7 @@ class GuidaAttivazioneWhatsApp extends StatelessWidget {
         children: [
           Text(
             '• ',
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.green,
@@ -163,11 +176,118 @@ class GuidaAttivazioneWhatsApp extends StatelessWidget {
             backgroundColor: Colors.green,
             child: Text(
               '$numero',
-              style: TextStyle(color: Colors.white, fontSize: 12),
+              style: const TextStyle(color: Colors.white, fontSize: 12),
             ),
           ),
-          SizedBox(width: 10),
-          Expanded(child: Text(testo, style: TextStyle(fontSize: 15))),
+          const SizedBox(width: 10),
+          Expanded(child: Text(testo, style: const TextStyle(fontSize: 15))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoBox({
+    required String title,
+    required String body,
+    MaterialColor color = Colors.green,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: color[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(fontWeight: FontWeight.bold, color: color[800]),
+          ),
+          const SizedBox(height: 5),
+          Text(body, style: const TextStyle(height: 1.35)),
+        ],
+      ),
+    );
+  }
+}
+
+class _PublicBookingLinkBox extends StatefulWidget {
+  const _PublicBookingLinkBox({required this.url});
+
+  final String url;
+
+  @override
+  State<_PublicBookingLinkBox> createState() => _PublicBookingLinkBoxState();
+}
+
+class _PublicBookingLinkBoxState extends State<_PublicBookingLinkBox> {
+  Timer? _copiedTimer;
+  bool _copied = false;
+
+  @override
+  void dispose() {
+    _copiedTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _copyLink() async {
+    await Clipboard.setData(ClipboardData(text: widget.url));
+    if (!mounted) return;
+    setState(() => _copied = true);
+    _copiedTimer?.cancel();
+    _copiedTimer = Timer(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() => _copied = false);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.green[50],
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.green[200]!),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            l10n.whatsappGuidePublicBookingLinkTitle,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              color: Colors.green[800],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            l10n.whatsappGuidePublicBookingLinkBody,
+            style: const TextStyle(fontSize: 14, height: 1.35),
+          ),
+          const SizedBox(height: 10),
+          SelectableText(
+            widget.url,
+            style: const TextStyle(fontSize: 13, height: 1.25),
+          ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilledButton.icon(
+              onPressed: _copyLink,
+              icon: Icon(_copied ? Icons.check : Icons.copy_outlined),
+              label: Text(
+                _copied
+                    ? l10n.whatsappGuidePublicBookingLinkCopiedAction
+                    : l10n.whatsappGuidePublicBookingLinkCopyAction,
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -966,7 +966,7 @@ class _ClassTypeFormDialogState extends ConsumerState<_ClassTypeFormDialog> {
   }
 }
 
-class _ClassTypeLocationsMultiSelect extends StatelessWidget {
+class _ClassTypeLocationsMultiSelect extends StatefulWidget {
   const _ClassTypeLocationsMultiSelect({
     required this.locations,
     required this.selectedIds,
@@ -980,12 +980,30 @@ class _ClassTypeLocationsMultiSelect extends StatelessWidget {
   final ValueChanged<Set<int>> onChanged;
 
   @override
+  State<_ClassTypeLocationsMultiSelect> createState() =>
+      _ClassTypeLocationsMultiSelectState();
+}
+
+class _ClassTypeLocationsMultiSelectState
+    extends State<_ClassTypeLocationsMultiSelect> {
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
     final colorScheme = Theme.of(context).colorScheme;
-    final allLocationIds = locations.map((location) => location.id).toSet();
+    final allLocationIds = widget.locations
+        .map((location) => location.id)
+        .toSet();
     final allSelected =
-        locations.isNotEmpty && selectedIds.containsAll(allLocationIds);
+        widget.locations.isNotEmpty &&
+        widget.selectedIds.containsAll(allLocationIds);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -999,9 +1017,11 @@ class _ClassTypeLocationsMultiSelect extends StatelessWidget {
               ),
             ),
             OutlinedButton.icon(
-              onPressed: !enabled
+              onPressed: !widget.enabled
                   ? null
-                  : () => onChanged(allSelected ? <int>{} : allLocationIds),
+                  : () => widget.onChanged(
+                      allSelected ? <int>{} : allLocationIds,
+                    ),
               icon: Icon(
                 allSelected ? Icons.deselect_outlined : Icons.select_all,
                 size: 16,
@@ -1032,26 +1052,28 @@ class _ClassTypeLocationsMultiSelect extends StatelessWidget {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxHeight: 288),
             child: Scrollbar(
-              thumbVisibility: locations.length > 4,
+              controller: _scrollController,
+              thumbVisibility: widget.locations.length > 4,
               child: ListView.separated(
+                controller: _scrollController,
                 primary: false,
                 shrinkWrap: true,
-                itemCount: locations.length,
+                itemCount: widget.locations.length,
                 separatorBuilder: (_, __) => const AppDivider(height: 1),
                 itemBuilder: (context, index) {
-                  final location = locations[index];
+                  final location = widget.locations[index];
                   return _ClassTypeLocationCheckboxTile(
                     location: location,
-                    isSelected: selectedIds.contains(location.id),
-                    enabled: enabled,
+                    isSelected: widget.selectedIds.contains(location.id),
+                    enabled: widget.enabled,
                     onChanged: (selected) {
-                      final newIds = Set<int>.from(selectedIds);
+                      final newIds = Set<int>.from(widget.selectedIds);
                       if (selected) {
                         newIds.add(location.id);
                       } else {
                         newIds.remove(location.id);
                       }
-                      onChanged(newIds);
+                      widget.onChanged(newIds);
                     },
                   );
                 },
@@ -3908,9 +3930,7 @@ class _ClassEventParticipantsListDialogState
     writeSection(l10n.classEventsParticipantsConfirmedTitle, confirmed);
     writeSection(l10n.classEventsParticipantsWaitlistTitle, waitlist);
 
-    await Clipboard.setData(
-      ClipboardData(text: buffer.toString().trimRight()),
-    );
+    await Clipboard.setData(ClipboardData(text: buffer.toString().trimRight()));
 
     if (!mounted) return;
     setState(() => _justCopied = true);

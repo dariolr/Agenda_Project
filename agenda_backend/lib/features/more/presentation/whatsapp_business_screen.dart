@@ -4,13 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '/core/environment/app_environment_config.dart';
 import '/core/l10n/l10_extension.dart';
+import '/core/models/location.dart';
 import '/core/network/api_client.dart';
 import '/core/services/whatsapp_embedded_signup_launcher.dart';
 import '/core/widgets/app_buttons.dart';
 import '/core/widgets/app_switch.dart';
 import '/core/widgets/feedback_dialog.dart';
 import '/features/agenda/providers/business_providers.dart';
+import '/features/agenda/providers/location_providers.dart';
 import '/features/auth/providers/auth_provider.dart';
 import '/features/booking_notifications/providers/whatsapp_integration_provider.dart';
 import '/features/more/presentation/widgets/guida_attivazione_whatsapp.dart';
@@ -153,6 +156,57 @@ class _WhatsappBusinessScreenState
     return '${error.message}\n\nDettaglio tecnico: $detail';
   }
 
+  String? _buildPublicBookingUrl({
+    required String? businessSlug,
+    required List<Location> locations,
+  }) {
+    final slug = businessSlug?.trim();
+    if (slug == null || slug.isEmpty) {
+      return null;
+    }
+
+    final bookableLocations = locations
+        .where((location) => location.isActive && location.onlineBookingEnabled)
+        .toList();
+    if (bookableLocations.isEmpty) {
+      return null;
+    }
+
+    final baseUri = Uri.parse(_publicBookingBaseUrl());
+
+    return baseUri.replace(pathSegments: <String>[slug, 'booking']).toString();
+  }
+
+  String _publicBookingBaseUrl() {
+    final webBaseUrl = _configuredWebBaseUrl();
+    if (webBaseUrl == null) {
+      return 'https://prenota.romeolab.it';
+    }
+
+    final webBaseUri = Uri.parse(webBaseUrl);
+    final host = webBaseUri.host;
+
+    if (host == 'gestionale.romeolab.it') {
+      return 'https://prenota.romeolab.it';
+    }
+    if (host == 'demo-gestionale.romeolab.it') {
+      return 'https://demo-prenota.romeolab.it';
+    }
+    if (host == 'staging-gestionale.romeolab.it') {
+      return 'https://staging-prenota.romeolab.it';
+    }
+
+    return 'https://prenota.romeolab.it';
+  }
+
+  String? _configuredWebBaseUrl() {
+    try {
+      return AppEnvironmentConfig.current.webBaseUrl;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<void> _setBusinessMessagesEnabled(bool enabled) async {
     final businessId = ref.read(currentBusinessIdProvider);
     if (businessId <= 0) return;
@@ -240,6 +294,8 @@ class _WhatsappBusinessScreenState
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final businessId = ref.watch(currentBusinessIdProvider);
+    final business = ref.watch(currentBusinessProvider);
+    final locations = ref.watch(locationsProvider);
     final isSuperadmin = ref.watch(
       authProvider.select((state) => state.user?.isSuperadmin ?? false),
     );
@@ -405,7 +461,12 @@ class _WhatsappBusinessScreenState
                       child: SingleChildScrollView(
                         controller: _guideScrollController,
                         padding: const EdgeInsets.all(20),
-                        child: const GuidaAttivazioneWhatsApp(),
+                        child: GuidaAttivazioneWhatsApp(
+                          publicBookingUrl: _buildPublicBookingUrl(
+                            businessSlug: business.slug,
+                            locations: locations,
+                          ),
+                        ),
                       ),
                     ),
                   ),

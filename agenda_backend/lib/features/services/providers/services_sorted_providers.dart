@@ -4,6 +4,7 @@ import '../../../core/models/class_type.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/models/service_package.dart';
+import '../../agenda/providers/location_providers.dart';
 import '../../auth/providers/current_business_user_provider.dart';
 import '../../class_events/providers/class_events_providers.dart';
 import 'service_categories_provider.dart';
@@ -23,18 +24,27 @@ final filteredServicesProvider = Provider<List<Service>>((ref) {
 final filteredClassTypesProvider = Provider<List<ClassType>>((ref) {
   final classTypes = ref.watch(classTypesProvider).value ?? const <ClassType>[];
   final allowedIds = ref.watch(allowedClassTypeIdsProvider);
-  if (allowedIds == null) return classTypes;
-  return classTypes.where((ct) => allowedIds.contains(ct.id)).toList();
+  final locationId = ref.watch(currentLocationProvider).id;
+  if (locationId <= 0) return const <ClassType>[];
+  final visibleForRole = allowedIds == null
+      ? classTypes
+      : classTypes.where((ct) => allowedIds.contains(ct.id));
+  return visibleForRole
+      .where((ct) => ct.locationIds.contains(locationId))
+      .toList();
 });
 
 /// Pacchetti visibili all'operatore corrente.
 /// Un pacchetto è visibile solo se TUTTI i suoi servizi sono consentiti.
 final filteredServicePackagesProvider = Provider<List<ServicePackage>>((ref) {
-  final packages = ref.watch(servicePackagesProvider).value ?? const <ServicePackage>[];
+  final packages =
+      ref.watch(servicePackagesProvider).value ?? const <ServicePackage>[];
   final allowedIds = ref.watch(allowedServiceIdsProvider);
   if (allowedIds == null) return packages;
   return packages
-      .where((p) => p.items.every((item) => allowedIds.contains(item.serviceId)))
+      .where(
+        (p) => p.items.every((item) => allowedIds.contains(item.serviceId)),
+      )
       .toList();
 });
 
@@ -86,8 +96,7 @@ final classTypesByCategoryProvider = Provider.family<List<ClassType>, int>((
   ref,
   categoryId,
 ) {
-  final allAsync = ref.watch(classTypesProvider);
-  final all = allAsync.value ?? const <ClassType>[];
+  final all = ref.watch(filteredClassTypesProvider);
   return all.where((ct) => ct.serviceCategoryId == categoryId).toList()
     ..sort((a, b) {
       final byOrder = a.sortOrder.compareTo(b.sortOrder);
