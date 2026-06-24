@@ -73,6 +73,11 @@ final effectiveLocationIdProvider = Provider<int>((ref) {
   return ref.watch(bookingConfigProvider).locationId;
 });
 
+final lockedStaffIdFromDirectLinkProvider = Provider<int?>((ref) {
+  final directLink = ref.watch(bookingDirectLinkProvider).value;
+  return directLink?.lockedStaffId;
+});
+
 /// Provider per la selezione multipla di servizi/eventi online
 final allowMultiServiceBookingProvider = Provider<bool>((ref) {
   final effectiveLocation = ref.watch(effectiveLocationProvider);
@@ -432,7 +437,9 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
       }
 
       // Se staff selection è disabilitata, salta lo step staff
-      if (nextStep == BookingStep.staff && !_config.allowStaffSelection) {
+      if (nextStep == BookingStep.staff &&
+          (!_config.allowStaffSelection ||
+              ref.read(lockedStaffIdFromDirectLinkProvider) != null)) {
         nextStep = BookingStep.dateTime;
       }
       state = state.copyWith(currentStep: nextStep, clearError: true);
@@ -451,6 +458,31 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     if (state.request.isClassEventBooking) {
       state = state.copyWith(
         currentStep: BookingStep.summary,
+        clearError: true,
+      );
+      return;
+    }
+
+    final lockedStaffId = ref.read(lockedStaffIdFromDirectLinkProvider);
+    if (lockedStaffId != null) {
+      final locationId = ref.read(effectiveLocationIdProvider);
+      final allStaff = locationId > 0
+          ? await ref.read(bookingRepositoryProvider).getStaff(locationId)
+          : const <Staff>[];
+      final lockedStaff = allStaff
+          .where((staff) => staff.id == lockedStaffId)
+          .firstOrNull;
+      if (lockedStaff == null) return;
+
+      state = state.copyWith(
+        request: state.request.copyWith(
+          selectedStaff: lockedStaff,
+          selectedStaffByService: const {},
+          clearSlot: true,
+          anyOperatorSelected: false,
+        ),
+        isStaffAutoSelected: true,
+        currentStep: BookingStep.dateTime,
         clearError: true,
       );
       return;
@@ -547,7 +579,9 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     var prevStep = BookingStep.values[prevIndex];
 
     // Se staff selection è disabilitata, salta lo step staff
-    if (prevStep == BookingStep.staff && !_config.allowStaffSelection) {
+    if (prevStep == BookingStep.staff &&
+        (!_config.allowStaffSelection ||
+            ref.read(lockedStaffIdFromDirectLinkProvider) != null)) {
       prevIndex--;
       prevStep = BookingStep.values[prevIndex];
     }
@@ -955,6 +989,11 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
 
   /// Seleziona staff specifico (resetta "qualsiasi operatore")
   void selectStaff(Staff? staff) {
+    final lockedStaffId = ref.read(lockedStaffIdFromDirectLinkProvider);
+    if (lockedStaffId != null && staff?.id != lockedStaffId) {
+      return;
+    }
+
     // Se staff è null, usa selectAnyOperator() invece
     if (staff == null) {
       selectAnyOperator();
@@ -975,6 +1014,11 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
 
   /// Seleziona staff per servizio (usato con allowMultiStaffBooking = true)
   void selectStaffForService(Service service, Staff? staff) {
+    final lockedStaffId = ref.read(lockedStaffIdFromDirectLinkProvider);
+    if (lockedStaffId != null && staff?.id != lockedStaffId) {
+      return;
+    }
+
     final updated = Map<int, Staff?>.from(state.request.selectedStaffByService);
     updated[service.id] = staff;
     final isSingleService = state.request.services.length == 1;
@@ -993,6 +1037,10 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
 
   /// Seleziona "qualsiasi operatore" (caso semplice, un solo staff per tutti i servizi)
   void selectAnyOperator() {
+    if (ref.read(lockedStaffIdFromDirectLinkProvider) != null) {
+      return;
+    }
+
     state = state.copyWith(
       request: state.request.copyWith(
         selectedStaff: null,
@@ -1198,7 +1246,9 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         }
       }
 
-      final staffId = state.request.singleStaffId;
+      final staffId =
+          ref.read(lockedStaffIdFromDirectLinkProvider) ??
+          state.request.singleStaffId;
       final pricingOverrides = _buildLegacyPricingOverrides(services);
       final bookingDirectLinkSlug = ref.read(bookingDirectLinkSlugProvider);
       // Se ci sono più servizi senza selezione staff specifica,
@@ -1461,11 +1511,14 @@ class ServicesDataNotifier extends StateNotifier<AsyncValue<ServicesData>> {
       );
       final staff = await repository.getStaff(locationId);
       final eligibleServiceIds = _eligibleServiceIdsFromActiveStaff(staff);
+      final lockedStaffId = _ref.read(lockedStaffIdFromDirectLinkProvider);
 
       final sortedCategories = List<ServiceCategory>.from(result.categories)
         ..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
       final sortedServices = List<Service>.from(
-        result.services.where((s) => eligibleServiceIds.contains(s.id)),
+        lockedStaffId != null
+            ? result.services
+            : result.services.where((s) => eligibleServiceIds.contains(s.id)),
       )..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
       state = AsyncValue.data(
@@ -1554,9 +1607,12 @@ class ServicePackagesNotifier
         linkSlug: linkSlug,
       );
       final staff = await repository.getStaff(locationId);
-      final filteredPackages = packages
-          .where((package) => _canSingleStaffDeliverPackage(package, staff))
-          .toList();
+      final lockedStaffId = _ref.read(lockedStaffIdFromDirectLinkProvider);
+      final filteredPackages = lockedStaffId != null
+          ? packages
+          : packages
+                .where((package) => _canSingleStaffDeliverPackage(package, staff))
+                .toList();
       state = AsyncValue.data(filteredPackages);
     } catch (e, st) {
       state = AsyncValue.error(e, st);
@@ -1729,7 +1785,9 @@ class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
     final maxDays = _ref.read(maxBookingAdvanceDaysProvider);
     final bookingState = _ref.read(bookingFlowProvider);
     final serviceIds = bookingState.request.services.map((s) => s.id).toList();
-    final staffId = bookingState.request.singleStaffId;
+    final staffId =
+        _ref.read(lockedStaffIdFromDirectLinkProvider) ??
+        bookingState.request.singleStaffId;
 
     if (locationId <= 0 || serviceIds.isEmpty) {
       return null;
@@ -1791,7 +1849,9 @@ class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
     final maxDays = _ref.read(maxBookingAdvanceDaysProvider);
     final bookingState = _ref.read(bookingFlowProvider);
     final serviceIds = bookingState.request.services.map((s) => s.id).toList();
-    final staffId = bookingState.request.singleStaffId;
+    final staffId =
+        _ref.read(lockedStaffIdFromDirectLinkProvider) ??
+        bookingState.request.singleStaffId;
 
     debugPrint(
       '[AvailableDatesNotifier] _loadNextChunk: locationId=$locationId, serviceIds=$serviceIds, staffId=$staffId, loadedDays=$_loadedDays, maxDays=$maxDays',
@@ -1893,7 +1953,9 @@ final availableSlotsProvider = FutureProvider<List<TimeSlot>>((ref) async {
     locationId: locationId,
     date: selectedDate,
     serviceIds: services.map((s) => s.id).toList(),
-    staffId: bookingState.request.singleStaffId,
+    staffId:
+        ref.watch(lockedStaffIdFromDirectLinkProvider) ??
+        bookingState.request.singleStaffId,
   );
 
   // === CODICE MULTI-STAFF (DISABILITATO) ===
@@ -2014,7 +2076,9 @@ final firstAvailableDateProvider = FutureProvider<DateTime>((ref) async {
   return repository.getFirstAvailableDate(
     locationId: locationId,
     serviceIds: bookingState.request.services.map((s) => s.id).toList(),
-    staffId: bookingState.request.singleStaffId,
+    staffId:
+        ref.watch(lockedStaffIdFromDirectLinkProvider) ??
+        bookingState.request.singleStaffId,
     now: ref.read(locationNowProvider),
   );
 });
@@ -2100,8 +2164,15 @@ class AvailableStaffNotifier extends StateNotifier<AsyncValue<List<Staff>>> {
       return;
     }
 
+    final lockedStaffId = _ref.read(lockedStaffIdFromDirectLinkProvider);
     final serviceIdSet = serviceIds.toSet();
     final availableStaff = _allStaff.where((s) {
+      if (lockedStaffId != null && s.id != lockedStaffId) {
+        return false;
+      }
+      if (lockedStaffId != null && s.serviceIds.isEmpty) {
+        return true;
+      }
       if (s.serviceIds.isEmpty) {
         return false;
       }
@@ -2109,5 +2180,8 @@ class AvailableStaffNotifier extends StateNotifier<AsyncValue<List<Staff>>> {
     }).toList()..sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
 
     state = AsyncValue.data(availableStaff);
+    if (lockedStaffId != null && availableStaff.isNotEmpty) {
+      _ref.read(bookingFlowProvider.notifier).selectStaff(availableStaff.first);
+    }
   }
 }

@@ -2830,19 +2830,22 @@ COMMIT;
 CREATE TABLE `booking_direct_links` (
   `id` int UNSIGNED NOT NULL,
   `business_id` int UNSIGNED NOT NULL,
-  `location_id` int UNSIGNED NOT NULL,
+  `location_id` int UNSIGNED DEFAULT NULL,
+  `scope_type` enum('location','business') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'location',
+  `location_scope_key` int UNSIGNED GENERATED ALWAYS AS (IF(`scope_type` = 'business',0,`location_id`)) STORED,
   `slug` varchar(160) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `target_type` enum('service_variant','service_package','class_event','service_category') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `target_type` enum('service_variant','service_package','class_event','service_category','staff') COLLATE utf8mb4_unicode_ci NOT NULL,
   `target_id` int UNSIGNED NOT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT `chk_booking_direct_links_scope_target` CHECK (((`scope_type` = 'location') and (`location_id` is not null)) or ((`scope_type` = 'business') and (`location_id` is null) and (`target_type` in ('service_category','staff'))))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 ALTER TABLE `booking_direct_links`
   ADD PRIMARY KEY (`id`),
   ADD UNIQUE KEY `uniq_booking_direct_links_business_slug` (`business_id`,`slug`),
-  ADD UNIQUE KEY `uniq_booking_direct_links_business_target_location` (`business_id`,`target_type`,`target_id`,`location_id`),
+  ADD UNIQUE KEY `uniq_booking_direct_links_business_target_scope` (`business_id`,`target_type`,`target_id`,`scope_type`,`location_scope_key`),
   ADD KEY `idx_booking_direct_links_business_active` (`business_id`,`is_active`),
   ADD KEY `idx_booking_direct_links_location` (`location_id`);
 

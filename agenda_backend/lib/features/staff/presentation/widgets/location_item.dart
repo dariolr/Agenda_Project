@@ -16,6 +16,8 @@ class LocationItem extends StatelessWidget {
     required this.onEditLocation,
     required this.onDeleteLocation,
     required this.onEditStaff,
+    required this.onCopyStaffBookingLink,
+    this.onCopyLocationBookingLink,
     required this.onDuplicateStaff,
     required this.onDeleteStaff,
     this.onManageResources,
@@ -35,6 +37,8 @@ class LocationItem extends StatelessWidget {
   final VoidCallback onEditLocation;
   final VoidCallback onDeleteLocation;
   final ValueChanged<Staff> onEditStaff;
+  final ValueChanged<Staff> onCopyStaffBookingLink;
+  final VoidCallback? onCopyLocationBookingLink;
   final ValueChanged<Staff> onDuplicateStaff;
   final ValueChanged<Staff> onDeleteStaff;
   final VoidCallback? onManageResources;
@@ -121,6 +125,12 @@ class LocationItem extends StatelessWidget {
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (onCopyLocationBookingLink != null)
+                IconButton(
+                  tooltip: context.l10n.bookingLocationLinkCopyAction,
+                  icon: const Icon(Icons.link_outlined),
+                  onPressed: onCopyLocationBookingLink,
+                ),
               if (showDefaultActions && !readOnly) ...[
                 IconButton(
                   tooltip: context.l10n.teamAddStaff,
@@ -190,6 +200,8 @@ class LocationItem extends StatelessWidget {
                               isWide: isWide,
                               readOnly: readOnly,
                               onEdit: () => onEditStaff(staff[i]),
+                              onCopyBookingLink: () =>
+                                  onCopyStaffBookingLink(staff[i]),
                               onDuplicate: () => onDuplicateStaff(staff[i]),
                               onDelete: () => onDeleteStaff(staff[i]),
                             ),

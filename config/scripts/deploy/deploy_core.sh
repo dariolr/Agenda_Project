@@ -126,6 +126,7 @@ echo ""
 echo "🔹 [1/3] Sincronizzando public_html (index.php, .htaccess)..."
 run_cmd rsync -avz --delete \
   --exclude='.DS_Store' \
+  --exclude='uploads/' \
   -e "ssh" \
   "$LOCAL_DIR/public/" \
   "$SSH_ALIAS:$REMOTE_BASE/public_html/"
@@ -169,6 +170,7 @@ echo "✅ Deploy completato!"
 echo ""
 echo "📋 Cartelle deployate:"
 echo "   ✓ public_html/ (da public/)"
+echo "     ↳ public_html/uploads/ preservata (non sincronizzata)"
 echo "   ✓ src/"
 echo "   ✓ vendor/"
 echo "   ✓ bin/ (worker cron)"

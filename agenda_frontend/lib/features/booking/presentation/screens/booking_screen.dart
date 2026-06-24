@@ -66,7 +66,6 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     );
     final l10n = context.l10n;
     final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
-    final urlLocationId = ref.watch(urlLocationIdProvider);
 
     // Guard: il router aggiorna bookingDirectLinkSlugProvider via Future.microtask,
     // quindi per UN FRAME il provider può essere null anche se l'URL ha già ?link=.
@@ -217,12 +216,7 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
       ),
     );
 
-    // link presente ma location assente → errore immediato, zero chiamate a /resolve
-    if (linkSlug != null && (urlLocationId == null || urlLocationId <= 0)) {
-      return buildDirectLinkErrorScreen();
-    }
-
-    // link presente con location → controlla stato resolve PRIMA di watchare
+    // link presente → controlla stato resolve PRIMA di watchare
     // bookingDirectLinkProvider direttamente, così in caso di errore/mismatch
     // BookingScreen non è un watcher diretto del provider
     if (linkSlug != null) {
@@ -250,7 +244,13 @@ class _BookingScreenState extends ConsumerState<BookingScreen> {
     final locationsAsync = ref.watch(locationsProvider);
 
     final directLink = directLinkAsync.value;
-    final targetLocationId = _intFromJson(directLink?.target['location_id']);
+    final targetLocationId = directLink != null && directLink.locationId > 0
+        ? directLink.locationId
+        : (directLink != null &&
+                  directLink.isBusinessScoped &&
+                  directLink.compatibleLocationIds.length == 1
+              ? directLink.compatibleLocationIds.first
+              : _intFromJson(directLink?.target['location_id']));
     if (directLink != null &&
         targetLocationId != null &&
         _appliedDirectLinkLocationSlug != directLink.linkSlug) {

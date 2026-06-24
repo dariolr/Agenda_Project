@@ -35,15 +35,14 @@ final bookingDirectLinkProvider = FutureProvider<BookingDirectLink?>((
   }
 
   final urlLocationId = ref.watch(urlLocationIdProvider);
-  if (urlLocationId == null || urlLocationId <= 0) {
-    throw const DirectLinkMissingLocationException();
-  }
 
   final apiClient = ref.watch(apiClientProvider);
   final data = await apiClient.resolveBookingDirectLink(
     businessSlug: businessSlug,
     linkSlug: linkSlug,
-    locationId: urlLocationId,
+    locationId: urlLocationId != null && urlLocationId > 0
+        ? urlLocationId
+        : null,
   );
 
   return BookingDirectLink.fromJson(data);
@@ -54,18 +53,30 @@ final bookingDirectLinkBlockingErrorProvider = Provider<bool>((ref) {
   final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
   if (linkSlug == null) return false;
 
-  // Un direct link valido richiede sempre il parametro location nell'URL
-  final urlLocationId = ref.watch(urlLocationIdProvider);
-  if (urlLocationId == null || urlLocationId <= 0) return true;
-
   final directLinkAsync = ref.watch(bookingDirectLinkProvider);
   if (directLinkAsync.hasError) return true;
 
   final directLink = directLinkAsync.value;
   if (directLink == null) return false;
 
-  // Controlla se la location nell'URL è diversa da quella del direct link
-  if (directLink.locationId > 0 && urlLocationId != directLink.locationId) {
+  final urlLocationId = ref.watch(urlLocationIdProvider);
+
+  if (directLink.isLocationScoped &&
+      (urlLocationId == null ||
+          urlLocationId <= 0 ||
+          directLink.locationId <= 0 ||
+          urlLocationId != directLink.locationId)) {
+    return true;
+  }
+
+  if (directLink.isBusinessScoped &&
+      urlLocationId != null &&
+      urlLocationId > 0 &&
+      !directLink.compatibleLocationIds.contains(urlLocationId)) {
+    return true;
+  }
+
+  if (directLink.isBusinessScoped && directLink.compatibleLocationIds.isEmpty) {
     return true;
   }
 
@@ -76,9 +87,6 @@ final bookingDirectLinkBlockingErrorProvider = Provider<bool>((ref) {
 final bookingDirectLinkIsResolvingProvider = Provider<bool>((ref) {
   final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
   if (linkSlug == null) return false;
-
-  final urlLocationId = ref.watch(urlLocationIdProvider);
-  if (urlLocationId == null || urlLocationId <= 0) return false;
 
   final directLinkAsync = ref.watch(bookingDirectLinkProvider);
   return directLinkAsync.isLoading;

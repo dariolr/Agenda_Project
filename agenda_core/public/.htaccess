@@ -1,3 +1,10 @@
+<IfModule mod_headers.c>
+    <FilesMatch "\.(jpg|jpeg|png|webp|gif)$">
+        Header always set Access-Control-Allow-Origin "*"
+        Header always set Cross-Origin-Resource-Policy "cross-origin"
+    </FilesMatch>
+</IfModule>
+
 <IfModule mod_rewrite.c>
     RewriteEngine On
     
@@ -14,3 +21,4 @@
 SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
 
 # CORS is handled by PHP (index.php + Response.php) for dynamic origin support
+# Static uploads are served directly by Apache, so image CORS headers are set above.

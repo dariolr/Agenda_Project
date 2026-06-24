@@ -81,6 +81,19 @@ final selectedLocationProvider =
       SelectedLocationNotifier.new,
     );
 
+final bookableLocationsForCurrentFlowProvider = Provider<List<Location>>((ref) {
+  final locations = ref.watch(locationsProvider).value ?? const <Location>[];
+  final directLink = ref.watch(bookingDirectLinkProvider).value;
+  if (directLink == null ||
+      !directLink.isBusinessScoped ||
+      directLink.compatibleLocationIds.isEmpty) {
+    return locations;
+  }
+
+  final compatibleIds = directLink.compatibleLocationIds.toSet();
+  return locations.where((location) => compatibleIds.contains(location.id)).toList();
+});
+
 /// Provider derivato: true se il business ha più location E nessuna è vincolata
 /// da Direct link o dal query param ?location=.
 /// Completamente reattivo: si ricalcola ogni volta che cambia locationsProvider,
@@ -100,16 +113,21 @@ final hasMultipleLocationsProvider = Provider<bool>((ref) {
 
   return locationsAsync.maybeWhen(
     data: (locations) {
-      if (locations.length <= 1) return false;
+      final flowLocations = ref.watch(bookableLocationsForCurrentFlowProvider);
+      if (flowLocations.length <= 1) return false;
 
       final directLocationId = directLink?.locationId ?? 0;
       if (directLocationId > 0 &&
-          locations.any((l) => l.id == directLocationId)) {
+          flowLocations.any((l) => l.id == directLocationId)) {
         return false;
       }
 
+      if (directLink?.isBusinessScoped == true) {
+        return flowLocations.length > 1;
+      }
+
       if (urlLocationId != null &&
-          locations.any((l) => l.id == urlLocationId)) {
+          flowLocations.any((l) => l.id == urlLocationId)) {
         return false;
       }
 
@@ -133,21 +151,27 @@ final effectiveLocationProvider = Provider<Location?>((ref) {
 
   return locationsAsync.maybeWhen(
     data: (locations) {
-      if (locations.isEmpty) return null;
+      final flowLocations = ref.watch(bookableLocationsForCurrentFlowProvider);
+      if (flowLocations.isEmpty) return null;
 
       if (!isDirectLinkBlocked) {
         final directLocationId = directLink?.locationId ?? 0;
         if (directLocationId > 0) {
-          final directLocation = locations
+          final directLocation = flowLocations
               .where((l) => l.id == directLocationId)
               .firstOrNull;
           if (directLocation != null) return directLocation;
+        }
+
+        if (directLink?.isBusinessScoped == true &&
+            flowLocations.length == 1) {
+          return flowLocations.first;
         }
       }
 
       // 1) Se c'è location da URL, cerca quella
       if (urlLocationId != null) {
-        final urlLocation = locations
+        final urlLocation = flowLocations
             .where((l) => l.id == urlLocationId)
             .firstOrNull;
         if (urlLocation != null) return urlLocation;
@@ -155,7 +179,7 @@ final effectiveLocationProvider = Provider<Location?>((ref) {
       }
 
       // 2) Se c'è una sola location, usa quella
-      if (locations.length == 1) return locations.first;
+      if (flowLocations.length == 1) return flowLocations.first;
 
       // 3) Usa la selezione dell'utente
       return selectedLocation;

@@ -76,7 +76,7 @@ class FeedbackDialog extends StatelessWidget {
       actionsAlignment: MainAxisAlignment.center,
       actions: [
         if (actionLabel != null && onAction != null)
-          TextButton(
+          OutlinedButton(
             onPressed: () {
               Navigator.of(context).pop();
               onAction!();

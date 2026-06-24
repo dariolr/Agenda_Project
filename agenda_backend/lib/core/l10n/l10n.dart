@@ -9696,6 +9696,126 @@ class L10n {
     );
   }
 
+  /// `The customer will only be able to book with this staff member.\n\n{url}`
+  String bookingDirectLinkCopiedStaffMessage(Object url) {
+    return Intl.message(
+      'The customer will only be able to book with this staff member.\n\n$url',
+      name: 'bookingDirectLinkCopiedStaffMessage',
+      desc: '',
+      args: [url],
+    );
+  }
+
+  /// `The customer will open booking already filtered to this location.\n\n{url}`
+  String bookingLocationLinkCopiedMessage(Object url) {
+    return Intl.message(
+      'The customer will open booking already filtered to this location.\n\n$url',
+      name: 'bookingLocationLinkCopiedMessage',
+      desc: '',
+      args: [url],
+    );
+  }
+
+  /// `Copy location link`
+  String get bookingLocationLinkCopyAction {
+    return Intl.message(
+      'Copy location link',
+      name: 'bookingLocationLinkCopyAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Open link`
+  String get bookingLinkOpenAction {
+    return Intl.message(
+      'Open link',
+      name: 'bookingLinkOpenAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Unable to create the link: business slug is not available.`
+  String get bookingLocationLinkMissingBusinessSlugMessage {
+    return Intl.message(
+      'Unable to create the link: business slug is not available.',
+      name: 'bookingLocationLinkMissingBusinessSlugMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Copy business category link`
+  String get bookingDirectLinkCopyBusinessCategoryAction {
+    return Intl.message(
+      'Copy business category link',
+      name: 'bookingDirectLinkCopyBusinessCategoryAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Copy staff booking link`
+  String get bookingDirectLinkCopyStaffAction {
+    return Intl.message(
+      'Copy staff booking link',
+      name: 'bookingDirectLinkCopyStaffAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `There are no online locations compatible with this link.`
+  String get bookingDirectLinkNoCompatibleLocationsMessage {
+    return Intl.message(
+      'There are no online locations compatible with this link.',
+      name: 'bookingDirectLinkNoCompatibleLocationsMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Choose link type`
+  String get bookingDirectLinkScopeChoiceTitle {
+    return Intl.message(
+      'Choose link type',
+      name: 'bookingDirectLinkScopeChoiceTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Single business link`
+  String get bookingDirectLinkBusinessScopeAction {
+    return Intl.message(
+      'Single business link',
+      name: 'bookingDirectLinkBusinessScopeAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Location-specific link`
+  String get bookingDirectLinkLocationScopeAction {
+    return Intl.message(
+      'Location-specific link',
+      name: 'bookingDirectLinkLocationScopeAction',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Choose location`
+  String get bookingDirectLinkLocationChoiceTitle {
+    return Intl.message(
+      'Choose location',
+      name: 'bookingDirectLinkLocationChoiceTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Year:`
   String get closuresImportHolidaysYear {
     return Intl.message(

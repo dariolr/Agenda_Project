@@ -20,6 +20,7 @@ class LocationStep extends ConsumerWidget {
       bookingTextOverridesForLocaleProvider(Localizations.localeOf(context)),
     );
     final locationsAsync = ref.watch(locationsProvider);
+    final flowLocations = ref.watch(bookableLocationsForCurrentFlowProvider);
     final selectedLocation = ref.watch(selectedLocationProvider);
     final isLoading = locationsAsync.isLoading;
 
@@ -71,7 +72,8 @@ class LocationStep extends ConsumerWidget {
               child: locationsAsync.when(
                 loading: () => const SizedBox.shrink(),
                 error: (e, _) => const SizedBox.shrink(),
-                data: (locations) {
+                data: (_) {
+                  final locations = flowLocations;
                   if (locations.isEmpty) {
                     return Center(
                       child: Column(

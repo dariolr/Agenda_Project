@@ -5,6 +5,7 @@ import 'package:agenda_backend/core/l10n/l10_extension.dart';
 import 'package:agenda_backend/core/models/location.dart';
 import 'package:agenda_backend/core/models/staff.dart';
 import 'package:agenda_backend/core/network/api_client.dart' show ApiException;
+import 'package:agenda_backend/core/utils/booking_direct_link_utils.dart';
 import 'package:agenda_backend/core/widgets/app_dialogs.dart';
 import 'package:agenda_backend/core/widgets/feedback_dialog.dart';
 import 'package:agenda_backend/core/widgets/reorder_toggle_button.dart';
@@ -387,6 +388,11 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
                   context.go('/altro/risorse?from_altro=1');
                 }
               : null,
+          onCopyLocationBookingLink: () => copyLocationBookingLink(
+            context,
+            ref,
+            locationId: loc.id,
+          ),
           onEditLocation: canManageSettings
               ? () => showLocationDialog(context, ref, initial: loc)
               : () {},
@@ -426,6 +432,15 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
               readOnly: !canEditThisStaff,
             );
           },
+          onCopyStaffBookingLink: canManageStaff
+              ? (staff) => copyBookingDirectLink(
+                  context,
+                  ref,
+                  targetType: 'staff',
+                  targetId: staff.id,
+                  locationId: loc.id,
+                )
+              : (_) {},
           onDuplicateStaff: canManageStaff
               ? (staff) => showStaffDialog(
                   context,
@@ -472,16 +487,20 @@ class _TeamScreenState extends ConsumerState<TeamScreen> {
                   );
                   if (viewBookings == true && context.mounted) {
                     final today = ref.read(tenantTodayProvider);
-                    final farFuture = DateTime(today.year + 2, today.month, today.day);
+                    final farFuture = DateTime(
+                      today.year + 2,
+                      today.month,
+                      today.day,
+                    );
                     ref
                         .read(bookingsListFilterProvider.notifier)
                         .setDateRange(today, farFuture);
                     ref
                         .read(bookingsListFiltersProvider.notifier)
                         .setStaffId(staff.id);
-                    ref
-                        .read(bookingsListFiltersProvider.notifier)
-                        .setStatus(['confirmed']);
+                    ref.read(bookingsListFiltersProvider.notifier).setStatus([
+                      'confirmed',
+                    ]);
                     context.go('/prenotazioni');
                   }
                 } else {

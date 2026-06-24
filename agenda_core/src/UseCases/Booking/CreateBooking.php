@@ -1064,6 +1064,24 @@ final class CreateBooking
             $packageCoveredServiceIds
         );
 
+        $lockedStaffId = $this->lockedStaffIdFromDirectLink($businessId, $locationId, $directLinkSlug);
+        if ($lockedStaffId !== null) {
+            if ($staffId !== null && (int) $staffId !== $lockedStaffId) {
+                throw BookingException::invalidStaff((int) $staffId);
+            }
+            if (!$this->bookingDirectLinkRepository?->authorizesRequestedServiceIdsForStaffLink(
+                $businessId,
+                $locationId,
+                (string) $directLinkSlug,
+                $lockedStaffId,
+                array_map('intval', $serviceIds)
+            )) {
+                throw BookingException::invalidStaff($lockedStaffId);
+            }
+            $staffId = $lockedStaffId;
+            $customerSelectedStaff = true;
+        }
+
         // Calculate total duration (including processing_time and blocked_time)
         $totalDuration = 0;
         foreach ($services as $service) {
@@ -1373,10 +1391,14 @@ final class CreateBooking
         try {
             $itemsToCreate = [];
             $staffId = null;
+            $lockedStaffId = $this->lockedStaffIdFromDirectLink($businessId, $locationId, $directLinkSlug);
 
             foreach ($items as $item) {
                 $serviceId = (int) $item['service_id'];
                 $staffId = (int) $item['staff_id'];
+                if ($lockedStaffId !== null && $staffId !== $lockedStaffId) {
+                    throw BookingException::invalidStaff($staffId);
+                }
                 // Frontend sends local time (naive ISO), parse in location timezone
                 // Database stores location time, not UTC
                 $startTime = (new DateTimeImmutable($item['start_time'], $locationTimezone))
@@ -1729,5 +1751,21 @@ final class CreateBooking
             // Log error but don't fail the booking creation
             file_put_contents(__DIR__ . '/../../../logs/debug.log', date('Y-m-d H:i:s') . " createBookingCreatedEvent ERROR: " . $e->getMessage() . "\n", FILE_APPEND);
         }
+    }
+
+    private function lockedStaffIdFromDirectLink(int $businessId, int $locationId, ?string $directLinkSlug): ?int
+    {
+        $slug = trim((string) ($directLinkSlug ?? ''));
+        if ($slug === '' || $this->bookingDirectLinkRepository === null) {
+            return null;
+        }
+
+        $scope = $this->bookingDirectLinkRepository->resolveAvailableScope($businessId, $slug, $locationId);
+        if ($scope === null || ($scope['target_type'] ?? null) !== BookingDirectLinkRepository::TARGET_STAFF) {
+            return null;
+        }
+
+        $staffId = (int) ($scope['target_id'] ?? 0);
+        return $staffId > 0 ? $staffId : null;
     }
 }

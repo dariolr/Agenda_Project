@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -8,6 +7,7 @@ import '../../../../core/widgets/centered_error_view.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/booking_nomenclature_provider.dart';
 import '../../providers/locations_provider.dart';
+import '../widgets/booking_staff_avatar.dart';
 
 class StaffStep extends ConsumerStatefulWidget {
   const StaffStep({super.key});
@@ -446,21 +446,10 @@ class _StaffTile extends StatelessWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              // Avatar
-              CircleAvatar(
+              BookingStaffAvatar(
+                staff: staff,
+                fallbackIcon: fallbackIcon,
                 radius: 24,
-                backgroundColor: staff == null
-                    ? theme.colorScheme.primary.withOpacity(0.1)
-                    : theme.colorScheme.secondary.withOpacity(0.1),
-                child: staff == null
-                    ? Icon(fallbackIcon, color: theme.colorScheme.primary)
-                    : Text(
-                        staff!.initials,
-                        style: TextStyle(
-                          color: theme.colorScheme.secondary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
               ),
               const SizedBox(width: 16),
               // Info
@@ -522,4 +511,3 @@ class _StaffTile extends StatelessWidget {
     );
   }
 }
-

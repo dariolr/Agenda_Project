@@ -1134,6 +1134,18 @@ final class ClassEventsController
                 return Response::conflict('class_event_not_bookable', 'Class event is not bookable', $request->traceId);
             }
         }
+        if ($directLinkSlug !== '' && $this->directLinkRepo !== null) {
+            $scope = $this->directLinkRepo->resolveAvailableScope(
+                $routeBusinessId,
+                $directLinkSlug,
+                (int) ($event['location_id'] ?? 0)
+            );
+            if (($scope['target_type'] ?? null) === BookingDirectLinkRepository::TARGET_STAFF
+                && !$this->directLinkRepo->authorizesClassEvent($routeBusinessId, $directLinkSlug, $classEventId)
+            ) {
+                return Response::conflict('class_event_not_bookable', 'Class event is not bookable', $request->traceId);
+            }
+        }
 
         // Controlla finestra di prenotazione
         $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));

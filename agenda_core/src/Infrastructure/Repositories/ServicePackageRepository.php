@@ -47,6 +47,22 @@ final class ServicePackageRepository
                     ? '1 = 0'
                     : "sp.category_id = ? AND sp.online_visibility IN ({$allowed})";
                 $params[] = $targetId;
+            } elseif ($targetType === BookingDirectLinkRepository::TARGET_STAFF) {
+                $visibilitySql = "sp.online_visibility = 'public'
+                    AND NOT EXISTS (
+                        SELECT 1
+                        FROM service_package_items spi_staff
+                        WHERE spi_staff.package_id = sp.id
+                          AND EXISTS (SELECT 1 FROM staff_services ss_any WHERE ss_any.staff_id = ?)
+                          AND NOT EXISTS (
+                              SELECT 1
+                              FROM staff_services ss
+                              WHERE ss.staff_id = ?
+                                AND ss.service_id = spi_staff.service_id
+                          )
+                    )";
+                $params[] = $targetId;
+                $params[] = $targetId;
             }
         }
 

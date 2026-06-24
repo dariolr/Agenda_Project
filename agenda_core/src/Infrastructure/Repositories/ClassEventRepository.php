@@ -464,6 +464,9 @@ final class ClassEventRepository
                     ? "1 = 0"
                     : "ce.visibility = 'PUBLIC' AND ct.service_category_id = :direct_category_id AND ce.online_visibility IN ({$allowed})";
                 $scopeParams['direct_category_id'] = $targetId;
+            } elseif ($targetType === BookingDirectLinkRepository::TARGET_STAFF) {
+                $visibilitySql = "ce.visibility = 'PUBLIC' AND ce.online_visibility = 'public' AND ce.staff_id = :direct_staff_id";
+                $scopeParams['direct_staff_id'] = $targetId;
             }
         }
 

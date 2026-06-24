@@ -1570,6 +1570,28 @@
       "url": {}
     }
   },
+  "bookingDirectLinkCopiedStaffMessage": "Il cliente potrà prenotare solo con questo membro dello staff.\n\n{url}",
+  "@bookingDirectLinkCopiedStaffMessage": {
+    "placeholders": {
+      "url": {}
+    }
+  },
+  "bookingLocationLinkCopiedMessage": "Il cliente aprirà la prenotazione già filtrata su questa sede.\n\n{url}",
+  "@bookingLocationLinkCopiedMessage": {
+    "placeholders": {
+      "url": {}
+    }
+  },
+  "bookingLocationLinkCopyAction": "Copia link sede",
+  "bookingLinkOpenAction": "Apri link",
+  "bookingLocationLinkMissingBusinessSlugMessage": "Impossibile creare il link: slug business non disponibile.",
+  "bookingDirectLinkCopyBusinessCategoryAction": "Copia link categoria business",
+  "bookingDirectLinkCopyStaffAction": "Copia link prenotazione staff",
+  "bookingDirectLinkNoCompatibleLocationsMessage": "Non ci sono sedi online compatibili con questo link.",
+  "bookingDirectLinkScopeChoiceTitle": "Scegli il tipo di link",
+  "bookingDirectLinkBusinessScopeAction": "Link unico business",
+  "bookingDirectLinkLocationScopeAction": "Link per sede specifica",
+  "bookingDirectLinkLocationChoiceTitle": "Scegli la sede",
   "closuresImportHolidaysYear": "Anno:",
   "closuresImportHolidaysLocations": "Applica alle sedi:",
   "closuresImportHolidaysList": "Seleziona le festività da importare:",

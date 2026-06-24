@@ -1570,6 +1570,28 @@
       "url": {}
     }
   },
+  "bookingDirectLinkCopiedStaffMessage": "The customer will only be able to book with this staff member.\n\n{url}",
+  "@bookingDirectLinkCopiedStaffMessage": {
+    "placeholders": {
+      "url": {}
+    }
+  },
+  "bookingLocationLinkCopiedMessage": "The customer will open booking already filtered to this location.\n\n{url}",
+  "@bookingLocationLinkCopiedMessage": {
+    "placeholders": {
+      "url": {}
+    }
+  },
+  "bookingLocationLinkCopyAction": "Copy location link",
+  "bookingLinkOpenAction": "Open link",
+  "bookingLocationLinkMissingBusinessSlugMessage": "Unable to create the link: business slug is not available.",
+  "bookingDirectLinkCopyBusinessCategoryAction": "Copy business category link",
+  "bookingDirectLinkCopyStaffAction": "Copy staff booking link",
+  "bookingDirectLinkNoCompatibleLocationsMessage": "There are no online locations compatible with this link.",
+  "bookingDirectLinkScopeChoiceTitle": "Choose link type",
+  "bookingDirectLinkBusinessScopeAction": "Single business link",
+  "bookingDirectLinkLocationScopeAction": "Location-specific link",
+  "bookingDirectLinkLocationChoiceTitle": "Choose location",
   "closuresImportHolidaysYear": "Year:",
   "closuresImportHolidaysLocations": "Apply to locations:",
   "closuresImportHolidaysList": "Select holidays to import:",

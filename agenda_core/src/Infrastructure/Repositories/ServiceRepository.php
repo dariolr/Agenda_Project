@@ -109,6 +109,14 @@ final class ServiceRepository
                     ? '1 = 0'
                     : "s.category_id = ? AND sv.is_bookable_online = 1 AND sv.online_visibility IN ({$allowed})";
                 $params[] = $targetId;
+            } elseif ($targetType === BookingDirectLinkRepository::TARGET_STAFF) {
+                $visibilitySql = "sv.is_bookable_online = 1 AND sv.online_visibility = 'public'
+                    AND (
+                        NOT EXISTS (SELECT 1 FROM staff_services ss_any WHERE ss_any.staff_id = ?)
+                        OR EXISTS (SELECT 1 FROM staff_services ss WHERE ss.staff_id = ? AND ss.service_id = s.id)
+                    )";
+                $params[] = $targetId;
+                $params[] = $targetId;
             }
         }
 

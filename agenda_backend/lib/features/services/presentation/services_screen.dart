@@ -1318,11 +1318,13 @@ class _ServicesScreenState extends ConsumerState<ServicesScreen> {
     WidgetRef ref, {
     required String targetType,
     required int targetId,
+    String? scopeType,
   }) => copyBookingDirectLink(
     context,
     ref,
     targetType: targetType,
     targetId: targetId,
+    scopeType: scopeType,
   );
 
   Future<void> _duplicateClassType(

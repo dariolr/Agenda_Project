@@ -195,6 +195,7 @@ class _ResourcesByLocationList extends ConsumerWidget {
           onEditLocation: () {},
           onDeleteLocation: () {},
           onEditStaff: (_) {},
+          onCopyStaffBookingLink: (_) {},
           onDuplicateStaff: (_) {},
           onDeleteStaff: (_) {},
           staffListOverride: _LocationResourcesBody(
@@ -233,7 +234,9 @@ class _LocationResourcesActions extends ConsumerWidget {
             tooltip: context.l10n.navStaff,
             icon: const Icon(Icons.badge_outlined),
             onPressed: () {
-              ref.read(staffSectionLocationIdProvider.notifier).set(location.id);
+              ref
+                  .read(staffSectionLocationIdProvider.notifier)
+                  .set(location.id);
               context.go('/staff?from_altro=1');
             },
           ),
@@ -301,7 +304,10 @@ class _LocationResourcesBody extends ConsumerWidget {
                 selectableLocations: selectableLocations,
               ),
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -352,7 +358,10 @@ class _LocationResourcesBody extends ConsumerWidget {
                       const SizedBox(width: 8),
                       IconButton(
                         tooltip: context.l10n.actionDelete,
-                        icon: const Icon(Icons.delete_outline, color: Colors.red),
+                        icon: const Icon(
+                          Icons.delete_outline,
+                          color: Colors.red,
+                        ),
                         onPressed: () async {
                           final l10n = context.l10n;
                           await showAppConfirmDialog(
@@ -446,11 +455,7 @@ class _StandaloneResourcesAddAction extends ConsumerWidget {
                                 color: onContainer,
                               )
                       : !showLabelEffective
-                      ? Icon(
-                          Icons.add_outlined,
-                          size: 22,
-                          color: onContainer,
-                        )
+                      ? Icon(Icons.add_outlined, size: 22, color: onContainer)
                       : Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [

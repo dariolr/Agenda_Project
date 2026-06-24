@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../app/providers/form_factor_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/location.dart';
+import '../../../core/utils/booking_direct_link_utils.dart';
 import '../../../core/widgets/app_dialogs.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../../auth/providers/current_business_user_provider.dart';
@@ -72,6 +73,7 @@ class MoreLocationsScreen extends ConsumerWidget {
           onEditLocation: () {},
           onDeleteLocation: () {},
           onEditStaff: (_) {},
+          onCopyStaffBookingLink: (_) {},
           onDuplicateStaff: (_) {},
           onDeleteStaff: (_) {},
         );
@@ -145,6 +147,15 @@ class _LocationActions extends ConsumerWidget {
               context.go('/staff?from_altro=1');
             },
           ),
+        IconButton(
+          tooltip: context.l10n.bookingLocationLinkCopyAction,
+          icon: const Icon(Icons.link_outlined),
+          onPressed: () => copyLocationBookingLink(
+            context,
+            ref,
+            locationId: location.id,
+          ),
+        ),
         IconButton(
           tooltip: context.l10n.resourcesTitle,
           icon: const Icon(Icons.inventory_2_outlined),

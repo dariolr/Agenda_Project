@@ -15,6 +15,7 @@ class StaffItem extends ConsumerStatefulWidget {
     required this.isEvenRow,
     required this.isWide,
     required this.onEdit,
+    required this.onCopyBookingLink,
     required this.onDuplicate,
     required this.onDelete,
     this.trailingOverride,
@@ -26,6 +27,7 @@ class StaffItem extends ConsumerStatefulWidget {
   final bool isEvenRow;
   final bool isWide;
   final VoidCallback onEdit;
+  final VoidCallback onCopyBookingLink;
   final VoidCallback onDuplicate;
   final VoidCallback onDelete;
   final Widget? trailingOverride;
@@ -161,6 +163,12 @@ class _StaffItemState extends ConsumerState<StaffItem> {
                             onPressed: widget.onEdit,
                           ),
                           IconButton(
+                            tooltip:
+                                context.l10n.bookingDirectLinkCopyStaffAction,
+                            icon: const Icon(Icons.link_outlined),
+                            onPressed: widget.onCopyBookingLink,
+                          ),
+                          IconButton(
                             tooltip: context.l10n.duplicateAction,
                             icon: const Icon(Icons.copy_outlined),
                             onPressed: widget.onDuplicate,
@@ -176,6 +184,9 @@ class _StaffItemState extends ConsumerState<StaffItem> {
                         icon: const Icon(Icons.more_vert),
                         onSelected: (value) {
                           if (value == 'edit') widget.onEdit();
+                          if (value == 'copy_link') {
+                            widget.onCopyBookingLink();
+                          }
                           if (value == 'duplicate') widget.onDuplicate();
                           if (value == 'delete') widget.onDelete();
                         },
@@ -183,6 +194,12 @@ class _StaffItemState extends ConsumerState<StaffItem> {
                           PopupMenuItem(
                             value: 'edit',
                             child: Text(context.l10n.actionEdit),
+                          ),
+                          PopupMenuItem(
+                            value: 'copy_link',
+                            child: Text(
+                              context.l10n.bookingDirectLinkCopyStaffAction,
+                            ),
                           ),
                           PopupMenuItem(
                             value: 'duplicate',

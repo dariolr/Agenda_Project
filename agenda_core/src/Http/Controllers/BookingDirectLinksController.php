@@ -48,29 +48,31 @@ final class BookingDirectLinksController
 
         $targetType = (string) $link['target_type'];
         $targetId = (int) $link['target_id'];
-        $target = $this->directLinkRepo->loadTarget(
-            $businessId,
-            $targetType,
-            $targetId
-        );
         $urlLocationId = (int) ($request->queryParam('location_id') ?? 0);
-        $linkLocationId = (int) ($link['location_id'] ?? 0);
-        if (
-            $target === null
-            || !$this->targetIsAvailable((string) $link['target_type'], $target)
-            || !$this->locationBelongsToBusiness($businessId, $linkLocationId)
-            || ($linkLocationId > 0 && ($urlLocationId <= 0 || $urlLocationId !== $linkLocationId))
-        ) {
+        $scope = $this->directLinkRepo->resolveAvailableScope($businessId, $linkSlug, $urlLocationId > 0 ? $urlLocationId : null);
+        if ($scope === null) {
             return $this->notAvailable(409, $request);
         }
+
+        $target = $scope['target'];
+        $scopeType = (string) ($scope['scope_type'] ?? BookingDirectLinkRepository::SCOPE_LOCATION);
+        $locationId = $scopeType === BookingDirectLinkRepository::SCOPE_LOCATION
+            ? (int) ($link['location_id'] ?? 0)
+            : ($urlLocationId > 0 ? $urlLocationId : 0);
+        $compatibleLocationIds = array_map('intval', $scope['compatible_location_ids'] ?? []);
 
         $payload = [
             'business_id' => $businessId,
             'business_slug' => (string) $business['slug'],
             'link_slug' => (string) $link['slug'],
-            'location_id' => $linkLocationId,
+            'scope_type' => $scopeType,
+            'location_id' => $locationId,
             'target_type' => $targetType,
             'target_id' => $targetId,
+            'compatible_location_ids' => $compatibleLocationIds,
+            'requires_location_selection' => $scopeType === BookingDirectLinkRepository::SCOPE_BUSINESS
+                && $locationId <= 0
+                && count($compatibleLocationIds) !== 1,
             'target' => $this->formatTarget($targetType, $target),
         ];
 
@@ -78,7 +80,7 @@ final class BookingDirectLinksController
             $payload['child_visibility_scope'] = $this->directLinkRepo->resolveCategoryChildVisibilityScope(
                 $businessId,
                 $targetId,
-                $linkLocationId > 0 ? $linkLocationId : null
+                $locationId > 0 ? $locationId : null
             );
         }
 
@@ -88,16 +90,17 @@ final class BookingDirectLinksController
     public function index(Request $request): Response
     {
         $businessId = (int) $request->getRouteParam('business_id');
-        if (!$this->hasBusinessAccess($request, $businessId)) {
-            return Response::forbidden('Access denied', $request->traceId);
-        }
-
         $targetType = trim((string) ($request->queryParam('target_type') ?? ''));
         $targetId = (int) ($request->queryParam('target_id') ?? 0);
+        $scopeType = trim((string) ($request->queryParam('scope_type') ?? BookingDirectLinkRepository::SCOPE_LOCATION));
         $locationId = (int) ($request->queryParam('location_id') ?? 0);
 
         if ($targetType === '' || $targetId <= 0) {
             return Response::error('target_type and target_id are required', 'validation_error', 400, $request->traceId);
+        }
+
+        if (!$this->hasBusinessAccessForTarget($request, $businessId, $targetType)) {
+            return Response::forbidden('Access denied', $request->traceId);
         }
 
         try {
@@ -105,36 +108,52 @@ final class BookingDirectLinksController
                 $businessId,
                 $targetType,
                 $targetId,
-                $locationId > 0 ? $locationId : null
+                $scopeType === BookingDirectLinkRepository::SCOPE_LOCATION && $locationId > 0 ? $locationId : null,
+                $scopeType
             );
-        } catch (InvalidArgumentException) {
-            return Response::error('Invalid target_type', 'validation_error', 400, $request->traceId);
+            $compatibleLocationIds = in_array($targetType, [BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY, BookingDirectLinkRepository::TARGET_STAFF], true)
+                ? $this->directLinkRepo->compatibleLocationIdsForLink($businessId, $targetType, $targetId)
+                : ($locationId > 0 ? [$locationId] : []);
+        } catch (InvalidArgumentException $e) {
+            return Response::error($e->getMessage(), 'validation_error', 400, $request->traceId);
         }
 
         return Response::success([
             'link' => $link !== null ? $this->formatAdminLink($request, $businessId, $link) : null,
+            'compatible_location_ids' => $compatibleLocationIds,
+            'requires_location_selection' => count($compatibleLocationIds) > 1,
         ]);
     }
 
     public function createOrGet(Request $request): Response
     {
         $businessId = (int) $request->getRouteParam('business_id');
-        if (!$this->hasBusinessAccess($request, $businessId)) {
-            return Response::forbidden('Access denied', $request->traceId);
-        }
-
         $body = $request->getBody() ?? [];
         $targetType = trim((string) ($body['target_type'] ?? ''));
         $targetId = (int) ($body['target_id'] ?? 0);
-        $locationId = (int) ($body['location_id'] ?? 0);
+        $scopeType = trim((string) ($body['scope_type'] ?? BookingDirectLinkRepository::SCOPE_LOCATION));
+        $locationId = array_key_exists('location_id', $body) && $body['location_id'] !== null
+            ? (int) $body['location_id']
+            : null;
 
-        if ($targetType === '' || $targetId <= 0 || $locationId <= 0) {
-            return Response::error('target_type, target_id and location_id are required', 'validation_error', 400, $request->traceId);
+        if ($targetType === '' || $targetId <= 0) {
+            return Response::error('target_type and target_id are required', 'validation_error', 400, $request->traceId);
+        }
+
+        if (!$this->hasBusinessAccessForTarget($request, $businessId, $targetType)) {
+            return Response::forbidden('Access denied', $request->traceId);
         }
 
         try {
-            if (!$this->locationBelongsToBusiness($businessId, $locationId)) {
+            $this->directLinkRepo->assertTargetType($targetType);
+            if (!in_array($scopeType, [BookingDirectLinkRepository::SCOPE_LOCATION, BookingDirectLinkRepository::SCOPE_BUSINESS], true)) {
+                return Response::error('Invalid scope_type', 'validation_error', 400, $request->traceId);
+            }
+            if ($scopeType === BookingDirectLinkRepository::SCOPE_LOCATION && (!$locationId || !$this->locationBelongsToBusiness($businessId, $locationId))) {
                 return Response::error('Invalid location for this business', 'validation_error', 400, $request->traceId);
+            }
+            if ($scopeType === BookingDirectLinkRepository::SCOPE_BUSINESS && !in_array($targetType, [BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY, BookingDirectLinkRepository::TARGET_STAFF], true)) {
+                return Response::error('Business-scoped direct links are allowed only for service_category and staff', 'validation_error', 400, $request->traceId);
             }
 
             $baseName = $this->directLinkRepo->targetBaseName($businessId, $targetType, $targetId);
@@ -142,8 +161,11 @@ final class BookingDirectLinksController
                 return Response::notFound('Target not found', $request->traceId);
             }
 
-            if (!$this->targetMatchesLocation($businessId, $targetType, $targetId, $locationId)) {
+            if ($scopeType === BookingDirectLinkRepository::SCOPE_LOCATION && !$this->targetMatchesLocation($businessId, $targetType, $targetId, (int) $locationId)) {
                 return Response::error('Target does not belong to location_id', 'validation_error', 400, $request->traceId);
+            }
+            if ($scopeType === BookingDirectLinkRepository::SCOPE_BUSINESS && empty($this->directLinkRepo->compatibleLocationIdsForLink($businessId, $targetType, $targetId))) {
+                return Response::error('Target is not available for online booking', 'validation_error', 400, $request->traceId);
             }
 
             $link = $this->directLinkRepo->createOrUpdateForTarget(
@@ -151,10 +173,11 @@ final class BookingDirectLinksController
                 $targetType,
                 $targetId,
                 $locationId,
-                $baseName
+                $baseName,
+                $scopeType
             );
-        } catch (InvalidArgumentException) {
-            return Response::error('Invalid target_type', 'validation_error', 400, $request->traceId);
+        } catch (InvalidArgumentException $e) {
+            return Response::error($e->getMessage(), 'validation_error', 400, $request->traceId);
         }
 
         return Response::success($this->formatAdminLink($request, $businessId, $link), 201);
@@ -199,6 +222,9 @@ final class BookingDirectLinksController
                 && (int) ($target['is_bookable_online'] ?? 0) === 1
                 && $this->classEventWindowIsOpen($target),
             BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY => true,
+            BookingDirectLinkRepository::TARGET_STAFF =>
+                (int) ($target['is_active'] ?? 0) === 1
+                && (int) ($target['is_bookable_online'] ?? 0) === 1,
             default => false,
         };
     }
@@ -225,6 +251,7 @@ final class BookingDirectLinksController
             BookingDirectLinkRepository::TARGET_SERVICE_PACKAGE,
             BookingDirectLinkRepository::TARGET_CLASS_EVENT => (int) ($target['location_id'] ?? 0) === $locationId,
             BookingDirectLinkRepository::TARGET_SERVICE_CATEGORY => true,
+            BookingDirectLinkRepository::TARGET_STAFF => in_array($locationId, $this->directLinkRepo->compatibleLocationIdsForLink($businessId, $targetType, $targetId), true),
             default => false,
         };
     }
@@ -261,7 +288,7 @@ final class BookingDirectLinksController
             $payload['online_visibility'] = (string) $target['online_visibility'];
         }
 
-        foreach (['name', 'service_id', 'location_id', 'category_id', 'class_type_id', 'starts_at', 'ends_at'] as $key) {
+        foreach (['name', 'surname', 'display_name', 'avatar_url', 'color_hex', 'service_id', 'location_id', 'category_id', 'class_type_id', 'starts_at', 'ends_at'] as $key) {
             if (array_key_exists($key, $target)) {
                 $payload[$key] = is_numeric($target[$key]) ? (int) $target[$key] : $target[$key];
             }
@@ -276,19 +303,34 @@ final class BookingDirectLinksController
         $business = $this->businessRepo->findById($businessId);
         $slug = (string) ($business['slug'] ?? '');
         $linkSlug = (string) $link['slug'];
+        $scopeType = (string) ($link['scope_type'] ?? BookingDirectLinkRepository::SCOPE_LOCATION);
+        $locationId = isset($link['location_id']) ? (int) $link['location_id'] : 0;
+        $compatibleLocationIds = $scopeType === BookingDirectLinkRepository::SCOPE_BUSINESS
+            ? $this->directLinkRepo->compatibleLocationIdsForLink($businessId, (string) $link['target_type'], (int) $link['target_id'])
+            : [];
+        $query = $scopeType === BookingDirectLinkRepository::SCOPE_BUSINESS
+            ? '?link=' . rawurlencode($linkSlug)
+            : '?location=' . $locationId . '&link=' . rawurlencode($linkSlug);
 
         return [
             'id' => (int) $link['id'],
-            'location_id' => (int) ($link['location_id'] ?? 0),
+            'scope_type' => $scopeType,
+            'location_id' => $locationId,
+            'compatible_location_ids' => $compatibleLocationIds,
             'slug' => $linkSlug,
             'target_type' => (string) $link['target_type'],
             'target_id' => (int) $link['target_id'],
             'is_active' => (bool) ($link['is_active'] ?? true),
-            'url' => rtrim(EnvironmentConfig::current()->webBaseUrl, '/') . '/' . $slug . '/booking?location=' . (int) ($link['location_id'] ?? 0) . '&link=' . rawurlencode($linkSlug),
+            'url' => rtrim(EnvironmentConfig::current()->webBaseUrl, '/') . '/' . $slug . '/booking' . $query,
         ];
     }
 
     private function hasBusinessAccess(Request $request, int $businessId): bool
+    {
+        return $this->hasBusinessAccessForTarget($request, $businessId, null);
+    }
+
+    private function hasBusinessAccessForTarget(Request $request, int $businessId, ?string $targetType): bool
     {
         $userId = $request->getAttribute('user_id');
         if ($userId === null) {
@@ -297,6 +339,11 @@ final class BookingDirectLinksController
 
         if ($this->userRepo->isSuperadmin($userId)) {
             return true;
+        }
+
+        if ($targetType === BookingDirectLinkRepository::TARGET_STAFF) {
+            return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_staff', false)
+                || $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_services', false);
         }
 
         return $this->businessUserRepo->hasPermission($userId, $businessId, 'can_manage_services', false);

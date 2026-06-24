@@ -958,18 +958,39 @@ class ApiClient {
   }
 
   /// POST /v1/businesses/{business_id}/booking-direct-links/create-or-get
-  Future<Map<String, dynamic>> createOrGetBookingDirectLink({
+  Future<Map<String, dynamic>> getBookingDirectLinkInfo({
     required int businessId,
-    required int locationId,
+    int? locationId,
     required String targetType,
     required int targetId,
+    String scopeType = 'location',
+  }) async {
+    return get(
+      '/v1/businesses/$businessId/booking-direct-links',
+      queryParameters: {
+        'target_type': targetType,
+        'target_id': targetId,
+        'scope_type': scopeType,
+        if (locationId != null && locationId > 0) 'location_id': locationId,
+      },
+    );
+  }
+
+  /// POST /v1/businesses/{business_id}/booking-direct-links/create-or-get
+  Future<Map<String, dynamic>> createOrGetBookingDirectLink({
+    required int businessId,
+    int? locationId,
+    required String targetType,
+    required int targetId,
+    String scopeType = 'location',
   }) async {
     return post(
       '/v1/businesses/$businessId/booking-direct-links/create-or-get',
       data: {
-        'location_id': locationId,
         'target_type': targetType,
         'target_id': targetId,
+        'scope_type': scopeType,
+        if (locationId != null && locationId > 0) 'location_id': locationId,
       },
     );
   }
