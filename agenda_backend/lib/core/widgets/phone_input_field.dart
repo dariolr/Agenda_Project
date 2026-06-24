@@ -179,19 +179,13 @@ class PhoneInputFieldState extends State<PhoneInputField>
     }
   }
 
-  /// Ritorna il numero di telefono completo (prefisso + numero)
-  /// Il numero viene pulito automaticamente dal prefisso se l'utente
-  /// lo ha accidentalmente riscritto (es. seleziona +39 ma digita 39123…).
+  /// Ritorna il numero di telefono completo (prefisso + numero).
+  /// Il prefisso e il numero sono input separati: il numero viene usato così
+  /// com'è, senza rimuovere cifre iniziali che coincidono col prefisso, perché
+  /// esistono numeri reali che iniziano con quelle cifre (es. prefisso +39 e
+  /// numero 339… del mobile TIM).
   String get fullPhone {
-    var number = _controller.text.replaceAll(RegExp(r'\s+'), '');
-    if (number.isEmpty) return '';
-
-    // Se il numero inizia con le cifre del prefisso selezionato, le rimuove
-    final prefixDigits = _selectedPrefix.replaceAll('+', '');
-    if (number.startsWith(prefixDigits)) {
-      number = number.substring(prefixDigits.length);
-    }
-
+    final number = _controller.text.replaceAll(RegExp(r'\s+'), '');
     if (number.isEmpty) return '';
     return '$_selectedPrefix $number';
   }

@@ -1079,7 +1079,8 @@ final class CreateBooking
                 throw BookingException::invalidStaff($lockedStaffId);
             }
             $staffId = $lockedStaffId;
-            $customerSelectedStaff = true;
+            // Operatore imposto dal link diretto: non è una scelta del cliente → "online".
+            $customerSelectedStaff = false;
         }
 
         // Calculate total duration (including processing_time and blocked_time)
@@ -1221,6 +1222,8 @@ final class CreateBooking
             }
 
             // Create booking (container) - note: user_id is NULL for customer bookings
+            // Il flag customer_selected_staff è calcolato dal frontend dallo stesso
+            // criterio che mostra/nasconde "Qualsiasi operatore" (≥2 operatori idonei).
             $source = $customerSelectedStaff ? 'onlinestaff' : 'online';
             $bookingId = $this->bookingRepository->create([
                 'business_id' => $businessId,
@@ -1462,6 +1465,8 @@ final class CreateBooking
             }
 
             // Create booking (container)
+            // Il flag customer_selected_staff è calcolato dal frontend dallo stesso
+            // criterio che mostra/nasconde "Qualsiasi operatore" (≥2 operatori idonei).
             $source = $customerSelectedStaff ? 'onlinestaff' : 'online';
             $bookingId = $this->bookingRepository->create([
                 'business_id' => $businessId,

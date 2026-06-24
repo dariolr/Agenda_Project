@@ -537,7 +537,9 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
         }
       }
 
-      // Se tutti i servizi hanno un solo operatore, auto-seleziona e mostra lo step
+      // Se tutti i servizi hanno un solo operatore, auto-seleziona e mostra lo step.
+      // Lo staff è imposto dal sistema, non scelto dal cliente: isStaffAutoSelected
+      // = true così la prenotazione non viene marcata come "onlinestaff".
       if (allAutoSelected && services.isNotEmpty) {
         final isSingleService = services.length == 1;
         final selectedStaff = isSingleService
@@ -550,7 +552,7 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
             clearSlot: true,
             anyOperatorSelected: false,
           ),
-          isStaffAutoSelected: false,
+          isStaffAutoSelected: true,
           currentStep: BookingStep.staff,
         );
         return;
