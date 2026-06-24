@@ -10,6 +10,7 @@ import 'package:agenda_backend/core/models/popular_service.dart';
 import 'package:agenda_backend/core/widgets/labeled_form_field.dart';
 import 'package:agenda_backend/core/widgets/no_scrollbar_behavior.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -3011,10 +3012,22 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
   final _searchController = TextEditingController();
   final _searchFocusNode = FocusNode();
 
+  /// Su web mobile la tastiera software si apre solo in risposta a un tap reale
+  /// dell'utente: l'autofocus/requestFocus programmatico non la fa salire (o la
+  /// fa salire in ritardo). Quindi su web mobile non forziamo il focus e
+  /// lasciamo che sia l'utente a toccare il campo. Su desktop (tastiera fisica)
+  /// e su app native il focus automatico funziona e resta attivo.
+  bool get _isWebMobile =>
+      kIsWeb &&
+      (defaultTargetPlatform == TargetPlatform.iOS ||
+          defaultTargetPlatform == TargetPlatform.android);
+
   @override
   void initState() {
     super.initState();
-    _scheduleSearchFocus();
+    if (!_isWebMobile) {
+      _scheduleSearchFocus();
+    }
   }
 
   void _scheduleSearchFocus() {
@@ -3071,7 +3084,10 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
                   TextField(
                     controller: _searchController,
                     focusNode: _searchFocusNode,
-                    autofocus: true,
+                    // Su web mobile l'autofocus non apre la tastiera (serve un
+                    // tap reale): la disattiviamo per evitare la tastiera in
+                    // ritardo/erratica. Resta attiva su desktop e app native.
+                    autofocus: !_isWebMobile,
                     decoration: InputDecoration(
                       hintText: l10n.searchClientPlaceholder,
                       prefixIcon: const Icon(Icons.search, size: 20),

@@ -18,6 +18,9 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <!-- Viewport mobile: senza questo Safari iOS renderizza in modalità desktop,
+       sopprimendo tastiera software e autofill password sui campi. -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="description" content="Prenota il tuo appuntamento online">
 
   <!-- Preconnect removed: API URL is configured at build time via dart-define -->
@@ -36,7 +39,7 @@
   
   <!-- Versione app esposta a Flutter -->
   <script>
-    window.appVersion = "20260624-2.143";
+    window.appVersion = "20260624-4.145";
     
     // Localizzazioni per loading screen
     window.loadingTexts = {
