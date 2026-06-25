@@ -20,6 +20,7 @@ final class ReportsController
      * Fallback step (minutes) for planning rows without explicit slot duration.
      */
     private const PLANNING_SLOT_MINUTES = 5;
+    private const AUTO_DISCOUNT_SOURCE = 'appointment_amount_adjustment';
 
     private ?LocationClosureRepository $locationClosureRepo;
     
@@ -379,7 +380,7 @@ final class ReportsController
                 COALESCE(SUM(COALESCE(pay.other_cents, 0)), 0) AS other_cents,
                 COALESCE(SUM(COALESCE(pay.discount_cents, 0)), 0) AS discount_cents,
                 COALESCE(SUM(COALESCE(pay.paid_cents, 0)), 0) AS paid_cents,
-                COALESCE(SUM(COALESCE(bp.total_due_cents, fb.fallback_due_cents)), 0) AS due_cents
+                COALESCE(SUM(fb.fallback_due_cents), 0) AS due_cents
             FROM (
                 SELECT b.id AS booking_id,
                        b.location_id AS location_id,
@@ -389,7 +390,6 @@ final class ReportsController
                 WHERE $whereClause
                 GROUP BY b.id, b.location_id
             ) fb
-            LEFT JOIN booking_payments bp ON bp.booking_id = fb.booking_id AND bp.is_active = 1
             LEFT JOIN (
                 SELECT
                     bp.booking_id,
@@ -397,7 +397,14 @@ final class ReportsController
                     SUM(CASE WHEN bpl.type = 'card' THEN bpl.amount_cents ELSE 0 END) AS card_cents,
                     SUM(CASE WHEN bpl.type = 'voucher' THEN bpl.amount_cents ELSE 0 END) AS voucher_cents,
                     SUM(CASE WHEN bpl.type = 'other' THEN bpl.amount_cents ELSE 0 END) AS other_cents,
-                    SUM(CASE WHEN bpl.type = 'discount' THEN bpl.amount_cents ELSE 0 END) AS discount_cents,
+                    SUM(
+                        CASE
+                            WHEN bpl.type = 'discount'
+                             AND COALESCE(JSON_UNQUOTE(JSON_EXTRACT(bpl.meta_json, '$.source')), '') <> '" . self::AUTO_DISCOUNT_SOURCE . "'
+                                THEN bpl.amount_cents
+                            ELSE 0
+                        END
+                    ) AS discount_cents,
                     SUM(
                         CASE
                             WHEN bpl.type <> 'discount' AND COALESCE(bpm.is_revenue, 1) = 1
@@ -446,7 +453,7 @@ final class ReportsController
                 COALESCE(SUM(COALESCE(pay.other_cents, 0)), 0) AS other_cents,
                 COALESCE(SUM(COALESCE(pay.discount_cents, 0)), 0) AS discount_cents,
                 COALESCE(SUM(COALESCE(pay.paid_cents, 0)), 0) AS paid_cents,
-                COALESCE(SUM(COALESCE(bp.total_due_cents, fb.fallback_due_cents)), 0) AS due_cents
+                COALESCE(SUM(fb.fallback_due_cents), 0) AS due_cents
             FROM (
                 SELECT b.id AS booking_id,
                        b.location_id AS location_id,
@@ -456,7 +463,6 @@ final class ReportsController
                 WHERE $whereClause
                 GROUP BY b.id, b.location_id
             ) fb
-            LEFT JOIN booking_payments bp ON bp.booking_id = fb.booking_id AND bp.is_active = 1
             LEFT JOIN (
                 SELECT
                     bp.booking_id,
@@ -464,7 +470,14 @@ final class ReportsController
                     SUM(CASE WHEN bpl.type = 'card' THEN bpl.amount_cents ELSE 0 END) AS card_cents,
                     SUM(CASE WHEN bpl.type = 'voucher' THEN bpl.amount_cents ELSE 0 END) AS voucher_cents,
                     SUM(CASE WHEN bpl.type = 'other' THEN bpl.amount_cents ELSE 0 END) AS other_cents,
-                    SUM(CASE WHEN bpl.type = 'discount' THEN bpl.amount_cents ELSE 0 END) AS discount_cents,
+                    SUM(
+                        CASE
+                            WHEN bpl.type = 'discount'
+                             AND COALESCE(JSON_UNQUOTE(JSON_EXTRACT(bpl.meta_json, '$.source')), '') <> '" . self::AUTO_DISCOUNT_SOURCE . "'
+                                THEN bpl.amount_cents
+                            ELSE 0
+                        END
+                    ) AS discount_cents,
                     SUM(
                         CASE
                             WHEN bpl.type <> 'discount' AND COALESCE(bpm.is_revenue, 1) = 1

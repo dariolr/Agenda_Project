@@ -19,6 +19,7 @@ import '../../providers/booking_payment_providers.dart';
 import '../../providers/bookings_provider.dart';
 import '../../providers/bookings_repository_provider.dart';
 import '../../providers/location_providers.dart';
+import '../../domain/booking_payment_preview.dart';
 import '../../../payments/providers/payment_methods_provider.dart';
 
 /// Mostra il dialog di pagamento per distribuire il totale di una prenotazione
@@ -98,7 +99,6 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
   late final TextEditingController _noteController;
   bool _isPersisting = false;
   bool _isLoadingPersisted = false;
-  int _loadedAutoDiscountCents = 0;
 
   @override
   void initState() {
@@ -350,13 +350,6 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
   double _amountFromCents(int cents) => cents / 100.0;
 
   void _applyBookingPayment(BookingPayment payment) {
-    _loadedAutoDiscountCents = payment.lines
-        .where(
-          (line) =>
-              line.type == BookingPaymentLineType.discount &&
-              line.meta?['source'] == 'appointment_amount_adjustment',
-        )
-        .fold<int>(0, (sum, line) => sum + line.amountCents);
     _setControllerValue(
       _totalPriceController,
       _formatAmountValue(_amountFromCents(payment.totalDueCents)),
@@ -366,6 +359,10 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
       final methodCode = line.type.trim().isNotEmpty
           ? line.type.trim()
           : BookingPaymentLineType.other;
+      if (methodCode == _discountMethodCode &&
+          line.meta?['source'] == bookingPaymentAutoDiscountSourceTag) {
+        continue;
+      }
       _ensureMethodState(methodCode);
       if (methodCode != _discountMethodCode &&
           !_paidMethodCodes.contains(methodCode)) {
@@ -396,28 +393,13 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
         continue;
       }
       if (entry.key == _discountMethodCode) {
-        final autoDiscountCents = amountCents < _loadedAutoDiscountCents
-            ? amountCents
-            : _loadedAutoDiscountCents;
-        final manualDiscountCents = amountCents - autoDiscountCents;
-        if (autoDiscountCents > 0) {
-          lines.add(
-            BookingPaymentLine(
-              type: BookingPaymentLineType.discount,
-              amountCents: autoDiscountCents,
-              meta: const {'source': 'appointment_amount_adjustment'},
-            ),
-          );
-        }
-        if (manualDiscountCents > 0) {
-          lines.add(
-            BookingPaymentLine(
-              type: BookingPaymentLineType.discount,
-              amountCents: manualDiscountCents,
-              meta: const {'source': 'manual'},
-            ),
-          );
-        }
+        lines.add(
+          BookingPaymentLine(
+            type: BookingPaymentLineType.discount,
+            amountCents: amountCents,
+            meta: const {'source': bookingPaymentManualDiscountSourceTag},
+          ),
+        );
         continue;
       }
       lines.add(BookingPaymentLine(type: entry.key, amountCents: amountCents));
@@ -447,17 +429,27 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
 
     setState(() => _isLoadingPersisted = true);
     try {
-      final controller = ref.read(bookingPaymentControllerProvider(bookingId));
       final loadedPayment = await ref.read(
         bookingPaymentProvider(bookingId).future,
       );
+      final currentTotalCents = _centsFromAmount(widget.totalPrice);
       final payment =
           loadedPayment == null || _shouldUseFormTotalFallback(loadedPayment)
-          ? controller.defaultValue(
-              totalDueCents: _centsFromAmount(widget.totalPrice),
-              currency: widget.currencyCode,
-            )
-          : loadedPayment;
+          ? ref
+                .read(bookingPaymentControllerProvider(bookingId))
+                .defaultValue(
+                  totalDueCents: currentTotalCents,
+                  currency: widget.currencyCode,
+                )
+          : buildBookingPaymentPreview(
+              bookingId: loadedPayment.bookingId,
+              clientId: loadedPayment.clientId,
+              currency: loadedPayment.currency,
+              referenceTotalCents: loadedPayment.totalDueCents,
+              currentTotalCents: currentTotalCents,
+              basePayment: loadedPayment,
+              isActive: loadedPayment.isActive,
+            );
       if (!mounted) return;
       setState(() {
         _applyBookingPayment(payment);
@@ -493,10 +485,13 @@ class _PaymentDialogState extends ConsumerState<_PaymentDialog> {
       ref.invalidate(bookingPaymentProvider(bookingId));
       final newPaymentStatus = saved.computed.balanceCents <= 0
           ? 'paid'
-          : (saved.computed.totalPaidCents > 0 || saved.computed.totalDiscountCents > 0
-              ? 'partial'
-              : 'unpaid');
-      ref.read(appointmentsProvider.notifier).updatePaymentStatus(bookingId, newPaymentStatus);
+          : (saved.computed.totalPaidCents > 0 ||
+                    saved.computed.totalDiscountCents > 0
+                ? 'partial'
+                : 'unpaid');
+      ref
+          .read(appointmentsProvider.notifier)
+          .updatePaymentStatus(bookingId, newPaymentStatus);
       if (!mounted) return;
       _applyBookingPayment(saved);
       Navigator.of(context).pop(saved);

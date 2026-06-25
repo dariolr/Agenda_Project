@@ -19,7 +19,6 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/booking.dart';
 import '../../../../core/models/booking_payment.dart';
-import '../../../../core/models/booking_payment_computed.dart';
 import '../../../../core/models/recurrence_rule.dart';
 import '../../../../core/models/service.dart';
 import '../../../../core/models/service_package.dart';
@@ -244,16 +243,6 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
 
   int _toCents(double value) => (value * 100).round();
 
-  int _baseTotalDueCents({
-    required int referenceTotalCents,
-    required int currentTotalCents,
-  }) {
-    return computeBaseTotalDueCents(
-      referenceTotalCents: referenceTotalCents,
-      currentTotalCents: currentTotalCents,
-    );
-  }
-
   double _calculateReferenceTotalPrice(List<ServiceVariant> variants) {
     double total = 0;
     for (final item in _serviceItems) {
@@ -266,21 +255,6 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
       }
     }
     return total;
-  }
-
-  BookingPayment _setAutoDiscountAmount({
-    required BookingPayment payment,
-    required int desiredAutoDiscountCents,
-  }) {
-    return buildBookingPaymentPreview(
-      bookingId: payment.bookingId,
-      clientId: payment.clientId,
-      currency: payment.currency,
-      referenceTotalCents: payment.totalDueCents,
-      currentTotalCents: payment.totalDueCents - desiredAutoDiscountCents,
-      basePayment: payment,
-      isActive: payment.isActive,
-    );
   }
 
   BookingPayment _buildPaymentPreviewForDraft({
@@ -660,15 +634,7 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
                 final payment = await showPaymentDialog(
                   context,
                   ref,
-                  totalPrice: widget.existing == null
-                      ? _baseTotalDueCents(
-                              referenceTotalCents: _toCents(
-                                referenceTotalPrice,
-                              ),
-                              currentTotalCents: _toCents(totalPrice),
-                            ) /
-                            100
-                      : totalPrice,
+                  totalPrice: totalPrice,
                   currencyCode: PriceFormatter.effectiveCurrency(ref),
                   bookingId: widget.existing?.id,
                   initialPayment: previewPayment,
@@ -2395,47 +2361,17 @@ class _BookingDialogState extends ConsumerState<_BookingDialog> {
     final bookingTotalCents = (bookingResponse.totalPrice as num?) == null
         ? referenceTotalCents
         : ((bookingResponse.totalPrice as num).toDouble() * 100).round();
-    final baseTotalDueCents = _baseTotalDueCents(
+    if (pendingPayment == null) return;
+
+    final normalizedPending = buildBookingPaymentPreview(
+      bookingId: bookingResponse.id as int,
+      clientId: bookingResponse.clientId as int?,
+      currency: pendingPayment.currency,
       referenceTotalCents: referenceTotalCents,
       currentTotalCents: bookingTotalCents,
+      basePayment: pendingPayment,
+      isActive: true,
     );
-    final desiredAutoDiscountCents = (baseTotalDueCents - bookingTotalCents)
-        .clamp(0, 1 << 30);
-    if (pendingPayment == null && desiredAutoDiscountCents <= 0) {
-      return;
-    }
-
-    final basePending =
-        pendingPayment ??
-        BookingPayment(
-          bookingId: bookingResponse.id as int,
-          clientId: bookingResponse.clientId as int?,
-          isActive: true,
-          currency: PriceFormatter.effectiveCurrency(ref),
-          totalDueCents: baseTotalDueCents,
-          note: null,
-          lines: const [],
-          computed: const BookingPaymentComputed(
-            totalPaidCents: 0,
-            totalDiscountCents: 0,
-            balanceCents: 0,
-          ),
-        );
-    final normalizedBase = BookingPayment(
-      bookingId: basePending.bookingId,
-      clientId: basePending.clientId,
-      isActive: basePending.isActive,
-      currency: basePending.currency,
-      totalDueCents: baseTotalDueCents,
-      note: basePending.note,
-      lines: basePending.lines,
-      computed: basePending.computed,
-    );
-    final adjustedPending = _setAutoDiscountAmount(
-      payment: normalizedBase,
-      desiredAutoDiscountCents: desiredAutoDiscountCents,
-    );
-    final normalizedPending = adjustedPending;
 
     final paymentToSave = BookingPayment(
       bookingId: bookingResponse.id as int,

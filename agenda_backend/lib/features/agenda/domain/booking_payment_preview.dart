@@ -77,7 +77,7 @@ BookingPayment buildBookingPaymentPreview({
       .where(
         (line) =>
             line.type != BookingPaymentLineType.discount ||
-            line.meta?['source'] == bookingPaymentManualDiscountSourceTag,
+            line.meta?['source'] != bookingPaymentAutoDiscountSourceTag,
       )
       .toList();
 

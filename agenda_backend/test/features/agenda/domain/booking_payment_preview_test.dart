@@ -9,7 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('buildBookingPaymentPreview', () {
-    test('new booking with single service keeps original base and auto discount', () {
+    test('new booking with single service uses current applied total', () {
       final preview = buildBookingPaymentPreview(
         bookingId: 0,
         clientId: 10,
@@ -18,17 +18,14 @@ void main() {
         currentTotalCents: 2000,
       );
 
-      expect(preview.totalDueCents, 3000);
-      expect(preview.lines, hasLength(1));
-      expect(preview.lines.single.type, BookingPaymentLineType.discount);
-      expect(preview.lines.single.amountCents, 1000);
-      expect(
-        preview.lines.single.meta?['source'],
-        bookingPaymentAutoDiscountSourceTag,
-      );
+      expect(preview.totalDueCents, 2000);
+      expect(preview.lines, isEmpty);
+      expect(preview.computed.totalPaidCents, 0);
+      expect(preview.computed.totalDiscountCents, 0);
+      expect(preview.computed.balanceCents, 2000);
     });
 
-    test('new booking with multi service keeps summed original base and auto discount', () {
+    test('new booking with multi service uses current applied total', () {
       final preview = buildBookingPaymentPreview(
         bookingId: 0,
         clientId: 10,
@@ -37,100 +34,119 @@ void main() {
         currentTotalCents: 5000,
       );
 
-      expect(preview.totalDueCents, 7000);
-      expect(preview.lines, hasLength(1));
-      expect(preview.lines.single.type, BookingPaymentLineType.discount);
-      expect(preview.lines.single.amountCents, 2000);
+      expect(preview.totalDueCents, 5000);
+      expect(preview.lines, isEmpty);
+      expect(preview.computed.balanceCents, 5000);
     });
 
-    test('editing existing booking rebuilds auto discount and preserves manual discount', () {
-      const persisted = BookingPayment(
-        bookingId: 99,
-        clientId: 11,
-        isActive: true,
-        currency: 'EUR',
-        totalDueCents: 7000,
-        note: 'keep',
-        lines: [
-          BookingPaymentLine(
-            type: BookingPaymentLineType.discount,
-            amountCents: 700,
-            meta: {'source': 'appointment_amount_adjustment'},
+    test(
+      'editing existing booking removes legacy auto discount and preserves manual discount',
+      () {
+        const persisted = BookingPayment(
+          bookingId: 99,
+          clientId: 11,
+          isActive: true,
+          currency: 'EUR',
+          totalDueCents: 7000,
+          note: 'keep',
+          lines: [
+            BookingPaymentLine(
+              type: BookingPaymentLineType.discount,
+              amountCents: 700,
+              meta: {'source': 'appointment_amount_adjustment'},
+            ),
+            BookingPaymentLine(
+              type: BookingPaymentLineType.discount,
+              amountCents: 500,
+              meta: {'source': 'manual'},
+            ),
+            BookingPaymentLine(
+              type: BookingPaymentLineType.discount,
+              amountCents: 300,
+            ),
+          ],
+          computed: BookingPaymentComputed(
+            totalPaidCents: 0,
+            totalDiscountCents: 0,
+            balanceCents: 0,
           ),
-          BookingPaymentLine(
-            type: BookingPaymentLineType.discount,
-            amountCents: 500,
-            meta: {'source': 'manual'},
+        );
+
+        final preview = buildBookingPaymentPreview(
+          bookingId: 99,
+          clientId: 11,
+          currency: 'EUR',
+          referenceTotalCents: 7000,
+          currentTotalCents: 5000,
+          basePayment: persisted,
+        );
+
+        expect(preview.totalDueCents, 5000);
+        expect(preview.note, 'keep');
+        expect(preview.lines, hasLength(2));
+
+        final manual = preview.lines.firstWhere(
+          (line) =>
+              line.meta?['source'] == bookingPaymentManualDiscountSourceTag,
+        );
+        final legacyManual = preview.lines.firstWhere(
+          (line) => line.meta == null,
+        );
+
+        expect(manual.amountCents, 500);
+        expect(legacyManual.amountCents, 300);
+        expect(
+          preview.lines.where(
+            (line) =>
+                line.meta?['source'] == bookingPaymentAutoDiscountSourceTag,
           ),
-        ],
-        computed: BookingPaymentComputed(
-          totalPaidCents: 0,
-          totalDiscountCents: 0,
-          balanceCents: 0,
-        ),
-      );
-
-      final preview = buildBookingPaymentPreview(
-        bookingId: 99,
-        clientId: 11,
-        currency: 'EUR',
-        referenceTotalCents: 7000,
-        currentTotalCents: 5000,
-        basePayment: persisted,
-      );
-
-      expect(preview.totalDueCents, 7000);
-      expect(preview.note, 'keep');
-      expect(preview.lines, hasLength(2));
-
-      final manual = preview.lines.firstWhere(
-        (line) => line.meta?['source'] == bookingPaymentManualDiscountSourceTag,
-      );
-      final auto = preview.lines.firstWhere(
-        (line) => line.meta?['source'] == bookingPaymentAutoDiscountSourceTag,
-      );
-
-      expect(manual.amountCents, 500);
-      expect(auto.amountCents, 2000);
-    });
+          isEmpty,
+        );
+        expect(preview.computed.totalDiscountCents, 800);
+        expect(preview.computed.balanceCents, 4200);
+      },
+    );
   });
 
   group('paymentExceedsCurrentDue', () {
-    test('returns true when non-discount payment coverage exceeds current due', () {
-      const payment = BookingPayment(
-        bookingId: 1,
-        clientId: 1,
-        isActive: true,
-        currency: 'EUR',
-        totalDueCents: 3000,
-        note: null,
-        lines: [
-          BookingPaymentLine(
-            type: BookingPaymentLineType.cash,
-            amountCents: 1500,
+    test(
+      'returns true when non-discount payment coverage exceeds current due',
+      () {
+        const payment = BookingPayment(
+          bookingId: 1,
+          clientId: 1,
+          isActive: true,
+          currency: 'EUR',
+          totalDueCents: 3000,
+          note: null,
+          lines: [
+            BookingPaymentLine(
+              type: BookingPaymentLineType.cash,
+              amountCents: 1500,
+            ),
+            BookingPaymentLine(
+              type: BookingPaymentLineType.voucher,
+              amountCents: 1000,
+            ),
+            BookingPaymentLine(
+              type: BookingPaymentLineType.discount,
+              amountCents: 900,
+              meta: {'source': 'manual'},
+            ),
+          ],
+          computed: BookingPaymentComputed(
+            totalPaidCents: 0,
+            totalDiscountCents: 0,
+            balanceCents: 0,
           ),
-          BookingPaymentLine(
-            type: BookingPaymentLineType.voucher,
-            amountCents: 1000,
-          ),
-          BookingPaymentLine(
-            type: BookingPaymentLineType.discount,
-            amountCents: 900,
-            meta: {'source': 'manual'},
-          ),
-        ],
-        computed: BookingPaymentComputed(
-          totalPaidCents: 0,
-          totalDiscountCents: 0,
-          balanceCents: 0,
-        ),
-      );
+        );
 
-      expect(
-        paymentExceedsCurrentDue(payment: payment, currentTotalCents: 2000),
-        isTrue,
-      );
-    });
+        expect(
+          paymentExceedsCurrentDue(payment: payment, currentTotalCents: 2000),
+          isTrue,
+        );
+      },
+    );
 
     test('ignores discount when checking if payment exceeds current due', () {
       const payment = BookingPayment(
