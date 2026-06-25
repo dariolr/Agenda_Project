@@ -199,7 +199,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               constraints: const BoxConstraints(maxWidth: 400),
               child: AutofillGroup(
                 child: Form(
-      autovalidateMode: AutovalidateMode.onUserInteraction,
                   key: _formKey,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -238,11 +237,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         textCapitalization: TextCapitalization.none,
                         autocorrect: false,
                         enableSuggestions: true,
-                        // Email + username per miglior compatibilità autofill Safari iOS
-                        autofillHints: const [
-                          AutofillHints.email,
-                          AutofillHints.username,
-                        ],
+                        // Solo 'username' (identificativo di login): il
+                        // suggerimento della credenziale ("presente in Password")
+                        // compare grazie a username + current-password, non serve
+                        // l'hint 'email'.
+                        autofillHints: const [AutofillHints.username],
                         decoration: InputDecoration(
                           labelText: l10n.authEmail,
                           prefixIcon: const Icon(Icons.email_outlined),
@@ -290,9 +289,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           if (value == null || value.isEmpty) {
                             return l10n.authRequiredField;
                           }
-                          if (value.length < 6) {
-                            return l10n.authPasswordTooShort;
-                          }
+                          // Al login non validiamo la lunghezza: è l'API a
+                          // rispondere con credenziali non valide (evita falsi
+                          // blocchi e fastidi con autovalidate onUserInteraction).
                           return null;
                         },
                       ),

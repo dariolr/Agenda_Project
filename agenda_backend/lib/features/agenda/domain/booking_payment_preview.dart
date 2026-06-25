@@ -11,9 +11,7 @@ int computeBaseTotalDueCents({
   required int referenceTotalCents,
   required int currentTotalCents,
 }) {
-  return currentTotalCents > referenceTotalCents
-      ? currentTotalCents
-      : referenceTotalCents;
+  return currentTotalCents;
 }
 
 int computeNonDiscountCoverageCents(BookingPayment payment) {
@@ -57,8 +55,6 @@ BookingPayment buildBookingPaymentPreview({
     referenceTotalCents: referenceTotalCents,
     currentTotalCents: currentTotalCents,
   );
-  final desiredAutoDiscountCents =
-      (baseTotalDueCents - currentTotalCents).clamp(0, 1 << 30);
 
   final seed =
       basePayment ??
@@ -85,15 +81,21 @@ BookingPayment buildBookingPaymentPreview({
       )
       .toList();
 
-  if (desiredAutoDiscountCents > 0) {
-    preservedLines.add(
-      BookingPaymentLine(
-        type: BookingPaymentLineType.discount,
-        amountCents: desiredAutoDiscountCents,
-        meta: const {'source': bookingPaymentAutoDiscountSourceTag},
-      ),
-    );
-  }
+  final totalPaidCents = computeNonDiscountCoverageCents(
+    BookingPayment(
+      bookingId: seed.bookingId,
+      clientId: seed.clientId,
+      isActive: seed.isActive,
+      currency: seed.currency,
+      totalDueCents: baseTotalDueCents,
+      note: seed.note,
+      lines: preservedLines,
+      computed: seed.computed,
+    ),
+  );
+  final totalDiscountCents = preservedLines
+      .where((line) => line.type == BookingPaymentLineType.discount)
+      .fold<int>(0, (sum, line) => sum + line.amountCents);
 
   return BookingPayment(
     bookingId: seed.bookingId,
@@ -103,6 +105,10 @@ BookingPayment buildBookingPaymentPreview({
     totalDueCents: baseTotalDueCents,
     note: seed.note,
     lines: preservedLines,
-    computed: seed.computed,
+    computed: BookingPaymentComputed(
+      totalPaidCents: totalPaidCents,
+      totalDiscountCents: totalDiscountCents,
+      balanceCents: baseTotalDueCents - totalPaidCents - totalDiscountCents,
+    ),
   );
 }

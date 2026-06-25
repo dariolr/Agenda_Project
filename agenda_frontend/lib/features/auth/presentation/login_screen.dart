@@ -384,11 +384,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     // Non usare autofocus: interferisce con autofill su Safari iOS
                     autocorrect: false,
                     enableSuggestions: true,
-                    // Email + username per miglior compatibilità autofill Safari iOS
-                    autofillHints: const [
-                      AutofillHints.email,
-                      AutofillHints.username,
-                    ],
+                    // Solo 'username' (identificativo di login): il suggerimento
+                    // della credenziale ("presente in Password") compare grazie
+                    // a username + current-password, non serve l'hint 'email'.
+                    autofillHints: const [AutofillHints.username],
                     decoration: InputDecoration(
                       labelText: l10n.authEmail,
                       prefixIcon: const Icon(Icons.email_outlined),
