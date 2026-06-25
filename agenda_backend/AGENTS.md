@@ -151,3 +151,22 @@ Route non-shell:
 4. Testi con `context.l10n`.
 5. `ref.watch()` per UI, `ref.read()` per azioni.
 6. API async (`Future<T>`) nei repository.
+
+## Uso MCP Dart/Flutter runtime
+
+Quando lavori su questo progetto Flutter e l’app è avviata in debug, usa sempre il server MCP Dart/Flutter disponibile per verificare lo stato reale dell’app in esecuzione prima di proporre o applicare modifiche che riguardano UI, layout, navigazione, stato, errori runtime, hot reload/hot restart o comportamento visibile.
+
+Prima di modificare codice, controlla tramite MCP:
+
+- app Flutter/Dart collegate;
+- errori runtime;
+- output diagnostico rilevante;
+- widget tree quando utile;
+- eventuali overflow o problemi di layout;
+- disponibilità di hot reload/hot restart.
+
+Se l’app non risulta collegata al Dart Tooling Daemon o non è disponibile alcuna istanza Flutter in esecuzione, segnala chiaramente che la verifica runtime non è possibile e procedi solo con analisi statica del codice.
+
+Non considerare MCP come sostituto dell’analisi del codice: usa sempre entrambe le fonti, cioè codice sorgente aggiornato e stato runtime quando disponibile.
+
+Mantieni invariati tutti i comportamenti esistenti non direttamente coinvolti dalla modifica richiesta.
