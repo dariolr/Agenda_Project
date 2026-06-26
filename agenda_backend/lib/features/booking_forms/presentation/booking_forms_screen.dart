@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/class_event.dart';
-import '../../../core/models/class_type.dart';
 import '../../../core/models/location.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
@@ -178,11 +177,11 @@ class _FormsListViewState extends ConsumerState<_FormsListView> {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final fieldsCount = form.fieldsCount ?? form.fields.length;
-    final assignmentsCount = form.assignmentsCount ?? form.assignments.length;
+    final rulesCount = form.rulesCount ?? form.rules.length;
     final reasons = <String>[
       if (!form.isActive) l10n.bookingFormsWarningInactive,
       if (fieldsCount == 0) l10n.bookingFormsWarningNoFields,
-      if (assignmentsCount == 0) l10n.bookingFormsWarningNoAssignments,
+      if (rulesCount == 0) l10n.bookingFormsWarningNoRules,
     ];
     final shown = reasons.isEmpty;
 
@@ -232,7 +231,7 @@ class _FormsListViewState extends ConsumerState<_FormsListView> {
                     ],
                     const SizedBox(height: 8),
                     Text(
-                      l10n.bookingFormsListMeta(fieldsCount, assignmentsCount),
+                      l10n.bookingFormsListMeta(fieldsCount, rulesCount),
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
@@ -278,9 +277,7 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
   int _step = 0;
 
   BookingForm? _form;
-  final List<BookingFormAssignment> _draftAssignments = [];
-  String _assignmentScopeType = 'business';
-  int? _assignmentScopeId;
+  final List<BookingFormRule> _draftRules = [];
 
   @override
   void initState() {
@@ -304,9 +301,9 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
         _descriptionController.text = detailed.description ?? '';
         _internalNameController.text = detailed.internalName ?? '';
         _isActive = detailed.isActive;
-        _draftAssignments
+        _draftRules
           ..clear()
-          ..addAll(detailed.assignments);
+          ..addAll(detailed.rules);
         _loading = false;
       });
     } catch (_) {
@@ -331,7 +328,7 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
       if (!_isActive) l10n.bookingFormsWarningInactive,
       if (form == null || !form.fields.any((f) => f.isInputField))
         l10n.bookingFormsWarningNoFields,
-      if (_draftAssignments.isEmpty) l10n.bookingFormsWarningNoAssignments,
+      if (_draftRules.isEmpty) l10n.bookingFormsWarningNoRules,
     ];
   }
 
@@ -358,16 +355,16 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
               'is_active': _isActive,
             },
           );
-      // Ricarico il dettaglio completo (campi + assegnazioni).
+      // Ricarico il dettaglio completo (campi + regole).
       final detailed = await ref
           .read(bookingFormsRepositoryProvider)
           .show(businessId, saved.id);
       if (!mounted) return;
       setState(() {
         _form = detailed;
-        _draftAssignments
+        _draftRules
           ..clear()
-          ..addAll(detailed.assignments);
+          ..addAll(detailed.rules);
       });
       ref.invalidate(bookingFormsProvider);
     } finally {
@@ -412,9 +409,9 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
       if (!mounted) return;
       setState(() {
         _form = updated;
-        _draftAssignments
+        _draftRules
           ..clear()
-          ..addAll(updated.assignments);
+          ..addAll(updated.rules);
       });
       ref.invalidate(bookingFormsProvider);
     } catch (e) {
@@ -482,9 +479,9 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
         isActive: form.isActive,
         sortOrder: form.sortOrder,
         fieldsCount: form.fieldsCount,
-        assignmentsCount: form.assignmentsCount,
+        rulesCount: form.rulesCount,
         fields: fields,
-        assignments: form.assignments,
+        rules: form.rules,
       );
     });
     await _mutateForm(
@@ -494,17 +491,13 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
     );
   }
 
-  // ---- assignments --------------------------------------------------------
+  // ---- regole di visualizzazione ------------------------------------------
 
-  Future<void> _persistAssignments(
-    List<BookingFormAssignment> assignments,
-    Map<String, List<_AssignmentTarget>> targets,
-  ) async {
-    final normalized = _normalizedAssignments(assignments, targets);
+  Future<void> _persistRules(List<BookingFormRule> rules) async {
     await _mutateForm(
       (businessId, formId) => ref
           .read(bookingFormsRepositoryProvider)
-          .replaceAssignments(businessId, formId, normalized),
+          .replaceRules(businessId, formId, rules),
     );
   }
 
@@ -825,204 +818,84 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
       return _SaveFirstPlaceholder(message: l10n.bookingFormsSaveModuleFirst);
     }
 
-    final locations = ref.watch(locationsProvider);
-    final categories = ref.watch(serviceCategoriesProvider);
-    final services = ref.watch(servicesProvider).value ?? const <Service>[];
-    final packages =
-        ref.watch(servicePackagesProvider).value ?? const <ServicePackage>[];
-    final classEvents =
-        ref.watch(classEventsProvider).value ?? const <ClassEvent>[];
-    final classTypes =
-        ref.watch(classTypesProvider).value ?? const <ClassType>[];
-
-    final targets = _assignmentTargets(
-      locations: locations,
-      categories: categories,
-      services: services,
-      packages: packages,
-      classEvents: classEvents,
-      classTypes: classTypes,
+    final targets = _buildVisibilityTargets(
+      locations: ref.watch(locationsProvider),
+      categories: ref.watch(serviceCategoriesProvider),
+      services: ref.watch(servicesProvider).value ?? const <Service>[],
+      packages:
+          ref.watch(servicePackagesProvider).value ?? const <ServicePackage>[],
+      classEvents:
+          ref.watch(classEventsProvider).value ?? const <ClassEvent>[],
     );
-    final isBusinessWide = _draftAssignments.any(
-      (a) => a.scopeType == 'business',
-    );
-    final availableScopeTypes = _availableScopeTypes(
-      _draftAssignments,
-      targets,
-    );
-    final effectiveScopeType =
-        availableScopeTypes.contains(_assignmentScopeType)
-        ? _assignmentScopeType
-        : availableScopeTypes.first;
-    final currentTargets = _availableTargetsForScope(
-      effectiveScopeType,
-      targets,
-    );
-    final effectiveTargetId =
-        currentTargets.any((t) => t.id == _assignmentScopeId)
-        ? _assignmentScopeId
-        : currentTargets.length == 1
-        ? currentTargets.first.id
-        : null;
-    final canAdd = effectiveScopeType == 'business'
-        ? !isBusinessWide
-        : effectiveTargetId != null;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(24, 4, 24, 32),
       children: [
-        Text(
-          l10n.bookingFormsVisibilityIntro,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            color: theme.colorScheme.onSurfaceVariant,
+        // Testo guida: ogni regola è un caso preciso; AND dentro, OR tra regole.
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: theme.colorScheme.primary.withValues(alpha: 0.06),
+            borderRadius: BorderRadius.circular(12),
           ),
-        ),
-        const SizedBox(height: 16),
-        // Current assignments
-        _SectionCard(
-          icon: Icons.public_outlined,
-          title: l10n.bookingFormsWhereShownTitle,
-          child: Column(
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (_draftAssignments.isEmpty)
-                const _InlineNotice(
-                  icon: Icons.warning_amber_rounded,
-                  messageKey: _NoticeMessage.noAssignments,
-                  tone: _NoticeTone.warning,
-                )
-              else if (isBusinessWide) ...[
-                const _InlineNotice(
-                  icon: Icons.check_circle_outline,
-                  messageKey: _NoticeMessage.businessWide,
-                  tone: _NoticeTone.positive,
+              Icon(
+                Icons.info_outline,
+                size: 18,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  l10n.bookingFormsRulesGuide,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _AssignmentChip(
-                      label: l10n.bookingFormsAssignmentBusinessWide,
-                      onDeleted: _saving
-                          ? null
-                          : () => _persistAssignments(const [], targets),
-                    ),
-                  ],
-                ),
-              ] else
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (var i = 0; i < _draftAssignments.length; i++)
-                      _AssignmentChip(
-                        label: _assignmentLabel(
-                          context,
-                          _draftAssignments[i],
-                          targets: targets,
-                        ),
-                        onDeleted: _saving
-                            ? null
-                            : () {
-                                final next = [..._draftAssignments]
-                                  ..removeAt(i);
-                                _persistAssignments(next, targets);
-                              },
-                      ),
-                  ],
-                ),
+              ),
             ],
           ),
         ),
         const SizedBox(height: 16),
-        // Add assignment
         _SectionCard(
-          icon: Icons.add_location_alt_outlined,
-          title: l10n.bookingFormsAssignmentAdd,
+          icon: Icons.rule_folder_outlined,
+          title: l10n.bookingFormsRulesTitle,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              LabeledFormField(
-                label: l10n.bookingFormsAssignmentScope,
-                child: DropdownButtonFormField<String>(
-                  initialValue: effectiveScopeType,
-                  decoration: _fieldDecoration(context),
-                  items: availableScopeTypes
-                      .map(
-                        (scopeType) => DropdownMenuItem(
-                          value: scopeType,
-                          child: Text(_scopeTypeLabel(context, scopeType)),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: _saving
-                      ? null
-                      : (value) {
-                          if (value == null) return;
-                          setState(() {
-                            _assignmentScopeType = value;
-                            _assignmentScopeId = null;
-                          });
-                        },
-                ),
-              ),
-              if (effectiveScopeType != 'business') ...[
-                const SizedBox(height: 14),
-                LabeledFormField(
-                  label: l10n.bookingFormsAssignmentTarget,
-                  child: DropdownButtonFormField<int>(
-                    initialValue: effectiveTargetId,
-                    decoration: _fieldDecoration(context),
-                    items: currentTargets
-                        .map(
-                          (target) => DropdownMenuItem(
-                            value: target.id,
-                            child: Text(target.label),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: _saving || currentTargets.isEmpty
+              if (_draftRules.isEmpty)
+                const _InlineNotice(
+                  icon: Icons.warning_amber_rounded,
+                  messageKey: _NoticeMessage.noRules,
+                  tone: _NoticeTone.warning,
+                )
+              else
+                for (var i = 0; i < _draftRules.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 8),
+                  _RuleRow(
+                    label: _ruleSentence(context, _draftRules[i], targets),
+                    onDeleted: _saving
                         ? null
-                        : (value) => setState(() => _assignmentScopeId = value),
-                  ),
-                ),
-                if (currentTargets.isEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    l10n.bookingFormsAssignmentNoTargets,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+                        : () {
+                            final next = [..._draftRules]..removeAt(i);
+                            _persistRules(next);
+                          },
                   ),
                 ],
-              ],
               const SizedBox(height: 16),
               Align(
                 alignment: Alignment.centerLeft,
                 child: AppOutlinedActionButton(
-                  onPressed: _saving || !canAdd
-                      ? null
-                      : () {
-                          final scopeId = effectiveScopeType == 'business'
-                              ? null
-                              : effectiveTargetId;
-                          final next = [
-                            ..._draftAssignments,
-                            BookingFormAssignment(
-                              scopeType: effectiveScopeType,
-                              scopeId: scopeId,
-                            ),
-                          ];
-                          setState(() => _assignmentScopeId = null);
-                          _persistAssignments(next, targets);
-                        },
+                  onPressed: _saving ? null : () => _addRule(targets),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       const Icon(Icons.add, size: 20),
                       const SizedBox(width: 8),
-                      Text(l10n.bookingFormsAssignmentAdd),
+                      Text(l10n.bookingFormsRuleAdd),
                     ],
                   ),
                 ),
@@ -1034,268 +907,74 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
     );
   }
 
-  // ==========================================================================
-  // ASSIGNMENT LOGIC (invariata) — gerarchia & normalizzazione scope.
-  // ==========================================================================
-
-  List<String> _availableScopeTypes(
-    List<BookingFormAssignment> assignments,
-    Map<String, List<_AssignmentTarget>> targets,
-  ) {
-    final meaningfulScopeTypes = _assignmentScopeTypes
-        .where((scopeType) => _scopeHasMeaningfulChoice(scopeType, targets))
-        .toList();
-    if (assignments.any((assignment) => assignment.scopeType == 'business')) {
-      return const ['business'];
-    }
-    if (assignments.any((assignment) => assignment.scopeType == 'location')) {
-      return meaningfulScopeTypes
-          .where(
-            (scopeType) => scopeType == 'business' || scopeType == 'location',
-          )
-          .toList();
-    }
-    if (assignments.any(
-      (assignment) => assignment.scopeType == 'service_category',
-    )) {
-      return meaningfulScopeTypes
-          .where(
-            (scopeType) =>
-                scopeType == 'business' ||
-                scopeType == 'location' ||
-                scopeType == 'service_category',
-          )
-          .toList();
-    }
-    return meaningfulScopeTypes.isEmpty
-        ? const ['business']
-        : meaningfulScopeTypes;
-  }
-
-  bool _scopeHasMeaningfulChoice(
-    String scopeType,
-    Map<String, List<_AssignmentTarget>> targets,
-  ) {
-    if (scopeType == 'business') return true;
-    if (scopeType == 'location') {
-      return (targets['location'] ?? const <_AssignmentTarget>[]).length > 1;
-    }
-    if (scopeType == 'service_category') {
-      return (targets['service_category'] ?? const <_AssignmentTarget>[])
-              .length >
-          1;
-    }
-
-    final totalSpecificTargets = _specificAssignmentScopeTypes.fold<int>(
-      0,
-      (count, itemScopeType) =>
-          count +
-          (targets[itemScopeType] ?? const <_AssignmentTarget>[]).length,
+  Future<void> _addRule(_VisibilityTargets targets) async {
+    final rule = await AppForm.show<BookingFormRule>(
+      context: context,
+      builder: (context) => _RuleBuilderDialog(targets: targets),
     );
-    final scopeTargets = targets[scopeType] ?? const <_AssignmentTarget>[];
-    if (scopeTargets.isEmpty) return false;
-    if (totalSpecificTargets <= 1) return false;
-    return true;
+    if (rule == null || rule.conditions.isEmpty) return;
+    await _persistRules([..._draftRules, rule]);
   }
 
-  List<_AssignmentTarget> _availableTargetsForScope(
-    String scopeType,
-    Map<String, List<_AssignmentTarget>> targets,
+  String _ruleSentence(
+    BuildContext context,
+    BookingFormRule rule,
+    _VisibilityTargets targets,
   ) {
-    final scopeTargets = targets[scopeType] ?? const <_AssignmentTarget>[];
-    final normalized = _normalizedAssignments(_draftAssignments, targets);
-    return scopeTargets.where((target) {
-      final candidate = BookingFormAssignment(
-        scopeType: scopeType,
-        scopeId: target.id,
-      );
-      final alreadyAssigned = normalized.any(
-        (assignment) =>
-            assignment.scopeType == candidate.scopeType &&
-            assignment.scopeId == candidate.scopeId,
-      );
-      if (alreadyAssigned) return false;
-      final normalizedWithCandidate = _normalizedAssignments([
-        ...normalized,
-        candidate,
-      ], targets);
-      return normalizedWithCandidate.any(
-        (assignment) =>
-            assignment.scopeType == candidate.scopeType &&
-            assignment.scopeId == candidate.scopeId,
-      );
-    }).toList();
+    return _ruleSentenceText(context, rule, targets);
   }
 
-  List<BookingFormAssignment> _normalizedAssignments(
-    List<BookingFormAssignment> assignments,
-    Map<String, List<_AssignmentTarget>> targets,
-  ) {
-    final unique = <String, BookingFormAssignment>{};
-    for (final assignment in assignments) {
-      unique['${assignment.scopeType}:${assignment.scopeId ?? 'all'}'] =
-          assignment;
-    }
-    final values = unique.values.toList();
-    if (values.any((assignment) => assignment.scopeType == 'business')) {
-      return const [BookingFormAssignment(scopeType: 'business')];
-    }
-
-    final assignedLocationIds = values
-        .where((assignment) => assignment.scopeType == 'location')
-        .map((assignment) => assignment.scopeId)
-        .whereType<int>()
-        .toSet();
-    final assignedCategoryIds = values
-        .where((assignment) => assignment.scopeType == 'service_category')
-        .map((assignment) => assignment.scopeId)
-        .whereType<int>()
-        .toSet();
-
-    return values.where((assignment) {
-      if (assignedLocationIds.isNotEmpty &&
-          assignment.scopeType == 'service_category') {
-        return false;
-      }
-      if (_isCoveredByLocations(assignment, assignedLocationIds, targets)) {
-        return false;
-      }
-      if (_isCoveredByCategories(assignment, assignedCategoryIds, targets)) {
-        return false;
-      }
-      return true;
-    }).toList();
-  }
-
-  bool _isCoveredByLocations(
-    BookingFormAssignment assignment,
-    Set<int> locationIds,
-    Map<String, List<_AssignmentTarget>> targets,
-  ) {
-    if (locationIds.isEmpty || assignment.scopeType == 'location') {
-      return false;
-    }
-    final target = _targetForAssignment(assignment, targets);
-    return target?.locationId != null &&
-        locationIds.contains(target!.locationId);
-  }
-
-  bool _isCoveredByCategories(
-    BookingFormAssignment assignment,
-    Set<int> categoryIds,
-    Map<String, List<_AssignmentTarget>> targets,
-  ) {
-    if (categoryIds.isEmpty ||
-        assignment.scopeType == 'location' ||
-        assignment.scopeType == 'service_category') {
-      return false;
-    }
-    final target = _targetForAssignment(assignment, targets);
-    return target?.categoryId != null &&
-        categoryIds.contains(target!.categoryId);
-  }
-
-  _AssignmentTarget? _targetForAssignment(
-    BookingFormAssignment assignment,
-    Map<String, List<_AssignmentTarget>> targets,
-  ) {
-    for (final item in targets[assignment.scopeType] ?? const []) {
-      if (item.id == assignment.scopeId) {
-        return item;
-      }
-    }
-    return null;
-  }
-
-  Map<String, List<_AssignmentTarget>> _assignmentTargets({
+  _VisibilityTargets _buildVisibilityTargets({
     required List<Location> locations,
     required List<ServiceCategory> categories,
     required List<Service> services,
     required List<ServicePackage> packages,
     required List<ClassEvent> classEvents,
-    required List<ClassType> classTypes,
   }) {
-    final classTypeCategoryIds = {
-      for (final classType in classTypes)
-        if (classType.serviceCategoryId != null)
-          classType.id: classType.serviceCategoryId!,
-    };
-    return {
-      'location': locations
-          .map(
-            (location) => _AssignmentTarget(
-              location.id,
-              location.name,
-              locationId: location.id,
-            ),
-          )
-          .toList(),
-      'service_category': categories
-          .map(
-            (category) => _AssignmentTarget(
-              category.id,
-              category.name,
-              categoryId: category.id,
-            ),
-          )
-          .toList(),
-      'service_variant': services
-          .where((service) => service.serviceVariantId != null)
-          .map(
-            (service) => _AssignmentTarget(
-              service.serviceVariantId!,
-              service.name,
+    return _VisibilityTargets(
+      locations: [
+        for (final location in locations)
+          _AssignmentTarget(
+            location.id,
+            location.name,
+            locationId: location.id,
+          ),
+      ],
+      categories: [
+        for (final category in categories)
+          _AssignmentTarget(
+            category.id,
+            category.name,
+            categoryId: category.id,
+          ),
+      ],
+      appointments: [
+        for (final service in services)
+          if (service.serviceVariantId != null)
+            _AppointmentTarget(
+              scopeType: 'service_variant',
+              id: service.serviceVariantId!,
+              label: service.name,
               locationId: service.locationId,
-              categoryId: service.categoryId,
             ),
-          )
-          .toList(),
-      'service_package': packages.map((servicePackage) {
-        return _AssignmentTarget(
-          servicePackage.id,
-          servicePackage.name,
-          locationId: servicePackage.locationId,
-          categoryId: servicePackage.categoryId,
-        );
-      }).toList(),
-      'class_event': classEvents.map((event) {
-        final label = event.classTypeName?.isNotEmpty == true
-            ? event.classTypeName!
-            : '#${event.id}';
-        return _AssignmentTarget(
-          event.id,
-          label,
-          locationId: event.locationId,
-          categoryId: classTypeCategoryIds[event.classTypeId],
-        );
-      }).toList(),
-    };
-  }
-
-  String _assignmentLabel(
-    BuildContext context,
-    BookingFormAssignment assignment, {
-    required Map<String, List<_AssignmentTarget>> targets,
-  }) {
-    if (assignment.scopeType == 'business') {
-      return context.l10n.bookingFormsAssignmentBusinessWide;
-    }
-    final target = _targetForAssignment(assignment, targets);
-    final targetLabel = target?.label ?? '#${assignment.scopeId}';
-    return '${_scopeTypeLabel(context, assignment.scopeType)}: $targetLabel';
-  }
-
-  String _scopeTypeLabel(BuildContext context, String scopeType) {
-    final l10n = context.l10n;
-    return switch (scopeType) {
-      'business' => l10n.bookingFormsAssignmentBusiness,
-      'location' => l10n.bookingFormsAssignmentLocation,
-      'service_category' => l10n.bookingFormsAssignmentCategory,
-      'service_variant' => l10n.bookingFormsAssignmentService,
-      'service_package' => l10n.bookingFormsAssignmentPackage,
-      'class_event' => l10n.bookingFormsAssignmentClassEvent,
-      _ => scopeType,
-    };
+        for (final servicePackage in packages)
+          _AppointmentTarget(
+            scopeType: 'service_package',
+            id: servicePackage.id,
+            label: servicePackage.name,
+            locationId: servicePackage.locationId,
+          ),
+        for (final event in classEvents)
+          _AppointmentTarget(
+            scopeType: 'class_event',
+            id: event.id,
+            label: event.classTypeName?.isNotEmpty == true
+                ? event.classTypeName!
+                : '#${event.id}',
+            locationId: event.locationId,
+          ),
+      ],
+    );
   }
 }
 
@@ -1314,20 +993,106 @@ InputDecoration _fieldDecoration(BuildContext context, {String? hint}) {
   );
 }
 
-const _assignmentScopeTypes = [
-  'business',
-  'location',
-  'service_category',
-  'service_variant',
-  'service_package',
-  'class_event',
-];
+/// Insieme degli elementi selezionabili nelle regole di visibilità.
+class _VisibilityTargets {
+  const _VisibilityTargets({
+    required this.locations,
+    required this.categories,
+    required this.appointments,
+  });
 
-const _specificAssignmentScopeTypes = [
-  'service_variant',
-  'service_package',
-  'class_event',
-];
+  final List<_AssignmentTarget> locations;
+  final List<_AssignmentTarget> categories;
+  final List<_AppointmentTarget> appointments;
+}
+
+/// Un tipo di appuntamento prenotabile (variante, pacchetto o lezione),
+/// con la sede a cui è collegato.
+class _AppointmentTarget {
+  const _AppointmentTarget({
+    required this.scopeType,
+    required this.id,
+    required this.label,
+    this.locationId,
+  });
+
+  final String scopeType;
+  final int id;
+  final String label;
+  final int? locationId;
+}
+
+/// Traduce una regola in una frase leggibile per l'operatore (senza simboli
+/// tecnici come "+"). Esempi: "Solo sede Roma", "Massaggi nella sede Roma".
+String _ruleSentenceText(
+  BuildContext context,
+  BookingFormRule rule,
+  _VisibilityTargets targets,
+) {
+  final l10n = context.l10n;
+  String? locationLabel;
+  String? categoryLabel;
+  String? appointmentLabel;
+  var hasBusiness = false;
+
+  for (final condition in rule.conditions) {
+    final type = condition.scopeType;
+    if (type == 'business') {
+      hasBusiness = true;
+    } else if (type == 'location') {
+      locationLabel = _targetLabel(targets.locations, condition.scopeId);
+    } else if (type == 'service_category') {
+      categoryLabel = _targetLabel(targets.categories, condition.scopeId);
+    } else {
+      appointmentLabel = _appointmentTargetLabel(
+        targets.appointments,
+        type,
+        condition.scopeId,
+      );
+    }
+  }
+
+  if (hasBusiness) return l10n.bookingFormsRuleBusiness;
+  if (locationLabel != null && categoryLabel != null) {
+    return l10n.bookingFormsRuleCategoryInLocation(categoryLabel, locationLabel);
+  }
+  if (locationLabel != null && appointmentLabel != null) {
+    return l10n.bookingFormsRuleAppointmentInLocation(
+      appointmentLabel,
+      locationLabel,
+    );
+  }
+  if (locationLabel != null) {
+    return l10n.bookingFormsRuleLocationOnly(locationLabel);
+  }
+  if (categoryLabel != null) {
+    return l10n.bookingFormsRuleCategoryOnly(categoryLabel);
+  }
+  if (appointmentLabel != null) {
+    return l10n.bookingFormsRuleAppointmentOnly(appointmentLabel);
+  }
+  return l10n.bookingFormsRuleBusiness;
+}
+
+String? _targetLabel(List<_AssignmentTarget> list, int? id) {
+  if (id == null) return null;
+  for (final target in list) {
+    if (target.id == id) return target.label;
+  }
+  return '#$id';
+}
+
+String? _appointmentTargetLabel(
+  List<_AppointmentTarget> list,
+  String scopeType,
+  int? id,
+) {
+  if (id == null) return null;
+  for (final target in list) {
+    if (target.scopeType == scopeType && target.id == id) return target.label;
+  }
+  return '#$id';
+}
 
 class _AssignmentTarget {
   const _AssignmentTarget(
@@ -1596,7 +1361,7 @@ class _WarningBanner extends StatelessWidget {
 
 enum _NoticeTone { positive, warning }
 
-enum _NoticeMessage { noAssignments, businessWide }
+enum _NoticeMessage { noRules }
 
 class _InlineNotice extends StatelessWidget {
   const _InlineNotice({
@@ -1617,9 +1382,7 @@ class _InlineNotice extends StatelessWidget {
         ? const Color(0xFF2E7D32)
         : const Color(0xFFB26A00);
     final message = switch (messageKey) {
-      _NoticeMessage.noAssignments => l10n.bookingFormsNoAssignmentsHint,
-      _NoticeMessage.businessWide =>
-        l10n.bookingFormsVisibilityBusinessWideHint,
+      _NoticeMessage.noRules => l10n.bookingFormsNoRulesHint,
     };
     return Container(
       width: double.infinity,
@@ -1645,8 +1408,9 @@ class _InlineNotice extends StatelessWidget {
   }
 }
 
-class _AssignmentChip extends StatelessWidget {
-  const _AssignmentChip({required this.label, this.onDeleted});
+/// Riga che mostra una regola come frase leggibile, con azione di rimozione.
+class _RuleRow extends StatelessWidget {
+  const _RuleRow({required this.label, this.onDeleted});
 
   final String label;
   final VoidCallback? onDeleted;
@@ -1655,41 +1419,346 @@ class _AssignmentChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 8, 6, 8),
+      padding: const EdgeInsets.fromLTRB(14, 10, 6, 10),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primary.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(20),
+        color: theme.colorScheme.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.20),
+          color: theme.colorScheme.primary.withValues(alpha: 0.18),
         ),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          Flexible(
+          Icon(
+            Icons.check_circle_outline,
+            size: 18,
+            color: theme.colorScheme.primary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
             child: Text(
               label,
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
           if (onDeleted != null)
-            InkWell(
-              onTap: onDeleted,
-              borderRadius: BorderRadius.circular(20),
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: Icon(
-                  Icons.close,
-                  size: 16,
+            IconButton(
+              tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
+              icon: const Icon(Icons.close, size: 18),
+              color: theme.colorScheme.onSurfaceVariant,
+              onPressed: onDeleted,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Dialog per comporre una regola di visualizzazione.
+/// Combinazioni ammesse: solo business, solo sede, solo categoria, solo tipo
+/// appuntamento, sede + categoria, sede + tipo appuntamento.
+class _RuleBuilderDialog extends StatefulWidget {
+  const _RuleBuilderDialog({required this.targets});
+
+  final _VisibilityTargets targets;
+
+  @override
+  State<_RuleBuilderDialog> createState() => _RuleBuilderDialogState();
+}
+
+class _RuleBuilderDialogState extends State<_RuleBuilderDialog> {
+  String _scope = 'business';
+  int? _locationId;
+  int? _categoryId;
+  String _refine = 'none';
+  _AppointmentTarget? _appointment;
+
+  List<_AppointmentTarget> _appointmentsForLocation() {
+    if (_locationId == null) return const [];
+    return widget.targets.appointments
+        .where((a) => a.locationId == _locationId)
+        .toList();
+  }
+
+  BookingFormRule _draftRule() {
+    switch (_scope) {
+      case 'location':
+        final conditions = <BookingFormCondition>[
+          BookingFormCondition(scopeType: 'location', scopeId: _locationId),
+        ];
+        if (_refine == 'service_category' && _categoryId != null) {
+          conditions.add(
+            BookingFormCondition(
+              scopeType: 'service_category',
+              scopeId: _categoryId,
+            ),
+          );
+        } else if (_refine == 'appointment' && _appointment != null) {
+          conditions.add(
+            BookingFormCondition(
+              scopeType: _appointment!.scopeType,
+              scopeId: _appointment!.id,
+            ),
+          );
+        }
+        return BookingFormRule(conditions: conditions);
+      case 'service_category':
+        return BookingFormRule(
+          conditions: [
+            BookingFormCondition(
+              scopeType: 'service_category',
+              scopeId: _categoryId,
+            ),
+          ],
+        );
+      case 'appointment':
+        final appointment = _appointment;
+        return BookingFormRule(
+          conditions: appointment == null
+              ? const []
+              : [
+                  BookingFormCondition(
+                    scopeType: appointment.scopeType,
+                    scopeId: appointment.id,
+                  ),
+                ],
+        );
+      case 'business':
+      default:
+        return const BookingFormRule(
+          conditions: [BookingFormCondition(scopeType: 'business')],
+        );
+    }
+  }
+
+  bool _canSubmit() {
+    switch (_scope) {
+      case 'location':
+        if (_locationId == null) return false;
+        if (_refine == 'service_category') return _categoryId != null;
+        if (_refine == 'appointment') return _appointment != null;
+        return true;
+      case 'service_category':
+        return _categoryId != null;
+      case 'appointment':
+        return _appointment != null;
+      case 'business':
+      default:
+        return true;
+    }
+  }
+
+  void _submit() {
+    final rule = _draftRule();
+    if (rule.conditions.isEmpty) return;
+    Navigator.of(context).pop(rule);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final targets = widget.targets;
+    final hasCategories = targets.categories.isNotEmpty;
+    final hasAppointments = targets.appointments.isNotEmpty;
+
+    return AppFormScaffold(
+      title: Text(l10n.bookingFormsRuleBuilderTitle),
+      content: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          LabeledFormField(
+            label: l10n.bookingFormsRuleScopeQuestion,
+            child: Column(
+              children: [
+                _scopeTile('business', l10n.bookingFormsRuleScopeBusiness),
+                _scopeTile('location', l10n.bookingFormsRuleScopeLocation),
+                if (hasCategories)
+                  _scopeTile(
+                    'service_category',
+                    l10n.bookingFormsRuleScopeCategory,
+                  ),
+                if (hasAppointments)
+                  _scopeTile(
+                    'appointment',
+                    l10n.bookingFormsRuleScopeAppointment,
+                  ),
+              ],
+            ),
+          ),
+          if (_scope == 'location') ...[
+            const SizedBox(height: 16),
+            LabeledFormField(
+              label: l10n.bookingFormsRuleSelectLocation,
+              child: DropdownButtonFormField<int>(
+                initialValue: _locationId,
+                decoration: _fieldDecoration(context),
+                items: [
+                  for (final location in targets.locations)
+                    DropdownMenuItem(
+                      value: location.id,
+                      child: Text(location.label),
+                    ),
+                ],
+                onChanged: (value) => setState(() {
+                  _locationId = value;
+                  _appointment = null;
+                }),
+              ),
+            ),
+            const SizedBox(height: 16),
+            LabeledFormField(
+              label: l10n.bookingFormsRuleRefine,
+              child: Column(
+                children: [
+                  _refineTile('none', l10n.bookingFormsRuleRefineNone),
+                  if (hasCategories)
+                    _refineTile(
+                      'service_category',
+                      l10n.bookingFormsRuleRefineCategory,
+                    ),
+                  if (hasAppointments)
+                    _refineTile(
+                      'appointment',
+                      l10n.bookingFormsRuleRefineAppointment,
+                    ),
+                ],
+              ),
+            ),
+            if (_refine == 'service_category') ...[
+              const SizedBox(height: 12),
+              _categoryDropdown(context),
+            ],
+            if (_refine == 'appointment') ...[
+              const SizedBox(height: 12),
+              _appointmentDropdown(context, _appointmentsForLocation()),
+            ],
+          ],
+          if (_scope == 'service_category') ...[
+            const SizedBox(height: 16),
+            _categoryDropdown(context),
+          ],
+          if (_scope == 'appointment') ...[
+            const SizedBox(height: 16),
+            _appointmentDropdown(context, targets.appointments),
+          ],
+          if (_canSubmit()) ...[
+            const SizedBox(height: 20),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.06),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                _ruleSentenceText(context, _draftRule(), targets),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
                   color: theme.colorScheme.primary,
                 ),
               ),
             ),
+          ],
         ],
       ),
+      actions: [
+        AppOutlinedActionButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(l10n.actionCancel),
+        ),
+        AppFilledButton(
+          onPressed: _canSubmit() ? _submit : null,
+          child: Text(l10n.bookingFormsRuleAdd),
+        ),
+      ],
+    );
+  }
+
+  Widget _categoryDropdown(BuildContext context) {
+    final l10n = context.l10n;
+    return LabeledFormField(
+      label: l10n.bookingFormsRuleSelectCategory,
+      child: DropdownButtonFormField<int>(
+        initialValue: _categoryId,
+        decoration: _fieldDecoration(context),
+        items: [
+          for (final category in widget.targets.categories)
+            DropdownMenuItem(value: category.id, child: Text(category.label)),
+        ],
+        onChanged: (value) => setState(() => _categoryId = value),
+      ),
+    );
+  }
+
+  Widget _appointmentDropdown(
+    BuildContext context,
+    List<_AppointmentTarget> items,
+  ) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    if (items.isEmpty) {
+      return Text(
+        l10n.bookingFormsRuleNoTargets,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+    final value = items.contains(_appointment) ? _appointment : null;
+    return LabeledFormField(
+      label: l10n.bookingFormsRuleSelectAppointment,
+      child: DropdownButtonFormField<_AppointmentTarget>(
+        key: ValueKey('appt-$_scope-$_locationId-$_refine'),
+        initialValue: value,
+        decoration: _fieldDecoration(context),
+        items: [
+          for (final appointment in items)
+            DropdownMenuItem(
+              value: appointment,
+              child: Text(appointment.label),
+            ),
+        ],
+        onChanged: (selected) => setState(() => _appointment = selected),
+      ),
+    );
+  }
+
+  Widget _scopeTile(String value, String label) {
+    return RadioListTile<String>(
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+      value: value,
+      // ignore: deprecated_member_use
+      groupValue: _scope,
+      title: Text(label),
+      // ignore: deprecated_member_use
+      onChanged: (selected) => setState(() {
+        _scope = selected ?? 'business';
+        _refine = 'none';
+        _appointment = null;
+        _categoryId = null;
+      }),
+    );
+  }
+
+  Widget _refineTile(String value, String label) {
+    return RadioListTile<String>(
+      contentPadding: EdgeInsets.zero,
+      dense: true,
+      value: value,
+      // ignore: deprecated_member_use
+      groupValue: _refine,
+      title: Text(label),
+      // ignore: deprecated_member_use
+      onChanged: (selected) => setState(() {
+        _refine = selected ?? 'none';
+        _appointment = null;
+        _categoryId = null;
+      }),
     );
   }
 }

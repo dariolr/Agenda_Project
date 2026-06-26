@@ -6,9 +6,9 @@ class BookingForm {
   final bool isActive;
   final int sortOrder;
   final int? fieldsCount;
-  final int? assignmentsCount;
+  final int? rulesCount;
   final List<BookingFormField> fields;
-  final List<BookingFormAssignment> assignments;
+  final List<BookingFormRule> rules;
 
   const BookingForm({
     required this.id,
@@ -18,9 +18,9 @@ class BookingForm {
     this.isActive = true,
     this.sortOrder = 0,
     this.fieldsCount,
-    this.assignmentsCount,
+    this.rulesCount,
     this.fields = const [],
-    this.assignments = const [],
+    this.rules = const [],
   });
 
   factory BookingForm.fromJson(Map<String, dynamic> json) => BookingForm(
@@ -31,15 +31,12 @@ class BookingForm {
     isActive: _asBool(json['is_active']),
     sortOrder: json['sort_order'] as int? ?? 0,
     fieldsCount: json['fields_count'] as int?,
-    assignmentsCount: json['assignments_count'] as int?,
+    rulesCount: json['rules_count'] as int?,
     fields: (json['fields'] as List<dynamic>? ?? const [])
         .map((item) => BookingFormField.fromJson(item as Map<String, dynamic>))
         .toList(),
-    assignments: (json['assignments'] as List<dynamic>? ?? const [])
-        .map(
-          (item) =>
-              BookingFormAssignment.fromJson(item as Map<String, dynamic>),
-        )
+    rules: (json['rules'] as List<dynamic>? ?? const [])
+        .map((item) => BookingFormRule.fromJson(item as Map<String, dynamic>))
         .toList(),
   );
 }
@@ -106,14 +103,16 @@ class BookingFormField {
   }
 }
 
-class BookingFormAssignment {
+/// Una condizione di una regola: un singolo ambito (business, sede, categoria,
+/// o tipo appuntamento).
+class BookingFormCondition {
   final String scopeType;
   final int? scopeId;
 
-  const BookingFormAssignment({required this.scopeType, this.scopeId});
+  const BookingFormCondition({required this.scopeType, this.scopeId});
 
-  factory BookingFormAssignment.fromJson(Map<String, dynamic> json) =>
-      BookingFormAssignment(
+  factory BookingFormCondition.fromJson(Map<String, dynamic> json) =>
+      BookingFormCondition(
         scopeType: json['scope_type'] as String? ?? 'business',
         scopeId: json['scope_id'] as int?,
       );
@@ -121,6 +120,34 @@ class BookingFormAssignment {
   Map<String, dynamic> toJson() => {
     'scope_type': scopeType,
     'scope_id': scopeId,
+  };
+}
+
+/// Una regola di visualizzazione: tutte le sue condizioni devono essere
+/// rispettate (AND). Il modulo appare se almeno una regola è soddisfatta (OR).
+class BookingFormRule {
+  final int? id;
+  final int sortOrder;
+  final List<BookingFormCondition> conditions;
+
+  const BookingFormRule({
+    this.id,
+    this.sortOrder = 0,
+    this.conditions = const [],
+  });
+
+  factory BookingFormRule.fromJson(Map<String, dynamic> json) => BookingFormRule(
+    id: json['id'] as int?,
+    sortOrder: json['sort_order'] as int? ?? 0,
+    conditions: (json['conditions'] as List<dynamic>? ?? const [])
+        .map(
+          (item) => BookingFormCondition.fromJson(item as Map<String, dynamic>),
+        )
+        .toList(),
+  );
+
+  Map<String, dynamic> toJson() => {
+    'conditions': conditions.map((c) => c.toJson()).toList(),
   };
 }
 

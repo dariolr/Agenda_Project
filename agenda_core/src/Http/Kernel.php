@@ -338,7 +338,7 @@ final class Kernel
         $this->router->patch('/v1/businesses/{business_id}/booking-forms/{form_id}/fields/{field_id}', BookingFormsController::class, 'updateField', ['auth', 'business_access_route']);
         $this->router->delete('/v1/businesses/{business_id}/booking-forms/{form_id}/fields/{field_id}', BookingFormsController::class, 'destroyField', ['auth', 'business_access_route']);
         $this->router->put('/v1/businesses/{business_id}/booking-forms/{form_id}/fields/reorder', BookingFormsController::class, 'reorderFields', ['auth', 'business_access_route']);
-        $this->router->put('/v1/businesses/{business_id}/booking-forms/{form_id}/assignments', BookingFormsController::class, 'replaceAssignments', ['auth', 'business_access_route']);
+        $this->router->put('/v1/businesses/{business_id}/booking-forms/{form_id}/rules', BookingFormsController::class, 'replaceRules', ['auth', 'business_access_route']);
         $this->router->get('/v1/businesses/{business_id}/bookings/{booking_id}/form-submissions', BookingFormsController::class, 'submissionsForBooking', ['auth', 'business_access_route']);
         $this->router->get('/v1/businesses/{business_id}/bookings/{booking_id}/forms', BookingFormsController::class, 'formsForBooking', ['auth', 'business_access_route']);
         $this->router->put('/v1/businesses/{business_id}/bookings/{booking_id}/form-submissions', BookingFormsController::class, 'saveBookingSubmissions', ['auth', 'business_access_route']);

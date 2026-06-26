@@ -79,7 +79,7 @@ final class BookingFormRepository
         $stmt = $this->db->getPdo()->prepare(
             "SELECT bf.*,
                     (SELECT COUNT(*) FROM booking_form_fields bff WHERE bff.form_id = bf.id AND bff.is_active = 1) AS fields_count,
-                    (SELECT COUNT(*) FROM booking_form_assignments bfa WHERE bfa.form_id = bf.id AND bfa.is_active = 1) AS assignments_count
+                    (SELECT COUNT(*) FROM booking_form_rules bfr WHERE bfr.form_id = bf.id AND bfr.is_active = 1) AS rules_count
              FROM booking_forms bf
              WHERE bf.business_id = ?
                AND bf.deleted_at IS NULL
@@ -275,43 +275,130 @@ final class BookingFormRepository
         }
     }
 
-    public function replaceAssignments(int $businessId, int $formId, array $assignments): void
+    /**
+     * Sostituisce tutte le regole di visualizzazione di un modulo.
+     * Ogni regola è un insieme di condizioni in AND; tra regole diverse vale OR.
+     *
+     * @param array<int,array{conditions?:array}> $rules
+     */
+    public function replaceRules(int $businessId, int $formId, array $rules): void
     {
         $this->assertFormBelongsToBusiness($businessId, $formId);
+
+        // Valida e normalizza tutte le regole prima di toccare il DB.
+        $normalizedRules = [];
+        foreach ($rules as $rule) {
+            if (!is_array($rule)) {
+                throw new InvalidArgumentException('invalid_rule');
+            }
+            $conditions = $rule['conditions'] ?? [];
+            if (!is_array($conditions)) {
+                throw new InvalidArgumentException('invalid_rule');
+            }
+            $normalizedRules[] = $this->normalizeRuleConditions($businessId, $conditions);
+        }
+
         $pdo = $this->db->getPdo();
         $pdo->beginTransaction();
         try {
-            $delete = $pdo->prepare('DELETE FROM booking_form_assignments WHERE form_id = ? AND business_id = ?');
-            $delete->execute([$formId, $businessId]);
+            $deleteConditions = $pdo->prepare('DELETE FROM booking_form_rule_conditions WHERE form_id = ? AND business_id = ?');
+            $deleteConditions->execute([$formId, $businessId]);
+            $deleteRules = $pdo->prepare('DELETE FROM booking_form_rules WHERE form_id = ? AND business_id = ?');
+            $deleteRules->execute([$formId, $businessId]);
 
-            $insert = $pdo->prepare(
-                'INSERT INTO booking_form_assignments (form_id, business_id, scope_type, scope_id, is_active)
+            $insertRule = $pdo->prepare(
+                'INSERT INTO booking_form_rules (form_id, business_id, is_active, sort_order) VALUES (?, ?, 1, ?)'
+            );
+            $insertCondition = $pdo->prepare(
+                'INSERT INTO booking_form_rule_conditions (rule_id, form_id, business_id, scope_type, scope_id)
                  VALUES (?, ?, ?, ?, ?)'
             );
-            foreach ($assignments as $assignment) {
-                if (!is_array($assignment)) {
-                    continue;
+            foreach ($normalizedRules as $index => $conditions) {
+                $insertRule->execute([$formId, $businessId, $index]);
+                $ruleId = (int) $pdo->lastInsertId();
+                foreach ($conditions as $condition) {
+                    $insertCondition->execute([
+                        $ruleId,
+                        $formId,
+                        $businessId,
+                        $condition['scope_type'],
+                        $condition['scope_id'],
+                    ]);
                 }
-                $scopeType = (string) ($assignment['scope_type'] ?? '');
-                $scopeId = array_key_exists('scope_id', $assignment) && $assignment['scope_id'] !== null
-                    ? (int) $assignment['scope_id']
-                    : null;
-                if (!$this->isValidAssignment($businessId, $scopeType, $scopeId)) {
-                    throw new InvalidArgumentException('invalid_assignment');
-                }
-                $insert->execute([
-                    $formId,
-                    $businessId,
-                    $scopeType,
-                    $scopeId,
-                    isset($assignment['is_active']) ? (int) (bool) $assignment['is_active'] : 1,
-                ]);
             }
             $pdo->commit();
         } catch (\Throwable $e) {
             $pdo->rollBack();
             throw $e;
         }
+    }
+
+    /**
+     * Valida e normalizza le condizioni di una singola regola.
+     *
+     * Combinazioni ammesse (AND dentro la regola):
+     *   - solo business
+     *   - solo location
+     *   - solo service_category
+     *   - solo tipo appuntamento (service_variant | service_package | class_event)
+     *   - location + service_category
+     *   - location + tipo appuntamento
+     *
+     * @return array<int,array{scope_type:string,scope_id:?int}>
+     */
+    private function normalizeRuleConditions(int $businessId, array $conditions): array
+    {
+        $counts = ['business' => 0, 'location' => 0, 'service_category' => 0, 'appointment' => 0];
+        $normalized = [];
+        $seen = [];
+        foreach ($conditions as $condition) {
+            if (!is_array($condition)) {
+                throw new InvalidArgumentException('invalid_rule');
+            }
+            $scopeType = (string) ($condition['scope_type'] ?? '');
+            $scopeId = array_key_exists('scope_id', $condition) && $condition['scope_id'] !== null
+                ? (int) $condition['scope_id']
+                : null;
+            if (!$this->isValidCondition($businessId, $scopeType, $scopeId)) {
+                throw new InvalidArgumentException('invalid_rule');
+            }
+            $key = $scopeType . ':' . ($scopeId ?? 'business');
+            if (isset($seen[$key])) {
+                continue; // condizioni identiche deduplicate
+            }
+            $seen[$key] = true;
+            $counts[$this->conditionCategory($scopeType)]++;
+            $normalized[] = ['scope_type' => $scopeType, 'scope_id' => $scopeId];
+        }
+
+        if (empty($normalized)) {
+            throw new InvalidArgumentException('empty_rule');
+        }
+        // Una sola condizione per ciascuna categoria.
+        if ($counts['location'] > 1 || $counts['service_category'] > 1 || $counts['appointment'] > 1) {
+            throw new InvalidArgumentException('invalid_rule_combination');
+        }
+        // business non si combina con altre condizioni.
+        if ($counts['business'] > 0 && count($normalized) > 1) {
+            throw new InvalidArgumentException('invalid_rule_combination');
+        }
+        // categoria + tipo appuntamento (con o senza sede) non è ammesso.
+        if ($counts['service_category'] > 0 && $counts['appointment'] > 0) {
+            throw new InvalidArgumentException('invalid_rule_combination');
+        }
+
+        return $normalized;
+    }
+
+    private function conditionCategory(string $scopeType): string
+    {
+        return match ($scopeType) {
+            'business' => 'business',
+            'location' => 'location',
+            'service_category' => 'service_category',
+            'service_variant', 'service_package', 'class_event' => 'appointment',
+            default => 'unknown',
+        };
     }
 
     public function resolvePublicForms(
@@ -654,33 +741,15 @@ final class BookingFormRepository
 
     private function findActiveFormsForContext(int $businessId, array $context): array
     {
-        $conditions = ['(bfa.scope_type = ? AND bfa.scope_id IS NULL)'];
-        $params = [$businessId, 'business'];
-
-        foreach (['location', 'service_variant', 'service_package', 'class_event', 'service_category'] as $scopeType) {
-            $ids = $context[$scopeType] ?? [];
-            if (empty($ids)) {
-                continue;
-            }
-            $conditions[] = '(bfa.scope_type = ? AND bfa.scope_id IN (' . implode(',', array_fill(0, count($ids), '?')) . '))';
-            $params[] = $scopeType;
-            foreach ($ids as $id) {
-                $params[] = $id;
-            }
-        }
-
         $stmt = $this->db->getPdo()->prepare(
-            'SELECT DISTINCT bf.*
+            'SELECT bf.*
              FROM booking_forms bf
-             INNER JOIN booking_form_assignments bfa ON bfa.form_id = bf.id
              WHERE bf.business_id = ?
                AND bf.is_active = 1
                AND bf.deleted_at IS NULL
-               AND bfa.is_active = 1
-               AND (' . implode(' OR ', $conditions) . ')
              ORDER BY bf.sort_order ASC, bf.id ASC'
         );
-        $stmt->execute($params);
+        $stmt->execute([$businessId]);
         $forms = $stmt->fetchAll();
         if (empty($forms)) {
             return [];
@@ -688,19 +757,64 @@ final class BookingFormRepository
 
         $formIds = array_map(static fn(array $row): int => (int) $row['id'], $forms);
         $fieldsByForm = $this->fieldsByFormIds($businessId, $formIds);
-        $assignmentsByForm = $this->assignmentsByFormIds($businessId, $formIds);
+        $rulesByForm = $this->rulesByFormIds($businessId, $formIds);
         $formsWithFields = [];
-        foreach ($forms as &$form) {
+        foreach ($forms as $form) {
             $id = (int) $form['id'];
             if (empty($fieldsByForm[$id])) {
                 continue;
             }
-            $form['fields'] = $fieldsByForm[$id] ?? [];
-            $form['assignments'] = $assignmentsByForm[$id] ?? [];
+            // Il modulo appare se almeno una regola è soddisfatta (OR tra regole).
+            if (!$this->formMatchesContext($rulesByForm[$id] ?? [], $context)) {
+                continue;
+            }
+            $form['fields'] = $fieldsByForm[$id];
+            $form['rules'] = $rulesByForm[$id] ?? [];
             $formsWithFields[] = $form;
         }
 
         return $formsWithFields;
+    }
+
+    /**
+     * Una regola è soddisfatta solo se tutte le sue condizioni sono compatibili
+     * con il contesto della prenotazione (AND); tra regole diverse vale OR.
+     *
+     * @param array<int,array{conditions:array}> $rules
+     */
+    private function formMatchesContext(array $rules, array $context): bool
+    {
+        foreach ($rules as $rule) {
+            $conditions = $rule['conditions'] ?? [];
+            if (empty($conditions)) {
+                continue;
+            }
+            $allMatch = true;
+            foreach ($conditions as $condition) {
+                if (!$this->conditionMatchesContext($condition, $context)) {
+                    $allMatch = false;
+                    break;
+                }
+            }
+            if ($allMatch) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private function conditionMatchesContext(array $condition, array $context): bool
+    {
+        $scopeType = (string) ($condition['scope_type'] ?? '');
+        if ($scopeType === 'business') {
+            return true;
+        }
+        $scopeId = $condition['scope_id'] ?? null;
+        if ($scopeId === null) {
+            return false;
+        }
+        $ids = $context[$scopeType] ?? [];
+        return in_array((int) $scopeId, $ids, true);
     }
 
     private function buildContextIds(int $businessId, int $locationId, array $serviceVariantIds, array $serviceIds, array $servicePackageIds, array $classEventIds): array
@@ -809,7 +923,11 @@ final class BookingFormRepository
         return $fields;
     }
 
-    private function assignmentsByFormIds(int $businessId, array $formIds): array
+    /**
+     * Restituisce le regole (con condizioni) per i moduli indicati,
+     * raggruppate per form_id.
+     */
+    private function rulesByFormIds(int $businessId, array $formIds): array
     {
         if (empty($formIds)) {
             return [];
@@ -817,18 +935,46 @@ final class BookingFormRepository
         $placeholders = implode(',', array_fill(0, count($formIds), '?'));
         $stmt = $this->db->getPdo()->prepare(
             "SELECT *
-             FROM booking_form_assignments
+             FROM booking_form_rules
              WHERE business_id = ?
                AND form_id IN ({$placeholders})
                AND is_active = 1
-             ORDER BY id ASC"
+             ORDER BY sort_order ASC, id ASC"
         );
         $stmt->execute([$businessId, ...$formIds]);
-        $assignments = [];
-        foreach ($stmt->fetchAll() as $assignment) {
-            $assignments[(int) $assignment['form_id']][] = $this->formatAssignment($assignment);
+        $rules = $stmt->fetchAll();
+        if (empty($rules)) {
+            return [];
         }
-        return $assignments;
+
+        $ruleIds = array_map(static fn(array $row): int => (int) $row['id'], $rules);
+        $rulePlaceholders = implode(',', array_fill(0, count($ruleIds), '?'));
+        $condStmt = $this->db->getPdo()->prepare(
+            "SELECT *
+             FROM booking_form_rule_conditions
+             WHERE rule_id IN ({$rulePlaceholders})
+             ORDER BY id ASC"
+        );
+        $condStmt->execute($ruleIds);
+        $conditionsByRule = [];
+        foreach ($condStmt->fetchAll() as $cond) {
+            $conditionsByRule[(int) $cond['rule_id']][] = [
+                'scope_type' => $cond['scope_type'],
+                'scope_id' => $cond['scope_id'] !== null ? (int) $cond['scope_id'] : null,
+            ];
+        }
+
+        $byForm = [];
+        foreach ($rules as $rule) {
+            $id = (int) $rule['id'];
+            $byForm[(int) $rule['form_id']][] = [
+                'id' => $id,
+                'form_id' => (int) $rule['form_id'],
+                'sort_order' => (int) $rule['sort_order'],
+                'conditions' => $conditionsByRule[$id] ?? [],
+            ];
+        }
+        return $byForm;
     }
 
     private function formatAdminForm(array $form): array
@@ -836,7 +982,7 @@ final class BookingFormRepository
         $id = (int) $form['id'];
         return $this->formatAdminFormSummary($form) + [
             'fields' => $this->fieldsByFormIds((int) $form['business_id'], [$id])[$id] ?? [],
-            'assignments' => $this->assignmentsByFormIds((int) $form['business_id'], [$id])[$id] ?? [],
+            'rules' => $this->rulesByFormIds((int) $form['business_id'], [$id])[$id] ?? [],
         ];
     }
 
@@ -851,7 +997,7 @@ final class BookingFormRepository
             'is_active' => (int) $form['is_active'] === 1,
             'sort_order' => (int) $form['sort_order'],
             'fields_count' => isset($form['fields_count']) ? (int) $form['fields_count'] : null,
-            'assignments_count' => isset($form['assignments_count']) ? (int) $form['assignments_count'] : null,
+            'rules_count' => isset($form['rules_count']) ? (int) $form['rules_count'] : null,
             'created_at' => $form['created_at'],
             'updated_at' => $form['updated_at'],
         ];
@@ -883,17 +1029,6 @@ final class BookingFormRepository
             'options' => $this->decodeJson($field['options_json'] ?? null) ?? [],
             'validation' => $this->decodeJson($field['validation_json'] ?? null) ?? [],
             'is_active' => (int) $field['is_active'] === 1,
-        ];
-    }
-
-    private function formatAssignment(array $assignment): array
-    {
-        return [
-            'id' => (int) $assignment['id'],
-            'form_id' => (int) $assignment['form_id'],
-            'scope_type' => $assignment['scope_type'],
-            'scope_id' => $assignment['scope_id'] !== null ? (int) $assignment['scope_id'] : null,
-            'is_active' => (int) $assignment['is_active'] === 1,
         ];
     }
 
@@ -1064,7 +1199,7 @@ final class BookingFormRepository
         ];
     }
 
-    private function isValidAssignment(int $businessId, string $scopeType, ?int $scopeId): bool
+    private function isValidCondition(int $businessId, string $scopeType, ?int $scopeId): bool
     {
         if (!in_array($scopeType, self::SCOPE_TYPES, true)) {
             return false;

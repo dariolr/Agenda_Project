@@ -2168,13 +2168,13 @@
   "bookingFormsNew": "Nuovo modulo",
   "bookingFormsEmpty": "Nessun modulo configurato",
   "bookingFormsSelectHint": "Seleziona un modulo o creane uno nuovo",
-  "bookingFormsListMeta": "{fields} campi · {assignments} assegnazioni",
+  "bookingFormsListMeta": "{fields} campi · {rules} regole",
   "@bookingFormsListMeta": {
     "placeholders": {
       "fields": {
         "type": "int"
       },
-      "assignments": {
+      "rules": {
         "type": "int"
       }
     }
@@ -2227,7 +2227,7 @@
   "bookingFormsStatusShown": "Visibile online",
   "bookingFormsStatusHidden": "Non visibile online",
   "bookingFormsWarningNoFields": "Nessun campo attivo",
-  "bookingFormsWarningNoAssignments": "Nessuna assegnazione",
+  "bookingFormsWarningNoRules": "Nessuna regola di visualizzazione",
   "bookingFormsWarningInactive": "Modulo disattivato",
   "bookingFormsWontShowSummary": "Non verrà mostrato online",
   "bookingFormsFieldsEmpty": "Nessun campo. Aggiungi il primo per iniziare.",
@@ -2240,6 +2240,71 @@
   "bookingFormsWhereShownTitle": "Dove viene mostrato",
   "bookingFormsVisibilityBusinessWideHint": "Verrà mostrato in tutte le prenotazioni online.",
   "bookingFormsNoAssignmentsHint": "Senza assegnazioni il modulo non comparirà mai online.",
+  "bookingFormsRulesTitle": "Regole di visualizzazione",
+  "bookingFormsRulesGuide": "Ogni regola indica quando mostrare il modulo. Le condizioni inserite nella stessa regola devono essere tutte rispettate. Per aggiungere un altro caso, crea una nuova regola.",
+  "bookingFormsNoRulesHint": "Senza regole il modulo non comparirà mai online.",
+  "bookingFormsRuleAdd": "Aggiungi regola",
+  "bookingFormsRuleBuilderTitle": "Nuova regola",
+  "bookingFormsRuleScopeQuestion": "A cosa si applica?",
+  "bookingFormsRuleScopeBusiness": "Tutto il business",
+  "bookingFormsRuleScopeLocation": "Una sede",
+  "bookingFormsRuleScopeCategory": "Una categoria",
+  "bookingFormsRuleScopeAppointment": "Un tipo appuntamento",
+  "bookingFormsRuleSelectLocation": "Sede",
+  "bookingFormsRuleSelectCategory": "Categoria",
+  "bookingFormsRuleSelectAppointment": "Tipo appuntamento",
+  "bookingFormsRuleRefine": "Restringi ulteriormente (facoltativo)",
+  "bookingFormsRuleRefineNone": "Nessuna restrizione",
+  "bookingFormsRuleRefineCategory": "A una categoria",
+  "bookingFormsRuleRefineAppointment": "A un tipo appuntamento",
+  "bookingFormsRuleNoTargets": "Nessun elemento disponibile",
+  "bookingFormsRuleBusiness": "Per tutte le prenotazioni",
+  "bookingFormsRuleLocationOnly": "Solo sede {location}",
+  "@bookingFormsRuleLocationOnly": {
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingFormsRuleCategoryOnly": "Solo categoria {category}",
+  "@bookingFormsRuleCategoryOnly": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingFormsRuleAppointmentOnly": "Solo per {appointment}",
+  "@bookingFormsRuleAppointmentOnly": {
+    "placeholders": {
+      "appointment": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingFormsRuleCategoryInLocation": "{category} nella sede {location}",
+  "@bookingFormsRuleCategoryInLocation": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingFormsRuleAppointmentInLocation": "{appointment} nella sede {location}",
+  "@bookingFormsRuleAppointmentInLocation": {
+    "placeholders": {
+      "appointment": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      }
+    }
+  },
   "bookingFormsDeleteFieldTitle": "Rimuovere il campo?",
   "bookingFormsDeleteFieldMessage": "Il campo non sarà più mostrato nel modulo. Le risposte già raccolte restano nello storico.",
   "bookingFormsOptionsRequired": "Aggiungi almeno due opzioni per i campi a scelta.",

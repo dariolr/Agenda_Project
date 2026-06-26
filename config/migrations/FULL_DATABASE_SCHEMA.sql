@@ -134,19 +134,34 @@ CREATE TABLE `booking_form_fields` (
 -- --------------------------------------------------------
 
 --
--- Struttura della tabella `booking_form_assignments`
+-- Struttura della tabella `booking_form_rules`
 --
 
-CREATE TABLE `booking_form_assignments` (
+CREATE TABLE `booking_form_rules` (
   `id` int UNSIGNED NOT NULL,
+  `business_id` int UNSIGNED NOT NULL,
+  `form_id` int UNSIGNED NOT NULL,
+  `is_active` tinyint(1) NOT NULL DEFAULT '1',
+  `sort_order` int NOT NULL DEFAULT '0',
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Struttura della tabella `booking_form_rule_conditions`
+--
+
+CREATE TABLE `booking_form_rule_conditions` (
+  `id` int UNSIGNED NOT NULL,
+  `rule_id` int UNSIGNED NOT NULL,
   `form_id` int UNSIGNED NOT NULL,
   `business_id` int UNSIGNED NOT NULL,
   `scope_type` varchar(40) COLLATE utf8mb4_unicode_ci NOT NULL,
   `scope_id` int UNSIGNED DEFAULT NULL,
   `scope_key` varchar(80) COLLATE utf8mb4_unicode_ci GENERATED ALWAYS AS (concat(`scope_type`,_utf8mb4':',coalesce(cast(`scope_id` as char charset utf8mb4),_utf8mb4'business'))) STORED,
-  `is_active` tinyint(1) NOT NULL DEFAULT '1',
-  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
@@ -1371,12 +1386,21 @@ ALTER TABLE `booking_form_fields`
   ADD KEY `idx_booking_form_fields_business` (`business_id`);
 
 --
--- Indici per le tabelle `booking_form_assignments`
+-- Indici per le tabelle `booking_form_rules`
 --
-ALTER TABLE `booking_form_assignments`
+ALTER TABLE `booking_form_rules`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `uniq_booking_form_assignment_scope` (`form_id`,`scope_key`),
-  ADD KEY `idx_booking_form_assignments_business_scope` (`business_id`,`scope_type`,`scope_id`,`is_active`);
+  ADD KEY `idx_booking_form_rules_form_active_sort` (`form_id`,`is_active`,`sort_order`),
+  ADD KEY `idx_booking_form_rules_business` (`business_id`);
+
+--
+-- Indici per le tabelle `booking_form_rule_conditions`
+--
+ALTER TABLE `booking_form_rule_conditions`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_booking_form_rule_condition_scope` (`rule_id`,`scope_key`),
+  ADD KEY `idx_booking_form_rule_conditions_rule` (`rule_id`),
+  ADD KEY `idx_booking_form_rule_conditions_business_scope` (`business_id`,`scope_type`,`scope_id`);
 
 --
 -- Indici per le tabelle `booking_form_submissions`
@@ -1910,9 +1934,15 @@ ALTER TABLE `booking_form_fields`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT per la tabella `booking_form_assignments`
+-- AUTO_INCREMENT per la tabella `booking_form_rules`
 --
-ALTER TABLE `booking_form_assignments`
+ALTER TABLE `booking_form_rules`
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT per la tabella `booking_form_rule_conditions`
+--
+ALTER TABLE `booking_form_rule_conditions`
   MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
@@ -2245,11 +2275,18 @@ ALTER TABLE `booking_form_fields`
   ADD CONSTRAINT `fk_booking_form_fields_form` FOREIGN KEY (`form_id`) REFERENCES `booking_forms` (`id`) ON DELETE CASCADE;
 
 --
--- Limiti per la tabella `booking_form_assignments`
+-- Limiti per la tabella `booking_form_rules`
 --
-ALTER TABLE `booking_form_assignments`
-  ADD CONSTRAINT `fk_booking_form_assignments_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
-  ADD CONSTRAINT `fk_booking_form_assignments_form` FOREIGN KEY (`form_id`) REFERENCES `booking_forms` (`id`) ON DELETE CASCADE;
+ALTER TABLE `booking_form_rules`
+  ADD CONSTRAINT `fk_booking_form_rules_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_booking_form_rules_form` FOREIGN KEY (`form_id`) REFERENCES `booking_forms` (`id`) ON DELETE CASCADE;
+
+--
+-- Limiti per la tabella `booking_form_rule_conditions`
+--
+ALTER TABLE `booking_form_rule_conditions`
+  ADD CONSTRAINT `fk_booking_form_rule_conditions_business` FOREIGN KEY (`business_id`) REFERENCES `businesses` (`id`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_booking_form_rule_conditions_rule` FOREIGN KEY (`rule_id`) REFERENCES `booking_form_rules` (`id`) ON DELETE CASCADE;
 
 --
 -- Limiti per la tabella `booking_form_submissions`

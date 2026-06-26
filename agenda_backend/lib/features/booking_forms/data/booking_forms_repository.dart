@@ -132,20 +132,16 @@ class BookingFormsRepository {
     );
   }
 
-  Future<BookingForm> setBusinessAssignment(int businessId, int formId) async {
-    return replaceAssignments(businessId, formId, const [
-      BookingFormAssignment(scopeType: 'business'),
-    ]);
-  }
-
-  Future<BookingForm> replaceAssignments(
+  /// Sostituisce tutte le regole di visualizzazione del modulo.
+  /// OR tra regole, AND tra le condizioni della stessa regola.
+  Future<BookingForm> replaceRules(
     int businessId,
     int formId,
-    List<BookingFormAssignment> assignments,
+    List<BookingFormRule> rules,
   ) async {
     final response = await _apiClient.put(
-      '/v1/businesses/$businessId/booking-forms/$formId/assignments',
-      data: {'assignments': assignments.map((item) => item.toJson()).toList()},
+      '/v1/businesses/$businessId/booking-forms/$formId/rules',
+      data: {'rules': rules.map((item) => item.toJson()).toList()},
     );
     return BookingForm.fromJson(response['form'] as Map<String, dynamic>);
   }

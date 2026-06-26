@@ -181,7 +181,7 @@ final class BookingFormsController
         return Response::success(['form' => $this->bookingFormRepo->findForm($businessId, $formId)]);
     }
 
-    public function replaceAssignments(Request $request): Response
+    public function replaceRules(Request $request): Response
     {
         $businessId = (int) $request->getRouteParam('business_id');
         $formId = (int) $request->getRouteParam('form_id');
@@ -189,13 +189,13 @@ final class BookingFormsController
             return Response::forbidden('Access denied', $request->traceId);
         }
 
-        $assignments = $this->body($request)['assignments'] ?? [];
-        if (!is_array($assignments)) {
-            return Response::error('assignments is required', 'validation_error', 422, $request->traceId);
+        $rules = $this->body($request)['rules'] ?? [];
+        if (!is_array($rules)) {
+            return Response::error('rules is required', 'validation_error', 422, $request->traceId);
         }
 
         try {
-            $this->bookingFormRepo->replaceAssignments($businessId, $formId, $assignments);
+            $this->bookingFormRepo->replaceRules($businessId, $formId, $rules);
             return Response::success(['form' => $this->bookingFormRepo->findForm($businessId, $formId)]);
         } catch (InvalidArgumentException $e) {
             return Response::error($e->getMessage(), 'validation_error', 422, $request->traceId);

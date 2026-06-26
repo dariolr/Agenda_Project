@@ -2168,13 +2168,13 @@
   "bookingFormsNew": "New form",
   "bookingFormsEmpty": "No forms configured",
   "bookingFormsSelectHint": "Select a form or create a new one",
-  "bookingFormsListMeta": "{fields} fields · {assignments} assignments",
+  "bookingFormsListMeta": "{fields} fields · {rules} rules",
   "@bookingFormsListMeta": {
     "placeholders": {
       "fields": {
         "type": "int"
       },
-      "assignments": {
+      "rules": {
         "type": "int"
       }
     }
@@ -2227,7 +2227,7 @@
   "bookingFormsStatusShown": "Shown online",
   "bookingFormsStatusHidden": "Not shown online",
   "bookingFormsWarningNoFields": "No active fields",
-  "bookingFormsWarningNoAssignments": "No assignments",
+  "bookingFormsWarningNoRules": "No visibility rules",
   "bookingFormsWarningInactive": "Form disabled",
   "bookingFormsWontShowSummary": "Won't be shown online",
   "bookingFormsFieldsEmpty": "No fields yet. Add the first one to get started.",
@@ -2240,6 +2240,71 @@
   "bookingFormsWhereShownTitle": "Where it shows",
   "bookingFormsVisibilityBusinessWideHint": "It will be shown in every online booking.",
   "bookingFormsNoAssignmentsHint": "Without assignments the form will never appear online.",
+  "bookingFormsRulesTitle": "Visibility rules",
+  "bookingFormsRulesGuide": "Each rule defines when to show the form. All the conditions within the same rule must be met. To add another case, create a new rule.",
+  "bookingFormsNoRulesHint": "Without rules the form will never appear online.",
+  "bookingFormsRuleAdd": "Add rule",
+  "bookingFormsRuleBuilderTitle": "New rule",
+  "bookingFormsRuleScopeQuestion": "What does it apply to?",
+  "bookingFormsRuleScopeBusiness": "The whole business",
+  "bookingFormsRuleScopeLocation": "A location",
+  "bookingFormsRuleScopeCategory": "A category",
+  "bookingFormsRuleScopeAppointment": "An appointment type",
+  "bookingFormsRuleSelectLocation": "Location",
+  "bookingFormsRuleSelectCategory": "Category",
+  "bookingFormsRuleSelectAppointment": "Appointment type",
+  "bookingFormsRuleRefine": "Narrow further (optional)",
+  "bookingFormsRuleRefineNone": "No restriction",
+  "bookingFormsRuleRefineCategory": "To a category",
+  "bookingFormsRuleRefineAppointment": "To an appointment type",
+  "bookingFormsRuleNoTargets": "No items available",
+  "bookingFormsRuleBusiness": "For all bookings",
+  "bookingFormsRuleLocationOnly": "Location {location} only",
+  "@bookingFormsRuleLocationOnly": {
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingFormsRuleCategoryOnly": "Category {category} only",
+  "@bookingFormsRuleCategoryOnly": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingFormsRuleAppointmentOnly": "{appointment} only",
+  "@bookingFormsRuleAppointmentOnly": {
+    "placeholders": {
+      "appointment": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingFormsRuleCategoryInLocation": "{category} at location {location}",
+  "@bookingFormsRuleCategoryInLocation": {
+    "placeholders": {
+      "category": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingFormsRuleAppointmentInLocation": "{appointment} at location {location}",
+  "@bookingFormsRuleAppointmentInLocation": {
+    "placeholders": {
+      "appointment": {
+        "type": "String"
+      },
+      "location": {
+        "type": "String"
+      }
+    }
+  },
   "bookingFormsDeleteFieldTitle": "Remove field?",
   "bookingFormsDeleteFieldMessage": "The field will no longer be shown in the form. Existing submissions remain in history.",
   "bookingFormsOptionsRequired": "Add at least two options for choice fields.",

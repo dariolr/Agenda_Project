@@ -14571,13 +14571,13 @@ class L10n {
     );
   }
 
-  /// `{fields} fields · {assignments} assignments`
-  String bookingFormsListMeta(int fields, int assignments) {
+  /// `{fields} fields · {rules} rules`
+  String bookingFormsListMeta(int fields, int rules) {
     return Intl.message(
-      '$fields fields · $assignments assignments',
+      '$fields fields · $rules rules',
       name: 'bookingFormsListMeta',
       desc: '',
-      args: [fields, assignments],
+      args: [fields, rules],
     );
   }
 
@@ -15061,11 +15061,11 @@ class L10n {
     );
   }
 
-  /// `No assignments`
-  String get bookingFormsWarningNoAssignments {
+  /// `No visibility rules`
+  String get bookingFormsWarningNoRules {
     return Intl.message(
-      'No assignments',
-      name: 'bookingFormsWarningNoAssignments',
+      'No visibility rules',
+      name: 'bookingFormsWarningNoRules',
       desc: '',
       args: [],
     );
@@ -15188,6 +15188,249 @@ class L10n {
       name: 'bookingFormsNoAssignmentsHint',
       desc: '',
       args: [],
+    );
+  }
+
+  /// `Visibility rules`
+  String get bookingFormsRulesTitle {
+    return Intl.message(
+      'Visibility rules',
+      name: 'bookingFormsRulesTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Each rule defines when to show the form. All the conditions within the same rule must be met. To add another case, create a new rule.`
+  String get bookingFormsRulesGuide {
+    return Intl.message(
+      'Each rule defines when to show the form. All the conditions within the same rule must be met. To add another case, create a new rule.',
+      name: 'bookingFormsRulesGuide',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Without rules the form will never appear online.`
+  String get bookingFormsNoRulesHint {
+    return Intl.message(
+      'Without rules the form will never appear online.',
+      name: 'bookingFormsNoRulesHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add rule`
+  String get bookingFormsRuleAdd {
+    return Intl.message(
+      'Add rule',
+      name: 'bookingFormsRuleAdd',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `New rule`
+  String get bookingFormsRuleBuilderTitle {
+    return Intl.message(
+      'New rule',
+      name: 'bookingFormsRuleBuilderTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `What does it apply to?`
+  String get bookingFormsRuleScopeQuestion {
+    return Intl.message(
+      'What does it apply to?',
+      name: 'bookingFormsRuleScopeQuestion',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `The whole business`
+  String get bookingFormsRuleScopeBusiness {
+    return Intl.message(
+      'The whole business',
+      name: 'bookingFormsRuleScopeBusiness',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `A location`
+  String get bookingFormsRuleScopeLocation {
+    return Intl.message(
+      'A location',
+      name: 'bookingFormsRuleScopeLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `A category`
+  String get bookingFormsRuleScopeCategory {
+    return Intl.message(
+      'A category',
+      name: 'bookingFormsRuleScopeCategory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `An appointment type`
+  String get bookingFormsRuleScopeAppointment {
+    return Intl.message(
+      'An appointment type',
+      name: 'bookingFormsRuleScopeAppointment',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Location`
+  String get bookingFormsRuleSelectLocation {
+    return Intl.message(
+      'Location',
+      name: 'bookingFormsRuleSelectLocation',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Category`
+  String get bookingFormsRuleSelectCategory {
+    return Intl.message(
+      'Category',
+      name: 'bookingFormsRuleSelectCategory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Appointment type`
+  String get bookingFormsRuleSelectAppointment {
+    return Intl.message(
+      'Appointment type',
+      name: 'bookingFormsRuleSelectAppointment',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Narrow further (optional)`
+  String get bookingFormsRuleRefine {
+    return Intl.message(
+      'Narrow further (optional)',
+      name: 'bookingFormsRuleRefine',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No restriction`
+  String get bookingFormsRuleRefineNone {
+    return Intl.message(
+      'No restriction',
+      name: 'bookingFormsRuleRefineNone',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `To a category`
+  String get bookingFormsRuleRefineCategory {
+    return Intl.message(
+      'To a category',
+      name: 'bookingFormsRuleRefineCategory',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `To an appointment type`
+  String get bookingFormsRuleRefineAppointment {
+    return Intl.message(
+      'To an appointment type',
+      name: 'bookingFormsRuleRefineAppointment',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No items available`
+  String get bookingFormsRuleNoTargets {
+    return Intl.message(
+      'No items available',
+      name: 'bookingFormsRuleNoTargets',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `For all bookings`
+  String get bookingFormsRuleBusiness {
+    return Intl.message(
+      'For all bookings',
+      name: 'bookingFormsRuleBusiness',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Location {location} only`
+  String bookingFormsRuleLocationOnly(String location) {
+    return Intl.message(
+      'Location $location only',
+      name: 'bookingFormsRuleLocationOnly',
+      desc: '',
+      args: [location],
+    );
+  }
+
+  /// `Category {category} only`
+  String bookingFormsRuleCategoryOnly(String category) {
+    return Intl.message(
+      'Category $category only',
+      name: 'bookingFormsRuleCategoryOnly',
+      desc: '',
+      args: [category],
+    );
+  }
+
+  /// `{appointment} only`
+  String bookingFormsRuleAppointmentOnly(String appointment) {
+    return Intl.message(
+      '$appointment only',
+      name: 'bookingFormsRuleAppointmentOnly',
+      desc: '',
+      args: [appointment],
+    );
+  }
+
+  /// `{category} at location {location}`
+  String bookingFormsRuleCategoryInLocation(String category, String location) {
+    return Intl.message(
+      '$category at location $location',
+      name: 'bookingFormsRuleCategoryInLocation',
+      desc: '',
+      args: [category, location],
+    );
+  }
+
+  /// `{appointment} at location {location}`
+  String bookingFormsRuleAppointmentInLocation(
+    String appointment,
+    String location,
+  ) {
+    return Intl.message(
+      '$appointment at location $location',
+      name: 'bookingFormsRuleAppointmentInLocation',
+      desc: '',
+      args: [appointment, location],
     );
   }
 
