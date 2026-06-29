@@ -105,6 +105,9 @@ class Appointment {
   /// Returns true if this appointment's booking was replaced
   bool get isReplaced => bookingStatus == 'replaced';
 
+  /// Returns true if this appointment's booking was completed
+  bool get isCompleted => bookingStatus == 'completed';
+
   /// Returns true if this appointment is part of a recurring series
   bool get isRecurring => recurrenceRuleId != null;
 

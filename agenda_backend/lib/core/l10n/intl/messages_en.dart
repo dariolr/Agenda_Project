@@ -328,6 +328,12 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("Card text zoom"),
     "agendaDisplaySettingsColumnWidthLabel":
         MessageLookupByLibrary.simpleMessage("Minimum column width"),
+    "agendaDisplaySettingsCompletedColorLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Dedicated color for completed appointments",
+        ),
+    "agendaDisplaySettingsCompletedColorPickLabel":
+        MessageLookupByLibrary.simpleMessage("Completed appointments color"),
     "agendaDisplaySettingsExpandStaffColumnsOnOverlapLabel":
         MessageLookupByLibrary.simpleMessage(
           "Expand columns when appointments overlap",

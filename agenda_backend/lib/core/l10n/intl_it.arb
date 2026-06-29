@@ -1970,6 +1970,8 @@
   "agendaDisplaySettingsUseRoundedCardCornersLabel": "Applica angoli arrotondati agli appuntamenti",
   "agendaDisplaySettingsShowCancelledLabel": "Mostra appuntamenti cancellati",
   "agendaDisplaySettingsServiceColorsLabel": "Colore degli appuntamenti in base a:",
+  "agendaDisplaySettingsCompletedColorLabel": "Colore dedicato agli appuntamenti completati",
+  "agendaDisplaySettingsCompletedColorPickLabel": "Colore appuntamenti completati",
   "agendaDisplaySettingsResetDefaultsAction": "Ripristina default",
   "whatsappGuideTitle": "Guida per attivare WhatsApp Business",
   "whatsappGuideIntro": "Per collegare WhatsApp al gestionale verrai reindirizzato nella procedura sicura di Meta. Durante la procedura potrai selezionare o creare l'account business Meta della tua attività, collegare un account WhatsApp Business e verificare il numero da usare per i messaggi automatici.",

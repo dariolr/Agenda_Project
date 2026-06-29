@@ -30,22 +30,33 @@ class StaffCircleAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasThreeLetterInitials = InitialsUtils.length(initials) == 3;
     final initialsFontSize = height * (hasThreeLetterInitials ? 0.30 : 0.35);
+    // Tonalità chiara opaca usata SIA per il bordo sottile SIA per il cerchio
+    // interno (stesso identico colore). In mezzo resta scoperto l'anello a
+    // colore pieno (margin: 2 del cerchio interno).
+    final lightTone = Color.alphaBlend(
+      color.withOpacity(0.18),
+      Theme.of(context).colorScheme.surface,
+    );
     return Container(
       width: height,
       height: height,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
+        // Riempimento dell'anello: colore PIENO. Il bordo sottile sopra e il
+        // cerchio interno (margin: 2) lo coprono lasciando scoperti 2 px di
+        // colore pieno tra i due elementi chiari.
+        color: color,
         border: Border.all(
-          color: isHighlighted ? color : color.withOpacity(0.35),
-          width: isHighlighted ? 2 : 1,
+          color: lightTone,
+          width: isHighlighted ? 4 : 3,
         ),
       ),
       alignment: Alignment.center,
       child: Container(
-        margin: const EdgeInsets.all(2),
+        margin: const EdgeInsets.all(1),
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: color.withOpacity(0.18),
+          color: lightTone,
         ),
         alignment: Alignment.center,
         child: Padding(

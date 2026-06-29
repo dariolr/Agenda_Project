@@ -1970,6 +1970,8 @@
   "agendaDisplaySettingsUseRoundedCardCornersLabel": "Use rounded card corners",
   "agendaDisplaySettingsShowCancelledLabel": "Show cancelled appointments",
   "agendaDisplaySettingsServiceColorsLabel": "Appointment color based on:",
+  "agendaDisplaySettingsCompletedColorLabel": "Dedicated color for completed appointments",
+  "agendaDisplaySettingsCompletedColorPickLabel": "Completed appointments color",
   "agendaDisplaySettingsResetDefaultsAction": "Reset defaults",
   "whatsappGuideTitle": "Guide to activating WhatsApp Business",
   "whatsappGuideIntro": "To connect WhatsApp to the management system, you will be redirected to Meta's secure setup flow. During the process you can select or create your business Meta account, connect a WhatsApp Business account, and verify the phone number used for automatic messages.",

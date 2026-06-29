@@ -769,6 +769,7 @@ class _SingleStaffWeekTimelineColumnState
     WidgetRef ref,
   ) {
     final cardColorSource = ref.watch(effectiveAgendaCardColorSourceProvider);
+    final completedCardColor = ref.watch(effectiveCompletedCardColorProvider);
     final firstStaffId = appointments.isEmpty
         ? null
         : appointments.first.staffId;
@@ -782,7 +783,11 @@ class _SingleStaffWeekTimelineColumnState
     final colors = <int, Color>{};
     if (cardColorSource == AgendaCardColorSource.team) {
       for (final appointment in appointments) {
-        colors[appointment.id] = fallbackColor;
+        colors[appointment.id] = applyCompletedColorOverride(
+          fallbackColor,
+          appointment,
+          completedCardColor,
+        );
       }
       return colors;
     }
@@ -790,10 +795,14 @@ class _SingleStaffWeekTimelineColumnState
     if (cardColorSource == AgendaCardColorSource.clients) {
       final clientsById = ref.watch(clientsByIdProvider);
       for (final appointment in appointments) {
-        colors[appointment.id] = resolveClientColorForAppointment(
-          context,
+        colors[appointment.id] = applyCompletedColorOverride(
+          resolveClientColorForAppointment(
+            context,
+            appointment,
+            clientColorHex: clientsById[appointment.clientId]?.colorHex,
+          ),
           appointment,
-          clientColorHex: clientsById[appointment.clientId]?.colorHex,
+          completedCardColor,
         );
       }
       return colors;
@@ -809,10 +818,13 @@ class _SingleStaffWeekTimelineColumnState
 
     for (final appointment in appointments) {
       final snapshotColor = _parseClassTypeColor(appointment.serviceColorHex);
-      colors[appointment.id] =
-          serviceColorMap[appointment.serviceId] ??
-          snapshotColor ??
-          fallbackColor;
+      colors[appointment.id] = applyCompletedColorOverride(
+        serviceColorMap[appointment.serviceId] ??
+            snapshotColor ??
+            fallbackColor,
+        appointment,
+        completedCardColor,
+      );
     }
     return colors;
   }

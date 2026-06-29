@@ -1,5 +1,7 @@
+import 'package:flutter/material.dart' show Color;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/models/appointment.dart';
 import '../../../core/services/preferences_service.dart';
 import '../domain/agenda_card_color_source.dart';
 import '../../auth/providers/current_business_user_provider.dart' show canViewPricesProvider;
@@ -8,6 +10,9 @@ import 'layout_config_provider.dart';
 import 'location_providers.dart';
 
 const Set<int> _clientsDefaultColorBusinessIds = {18, 19};
+
+/// Colore di default per le card di appuntamenti "Completati" (grigio chiaro).
+const Color kDefaultCompletedAppointmentColor = Color(0xFFE0E0E0);
 
 AgendaCardColorSource _defaultCardColorSourceForBusiness(int businessId) {
   if (_clientsDefaultColorBusinessIds.contains(businessId)) {
@@ -30,6 +35,8 @@ class AgendaDisplaySettings {
     this.showPricesOverride,
     this.cardColorSourceOverride,
     this.showCancelledAppointments = false,
+    this.completedColorEnabled = false,
+    this.completedColor = kDefaultCompletedAppointmentColor,
   });
 
   final double cardTextScale;
@@ -45,6 +52,14 @@ class AgendaDisplaySettings {
   final AgendaCardColorSource? cardColorSourceOverride;
   final bool showCancelledAppointments;
 
+  /// Se true, gli appuntamenti in stato "Completata" usano [completedColor]
+  /// al posto del colore derivato dalla sorgente (servizio/team/cliente).
+  final bool completedColorEnabled;
+
+  /// Colore applicato alle card degli appuntamenti "Completati"
+  /// quando [completedColorEnabled] è true.
+  final Color completedColor;
+
   AgendaDisplaySettings copyWith({
     double? cardTextScale,
     double? slotHeightScale,
@@ -58,6 +73,8 @@ class AgendaDisplaySettings {
     bool? showPricesOverride,
     AgendaCardColorSource? cardColorSourceOverride,
     bool? showCancelledAppointments,
+    bool? completedColorEnabled,
+    Color? completedColor,
     bool clearShowPricesOverride = false,
     bool clearCardColorSourceOverride = false,
   }) {
@@ -83,8 +100,25 @@ class AgendaDisplaySettings {
           : (cardColorSourceOverride ?? this.cardColorSourceOverride),
       showCancelledAppointments:
           showCancelledAppointments ?? this.showCancelledAppointments,
+      completedColorEnabled:
+          completedColorEnabled ?? this.completedColorEnabled,
+      completedColor: completedColor ?? this.completedColor,
     );
   }
+}
+
+/// Applica l'override colore per gli appuntamenti "Completati", se attivo.
+/// Restituisce [completedColor] quando l'appuntamento è completato e
+/// l'opzione è attiva (completedColor != null), altrimenti [base].
+Color applyCompletedColorOverride(
+  Color base,
+  Appointment appointment,
+  Color? completedColor,
+) {
+  if (completedColor != null && appointment.isCompleted) {
+    return completedColor;
+  }
+  return base;
 }
 
 class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
@@ -163,6 +197,14 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
         locationId: locationId,
       ),
       showCancelledAppointments: prefs.getAgendaShowCancelledAppointments(
+        businessId,
+        locationId: locationId,
+      ),
+      completedColorEnabled: prefs.getAgendaCompletedColorEnabled(
+        businessId,
+        locationId: locationId,
+      ),
+      completedColor: prefs.getAgendaCompletedColor(
         businessId,
         locationId: locationId,
       ),
@@ -339,6 +381,30 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
         );
   }
 
+  Future<void> setCompletedColorEnabled(bool value) async {
+    final businessId = _businessId();
+    final locationId = _locationId();
+    if (businessId <= 0 || locationId <= 0) return;
+    state = state.copyWith(completedColorEnabled: value);
+    await ref
+        .read(preferencesServiceProvider)
+        .setAgendaCompletedColorEnabled(
+          businessId,
+          value,
+          locationId: locationId,
+        );
+  }
+
+  Future<void> setCompletedColor(Color value) async {
+    final businessId = _businessId();
+    final locationId = _locationId();
+    if (businessId <= 0 || locationId <= 0) return;
+    state = state.copyWith(completedColor: value);
+    await ref
+        .read(preferencesServiceProvider)
+        .setAgendaCompletedColor(businessId, value, locationId: locationId);
+  }
+
   Future<void> resetToDefaults() async {
     final businessId = _businessId();
     final locationId = _locationId();
@@ -404,6 +470,16 @@ class AgendaDisplaySettingsNotifier extends Notifier<AgendaDisplaySettings> {
     await prefs.setAgendaShowCancelledAppointments(
       businessId,
       false,
+      locationId: locationId,
+    );
+    await prefs.setAgendaCompletedColorEnabled(
+      businessId,
+      false,
+      locationId: locationId,
+    );
+    await prefs.setAgendaCompletedColor(
+      businessId,
+      kDefaultCompletedAppointmentColor,
       locationId: locationId,
     );
   }
@@ -486,5 +562,17 @@ final effectiveAgendaCardColorSourceProvider = Provider<AgendaCardColorSource>((
 final effectiveShowCancelledAppointmentsProvider = Provider<bool>((ref) {
   return ref.watch(
     agendaDisplaySettingsProvider.select((s) => s.showCancelledAppointments),
+  );
+});
+
+/// Colore da usare per le card degli appuntamenti "Completati", oppure null
+/// se l'override è disattivato (in tal caso vale il colore della sorgente).
+final effectiveCompletedCardColorProvider = Provider<Color?>((ref) {
+  final enabled = ref.watch(
+    agendaDisplaySettingsProvider.select((s) => s.completedColorEnabled),
+  );
+  if (!enabled) return null;
+  return ref.watch(
+    agendaDisplaySettingsProvider.select((s) => s.completedColor),
   );
 });

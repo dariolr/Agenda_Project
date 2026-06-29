@@ -1,7 +1,12 @@
+import 'package:flutter/material.dart' show Color;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../features/agenda/domain/agenda_card_color_source.dart';
+
+/// Default (grigio chiaro) per le card "Completate" quando non c'è un valore salvato.
+/// Tenuto allineato a kDefaultCompletedAppointmentColor del provider.
+const int _defaultCompletedColorArgb = 0xFFE0E0E0;
 
 /// Provider per SharedPreferences (inizializzato in main.dart)
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
@@ -120,6 +125,18 @@ class PrefsKeys {
     required int locationId,
   }) =>
       'agenda_expand_staff_columns_on_overlap_${_scope(businessId, locationId)}';
+
+  /// Abilita colore dedicato per appuntamenti "Completati" (scope business + location)
+  static String agendaCompletedColorEnabled(
+    int businessId, {
+    required int locationId,
+  }) => 'agenda_completed_color_enabled_${_scope(businessId, locationId)}';
+
+  /// Colore (ARGB int) per appuntamenti "Completati" (scope business + location)
+  static String agendaCompletedColor(
+    int businessId, {
+    required int locationId,
+  }) => 'agenda_completed_color_${_scope(businessId, locationId)}';
 
   /// Chiave per ultimo business visitato dal superadmin
   static const superadminLastBusinessId = 'superadmin_last_business_id';
@@ -642,6 +659,48 @@ class PreferencesService {
     );
   }
 
+  bool getAgendaCompletedColorEnabled(
+    int businessId, {
+    required int locationId,
+  }) {
+    return _prefs.getBool(
+          PrefsKeys.agendaCompletedColorEnabled(
+            businessId,
+            locationId: locationId,
+          ),
+        ) ??
+        false;
+  }
+
+  Future<void> setAgendaCompletedColorEnabled(
+    int businessId,
+    bool value, {
+    required int locationId,
+  }) async {
+    await _prefs.setBool(
+      PrefsKeys.agendaCompletedColorEnabled(businessId, locationId: locationId),
+      value,
+    );
+  }
+
+  Color getAgendaCompletedColor(int businessId, {required int locationId}) {
+    final value = _prefs.getInt(
+      PrefsKeys.agendaCompletedColor(businessId, locationId: locationId),
+    );
+    return Color(value ?? _defaultCompletedColorArgb);
+  }
+
+  Future<void> setAgendaCompletedColor(
+    int businessId,
+    Color color, {
+    required int locationId,
+  }) async {
+    await _prefs.setInt(
+      PrefsKeys.agendaCompletedColor(businessId, locationId: locationId),
+      color.toARGB32(),
+    );
+  }
+
   // ============================================
   // Admin Locale
   // ============================================
@@ -787,7 +846,9 @@ class PreferencesService {
           key.startsWith('agenda_show_cancelled_appointments_${businessId}_') ||
           key.startsWith(
             'agenda_expand_staff_columns_on_overlap_${businessId}_',
-          )) {
+          ) ||
+          key.startsWith('agenda_completed_color_enabled_${businessId}_') ||
+          key.startsWith('agenda_completed_color_${businessId}_')) {
         await _prefs.remove(key);
       }
     }
@@ -813,6 +874,8 @@ class PreferencesService {
           key.startsWith('agenda_use_service_colors_override_') ||
           key.startsWith('agenda_show_cancelled_appointments_') ||
           key.startsWith('agenda_expand_staff_columns_on_overlap_') ||
+          key.startsWith('agenda_completed_color_enabled_') ||
+          key.startsWith('agenda_completed_color_') ||
           key.startsWith('last_visited_route_user_') ||
           key.startsWith('last_visited_route_updated_at_user_') ||
           key.startsWith('current_location_id') ||

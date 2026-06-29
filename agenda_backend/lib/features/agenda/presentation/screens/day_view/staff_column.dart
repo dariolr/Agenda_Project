@@ -1084,6 +1084,7 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
     final layoutConfig = ref.watch(layoutConfigProvider);
     final cardColorSource = ref.watch(effectiveAgendaCardColorSourceProvider);
     final useServiceColors = cardColorSource == AgendaCardColorSource.services;
+    final completedCardColor = ref.watch(effectiveCompletedCardColorProvider);
     final canManageBookings = ref.watch(currentUserCanManageBookingsProvider);
     final clientsById = ref.watch(clientsByIdProvider);
     // 🔹 Watch fuori dal loop per evitare rebuild multipli
@@ -1211,6 +1212,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
           );
           break;
       }
+      cardColor = applyCompletedColorOverride(
+        cardColor,
+        originalAppt,
+        completedCardColor,
+      );
 
       const narrowOverlapRatioThreshold = 0.65;
       const narrowOverlapMaxWidthPx = 320.0;
@@ -1603,6 +1609,11 @@ class _StaffColumnState extends ConsumerState<StaffColumn> {
             );
             break;
         }
+        cardColor = applyCompletedColorOverride(
+          cardColor,
+          originalAppt,
+          completedCardColor,
+        );
 
         // Preview card con bordo tratteggiato per indicare la posizione proposta
         positionedEntries.add(

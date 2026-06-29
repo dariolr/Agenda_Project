@@ -1015,16 +1015,25 @@ class _WeeklyAppointmentTileState
     final fallbackColor =
         staff?.color ?? Theme.of(context).colorScheme.primary.withOpacity(0.8);
 
+    final completedCardColor = ref.watch(effectiveCompletedCardColorProvider);
     final cardColorSource = ref.watch(effectiveAgendaCardColorSourceProvider);
     if (cardColorSource == AgendaCardColorSource.team) {
-      return fallbackColor;
+      return applyCompletedColorOverride(
+        fallbackColor,
+        currentAppointment,
+        completedCardColor,
+      );
     }
     if (cardColorSource == AgendaCardColorSource.clients) {
       final clientsById = ref.watch(clientsByIdProvider);
-      return resolveClientColorForAppointment(
-        context,
+      return applyCompletedColorOverride(
+        resolveClientColorForAppointment(
+          context,
+          currentAppointment,
+          clientColorHex: clientsById[currentAppointment.clientId]?.colorHex,
+        ),
         currentAppointment,
-        clientColorHex: clientsById[currentAppointment.clientId]?.colorHex,
+        completedCardColor,
       );
     }
 
@@ -1047,9 +1056,13 @@ class _WeeklyAppointmentTileState
     final snapshotColor = _parseClassTypeColor(
       currentAppointment.serviceColorHex,
     );
-    return serviceColorMap[currentAppointment.serviceId] ??
-        snapshotColor ??
-        neutralServiceColor;
+    return applyCompletedColorOverride(
+      serviceColorMap[currentAppointment.serviceId] ??
+          snapshotColor ??
+          neutralServiceColor,
+      currentAppointment,
+      completedCardColor,
+    );
   }
 
   String _resolveStaffDisplayName(WidgetRef ref, int staffId) {

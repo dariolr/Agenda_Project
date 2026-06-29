@@ -335,6 +335,12 @@ class MessageLookup extends MessageLookupByLibrary {
         MessageLookupByLibrary.simpleMessage("Zoom testo"),
     "agendaDisplaySettingsColumnWidthLabel":
         MessageLookupByLibrary.simpleMessage("Larghezza minima colonne"),
+    "agendaDisplaySettingsCompletedColorLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Colore dedicato agli appuntamenti completati",
+        ),
+    "agendaDisplaySettingsCompletedColorPickLabel":
+        MessageLookupByLibrary.simpleMessage("Colore appuntamenti completati"),
     "agendaDisplaySettingsExpandStaffColumnsOnOverlapLabel":
         MessageLookupByLibrary.simpleMessage(
           "Espandi le colonne in caso di appuntamenti sovrapposti",

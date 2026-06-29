@@ -16,7 +16,42 @@ import 'package:agenda_backend/features/services/providers/services_provider.dar
 import 'package:agenda_backend/features/auth/providers/current_business_user_provider.dart';
 import 'package:agenda_backend/features/staff/providers/staff_providers.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+/// Apre un color picker a tutto spettro e ritorna il colore scelto (o null).
+Future<Color?> _openCompletedColorPicker(
+  BuildContext context, {
+  required Color initialColor,
+}) async {
+  var tempColor = initialColor;
+  return showDialog<Color>(
+    context: context,
+    builder: (dialogContext) {
+      return AlertDialog(
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: tempColor,
+            onColorChanged: (color) => tempColor = color,
+            enableAlpha: false,
+            displayThumbColor: true,
+            pickerAreaHeightPercent: 0.72,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: Text(dialogContext.l10n.actionCancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(tempColor),
+            child: Text(dialogContext.l10n.actionConfirm),
+          ),
+        ],
+      );
+    },
+  );
+}
 
 Future<void> showAgendaDisplaySettingsSheet(BuildContext context) async {
   final formFactor = ProviderScope.containerOf(
@@ -321,6 +356,58 @@ class _AgendaDisplaySettingsSheetContent extends ConsumerWidget {
               Text('${(settings.cardColorOpacity * 100).round()}%'),
             ],
           ),
+          const SizedBox(height: _sectionSpacing),
+          SwitchListTile.adaptive(
+            contentPadding: EdgeInsets.zero,
+            title: Text(
+              context.l10n.agendaDisplaySettingsCompletedColorLabel,
+              style: settingLabelStyle,
+            ),
+            value: settings.completedColorEnabled,
+            onChanged: notifier.setCompletedColorEnabled,
+          ),
+          if (settings.completedColorEnabled) ...[
+            const SizedBox(height: 8),
+            InkWell(
+              onTap: () async {
+                final picked = await _openCompletedColorPicker(
+                  context,
+                  initialColor: settings.completedColor,
+                );
+                if (picked != null) {
+                  await notifier.setCompletedColor(picked);
+                }
+              },
+              borderRadius: BorderRadius.circular(8),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        context
+                            .l10n
+                            .agendaDisplaySettingsCompletedColorPickLabel,
+                      ),
+                    ),
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        color: settings.completedColor,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Theme.of(context).colorScheme.outline,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(Icons.edit, size: 18),
+                  ],
+                ),
+              ),
+            ),
+          ],
           if (showExtraMinutesBandIntensitySetting) ...[
             const SizedBox(height: _sectionSpacing),
             Text(

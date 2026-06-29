@@ -12706,6 +12706,26 @@ class L10n {
     );
   }
 
+  /// `Dedicated color for completed appointments`
+  String get agendaDisplaySettingsCompletedColorLabel {
+    return Intl.message(
+      'Dedicated color for completed appointments',
+      name: 'agendaDisplaySettingsCompletedColorLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Completed appointments color`
+  String get agendaDisplaySettingsCompletedColorPickLabel {
+    return Intl.message(
+      'Completed appointments color',
+      name: 'agendaDisplaySettingsCompletedColorPickLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Reset defaults`
   String get agendaDisplaySettingsResetDefaultsAction {
     return Intl.message(
