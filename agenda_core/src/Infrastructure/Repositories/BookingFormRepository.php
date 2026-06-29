@@ -69,6 +69,7 @@ final class BookingFormRepository
         'service_variant',
         'service_package',
         'class_event',
+        'class_type',
         'service_category',
     ];
 
@@ -396,7 +397,7 @@ final class BookingFormRepository
             'business' => 'business',
             'location' => 'location',
             'service_category' => 'service_category',
-            'service_variant', 'service_package', 'class_event' => 'appointment',
+            'service_variant', 'service_package', 'class_event', 'class_type' => 'appointment',
             default => 'unknown',
         };
     }
@@ -824,6 +825,7 @@ final class BookingFormRepository
         $servicePackageIds = $this->positiveIds($servicePackageIds);
         $classEventIds = $this->positiveIds($classEventIds);
         $categoryIds = [];
+        $classTypeIds = [];
 
         if (!empty($serviceVariantIds) || !empty($serviceIds)) {
             $variantSql = !empty($serviceVariantIds)
@@ -879,13 +881,16 @@ final class BookingFormRepository
         if (!empty($classEventIds)) {
             $placeholders = implode(',', array_fill(0, count($classEventIds), '?'));
             $stmt = $this->db->getPdo()->prepare(
-                "SELECT DISTINCT ct.service_category_id
+                "SELECT DISTINCT ct.id AS class_type_id, ct.service_category_id
                  FROM class_events ce
                  INNER JOIN class_types ct ON ct.id = ce.class_type_id AND ct.business_id = ce.business_id
                  WHERE ce.id IN ({$placeholders}) AND ce.business_id = ? AND ce.location_id = ?"
             );
             $stmt->execute([...$classEventIds, $businessId, $locationId]);
             foreach ($stmt->fetchAll() as $row) {
+                if ($row['class_type_id'] !== null) {
+                    $classTypeIds[] = (int) $row['class_type_id'];
+                }
                 if ($row['service_category_id'] !== null) {
                     $categoryIds[] = (int) $row['service_category_id'];
                 }
@@ -897,6 +902,7 @@ final class BookingFormRepository
             'service_variant' => $serviceVariantIds,
             'service_package' => $servicePackageIds,
             'class_event' => $classEventIds,
+            'class_type' => $this->positiveIds($classTypeIds),
             'service_category' => $this->positiveIds($categoryIds),
         ];
     }
@@ -1215,6 +1221,7 @@ final class BookingFormRepository
             'service_variant' => ['service_variants sv INNER JOIN services s ON s.id = sv.service_id', 'sv.id'],
             'service_package' => ['service_packages', 'id'],
             'class_event' => ['class_events', 'id'],
+            'class_type' => ['class_types', 'id'],
             'service_category' => ['service_categories', 'id'],
         ];
         [$table, $column] = $map[$scopeType];

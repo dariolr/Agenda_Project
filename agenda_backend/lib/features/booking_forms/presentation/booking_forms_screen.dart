@@ -1,14 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../app/providers/form_factor_provider.dart';
+import '../../../app/theme/extensions.dart';
 import '../../../core/l10n/l10_extension.dart';
-import '../../../core/models/class_event.dart';
+import '../../../core/models/class_type.dart';
 import '../../../core/models/location.dart';
 import '../../../core/models/service.dart';
 import '../../../core/models/service_category.dart';
 import '../../../core/models/service_package.dart';
+import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/app_buttons.dart';
 import '../../../core/widgets/app_dialogs.dart';
+import '../../../core/widgets/app_dividers.dart';
 import '../../../core/widgets/app_form.dart';
 import '../../../core/widgets/app_switch.dart';
 import '../../../core/widgets/feedback_dialog.dart';
@@ -326,7 +330,9 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
     final form = _form;
     return <String>[
       if (!_isActive) l10n.bookingFormsWarningInactive,
-      if (form == null || !form.fields.any((f) => f.isInputField))
+      // Basta almeno un campo (anche solo "Testo informativo") perché il modulo
+      // venga mostrato online: un modulo solo-informativo è un caso valido.
+      if (form == null || form.fields.isEmpty)
         l10n.bookingFormsWarningNoFields,
       if (_draftRules.isEmpty) l10n.bookingFormsWarningNoRules,
     ];
@@ -818,14 +824,73 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
       return _SaveFirstPlaceholder(message: l10n.bookingFormsSaveModuleFirst);
     }
 
+    // I tipi appuntamento vengono caricati per TUTTE le sedi del business: le
+    // regole sono business-wide. Carico i dati SEDE PER SEDE e taggo ogni
+    // elemento con la sua sede (la risposta API dei servizi non include
+    // location_id, quindi non possiamo dedurlo dal modello).
+    final locations = ref.watch(locationsProvider);
+    final appointments = <_AppointmentTarget>[];
+    for (final location in locations) {
+      final key = locationIdsToKey({location.id});
+      final locationServices =
+          ref.watch(servicesForLocationsProvider(key)).value?.services ??
+          const <Service>[];
+      final locationPackages =
+          ref.watch(servicePackagesForLocationsProvider(key)).value ??
+          const <ServicePackage>[];
+      for (final service in locationServices) {
+        if (service.serviceVariantId == null) continue;
+        appointments.add(
+          _AppointmentTarget(
+            scopeType: 'service_variant',
+            id: service.serviceVariantId!,
+            label: service.name,
+            locationId: location.id,
+            locationName: location.name,
+            categoryId: service.categoryId,
+          ),
+        );
+      }
+      for (final servicePackage in locationPackages) {
+        appointments.add(
+          _AppointmentTarget(
+            scopeType: 'service_package',
+            id: servicePackage.id,
+            label: servicePackage.name,
+            locationId: location.id,
+            locationName: location.name,
+            categoryId: servicePackage.categoryId,
+          ),
+        );
+      }
+    }
+
+    // Lezioni: si fa riferimento al TIPO di lezione (valido su tutte le sedi in
+    // cui il tipo è offerto), non alle singole istanze datate.
+    final classTypes =
+        ref.watch(classTypesProvider).value ?? const <ClassType>[];
+    for (final classType in classTypes) {
+      appointments.add(
+        _AppointmentTarget(
+          scopeType: 'class_type',
+          id: classType.id,
+          label: classType.name,
+          locationIds: classType.locationIds.toSet(),
+          categoryId: classType.serviceCategoryId,
+        ),
+      );
+    }
+
+    // `serviceCategoriesProvider` viene popolato come effetto collaterale del
+    // caricamento di `servicesProvider`: lo osserviamo per garantire che le
+    // categorie del business siano disponibili anche su questa schermata.
+    ref.watch(servicesProvider);
+    final categories = ref.watch(serviceCategoriesProvider);
+
     final targets = _buildVisibilityTargets(
-      locations: ref.watch(locationsProvider),
-      categories: ref.watch(serviceCategoriesProvider),
-      services: ref.watch(servicesProvider).value ?? const <Service>[],
-      packages:
-          ref.watch(servicePackagesProvider).value ?? const <ServicePackage>[],
-      classEvents:
-          ref.watch(classEventsProvider).value ?? const <ClassEvent>[],
+      locations: locations,
+      categories: categories,
+      appointments: appointments,
     );
 
     return ListView(
@@ -908,12 +973,34 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
   }
 
   Future<void> _addRule(_VisibilityTargets targets) async {
-    final rule = await AppForm.show<BookingFormRule>(
+    final newRules = await AppForm.show<List<BookingFormRule>>(
       context: context,
       builder: (context) => _RuleBuilderDialog(targets: targets),
     );
-    if (rule == null || rule.conditions.isEmpty) return;
-    await _persistRules([..._draftRules, rule]);
+    if (newRules == null || newRules.isEmpty) return;
+
+    // Evito duplicati rispetto alle regole già presenti (stesse condizioni).
+    final existing = _draftRules.map(_ruleSignature).toSet();
+    final merged = [..._draftRules];
+    for (final rule in newRules) {
+      if (rule.conditions.isEmpty) continue;
+      final signature = _ruleSignature(rule);
+      if (existing.add(signature)) {
+        merged.add(rule);
+      }
+    }
+    if (merged.length == _draftRules.length) return;
+    await _persistRules(merged);
+  }
+
+  /// Firma di una regola = insieme ordinato delle sue condizioni, per dedup.
+  String _ruleSignature(BookingFormRule rule) {
+    final parts =
+        rule.conditions
+            .map((c) => '${c.scopeType}:${c.scopeId ?? 'all'}')
+            .toList()
+          ..sort();
+    return parts.join('&');
   }
 
   String _ruleSentence(
@@ -927,9 +1014,7 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
   _VisibilityTargets _buildVisibilityTargets({
     required List<Location> locations,
     required List<ServiceCategory> categories,
-    required List<Service> services,
-    required List<ServicePackage> packages,
-    required List<ClassEvent> classEvents,
+    required List<_AppointmentTarget> appointments,
   }) {
     return _VisibilityTargets(
       locations: [
@@ -948,32 +1033,7 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
             categoryId: category.id,
           ),
       ],
-      appointments: [
-        for (final service in services)
-          if (service.serviceVariantId != null)
-            _AppointmentTarget(
-              scopeType: 'service_variant',
-              id: service.serviceVariantId!,
-              label: service.name,
-              locationId: service.locationId,
-            ),
-        for (final servicePackage in packages)
-          _AppointmentTarget(
-            scopeType: 'service_package',
-            id: servicePackage.id,
-            label: servicePackage.name,
-            locationId: servicePackage.locationId,
-          ),
-        for (final event in classEvents)
-          _AppointmentTarget(
-            scopeType: 'class_event',
-            id: event.id,
-            label: event.classTypeName?.isNotEmpty == true
-                ? event.classTypeName!
-                : '#${event.id}',
-            locationId: event.locationId,
-          ),
-      ],
+      appointments: appointments,
     );
   }
 }
@@ -1014,12 +1074,42 @@ class _AppointmentTarget {
     required this.id,
     required this.label,
     this.locationId,
+    this.locationName,
+    this.locationIds = const {},
+    this.categoryId,
   });
 
   final String scopeType;
   final int id;
   final String label;
+
+  /// Sede singola (varianti/pacchetti). Null per i tipi lezione.
   final int? locationId;
+  final String? locationName;
+
+  /// Sedi in cui l'elemento è disponibile (tipi lezione, offerti su più sedi).
+  final Set<int> locationIds;
+
+  /// Categoria di appartenenza, per filtrare le categorie disponibili in una sede.
+  final int? categoryId;
+
+  /// Chiave univoca per tracciare la selezione multipla.
+  String get key => '$scopeType:$id';
+
+  /// Etichetta con la sede, per distinguere tipi omonimi di sedi diverse
+  /// nell'elenco business-wide (es. "Massaggio · Roma"). I tipi lezione, non
+  /// legati a una singola sede, restano col solo nome.
+  String get labelWithLocation =>
+      locationName == null || locationName!.isEmpty
+      ? label
+      : '$label · $locationName';
+
+  /// Vero se l'elemento è disponibile nella sede indicata.
+  bool matchesLocation(int locationId) {
+    if (this.locationId != null) return this.locationId == locationId;
+    if (locationIds.isNotEmpty) return locationIds.contains(locationId);
+    return true;
+  }
 }
 
 /// Traduce una regola in una frase leggibile per l'operatore (senza simboli
@@ -1474,64 +1564,155 @@ class _RuleBuilderDialogState extends State<_RuleBuilderDialog> {
   int? _locationId;
   int? _categoryId;
   String _refine = 'none';
-  _AppointmentTarget? _appointment;
+  /// Selezione multipla dei tipi appuntamento (scope "appointment" o refine).
+  List<_AppointmentTarget> _selectedAppointments = const [];
 
   List<_AppointmentTarget> _appointmentsForLocation() {
-    if (_locationId == null) return const [];
+    final locationId = _locationId;
+    if (locationId == null) return const [];
     return widget.targets.appointments
-        .where((a) => a.locationId == _locationId)
+        .where((a) => a.matchesLocation(locationId))
         .toList();
   }
 
-  BookingFormRule _draftRule() {
+  /// Le regole risultanti dalle scelte correnti. Per gli scope business/sede/
+  /// categoria è una singola regola; per i tipi appuntamento (multi-selezione)
+  /// può essere più di una, con collasso intelligente a categoria/sede/business.
+  List<BookingFormRule> _draftRules() {
     switch (_scope) {
       case 'location':
-        final conditions = <BookingFormCondition>[
-          BookingFormCondition(scopeType: 'location', scopeId: _locationId),
-        ];
-        if (_refine == 'service_category' && _categoryId != null) {
-          conditions.add(
-            BookingFormCondition(
-              scopeType: 'service_category',
-              scopeId: _categoryId,
-            ),
-          );
-        } else if (_refine == 'appointment' && _appointment != null) {
-          conditions.add(
-            BookingFormCondition(
-              scopeType: _appointment!.scopeType,
-              scopeId: _appointment!.id,
-            ),
-          );
-        }
-        return BookingFormRule(conditions: conditions);
-      case 'service_category':
-        return BookingFormRule(
-          conditions: [
-            BookingFormCondition(
-              scopeType: 'service_category',
-              scopeId: _categoryId,
-            ),
-          ],
-        );
-      case 'appointment':
-        final appointment = _appointment;
-        return BookingFormRule(
-          conditions: appointment == null
+        if (_locationId == null) return const [];
+        if (_refine == 'service_category') {
+          return _categoryId == null
               ? const []
               : [
-                  BookingFormCondition(
-                    scopeType: appointment.scopeType,
-                    scopeId: appointment.id,
+                  BookingFormRule(
+                    conditions: [
+                      BookingFormCondition(
+                        scopeType: 'location',
+                        scopeId: _locationId,
+                      ),
+                      BookingFormCondition(
+                        scopeType: 'service_category',
+                        scopeId: _categoryId,
+                      ),
+                    ],
                   ),
-                ],
-        );
+                ];
+        }
+        if (_refine == 'appointment') {
+          return _rulesFromAppointmentSelection(locationId: _locationId);
+        }
+        return [
+          BookingFormRule(
+            conditions: [
+              BookingFormCondition(scopeType: 'location', scopeId: _locationId),
+            ],
+          ),
+        ];
+      case 'service_category':
+        return _categoryId == null
+            ? const []
+            : [
+                BookingFormRule(
+                  conditions: [
+                    BookingFormCondition(
+                      scopeType: 'service_category',
+                      scopeId: _categoryId,
+                    ),
+                  ],
+                ),
+              ];
+      case 'appointment':
+        return _rulesFromAppointmentSelection(locationId: null);
       case 'business':
       default:
-        return const BookingFormRule(
-          conditions: [BookingFormCondition(scopeType: 'business')],
-        );
+        return const [
+          BookingFormRule(
+            conditions: [BookingFormCondition(scopeType: 'business')],
+          ),
+        ];
     }
+  }
+
+  /// Converte la selezione multipla dei tipi appuntamento in regole, applicando
+  /// il collasso: tutti i tipi → business/sede; tutti quelli di una categoria
+  /// (con almeno 2 elementi) → regola categoria; gli altri → regole per tipo.
+  List<BookingFormRule> _rulesFromAppointmentSelection({int? locationId}) {
+    final all = locationId == null
+        ? widget.targets.appointments
+        : _appointmentsForLocation();
+    final selected = _selectedAppointments;
+    if (selected.isEmpty) return const [];
+
+    BookingFormRule withScope(List<BookingFormCondition> conditions) {
+      if (locationId == null) return BookingFormRule(conditions: conditions);
+      return BookingFormRule(
+        conditions: [
+          BookingFormCondition(scopeType: 'location', scopeId: locationId),
+          ...conditions,
+        ],
+      );
+    }
+
+    final selectedKeys = selected.map((a) => a.key).toSet();
+
+    // Tutto selezionato → business (o sede).
+    if (all.length >= 2 && selectedKeys.length == all.length) {
+      return [
+        locationId == null
+            ? const BookingFormRule(
+                conditions: [BookingFormCondition(scopeType: 'business')],
+              )
+            : BookingFormRule(
+                conditions: [
+                  BookingFormCondition(
+                    scopeType: 'location',
+                    scopeId: locationId,
+                  ),
+                ],
+              ),
+      ];
+    }
+
+    // Categorie completamente selezionate (con ≥2 elementi) → regola categoria.
+    final allByCategory = <int, List<_AppointmentTarget>>{};
+    for (final appointment in all) {
+      final categoryId = appointment.categoryId;
+      if (categoryId != null) {
+        allByCategory.putIfAbsent(categoryId, () => []).add(appointment);
+      }
+    }
+    final wholeCategoryIds = <int>{};
+    final consumed = <String>{};
+    for (final entry in allByCategory.entries) {
+      if (entry.value.length >= 2 &&
+          entry.value.every((a) => selectedKeys.contains(a.key))) {
+        wholeCategoryIds.add(entry.key);
+        for (final a in entry.value) {
+          consumed.add(a.key);
+        }
+      }
+    }
+
+    final rules = <BookingFormRule>[
+      for (final categoryId in wholeCategoryIds)
+        withScope([
+          BookingFormCondition(
+            scopeType: 'service_category',
+            scopeId: categoryId,
+          ),
+        ]),
+      for (final appointment in selected)
+        if (!consumed.contains(appointment.key))
+          withScope([
+            BookingFormCondition(
+              scopeType: appointment.scopeType,
+              scopeId: appointment.id,
+            ),
+          ]),
+    ];
+    return rules;
   }
 
   bool _canSubmit() {
@@ -1539,12 +1720,12 @@ class _RuleBuilderDialogState extends State<_RuleBuilderDialog> {
       case 'location':
         if (_locationId == null) return false;
         if (_refine == 'service_category') return _categoryId != null;
-        if (_refine == 'appointment') return _appointment != null;
+        if (_refine == 'appointment') return _selectedAppointments.isNotEmpty;
         return true;
       case 'service_category':
         return _categoryId != null;
       case 'appointment':
-        return _appointment != null;
+        return _selectedAppointments.isNotEmpty;
       case 'business':
       default:
         return true;
@@ -1552,15 +1733,14 @@ class _RuleBuilderDialogState extends State<_RuleBuilderDialog> {
   }
 
   void _submit() {
-    final rule = _draftRule();
-    if (rule.conditions.isEmpty) return;
-    Navigator.of(context).pop(rule);
+    final rules = _draftRules();
+    if (rules.isEmpty) return;
+    Navigator.of(context).pop(rules);
   }
 
   @override
   Widget build(BuildContext context) {
     final l10n = context.l10n;
-    final theme = Theme.of(context);
     final targets = widget.targets;
     final hasCategories = targets.categories.isNotEmpty;
     final hasAppointments = targets.appointments.isNotEmpty;
@@ -1605,7 +1785,10 @@ class _RuleBuilderDialogState extends State<_RuleBuilderDialog> {
                 ],
                 onChanged: (value) => setState(() {
                   _locationId = value;
-                  _appointment = null;
+                  // La restrizione facoltativa deve essere un sottoinsieme della
+                  // sede scelta: azzero le selezioni dipendenti dalla sede.
+                  _selectedAppointments = const [];
+                  _categoryId = null;
                 }),
               ),
             ),
@@ -1630,37 +1813,39 @@ class _RuleBuilderDialogState extends State<_RuleBuilderDialog> {
             ),
             if (_refine == 'service_category') ...[
               const SizedBox(height: 12),
-              _categoryDropdown(context),
+              _categoryDropdown(context, _categoriesForLocation()),
             ],
             if (_refine == 'appointment') ...[
               const SizedBox(height: 12),
-              _appointmentDropdown(context, _appointmentsForLocation()),
+              _AppointmentPickerField(
+                items: _appointmentsForLocation(),
+                categories: targets.categories,
+                selected: _selectedAppointments,
+                onChanged: (selection) =>
+                    setState(() => _selectedAppointments = selection),
+              ),
             ],
           ],
           if (_scope == 'service_category') ...[
             const SizedBox(height: 16),
-            _categoryDropdown(context),
+            _categoryDropdown(context, targets.categories),
           ],
           if (_scope == 'appointment') ...[
             const SizedBox(height: 16),
-            _appointmentDropdown(context, targets.appointments),
+            _AppointmentPickerField(
+              items: targets.appointments,
+              categories: targets.categories,
+              selected: _selectedAppointments,
+              showLocation: true,
+              onChanged: (selection) =>
+                  setState(() => _selectedAppointments = selection),
+            ),
           ],
           if (_canSubmit()) ...[
             const SizedBox(height: 20),
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primary.withValues(alpha: 0.06),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                _ruleSentenceText(context, _draftRule(), targets),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: theme.colorScheme.primary,
-                ),
-              ),
+            _RulesPreview(
+              rules: _draftRules(),
+              targets: targets,
             ),
           ],
         ],
@@ -1678,25 +1863,25 @@ class _RuleBuilderDialogState extends State<_RuleBuilderDialog> {
     );
   }
 
-  Widget _categoryDropdown(BuildContext context) {
-    final l10n = context.l10n;
-    return LabeledFormField(
-      label: l10n.bookingFormsRuleSelectCategory,
-      child: DropdownButtonFormField<int>(
-        initialValue: _categoryId,
-        decoration: _fieldDecoration(context),
-        items: [
-          for (final category in widget.targets.categories)
-            DropdownMenuItem(value: category.id, child: Text(category.label)),
-        ],
-        onChanged: (value) => setState(() => _categoryId = value),
-      ),
-    );
+  /// Categorie disponibili nella sede selezionata: solo quelle che hanno almeno
+  /// un tipo appuntamento (variante, pacchetto o tipo lezione) in quella sede.
+  List<_AssignmentTarget> _categoriesForLocation() {
+    final locationId = _locationId;
+    if (locationId == null) return const [];
+    final categoryIds = <int>{
+      for (final appointment in widget.targets.appointments)
+        if (appointment.matchesLocation(locationId) &&
+            appointment.categoryId != null)
+          appointment.categoryId!,
+    };
+    return widget.targets.categories
+        .where((category) => categoryIds.contains(category.id))
+        .toList();
   }
 
-  Widget _appointmentDropdown(
+  Widget _categoryDropdown(
     BuildContext context,
-    List<_AppointmentTarget> items,
+    List<_AssignmentTarget> items,
   ) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
@@ -1708,21 +1893,20 @@ class _RuleBuilderDialogState extends State<_RuleBuilderDialog> {
         ),
       );
     }
-    final value = items.contains(_appointment) ? _appointment : null;
+    final value = items.any((category) => category.id == _categoryId)
+        ? _categoryId
+        : null;
     return LabeledFormField(
-      label: l10n.bookingFormsRuleSelectAppointment,
-      child: DropdownButtonFormField<_AppointmentTarget>(
-        key: ValueKey('appt-$_scope-$_locationId-$_refine'),
+      label: l10n.bookingFormsRuleSelectCategory,
+      child: DropdownButtonFormField<int>(
+        key: ValueKey('cat-$_scope-$_locationId'),
         initialValue: value,
         decoration: _fieldDecoration(context),
         items: [
-          for (final appointment in items)
-            DropdownMenuItem(
-              value: appointment,
-              child: Text(appointment.label),
-            ),
+          for (final category in items)
+            DropdownMenuItem(value: category.id, child: Text(category.label)),
         ],
-        onChanged: (selected) => setState(() => _appointment = selected),
+        onChanged: (value) => setState(() => _categoryId = value),
       ),
     );
   }
@@ -1739,7 +1923,7 @@ class _RuleBuilderDialogState extends State<_RuleBuilderDialog> {
       onChanged: (selected) => setState(() {
         _scope = selected ?? 'business';
         _refine = 'none';
-        _appointment = null;
+        _selectedAppointments = const [];
         _categoryId = null;
       }),
     );
@@ -1756,9 +1940,553 @@ class _RuleBuilderDialogState extends State<_RuleBuilderDialog> {
       // ignore: deprecated_member_use
       onChanged: (selected) => setState(() {
         _refine = selected ?? 'none';
-        _appointment = null;
+        _selectedAppointments = const [];
         _categoryId = null;
       }),
+    );
+  }
+}
+
+/// Campo che apre un selettore di tipi appuntamento con LO STESSO layout usato
+/// nella creazione prenotazione: fasce header a tutta larghezza, righe con
+/// sfondo alternato, sezione Pacchetti, sezione Lezioni e servizi per categoria.
+/// Anteprima delle regole che verranno create dalla selezione corrente.
+class _RulesPreview extends StatelessWidget {
+  const _RulesPreview({required this.rules, required this.targets});
+
+  final List<BookingFormRule> rules;
+  final _VisibilityTargets targets;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    if (rules.isEmpty) return const SizedBox.shrink();
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.primary.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < rules.length; i++) ...[
+            if (i > 0) const SizedBox(height: 6),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.check_circle_outline,
+                  size: 16,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _ruleSentenceText(context, rules[i], targets),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Campo che apre un selettore MULTIPLO di tipi appuntamento con lo stesso
+/// layout della creazione prenotazione (fasce header, righe a sfondo alternato,
+/// sezione Pacchetti, sezione Lezioni e servizi per categoria), con
+/// "seleziona tutto" per sezione e globale.
+class _AppointmentPickerField extends StatelessWidget {
+  const _AppointmentPickerField({
+    required this.items,
+    required this.categories,
+    required this.selected,
+    required this.onChanged,
+    this.showLocation = false,
+  });
+
+  final List<_AppointmentTarget> items;
+  final List<_AssignmentTarget> categories;
+  final List<_AppointmentTarget> selected;
+  final ValueChanged<List<_AppointmentTarget>> onChanged;
+  final bool showLocation;
+
+  Future<void> _open(BuildContext context) async {
+    final isDesktop =
+        ProviderScope.containerOf(context, listen: false).read(
+          formFactorProvider,
+        ) ==
+        AppFormFactor.desktop;
+    Widget content() => _AppointmentPickerContent(
+      items: items,
+      categories: categories,
+      selected: selected,
+      showLocation: showLocation,
+    );
+
+    List<_AppointmentTarget>? result;
+    if (isDesktop) {
+      result = await showDialog<List<_AppointmentTarget>>(
+        context: context,
+        builder: (_) => Dialog(
+          insetPadding: const EdgeInsets.symmetric(horizontal: 32, vertical: 24),
+          clipBehavior: Clip.antiAlias,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              minWidth: 600,
+              maxWidth: 720,
+              maxHeight: 560,
+            ),
+            child: content(),
+          ),
+        ),
+      );
+    } else {
+      result = await AppBottomSheet.show<List<_AppointmentTarget>>(
+        context: context,
+        padding: EdgeInsets.zero,
+        builder: (_) => content(),
+      );
+    }
+    if (result != null) onChanged(result);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+
+    if (items.isEmpty) {
+      return Text(
+        l10n.bookingFormsRuleNoTargets,
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      );
+    }
+
+    final keys = items.map((e) => e.key).toSet();
+    final current = selected.where((a) => keys.contains(a.key)).toList();
+    final String? text;
+    if (current.isEmpty) {
+      text = null;
+    } else if (current.length == 1) {
+      text = showLocation ? current.first.labelWithLocation : current.first.label;
+    } else {
+      text = l10n.bookingFormsRuleSelectedCount(current.length);
+    }
+
+    return LabeledFormField(
+      label: l10n.bookingFormsRuleSelectAppointment,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _open(context),
+        child: InputDecorator(
+          decoration: _fieldDecoration(context),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  text ?? l10n.bookingFormsRuleSelectAppointment,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: text == null
+                        ? theme.colorScheme.onSurfaceVariant
+                        : theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              Icon(
+                Icons.arrow_drop_down,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppointmentPickerContent extends StatefulWidget {
+  const _AppointmentPickerContent({
+    required this.items,
+    required this.categories,
+    required this.selected,
+    required this.showLocation,
+  });
+
+  final List<_AppointmentTarget> items;
+  final List<_AssignmentTarget> categories;
+  final List<_AppointmentTarget> selected;
+  final bool showLocation;
+
+  @override
+  State<_AppointmentPickerContent> createState() =>
+      _AppointmentPickerContentState();
+}
+
+class _AppointmentPickerContentState extends State<_AppointmentPickerContent> {
+  final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
+  late final Map<String, _AppointmentTarget> _byKey;
+  late Set<String> _selectedKeys;
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _byKey = {for (final a in widget.items) a.key: a};
+    _selectedKeys = {
+      for (final a in widget.selected)
+        if (_byKey.containsKey(a.key)) a.key,
+    };
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  int _byLabel(_AppointmentTarget a, _AppointmentTarget b) =>
+      a.label.toLowerCase().compareTo(b.label.toLowerCase());
+
+  void _toggle(String key, bool value) {
+    setState(() {
+      if (value) {
+        _selectedKeys.add(key);
+      } else {
+        _selectedKeys.remove(key);
+      }
+    });
+  }
+
+  void _toggleMany(Iterable<String> keys, bool value) {
+    setState(() {
+      if (value) {
+        _selectedKeys.addAll(keys);
+      } else {
+        _selectedKeys.removeAll(keys);
+      }
+    });
+  }
+
+  void _confirm() {
+    Navigator.of(context).pop([
+      for (final key in _selectedKeys)
+        if (_byKey[key] != null) _byKey[key]!,
+    ]);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final l10n = context.l10n;
+    final query = _query.trim().toLowerCase();
+    final filtered = widget.items
+        .where((a) => query.isEmpty || a.label.toLowerCase().contains(query))
+        .toList();
+
+    final packages =
+        filtered.where((a) => a.scopeType == 'service_package').toList()
+          ..sort(_byLabel);
+    final lessons = filtered.where((a) => a.scopeType == 'class_type').toList()
+      ..sort(_byLabel);
+    final variants = filtered
+        .where((a) => a.scopeType == 'service_variant')
+        .toList();
+
+    final byCategory = <int?, List<_AppointmentTarget>>{};
+    for (final variant in variants) {
+      byCategory.putIfAbsent(variant.categoryId, () => []).add(variant);
+    }
+    for (final list in byCategory.values) {
+      list.sort(_byLabel);
+    }
+    final orderedCategoryIds = <int>[
+      for (final category in widget.categories)
+        if (byCategory.containsKey(category.id)) category.id,
+    ];
+    final uncategorized = <_AppointmentTarget>[
+      for (final entry in byCategory.entries)
+        if (entry.key == null ||
+            !widget.categories.any((c) => c.id == entry.key))
+          ...entry.value,
+    ]..sort(_byLabel);
+
+    final showSearch = widget.items.length > 10 || _query.isNotEmpty;
+    final isEmpty = packages.isEmpty && lessons.isEmpty && variants.isEmpty;
+    final allKeys = widget.items.map((e) => e.key).toSet();
+    final allSelected =
+        allKeys.isNotEmpty && _selectedKeys.containsAll(allKeys);
+
+    Widget section(
+      String title,
+      Color headerColor,
+      Color onHeaderColor,
+      List<_AppointmentTarget> sectionItems, {
+      IconData? icon,
+    }) {
+      return _AppointmentSection(
+        title: title,
+        headerColor: headerColor,
+        onHeaderColor: onHeaderColor,
+        headerIcon: icon,
+        items: sectionItems,
+        selectedKeys: _selectedKeys,
+        showLocation: widget.showLocation,
+        onToggleItem: _toggle,
+        onToggleAll: (value) =>
+            _toggleMany(sectionItems.map((e) => e.key), value),
+      );
+    }
+
+    final sections = <Widget>[
+      if (packages.isNotEmpty)
+        section(
+          l10n.bookingFormsRulePackagesSection,
+          theme.colorScheme.secondary,
+          theme.colorScheme.onSecondary,
+          packages,
+          icon: Icons.widgets_outlined,
+        ),
+      if (lessons.isNotEmpty)
+        section(
+          l10n.bookingFormsRuleLessonsSection,
+          theme.colorScheme.tertiary,
+          theme.colorScheme.onTertiary,
+          lessons,
+          icon: Icons.school_outlined,
+        ),
+      for (final categoryId in orderedCategoryIds)
+        section(
+          widget.categories.firstWhere((c) => c.id == categoryId).label,
+          theme.colorScheme.primary,
+          theme.colorScheme.onPrimary,
+          byCategory[categoryId]!,
+        ),
+      if (uncategorized.isNotEmpty)
+        section(
+          l10n.bookingFormsRuleOtherServices,
+          theme.colorScheme.primary,
+          theme.colorScheme.onPrimary,
+          uncategorized,
+        ),
+    ];
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: Text(
+            l10n.bookingFormsRuleSelectAppointment,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
+        if (showSearch)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: l10n.bookingFormsRuleSearchHint,
+                prefixIcon: const Icon(Icons.search, size: 20),
+                suffixIcon: _query.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear, size: 20),
+                        onPressed: () {
+                          setState(() {
+                            _searchController.clear();
+                            _query = '';
+                          });
+                        },
+                      )
+                    : null,
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 10,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              onChanged: (value) => setState(() => _query = value),
+            ),
+          ),
+        if (!isEmpty)
+          CheckboxListTile(
+            controlAffinity: ListTileControlAffinity.leading,
+            dense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+            value: allSelected,
+            title: Text(
+              l10n.bookingFormsRuleSelectAll,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            onChanged: (value) => _toggleMany(allKeys, value ?? false),
+          ),
+        const AppDivider(),
+        Expanded(
+          child: isEmpty
+              ? Center(
+                  child: Text(
+                    l10n.bookingFormsRuleNoTargets,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                )
+              : ListView(controller: _scrollController, children: sections),
+        ),
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+            child: AppFilledButton(
+              onPressed: _selectedKeys.isEmpty ? null : _confirm,
+              child: Text(
+                _selectedKeys.isEmpty
+                    ? l10n.bookingFormsRuleConfirm
+                    : '${l10n.bookingFormsRuleConfirm} (${_selectedKeys.length})',
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// Sezione del selettore multiplo: fascia header a tutta larghezza con toggle
+/// "seleziona tutta la sezione" + righe con checkbox e sfondo alternato.
+class _AppointmentSection extends StatelessWidget {
+  const _AppointmentSection({
+    required this.title,
+    required this.headerColor,
+    required this.onHeaderColor,
+    required this.items,
+    required this.selectedKeys,
+    required this.showLocation,
+    required this.onToggleItem,
+    required this.onToggleAll,
+    this.headerIcon,
+  });
+
+  final String title;
+  final Color headerColor;
+  final Color onHeaderColor;
+  final IconData? headerIcon;
+  final List<_AppointmentTarget> items;
+  final Set<String> selectedKeys;
+  final bool showLocation;
+  final void Function(String key, bool value) onToggleItem;
+  final ValueChanged<bool> onToggleAll;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final interactionColors = theme.extension<AppInteractionColors>();
+    final evenBackgroundColor =
+        interactionColors?.alternatingRowFill ??
+        theme.colorScheme.onSurface.withValues(alpha: 0.04);
+
+    final keys = items.map((e) => e.key).toList();
+    final selectedCount = keys.where(selectedKeys.contains).length;
+    final allSelected = selectedCount == keys.length && keys.isNotEmpty;
+    final headerToggleIcon = allSelected
+        ? Icons.check_box
+        : (selectedCount == 0
+              ? Icons.check_box_outline_blank
+              : Icons.indeterminate_check_box);
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Material(
+          color: headerColor,
+          child: InkWell(
+            onTap: () => onToggleAll(!allSelected),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(
+                children: [
+                  Icon(headerToggleIcon, color: onHeaderColor, size: 20),
+                  const SizedBox(width: 10),
+                  if (headerIcon != null) ...[
+                    Icon(headerIcon, color: onHeaderColor, size: 18),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: Text(
+                      title.toUpperCase(),
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: onHeaderColor,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        for (var i = 0; i < items.length; i++)
+          _tile(context, items[i], isEven: i.isEven, evenBg: evenBackgroundColor),
+      ],
+    );
+  }
+
+  Widget _tile(
+    BuildContext context,
+    _AppointmentTarget appointment, {
+    required bool isEven,
+    required Color evenBg,
+  }) {
+    final isSelected = selectedKeys.contains(appointment.key);
+    return Material(
+      color: isEven ? evenBg : Colors.transparent,
+      child: InkWell(
+        onTap: () => onToggleItem(appointment.key, !isSelected),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 24, 4),
+          child: Row(
+            children: [
+              Checkbox(
+                value: isSelected,
+                onChanged: (value) =>
+                    onToggleItem(appointment.key, value ?? false),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  showLocation
+                      ? appointment.labelWithLocation
+                      : appointment.label,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

@@ -93,8 +93,9 @@ class BookingFormField {
             .toList(),
       );
 
-  /// Campi compilabili dal cliente (non puramente informativi). Un modulo
-  /// senza nessun campo di input non viene mostrato nella prenotazione online.
+  /// Campi compilabili dal cliente (non puramente informativi). Usato per la
+  /// raccolta delle risposte: i campi `info_text` non producono un valore.
+  /// NB: un modulo con soli campi informativi è comunque mostrato online.
   bool get isInputField => fieldType != 'info_text';
 
   String? get consentUrl {

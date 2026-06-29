@@ -1929,7 +1929,7 @@ class _MobileAgendaDateSwitcher extends ConsumerWidget {
     }
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 1, vertical: 8),
       child: AgendaDateSwitcher(
         key: ValueKey<bool>(isWeekMode),
         label: label,

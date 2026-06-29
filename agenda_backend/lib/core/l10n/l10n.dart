@@ -15371,40 +15371,110 @@ class L10n {
     );
   }
 
-  /// `For all bookings`
+  /// `Packages`
+  String get bookingFormsRulePackagesSection {
+    return Intl.message(
+      'Packages',
+      name: 'bookingFormsRulePackagesSection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Lessons`
+  String get bookingFormsRuleLessonsSection {
+    return Intl.message(
+      'Lessons',
+      name: 'bookingFormsRuleLessonsSection',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Other services`
+  String get bookingFormsRuleOtherServices {
+    return Intl.message(
+      'Other services',
+      name: 'bookingFormsRuleOtherServices',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Search…`
+  String get bookingFormsRuleSearchHint {
+    return Intl.message(
+      'Search…',
+      name: 'bookingFormsRuleSearchHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Select all`
+  String get bookingFormsRuleSelectAll {
+    return Intl.message(
+      'Select all',
+      name: 'bookingFormsRuleSelectAll',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Confirm`
+  String get bookingFormsRuleConfirm {
+    return Intl.message(
+      'Confirm',
+      name: 'bookingFormsRuleConfirm',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count} selected`
+  String bookingFormsRuleSelectedCount(int count) {
+    return Intl.message(
+      '$count selected',
+      name: 'bookingFormsRuleSelectedCount',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `All bookings`
   String get bookingFormsRuleBusiness {
     return Intl.message(
-      'For all bookings',
+      'All bookings',
       name: 'bookingFormsRuleBusiness',
       desc: '',
       args: [],
     );
   }
 
-  /// `Location {location} only`
+  /// `Location {location}`
   String bookingFormsRuleLocationOnly(String location) {
     return Intl.message(
-      'Location $location only',
+      'Location $location',
       name: 'bookingFormsRuleLocationOnly',
       desc: '',
       args: [location],
     );
   }
 
-  /// `Category {category} only`
+  /// `Category {category}`
   String bookingFormsRuleCategoryOnly(String category) {
     return Intl.message(
-      'Category $category only',
+      'Category $category',
       name: 'bookingFormsRuleCategoryOnly',
       desc: '',
       args: [category],
     );
   }
 
-  /// `{appointment} only`
+  /// `For {appointment}`
   String bookingFormsRuleAppointmentOnly(String appointment) {
     return Intl.message(
-      '$appointment only',
+      'For $appointment',
       name: 'bookingFormsRuleAppointmentOnly',
       desc: '',
       args: [appointment],

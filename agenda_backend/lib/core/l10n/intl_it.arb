@@ -2258,8 +2258,22 @@
   "bookingFormsRuleRefineCategory": "A una categoria",
   "bookingFormsRuleRefineAppointment": "A un tipo appuntamento",
   "bookingFormsRuleNoTargets": "Nessun elemento disponibile",
-  "bookingFormsRuleBusiness": "Per tutte le prenotazioni",
-  "bookingFormsRuleLocationOnly": "Solo sede {location}",
+  "bookingFormsRulePackagesSection": "Pacchetti",
+  "bookingFormsRuleLessonsSection": "Lezioni",
+  "bookingFormsRuleOtherServices": "Altri servizi",
+  "bookingFormsRuleSearchHint": "Cerca…",
+  "bookingFormsRuleSelectAll": "Seleziona tutto",
+  "bookingFormsRuleConfirm": "Conferma",
+  "bookingFormsRuleSelectedCount": "{count} selezionati",
+  "@bookingFormsRuleSelectedCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "bookingFormsRuleBusiness": "Tutte le prenotazioni",
+  "bookingFormsRuleLocationOnly": "Sede {location}",
   "@bookingFormsRuleLocationOnly": {
     "placeholders": {
       "location": {
@@ -2267,7 +2281,7 @@
       }
     }
   },
-  "bookingFormsRuleCategoryOnly": "Solo categoria {category}",
+  "bookingFormsRuleCategoryOnly": "Categoria {category}",
   "@bookingFormsRuleCategoryOnly": {
     "placeholders": {
       "category": {
@@ -2275,7 +2289,7 @@
       }
     }
   },
-  "bookingFormsRuleAppointmentOnly": "Solo per {appointment}",
+  "bookingFormsRuleAppointmentOnly": "Per {appointment}",
   "@bookingFormsRuleAppointmentOnly": {
     "placeholders": {
       "appointment": {
