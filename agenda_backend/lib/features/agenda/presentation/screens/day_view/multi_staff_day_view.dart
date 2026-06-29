@@ -92,6 +92,50 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
   // Larghezza colonna corrente — aggiornata nel build per usarla nel handler.
   double _colWidth = LayoutConfig.minColumnWidthDesktop;
 
+  // ─────────────────────────────────────────
+  // Swipe per cambio data (solo touch)
+  // Lo scroll orizzontale scorre prima le colonne; arrivati al bordo,
+  // l'overscroll viene accumulato e oltre soglia cambia giorno.
+  // ─────────────────────────────────────────
+  static const double _dateSwipeThreshold = 90;
+  double _dateSwipeAccum = 0;
+  bool _dateSwipeFired = false;
+
+  bool _handleDateSwipe(ScrollNotification notification) {
+    // Solo lo scroll orizzontale delle colonne ci interessa.
+    if (notification.metrics.axis != Axis.horizontal) return false;
+
+    if (notification is ScrollStartNotification ||
+        notification is ScrollEndNotification) {
+      _dateSwipeAccum = 0;
+      _dateSwipeFired = false;
+      return false;
+    }
+
+    if (notification is OverscrollNotification) {
+      if (_dateSwipeFired) return false;
+      // Gate "solo touch" basato sull'input, non sulla piattaforma:
+      // l'overscroll con dragDetails != null arriva da un drag attivo
+      // (touch reale o touch-emulation). Mouse-wheel e trackpad generano
+      // overscroll con dragDetails == null → esclusi.
+      if (notification.dragDetails == null) return false;
+      // Niente cambio data mentre si trascina/ridimensiona/seleziona una card.
+      if (ref.read(agendaDayScrollLockProvider)) return false;
+
+      // overscroll > 0 → bordo destro (verso giorno successivo)
+      // overscroll < 0 → bordo sinistro (verso giorno precedente)
+      _dateSwipeAccum += notification.overscroll;
+      if (_dateSwipeAccum >= _dateSwipeThreshold) {
+        _dateSwipeFired = true;
+        ref.read(agendaDateProvider.notifier).nextDay();
+      } else if (_dateSwipeAccum <= -_dateSwipeThreshold) {
+        _dateSwipeFired = true;
+        ref.read(agendaDateProvider.notifier).previousDay();
+      }
+    }
+    return false;
+  }
+
   bool _onHorizontalArrowKey(KeyEvent event) {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) return false;
     if (event.logicalKey != LogicalKeyboardKey.arrowLeft &&
@@ -559,18 +603,22 @@ class _MultiStaffDayViewState extends ConsumerState<MultiStaffDayView> {
             // BODY scrollabile
             Positioned.fill(
               top: headerHeight,
-              child: AgendaStaffBody(
-                verticalController: scrollState.verticalScrollCtrl,
-                horizontalController: scrollState.horizontalScrollCtrl,
-                staffList: widget.staffList,
-                appointments: appointments,
-                layoutConfig: layoutConfig,
-                availableWidth: availableWidth,
-                staffColumnWidths: staffColumnWidths,
-                isResizing: isResizing,
-                dragLayerLink: _dragLayerLink,
-                bodyKey: _bodyKey,
-                isInteractionLocked: isInteractionLocked,
+              child: NotificationListener<ScrollNotification>(
+                onNotification: _handleDateSwipe,
+                child: AgendaStaffBody(
+                  verticalController: scrollState.verticalScrollCtrl,
+                  horizontalController: scrollState.horizontalScrollCtrl,
+                  staffList: widget.staffList,
+                  appointments: appointments,
+                  layoutConfig: layoutConfig,
+                  availableWidth: availableWidth,
+                  staffColumnWidths: staffColumnWidths,
+                  isResizing: isResizing,
+                  dragLayerLink: _dragLayerLink,
+                  bodyKey: _bodyKey,
+                  isInteractionLocked: isInteractionLocked,
+                  enableDateSwipe: true,
+                ),
               ),
             ),
             // LINEA ORARIO (solo per la data odierna)

@@ -20,6 +20,7 @@ class AgendaStaffBody extends StatelessWidget {
     required this.dragLayerLink,
     required this.bodyKey,
     required this.isInteractionLocked,
+    this.enableDateSwipe = false,
   });
 
   final ScrollController verticalController;
@@ -33,6 +34,12 @@ class AgendaStaffBody extends StatelessWidget {
   final LayerLink? dragLayerLink;
   final GlobalKey bodyKey;
   final bool isInteractionLocked;
+
+  /// Quando true (solo touch), lo scroll orizzontale usa
+  /// [AlwaysScrollableScrollPhysics] così lo swipe viene catturato e genera
+  /// overscroll anche quando le colonne stanno tutte nello schermo,
+  /// permettendo il cambio data via swipe.
+  final bool enableDateSwipe;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +65,11 @@ class AgendaStaffBody extends StatelessWidget {
                   child: SingleChildScrollView(
                     controller: horizontalController,
                     scrollDirection: Axis.horizontal,
-                    physics: const ClampingScrollPhysics(),
+                    physics: enableDateSwipe
+                        ? const AlwaysScrollableScrollPhysics(
+                            parent: ClampingScrollPhysics(),
+                          )
+                        : const ClampingScrollPhysics(),
                     clipBehavior: Clip.hardEdge,
                     child: SizedBox(
                       width: totalContentWidth,
