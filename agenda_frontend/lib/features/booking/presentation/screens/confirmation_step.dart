@@ -1,14 +1,18 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/providers/route_slug_provider.dart';
+import '../../../auth/providers/auth_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/network/network_providers.dart';
 import '../../providers/booking_direct_link_provider.dart';
 import '../../providers/booking_provider.dart';
+import '../../providers/booking_tutorial_provider.dart';
 import '../../providers/locations_provider.dart';
 import '../widgets/booking_formatted_message_text.dart';
+import '../booking_step_layout.dart';
 
 class ConfirmationStep extends ConsumerStatefulWidget {
   const ConfirmationStep({super.key});
@@ -28,7 +32,33 @@ class _ConfirmationStepState extends ConsumerState<ConfirmationStep> {
       final shouldShow = await _shouldShowFirstFiveHint();
       if (!mounted) return;
       setState(() => _showFirstFiveHint = shouldShow);
+      await _maybeRequestProfileSpotlight();
     });
+  }
+
+  /// Alla primissima prenotazione confermata (una sola volta in assoluto)
+  /// richiede lo spotlight che evidenzia dove sono le prenotazioni.
+  Future<void> _maybeRequestProfileSpotlight() async {
+    final confirmedBookingId = ref.read(bookingFlowProvider).confirmedBookingId;
+    final confirmedClassStatus = ref
+        .read(bookingFlowProvider)
+        .confirmedClassBookingStatus;
+    final hasConfirmation =
+        confirmedBookingId != null || confirmedClassStatus != null;
+    if (!hasConfirmation) return;
+
+    // Il tutorial è una sola volta per utente: serve l'utente autenticato.
+    final userId = ref.read(authProvider).user?.id;
+    if (userId == null) return;
+
+    final alreadyShown =
+        await BookingTutorialStorage.hasShownProfileSpotlight(userId);
+    if (!mounted) return;
+    // In debug lo spotlight viene mostrato a ogni conferma (ignorando il flag
+    // "già visto") per poterlo testare comodamente.
+    if (!kDebugMode && alreadyShown) return;
+
+    ref.read(profileTutorialRequestProvider.notifier).state = true;
   }
 
   Future<bool> _shouldShowFirstFiveHint() async {
@@ -63,7 +93,10 @@ class _ConfirmationStepState extends ConsumerState<ConfirmationStep> {
 
     return SafeArea(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.symmetric(
+          horizontal: kBookingStepHorizontalMargin,
+          vertical: 24,
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [

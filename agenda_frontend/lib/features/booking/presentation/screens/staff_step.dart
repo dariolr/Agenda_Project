@@ -8,6 +8,7 @@ import '../../providers/booking_provider.dart';
 import '../../providers/booking_nomenclature_provider.dart';
 import '../../providers/locations_provider.dart';
 import '../widgets/booking_staff_avatar.dart';
+import '../booking_step_layout.dart';
 
 class StaffStep extends ConsumerStatefulWidget {
   const StaffStep({super.key});
@@ -58,7 +59,12 @@ class _StaffStepState extends ConsumerState<StaffStep> {
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              padding: const EdgeInsets.fromLTRB(
+                kBookingStepHorizontalMargin,
+                12,
+                kBookingStepHorizontalMargin,
+                8,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -138,7 +144,12 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                     final bottomInset =
                         MediaQuery.of(context).viewPadding.bottom + 88 + 24;
                     return ListView(
-                      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
+                      padding: EdgeInsets.fromLTRB(
+                        kBookingStepHorizontalMargin,
+                        0,
+                        kBookingStepHorizontalMargin,
+                        bottomInset,
+                      ),
                       children: [
                         _StaffTile(
                           staff: null,
@@ -233,7 +244,12 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                     final bottomInset =
                         MediaQuery.of(context).viewPadding.bottom + 88 + 24;
                     return ListView(
-                      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
+                      padding: EdgeInsets.fromLTRB(
+                        kBookingStepHorizontalMargin,
+                        0,
+                        kBookingStepHorizontalMargin,
+                        bottomInset,
+                      ),
                       children: [
                         _StaffTile(
                           staff: eligibleStaff.first,
@@ -252,7 +268,12 @@ class _StaffStepState extends ConsumerState<StaffStep> {
                   final bottomInsetMulti =
                       MediaQuery.of(context).viewPadding.bottom + 88 + 24;
                   return ListView(
-                    padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInsetMulti),
+                    padding: EdgeInsets.fromLTRB(
+                      kBookingStepHorizontalMargin,
+                      0,
+                      kBookingStepHorizontalMargin,
+                      bottomInsetMulti,
+                    ),
                     children: [
                       // Opzione "Qualsiasi operatore"
                       _StaffTile(

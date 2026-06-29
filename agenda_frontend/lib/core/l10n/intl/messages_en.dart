@@ -572,6 +572,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "dateTimeGoToNext": MessageLookupByLibrary.simpleMessage(
       "Go to next available date",
     ),
+    "dateTimeJumpToDate": MessageLookupByLibrary.simpleMessage(
+      "Jump to a specific date",
+    ),
     "dateTimeMorning": MessageLookupByLibrary.simpleMessage("Morning"),
     "dateTimeNoSlots": MessageLookupByLibrary.simpleMessage(
       "No time slots available for this date",
@@ -788,6 +791,17 @@ class MessageLookup extends MessageLookupByLibrary {
       "Always",
     ),
     "summaryCancellationPolicyDays": m45,
+    "summaryCancellationPolicyExpiredAcceptLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "I understand and accept that this booking cannot be modified or cancelled",
+        ),
+    "summaryCancellationPolicyExpiredAcceptRequiredError":
+        MessageLookupByLibrary.simpleMessage(
+          "To confirm, you must accept that this booking cannot be modified or cancelled.",
+        ),
+    "summaryCancellationPolicyExpiredInfo": MessageLookupByLibrary.simpleMessage(
+      "Warning: the deadline to modify or cancel this booking has already passed. Once confirmed, this booking can no longer be modified or cancelled.",
+    ),
     "summaryCancellationPolicyHours": m46,
     "summaryCancellationPolicyNever": MessageLookupByLibrary.simpleMessage(
       "Never (not allowed after booking)",
@@ -824,6 +838,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "tabEvents": MessageLookupByLibrary.simpleMessage("Events"),
     "tabServices": MessageLookupByLibrary.simpleMessage("Services"),
+    "tutorialGotIt": MessageLookupByLibrary.simpleMessage("Got it"),
+    "tutorialMyBookingsTitle": MessageLookupByLibrary.simpleMessage(
+      "Your bookings",
+    ),
     "upcomingBookings": MessageLookupByLibrary.simpleMessage("Upcoming"),
     "validationInvalidEmail": MessageLookupByLibrary.simpleMessage(
       "Invalid email",

@@ -420,7 +420,11 @@ class BookingFlowNotifier extends Notifier<BookingFlowState> {
     ref.read(focusedMonthProvider.notifier).state = ref.read(
       locationNowProvider,
     );
-    ref.read(availableDatesProvider.notifier).resetForNewSelection();
+    // NB: non leggere qui availableDatesProvider: AvailableDatesNotifier
+    // dipende già da bookingFlowProvider (ascolta request.services), quindi
+    // leggerlo da dentro questo notifier creerebbe una dipendenza circolare.
+    // L'azzeramento avviene comunque automaticamente: svuotando i servizi qui
+    // sopra, il listener su request.services resetta la disponibilità.
   }
 
   /// Vai allo step successivo
@@ -1878,9 +1882,10 @@ class AvailableDatesNotifier extends StateNotifier<AsyncValue<Set<DateTime>>> {
       final startDay = _loadedDays;
       final endDay = (startDay + _chunkSize).clamp(0, maxDays);
 
-      // Carica le date per questo blocco di giorni
+      // Carica le date per questo blocco di giorni. Per giorno di calendario
+      // (non sommando Duration di 24h) per non sfasare al cambio ora legale.
       for (var i = startDay; i < endDay; i++) {
-        final date = today.add(Duration(days: i));
+        final date = DateTime(today.year, today.month, today.day + i);
         try {
           final slots = await repository.getAvailableSlots(
             locationId: locationId,
@@ -2058,30 +2063,94 @@ final availableSlotsProvider = FutureProvider<List<TimeSlot>>((ref) async {
 });
 
 /// Provider per la prima data disponibile
-final firstAvailableDateProvider = FutureProvider<DateTime>((ref) async {
+/// Prima data con disponibilità (null se non c'è disponibilità entro il limite
+/// di prenotazione futura della location). Usata per offrire all'utente
+/// l'opzione "Vai alla prima data disponibile".
+final firstAvailableDateProvider = FutureProvider<DateTime?>((ref) async {
   final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
   if (linkSlug != null) {
     final directLinkAsync = ref.read(bookingDirectLinkProvider);
     if (!directLinkAsync.hasValue) {
-      return ref.read(locationTodayProvider).add(const Duration(days: 1));
+      return null;
     }
   }
 
   final repository = ref.read(bookingRepositoryProvider);
   final locationId = ref.watch(effectiveLocationIdProvider);
-  final bookingState = ref.watch(bookingFlowProvider);
+  // Dipende SOLO da servizi e staff (non dall'intero stato del flow): così non
+  // ri-cerca a ogni navigazione di step, ma si ricalcola quando cambia la
+  // selezione (es. servizi/durata diversi).
+  final services = ref.watch(
+    bookingFlowProvider.select((s) => s.request.services),
+  );
+  final singleStaffId = ref.watch(
+    bookingFlowProvider.select((s) => s.request.singleStaffId),
+  );
 
   if (locationId <= 0) {
-    return ref.read(locationTodayProvider).add(const Duration(days: 1));
+    return null;
   }
 
   return repository.getFirstAvailableDate(
     locationId: locationId,
-    serviceIds: bookingState.request.services.map((s) => s.id).toList(),
-    staffId:
-        ref.watch(lockedStaffIdFromDirectLinkProvider) ??
-        bookingState.request.singleStaffId,
+    serviceIds: services.map((s) => s.id).toList(),
+    staffId: ref.watch(lockedStaffIdFromDirectLinkProvider) ?? singleStaffId,
     now: ref.read(locationNowProvider),
+    // Cerca fino al limite di prenotazione futura della location.
+    maxAdvanceDays: ref.read(maxBookingAdvanceDaysProvider),
+  );
+});
+
+/// Prossima data con disponibilità DOPO la data attualmente selezionata
+/// (null se non ce ne sono altre entro il limite di prenotazione). Serve per
+/// l'opzione "Vai alla prossima data disponibile" quando esiste un buco di
+/// disponibilità (es. ferie) oltre la finestra già caricata dal loader.
+final nextAvailableDateProvider = FutureProvider<DateTime?>((ref) async {
+  final selected = ref.watch(selectedDateProvider);
+  if (selected == null) return null;
+
+  final linkSlug = ref.watch(bookingDirectLinkSlugProvider);
+  if (linkSlug != null) {
+    final directLinkAsync = ref.read(bookingDirectLinkProvider);
+    if (!directLinkAsync.hasValue) return null;
+  }
+
+  final locationId = ref.watch(effectiveLocationIdProvider);
+  if (locationId <= 0) return null;
+
+  final today = ref.read(locationTodayProvider);
+  final maxDays = ref.read(maxBookingAdvanceDaysProvider);
+  // Date per giorno di calendario (non sommando Duration di 24h) per evitare
+  // sfasamenti al cambio ora legale/solare.
+  final lastAllowed = DateTime(
+    today.year,
+    today.month,
+    today.day + maxDays - 1,
+  );
+
+  // Inizia dal giorno successivo a quello selezionato.
+  final fromDate = DateTime(selected.year, selected.month, selected.day + 1);
+  if (fromDate.isAfter(lastAllowed)) return null;
+
+  // Numero di giorni da fromDate a lastAllowed inclusi (differenza di calendario
+  // arrotondata: .inDays su DateTime a mezzanotte può dare 1 in meno se cade un
+  // cambio ora, quindi calcoliamo con un round).
+  final remaining =
+      (lastAllowed.difference(fromDate).inHours / 24).round() + 1;
+
+  final repository = ref.read(bookingRepositoryProvider);
+  final services = ref.watch(
+    bookingFlowProvider.select((s) => s.request.services),
+  );
+  final singleStaffId = ref.watch(
+    bookingFlowProvider.select((s) => s.request.singleStaffId),
+  );
+  return repository.getFirstAvailableDate(
+    locationId: locationId,
+    serviceIds: services.map((s) => s.id).toList(),
+    staffId: ref.watch(lockedStaffIdFromDirectLinkProvider) ?? singleStaffId,
+    now: fromDate,
+    maxAdvanceDays: remaining,
   );
 });
 

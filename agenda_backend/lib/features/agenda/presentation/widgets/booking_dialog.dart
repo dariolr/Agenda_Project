@@ -2970,13 +2970,11 @@ class _ClientPickerSheetState extends ConsumerState<_ClientPickerSheet> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _searchFocusNode.requestFocus();
-      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
     });
 
     Future<void>.delayed(const Duration(milliseconds: 300), () {
       if (!mounted) return;
       _searchFocusNode.requestFocus();
-      SystemChannels.textInput.invokeMethod<void>('TextInput.show');
     });
   }
 

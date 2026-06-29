@@ -20,6 +20,7 @@ import '../../providers/booking_nomenclature_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../providers/locations_provider.dart';
 import '../widgets/wrong_business_auth_banner.dart';
+import '../booking_step_layout.dart';
 
 class SummaryStep extends ConsumerStatefulWidget {
   const SummaryStep({super.key});
@@ -118,12 +119,25 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
     final business = ref.watch(currentBusinessProvider).value;
     final cancellationHours =
         location?.cancellationHours ?? business?.cancellationHours ?? 24;
+    // Se al momento della prenotazione i termini di modifica/cancellazione sono
+    // già scaduti (appuntamento troppo vicino), l'utente deve essere informato
+    // e accettare questa situazione specifica invece della policy ordinaria.
+    final isCancellationWindowExpired = _isCancellationWindowExpired(
+      ref.watch(locationNowProvider),
+      request.selectedSlot?.startTime,
+      cancellationHours,
+    );
     _refreshBookingFormsIfNeeded(business?.id, location?.id, request);
 
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          padding: const EdgeInsets.fromLTRB(
+            kBookingStepHorizontalMargin,
+            12,
+            kBookingStepHorizontalMargin,
+            8,
+          ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -151,9 +165,9 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
             // Aggiunge padding bottom per footer fisso (~72px) +
             // gesture bar Android + tastiera (quando il campo note è attivo).
             padding: EdgeInsets.fromLTRB(
-              16,
+              kBookingStepHorizontalMargin,
               0,
-              16,
+              kBookingStepHorizontalMargin,
               MediaQuery.of(context).viewPadding.bottom +
                   MediaQuery.of(context).viewInsets.bottom +
                   72 +
@@ -322,7 +336,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                             ),
                                       ),
                                       if (serviceDescription != null &&
-                                          serviceDescription.isNotEmpty)
+                                          serviceDescription.isNotEmpty) ...[
                                         Padding(
                                           padding: const EdgeInsets.only(
                                             top: 2,
@@ -338,6 +352,19 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                                 ),
                                           ),
                                         ),
+                                        // Riga di separazione dopo la
+                                        // descrizione del tipo di prenotazione.
+                                        Padding(
+                                          padding: const EdgeInsets.only(
+                                            top: 6,
+                                            bottom: 4,
+                                          ),
+                                          child: Divider(
+                                            height: 1,
+                                            color: theme.dividerColor,
+                                          ),
+                                        ),
+                                      ],
                                       Text(
                                         operatorLabel,
                                         style: theme.textTheme.bodySmall
@@ -521,10 +548,48 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        _formatCancellationPolicy(context, cancellationHours),
-                        style: theme.textTheme.bodyMedium,
-                      ),
+                      if (isCancellationWindowExpired)
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            // Coppia Material errorContainer/onErrorContainer
+                            // (senza opacità) per garantire il contrasto.
+                            color: theme.colorScheme.errorContainer,
+                            // Stesso arrotondamento dei riquadri dei moduli
+                            // (es. consenso privacy).
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: theme.colorScheme.onErrorContainer
+                                  .withOpacity(0.25),
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.warning_amber_rounded,
+                                size: 20,
+                                color: theme.colorScheme.onErrorContainer,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  l10n.summaryCancellationPolicyExpiredInfo,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: theme.colorScheme.onErrorContainer,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        )
+                      else
+                        Text(
+                          _formatCancellationPolicy(context, cancellationHours),
+                          style: theme.textTheme.bodyMedium,
+                        ),
                       const SizedBox(height: 14),
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
@@ -569,7 +634,10 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                                 });
                               },
                               child: Text(
-                                l10n.summaryCancellationPolicyAcceptLabel,
+                                isCancellationWindowExpired
+                                    ? l10n
+                                          .summaryCancellationPolicyExpiredAcceptLabel
+                                    : l10n.summaryCancellationPolicyAcceptLabel,
                                 textAlign: TextAlign.left,
                                 style: theme.textTheme.bodyMedium,
                               ),
@@ -580,7 +648,11 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                       if (_showCancellationPolicyWarning) ...[
                         const SizedBox(height: 8),
                         Text(
-                          l10n.summaryCancellationPolicyAcceptRequiredError,
+                          isCancellationWindowExpired
+                              ? l10n
+                                    .summaryCancellationPolicyExpiredAcceptRequiredError
+                              : l10n
+                                    .summaryCancellationPolicyAcceptRequiredError,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.error,
                             fontWeight: FontWeight.w600,
@@ -965,6 +1037,21 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
         return l10n.bookingErrorServer;
     }
     return state.errorMessage ?? l10n.errorGeneric;
+  }
+
+  /// True se i termini di modifica/cancellazione risultano già scaduti al
+  /// momento della prenotazione (l'appuntamento è più vicino della finestra
+  /// consentita). Le policy "Sempre" (0) e "Mai" (costante) non dipendono dalla
+  /// vicinanza dell'appuntamento e non vengono mai considerate "scadute" qui.
+  bool _isCancellationWindowExpired(
+    DateTime now,
+    DateTime? appointmentStart,
+    int hours,
+  ) {
+    if (appointmentStart == null) return false;
+    if (hours <= 0 || hours == _neverCancellationHours) return false;
+    final deadline = appointmentStart.subtract(Duration(hours: hours));
+    return now.isAfter(deadline);
   }
 
   String _formatCancellationPolicy(BuildContext context, int hours) {

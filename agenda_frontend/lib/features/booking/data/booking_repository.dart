@@ -226,30 +226,40 @@ class BookingRepository {
 
   /// Trova la prima data con disponibilità
   /// Cerca nei prossimi 30 giorni
-  Future<DateTime> getFirstAvailableDate({
+  /// Ritorna la prima data con disponibilità entro [maxAdvanceDays], oppure
+  /// null se non c'è alcuna disponibilità nel limite di prenotazione futura.
+  Future<DateTime?> getFirstAvailableDate({
     required int locationId,
     required List<int> serviceIds,
     int? staffId,
     DateTime? now,
+    int maxAdvanceDays = 30,
   }) async {
     final effectiveNow = now ?? DateTime.now();
     if (serviceIds.isEmpty) {
-      return effectiveNow.add(const Duration(days: 1));
+      return null;
     }
 
-    var checkDate = DateTime(
+    final base = DateTime(
       effectiveNow.year,
       effectiveNow.month,
       effectiveNow.day,
     );
-
     // Se oggi è già tardi, inizia da domani
-    if (effectiveNow.hour >= 18) {
-      checkDate = checkDate.add(const Duration(days: 1));
-    }
+    final startOffset = effectiveNow.hour >= 18 ? 1 : 0;
 
-    // Cerca nei prossimi 30 giorni
-    for (var i = 0; i < 30; i++) {
+    // Cerca fino al limite di prenotazione futura della location, così se la
+    // prima disponibilità è lontana viene comunque trovata (e non si ricade
+    // sul fallback "domani" che nasconderebbe l'opzione di prenotazione).
+    // Le date sono calcolate per giorno di calendario (non sommando Duration di
+    // 24h) per non duplicare/saltare giorni al cambio ora legale/solare.
+    final searchDays = maxAdvanceDays > 0 ? maxAdvanceDays : 30;
+    for (var i = 0; i < searchDays; i++) {
+      final checkDate = DateTime(
+        base.year,
+        base.month,
+        base.day + startOffset + i,
+      );
       try {
         final slots = await getAvailableSlots(
           locationId: locationId,
@@ -264,15 +274,10 @@ class BookingRepository {
       } catch (_) {
         // Ignora errori e prova il giorno successivo
       }
-      checkDate = checkDate.add(const Duration(days: 1));
     }
 
-    // Fallback: domani
-    return DateTime(
-      effectiveNow.year,
-      effectiveNow.month,
-      effectiveNow.day + 1,
-    );
+    // Nessuna disponibilità entro il limite di prenotazione futura.
+    return null;
   }
 
   /// POST /v1/customer/{business_id}/class-events/{id}/book

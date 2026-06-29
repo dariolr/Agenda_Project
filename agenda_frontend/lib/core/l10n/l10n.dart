@@ -1527,6 +1527,16 @@ class L10n {
     );
   }
 
+  /// `Jump to a specific date`
+  String get dateTimeJumpToDate {
+    return Intl.message(
+      'Jump to a specific date',
+      name: 'dateTimeJumpToDate',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `No time slots available for this date`
   String get dateTimeNoSlots {
     return Intl.message(
@@ -1694,6 +1704,36 @@ class L10n {
     return Intl.message(
       'To confirm, you must accept the modify/cancel policy.',
       name: 'summaryCancellationPolicyAcceptRequiredError',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Warning: the deadline to modify or cancel this booking has already passed. Once confirmed, this booking can no longer be modified or cancelled.`
+  String get summaryCancellationPolicyExpiredInfo {
+    return Intl.message(
+      'Warning: the deadline to modify or cancel this booking has already passed. Once confirmed, this booking can no longer be modified or cancelled.',
+      name: 'summaryCancellationPolicyExpiredInfo',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `I understand and accept that this booking cannot be modified or cancelled`
+  String get summaryCancellationPolicyExpiredAcceptLabel {
+    return Intl.message(
+      'I understand and accept that this booking cannot be modified or cancelled',
+      name: 'summaryCancellationPolicyExpiredAcceptLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `To confirm, you must accept that this booking cannot be modified or cancelled.`
+  String get summaryCancellationPolicyExpiredAcceptRequiredError {
+    return Intl.message(
+      'To confirm, you must accept that this booking cannot be modified or cancelled.',
+      name: 'summaryCancellationPolicyExpiredAcceptRequiredError',
       desc: '',
       args: [],
     );
@@ -1980,6 +2020,21 @@ class L10n {
       desc: '',
       args: [],
     );
+  }
+
+  /// `Your bookings`
+  String get tutorialMyBookingsTitle {
+    return Intl.message(
+      'Your bookings',
+      name: 'tutorialMyBookingsTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Got it`
+  String get tutorialGotIt {
+    return Intl.message('Got it', name: 'tutorialGotIt', desc: '', args: []);
   }
 
   /// `New booking`

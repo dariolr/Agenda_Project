@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -20,6 +21,20 @@ import '../../providers/class_events_provider.dart';
 import '../../providers/my_bookings_provider.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../widgets/booking_formatted_message_text.dart';
+import '../booking_step_layout.dart';
+
+/// ID delle categorie servizi attualmente espanse. Tenuto in un provider (non
+/// in stato locale del widget) così l'espansione viene mantenuta quando si
+/// lascia e si torna sullo step dei servizi.
+final _expandedServiceCategoriesProvider = StateProvider<Set<int>>(
+  (ref) => <int>{},
+);
+
+/// Nomi delle categorie eventi/corsi attualmente espanse (gli eventi sono
+/// raggruppati per nome categoria, non per id).
+final _expandedEventCategoriesProvider = StateProvider<Set<String>>(
+  (ref) => <String>{},
+);
 
 class ServicesStep extends ConsumerStatefulWidget {
   const ServicesStep({super.key});
@@ -233,7 +248,12 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+              padding: const EdgeInsets.fromLTRB(
+                kBookingStepHorizontalMargin,
+                12,
+                kBookingStepHorizontalMargin,
+                0,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -525,7 +545,12 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     if (packagesAsync.hasError) {
       widgets.add(
         Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          padding: const EdgeInsets.fromLTRB(
+            kBookingStepHorizontalMargin,
+            8,
+            kBookingStepHorizontalMargin,
+            8,
+          ),
           child: Text(
             context.l10n.servicePackagesLoadError,
             style: TextStyle(color: Theme.of(context).colorScheme.error),
@@ -656,8 +681,14 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
     // Il footer fisso è alto ~88px (info selezione + bottone); aggiunge
     // viewPadding.bottom per la gesture bar Android.
     final bottomInset = MediaQuery.of(context).viewPadding.bottom + 88 + 24;
+    // Margine orizzontale uniforme per tutti gli step della prenotazione.
     return ListView(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
+      padding: EdgeInsets.fromLTRB(
+        kBookingStepHorizontalMargin,
+        0,
+        kBookingStepHorizontalMargin,
+        bottomInset,
+      ),
       children: widgets,
     );
   }
@@ -768,7 +799,12 @@ class _ServicesStepState extends ConsumerState<ServicesStep>
           final bottomInset =
               MediaQuery.of(context).viewPadding.bottom + 88 + 24;
           return ListView(
-            padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
+            padding: EdgeInsets.fromLTRB(
+              kBookingStepHorizontalMargin,
+              0,
+              kBookingStepHorizontalMargin,
+              bottomInset,
+            ),
             children: _buildEventsByDate(
               context,
               byCategory.values.expand((e) => e).toList(),
@@ -1316,7 +1352,7 @@ class _ClassEventTile extends ConsumerWidget {
   }
 }
 
-class _CategorySection extends StatefulWidget {
+class _CategorySection extends ConsumerStatefulWidget {
   final ServiceCategory category;
   final List<_CategoryEntry> entries;
   final Set<int> selectedServiceIds;
@@ -1349,24 +1385,23 @@ class _CategorySection extends StatefulWidget {
   });
 
   @override
-  State<_CategorySection> createState() => _CategorySectionState();
+  ConsumerState<_CategorySection> createState() => _CategorySectionState();
 }
 
-class _CategorySectionState extends State<_CategorySection> {
-  late bool _isExpanded;
+class _CategorySectionState extends ConsumerState<_CategorySection> {
+  // Le categorie non collassabili sono sempre espanse; quelle collassabili
+  // leggono lo stato dal provider, così l'espansione sopravvive alla
+  // navigazione tra gli step.
+  bool get _isExpanded =>
+      !widget.isCollapsible ||
+      ref.watch(_expandedServiceCategoriesProvider).contains(widget.category.id);
 
-  @override
-  void initState() {
-    super.initState();
-    _isExpanded = !widget.isCollapsible;
-  }
-
-  @override
-  void didUpdateWidget(_CategorySection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.isCollapsible != widget.isCollapsible) {
-      _isExpanded = !widget.isCollapsible;
-    }
+  void _toggleExpanded() {
+    final id = widget.category.id;
+    final current = ref.read(_expandedServiceCategoriesProvider);
+    final next = Set<int>.from(current);
+    if (!next.remove(id)) next.add(id);
+    ref.read(_expandedServiceCategoriesProvider.notifier).state = next;
   }
 
   @override
@@ -1381,9 +1416,7 @@ class _CategorySectionState extends State<_CategorySection> {
 
     final header = GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: widget.isCollapsible
-          ? () => setState(() => _isExpanded = !_isExpanded)
-          : null,
+      onTap: widget.isCollapsible ? _toggleExpanded : null,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           widget.isCollapsible ? 14 : 0,
@@ -1525,7 +1558,7 @@ class _CategorySectionState extends State<_CategorySection> {
   }
 }
 
-class _EventCategorySection extends StatefulWidget {
+class _EventCategorySection extends ConsumerStatefulWidget {
   final String categoryName;
   final List<ClassEvent> events;
   final ClassEvent? selectedEvent;
@@ -1548,24 +1581,23 @@ class _EventCategorySection extends StatefulWidget {
   });
 
   @override
-  State<_EventCategorySection> createState() => _EventCategorySectionState();
+  ConsumerState<_EventCategorySection> createState() =>
+      _EventCategorySectionState();
 }
 
-class _EventCategorySectionState extends State<_EventCategorySection> {
-  late bool _isExpanded;
+class _EventCategorySectionState extends ConsumerState<_EventCategorySection> {
+  bool get _isExpanded =>
+      !widget.isCollapsible ||
+      ref
+          .watch(_expandedEventCategoriesProvider)
+          .contains(widget.categoryName);
 
-  @override
-  void initState() {
-    super.initState();
-    _isExpanded = !widget.isCollapsible;
-  }
-
-  @override
-  void didUpdateWidget(_EventCategorySection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.isCollapsible != widget.isCollapsible) {
-      _isExpanded = !widget.isCollapsible;
-    }
+  void _toggleExpanded() {
+    final name = widget.categoryName;
+    final current = ref.read(_expandedEventCategoriesProvider);
+    final next = Set<String>.from(current);
+    if (!next.remove(name)) next.add(name);
+    ref.read(_expandedEventCategoriesProvider.notifier).state = next;
   }
 
   @override
@@ -1575,9 +1607,7 @@ class _EventCategorySectionState extends State<_EventCategorySection> {
 
     final header = GestureDetector(
       behavior: HitTestBehavior.opaque,
-      onTap: widget.isCollapsible
-          ? () => setState(() => _isExpanded = !_isExpanded)
-          : null,
+      onTap: widget.isCollapsible ? _toggleExpanded : null,
       child: Padding(
         padding: EdgeInsets.fromLTRB(
           widget.isCollapsible ? 14 : 0,

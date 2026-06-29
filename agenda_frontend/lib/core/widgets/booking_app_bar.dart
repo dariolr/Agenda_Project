@@ -6,7 +6,9 @@ import '../../app/providers/route_slug_provider.dart';
 import '../../features/auth/providers/auth_provider.dart';
 import '../../features/booking/providers/booking_direct_link_provider.dart';
 import '../../features/booking/providers/business_provider.dart';
+import '../../features/booking/providers/booking_tutorial_provider.dart';
 import '../../features/booking/providers/locations_provider.dart';
+import '../../features/booking/presentation/widgets/spotlight_coachmark.dart';
 import '../l10n/l10_extension.dart';
 import '../utils/initials_utils.dart';
 
@@ -108,17 +110,55 @@ class BookingAppBar extends ConsumerWidget implements PreferredSizeWidget {
 }
 
 /// Menu utente con avatar iniziali
-class _UserMenuButton extends ConsumerWidget {
+class _UserMenuButton extends ConsumerStatefulWidget {
   const _UserMenuButton({required this.slug});
 
   final String slug;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_UserMenuButton> createState() => _UserMenuButtonState();
+}
+
+class _UserMenuButtonState extends ConsumerState<_UserMenuButton> {
+  /// Chiave dell'avatar, usata per ancorare lo spotlight del tutorial.
+  final GlobalKey _avatarKey = GlobalKey();
+
+  String get slug => widget.slug;
+
+  void _maybeShowProfileSpotlight() {
+    // Consuma la richiesta e mostra lo spotlight dopo il frame corrente
+    // (evita modifiche di stato durante build/listen).
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      ref.read(profileTutorialRequestProvider.notifier).state = false;
+      // Se l'avatar non è visibile (es. non autenticato) non mostrare nulla:
+      // verrà ritentato alla prossima richiesta.
+      if (_avatarKey.currentContext == null) return;
+      showSpotlightCoachmark(
+        context,
+        targetKey: _avatarKey,
+        title: context.l10n.tutorialMyBookingsTitle,
+        message: context.l10n.confirmationPostRegistrationMyBookingsHint,
+        dismissLabel: context.l10n.tutorialGotIt,
+      );
+      final userId = ref.read(authProvider).user?.id;
+      if (userId != null) {
+        await BookingTutorialStorage.markProfileSpotlightShown(userId);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final user = ref.watch(authProvider.select((s) => s.user));
+
+    // Mostra lo spotlight quando lo step di conferma lo richiede.
+    ref.listen<bool>(profileTutorialRequestProvider, (previous, next) {
+      if (next) _maybeShowProfileSpotlight();
+    });
 
     // Iniziali per avatar
     final initials = _getInitials(user?.firstName, user?.lastName);
@@ -221,6 +261,7 @@ class _UserMenuButton extends ConsumerWidget {
       padding: EdgeInsets.zero,
       splashRadius: 26,
       icon: Container(
+        key: _avatarKey,
         width: 44,
         height: 44,
         decoration: BoxDecoration(

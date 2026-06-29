@@ -587,6 +587,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "dateTimeGoToNext": MessageLookupByLibrary.simpleMessage(
       "Vai alla prossima data disponibile",
     ),
+    "dateTimeJumpToDate": MessageLookupByLibrary.simpleMessage(
+      "Vai a una data specifica",
+    ),
     "dateTimeMorning": MessageLookupByLibrary.simpleMessage("Mattina"),
     "dateTimeNoSlots": MessageLookupByLibrary.simpleMessage(
       "Nessun orario disponibile per questa data",
@@ -809,6 +812,17 @@ class MessageLookup extends MessageLookupByLibrary {
       "Sempre",
     ),
     "summaryCancellationPolicyDays": m45,
+    "summaryCancellationPolicyExpiredAcceptLabel":
+        MessageLookupByLibrary.simpleMessage(
+          "Ho capito e accetto che questa prenotazione non potrà essere modificata né cancellata",
+        ),
+    "summaryCancellationPolicyExpiredAcceptRequiredError":
+        MessageLookupByLibrary.simpleMessage(
+          "Per confermare devi accettare che la prenotazione non potrà essere modificata né cancellata.",
+        ),
+    "summaryCancellationPolicyExpiredInfo": MessageLookupByLibrary.simpleMessage(
+      "Attenzione: i termini per modificare o cancellare questa prenotazione sono già scaduti. Confermando, questa prenotazione non potrà più essere modificata né cancellata.",
+    ),
     "summaryCancellationPolicyHours": m46,
     "summaryCancellationPolicyNever": MessageLookupByLibrary.simpleMessage(
       "Mai (non consentita dopo la prenotazione)",
@@ -847,6 +861,10 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "tabEvents": MessageLookupByLibrary.simpleMessage("Eventi"),
     "tabServices": MessageLookupByLibrary.simpleMessage("Servizi"),
+    "tutorialGotIt": MessageLookupByLibrary.simpleMessage("Ho capito"),
+    "tutorialMyBookingsTitle": MessageLookupByLibrary.simpleMessage(
+      "Le tue prenotazioni",
+    ),
     "upcomingBookings": MessageLookupByLibrary.simpleMessage("Prossime"),
     "validationInvalidEmail": MessageLookupByLibrary.simpleMessage(
       "Email non valida",

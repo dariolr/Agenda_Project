@@ -7,6 +7,7 @@ import '../../../../core/widgets/centered_error_view.dart';
 import '../../providers/booking_nomenclature_provider.dart';
 import '../../providers/booking_provider.dart';
 import '../../providers/locations_provider.dart';
+import '../booking_step_layout.dart';
 
 class LocationStep extends ConsumerWidget {
   const LocationStep({super.key});
@@ -38,7 +39,12 @@ class LocationStep extends ConsumerWidget {
           children: [
             // Header
             Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+              padding: const EdgeInsets.fromLTRB(
+                kBookingStepHorizontalMargin,
+                12,
+                kBookingStepHorizontalMargin,
+                8,
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -104,7 +110,12 @@ class LocationStep extends ConsumerWidget {
                       MediaQuery.of(context).viewPadding.bottom + 72 + 24;
                   return ListView.builder(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: EdgeInsets.fromLTRB(16, 0, 16, bottomInset),
+                    padding: EdgeInsets.fromLTRB(
+                      kBookingStepHorizontalMargin,
+                      0,
+                      kBookingStepHorizontalMargin,
+                      bottomInset,
+                    ),
                     itemCount: locations.length,
                     itemBuilder: (context, index) {
                       final location = locations[index];
