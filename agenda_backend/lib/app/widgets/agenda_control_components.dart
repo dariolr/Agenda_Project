@@ -332,22 +332,30 @@ class _AgendaDateSwitcherState extends State<AgendaDateSwitcher> {
             );
           }
 
-          Widget buildLabelRegion() => _HoverableRegion(
-            onTap: () => _handleTap(context),
-            semanticsLabel: labelSemantics,
-            hoverColor: hoverFill,
-            minWidth: kAgendaMinDateLabelWidth,
-            padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-            child: Align(
-              alignment: Alignment.center,
-              child: Text(
-                widget.label,
-                style: textTheme.titleMedium,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
+          Widget buildLabelRegion() {
+            final labelText = Text(
+              widget.label,
+              style: textTheme.titleMedium,
+              overflow: TextOverflow.ellipsis,
+              maxLines: 1,
+            );
+            return _HoverableRegion(
+              onTap: () => _handleTap(context),
+              semanticsLabel: labelSemantics,
+              hoverColor: hoverFill,
+              minWidth: kAgendaMinDateLabelWidth,
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Align(
+                alignment: Alignment.center,
+                // Solo su mobile (isCompact) la data viene scalata per stare
+                // nello spazio disponibile, evitando il troncamento qualunque
+                // sia il contenuto/locale. Su desktop/tablet resta invariata.
+                child: widget.isCompact
+                    ? FittedBox(fit: BoxFit.scaleDown, child: labelText)
+                    : labelText,
               ),
-            ),
-          );
+            );
+          }
 
           List<Widget> buildNavButtons(
             List<_NavButtonSpec> specs, {
