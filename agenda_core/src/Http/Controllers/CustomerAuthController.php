@@ -133,6 +133,12 @@ final class CustomerAuthController
         $firstName = $firstName ?? 'Cliente';
         $lastName = $lastName ?? '';
 
+        // Risposte ai moduli per-cliente compilati durante la registrazione
+        $customerFormSubmissions = $body['customer_form_submissions'] ?? [];
+        if (!is_array($customerFormSubmissions)) {
+            $customerFormSubmissions = [];
+        }
+
         try {
             $result = $this->registerCustomer->execute(
                 $email,
@@ -142,7 +148,8 @@ final class CustomerAuthController
                 $businessId,
                 $phone,
                 $request->getHeader('User-Agent'),
-                $request->getClientIp()
+                $request->getClientIp(),
+                $customerFormSubmissions
             );
 
             $response = Response::success($result, 201);

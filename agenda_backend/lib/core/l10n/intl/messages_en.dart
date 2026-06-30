@@ -907,6 +907,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Add at least two options for choice fields.",
     ),
     "bookingFormsOptionsTitle": MessageLookupByLibrary.simpleMessage("Options"),
+    "bookingFormsRegistrationOnly": MessageLookupByLibrary.simpleMessage(
+      "New clients at signup only",
+    ),
+    "bookingFormsRegistrationOnlyHint": MessageLookupByLibrary.simpleMessage(
+      "When on, the form is only asked to new clients during registration, not to already registered clients.",
+    ),
     "bookingFormsReorderTooltip": MessageLookupByLibrary.simpleMessage(
       "Press and drag to reorder",
     ),
@@ -1004,6 +1010,19 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingFormsStepForm": MessageLookupByLibrary.simpleMessage("Form"),
     "bookingFormsStepVisibility": MessageLookupByLibrary.simpleMessage(
       "Visibility",
+    ),
+    "bookingFormsTypeLabel": MessageLookupByLibrary.simpleMessage("Form type"),
+    "bookingFormsTypePerBooking": MessageLookupByLibrary.simpleMessage(
+      "Per booking",
+    ),
+    "bookingFormsTypePerBookingHint": MessageLookupByLibrary.simpleMessage(
+      "Asked on every booking; answers are tied to the individual booking.",
+    ),
+    "bookingFormsTypePerClient": MessageLookupByLibrary.simpleMessage(
+      "Per client",
+    ),
+    "bookingFormsTypePerClientHint": MessageLookupByLibrary.simpleMessage(
+      "Asked once and tied to the client (at registration or at the first relevant booking).",
     ),
     "bookingFormsVisibilityBusinessWideHint":
         MessageLookupByLibrary.simpleMessage(
@@ -1855,6 +1874,13 @@ class MessageLookup extends MessageLookupByLibrary {
     "clientContactsActionGroup": MessageLookupByLibrary.simpleMessage(
       "Contacts",
     ),
+    "clientFormsEmpty": MessageLookupByLibrary.simpleMessage(
+      "This client has not submitted any form.",
+    ),
+    "clientFormsSectionTitle": MessageLookupByLibrary.simpleMessage(
+      "Submitted forms",
+    ),
+    "clientFormsTabLabel": MessageLookupByLibrary.simpleMessage("Forms"),
     "clientLockedHint": MessageLookupByLibrary.simpleMessage(
       "Client cannot be changed for this appointment",
     ),

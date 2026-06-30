@@ -11,6 +11,8 @@ import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/models/appointment.dart';
 import '../../../../core/widgets/app_alternating_row.dart';
 import '../../../../core/widgets/app_form.dart';
+import '../../../booking_forms/domain/customer_form_submission.dart';
+import '../../../booking_forms/providers/booking_forms_provider.dart';
 import '../../domain/clients.dart';
 import '../../providers/clients_providers.dart';
 
@@ -67,7 +69,7 @@ class ClientAppointmentsDialog extends ConsumerWidget {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (e, _) => Center(child: Text('Errore: $e')),
               data: (data) => DefaultTabController(
-                length: 3,
+                length: 4,
                 child: Column(
                   children: [
                     if (clientNote != null && clientNote.isNotEmpty) ...[
@@ -75,6 +77,7 @@ class ClientAppointmentsDialog extends ConsumerWidget {
                       const SizedBox(height: 8),
                     ],
                     TabBar(
+                      isScrollable: true,
                       tabs: [
                         Tab(
                           text:
@@ -88,6 +91,7 @@ class ClientAppointmentsDialog extends ConsumerWidget {
                           text:
                               '${l10n.clientAppointmentsCancelled} (${data.cancelled.length})',
                         ),
+                        Tab(text: l10n.clientFormsTabLabel),
                       ],
                       labelColor: theme.colorScheme.primary,
                       unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
@@ -109,6 +113,7 @@ class ClientAppointmentsDialog extends ConsumerWidget {
                             appointments: data.cancelled,
                             emptyMessage: l10n.clientAppointmentsEmpty,
                           ),
+                          _ClientFormsTab(clientId: client.id),
                         ],
                       ),
                     ),
@@ -327,7 +332,7 @@ class ClientAppointmentsBottomSheet extends ConsumerWidget {
         body: Center(child: Text('Errore: $e')),
       ),
       data: (data) => DefaultTabController(
-        length: 3,
+        length: 4,
         child: Scaffold(
           appBar: AppBar(
             title: Text(l10n.clientAppointmentsTitle(client.name)),
@@ -339,6 +344,7 @@ class ClientAppointmentsBottomSheet extends ConsumerWidget {
               ),
             ],
             bottom: TabBar(
+              isScrollable: true,
               tabs: [
                 Tab(
                   text:
@@ -351,6 +357,7 @@ class ClientAppointmentsBottomSheet extends ConsumerWidget {
                   text:
                       '${l10n.clientAppointmentsCancelled} (${data.cancelled.length})',
                 ),
+                Tab(text: l10n.clientFormsTabLabel),
               ],
               labelColor: theme.colorScheme.primary,
               unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
@@ -406,9 +413,99 @@ class ClientAppointmentsBottomSheet extends ConsumerWidget {
                     ),
                   ],
                 ),
+                _ClientFormsTab(clientId: client.id),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tab di sola lettura con le risposte ai moduli per-cliente.
+class _ClientFormsTab extends ConsumerWidget {
+  const _ClientFormsTab({required this.clientId});
+
+  final int clientId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = context.l10n;
+    final theme = Theme.of(context);
+    final asyncForms = ref.watch(clientFormSubmissionsProvider(clientId));
+
+    return asyncForms.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Center(child: Text('Errore: $e')),
+      data: (submissions) {
+        if (submissions.isEmpty) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                l10n.clientFormsEmpty,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          );
+        }
+        return ListView.separated(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: submissions.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
+          itemBuilder: (context, index) =>
+              _ClientFormCard(submission: submissions[index]),
+        );
+      },
+    );
+  }
+}
+
+class _ClientFormCard extends StatelessWidget {
+  const _ClientFormCard({required this.submission});
+
+  final CustomerFormSubmission submission;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              submission.formTitle,
+              style: theme.textTheme.titleSmall
+                  ?.copyWith(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            for (final answer in submission.answers)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 6),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      answer.fieldLabel,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    Text(
+                      answer.displayValue,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
+          ],
         ),
       ),
     );

@@ -940,6 +940,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Aggiungi almeno due opzioni per i campi a scelta.",
     ),
     "bookingFormsOptionsTitle": MessageLookupByLibrary.simpleMessage("Opzioni"),
+    "bookingFormsRegistrationOnly": MessageLookupByLibrary.simpleMessage(
+      "Solo nuovi clienti alla registrazione",
+    ),
+    "bookingFormsRegistrationOnlyHint": MessageLookupByLibrary.simpleMessage(
+      "Se attivo, il modulo viene chiesto solo ai nuovi clienti al momento della registrazione e non ai clienti già registrati.",
+    ),
     "bookingFormsReorderTooltip": MessageLookupByLibrary.simpleMessage(
       "Tieni premuto e trascina per riordinare",
     ),
@@ -1041,6 +1047,21 @@ class MessageLookup extends MessageLookupByLibrary {
     "bookingFormsStepForm": MessageLookupByLibrary.simpleMessage("Modulo"),
     "bookingFormsStepVisibility": MessageLookupByLibrary.simpleMessage(
       "Visibilità",
+    ),
+    "bookingFormsTypeLabel": MessageLookupByLibrary.simpleMessage(
+      "Tipo di modulo",
+    ),
+    "bookingFormsTypePerBooking": MessageLookupByLibrary.simpleMessage(
+      "Per prenotazione",
+    ),
+    "bookingFormsTypePerBookingHint": MessageLookupByLibrary.simpleMessage(
+      "Richiesto a ogni prenotazione; le risposte sono associate alla singola prenotazione.",
+    ),
+    "bookingFormsTypePerClient": MessageLookupByLibrary.simpleMessage(
+      "Per cliente",
+    ),
+    "bookingFormsTypePerClientHint": MessageLookupByLibrary.simpleMessage(
+      "Richiesto una volta sola e associato al cliente (alla registrazione o alla prima prenotazione utile).",
     ),
     "bookingFormsVisibilityBusinessWideHint":
         MessageLookupByLibrary.simpleMessage(
@@ -1917,6 +1938,13 @@ class MessageLookup extends MessageLookupByLibrary {
     "clientContactsActionGroup": MessageLookupByLibrary.simpleMessage(
       "Contatti",
     ),
+    "clientFormsEmpty": MessageLookupByLibrary.simpleMessage(
+      "Nessun modulo compilato da questo cliente.",
+    ),
+    "clientFormsSectionTitle": MessageLookupByLibrary.simpleMessage(
+      "Moduli compilati",
+    ),
+    "clientFormsTabLabel": MessageLookupByLibrary.simpleMessage("Moduli"),
     "clientLockedHint": MessageLookupByLibrary.simpleMessage(
       "Il cliente non può essere modificato per questo appuntamento",
     ),

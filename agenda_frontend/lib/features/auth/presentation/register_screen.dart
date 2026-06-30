@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/providers/route_slug_provider.dart';
 import '../../../core/l10n/l10_extension.dart';
+import '../../../core/models/booking_form.dart';
+import '../../../core/network/network_providers.dart';
+import '../../../core/widgets/dynamic_form_fields.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../../core/widgets/phone_input_field.dart';
 import '../../booking/providers/business_provider.dart';
@@ -42,6 +45,11 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   bool _isInitialized = false;
   bool _isRegistering = false;
 
+  // Moduli per-cliente da compilare in fase di registrazione.
+  List<BookingForm> _registrationForms = const [];
+  final Map<int, dynamic> _formAnswers = {};
+  final Set<int> _invalidFormFieldIds = {};
+
   String _bookingPath(String? slug) {
     final query = Uri(queryParameters: widget.redirectQueryParameters).query;
     return '/$slug/booking${query.isNotEmpty ? '?$query' : ''}';
@@ -59,6 +67,28 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     });
     // Pre-compila l'email se passata dal login
     _initEmail();
+    _loadRegistrationForms();
+  }
+
+  Future<void> _loadRegistrationForms() async {
+    try {
+      var businessId = ref.read(currentBusinessIdProvider);
+      if (businessId == null) {
+        final businessAsync = await ref.read(currentBusinessProvider.future);
+        businessId = businessAsync?.id;
+      }
+      if (businessId == null) return;
+      final response = await ref
+          .read(apiClientProvider)
+          .getRegistrationForms(businessId: businessId);
+      if (!mounted) return;
+      final forms = (response['forms'] as List<dynamic>? ?? const [])
+          .map((item) => BookingForm.fromJson(item as Map<String, dynamic>))
+          .toList();
+      setState(() => _registrationForms = forms);
+    } catch (_) {
+      // I moduli sono best-effort: un errore non blocca la registrazione.
+    }
   }
 
   void _initEmail() {
@@ -112,7 +142,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
 
   Future<void> _handleRegister() async {
     if (_isRegistering) return;
-    if (!_formKey.currentState!.validate()) return;
+    final formValid = _formKey.currentState!.validate();
+    final invalidFormFields = BookingFormAnswers.invalidRequired(
+      _registrationForms,
+      _formAnswers,
+    );
+    setState(() {
+      _invalidFormFieldIds
+        ..clear()
+        ..addAll(invalidFormFields);
+    });
+    if (!formValid || invalidFormFields.isNotEmpty) return;
 
     setState(() => _hasAttemptedRegister = true);
     setState(() => _isRegistering = true);
@@ -148,6 +188,10 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
             firstName: _firstNameController.text.trim(),
             lastName: _lastNameController.text.trim(),
             phone: _phoneFieldKey.currentState?.fullPhone ?? '',
+            customerFormSubmissions: BookingFormAnswers.buildSubmissions(
+              _registrationForms,
+              _formAnswers,
+            ),
           );
 
       if (success && mounted) {
@@ -366,6 +410,42 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     },
                   ),
                   const SizedBox(height: 24),
+
+                  // Moduli per-cliente richiesti alla registrazione
+                  if (_registrationForms.isNotEmpty) ...[
+                    for (final form in _registrationForms) ...[
+                      Text(
+                        form.title,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      if (form.description != null &&
+                          form.description!.trim().isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            form.description!,
+                            style: theme.textTheme.bodySmall,
+                          ),
+                        ),
+                      const SizedBox(height: 12),
+                      for (final field in form.fields) ...[
+                        BookingFormFieldWidget(
+                          field: field,
+                          value: _formAnswers[field.id],
+                          showRequiredError:
+                              _invalidFormFieldIds.contains(field.id),
+                          onChanged: (value) => setState(() {
+                            _formAnswers[field.id] = value;
+                            _invalidFormFieldIds.remove(field.id);
+                          }),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ],
+                    const SizedBox(height: 8),
+                  ],
 
                   // Errore (mostrato solo dopo un tentativo di registrazione e dopo init)
                   if (_isInitialized &&

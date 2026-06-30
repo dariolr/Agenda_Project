@@ -510,6 +510,7 @@ class ApiClient {
     required String firstName,
     required String lastName,
     required String phone,
+    List<Map<String, dynamic>> customerFormSubmissions = const [],
   }) async {
     debugPrint('=== API customerRegister ===');
     debugPrint('businessId: $businessId, email: $email');
@@ -523,6 +524,8 @@ class ApiClient {
         'first_name': firstName,
         'last_name': lastName,
         'phone': phone,
+        if (customerFormSubmissions.isNotEmpty)
+          'customer_form_submissions': customerFormSubmissions,
       },
     );
 
@@ -755,6 +758,44 @@ class ApiClient {
         'service_variant_ids': serviceVariantIds,
         'service_package_ids': packageIds,
         'class_event_ids': classEventIds,
+      },
+    );
+  }
+
+  /// GET /v1/customer/{business_id}/registration-forms
+  /// Moduli per-cliente da mostrare in fase di registrazione (pubblico).
+  Future<Map<String, dynamic>> getRegistrationForms({
+    required int businessId,
+  }) async {
+    return get('/v1/customer/$businessId/registration-forms');
+  }
+
+  /// GET /v1/customer/{business_id}/customer-forms/pending
+  /// Moduli per-cliente ancora in sospeso per il cliente autenticato.
+  Future<Map<String, dynamic>> getPendingCustomerForms({
+    required int businessId,
+    int? locationId,
+  }) async {
+    return get(
+      '/v1/customer/$businessId/customer-forms/pending',
+      queryParameters: {
+        if (locationId != null && locationId > 0)
+          'location_id': locationId.toString(),
+      },
+    );
+  }
+
+  /// POST /v1/customer/{business_id}/customer-forms/submit
+  Future<Map<String, dynamic>> submitCustomerForms({
+    required int businessId,
+    int? locationId,
+    required List<Map<String, dynamic>> submissions,
+  }) async {
+    return post(
+      '/v1/customer/$businessId/customer-forms/submit',
+      data: {
+        'submissions': submissions,
+        if (locationId != null && locationId > 0) 'location_id': locationId,
       },
     );
   }

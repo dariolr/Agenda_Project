@@ -1,17 +1,16 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/models/class_event.dart';
 import '../../../../core/models/booking_form.dart';
+import '../../../../core/widgets/dynamic_form_fields.dart';
 
 import '../../../../app/providers/route_slug_provider.dart';
 import '../../../../core/l10n/l10_extension.dart';
 import '../../../../core/network/api_client.dart';
+import '../../../../core/network/network_providers.dart';
 import '../../../../core/services/pending_booking_storage.dart';
 import '../../../auth/providers/auth_provider.dart';
 import '../../providers/booking_direct_link_provider.dart';
@@ -40,6 +39,14 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
   List<BookingForm> _bookingForms = const [];
   final Map<int, dynamic> _formAnswers = {};
   final Set<int> _invalidRequiredFieldIds = {};
+
+  // Moduli per-cliente in sospeso (raccolti una volta sola). Caricati solo se
+  // il cliente è autenticato; il contesto è business + sede scelta.
+  String? _customerFormsContextKey;
+  bool _customerFormsLoading = false;
+  List<BookingForm> _customerForms = const [];
+  final Map<int, dynamic> _customerAnswers = {};
+  final Set<int> _invalidCustomerFieldIds = {};
 
   Future<void> _savePendingBookingForAuth() async {
     final bookingState = ref.read(bookingFlowProvider);
@@ -128,6 +135,7 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
       cancellationHours,
     );
     _refreshBookingFormsIfNeeded(business?.id, location?.id, request);
+    _loadCustomerFormsIfNeeded(business?.id, location?.id);
 
     return Column(
       children: [
@@ -515,6 +523,14 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                   const SizedBox(height: 16),
                 ] else if (_bookingForms.isNotEmpty) ...[
                   _buildBookingFormsSection(context, theme),
+                  const SizedBox(height: 16),
+                ],
+
+                if (_customerFormsLoading) ...[
+                  const Center(child: CircularProgressIndicator()),
+                  const SizedBox(height: 16),
+                ] else if (_customerForms.isNotEmpty) ...[
+                  _buildCustomerFormsSection(context, theme),
                   const SizedBox(height: 16),
                 ],
 
@@ -920,7 +936,9 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                         _scrollToBottom();
                         return;
                       }
-                      if (!_validateBookingForms()) {
+                      final formsValid = _validateBookingForms();
+                      final customerFormsValid = _validateCustomerForms();
+                      if (!formsValid || !customerFormsValid) {
                         _scrollToBottom();
                         return;
                       }
@@ -935,6 +953,12 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
                             .confirmBooking(
                               formSubmissions: _buildFormSubmissions(),
                             );
+                        // Moduli per-cliente in sospeso (indipendenti dalla
+                        // prenotazione): inviati dopo la conferma riuscita.
+                        await _submitCustomerForms(
+                          ref.read(currentBusinessProvider).value?.id,
+                          ref.read(effectiveLocationIdProvider),
+                        );
                       } on TokenExpiredException {
                         // Sessione scaduta - reindirizza al login
                         // Lo stato della prenotazione è già salvato in localStorage
@@ -1131,6 +1155,79 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
     });
   }
 
+  void _loadCustomerFormsIfNeeded(int? businessId, int? locationId) {
+    if (businessId == null || locationId == null || locationId <= 0) return;
+    final isAuthenticated = ref.read(
+      authProvider.select((state) => state.isAuthenticated),
+    );
+    if (!isAuthenticated) return;
+    final key = '$businessId|$locationId';
+    if (_customerFormsContextKey == key || _customerFormsLoading) return;
+    _customerFormsContextKey = key;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      setState(() {
+        _customerFormsLoading = true;
+        _customerForms = const [];
+        _customerAnswers.clear();
+        _invalidCustomerFieldIds.clear();
+      });
+      try {
+        final response = await ref
+            .read(apiClientProvider)
+            .getPendingCustomerForms(
+              businessId: businessId,
+              locationId: locationId,
+            );
+        if (!mounted) return;
+        final forms = (response['forms'] as List<dynamic>? ?? const [])
+            .map((item) => BookingForm.fromJson(item as Map<String, dynamic>))
+            .toList();
+        setState(() {
+          _customerForms = forms;
+          _customerFormsLoading = false;
+        });
+      } catch (_) {
+        if (!mounted) return;
+        setState(() {
+          _customerForms = const [];
+          _customerFormsLoading = false;
+        });
+      }
+    });
+  }
+
+  bool _validateCustomerForms() {
+    final invalid = BookingFormAnswers.invalidRequired(
+      _customerForms,
+      _customerAnswers,
+    );
+    setState(() {
+      _invalidCustomerFieldIds
+        ..clear()
+        ..addAll(invalid);
+    });
+    return invalid.isEmpty;
+  }
+
+  Future<void> _submitCustomerForms(int? businessId, int? locationId) async {
+    if (_customerForms.isEmpty || businessId == null) return;
+    final submissions = BookingFormAnswers.buildSubmissions(
+      _customerForms,
+      _customerAnswers,
+    );
+    if (submissions.isEmpty) return;
+    try {
+      await ref.read(apiClientProvider).submitCustomerForms(
+            businessId: businessId,
+            locationId: locationId,
+            submissions: submissions,
+          );
+    } catch (_) {
+      // Best-effort: un errore qui non deve invalidare la prenotazione creata.
+    }
+  }
+
   bool _validateBookingForms() {
     final invalid = <int>{};
     for (final form in _bookingForms) {
@@ -1202,6 +1299,28 @@ class _SummaryStepState extends ConsumerState<SummaryStep> {
       ],
     );
   }
+
+  Widget _buildCustomerFormsSection(BuildContext context, ThemeData theme) {
+    return Column(
+      children: [
+        for (var index = 0; index < _customerForms.length; index++) ...[
+          _BookingFormSection(
+            form: _customerForms[index],
+            theme: theme,
+            formAnswers: _customerAnswers,
+            invalidRequiredFieldIds: _invalidCustomerFieldIds,
+            onFieldChanged: (fieldId, value) {
+              setState(() {
+                _customerAnswers[fieldId] = value;
+                _invalidCustomerFieldIds.remove(fieldId);
+              });
+            },
+          ),
+          if (index != _customerForms.length - 1) const SizedBox(height: 12),
+        ],
+      ],
+    );
+  }
 }
 
 class _BookingFormSection extends StatelessWidget {
@@ -1233,7 +1352,7 @@ class _BookingFormSection extends StatelessWidget {
               child: Text(form.description!, style: theme.textTheme.bodySmall),
             ),
           for (var index = 0; index < form.fields.length; index++) ...[
-            _BookingFormFieldWidget(
+            BookingFormFieldWidget(
               field: form.fields[index],
               value: formAnswers[form.fields[index].id],
               showRequiredError: invalidRequiredFieldIds.contains(
@@ -1248,296 +1367,6 @@ class _BookingFormSection extends StatelessWidget {
       ),
     );
   }
-}
-
-class _BookingFormFieldWidget extends StatelessWidget {
-  const _BookingFormFieldWidget({
-    required this.field,
-    required this.value,
-    required this.showRequiredError,
-    required this.onChanged,
-  });
-
-  final BookingFormField field;
-  final dynamic value;
-  final bool showRequiredError;
-  final ValueChanged<dynamic> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = context.l10n;
-    final theme = Theme.of(context);
-    if (field.fieldType == 'info_text') {
-      return Text(field.label, style: theme.textTheme.bodyMedium);
-    }
-
-    final label = field.isRequired
-        ? l10n.bookingFormsRequiredLabel(field.label)
-        : field.label;
-    final errorText = showRequiredError ? l10n.bookingFormsRequiredError : null;
-
-    switch (field.fieldType) {
-      case 'long_text':
-        return TextField(
-          maxLines: 4,
-          decoration: InputDecoration(
-            labelText: label,
-            hintText: field.placeholder,
-            helperText: field.helpText,
-            errorText: errorText,
-            border: const OutlineInputBorder(),
-          ),
-          onChanged: onChanged,
-        );
-      case 'date':
-        return _dateField(context, label, errorText);
-      case 'single_choice':
-      case 'dropdown':
-        return DropdownButtonFormField<String>(
-          value: value as String?,
-          decoration: InputDecoration(
-            labelText: label,
-            helperText: field.helpText,
-            errorText: errorText,
-            border: const OutlineInputBorder(),
-          ),
-          items: [
-            for (final option in field.options)
-              DropdownMenuItem(value: option.value, child: Text(option.label)),
-          ],
-          onChanged: onChanged,
-        );
-      case 'segmented_choice':
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: theme.textTheme.bodyMedium),
-            const SizedBox(height: 8),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SegmentedButton<String>(
-                showSelectedIcon: false,
-                segments: [
-                  for (final option in field.options)
-                    ButtonSegment<String>(
-                      value: option.value,
-                      label: Text(option.label),
-                    ),
-                ],
-                selected: value is String ? {value} : const <String>{},
-                emptySelectionAllowed: true,
-                onSelectionChanged: (selection) {
-                  onChanged(selection.isEmpty ? null : selection.first);
-                },
-              ),
-            ),
-            if (field.helpText != null && field.helpText!.trim().isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(field.helpText!, style: theme.textTheme.bodySmall),
-              ),
-            if (errorText != null)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Text(
-                  errorText,
-                  style: TextStyle(color: theme.colorScheme.error),
-                ),
-              ),
-          ],
-        );
-      case 'multiple_choice':
-        final selected = value is Set<String>
-            ? value as Set<String>
-            : <String>{};
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: theme.textTheme.bodyMedium),
-            for (final option in field.options)
-              CheckboxListTile(
-                contentPadding: EdgeInsets.zero,
-                value: selected.contains(option.value),
-                title: Text(option.label),
-                onChanged: (checked) {
-                  final next = Set<String>.from(selected);
-                  if (checked ?? false) {
-                    next.add(option.value);
-                  } else {
-                    next.remove(option.value);
-                  }
-                  onChanged(next);
-                },
-              ),
-            if (errorText != null)
-              Text(errorText, style: TextStyle(color: theme.colorScheme.error)),
-          ],
-        );
-      case 'consent':
-        return Container(
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: theme.colorScheme.primaryContainer.withOpacity(0.22),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: theme.colorScheme.primary.withOpacity(0.25),
-            ),
-          ),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Checkbox(
-                value: value == true,
-                onChanged: (checked) => onChanged(checked ?? false),
-              ),
-              const SizedBox(width: 4),
-              Icon(
-                Icons.verified_user_outlined,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(label, style: theme.textTheme.bodyMedium),
-                    if (field.consentUrl != null) ...[
-                      const SizedBox(height: 6),
-                      Wrap(
-                        crossAxisAlignment: WrapCrossAlignment.center,
-                        spacing: 6,
-                        runSpacing: 4,
-                        children: [
-                          TextButton.icon(
-                            onPressed: () => _openConsentUrl(field.consentUrl!),
-                            icon: const Icon(Icons.open_in_new, size: 16),
-                            label: Text(field.consentUrl!),
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              alignment: Alignment.centerLeft,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                    if (field.helpText != null &&
-                        field.helpText!.trim().isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Text(field.helpText!),
-                      ),
-                    if (errorText != null) ...[
-                      const SizedBox(height: 6),
-                      Text(
-                        errorText,
-                        style: TextStyle(color: theme.colorScheme.error),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-      case 'checkbox':
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              value: value == true,
-              title: Text(label),
-              subtitle: field.helpText == null ? null : Text(field.helpText!),
-              onChanged: (checked) => onChanged(checked ?? false),
-            ),
-            if (errorText != null)
-              Text(errorText, style: TextStyle(color: theme.colorScheme.error)),
-          ],
-        );
-      default:
-        return TextField(
-          keyboardType: field.fieldType == 'number'
-              ? TextInputType.number
-              : (field.fieldType == 'email'
-                    ? TextInputType.emailAddress
-                    : (field.fieldType == 'phone'
-                          ? TextInputType.phone
-                          : TextInputType.text)),
-          decoration: InputDecoration(
-            labelText: label,
-            hintText: field.placeholder,
-            helperText: field.helpText,
-            errorText: errorText,
-            border: const OutlineInputBorder(),
-          ),
-          onChanged: onChanged,
-        );
-    }
-  }
-
-  Widget _dateField(BuildContext context, String label, String? errorText) {
-    final selected = _parseDateValue(value);
-    final locale = Localizations.localeOf(context).toLanguageTag();
-    final displayValue = selected == null
-        ? ''
-        : DateFormat.yMd(locale).format(selected);
-    return InkWell(
-      borderRadius: BorderRadius.circular(4),
-      onTap: () async {
-        final now = DateTime.now();
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: selected ?? now,
-          firstDate: DateTime(1900),
-          lastDate: DateTime(2100),
-        );
-        if (picked == null) return;
-        onChanged(_formatDateValue(picked));
-      },
-      child: InputDecorator(
-        decoration: InputDecoration(
-          labelText: label,
-          helperText: field.helpText,
-          errorText: errorText,
-          suffixIcon: const Icon(Icons.calendar_today_outlined),
-          border: const OutlineInputBorder(),
-        ),
-        child: Text(displayValue),
-      ),
-    );
-  }
-}
-
-DateTime? _parseDateValue(dynamic value) {
-  if (value is! String || value.trim().isEmpty) return null;
-  final trimmed = value.trim();
-  final parts = trimmed.split('-');
-  if (parts.length != 3) return DateTime.tryParse(trimmed);
-  final year = int.tryParse(parts[0]);
-  final month = int.tryParse(parts[1]);
-  final day = int.tryParse(parts[2]);
-  if (year == null || month == null || day == null) return null;
-  return DateTime(year, month, day);
-}
-
-String _formatDateValue(DateTime date) {
-  final month = date.month.toString().padLeft(2, '0');
-  final day = date.day.toString().padLeft(2, '0');
-  return '${date.year}-$month-$day';
-}
-
-void _openConsentUrl(String rawUrl) {
-  final uri = Uri.tryParse(rawUrl.trim());
-  if (uri == null || !uri.hasScheme) return;
-  unawaited(
-    launchUrl(
-      uri,
-      mode: LaunchMode.externalApplication,
-      webOnlyWindowName: '_blank',
-    ),
-  );
 }
 
 class _SummarySection extends StatelessWidget {

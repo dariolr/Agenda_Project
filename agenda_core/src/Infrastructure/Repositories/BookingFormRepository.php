@@ -73,6 +73,8 @@ final class BookingFormRepository
         'service_category',
     ];
 
+    private const DATA_SCOPES = ['per_booking', 'per_client'];
+
     public function __construct(private readonly Connection $db) {}
 
     public function listForms(int $businessId): array
@@ -110,16 +112,23 @@ final class BookingFormRepository
             throw new InvalidArgumentException('title_required');
         }
 
+        $dataScope = $this->normalizeDataScope($data['data_scope'] ?? 'per_booking');
+        $registrationOnly = ($dataScope === 'per_client' && isset($data['registration_only']))
+            ? (int) (bool) $data['registration_only']
+            : 0;
+
         $stmt = $this->db->getPdo()->prepare(
             'INSERT INTO booking_forms
-                (business_id, title, description, internal_name, is_active, sort_order, created_by_user_id, updated_by_user_id)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                (business_id, title, description, internal_name, data_scope, registration_only, is_active, sort_order, created_by_user_id, updated_by_user_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $businessId,
             $title,
             $this->nullableTrim($data['description'] ?? null),
             $this->nullableTrim($data['internal_name'] ?? null),
+            $dataScope,
+            $registrationOnly,
             isset($data['is_active']) ? ((int) (bool) $data['is_active']) : 1,
             (int) ($data['sort_order'] ?? 0),
             $userId,
@@ -131,7 +140,7 @@ final class BookingFormRepository
 
     public function updateForm(int $businessId, int $formId, array $data, ?int $userId): bool
     {
-        $allowed = ['title', 'description', 'internal_name', 'is_active', 'sort_order'];
+        $allowed = ['title', 'description', 'internal_name', 'data_scope', 'registration_only', 'is_active', 'sort_order'];
         $fields = [];
         $params = [];
         foreach ($allowed as $key) {
@@ -145,7 +154,9 @@ final class BookingFormRepository
                 }
             } elseif (in_array($key, ['description', 'internal_name'], true)) {
                 $value = $this->nullableTrim($data[$key]);
-            } elseif ($key === 'is_active') {
+            } elseif ($key === 'data_scope') {
+                $value = $this->normalizeDataScope($data[$key]);
+            } elseif (in_array($key, ['registration_only', 'is_active'], true)) {
                 $value = (int) (bool) $data[$key];
             } else {
                 $value = (int) $data[$key];
@@ -284,7 +295,11 @@ final class BookingFormRepository
      */
     public function replaceRules(int $businessId, int $formId, array $rules): void
     {
-        $this->assertFormBelongsToBusiness($businessId, $formId);
+        $form = $this->findForm($businessId, $formId);
+        if ($form === null) {
+            throw new InvalidArgumentException('form_not_found');
+        }
+        $perClient = ($form['data_scope'] ?? 'per_booking') === 'per_client';
 
         // Valida e normalizza tutte le regole prima di toccare il DB.
         $normalizedRules = [];
@@ -296,7 +311,7 @@ final class BookingFormRepository
             if (!is_array($conditions)) {
                 throw new InvalidArgumentException('invalid_rule');
             }
-            $normalizedRules[] = $this->normalizeRuleConditions($businessId, $conditions);
+            $normalizedRules[] = $this->normalizeRuleConditions($businessId, $conditions, $perClient);
         }
 
         $pdo = $this->db->getPdo();
@@ -347,7 +362,7 @@ final class BookingFormRepository
      *
      * @return array<int,array{scope_type:string,scope_id:?int}>
      */
-    private function normalizeRuleConditions(int $businessId, array $conditions): array
+    private function normalizeRuleConditions(int $businessId, array $conditions, bool $perClient = false): array
     {
         $counts = ['business' => 0, 'location' => 0, 'service_category' => 0, 'appointment' => 0];
         $normalized = [];
@@ -362,6 +377,11 @@ final class BookingFormRepository
                 : null;
             if (!$this->isValidCondition($businessId, $scopeType, $scopeId)) {
                 throw new InvalidArgumentException('invalid_rule');
+            }
+            // I moduli per-cliente si raccolgono a registrazione/avvio prenotazione,
+            // quando servizio/categoria non sono rilevanti: solo business e sede.
+            if ($perClient && !in_array($this->conditionCategory($scopeType), ['business', 'location'], true)) {
+                throw new InvalidArgumentException('invalid_rule_combination');
             }
             $key = $scopeType . ':' . ($scopeId ?? 'business');
             if (isset($seen[$key])) {
@@ -413,6 +433,312 @@ final class BookingFormRepository
         $context = $this->buildContextIds($businessId, $locationId, $serviceVariantIds, $serviceIds, $servicePackageIds, $classEventIds);
         $forms = $this->findActiveFormsForContext($businessId, $context);
         return array_map([$this, 'formatPublicForm'], $forms);
+    }
+
+    /**
+     * Moduli per-cliente da mostrare in fase di registrazione (contesto senza
+     * sede: matchano solo le regole business-level). Include i moduli
+     * `registration_only`. Usato dall'endpoint pubblico del signup.
+     */
+    public function resolveRegistrationForms(int $businessId): array
+    {
+        $forms = $this->findActiveCustomerFormsForContext($businessId, [], false);
+        return array_map([$this, 'formatPublicForm'], $forms);
+    }
+
+    /**
+     * Moduli per-cliente ancora "in sospeso" per un cliente: attivi e
+     * applicabili al contesto (business + eventuale sede), esclusi i
+     * `registration_only` e quelli già compilati. Usato all'avvio prenotazione.
+     */
+    public function resolvePendingCustomerForms(int $businessId, int $clientId, ?int $locationId): array
+    {
+        $forms = $this->findActiveCustomerFormsForContext($businessId, $this->customerContext($locationId), true);
+        if (empty($forms)) {
+            return [];
+        }
+        $submitted = $this->submittedCustomerFormIds($businessId, $clientId);
+        $pending = array_filter(
+            $forms,
+            static fn(array $form): bool => !in_array((int) $form['id'], $submitted, true)
+        );
+        return array_map([$this, 'formatPublicForm'], array_values($pending));
+    }
+
+    /**
+     * Valida e salva (una volta sola, per cliente) le risposte ai moduli
+     * per-cliente. `$locationId` null = contesto di registrazione (include i
+     * moduli `registration_only`). Idempotente: i moduli già compilati dal
+     * cliente vengono ignorati. Con `$enforceRequired` lancia se mancano i
+     * campi obbligatori dei moduli applicabili non ancora compilati.
+     */
+    public function validateAndSaveCustomerSubmissions(
+        int $businessId,
+        int $clientId,
+        ?int $locationId,
+        array $submissions,
+        bool $enforceRequired = true
+    ): void {
+        $excludeRegistrationOnly = $locationId !== null;
+        $formsById = [];
+        foreach ($this->findActiveCustomerFormsForContext($businessId, $this->customerContext($locationId), $excludeRegistrationOnly) as $form) {
+            $formsById[(int) $form['id']] = $form;
+        }
+
+        $submittedByForm = [];
+        foreach ($submissions as $submission) {
+            if (!is_array($submission) || !isset($submission['form_id'])) {
+                throw BookingException::bookingFormError('booking_form_invalid_submission', 'Invalid booking form submission');
+            }
+            $formId = (int) $submission['form_id'];
+            if (!isset($formsById[$formId])) {
+                throw BookingException::bookingFormError('booking_form_not_applicable', 'Booking form is not applicable', ['form_id' => $formId]);
+            }
+            $submittedByForm[$formId] = $submission;
+        }
+
+        $alreadySubmitted = $this->submittedCustomerFormIds($businessId, $clientId);
+
+        if ($enforceRequired) {
+            $missing = [];
+            foreach ($formsById as $formId => $form) {
+                if (in_array((int) $formId, $alreadySubmitted, true)) {
+                    continue; // già compilato in passato
+                }
+                $answersByField = $this->answersByField($submittedByForm[$formId]['answers'] ?? []);
+                foreach ($form['fields'] as $field) {
+                    if ((int) $field['is_required'] !== 1 || !$this->isInputField((string) $field['field_type'])) {
+                        continue;
+                    }
+                    $value = $answersByField[(int) $field['id']]['value'] ?? null;
+                    if (!$this->isValidAnswerValue($field, $value)) {
+                        $missing[] = ['form_id' => (int) $formId, 'field_id' => (int) $field['id']];
+                    }
+                }
+            }
+            if (!empty($missing)) {
+                throw BookingException::bookingFormError(
+                    'booking_form_required_fields_missing',
+                    'One or more required booking form fields are missing',
+                    ['fields' => $missing]
+                );
+            }
+        }
+
+        foreach ($submittedByForm as $formId => $submission) {
+            if (in_array((int) $formId, $alreadySubmitted, true)) {
+                continue; // una volta sola: non sovrascrivo una risposta esistente
+            }
+            $form = $formsById[$formId];
+            $answersByField = $this->answersByField($submission['answers'] ?? []);
+            $answersToSave = [];
+            foreach ($form['fields'] as $field) {
+                $fieldId = (int) $field['id'];
+                $fieldType = (string) $field['field_type'];
+                if (!$this->isInputField($fieldType) || !array_key_exists($fieldId, $answersByField)) {
+                    continue;
+                }
+                $value = $answersByField[$fieldId]['value'] ?? null;
+                if (!$this->isValidAnswerValue($field, $value)) {
+                    if ((int) $field['is_required'] === 1) {
+                        throw BookingException::bookingFormError('booking_form_invalid_field', 'Invalid booking form field value', ['field_id' => $fieldId]);
+                    }
+                    continue;
+                }
+                $answersToSave[] = $this->formatAnswerForStorage($field, $value);
+            }
+
+            if (empty($answersToSave)) {
+                continue;
+            }
+
+            $stmt = $this->db->getPdo()->prepare(
+                'INSERT INTO customer_form_submissions
+                    (business_id, client_id, form_id, form_title_snapshot, location_id)
+                 VALUES (?, ?, ?, ?, ?)'
+            );
+            $stmt->execute([$businessId, $clientId, $formId, $form['title'], $locationId]);
+            $submissionId = (int) $this->db->getPdo()->lastInsertId();
+
+            $answerStmt = $this->db->getPdo()->prepare(
+                'INSERT INTO customer_form_submission_answers
+                    (submission_id, business_id, client_id, form_id, field_id, field_type_snapshot, field_label_snapshot, answer_text, answer_json)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            );
+            foreach ($answersToSave as $answer) {
+                $answerStmt->execute([
+                    $submissionId,
+                    $businessId,
+                    $clientId,
+                    $formId,
+                    $answer['field_id'],
+                    $answer['field_type'],
+                    $answer['field_label'],
+                    $answer['answer_text'],
+                    $answer['answer_json'],
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Valida (senza salvare) le risposte ai moduli per-cliente. Usato in fase
+     * di registrazione PRIMA di creare il cliente, così un campo obbligatorio
+     * mancante non lascia un account orfano.
+     */
+    public function validateCustomerSubmissions(int $businessId, ?int $locationId, array $submissions): void
+    {
+        $excludeRegistrationOnly = $locationId !== null;
+        $formsById = [];
+        foreach ($this->findActiveCustomerFormsForContext($businessId, $this->customerContext($locationId), $excludeRegistrationOnly) as $form) {
+            $formsById[(int) $form['id']] = $form;
+        }
+
+        $submittedByForm = [];
+        foreach ($submissions as $submission) {
+            if (!is_array($submission) || !isset($submission['form_id'])) {
+                throw BookingException::bookingFormError('booking_form_invalid_submission', 'Invalid booking form submission');
+            }
+            $formId = (int) $submission['form_id'];
+            if (!isset($formsById[$formId])) {
+                throw BookingException::bookingFormError('booking_form_not_applicable', 'Booking form is not applicable', ['form_id' => $formId]);
+            }
+            $submittedByForm[$formId] = $submission;
+        }
+
+        $missing = [];
+        foreach ($formsById as $formId => $form) {
+            $answersByField = $this->answersByField($submittedByForm[$formId]['answers'] ?? []);
+            foreach ($form['fields'] as $field) {
+                if ((int) $field['is_required'] !== 1 || !$this->isInputField((string) $field['field_type'])) {
+                    continue;
+                }
+                $value = $answersByField[(int) $field['id']]['value'] ?? null;
+                if (!$this->isValidAnswerValue($field, $value)) {
+                    $missing[] = ['form_id' => (int) $formId, 'field_id' => (int) $field['id']];
+                }
+            }
+        }
+        if (!empty($missing)) {
+            throw BookingException::bookingFormError(
+                'booking_form_required_fields_missing',
+                'One or more required booking form fields are missing',
+                ['fields' => $missing]
+            );
+        }
+    }
+
+    /**
+     * Risposte ai moduli per-cliente di un cliente. Per la scheda cliente del
+     * gestionale (sola lettura).
+     */
+    public function getCustomerSubmissions(int $businessId, int $clientId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT * FROM customer_form_submissions WHERE business_id = ? AND client_id = ? ORDER BY id ASC'
+        );
+        $stmt->execute([$businessId, $clientId]);
+        $submissions = $stmt->fetchAll();
+        if (empty($submissions)) {
+            return [];
+        }
+
+        $ids = array_map(static fn(array $row): int => (int) $row['id'], $submissions);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $answerStmt = $this->db->getPdo()->prepare(
+            "SELECT * FROM customer_form_submission_answers
+             WHERE submission_id IN ({$placeholders})
+             ORDER BY id ASC"
+        );
+        $answerStmt->execute($ids);
+        $answersBySubmission = [];
+        foreach ($answerStmt->fetchAll() as $answer) {
+            $answersBySubmission[(int) $answer['submission_id']][] = [
+                'id' => (int) $answer['id'],
+                'field_id' => (int) $answer['field_id'],
+                'field_type' => $answer['field_type_snapshot'],
+                'field_label' => $answer['field_label_snapshot'],
+                'answer_text' => $answer['answer_text'],
+                'answer_json' => $this->decodeJson($answer['answer_json'] ?? null),
+            ];
+        }
+
+        return array_map(static function (array $submission) use ($answersBySubmission): array {
+            $id = (int) $submission['id'];
+            return [
+                'id' => $id,
+                'client_id' => (int) $submission['client_id'],
+                'form_id' => (int) $submission['form_id'],
+                'form_title' => $submission['form_title_snapshot'],
+                'location_id' => $submission['location_id'] !== null ? (int) $submission['location_id'] : null,
+                'submitted_at' => $submission['submitted_at'],
+                'answers' => $answersBySubmission[$id] ?? [],
+            ];
+        }, $submissions);
+    }
+
+    /**
+     * Moduli per-cliente attivi che matchano il contesto dato. Contesto vuoto
+     * (registrazione) => matchano solo le regole business-level.
+     */
+    private function findActiveCustomerFormsForContext(int $businessId, array $context, bool $excludeRegistrationOnly): array
+    {
+        $sql = 'SELECT bf.*
+                FROM booking_forms bf
+                WHERE bf.business_id = ?
+                  AND bf.is_active = 1
+                  AND bf.deleted_at IS NULL
+                  AND bf.data_scope = \'per_client\'';
+        if ($excludeRegistrationOnly) {
+            $sql .= ' AND bf.registration_only = 0';
+        }
+        $sql .= ' ORDER BY bf.sort_order ASC, bf.id ASC';
+
+        $stmt = $this->db->getPdo()->prepare($sql);
+        $stmt->execute([$businessId]);
+        $forms = $stmt->fetchAll();
+        if (empty($forms)) {
+            return [];
+        }
+
+        $formIds = array_map(static fn(array $row): int => (int) $row['id'], $forms);
+        $fieldsByForm = $this->fieldsByFormIds($businessId, $formIds);
+        $rulesByForm = $this->rulesByFormIds($businessId, $formIds);
+        $result = [];
+        foreach ($forms as $form) {
+            $id = (int) $form['id'];
+            if (empty($fieldsByForm[$id])) {
+                continue;
+            }
+            if (!$this->formMatchesContext($rulesByForm[$id] ?? [], $context)) {
+                continue;
+            }
+            $form['fields'] = $fieldsByForm[$id];
+            $form['rules'] = $rulesByForm[$id] ?? [];
+            $result[] = $form;
+        }
+
+        return $result;
+    }
+
+    private function submittedCustomerFormIds(int $businessId, int $clientId): array
+    {
+        $stmt = $this->db->getPdo()->prepare(
+            'SELECT form_id FROM customer_form_submissions WHERE business_id = ? AND client_id = ?'
+        );
+        $stmt->execute([$businessId, $clientId]);
+        return array_map(static fn(array $row): int => (int) $row['form_id'], $stmt->fetchAll());
+    }
+
+    private function customerContext(?int $locationId): array
+    {
+        return ($locationId !== null && $locationId > 0) ? ['location' => [$locationId]] : [];
+    }
+
+    private function normalizeDataScope(mixed $value): string
+    {
+        $scope = is_string($value) ? trim($value) : '';
+        return in_array($scope, self::DATA_SCOPES, true) ? $scope : 'per_booking';
     }
 
     public function validateAndSaveSubmissions(
@@ -693,6 +1019,7 @@ final class BookingFormRepository
         $stmt = $this->db->getPdo()->prepare(
             'SELECT * FROM booking_forms
              WHERE business_id = ? AND is_active = 1 AND deleted_at IS NULL
+               AND data_scope = \'per_booking\'
              ORDER BY sort_order ASC, id ASC'
         );
         $stmt->execute([$businessId]);
@@ -748,6 +1075,7 @@ final class BookingFormRepository
              WHERE bf.business_id = ?
                AND bf.is_active = 1
                AND bf.deleted_at IS NULL
+               AND bf.data_scope = \'per_booking\'
              ORDER BY bf.sort_order ASC, bf.id ASC'
         );
         $stmt->execute([$businessId]);
@@ -1000,6 +1328,8 @@ final class BookingFormRepository
             'title' => $form['title'],
             'description' => $form['description'],
             'internal_name' => $form['internal_name'],
+            'data_scope' => $form['data_scope'] ?? 'per_booking',
+            'registration_only' => (int) ($form['registration_only'] ?? 0) === 1,
             'is_active' => (int) $form['is_active'] === 1,
             'sort_order' => (int) $form['sort_order'],
             'fields_count' => isset($form['fields_count']) ? (int) $form['fields_count'] : null,

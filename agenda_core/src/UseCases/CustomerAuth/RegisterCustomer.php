@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Agenda\UseCases\CustomerAuth;
 
+use Agenda\Infrastructure\Repositories\BookingFormRepository;
 use Agenda\Infrastructure\Repositories\ClientAuthRepository;
 use Agenda\Infrastructure\Repositories\ClientRepository;
 use Agenda\Infrastructure\Security\JwtService;
@@ -25,6 +26,7 @@ final class RegisterCustomer
         private readonly ClientRepository $clientRepository,
         private readonly JwtService $jwtService,
         private readonly PasswordHasher $passwordHasher,
+        private readonly BookingFormRepository $bookingFormRepository,
     ) {}
 
     /**
@@ -40,7 +42,8 @@ final class RegisterCustomer
         int $businessId,
         ?string $phone = null,
         ?string $userAgent = null,
-        ?string $ipAddress = null
+        ?string $ipAddress = null,
+        array $customerFormSubmissions = []
     ): array {
         // Validate password strength
         $this->validatePassword($password);
@@ -49,6 +52,11 @@ final class RegisterCustomer
         if ($phone === null || trim($phone) === '') {
             throw new ValidationException('Phone number is required');
         }
+
+        // Valida i moduli per-cliente PRIMA di creare il cliente: un campo
+        // obbligatorio mancante deve far fallire la registrazione senza lasciare
+        // un account orfano.
+        $this->bookingFormRepository->validateCustomerSubmissions($businessId, null, $customerFormSubmissions);
 
         // Check if client exists with this email in this business
         $existingClient = $this->clientRepository->findByEmail($email, $businessId);
@@ -92,6 +100,14 @@ final class RegisterCustomer
                 'phone' => $phone,
             ], $businessId);
         }
+
+        // Salva le risposte ai moduli per-cliente (già validate sopra). Idempotente.
+        $this->bookingFormRepository->validateAndSaveCustomerSubmissions(
+            $businessId,
+            $clientId,
+            null,
+            $customerFormSubmissions
+        );
 
         // Fetch client data
         $client = $this->clientAuthRepository->findById($clientId);

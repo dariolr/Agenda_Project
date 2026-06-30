@@ -54,6 +54,7 @@ class AuthRepository {
     required String firstName,
     required String lastName,
     required String phone,
+    List<Map<String, dynamic>> customerFormSubmissions = const [],
   }) async {
     final data = await _apiClient.customerRegister(
       businessId: businessId,
@@ -62,6 +63,7 @@ class AuthRepository {
       firstName: firstName,
       lastName: lastName,
       phone: phone,
+      customerFormSubmissions: customerFormSubmissions,
     );
     return User.fromJson(data['client'] as Map<String, dynamic>);
   }

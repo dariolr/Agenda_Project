@@ -170,6 +170,7 @@ class AuthNotifier extends Notifier<AuthState> {
     required String firstName,
     required String lastName,
     required String phone,
+    List<Map<String, dynamic>> customerFormSubmissions = const [],
   }) async {
     debugPrint('=== REGISTER START ===');
     debugPrint(
@@ -187,6 +188,7 @@ class AuthNotifier extends Notifier<AuthState> {
         firstName: firstName,
         lastName: lastName,
         phone: phone,
+        customerFormSubmissions: customerFormSubmissions,
       );
       debugPrint('Register SUCCESS: user=${user.email}');
       ref.invalidate(authenticatedBusinessIdProvider);

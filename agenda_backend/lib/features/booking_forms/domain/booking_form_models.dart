@@ -1,8 +1,22 @@
+/// Indica quando si raccoglie un modulo: a ogni prenotazione (`perBooking`,
+/// default) oppure una volta sola, associato al cliente (`perClient`).
+enum BookingFormDataScope { perBooking, perClient }
+
+BookingFormDataScope _dataScopeFromString(String? value) =>
+    value == 'per_client'
+    ? BookingFormDataScope.perClient
+    : BookingFormDataScope.perBooking;
+
+String dataScopeToApi(BookingFormDataScope scope) =>
+    scope == BookingFormDataScope.perClient ? 'per_client' : 'per_booking';
+
 class BookingForm {
   final int id;
   final String title;
   final String? description;
   final String? internalName;
+  final BookingFormDataScope dataScope;
+  final bool registrationOnly;
   final bool isActive;
   final int sortOrder;
   final int? fieldsCount;
@@ -15,6 +29,8 @@ class BookingForm {
     required this.title,
     this.description,
     this.internalName,
+    this.dataScope = BookingFormDataScope.perBooking,
+    this.registrationOnly = false,
     this.isActive = true,
     this.sortOrder = 0,
     this.fieldsCount,
@@ -23,11 +39,15 @@ class BookingForm {
     this.rules = const [],
   });
 
+  bool get isPerClient => dataScope == BookingFormDataScope.perClient;
+
   factory BookingForm.fromJson(Map<String, dynamic> json) => BookingForm(
     id: json['id'] as int,
     title: json['title'] as String? ?? '',
     description: json['description'] as String?,
     internalName: json['internal_name'] as String?,
+    dataScope: _dataScopeFromString(json['data_scope'] as String?),
+    registrationOnly: _asBool(json['registration_only']),
     isActive: _asBool(json['is_active']),
     sortOrder: json['sort_order'] as int? ?? 0,
     fieldsCount: json['fields_count'] as int?,

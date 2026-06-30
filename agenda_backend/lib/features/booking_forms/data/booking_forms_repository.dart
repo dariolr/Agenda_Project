@@ -1,6 +1,7 @@
 import '../../../core/network/api_client.dart';
 import '../domain/booking_form_for_booking.dart';
 import '../domain/booking_form_models.dart';
+import '../domain/customer_form_submission.dart';
 
 class BookingFormsRepository {
   BookingFormsRepository(this._apiClient);
@@ -130,6 +131,20 @@ class BookingFormsRepository {
       '/v1/businesses/$businessId/bookings/$bookingId/form-submissions',
       data: {'submissions': submissions},
     );
+  }
+
+  /// Risposte ai moduli per-cliente di un cliente (sola lettura).
+  Future<List<CustomerFormSubmission>> getClientForms(
+    int businessId,
+    int clientId,
+  ) async {
+    final response = await _apiClient.get(
+      '/v1/businesses/$businessId/clients/$clientId/form-submissions',
+    );
+    return (response['form_submissions'] as List<dynamic>? ?? const [])
+        .map((item) =>
+            CustomerFormSubmission.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// Sostituisce tutte le regole di visualizzazione del modulo.

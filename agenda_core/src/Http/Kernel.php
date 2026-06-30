@@ -191,6 +191,8 @@ final class Kernel
         $this->router->get('/v1/businesses/{business_id}/locations/public', LocationsController::class, 'indexPublic');
         $this->router->get('/v1/public/booking-direct-links/resolve', BookingDirectLinksController::class, 'resolve');
         $this->router->post('/v1/public/booking-forms/resolve', BookingFormsController::class, 'resolvePublic');
+        // Public: moduli per-cliente da mostrare in fase di registrazione
+        $this->router->get('/v1/customer/{business_id}/registration-forms', BookingFormsController::class, 'resolveRegistrationForms');
         // Public Meta webhook endpoint (verification + events)
         $this->router->get('/v1/whatsapp/webhook', WhatsappController::class, 'webhookPublicVerify');
         $this->router->post('/v1/whatsapp/webhook', WhatsappController::class, 'webhookPublicIngest');
@@ -342,6 +344,8 @@ final class Kernel
         $this->router->get('/v1/businesses/{business_id}/bookings/{booking_id}/form-submissions', BookingFormsController::class, 'submissionsForBooking', ['auth', 'business_access_route']);
         $this->router->get('/v1/businesses/{business_id}/bookings/{booking_id}/forms', BookingFormsController::class, 'formsForBooking', ['auth', 'business_access_route']);
         $this->router->put('/v1/businesses/{business_id}/bookings/{booking_id}/form-submissions', BookingFormsController::class, 'saveBookingSubmissions', ['auth', 'business_access_route']);
+        // Moduli per-cliente: risposte di un cliente (scheda cliente, sola lettura)
+        $this->router->get('/v1/businesses/{business_id}/clients/{client_id}/form-submissions', BookingFormsController::class, 'clientFormSubmissions', ['auth', 'business_access_route']);
 
         // Clients (auth required)
         $this->router->get('/v1/clients', ClientsController::class, 'index', ['auth']);
@@ -451,7 +455,10 @@ final class Kernel
         $this->router->get('/v1/customer/me', CustomerAuthController::class, 'me', ['customer_auth']);
         $this->router->put('/v1/customer/me', CustomerAuthController::class, 'updateProfile', ['customer_auth']);
         $this->router->post('/v1/customer/me/change-password', CustomerAuthController::class, 'changePassword', ['customer_auth']);
-        
+        // Moduli per-cliente in sospeso + invio (cliente autenticato)
+        $this->router->get('/v1/customer/{business_id}/customer-forms/pending', BookingFormsController::class, 'pendingCustomerForms', ['customer_auth']);
+        $this->router->post('/v1/customer/{business_id}/customer-forms/submit', BookingFormsController::class, 'submitCustomerForms', ['customer_auth', 'idempotency']);
+
         // Customer bookings (protected, uses client_id from customer JWT)
         $this->router->post('/v1/customer/{business_id}/bookings', BookingsController::class, 'storeCustomer', ['customer_auth', 'idempotency']);
         $this->router->get('/v1/customer/bookings', BookingsController::class, 'myCustomerBookings', ['customer_auth']);
@@ -555,7 +562,7 @@ final class Kernel
 
         // Customer Auth Use Cases
         $loginCustomer = new LoginCustomer($clientAuthRepo, $jwtService, $passwordHasher);
-        $registerCustomer = new RegisterCustomer($clientAuthRepo, $clientRepo, $jwtService, $passwordHasher);
+        $registerCustomer = new RegisterCustomer($clientAuthRepo, $clientRepo, $jwtService, $passwordHasher, $bookingFormRepo);
         $refreshCustomerToken = new RefreshCustomerToken($clientAuthRepo, $jwtService);
         $logoutCustomer = new LogoutCustomer($clientAuthRepo);
         $getCustomerMe = new GetCustomerMe($clientAuthRepo);

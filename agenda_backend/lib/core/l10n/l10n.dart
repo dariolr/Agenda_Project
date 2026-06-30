@@ -15031,6 +15031,106 @@ class L10n {
     );
   }
 
+  /// `Form type`
+  String get bookingFormsTypeLabel {
+    return Intl.message(
+      'Form type',
+      name: 'bookingFormsTypeLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Per booking`
+  String get bookingFormsTypePerBooking {
+    return Intl.message(
+      'Per booking',
+      name: 'bookingFormsTypePerBooking',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Per client`
+  String get bookingFormsTypePerClient {
+    return Intl.message(
+      'Per client',
+      name: 'bookingFormsTypePerClient',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Asked on every booking; answers are tied to the individual booking.`
+  String get bookingFormsTypePerBookingHint {
+    return Intl.message(
+      'Asked on every booking; answers are tied to the individual booking.',
+      name: 'bookingFormsTypePerBookingHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Asked once and tied to the client (at registration or at the first relevant booking).`
+  String get bookingFormsTypePerClientHint {
+    return Intl.message(
+      'Asked once and tied to the client (at registration or at the first relevant booking).',
+      name: 'bookingFormsTypePerClientHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `New clients at signup only`
+  String get bookingFormsRegistrationOnly {
+    return Intl.message(
+      'New clients at signup only',
+      name: 'bookingFormsRegistrationOnly',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `When on, the form is only asked to new clients during registration, not to already registered clients.`
+  String get bookingFormsRegistrationOnlyHint {
+    return Intl.message(
+      'When on, the form is only asked to new clients during registration, not to already registered clients.',
+      name: 'bookingFormsRegistrationOnlyHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Submitted forms`
+  String get clientFormsSectionTitle {
+    return Intl.message(
+      'Submitted forms',
+      name: 'clientFormsSectionTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Forms`
+  String get clientFormsTabLabel {
+    return Intl.message(
+      'Forms',
+      name: 'clientFormsTabLabel',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This client has not submitted any form.`
+  String get clientFormsEmpty {
+    return Intl.message(
+      'This client has not submitted any form.',
+      name: 'clientFormsEmpty',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Inactive forms are never shown online.`
   String get bookingFormsActiveHint {
     return Intl.message(

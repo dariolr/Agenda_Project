@@ -288,6 +288,105 @@ final class BookingFormsController
         ]);
     }
 
+    /**
+     * Moduli per-cliente da mostrare al signup (endpoint pubblico, non
+     * autenticato come login/register).
+     */
+    public function resolveRegistrationForms(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        if ($businessId <= 0) {
+            return Response::error('business_id is required', 'validation_error', 400, $request->traceId);
+        }
+
+        return Response::success([
+            'forms' => $this->bookingFormRepo->resolveRegistrationForms($businessId),
+        ]);
+    }
+
+    /**
+     * Moduli per-cliente ancora in sospeso per il cliente autenticato
+     * (business + eventuale sede). Usato all'avvio prenotazione.
+     */
+    public function pendingCustomerForms(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        $clientId = $this->clientId($request);
+        if ($clientId === null) {
+            return Response::unauthorized('Authentication required', $request->traceId);
+        }
+        $locationId = (int) ($request->queryParam('location_id') ?? 0);
+
+        return Response::success([
+            'forms' => $this->bookingFormRepo->resolvePendingCustomerForms(
+                $businessId,
+                $clientId,
+                $locationId > 0 ? $locationId : null,
+            ),
+        ]);
+    }
+
+    /**
+     * Salva le risposte ai moduli per-cliente per il cliente autenticato.
+     */
+    public function submitCustomerForms(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        $clientId = $this->clientId($request);
+        if ($clientId === null) {
+            return Response::unauthorized('Authentication required', $request->traceId);
+        }
+
+        $body = $this->body($request);
+        $submissions = $body['submissions'] ?? [];
+        if (!is_array($submissions)) {
+            return Response::error('submissions is required', 'validation_error', 422, $request->traceId);
+        }
+        $locationId = (int) ($body['location_id'] ?? 0);
+
+        try {
+            $this->bookingFormRepo->validateAndSaveCustomerSubmissions(
+                $businessId,
+                $clientId,
+                $locationId > 0 ? $locationId : null,
+                $submissions,
+            );
+        } catch (\Throwable $e) {
+            return Response::error($e->getMessage(), 'validation_error', 422, $request->traceId);
+        }
+
+        return Response::success([
+            'forms' => $this->bookingFormRepo->resolvePendingCustomerForms(
+                $businessId,
+                $clientId,
+                $locationId > 0 ? $locationId : null,
+            ),
+        ]);
+    }
+
+    /**
+     * Risposte ai moduli per-cliente di un cliente, per la scheda cliente del
+     * gestionale (sola lettura).
+     */
+    public function clientFormSubmissions(Request $request): Response
+    {
+        $businessId = (int) $request->getRouteParam('business_id');
+        $clientId = (int) $request->getRouteParam('client_id');
+        if (!$this->hasReadAccess($request, $businessId)) {
+            return Response::forbidden('Access denied', $request->traceId);
+        }
+
+        return Response::success([
+            'form_submissions' => $this->bookingFormRepo->getCustomerSubmissions($businessId, $clientId),
+        ]);
+    }
+
+    private function clientId(Request $request): ?int
+    {
+        $clientId = $request->getAttribute('client_id');
+        return $clientId !== null ? (int) $clientId : null;
+    }
+
     private function hasManageAccess(Request $request, int $businessId): bool
     {
         $userId = $this->userId($request);
