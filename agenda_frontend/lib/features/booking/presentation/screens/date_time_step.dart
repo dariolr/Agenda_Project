@@ -1,5 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
@@ -191,7 +191,8 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                 // Aggiunge padding bottom per footer fisso (~72px) +
                 // gesture bar Android + eventuale tastiera.
                 padding: EdgeInsets.only(
-                  bottom: MediaQuery.of(context).viewPadding.bottom +
+                  bottom:
+                      MediaQuery.of(context).viewPadding.bottom +
                       MediaQuery.of(context).viewInsets.bottom +
                       72 +
                       24,
@@ -211,7 +212,8 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                       // pallino (invece dello spinner) quando si salta a una
                       // data lontana non ancora coperta dal loader sequenziale.
                       selectedDateSlotsLoading: slotsAsync.isLoading,
-                      selectedDateHasSlots: slotsAsync.value?.isNotEmpty ?? false,
+                      selectedDateHasSlots:
+                          slotsAsync.value?.isNotEmpty ?? false,
                     ),
 
                     Padding(
@@ -232,21 +234,30 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(
-                                      Icons.event_busy,
-                                      size: 48,
-                                      color: theme.colorScheme.onSurface
-                                          .withOpacity(0.3),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Text(
-                                      l10n.dateTimeNoSlots,
-                                      textAlign: TextAlign.center,
-                                      style: theme.textTheme.bodyLarge
-                                          ?.copyWith(
-                                            color: theme.colorScheme.onSurface
-                                                .withOpacity(0.6),
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.event_busy,
+                                          size: 32,
+                                          color: theme.colorScheme.onSurface
+                                              .withOpacity(0.3),
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(
+                                            l10n.dateTimeNoSlots,
+                                            textAlign: TextAlign.center,
+                                            style: theme.textTheme.bodyLarge
+                                                ?.copyWith(
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withOpacity(0.6),
+                                                ),
                                           ),
+                                        ),
+                                      ],
                                     ),
                                     const SizedBox(height: 36),
                                     _buildGoToAvailableDateButton(
@@ -260,7 +271,8 @@ class _DateTimeStepState extends ConsumerState<DateTimeStep> {
                                       theme,
                                       // La prima data disponibile è ancora in
                                       // ricerca.
-                                      firstDateLoading: firstDateAsync.isLoading,
+                                      firstDateLoading:
+                                          firstDateAsync.isLoading,
                                     ),
                                   ],
                                 ),
@@ -853,8 +865,10 @@ class _HorizontalDateListState extends State<_HorizontalDateList> {
         final screenWidth = MediaQuery.of(context).size.width;
         final targetOffset =
             (idx * _itemExtent) - (screenWidth / 2) + (_itemExtent / 2);
-        final clamped =
-            targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent);
+        final clamped = targetOffset.clamp(
+          0.0,
+          _scrollController.position.maxScrollExtent,
+        );
         // Prima inizializzazione (da nessuna data alla prima disponibile):
         // posiziona istantaneamente per evitare il "salto" animato. Le
         // selezioni successive (navigazione utente) restano animate.
