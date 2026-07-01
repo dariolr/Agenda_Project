@@ -14571,6 +14571,26 @@ class L10n {
     );
   }
 
+  /// `Client forms`
+  String get customerFormsAdminTitle {
+    return Intl.message(
+      'Client forms',
+      name: 'customerFormsAdminTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Collect information and consent from the client once, at registration or at the first booking`
+  String get customerFormsAdminDescription {
+    return Intl.message(
+      'Collect information and consent from the client once, at registration or at the first booking',
+      name: 'customerFormsAdminDescription',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `New form`
   String get bookingFormsNew {
     return Intl.message(
@@ -14991,11 +15011,31 @@ class L10n {
     );
   }
 
+  /// `The form will no longer be asked to clients. Existing submissions remain in history.`
+  String get customerFormsDeleteMessage {
+    return Intl.message(
+      'The form will no longer be asked to clients. Existing submissions remain in history.',
+      name: 'customerFormsDeleteMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Configure the form, its fields and where it shows online.`
   String get bookingFormsEditorSubtitle {
     return Intl.message(
       'Configure the form, its fields and where it shows online.',
       name: 'bookingFormsEditorSubtitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Configure the form, its fields and when to ask the client.`
+  String get customerFormsEditorSubtitle {
+    return Intl.message(
+      'Configure the form, its fields and when to ask the client.',
+      name: 'customerFormsEditorSubtitle',
       desc: '',
       args: [],
     );
@@ -15036,56 +15076,6 @@ class L10n {
     return Intl.message(
       'Form details',
       name: 'bookingFormsModuleDetailsTitle',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Form type`
-  String get bookingFormsTypeLabel {
-    return Intl.message(
-      'Form type',
-      name: 'bookingFormsTypeLabel',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Per booking`
-  String get bookingFormsTypePerBooking {
-    return Intl.message(
-      'Per booking',
-      name: 'bookingFormsTypePerBooking',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Per client`
-  String get bookingFormsTypePerClient {
-    return Intl.message(
-      'Per client',
-      name: 'bookingFormsTypePerClient',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Asked on every booking; answers are tied to the individual booking.`
-  String get bookingFormsTypePerBookingHint {
-    return Intl.message(
-      'Asked on every booking; answers are tied to the individual booking.',
-      name: 'bookingFormsTypePerBookingHint',
-      desc: '',
-      args: [],
-    );
-  }
-
-  /// `Asked once and tied to the client (at registration or at the first relevant booking).`
-  String get bookingFormsTypePerClientHint {
-    return Intl.message(
-      'Asked once and tied to the client (at registration or at the first relevant booking).',
-      name: 'bookingFormsTypePerClientHint',
       desc: '',
       args: [],
     );
@@ -15151,6 +15141,16 @@ class L10n {
     );
   }
 
+  /// `Inactive forms are never asked.`
+  String get customerFormsActiveHint {
+    return Intl.message(
+      'Inactive forms are never asked.',
+      name: 'customerFormsActiveHint',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Inactive`
   String get bookingFormsStatusInactive {
     return Intl.message(
@@ -15181,6 +15181,26 @@ class L10n {
     );
   }
 
+  /// `Active for clients`
+  String get customerFormsStatusShown {
+    return Intl.message(
+      'Active for clients',
+      name: 'customerFormsStatusShown',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Not active for clients`
+  String get customerFormsStatusHidden {
+    return Intl.message(
+      'Not active for clients',
+      name: 'customerFormsStatusHidden',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `No active fields`
   String get bookingFormsWarningNoFields {
     return Intl.message(
@@ -15191,10 +15211,10 @@ class L10n {
     );
   }
 
-  /// `No visibility rules`
+  /// `You haven't set when to show it`
   String get bookingFormsWarningNoRules {
     return Intl.message(
-      'No visibility rules',
+      'You haven\'t set when to show it',
       name: 'bookingFormsWarningNoRules',
       desc: '',
       args: [],
@@ -15216,6 +15236,16 @@ class L10n {
     return Intl.message(
       'Won\'t be shown online',
       name: 'bookingFormsWontShowSummary',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Will never be asked`
+  String get customerFormsWontShowSummary {
+    return Intl.message(
+      'Will never be asked',
+      name: 'customerFormsWontShowSummary',
       desc: '',
       args: [],
     );
@@ -15321,100 +15351,130 @@ class L10n {
     );
   }
 
-  /// `Visibility rules`
+  /// `When to show it`
   String get bookingFormsRulesTitle {
     return Intl.message(
-      'Visibility rules',
+      'When to show it',
       name: 'bookingFormsRulesTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `Each rule defines when to show the form. All the conditions within the same rule must be met. To add another case, create a new rule.`
+  /// `When to ask it`
+  String get customerFormsRulesTitle {
+    return Intl.message(
+      'When to ask it',
+      name: 'customerFormsRulesTitle',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Each condition defines when to show the form. You can add several conditions: the form appears if at least one is met.`
   String get bookingFormsRulesGuide {
     return Intl.message(
-      'Each rule defines when to show the form. All the conditions within the same rule must be met. To add another case, create a new rule.',
+      'Each condition defines when to show the form. You can add several conditions: the form appears if at least one is met.',
       name: 'bookingFormsRulesGuide',
       desc: '',
       args: [],
     );
   }
 
-  /// `Without rules the form will never appear online.`
+  /// `Each condition defines who to ask the form to. You can add several conditions: the form is asked if at least one is met.`
+  String get customerFormsRulesGuide {
+    return Intl.message(
+      'Each condition defines who to ask the form to. You can add several conditions: the form is asked if at least one is met.',
+      name: 'customerFormsRulesGuide',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Without conditions the form will never appear online.`
   String get bookingFormsNoRulesHint {
     return Intl.message(
-      'Without rules the form will never appear online.',
+      'Without conditions the form will never appear online.',
       name: 'bookingFormsNoRulesHint',
       desc: '',
       args: [],
     );
   }
 
-  /// `Add rule`
+  /// `Will be asked to all clients.`
+  String get customerFormsAllClientsHint {
+    return Intl.message(
+      'Will be asked to all clients.',
+      name: 'customerFormsAllClientsHint',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Add condition`
   String get bookingFormsRuleAdd {
     return Intl.message(
-      'Add rule',
+      'Add condition',
       name: 'bookingFormsRuleAdd',
       desc: '',
       args: [],
     );
   }
 
-  /// `New rule`
+  /// `New condition`
   String get bookingFormsRuleBuilderTitle {
     return Intl.message(
-      'New rule',
+      'New condition',
       name: 'bookingFormsRuleBuilderTitle',
       desc: '',
       args: [],
     );
   }
 
-  /// `What does it apply to?`
+  /// `When to show the form?`
   String get bookingFormsRuleScopeQuestion {
     return Intl.message(
-      'What does it apply to?',
+      'When to show the form?',
       name: 'bookingFormsRuleScopeQuestion',
       desc: '',
       args: [],
     );
   }
 
-  /// `The whole business`
+  /// `All bookings`
   String get bookingFormsRuleScopeBusiness {
     return Intl.message(
-      'The whole business',
+      'All bookings',
       name: 'bookingFormsRuleScopeBusiness',
       desc: '',
       args: [],
     );
   }
 
-  /// `A location`
+  /// `Only one location`
   String get bookingFormsRuleScopeLocation {
     return Intl.message(
-      'A location',
+      'Only one location',
       name: 'bookingFormsRuleScopeLocation',
       desc: '',
       args: [],
     );
   }
 
-  /// `A category`
+  /// `Only one category`
   String get bookingFormsRuleScopeCategory {
     return Intl.message(
-      'A category',
+      'Only one category',
       name: 'bookingFormsRuleScopeCategory',
       desc: '',
       args: [],
     );
   }
 
-  /// `An appointment type`
+  /// `Only one appointment type`
   String get bookingFormsRuleScopeAppointment {
     return Intl.message(
-      'An appointment type',
+      'Only one appointment type',
       name: 'bookingFormsRuleScopeAppointment',
       desc: '',
       args: [],
@@ -15451,20 +15511,20 @@ class L10n {
     );
   }
 
-  /// `Narrow further (optional)`
+  /// `Limit to (optional)`
   String get bookingFormsRuleRefine {
     return Intl.message(
-      'Narrow further (optional)',
+      'Limit to (optional)',
       name: 'bookingFormsRuleRefine',
       desc: '',
       args: [],
     );
   }
 
-  /// `No restriction`
+  /// `No limit`
   String get bookingFormsRuleRefineNone {
     return Intl.message(
-      'No restriction',
+      'No limit',
       name: 'bookingFormsRuleRefineNone',
       desc: '',
       args: [],
@@ -15581,53 +15641,73 @@ class L10n {
     );
   }
 
-  /// `Location {location}`
+  /// `All clients`
+  String get customerFormsRuleBusiness {
+    return Intl.message(
+      'All clients',
+      name: 'customerFormsRuleBusiness',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `All bookings at {location}`
   String bookingFormsRuleLocationOnly(String location) {
     return Intl.message(
-      'Location $location',
+      'All bookings at $location',
       name: 'bookingFormsRuleLocationOnly',
       desc: '',
       args: [location],
     );
   }
 
-  /// `Category {category}`
+  /// `All clients of {location}`
+  String customerFormsRuleLocationOnly(String location) {
+    return Intl.message(
+      'All clients of $location',
+      name: 'customerFormsRuleLocationOnly',
+      desc: '',
+      args: [location],
+    );
+  }
+
+  /// `All bookings in category {category}`
   String bookingFormsRuleCategoryOnly(String category) {
     return Intl.message(
-      'Category $category',
+      'All bookings in category $category',
       name: 'bookingFormsRuleCategoryOnly',
       desc: '',
       args: [category],
     );
   }
 
-  /// `For {appointment}`
+  /// `All bookings for {appointment}`
   String bookingFormsRuleAppointmentOnly(String appointment) {
     return Intl.message(
-      'For $appointment',
+      'All bookings for $appointment',
       name: 'bookingFormsRuleAppointmentOnly',
       desc: '',
       args: [appointment],
     );
   }
 
-  /// `{category} at location {location}`
+  /// `All bookings in category {category} at {location}`
   String bookingFormsRuleCategoryInLocation(String category, String location) {
     return Intl.message(
-      '$category at location $location',
+      'All bookings in category $category at $location',
       name: 'bookingFormsRuleCategoryInLocation',
       desc: '',
       args: [category, location],
     );
   }
 
-  /// `{appointment} at location {location}`
+  /// `All bookings for {appointment} at {location}`
   String bookingFormsRuleAppointmentInLocation(
     String appointment,
     String location,
   ) {
     return Intl.message(
-      '$appointment at location $location',
+      'All bookings for $appointment at $location',
       name: 'bookingFormsRuleAppointmentInLocation',
       desc: '',
       args: [appointment, location],

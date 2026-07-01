@@ -140,7 +140,8 @@ final class BookingFormRepository
 
     public function updateForm(int $businessId, int $formId, array $data, ?int $userId): bool
     {
-        $allowed = ['title', 'description', 'internal_name', 'data_scope', 'registration_only', 'is_active', 'sort_order'];
+        // data_scope è immutabile dopo la creazione: non è aggiornabile.
+        $allowed = ['title', 'description', 'internal_name', 'registration_only', 'is_active', 'sort_order'];
         $fields = [];
         $params = [];
         foreach ($allowed as $key) {
@@ -154,8 +155,6 @@ final class BookingFormRepository
                 }
             } elseif (in_array($key, ['description', 'internal_name'], true)) {
                 $value = $this->nullableTrim($data[$key]);
-            } elseif ($key === 'data_scope') {
-                $value = $this->normalizeDataScope($data[$key]);
             } elseif (in_array($key, ['registration_only', 'is_active'], true)) {
                 $value = (int) (bool) $data[$key];
             } else {
@@ -680,6 +679,10 @@ final class BookingFormRepository
     /**
      * Moduli per-cliente attivi che matchano il contesto dato. Contesto vuoto
      * (registrazione) => matchano solo le regole business-level.
+     *
+     * Per i moduli per-cliente vale un default implicito: un modulo SENZA regole
+     * si applica a TUTTI i clienti (le regole servono solo a restringere a una
+     * sede). Per questo un modulo senza regole matcha sempre.
      */
     private function findActiveCustomerFormsForContext(int $businessId, array $context, bool $excludeRegistrationOnly): array
     {
@@ -710,11 +713,14 @@ final class BookingFormRepository
             if (empty($fieldsByForm[$id])) {
                 continue;
             }
-            if (!$this->formMatchesContext($rulesByForm[$id] ?? [], $context)) {
+            $rules = $rulesByForm[$id] ?? [];
+            // Nessuna regola => tutti i clienti (default implicito). Altrimenti
+            // deve matchare il contesto (business/sede).
+            if (!empty($rules) && !$this->formMatchesContext($rules, $context)) {
                 continue;
             }
             $form['fields'] = $fieldsByForm[$id];
-            $form['rules'] = $rulesByForm[$id] ?? [];
+            $form['rules'] = $rules;
             $result[] = $form;
         }
 

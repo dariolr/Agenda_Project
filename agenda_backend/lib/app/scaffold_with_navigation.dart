@@ -33,6 +33,7 @@ import '../features/agenda/providers/location_providers.dart';
 import '../features/agenda/providers/tenant_time_provider.dart';
 
 import '../features/auth/providers/auth_provider.dart';
+import '../features/booking_forms/domain/booking_form_models.dart';
 import '../features/booking_forms/presentation/booking_forms_screen.dart';
 import '../features/business/presentation/dialogs/invite_operator_dialog.dart';
 import '../features/business/presentation/dialogs/location_closure_dialog.dart';
@@ -176,6 +177,7 @@ class _ScaffoldWithNavigationState
     final isMoreLocations = currentPath == '/altro/sedi';
     final isMorePaymentMethods = currentPath == '/altro/metodi-pagamento';
     final isMoreBookingForms = currentPath == '/altro/booking-forms';
+    final isMoreCustomerForms = currentPath == '/altro/customer-forms';
     final isMoreBilling = currentPath == '/altro/abbonamento';
     final isMoreWhatsappBusiness = currentPath == '/altro/whatsapp-business';
     final hasAltroBack =
@@ -316,6 +318,12 @@ class _ScaffoldWithNavigationState
           actions.add(const _PaymentMethodsAddAction());
         } else if (isMoreBookingForms && canManageClosures) {
           actions.add(const _BookingFormsAddAction());
+        } else if (isMoreCustomerForms && canManageClosures) {
+          actions.add(
+            const _BookingFormsAddAction(
+              dataScope: BookingFormDataScope.perClient,
+            ),
+          );
         } else if (isBookingNotifications) {
           actions.add(_BookingNotificationsRefreshAction(ref: ref));
         } else if (isClosures && canManageClosures) {
@@ -497,6 +505,13 @@ class _ScaffoldWithNavigationState
         actions.add(const _PaymentMethodsAddAction(compact: true));
       } else if (isMoreBookingForms && canManageClosures) {
         actions.add(const _BookingFormsAddAction(compact: true));
+      } else if (isMoreCustomerForms && canManageClosures) {
+        actions.add(
+          const _BookingFormsAddAction(
+            compact: true,
+            dataScope: BookingFormDataScope.perClient,
+          ),
+        );
       } else if (isBookingNotifications) {
         actions.add(_BookingNotificationsRefreshAction(ref: ref));
       } else if (isClosures && canManageClosures) {
@@ -2409,8 +2424,12 @@ class _PaymentMethodsAddAction extends ConsumerWidget {
 }
 
 class _BookingFormsAddAction extends ConsumerWidget {
-  const _BookingFormsAddAction({this.compact = false});
+  const _BookingFormsAddAction({
+    this.compact = false,
+    this.dataScope = BookingFormDataScope.perBooking,
+  });
   final bool compact;
+  final BookingFormDataScope dataScope;
   static const double _actionButtonHeight = 40;
 
   @override
@@ -2426,7 +2445,8 @@ class _BookingFormsAddAction extends ConsumerWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 8),
       child: GestureDetector(
-        onTap: () => openBookingFormEditor(context, ref),
+        onTap: () =>
+            openBookingFormEditor(context, ref, dataScope: dataScope),
         child: Builder(
           builder: (buttonContext) {
             final scheme = Theme.of(buttonContext).colorScheme;

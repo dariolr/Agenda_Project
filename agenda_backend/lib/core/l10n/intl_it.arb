@@ -2168,6 +2168,8 @@
   "operatorsAccessibleStaff": "Membri del team accessibili",
   "bookingFormsAdminTitle": "Moduli prenotazione online",
   "bookingFormsAdminDescription": "Raccogli informazioni e consensi durante la prenotazione online",
+  "customerFormsAdminTitle": "Moduli cliente",
+  "customerFormsAdminDescription": "Raccogli informazioni e consensi dal cliente una volta sola, alla registrazione o alla prima prenotazione",
   "bookingFormsNew": "Nuovo modulo",
   "bookingFormsEmpty": "Nessun modulo configurato",
   "bookingFormsSelectHint": "Seleziona un modulo o creane uno nuovo",
@@ -2220,29 +2222,30 @@
   "bookingFormsAssignmentNoTargets": "Nessun elemento disponibile per questo ambito",
   "bookingFormsDeleteTitle": "Eliminare il modulo?",
   "bookingFormsDeleteMessage": "Il modulo non sarà più disponibile per le prenotazioni online. Le risposte già raccolte restano nello storico.",
+  "customerFormsDeleteMessage": "Il modulo non sarà più chiesto ai clienti. Le risposte già raccolte restano nello storico.",
   "bookingFormsEditorSubtitle": "Configura il modulo, i suoi campi e dove mostrarlo online.",
+  "customerFormsEditorSubtitle": "Configura il modulo, i suoi campi e quando chiederlo al cliente.",
   "bookingFormsStepForm": "Modulo",
   "bookingFormsStepFields": "Campi",
   "bookingFormsStepVisibility": "Visibilità",
   "bookingFormsModuleDetailsTitle": "Dettagli del modulo",
-  "bookingFormsTypeLabel": "Tipo di modulo",
-  "bookingFormsTypePerBooking": "Per prenotazione",
-  "bookingFormsTypePerClient": "Per cliente",
-  "bookingFormsTypePerBookingHint": "Richiesto a ogni prenotazione; le risposte sono associate alla singola prenotazione.",
-  "bookingFormsTypePerClientHint": "Richiesto una volta sola e associato al cliente (alla registrazione o alla prima prenotazione utile).",
   "bookingFormsRegistrationOnly": "Solo nuovi clienti alla registrazione",
   "bookingFormsRegistrationOnlyHint": "Se attivo, il modulo viene chiesto solo ai nuovi clienti al momento della registrazione e non ai clienti già registrati.",
   "clientFormsSectionTitle": "Moduli compilati",
   "clientFormsTabLabel": "Moduli",
   "clientFormsEmpty": "Nessun modulo compilato da questo cliente.",
   "bookingFormsActiveHint": "I moduli non attivi non vengono mai mostrati online.",
+  "customerFormsActiveHint": "I moduli non attivi non vengono mai chiesti.",
   "bookingFormsStatusInactive": "Non attivo",
   "bookingFormsStatusShown": "Visibile online",
   "bookingFormsStatusHidden": "Non visibile online",
+  "customerFormsStatusShown": "Attivo per i clienti",
+  "customerFormsStatusHidden": "Non attivo per i clienti",
   "bookingFormsWarningNoFields": "Nessun campo attivo",
-  "bookingFormsWarningNoRules": "Nessuna regola di visualizzazione",
+  "bookingFormsWarningNoRules": "Non hai indicato quando mostrarlo",
   "bookingFormsWarningInactive": "Modulo disattivato",
   "bookingFormsWontShowSummary": "Non verrà mostrato online",
+  "customerFormsWontShowSummary": "Non verrà mai chiesto",
   "bookingFormsFieldsEmpty": "Nessun campo. Aggiungi il primo per iniziare.",
   "bookingFormsFieldOptional": "Facoltativo",
   "bookingFormsFieldHelpText": "Testo di aiuto (facoltativo)",
@@ -2253,23 +2256,26 @@
   "bookingFormsWhereShownTitle": "Dove viene mostrato",
   "bookingFormsVisibilityBusinessWideHint": "Verrà mostrato in tutte le prenotazioni online.",
   "bookingFormsNoAssignmentsHint": "Senza assegnazioni il modulo non comparirà mai online.",
-  "bookingFormsRulesTitle": "Regole di visualizzazione",
-  "bookingFormsRulesGuide": "Ogni regola indica quando mostrare il modulo. Le condizioni inserite nella stessa regola devono essere tutte rispettate. Per aggiungere un altro caso, crea una nuova regola.",
-  "bookingFormsNoRulesHint": "Senza regole il modulo non comparirà mai online.",
-  "bookingFormsRuleAdd": "Aggiungi regola",
-  "bookingFormsRuleBuilderTitle": "Nuova regola",
-  "bookingFormsRuleScopeQuestion": "A cosa si applica?",
-  "bookingFormsRuleScopeBusiness": "Tutto il business",
-  "bookingFormsRuleScopeLocation": "Una sede",
-  "bookingFormsRuleScopeCategory": "Una categoria",
-  "bookingFormsRuleScopeAppointment": "Un tipo appuntamento",
+  "bookingFormsRulesTitle": "Quando mostrarlo",
+  "customerFormsRulesTitle": "Quando chiederlo",
+  "bookingFormsRulesGuide": "Ogni condizione indica quando mostrare il modulo. Puoi aggiungere più condizioni: il modulo appare se almeno una è soddisfatta.",
+  "customerFormsRulesGuide": "Ogni condizione indica a chi chiedere il modulo. Puoi aggiungere più condizioni: il modulo viene chiesto se almeno una è soddisfatta.",
+  "bookingFormsNoRulesHint": "Senza condizioni il modulo non comparirà mai online.",
+  "customerFormsAllClientsHint": "Verrà chiesto a tutti i clienti.",
+  "bookingFormsRuleAdd": "Aggiungi condizione",
+  "bookingFormsRuleBuilderTitle": "Nuova condizione",
+  "bookingFormsRuleScopeQuestion": "Quando mostrare il modulo?",
+  "bookingFormsRuleScopeBusiness": "Tutte le prenotazioni",
+  "bookingFormsRuleScopeLocation": "Solo una sede",
+  "bookingFormsRuleScopeCategory": "Solo una categoria",
+  "bookingFormsRuleScopeAppointment": "Solo un tipo di appuntamento",
   "bookingFormsRuleSelectLocation": "Sede",
   "bookingFormsRuleSelectCategory": "Categoria",
   "bookingFormsRuleSelectAppointment": "Tipo appuntamento",
-  "bookingFormsRuleRefine": "Restringi ulteriormente (facoltativo)",
-  "bookingFormsRuleRefineNone": "Nessuna restrizione",
+  "bookingFormsRuleRefine": "Limita a (facoltativo)",
+  "bookingFormsRuleRefineNone": "Nessun limite",
   "bookingFormsRuleRefineCategory": "A una categoria",
-  "bookingFormsRuleRefineAppointment": "A un tipo appuntamento",
+  "bookingFormsRuleRefineAppointment": "A un tipo di appuntamento",
   "bookingFormsRuleNoTargets": "Nessun elemento disponibile",
   "bookingFormsRulePackagesSection": "Pacchetti",
   "bookingFormsRuleLessonsSection": "Lezioni",
@@ -2286,7 +2292,8 @@
     }
   },
   "bookingFormsRuleBusiness": "Tutte le prenotazioni",
-  "bookingFormsRuleLocationOnly": "Sede {location}",
+  "customerFormsRuleBusiness": "Tutti i clienti",
+  "bookingFormsRuleLocationOnly": "Tutte le prenotazioni della sede {location}",
   "@bookingFormsRuleLocationOnly": {
     "placeholders": {
       "location": {
@@ -2294,7 +2301,15 @@
       }
     }
   },
-  "bookingFormsRuleCategoryOnly": "Categoria {category}",
+  "customerFormsRuleLocationOnly": "Tutti i clienti della sede {location}",
+  "@customerFormsRuleLocationOnly": {
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingFormsRuleCategoryOnly": "Tutte le prenotazioni della categoria {category}",
   "@bookingFormsRuleCategoryOnly": {
     "placeholders": {
       "category": {
@@ -2302,7 +2317,7 @@
       }
     }
   },
-  "bookingFormsRuleAppointmentOnly": "Per {appointment}",
+  "bookingFormsRuleAppointmentOnly": "Tutte le prenotazioni per {appointment}",
   "@bookingFormsRuleAppointmentOnly": {
     "placeholders": {
       "appointment": {
@@ -2310,7 +2325,7 @@
       }
     }
   },
-  "bookingFormsRuleCategoryInLocation": "{category} nella sede {location}",
+  "bookingFormsRuleCategoryInLocation": "Tutte le prenotazioni della categoria {category} nella sede {location}",
   "@bookingFormsRuleCategoryInLocation": {
     "placeholders": {
       "category": {
@@ -2321,7 +2336,7 @@
       }
     }
   },
-  "bookingFormsRuleAppointmentInLocation": "{appointment} nella sede {location}",
+  "bookingFormsRuleAppointmentInLocation": "Tutte le prenotazioni per {appointment} nella sede {location}",
   "@bookingFormsRuleAppointmentInLocation": {
     "placeholders": {
       "appointment": {

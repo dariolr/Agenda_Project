@@ -8,6 +8,7 @@ import '../features/agenda/presentation/agenda_screen.dart';
 import '../features/auth/presentation/profile_screen.dart';
 import '../features/auth/presentation/meta_whatsapp_callback_screen.dart';
 import '../features/auth/presentation/reset_password_screen.dart';
+import '../features/booking_forms/domain/booking_form_models.dart';
 import '../features/booking_forms/presentation/booking_forms_screen.dart';
 import '../features/bookings_list/presentation/bookings_list_screen.dart';
 import '../features/business/presentation/operators_screen.dart';
@@ -185,6 +186,13 @@ final GoRouter appRouter = GoRouter(
       parentNavigatorKey: _rootNavigatorKey,
       builder: (BuildContext context, GoRouterState state) =>
           const BookingFormsScreen(),
+    ),
+    GoRoute(
+      path: '/altro/customer-forms',
+      name: 'more-customer-forms',
+      parentNavigatorKey: _rootNavigatorKey,
+      builder: (BuildContext context, GoRouterState state) =>
+          const BookingFormsScreen(dataScope: BookingFormDataScope.perClient),
     ),
     GoRoute(
       path: '/altro/whatsapp-business',

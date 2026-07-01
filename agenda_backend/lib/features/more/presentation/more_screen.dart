@@ -110,6 +110,14 @@ class MoreScreen extends ConsumerWidget {
         ),
       if (canManageSettings)
         _MoreItem(
+          icon: Icons.badge_outlined,
+          title: l10n.customerFormsAdminTitle,
+          description: l10n.customerFormsAdminDescription,
+          color: const Color(0xFF7E57C2),
+          onTap: () => context.go(_withFromAltro('/altro/customer-forms')),
+        ),
+      if (canManageSettings)
+        _MoreItem(
           icon: Icons.chat_rounded,
           svgAssetPath: 'assets/icons/whatsapp.svg',
           svgInsetFactor: 0.0,

@@ -19,6 +19,7 @@ import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/providers/current_business_user_provider.dart';
 import '../features/billing/presentation/billing_screen.dart';
 import '../features/billing/providers/billing_provider.dart';
+import '../features/booking_forms/domain/booking_form_models.dart';
 import '../features/booking_forms/presentation/booking_forms_screen.dart';
 import '../features/booking_notifications/presentation/booking_notifications_screen.dart';
 import '../features/bookings_list/presentation/bookings_list_screen.dart';
@@ -345,6 +346,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           rlog('permission_guard_booking_forms', '/agenda');
           return '/agenda';
         }
+        if (path == '/altro/customer-forms' && !canManageBusinessSettings) {
+          rlog('permission_guard_customer_forms', '/agenda');
+          return '/agenda';
+        }
         if (path == '/permessi' && !canManageOperators) {
           rlog('permission_guard_permissions', '/agenda');
           return '/agenda';
@@ -559,6 +564,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                     name: 'more-booking-forms',
                     pageBuilder: (BuildContext context, GoRouterState state) =>
                         const NoTransitionPage(child: BookingFormsScreen()),
+                  ),
+                  GoRoute(
+                    path: 'customer-forms',
+                    name: 'more-customer-forms',
+                    pageBuilder: (BuildContext context, GoRouterState state) =>
+                        const NoTransitionPage(
+                          child: BookingFormsScreen(
+                            dataScope: BookingFormDataScope.perClient,
+                          ),
+                        ),
                   ),
                 ],
               ),

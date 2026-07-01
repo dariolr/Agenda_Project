@@ -33,12 +33,20 @@ import '../providers/booking_forms_provider.dart';
 // ============================================================================
 
 class BookingFormsScreen extends ConsumerWidget {
-  const BookingFormsScreen({super.key});
+  const BookingFormsScreen({
+    super.key,
+    this.dataScope = BookingFormDataScope.perBooking,
+  });
+
+  /// Tipo di moduli gestiti da questa schermata. Determina il filtro della
+  /// lista e il tipo dei nuovi moduli creati da qui (non è modificabile).
+  final BookingFormDataScope dataScope;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return _FormsListView(
-      onNew: () => openBookingFormEditor(context, ref),
+      dataScope: dataScope,
+      onNew: () => openBookingFormEditor(context, ref, dataScope: dataScope),
       onOpen: (form) => openBookingFormEditor(context, ref, formId: form.id),
     );
   }
@@ -52,9 +60,12 @@ Future<void> openBookingFormEditor(
   BuildContext context,
   WidgetRef ref, {
   int? formId,
+  BookingFormDataScope dataScope = BookingFormDataScope.perBooking,
 }) async {
   await Navigator.of(context, rootNavigator: true).push<void>(
-    MaterialPageRoute(builder: (_) => _FormEditorView(formId: formId)),
+    MaterialPageRoute(
+      builder: (_) => _FormEditorView(formId: formId, dataScope: dataScope),
+    ),
   );
   ref.invalidate(bookingFormsProvider);
 }
@@ -64,8 +75,13 @@ Future<void> openBookingFormEditor(
 // ============================================================================
 
 class _FormsListView extends ConsumerStatefulWidget {
-  const _FormsListView({required this.onNew, required this.onOpen});
+  const _FormsListView({
+    required this.dataScope,
+    required this.onNew,
+    required this.onOpen,
+  });
 
+  final BookingFormDataScope dataScope;
   final VoidCallback onNew;
   final ValueChanged<BookingForm> onOpen;
 
@@ -118,7 +134,13 @@ class _FormsListViewState extends ConsumerState<_FormsListView> {
       backgroundColor: theme.colorScheme.surfaceContainerLowest,
       body: SafeArea(
         child: formsAsync.when(
-          data: (forms) => _buildList(context, _order ?? forms),
+          data: (forms) => _buildList(
+            context,
+            _order ??
+                forms
+                    .where((form) => form.dataScope == widget.dataScope)
+                    .toList(),
+          ),
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (error, _) => Center(
             child: Text(
@@ -136,10 +158,15 @@ class _FormsListViewState extends ConsumerState<_FormsListView> {
   Widget _buildList(BuildContext context, List<BookingForm> forms) {
     final l10n = context.l10n;
     if (forms.isEmpty) {
+      final isPerClient = widget.dataScope == BookingFormDataScope.perClient;
       return _EmptyState(
-        icon: Icons.assignment_outlined,
+        icon: isPerClient
+            ? Icons.badge_outlined
+            : Icons.assignment_outlined,
         title: l10n.bookingFormsEmpty,
-        subtitle: l10n.bookingFormsAdminDescription,
+        subtitle: isPerClient
+            ? l10n.customerFormsAdminDescription
+            : l10n.bookingFormsAdminDescription,
         action: AppOutlinedActionButton(
           onPressed: widget.onNew,
           child: Text(l10n.bookingFormsNew),
@@ -180,12 +207,15 @@ class _FormsListViewState extends ConsumerState<_FormsListView> {
   Widget _buildCard(BuildContext context, BookingForm form, {int? index}) {
     final l10n = context.l10n;
     final theme = Theme.of(context);
+    final perClient = widget.dataScope == BookingFormDataScope.perClient;
     final fieldsCount = form.fieldsCount ?? form.fields.length;
     final rulesCount = form.rulesCount ?? form.rules.length;
     final reasons = <String>[
       if (!form.isActive) l10n.bookingFormsWarningInactive,
       if (fieldsCount == 0) l10n.bookingFormsWarningNoFields,
-      if (rulesCount == 0) l10n.bookingFormsWarningNoRules,
+      // Per i moduli cliente "nessuna condizione" = tutti i clienti: non è un
+      // problema, quindi nessun avviso.
+      if (rulesCount == 0 && !perClient) l10n.bookingFormsWarningNoRules,
     ];
     final shown = reasons.isEmpty;
 
@@ -244,12 +274,16 @@ class _FormsListViewState extends ConsumerState<_FormsListView> {
                 ),
               ),
               const SizedBox(width: 12),
-              _StatusChip(shown: shown, active: form.isActive),
+              _StatusChip(
+                shown: shown,
+                active: form.isActive,
+                perClient: perClient,
+              ),
             ],
           ),
           if (!shown) ...[
             const SizedBox(height: 12),
-            _WarningBanner(reasons: reasons),
+            _WarningBanner(reasons: reasons, perClient: perClient),
           ],
         ],
       ),
@@ -262,9 +296,16 @@ class _FormsListViewState extends ConsumerState<_FormsListView> {
 // ============================================================================
 
 class _FormEditorView extends ConsumerStatefulWidget {
-  const _FormEditorView({this.formId});
+  const _FormEditorView({
+    this.formId,
+    this.dataScope = BookingFormDataScope.perBooking,
+  });
 
   final int? formId;
+
+  /// Tipo del modulo per la creazione (immutabile). In modifica viene
+  /// sovrascritto dal valore caricato.
+  final BookingFormDataScope dataScope;
 
   @override
   ConsumerState<_FormEditorView> createState() => _FormEditorViewState();
@@ -276,7 +317,7 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
   final _internalNameController = TextEditingController();
 
   bool _isActive = true;
-  BookingFormDataScope _dataScope = BookingFormDataScope.perBooking;
+  late BookingFormDataScope _dataScope = widget.dataScope;
   bool _registrationOnly = false;
   bool _saving = false;
   bool _loading = false;
@@ -340,7 +381,8 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
       // venga mostrato online: un modulo solo-informativo è un caso valido.
       if (form == null || form.fields.isEmpty)
         l10n.bookingFormsWarningNoFields,
-      if (_draftRules.isEmpty) l10n.bookingFormsWarningNoRules,
+      // Per i moduli cliente "nessuna condizione" = tutti i clienti (valido).
+      if (_draftRules.isEmpty && !_isPerClient) l10n.bookingFormsWarningNoRules,
     ];
   }
 
@@ -364,7 +406,8 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
               'title': title,
               'description': _descriptionController.text.trim(),
               'internal_name': _internalNameController.text.trim(),
-              'data_scope': dataScopeToApi(_dataScope),
+              // Il tipo si imposta solo alla creazione: immutabile in modifica.
+              if (_form == null) 'data_scope': dataScopeToApi(_dataScope),
               'registration_only': _isPerClient && _registrationOnly,
               'is_active': _isActive,
             },
@@ -392,7 +435,11 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
     final confirmed = await showConfirmDialog(
       context,
       title: Text(context.l10n.bookingFormsDeleteTitle),
-      content: Text(context.l10n.bookingFormsDeleteMessage),
+      content: Text(
+        _isPerClient
+            ? context.l10n.customerFormsDeleteMessage
+            : context.l10n.bookingFormsDeleteMessage,
+      ),
       confirmLabel: context.l10n.actionDelete,
       cancelLabel: context.l10n.actionCancel,
       danger: true,
@@ -592,7 +639,9 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
           const SizedBox(height: 12),
           // Riga 2: sottotitolo (interamente leggibile)
           Text(
-            l10n.bookingFormsEditorSubtitle,
+            _isPerClient
+                ? l10n.customerFormsEditorSubtitle
+                : l10n.bookingFormsEditorSubtitle,
             style: theme.textTheme.bodyMedium?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),
@@ -601,7 +650,11 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
           if (_form != null) ...[
             const SizedBox(height: 20),
             Center(
-              child: _StatusChip(shown: shown, active: _isActive),
+              child: _StatusChip(
+                shown: shown,
+                active: _isActive,
+                perClient: _isPerClient,
+              ),
             ),
           ],
         ],
@@ -630,7 +683,11 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
       padding: const EdgeInsets.fromLTRB(24, 4, 24, 32),
       children: [
         if (reasons.isNotEmpty) ...[
-          _WarningBanner(reasons: reasons, dense: false),
+          _WarningBanner(
+            reasons: reasons,
+            dense: false,
+            perClient: _isPerClient,
+          ),
           const SizedBox(height: 16),
         ],
         _SectionCard(
@@ -664,41 +721,8 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
                   decoration: _fieldDecoration(context),
                 ),
               ),
-              const SizedBox(height: 16),
-              LabeledFormField(
-                label: l10n.bookingFormsTypeLabel,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SegmentedButton<BookingFormDataScope>(
-                      segments: [
-                        ButtonSegment(
-                          value: BookingFormDataScope.perBooking,
-                          label: Text(l10n.bookingFormsTypePerBooking),
-                          icon: const Icon(Icons.event_available_outlined),
-                        ),
-                        ButtonSegment(
-                          value: BookingFormDataScope.perClient,
-                          label: Text(l10n.bookingFormsTypePerClient),
-                          icon: const Icon(Icons.person_outline),
-                        ),
-                      ],
-                      selected: {_dataScope},
-                      onSelectionChanged: (selection) =>
-                          setState(() => _dataScope = selection.first),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      _isPerClient
-                          ? l10n.bookingFormsTypePerClientHint
-                          : l10n.bookingFormsTypePerBookingHint,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // Il tipo di modulo è fissato dalla sezione da cui si crea
+              // (Moduli prenotazione / Moduli cliente) e non è modificabile.
               if (_isPerClient) ...[
                 const _SectionSpacer(),
                 Row(
@@ -746,7 +770,9 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          l10n.bookingFormsActiveHint,
+                          _isPerClient
+                              ? l10n.customerFormsActiveHint
+                              : l10n.bookingFormsActiveHint,
                           style: theme.textTheme.bodySmall?.copyWith(
                             color: theme.colorScheme.onSurfaceVariant,
                           ),
@@ -990,7 +1016,9 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  l10n.bookingFormsRulesGuide,
+                  _isPerClient
+                      ? l10n.customerFormsRulesGuide
+                      : l10n.bookingFormsRulesGuide,
                   style: theme.textTheme.bodySmall?.copyWith(
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
@@ -1002,16 +1030,26 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
         const SizedBox(height: 16),
         _SectionCard(
           icon: Icons.rule_folder_outlined,
-          title: l10n.bookingFormsRulesTitle,
+          title: _isPerClient
+              ? l10n.customerFormsRulesTitle
+              : l10n.bookingFormsRulesTitle,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               if (_draftRules.isEmpty)
-                const _InlineNotice(
-                  icon: Icons.warning_amber_rounded,
-                  messageKey: _NoticeMessage.noRules,
-                  tone: _NoticeTone.warning,
-                )
+                // Moduli cliente: senza condizioni = tutti i clienti (default
+                // implicito, nessun avviso). Moduli prenotazione: avviso.
+                _isPerClient
+                    ? const _InlineNotice(
+                        icon: Icons.check_circle_outline,
+                        messageKey: _NoticeMessage.allClients,
+                        tone: _NoticeTone.positive,
+                      )
+                    : const _InlineNotice(
+                        icon: Icons.warning_amber_rounded,
+                        messageKey: _NoticeMessage.noRules,
+                        tone: _NoticeTone.warning,
+                      )
               else
                 for (var i = 0; i < _draftRules.length; i++) ...[
                   if (i > 0) const SizedBox(height: 8),
@@ -1025,21 +1063,25 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
                           },
                   ),
                 ],
-              const SizedBox(height: 16),
-              Align(
-                alignment: Alignment.centerLeft,
-                child: AppOutlinedActionButton(
-                  onPressed: _saving ? null : () => _addRule(targets),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.add, size: 20),
-                      const SizedBox(width: 8),
-                      Text(l10n.bookingFormsRuleAdd),
-                    ],
+              // Per i moduli cliente la condizione serve solo a restringere a
+              // una sede: ha senso aggiungerla solo se le sedi sono almeno 2.
+              if (!_isPerClient || locations.length >= 2) ...[
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: AppOutlinedActionButton(
+                    onPressed: _saving ? null : () => _addRule(targets),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.add, size: 20),
+                        const SizedBox(width: 8),
+                        Text(l10n.bookingFormsRuleAdd),
+                      ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -1084,7 +1126,7 @@ class _FormEditorViewState extends ConsumerState<_FormEditorView> {
     BookingFormRule rule,
     _VisibilityTargets targets,
   ) {
-    return _ruleSentenceText(context, rule, targets);
+    return _ruleSentenceText(context, rule, targets, perClient: _isPerClient);
   }
 
   _VisibilityTargets _buildVisibilityTargets({
@@ -1193,8 +1235,9 @@ class _AppointmentTarget {
 String _ruleSentenceText(
   BuildContext context,
   BookingFormRule rule,
-  _VisibilityTargets targets,
-) {
+  _VisibilityTargets targets, {
+  bool perClient = false,
+}) {
   final l10n = context.l10n;
   String? locationLabel;
   String? categoryLabel;
@@ -1218,7 +1261,11 @@ String _ruleSentenceText(
     }
   }
 
-  if (hasBusiness) return l10n.bookingFormsRuleBusiness;
+  if (hasBusiness) {
+    return perClient
+        ? l10n.customerFormsRuleBusiness
+        : l10n.bookingFormsRuleBusiness;
+  }
   if (locationLabel != null && categoryLabel != null) {
     return l10n.bookingFormsRuleCategoryInLocation(categoryLabel, locationLabel);
   }
@@ -1229,7 +1276,9 @@ String _ruleSentenceText(
     );
   }
   if (locationLabel != null) {
-    return l10n.bookingFormsRuleLocationOnly(locationLabel);
+    return perClient
+        ? l10n.customerFormsRuleLocationOnly(locationLabel)
+        : l10n.bookingFormsRuleLocationOnly(locationLabel);
   }
   if (categoryLabel != null) {
     return l10n.bookingFormsRuleCategoryOnly(categoryLabel);
@@ -1237,7 +1286,9 @@ String _ruleSentenceText(
   if (appointmentLabel != null) {
     return l10n.bookingFormsRuleAppointmentOnly(appointmentLabel);
   }
-  return l10n.bookingFormsRuleBusiness;
+  return perClient
+      ? l10n.customerFormsRuleBusiness
+      : l10n.bookingFormsRuleBusiness;
 }
 
 String? _targetLabel(List<_AssignmentTarget> list, int? id) {
@@ -1427,10 +1478,15 @@ class _LeadingIcon extends StatelessWidget {
 }
 
 class _StatusChip extends StatelessWidget {
-  const _StatusChip({required this.shown, required this.active});
+  const _StatusChip({
+    required this.shown,
+    required this.active,
+    this.perClient = false,
+  });
 
   final bool shown;
   final bool active;
+  final bool perClient;
 
   @override
   Widget build(BuildContext context) {
@@ -1445,11 +1501,15 @@ class _StatusChip extends StatelessWidget {
       icon = Icons.pause_circle_outline;
     } else if (shown) {
       color = const Color(0xFF2E7D32);
-      label = l10n.bookingFormsStatusShown;
+      label = perClient
+          ? l10n.customerFormsStatusShown
+          : l10n.bookingFormsStatusShown;
       icon = Icons.check_circle_outline;
     } else {
       color = const Color(0xFFC62828);
-      label = l10n.bookingFormsStatusHidden;
+      label = perClient
+          ? l10n.customerFormsStatusHidden
+          : l10n.bookingFormsStatusHidden;
       icon = Icons.visibility_off_outlined;
     }
     return Container(
@@ -1477,10 +1537,15 @@ class _StatusChip extends StatelessWidget {
 }
 
 class _WarningBanner extends StatelessWidget {
-  const _WarningBanner({required this.reasons, this.dense = true});
+  const _WarningBanner({
+    required this.reasons,
+    this.dense = true,
+    this.perClient = false,
+  });
 
   final List<String> reasons;
   final bool dense;
+  final bool perClient;
 
   @override
   Widget build(BuildContext context) {
@@ -1505,7 +1570,9 @@ class _WarningBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  l10n.bookingFormsWontShowSummary,
+                  perClient
+                      ? l10n.customerFormsWontShowSummary
+                      : l10n.bookingFormsWontShowSummary,
                   style: theme.textTheme.labelLarge?.copyWith(
                     color: color,
                     fontWeight: FontWeight.w700,
@@ -1527,7 +1594,7 @@ class _WarningBanner extends StatelessWidget {
 
 enum _NoticeTone { positive, warning }
 
-enum _NoticeMessage { noRules }
+enum _NoticeMessage { noRules, allClients }
 
 class _InlineNotice extends StatelessWidget {
   const _InlineNotice({
@@ -1549,6 +1616,7 @@ class _InlineNotice extends StatelessWidget {
         : const Color(0xFFB26A00);
     final message = switch (messageKey) {
       _NoticeMessage.noRules => l10n.bookingFormsNoRulesHint,
+      _NoticeMessage.allClients => l10n.customerFormsAllClientsHint,
     };
     return Container(
       width: double.infinity,
@@ -1641,7 +1709,9 @@ class _RuleBuilderDialog extends StatefulWidget {
 }
 
 class _RuleBuilderDialogState extends State<_RuleBuilderDialog> {
-  String _scope = 'business';
+  // Per i moduli cliente l'unica condizione possibile è la sede (business è il
+  // default implicito, quindi non è un'opzione).
+  late String _scope = widget.perClient ? 'location' : 'business';
   int? _locationId;
   int? _categoryId;
   String _refine = 'none';
@@ -1826,31 +1896,41 @@ class _RuleBuilderDialogState extends State<_RuleBuilderDialog> {
     // I moduli per-cliente ammettono solo business e sede.
     final hasCategories = targets.categories.isNotEmpty && !widget.perClient;
     final hasAppointments = targets.appointments.isNotEmpty && !widget.perClient;
+    // La sede come ambito ha senso solo con più sedi: con una sola sede,
+    // "business" e "quella sede" coincidono, quindi basta il business.
+    final hasMultipleLocations = targets.locations.length >= 2;
+    // La restrizione ("ulteriore restrizione") ha senso solo se esistono
+    // categorie o tipi appuntamento su cui restringere.
+    final hasRefinements = hasCategories || hasAppointments;
 
     return AppFormScaffold(
       title: Text(l10n.bookingFormsRuleBuilderTitle),
       content: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          LabeledFormField(
-            label: l10n.bookingFormsRuleScopeQuestion,
-            child: Column(
-              children: [
-                _scopeTile('business', l10n.bookingFormsRuleScopeBusiness),
-                _scopeTile('location', l10n.bookingFormsRuleScopeLocation),
-                if (hasCategories)
-                  _scopeTile(
-                    'service_category',
-                    l10n.bookingFormsRuleScopeCategory,
-                  ),
-                if (hasAppointments)
-                  _scopeTile(
-                    'appointment',
-                    l10n.bookingFormsRuleScopeAppointment,
-                  ),
-              ],
+          // Moduli cliente: business è il default implicito e la sola opzione
+          // è "una sede", quindi salto la domanda-ambito e vado alla sede.
+          if (!widget.perClient)
+            LabeledFormField(
+              label: l10n.bookingFormsRuleScopeQuestion,
+              child: Column(
+                children: [
+                  _scopeTile('business', l10n.bookingFormsRuleScopeBusiness),
+                  if (hasMultipleLocations)
+                    _scopeTile('location', l10n.bookingFormsRuleScopeLocation),
+                  if (hasCategories)
+                    _scopeTile(
+                      'service_category',
+                      l10n.bookingFormsRuleScopeCategory,
+                    ),
+                  if (hasAppointments)
+                    _scopeTile(
+                      'appointment',
+                      l10n.bookingFormsRuleScopeAppointment,
+                    ),
+                ],
+              ),
             ),
-          ),
           if (_scope == 'location') ...[
             const SizedBox(height: 16),
             LabeledFormField(
@@ -1874,25 +1954,27 @@ class _RuleBuilderDialogState extends State<_RuleBuilderDialog> {
                 }),
               ),
             ),
-            const SizedBox(height: 16),
-            LabeledFormField(
-              label: l10n.bookingFormsRuleRefine,
-              child: Column(
-                children: [
-                  _refineTile('none', l10n.bookingFormsRuleRefineNone),
-                  if (hasCategories)
-                    _refineTile(
-                      'service_category',
-                      l10n.bookingFormsRuleRefineCategory,
-                    ),
-                  if (hasAppointments)
-                    _refineTile(
-                      'appointment',
-                      l10n.bookingFormsRuleRefineAppointment,
-                    ),
-                ],
+            if (hasRefinements) ...[
+              const SizedBox(height: 16),
+              LabeledFormField(
+                label: l10n.bookingFormsRuleRefine,
+                child: Column(
+                  children: [
+                    _refineTile('none', l10n.bookingFormsRuleRefineNone),
+                    if (hasCategories)
+                      _refineTile(
+                        'service_category',
+                        l10n.bookingFormsRuleRefineCategory,
+                      ),
+                    if (hasAppointments)
+                      _refineTile(
+                        'appointment',
+                        l10n.bookingFormsRuleRefineAppointment,
+                      ),
+                  ],
+                ),
               ),
-            ),
+            ],
             if (_refine == 'service_category') ...[
               const SizedBox(height: 12),
               _categoryDropdown(context, _categoriesForLocation()),
@@ -1928,6 +2010,7 @@ class _RuleBuilderDialogState extends State<_RuleBuilderDialog> {
             _RulesPreview(
               rules: _draftRules(),
               targets: targets,
+              perClient: widget.perClient,
             ),
           ],
         ],
@@ -2034,10 +2117,15 @@ class _RuleBuilderDialogState extends State<_RuleBuilderDialog> {
 /// sfondo alternato, sezione Pacchetti, sezione Lezioni e servizi per categoria.
 /// Anteprima delle regole che verranno create dalla selezione corrente.
 class _RulesPreview extends StatelessWidget {
-  const _RulesPreview({required this.rules, required this.targets});
+  const _RulesPreview({
+    required this.rules,
+    required this.targets,
+    this.perClient = false,
+  });
 
   final List<BookingFormRule> rules;
   final _VisibilityTargets targets;
+  final bool perClient;
 
   @override
   Widget build(BuildContext context) {
@@ -2066,7 +2154,12 @@ class _RulesPreview extends StatelessWidget {
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    _ruleSentenceText(context, rules[i], targets),
+                    _ruleSentenceText(
+                      context,
+                      rules[i],
+                      targets,
+                      perClient: perClient,
+                    ),
                     style: theme.textTheme.bodyMedium?.copyWith(
                       fontWeight: FontWeight.w600,
                       color: theme.colorScheme.primary,

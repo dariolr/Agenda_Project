@@ -2168,6 +2168,8 @@
   "operatorsAccessibleStaff": "Accessible team members",
   "bookingFormsAdminTitle": "Online booking forms",
   "bookingFormsAdminDescription": "Collect information and consent during online booking",
+  "customerFormsAdminTitle": "Client forms",
+  "customerFormsAdminDescription": "Collect information and consent from the client once, at registration or at the first booking",
   "bookingFormsNew": "New form",
   "bookingFormsEmpty": "No forms configured",
   "bookingFormsSelectHint": "Select a form or create a new one",
@@ -2220,29 +2222,30 @@
   "bookingFormsAssignmentNoTargets": "No targets available for this scope",
   "bookingFormsDeleteTitle": "Delete form?",
   "bookingFormsDeleteMessage": "The form will no longer be available for online bookings. Existing submissions remain in history.",
+  "customerFormsDeleteMessage": "The form will no longer be asked to clients. Existing submissions remain in history.",
   "bookingFormsEditorSubtitle": "Configure the form, its fields and where it shows online.",
+  "customerFormsEditorSubtitle": "Configure the form, its fields and when to ask the client.",
   "bookingFormsStepForm": "Form",
   "bookingFormsStepFields": "Fields",
   "bookingFormsStepVisibility": "Visibility",
   "bookingFormsModuleDetailsTitle": "Form details",
-  "bookingFormsTypeLabel": "Form type",
-  "bookingFormsTypePerBooking": "Per booking",
-  "bookingFormsTypePerClient": "Per client",
-  "bookingFormsTypePerBookingHint": "Asked on every booking; answers are tied to the individual booking.",
-  "bookingFormsTypePerClientHint": "Asked once and tied to the client (at registration or at the first relevant booking).",
   "bookingFormsRegistrationOnly": "New clients at signup only",
   "bookingFormsRegistrationOnlyHint": "When on, the form is only asked to new clients during registration, not to already registered clients.",
   "clientFormsSectionTitle": "Submitted forms",
   "clientFormsTabLabel": "Forms",
   "clientFormsEmpty": "This client has not submitted any form.",
   "bookingFormsActiveHint": "Inactive forms are never shown online.",
+  "customerFormsActiveHint": "Inactive forms are never asked.",
   "bookingFormsStatusInactive": "Inactive",
   "bookingFormsStatusShown": "Shown online",
   "bookingFormsStatusHidden": "Not shown online",
+  "customerFormsStatusShown": "Active for clients",
+  "customerFormsStatusHidden": "Not active for clients",
   "bookingFormsWarningNoFields": "No active fields",
-  "bookingFormsWarningNoRules": "No visibility rules",
+  "bookingFormsWarningNoRules": "You haven't set when to show it",
   "bookingFormsWarningInactive": "Form disabled",
   "bookingFormsWontShowSummary": "Won't be shown online",
+  "customerFormsWontShowSummary": "Will never be asked",
   "bookingFormsFieldsEmpty": "No fields yet. Add the first one to get started.",
   "bookingFormsFieldOptional": "Optional",
   "bookingFormsFieldHelpText": "Help text (optional)",
@@ -2253,21 +2256,24 @@
   "bookingFormsWhereShownTitle": "Where it shows",
   "bookingFormsVisibilityBusinessWideHint": "It will be shown in every online booking.",
   "bookingFormsNoAssignmentsHint": "Without assignments the form will never appear online.",
-  "bookingFormsRulesTitle": "Visibility rules",
-  "bookingFormsRulesGuide": "Each rule defines when to show the form. All the conditions within the same rule must be met. To add another case, create a new rule.",
-  "bookingFormsNoRulesHint": "Without rules the form will never appear online.",
-  "bookingFormsRuleAdd": "Add rule",
-  "bookingFormsRuleBuilderTitle": "New rule",
-  "bookingFormsRuleScopeQuestion": "What does it apply to?",
-  "bookingFormsRuleScopeBusiness": "The whole business",
-  "bookingFormsRuleScopeLocation": "A location",
-  "bookingFormsRuleScopeCategory": "A category",
-  "bookingFormsRuleScopeAppointment": "An appointment type",
+  "bookingFormsRulesTitle": "When to show it",
+  "customerFormsRulesTitle": "When to ask it",
+  "bookingFormsRulesGuide": "Each condition defines when to show the form. You can add several conditions: the form appears if at least one is met.",
+  "customerFormsRulesGuide": "Each condition defines who to ask the form to. You can add several conditions: the form is asked if at least one is met.",
+  "bookingFormsNoRulesHint": "Without conditions the form will never appear online.",
+  "customerFormsAllClientsHint": "Will be asked to all clients.",
+  "bookingFormsRuleAdd": "Add condition",
+  "bookingFormsRuleBuilderTitle": "New condition",
+  "bookingFormsRuleScopeQuestion": "When to show the form?",
+  "bookingFormsRuleScopeBusiness": "All bookings",
+  "bookingFormsRuleScopeLocation": "Only one location",
+  "bookingFormsRuleScopeCategory": "Only one category",
+  "bookingFormsRuleScopeAppointment": "Only one appointment type",
   "bookingFormsRuleSelectLocation": "Location",
   "bookingFormsRuleSelectCategory": "Category",
   "bookingFormsRuleSelectAppointment": "Appointment type",
-  "bookingFormsRuleRefine": "Narrow further (optional)",
-  "bookingFormsRuleRefineNone": "No restriction",
+  "bookingFormsRuleRefine": "Limit to (optional)",
+  "bookingFormsRuleRefineNone": "No limit",
   "bookingFormsRuleRefineCategory": "To a category",
   "bookingFormsRuleRefineAppointment": "To an appointment type",
   "bookingFormsRuleNoTargets": "No items available",
@@ -2286,7 +2292,8 @@
     }
   },
   "bookingFormsRuleBusiness": "All bookings",
-  "bookingFormsRuleLocationOnly": "Location {location}",
+  "customerFormsRuleBusiness": "All clients",
+  "bookingFormsRuleLocationOnly": "All bookings at {location}",
   "@bookingFormsRuleLocationOnly": {
     "placeholders": {
       "location": {
@@ -2294,7 +2301,15 @@
       }
     }
   },
-  "bookingFormsRuleCategoryOnly": "Category {category}",
+  "customerFormsRuleLocationOnly": "All clients of {location}",
+  "@customerFormsRuleLocationOnly": {
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "bookingFormsRuleCategoryOnly": "All bookings in category {category}",
   "@bookingFormsRuleCategoryOnly": {
     "placeholders": {
       "category": {
@@ -2302,7 +2317,7 @@
       }
     }
   },
-  "bookingFormsRuleAppointmentOnly": "For {appointment}",
+  "bookingFormsRuleAppointmentOnly": "All bookings for {appointment}",
   "@bookingFormsRuleAppointmentOnly": {
     "placeholders": {
       "appointment": {
@@ -2310,7 +2325,7 @@
       }
     }
   },
-  "bookingFormsRuleCategoryInLocation": "{category} at location {location}",
+  "bookingFormsRuleCategoryInLocation": "All bookings in category {category} at {location}",
   "@bookingFormsRuleCategoryInLocation": {
     "placeholders": {
       "category": {
@@ -2321,7 +2336,7 @@
       }
     }
   },
-  "bookingFormsRuleAppointmentInLocation": "{appointment} at location {location}",
+  "bookingFormsRuleAppointmentInLocation": "All bookings for {appointment} at {location}",
   "@bookingFormsRuleAppointmentInLocation": {
     "placeholders": {
       "appointment": {
