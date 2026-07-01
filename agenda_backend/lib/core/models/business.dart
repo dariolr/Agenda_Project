@@ -17,6 +17,9 @@ class Business {
   final String? suspensionMessage; // Messaggio da mostrare quando sospeso
   final String? userRole; // Ruolo dell'utente corrente nel business
   final String? userScopeType; // Scope dell'utente corrente nel business
+  final bool billingEnabled; // Abbonamento attivo per il business
+  final int? billingAmountCents; // Ammontare periodico in centesimi
+  final String? subscriptionStatus; // Stato abbonamento (active, past_due, ...)
 
   const Business({
     required this.id,
@@ -37,6 +40,9 @@ class Business {
     this.suspensionMessage,
     this.userRole,
     this.userScopeType,
+    this.billingEnabled = false,
+    this.billingAmountCents,
+    this.subscriptionStatus,
   });
 
   Business copyWith({
@@ -58,6 +64,9 @@ class Business {
     String? suspensionMessage,
     String? userRole,
     String? userScopeType,
+    bool? billingEnabled,
+    int? billingAmountCents,
+    String? subscriptionStatus,
   }) {
     return Business(
       id: id ?? this.id,
@@ -81,6 +90,9 @@ class Business {
       suspensionMessage: suspensionMessage ?? this.suspensionMessage,
       userRole: userRole ?? this.userRole,
       userScopeType: userScopeType ?? this.userScopeType,
+      billingEnabled: billingEnabled ?? this.billingEnabled,
+      billingAmountCents: billingAmountCents ?? this.billingAmountCents,
+      subscriptionStatus: subscriptionStatus ?? this.subscriptionStatus,
     );
   }
 
@@ -109,6 +121,10 @@ class Business {
       suspensionMessage: json['suspension_message'] as String?,
       userRole: json['user_role'] as String?,
       userScopeType: json['user_scope_type'] as String?,
+      billingEnabled:
+          json['billing_enabled'] == true || json['billing_enabled'] == 1,
+      billingAmountCents: (json['amount_cents'] as num?)?.toInt(),
+      subscriptionStatus: json['subscription_status'] as String?,
     );
   }
 
@@ -132,6 +148,9 @@ class Business {
       'suspension_message': suspensionMessage,
       'user_role': userRole,
       'user_scope_type': userScopeType,
+      'billing_enabled': billingEnabled,
+      if (billingAmountCents != null) 'amount_cents': billingAmountCents,
+      'subscription_status': subscriptionStatus,
     };
   }
 }

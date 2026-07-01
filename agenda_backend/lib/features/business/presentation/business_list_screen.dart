@@ -12,6 +12,7 @@ import '../../../core/l10n/l10_extension.dart';
 import '../../../core/models/business.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/utils/initials_utils.dart';
+import '../../../core/utils/price_utils.dart';
 import '../../../core/widgets/app_bottom_sheet.dart';
 import '../../../core/widgets/feedback_dialog.dart';
 import '../../agenda/providers/business_providers.dart';
@@ -88,6 +89,7 @@ class BusinessListScreen extends ConsumerWidget {
           final orderedBusinesses = sortBusinessesForSelection(businesses);
           return Column(
             children: [
+              _BillingTotalsBar(businesses: orderedBusinesses),
               Expanded(
                 child: _BusinessList(
                   businesses: orderedBusinesses,
@@ -584,6 +586,113 @@ class BusinessListScreen extends ConsumerWidget {
   }
 }
 
+/// Barra riepilogo importi abbonamenti: totale, totale in regola (verde),
+/// totale non pagato (rosso). Mostrata sopra la lista business.
+class _BillingTotalsBar extends StatelessWidget {
+  const _BillingTotalsBar({required this.businesses});
+
+  final List<Business> businesses;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+
+    var totalCents = 0;
+    var greenCents = 0;
+    var redCents = 0;
+    var currency = 'EUR';
+
+    for (final b in businesses) {
+      if (!b.billingEnabled || b.billingAmountCents == null) continue;
+      final cents = b.billingAmountCents!;
+      totalCents += cents;
+      if (b.subscriptionStatus == 'active') {
+        greenCents += cents;
+      } else {
+        redCents += cents;
+      }
+      currency = b.currency;
+    }
+
+    if (totalCents == 0) return const SizedBox.shrink();
+
+    String fmt(int cents) => PriceFormatter.format(
+      context: context,
+      amount: cents / 100,
+      currencyCode: currency,
+    );
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 6),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        alignment: WrapAlignment.center,
+        children: [
+          _totalChip(
+            theme: theme,
+            label: 'Totale',
+            value: fmt(totalCents),
+            color: colorScheme.onSurfaceVariant,
+            background: colorScheme.surfaceContainerHighest,
+          ),
+          _totalChip(
+            theme: theme,
+            label: 'In regola',
+            value: fmt(greenCents),
+            color: Colors.green.shade700,
+            background: Colors.green.withValues(alpha: 0.15),
+          ),
+          _totalChip(
+            theme: theme,
+            label: 'Non pagato',
+            value: fmt(redCents),
+            color: Colors.red.shade700,
+            background: Colors.red.withValues(alpha: 0.15),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _totalChip({
+    required ThemeData theme,
+    required String label,
+    required String value,
+    required Color color,
+    required Color background,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            value,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _BusinessList extends StatelessWidget {
   const _BusinessList({
     required this.businesses,
@@ -749,6 +858,42 @@ class _BusinessCard extends StatelessWidget {
                           ),
                         ),
                         const SizedBox(width: 6),
+                        // Tag ammontare abbonamento (verde=attivo, rosso=non in regola)
+                        if (business.billingEnabled &&
+                            business.billingAmountCents != null) ...[
+                          Builder(
+                            builder: (context) {
+                              final isPaid =
+                                  business.subscriptionStatus == 'active';
+                              final tagColor = isPaid
+                                  ? Colors.green
+                                  : Colors.red;
+                              return Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isCompact ? 4 : 6,
+                                  vertical: 1,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: tagColor.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: Text(
+                                  PriceFormatter.format(
+                                    context: context,
+                                    amount: business.billingAmountCents! / 100,
+                                    currencyCode: business.currency,
+                                  ),
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: tagColor.shade700,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: isCompact ? 9 : 11,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                          const SizedBox(width: 6),
+                        ],
                         // Badge sospeso
                         if (business.isSuspended) ...[
                           Container(

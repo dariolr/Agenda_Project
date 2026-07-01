@@ -28,6 +28,10 @@ class ApiException implements Exception {
   final int statusCode;
   final dynamic details;
 
+  /// Errore "silenzioso": non deve essere mostrato all'utente
+  /// (es. richiesta protetta scartata perché l'utente ha fatto logout).
+  final bool silent;
+
   const ApiException({
     required this.code,
     required this.message,
@@ -35,6 +39,7 @@ class ApiException implements Exception {
     this.params = const {},
     required this.statusCode,
     this.details,
+    this.silent = false,
   });
 
   bool get isUnauthorized => statusCode == 401;
@@ -98,6 +103,24 @@ class ApiClient {
         onRequest: (options, handler) {
           if (_accessToken != null) {
             options.headers['Authorization'] = 'Bearer $_accessToken';
+          } else if (!_isPublicPath(options.path)) {
+            // Utente non autenticato (es. subito dopo il logout): non inviare
+            // richieste protette. Evita la raffica di 401
+            // missing_authorization_token e i dialog di errore conseguenti.
+            handler.reject(
+              DioException(
+                requestOptions: options,
+                type: DioExceptionType.cancel,
+                error: const ApiException(
+                  code: 'unauthorized',
+                  message: 'Autenticazione richiesta.',
+                  messageKey: 'errors.unauthorized.missing_authorization_token',
+                  statusCode: 401,
+                  silent: true,
+                ),
+              ),
+            );
+            return;
           }
           handler.next(options);
         },
@@ -406,7 +429,16 @@ class ApiClient {
   }
 
   /// Gestisce errori Dio
+  /// Endpoint che non richiedono autenticazione (login, refresh, recupero
+  /// password, ecc.). Solo su questi si consente una richiesta senza token.
+  bool _isPublicPath(String path) => path.contains('/auth/');
+
   ApiException _handleError(DioException error) {
+    // Preserva le ApiException già costruite (es. richiesta protetta scartata
+    // durante il logout): non trasformarle in generici network_error.
+    if (error.error is ApiException) {
+      return error.error as ApiException;
+    }
     final response = error.response;
     if (response != null) {
       final statusCode = response.statusCode ?? 500;

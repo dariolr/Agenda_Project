@@ -534,6 +534,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "The free period has ended. To continue using the app, activate your subscription.",
     ),
     "billingAccessBlockedMessageWithDate": m1,
+    "billingAccessBlockedPastDueMessage": MessageLookupByLibrary.simpleMessage(
+      "Your subscription payment is overdue. To continue using the app, please settle the outstanding payment.",
+    ),
     "billingAccessBlockedTitle": MessageLookupByLibrary.simpleMessage(
       "Subscription required",
     ),

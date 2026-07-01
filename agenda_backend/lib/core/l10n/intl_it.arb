@@ -2155,6 +2155,7 @@
   "billingAccessBlockedTitle": "Abbonamento richiesto",
   "billingAccessBlockedMessage": "Il periodo gratuito è terminato. Per continuare a usare il gestionale, attiva l'abbonamento.",
   "billingAccessBlockedMessageWithDate": "Il periodo gratuito è terminato il {date}. Per continuare a usare il gestionale, attiva l'abbonamento.",
+  "billingAccessBlockedPastDueMessage": "Il pagamento dell'abbonamento è in ritardo. Per continuare a usare il gestionale, regolarizza il pagamento.",
   "billingActivationDeadlinePending": "L'attivazione dell abbonamento è richiesta entro: {date}.",
   "billingAccessBlockedActivateAction": "Attiva abbonamento",
   "whatsappNotEnabledForBusiness": "WhatsApp non è ancora attivo per questo business.",

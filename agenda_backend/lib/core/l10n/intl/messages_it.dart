@@ -557,6 +557,9 @@ class MessageLookup extends MessageLookupByLibrary {
       "Il periodo gratuito è terminato. Per continuare a usare il gestionale, attiva l\'abbonamento.",
     ),
     "billingAccessBlockedMessageWithDate": m1,
+    "billingAccessBlockedPastDueMessage": MessageLookupByLibrary.simpleMessage(
+      "Il pagamento dell\'abbonamento è in ritardo. Per continuare a usare il gestionale, regolarizza il pagamento.",
+    ),
     "billingAccessBlockedTitle": MessageLookupByLibrary.simpleMessage(
       "Abbonamento richiesto",
     ),

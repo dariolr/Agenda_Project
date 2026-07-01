@@ -18,6 +18,7 @@ final class AuthException extends Exception
     public const INVALID_RESET_TOKEN = 'invalid_reset_token';
     public const RESET_TOKEN_EXPIRED = 'reset_token_expired';
     public const INVALID_REFRESH_TOKEN = 'invalid_refresh_token';
+    public const FORBIDDEN = 'forbidden';
 
     private string $errorCode;
 
@@ -75,6 +76,11 @@ final class AuthException extends Exception
     public static function invalidRefreshToken(): self
     {
         return new self('Invalid or expired refresh token', self::INVALID_REFRESH_TOKEN, 401);
+    }
+
+    public static function forbidden(string $message): self
+    {
+        return new self($message, self::FORBIDDEN, 403);
     }
 
     public function getErrorCode(): string

@@ -14441,6 +14441,16 @@ class L10n {
     );
   }
 
+  /// `Your subscription payment is overdue. To continue using the app, please settle the outstanding payment.`
+  String get billingAccessBlockedPastDueMessage {
+    return Intl.message(
+      'Your subscription payment is overdue. To continue using the app, please settle the outstanding payment.',
+      name: 'billingAccessBlockedPastDueMessage',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Subscription activation is required by {date}.`
   String billingActivationDeadlinePending(Object date) {
     return Intl.message(

@@ -61,6 +61,9 @@ final class GetAllBusinesses
                 'created_at' => $b['created_at'],
                 'updated_at' => $b['updated_at'],
                 'admin_email' => $b['admin_email'] ?? null,
+                'billing_enabled' => (bool) ($b['billing_enabled'] ?? false),
+                'amount_cents' => isset($b['amount_cents']) ? (int) $b['amount_cents'] : null,
+                'subscription_status' => $b['subscription_status'] ?? null,
             ], $businesses),
             'pagination' => [
                 'total' => $total,

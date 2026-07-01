@@ -186,7 +186,9 @@ class _BillingContentState extends ConsumerState<_BillingContent> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        billing.activationDeadlineAt != null
+                        billing.lastPaymentAt != null
+                            ? context.l10n.billingAccessBlockedPastDueMessage
+                            : billing.activationDeadlineAt != null
                             ? context.l10n.billingAccessBlockedMessageWithDate(
                                 DtFmt.longDate(context, billing.activationDeadlineAt!),
                               )

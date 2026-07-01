@@ -470,15 +470,35 @@ final class BusinessBillingController
         }
 
         $activationDeadline = $config->activationDeadlineAt;
+        $now = new \DateTimeImmutable('now', new \DateTimeZone('UTC'));
         $accessBlocked = false;
         if (
             $config->billingEnabled &&
             $config->billingMode === BillingMode::RECURRING &&
-            $activationDeadline !== null &&
-            $activationDeadline < new \DateTimeImmutable('now', new \DateTimeZone('UTC')) &&
             !in_array($status, [BillingSubscriptionStatus::ACTIVE], true)
         ) {
-            $accessBlocked = true;
+            // Caso 1: attivazione iniziale mai completata e scadenza di attivazione superata.
+            if ($activationDeadline !== null && $activationDeadline < $now) {
+                $accessBlocked = true;
+            }
+
+            // Caso 2: periodo pagato terminato senza rinnovo attivo
+            // (moroso past_due/unpaid, oppure cancellato dopo la fine del periodo).
+            // Durante la finestra di retry di Stripe (periodo non ancora scaduto)
+            // l'accesso resta consentito.
+            if (!$accessBlocked && $subscription?->currentPeriodEnd !== null) {
+                try {
+                    $periodEnd = new \DateTimeImmutable(
+                        (string) $subscription->currentPeriodEnd,
+                        new \DateTimeZone('UTC')
+                    );
+                    if ($periodEnd < $now) {
+                        $accessBlocked = true;
+                    }
+                } catch (\Throwable) {
+                    // Data non parsabile: non blocchiamo per evitare falsi positivi.
+                }
+            }
         }
 
         return [

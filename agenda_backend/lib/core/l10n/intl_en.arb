@@ -2155,6 +2155,7 @@
   "billingAccessBlockedTitle": "Subscription required",
   "billingAccessBlockedMessage": "The free period has ended. To continue using the app, activate your subscription.",
   "billingAccessBlockedMessageWithDate": "The free period ended on {date}. To continue using the app, activate your subscription.",
+  "billingAccessBlockedPastDueMessage": "Your subscription payment is overdue. To continue using the app, please settle the outstanding payment.",
   "billingActivationDeadlinePending": "Subscription activation is required by {date}.",
   "billingAccessBlockedActivateAction": "Activate subscription",
   "whatsappNotEnabledForBusiness": "WhatsApp is not enabled for this business yet.",

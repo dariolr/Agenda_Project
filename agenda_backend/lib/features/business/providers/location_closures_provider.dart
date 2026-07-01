@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '/core/models/location_closure.dart';
 import '/core/network/network_providers.dart';
 import '/features/agenda/providers/business_providers.dart';
+import '/features/auth/providers/auth_provider.dart';
 import '/features/agenda/providers/location_providers.dart';
 import '/features/agenda/providers/tenant_time_provider.dart';
 
@@ -24,6 +25,9 @@ class LocationClosuresNotifier extends AsyncNotifier<List<LocationClosure>> {
   }
 
   Future<List<LocationClosure>> _loadClosures() async {
+    if (!ref.read(authProvider).isAuthenticated) {
+      return [];
+    }
     final businessId = ref.read(currentBusinessIdProvider);
     if (businessId <= 0) {
       return [];

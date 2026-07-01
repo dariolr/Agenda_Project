@@ -194,15 +194,19 @@ final class BusinessRepository
      */
     public function findAllWithSearch(?string $search, ?int $limit, int $offset): array
     {
-        $sql = 'SELECT b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency, 
+        $sql = 'SELECT b.id, b.name, b.slug, b.email, b.phone, b.timezone, b.currency,
                        b.cancellation_hours, b.show_appointment_price_in_card,
                        b.online_bookings_notification_email,
                        b.service_color_palette,
                        b.is_active, b.is_suspended, b.suspension_message, b.created_at, b.updated_at,
-                       u.email as admin_email
+                       u.email as admin_email,
+                       bc.billing_enabled, bc.amount_cents,
+                       bs.status as subscription_status
                 FROM businesses b
                 LEFT JOIN business_users bu ON bu.business_id = b.id AND bu.role = "owner"
                 LEFT JOIN users u ON u.id = bu.user_id
+                LEFT JOIN business_billing_config bc ON bc.business_id = b.id
+                LEFT JOIN business_billing_subscription bs ON bs.business_id = b.id
                 WHERE b.is_active = 1';
         $params = [];
 

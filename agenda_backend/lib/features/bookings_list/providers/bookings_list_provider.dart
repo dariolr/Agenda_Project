@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '/core/models/booking_list_item.dart';
 import '/core/network/network_providers.dart';
 import '../../agenda/providers/tenant_time_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
 
 /// Stato per i filtri della lista prenotazioni
@@ -312,7 +313,7 @@ class BookingsListNotifier extends Notifier<BookingsListState> {
 
   /// Carica la prima pagina (reset)
   Future<void> loadBookings(int businessId) async {
-    if (businessId <= 0) {
+    if (businessId <= 0 || !ref.read(authProvider).isAuthenticated) {
       state = state.copyWith(
         bookings: const [],
         total: 0,

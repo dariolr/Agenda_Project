@@ -10,6 +10,7 @@ import '../../agenda/providers/business_providers.dart';
 import '../../agenda/providers/date_range_provider.dart';
 import '../../agenda/providers/location_providers.dart';
 import '../../agenda/providers/tenant_time_provider.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../../auth/providers/current_business_user_provider.dart';
 import '../../services/providers/service_categories_provider.dart';
 import '../../services/providers/services_repository_provider.dart';
@@ -86,6 +87,7 @@ final classEventsForRangeProvider =
       ref,
       request,
     ) async {
+      if (!ref.watch(authProvider).isAuthenticated) return const [];
       if (request.businessId <= 0) return const [];
       final repo = ref.watch(classEventsRepositoryProvider);
       return repo.listEvents(
@@ -98,6 +100,7 @@ final classEventsForRangeProvider =
     });
 
 final classTypesProvider = FutureProvider<List<ClassType>>((ref) async {
+  if (!ref.watch(authProvider).isAuthenticated) return const [];
   final businessId = ref.watch(currentBusinessIdProvider);
   if (businessId <= 0) return const [];
   final repo = ref.watch(classEventsRepositoryProvider);
@@ -111,6 +114,7 @@ final classTypesProvider = FutureProvider<List<ClassType>>((ref) async {
 final classTypesWithInactiveProvider = FutureProvider<List<ClassType>>((
   ref,
 ) async {
+  if (!ref.watch(authProvider).isAuthenticated) return const [];
   final businessId = ref.watch(currentBusinessIdProvider);
   if (businessId <= 0) return const [];
   final repo = ref.watch(classEventsRepositoryProvider);
@@ -120,6 +124,9 @@ final classTypesWithInactiveProvider = FutureProvider<List<ClassType>>((
 
 final classTypeServiceCategoriesProvider =
     FutureProvider<List<ServiceCategory>>((ref) async {
+      if (!ref.watch(authProvider).isAuthenticated) {
+        return const <ServiceCategory>[];
+      }
       final businessId = ref.watch(currentBusinessIdProvider);
       final sharedCategories = ref.watch(serviceCategoriesProvider);
       if (businessId <= 0) return const <ServiceCategory>[];
@@ -143,6 +150,7 @@ final classTypeServiceCategoriesProvider =
     });
 
 final classEventsProvider = FutureProvider<List<ClassEvent>>((ref) async {
+  if (!ref.watch(authProvider).isAuthenticated) return const [];
   final businessId = ref.watch(currentBusinessIdProvider);
   if (businessId <= 0) return const [];
   final range = ref.watch(classEventsRangeProvider);

@@ -6,6 +6,7 @@ import '../../../core/models/business_invitation.dart';
 import '../../../core/models/business_user.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/network_providers.dart';
+import '../../auth/providers/auth_provider.dart';
 import '../data/business_users_repository.dart';
 
 part 'business_users_provider.g.dart';
@@ -55,7 +56,7 @@ class BusinessUsersState {
 class BusinessUsersNotifier extends _$BusinessUsersNotifier {
   @override
   BusinessUsersState build(int businessId) {
-    if (businessId <= 0) {
+    if (businessId <= 0 || !ref.watch(authProvider).isAuthenticated) {
       return const BusinessUsersState(isLoading: false);
     }
     final initial = const BusinessUsersState(isLoading: true);
